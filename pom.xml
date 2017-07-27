@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>uk.gov.moj.cpp.common</groupId>
+        <artifactId>service-parent-pom</artifactId>
+        <version>4.0.2</version>
+    </parent>
+
+    <groupId>uk.gov.moj.cpp.listing</groupId>
+    <artifactId>listing-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Listing Context Microservice Parent</name>
+
+    <description>
+        The Listing Microservice is a Listing context based Microservice that deals with .....
+    </description>
+
+    <properties>
+        <referencedata.version>2.0.120</referencedata.version>
+        <hearing.version>2.0.121</hearing.version>
+        <authorisation.library.version>2.0.0</authorisation.library.version>
+        <activiti.library.version>1.0.0</activiti.library.version>
+    </properties>
+
+    <modules>
+        <module>listing-command</module>
+        <module>listing-domain</module>
+        <module>listing-event</module>
+        <module>listing-viewstore</module>
+        <module>listing-query</module>
+        <module>listing-integration-test</module>
+        <module>listing-test-common</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- TODO: Move this to service parent pom -->
+            <dependency>
+                <groupId>uk.gov.moj.cpp.activiti</groupId>
+                <artifactId>activiti-embedded-rest</artifactId>
+                <version>${activiti.library.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>external.atlassian.jgitflow</groupId>
+                <artifactId>jgitflow-maven-plugin</artifactId>
+                <version>1.0-m5.1</version>
+                <configuration>
+                    <flowInitContext>
+                        <masterBranchName>dev/listing-release</masterBranchName>
+                        <developBranchName>master</developBranchName>
+                        <featureBranchPrefix>dev/listing-feature-</featureBranchPrefix>
+                        <releaseBranchPrefix>dev/listing-release-</releaseBranchPrefix>
+                        <hotfixBranchPrefix>dev/listing-hotfix-</hotfixBranchPrefix>
+                        <versionTagPrefix>listing-tag-</versionTagPrefix>
+                    </flowInitContext>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <enableSshAgent>true</enableSshAgent>
+                    <pushReleases>true</pushReleases>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>
