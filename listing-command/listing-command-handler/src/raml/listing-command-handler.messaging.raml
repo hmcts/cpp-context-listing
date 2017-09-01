@@ -1,0 +1,10 @@
+#%RAML 0.8
+title: Listing - Command Handler
+baseUri:  message://command/handler/message/listing
+
+/listing.handler.command:
+  post:
+    body:
+      application/vnd.listing.list-case-for-hearing+json:
+        example: !include json/listing.list-case-for-hearing.json
+        schema:  !include json/schema/listing.list-case-for-hearing.json

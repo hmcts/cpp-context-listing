@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
+        <artifactId>listing-event</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <artifactId>listing-viewstore</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>listing-viewstore-persistence</artifactId>
+    <artifactId>listing-event-processor</artifactId>
+    <packaging>war</packaging>
+
+    <properties>
+        <cpp.service-component>EVENT_PROCESSOR</cpp.service-component>
+    </properties>
 
     <dependencies>
         <dependency>
-            <groupId>uk.gov.justice.services</groupId>
-            <artifactId>common</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>uk.gov.justice.services</groupId>
-            <artifactId>persistence-deltaspike</artifactId>
+            <groupId>uk.gov.moj.cpp.common</groupId>
+            <artifactId>event-processor</artifactId>
+            <type>pom</type>
         </dependency>
 
         <dependency>
@@ -29,7 +30,7 @@
         <!-- Listing Dependencies -->
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
-            <artifactId>listing-domain-common</artifactId>
+            <artifactId>listing-domain-event</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -37,12 +38,6 @@
         <dependency>
             <groupId>uk.gov.justice.services</groupId>
             <artifactId>test-utils-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>uk.gov.justice.services</groupId>
-            <artifactId>test-utils-persistence</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
