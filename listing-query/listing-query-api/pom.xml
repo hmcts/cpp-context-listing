@@ -14,23 +14,6 @@
         <cpp.service-component>QUERY_API</cpp.service-component>
     </properties>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>uk.gov.justice.maven</groupId>
-                <artifactId>raml-maven-plugin</artifactId>
-                <dependencies>
-                    <dependency>
-                        <groupId>uk.gov.moj.cpp.listing</groupId>
-                        <artifactId>listing-query-view</artifactId>
-                        <version>${project.version}</version>
-                        <classifier>raml</classifier>
-                    </dependency>
-                </dependencies>
-            </plugin>
-        </plugins>
-    </build>
-
     <dependencies>
         <dependency>
             <groupId>uk.gov.moj.cpp.common</groupId>
