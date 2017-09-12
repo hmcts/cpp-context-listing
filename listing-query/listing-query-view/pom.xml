@@ -1,45 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>listing-query</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
+        <artifactId>listing-query</artifactId>
         <version>0.0.5-R2-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
     <artifactId>listing-query-view</artifactId>
     <packaging>war</packaging>
 
-    <properties>
-        <cpp.service-component>QUERY_VIEW</cpp.service-component>
-    </properties>
-
     <dependencies>
-        <dependency>
-            <groupId>uk.gov.moj.cpp.common</groupId>
-            <artifactId>query-view</artifactId>
-            <type>pom</type>
-        </dependency>
-
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
 
-        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>query-view</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-viewstore-persistence</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Test dependencies -->
         <dependency>
             <groupId>uk.gov.justice.services</groupId>
             <artifactId>test-utils-core</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>uk.gov.justice.utils</groupId>
-            <artifactId>test-utils-logging-simple</artifactId>
-            <type>pom</type>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
 </project>

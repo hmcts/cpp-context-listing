@@ -11,8 +11,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>listing-query-api</module>
         <module>listing-query-view</module>
+        <module>listing-query-api</module>
     </modules>
 
 </project>

@@ -1,0 +1,62 @@
+package uk.gov.moj.cpp.listing.event.listener;
+
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.event.CaseSentForListing;
+import uk.gov.moj.cpp.listing.event.converter.HearingConverter;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+
+import javax.json.JsonObject;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
+@RunWith(MockitoJUnitRunner.class)
+public class HearingEventListenerTest {
+
+    @Mock
+    private HearingRepository hearingRepository;
+
+    @InjectMocks
+    private HearingEventListener hearingEventListener;
+
+    @Mock
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter;
+
+    @Mock
+    private HearingConverter hearingConverter;
+
+    @Mock
+    private JsonEnvelope envelope;
+
+    @Mock
+    private CaseSentForListing caseSentForListing;
+
+    @Mock
+    private Hearing hearing;
+
+    @Mock
+    private JsonObject payload;
+
+    @Test
+    public void shouldHandleCaseSentForListingEvent() throws Exception {
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectToObjectConverter.convert(payload, CaseSentForListing.class))
+                .willReturn(caseSentForListing);
+        given(hearingConverter.convert(caseSentForListing)).willReturn(hearing);
+
+        hearingEventListener.caseSentForListing(envelope);
+
+        verify(envelope).payloadAsJsonObject();
+        verify(jsonObjectToObjectConverter).convert(payload, CaseSentForListing.class);
+        verify(hearingConverter).convert(caseSentForListing);
+        verify(hearingRepository).save(hearing);
+    }
+}

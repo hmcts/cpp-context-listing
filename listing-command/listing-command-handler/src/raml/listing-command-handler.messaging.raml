@@ -1,10 +1,19 @@
 #%RAML 0.8
 title: Listing - Command Handler
-baseUri:  message://command/handler/message/listing
+baseUri: message://command/handler/message/listing
 
 /listing.handler.command:
   post:
     body:
-      application/vnd.listing.list-case-for-hearing+json:
-        example: !include json/listing.list-case-for-hearing.json
-        schema:  !include json/schema/listing.list-case-for-hearing.json
+      application/vnd.listing.command.send-case-for-listing+json:
+        example: !include json/listing.command.send-case-for-listing.json
+        schema:  !include json/schema/listing.command.send-case-for-listing.json
+      application/vnd.listing.command.add-judge+json:
+        example: !include json/listing.command.add-judge.json
+        schema:  !include json/schema/listing.command.add-judge.json
+      application/vnd.listing.command.add-court-centre+json:
+        example: !include json/listing.command.add-court-centre.json
+        schema:  !include json/schema/listing.command.add-court-centre.json
+      application/vnd.listing.command.add-court-room+json:
+        example: !include json/listing.command.add-court-room.json
+        schema:  !include json/schema/listing.command.add-court-room.json

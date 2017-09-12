@@ -1,0 +1,12 @@
+#%RAML 0.8
+title: Public events
+baseUri: message://event/processor/message/listing
+version: v1
+/public.event:
+  get:
+      responses:
+          200:
+              body:
+                application/vnd.listing.case-sent-for-listing+json:
+                    schema: !include json/schema/listing.case-sent-for-listing.json
+                    example: !include json/listing.case-sent-for-listing.json

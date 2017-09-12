@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    },
+    "courtCentre": {
+      "description": "court centre name",
+      "type": "string"
+    },
+    "courtRoomName": {
+      "description": "The court room name",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "courtCentre",
+    "courtRoomName"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,19 @@
+#%RAML 0.8
+title: API Using media type in the URL
+baseUri: message://event/listener/message/listing
+
+/listing.event:
+  post:
+    body:
+      application/vnd.listing.events.judge-added+json:
+        example: !include json/listing.events.judge-added.json
+        schema:  !include json/schema/listing.events.judge-added.json
+      application/vnd.listing.events.court-centre-added+json:
+        example: !include json/listing.events.court-centre-added.json
+        schema:  !include json/schema/listing.events.court-centre-added.json
+      application/vnd.listing.events.court-room-added+json:
+        example: !include json/listing.events.court-room-added.json
+        schema:  !include json/schema/listing.events.court-room-added.json
+      application/vnd.listing.events.case-sent-for-listing+json:
+        schema: !include json/schema/listing.events.case-sent-for-listing.json
+        example: !include json/listing.events.case-sent-for-listing.json

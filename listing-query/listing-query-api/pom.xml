@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>listing-query</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
+        <artifactId>listing-query</artifactId>
         <version>0.0.5-R2-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
     <artifactId>listing-query-api</artifactId>
     <packaging>war</packaging>
@@ -13,6 +13,28 @@
     <properties>
         <cpp.service-component>QUERY_API</cpp.service-component>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>uk.gov.justice.maven</groupId>
+                <artifactId>raml-maven-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.listing</groupId>
+                        <artifactId>listing-query-view</artifactId>
+                        <version>${project.version}</version>
+                        <classifier>raml</classifier>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <generatorProperties>
+                        <actionMapping>${cpp.framework.action.mapping.enabled}</actionMapping>
+                    </generatorProperties>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -26,20 +48,32 @@
             <artifactId>javaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>query-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.access-control</groupId>
+            <artifactId>access-control-common-providers</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.authorisation.service</groupId>
+            <artifactId>authorisation-service-interceptor</artifactId>
+            <version>${authorisation.service.version}</version>
+        </dependency>
 
-        <!-- Test Dependencies -->
+        <!-- Test dependencies -->
         <dependency>
             <groupId>uk.gov.justice.services</groupId>
             <artifactId>test-utils-core</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
-            <groupId>uk.gov.justice.utils</groupId>
-            <artifactId>test-utils-logging-simple</artifactId>
-            <type>pom</type>
+            <groupId>uk.gov.moj.cpp.access-control</groupId>
+            <artifactId>access-control-test-utils</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
 </project>

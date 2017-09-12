@@ -1,0 +1,34 @@
+package uk.gov.moj.cpp.accesscontrol;
+
+import uk.gov.moj.cpp.accesscontrol.drools.Outcome;
+import uk.gov.moj.cpp.accesscontrol.drools.Action;
+import java.util.Arrays;
+
+global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAndGroupProvider;
+
+rule "Query - API - listing.get.judges"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.get.judges");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, "Listing Officers"));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.get.court-centres"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.get.court-centres");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, "Listing Officers"));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.get.court-rooms"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.get.court-rooms");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, "Listing Officers"));
+  then
+    $outcome.setSuccess(true);
+end

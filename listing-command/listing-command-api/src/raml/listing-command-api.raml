@@ -3,19 +3,52 @@ title: Listing - Command API
 baseUri: http://localhost:8080/listing-command-api/command/api/rest/listing
 protocols: [ HTTP, HTTPS ]
 
-/cases:
+/hearings:
   post:
     description: |
       List case for hearing
       ...
       (mapping):
-        requestType: application/vnd.listing.list-case-for-hearing+json
-        name: listing.list-case-for-hearing
+        requestType: application/vnd.listing.command.send-case-for-listing+json
+        name: listing.command.send-case-for-listing
       ...
     body:
-      application/vnd.listing.list-case-for-hearing+json:
-        example: !include json/listing.list-case-for-hearing.json
-        schema: !include json/schema/listing.list-case-for-hearing.json
+      application/vnd.listing.command.send-case-for-listing+json:
+        example: !include json/listing.command.send-case-for-listing.json
+        schema: !include json/schema/listing.command.send-case-for-listing.json
+    responses:
+      202:
+        description: Request accepted
+
+/reference-data:
+  post:
+    description: |
+      Add judges, court-centres and court-rooms to reference data
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.add-judge+json
+        name: listing.command.add-judge
+      (mapping):
+        requestType: application/vnd.listing.command.add-court-centre+json
+        name: listing.command.add-court-centre
+      (mapping):
+        requestType: application/vnd.listing.command.add-court-room+json
+        name: listing.command.add-court-room
+
+      ...
+    body:
+      application/vnd.listing.command.add-judge+json:
+        example: !include json/listing.command.add-judge.json
+        schema: !include json/schema/listing.command.add-judge.json
+
+      application/vnd.listing.command.add-court-centre+json:
+        example: !include json/listing.command.add-court-centre.json
+        schema: !include json/schema/listing.command.add-court-centre.json
+
+      application/vnd.listing.command.add-court-room+json:
+        example: !include json/listing.command.add-court-room.json
+        schema: !include json/schema/listing.command.add-court-room.json
+
     responses:
       202:
         description: Request accepted

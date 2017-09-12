@@ -15,8 +15,8 @@ public class ListingCommandApi {
     @Inject
     private Sender sender;
 
-    @Handles("listing.list-case-for-hearing")
-    public void listCaseForHearing(final JsonEnvelope envelope) {
+    @Handles("listing.command.send-case-for-listing")
+    public void sendCaseForListing(final JsonEnvelope envelope) {
         sender.send(envelope);
     }
 

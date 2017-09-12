@@ -28,6 +28,14 @@
             <artifactId>wiremock-test-utils</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- TODO need to get rid of the rest-assured dependency as framework have provided tools to achieve the same -->
+        <dependency>
+            <groupId>com.jayway.restassured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>2.5.0</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <profiles>

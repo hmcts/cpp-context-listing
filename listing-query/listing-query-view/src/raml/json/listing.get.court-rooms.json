@@ -1,0 +1,19 @@
+{
+  "courtRooms": [
+    {
+      "id": "1daefec3-2f76-8109-82d9-2e60544a6c01",
+      "courtCentre": "Liverpool Crown Court",
+      "courtRoomName": "Court room 1"
+    },
+    {
+      "hearingId": "4bb4cd5a-ce2a-467d-8984-76b62ec92072",
+      "courtCentre": "Liverpool Crown Court",
+      "courtRoomName": "Court room 2"
+    },
+    {
+      "hearingId": "4bb4cd5a-ce2a-467d-8984-76b62ec92077",
+      "courtCentre": "Liverpool Crown Court",
+      "courtRoomName": "Court room 3"
+    }
+  ]
+}

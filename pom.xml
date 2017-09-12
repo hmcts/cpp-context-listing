@@ -22,6 +22,8 @@
     </description>
 
     <properties>
+        <cpp.framework.action.mapping.enabled>true</cpp.framework.action.mapping.enabled>
+        <authorisation.service.version>0.1.19</authorisation.service.version>
         <sonar.jacoco.itReportPath>${project.basedir}/../target/jacoco-it.exec
         </sonar.jacoco.itReportPath>
         <sonar.report.export.path>sonar-report.json</sonar.report.export.path>
@@ -34,8 +36,8 @@
         <module>listing-domain</module>
         <module>listing-event</module>
         <module>listing-integration-test</module>
-        <module>listing-query</module>
         <module>listing-viewstore</module>
+        <module>listing-query</module>
         <module>listing-service</module>
     </modules>
 

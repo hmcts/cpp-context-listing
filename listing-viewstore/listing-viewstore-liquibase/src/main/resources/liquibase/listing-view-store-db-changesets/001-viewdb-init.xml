@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="1" logicalFilePath="001-viewdb-init.xml">
+        <createTable tableName="listing_case">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="urn" type="TEXT"/>
+            <column name="sending_committal_date" type="DATE"/>
+        </createTable>
+
+        <createTable tableName="defendant">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="case_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_defendant_case"
+                             references="listing_case(id)"/>
+            </column>
+            <column name="person_id" type="UUID"/>
+            <column name="first_name" type="TEXT"/>
+            <column name="last_name" type="TEXT"/>
+            <column name="date_of_birth" type="DATE"/>
+            <column name="bail_status" type="TEXT"/>
+            <column name="defence_organisation" type="TEXT"/>
+        </createTable>
+
+        <createTable tableName="hearing">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="case_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_hearing_case"
+                             references="listing_case(id)"/>
+            </column>
+            <column name="court_centre_id" type="TEXT"/>
+            <column name="type" type="TEXT"/>
+            <column name="start_date_time" type="DATE"/>
+            <column name="estimate_minutes" type="INTEGER"/>
+        </createTable>
+
+        <createTable tableName="offence">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="defendant_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_offence_defendant"
+                             references="defendant(id)"/>
+            </column>
+            <column name="offence_code" type="TEXT"/>
+            <column name="plea" type="TEXT"/>
+            <column name="start_date_time" type="DATE"/>
+            <column name="end_date_time" type="DATE"/>
+            <column name="statement_of_offence_title" type="TEXT"/>
+            <column name="statement_of_offence_legislation" type="TEXT"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

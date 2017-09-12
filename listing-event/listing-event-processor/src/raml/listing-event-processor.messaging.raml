@@ -1,0 +1,10 @@
+#%RAML 0.8
+title: API Using media type in the URL
+baseUri: message://event/processor/message/listing
+
+/listing.event:
+    post:
+      body:
+        application/vnd.listing.events.case-sent-for-listing+json:
+            schema: !include json/schema/listing.events.case-sent-for-listing.json
+            example: !include json/listing.events.case-sent-for-listing.json

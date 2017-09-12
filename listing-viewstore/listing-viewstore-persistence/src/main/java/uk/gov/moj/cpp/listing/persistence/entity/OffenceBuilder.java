@@ -1,0 +1,53 @@
+package uk.gov.moj.cpp.listing.persistence.entity;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+public class OffenceBuilder {
+    private UUID id;
+    private String offenceCode;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private String plea;
+    private StatementOfOffence statementOfOffence;
+    private Defendant defendant;
+
+    public OffenceBuilder setId(final UUID id) {
+        this.id = id;
+        return this;
+    }
+
+    public OffenceBuilder setOffenceCode(final String offenceCode) {
+        this.offenceCode = offenceCode;
+        return this;
+    }
+
+    public OffenceBuilder setStartDate(final LocalDate startDate) {
+        this.startDate = startDate;
+        return this;
+    }
+
+    public OffenceBuilder setEndDate(final LocalDate endDate) {
+        this.endDate = endDate;
+        return this;
+    }
+
+    public OffenceBuilder setPlea(final String plea) {
+        this.plea = plea;
+        return this;
+    }
+
+    public OffenceBuilder setStatementOfOffence(final StatementOfOffence statementOfOffence) {
+        this.statementOfOffence = statementOfOffence;
+        return this;
+    }
+
+    public OffenceBuilder setDefendant(final Defendant defendant) {
+        this.defendant = defendant;
+        return this;
+    }
+
+    public Offence build() {
+        return new Offence(id, offenceCode, startDate, endDate, plea, statementOfOffence, defendant);
+    }
+}
