@@ -17,9 +17,8 @@
 
     <description>
         The listing microservice is a Listing context based microservice that processes CPP
-        cases to be listed for hearing(s). It interfaces with an external Scheduling Service
-        to request/receive a fully allocated hearing for a case. Once the hearing is fully
-        allocated it emits this event to downstream CPP contexts.
+        cases to be listed for hearing(s). Once the hearing is fully allocated it emits this
+        event to downstream CPP contexts.
     </description>
 
     <properties>
