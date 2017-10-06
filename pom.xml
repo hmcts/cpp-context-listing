@@ -22,7 +22,11 @@
     </description>
 
     <properties>
-        <activiti.library.version>1.0.0</activiti.library.version>
+        <sonar.jacoco.itReportPath>${project.basedir}/../target/jacoco-it.exec
+        </sonar.jacoco.itReportPath>
+        <sonar.report.export.path>sonar-report.json</sonar.report.export.path>
+        <sonar.scm.provider>git</sonar.scm.provider>
+        <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
     </properties>
 
     <modules>
@@ -33,17 +37,6 @@
         <module>listing-query</module>
         <module>listing-viewstore</module>
     </modules>
-
-    <dependencyManagement>
-        <dependencies>
-            <!-- TODO: Move this to service parent pom -->
-            <dependency>
-                <groupId>uk.gov.moj.cpp.activiti</groupId>
-                <artifactId>activiti-embedded-rest</artifactId>
-                <version>${activiti.library.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <plugins>
@@ -68,4 +61,11 @@
 
         </plugins>
     </build>
+
+    <distributionManagement>
+        <site>
+            <id>site</id>
+            <url>${mvn.site.url}</url>
+        </site>
+    </distributionManagement>
 </project>
