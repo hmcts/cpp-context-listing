@@ -10,20 +10,23 @@
 
     <groupId>uk.gov.moj.cpp.listing</groupId>
     <artifactId>listing-parent</artifactId>
-    <version>0.0.1-R2-SNAPSHOT</version>
+    <version>0.0.5-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
 
     <description>
         The listing microservice is a Listing context based microservice that processes CPP
-        cases to be listed for hearing(s). It interfaces with an external Scheduling Service
-        to request/receive a fully allocated hearing for a case. Once the hearing is fully
-        allocated it emits this event to downstream CPP contexts (ie. Hearing).
+        cases to be listed for hearing(s). Once the hearing is fully allocated it emits this
+        event to downstream CPP contexts.
     </description>
 
     <properties>
-        <activiti.library.version>1.0.0</activiti.library.version>
+        <sonar.jacoco.itReportPath>${project.basedir}/../target/jacoco-it.exec
+        </sonar.jacoco.itReportPath>
+        <sonar.report.export.path>sonar-report.json</sonar.report.export.path>
+        <sonar.scm.provider>git</sonar.scm.provider>
+        <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
     </properties>
 
     <modules>
@@ -33,25 +36,21 @@
         <module>listing-integration-test</module>
         <module>listing-query</module>
         <module>listing-viewstore</module>
+        <module>listing-service</module>
     </modules>
-
-    <dependencyManagement>
-        <dependencies>
-            <!-- TODO: Move this to service parent pom -->
-            <dependency>
-                <groupId>uk.gov.moj.cpp.activiti</groupId>
-                <artifactId>activiti-embedded-rest</artifactId>
-                <version>${activiti.library.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <archiveClasses>true</archiveClasses>
+                    <attachClasses>true</attachClasses>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>external.atlassian.jgitflow</groupId>
                 <artifactId>jgitflow-maven-plugin</artifactId>
-                <version>1.0-m5.1</version>
                 <configuration>
                     <flowInitContext>
                         <masterBranchName>dev/listing-release</masterBranchName>
@@ -69,4 +68,11 @@
 
         </plugins>
     </build>
+
+    <distributionManagement>
+        <site>
+            <id>site</id>
+            <url>${mvn.site.url}</url>
+        </site>
+    </distributionManagement>
 </project>
