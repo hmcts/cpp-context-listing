@@ -36,14 +36,21 @@
         <module>listing-integration-test</module>
         <module>listing-query</module>
         <module>listing-viewstore</module>
+        <module>listing-service</module>
     </modules>
 
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <archiveClasses>true</archiveClasses>
+                    <attachClasses>true</attachClasses>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>external.atlassian.jgitflow</groupId>
                 <artifactId>jgitflow-maven-plugin</artifactId>
-                <version>1.0-m5.1</version>
                 <configuration>
                     <flowInitContext>
                         <masterBranchName>dev/listing-release</masterBranchName>

@@ -1,0 +1,57 @@
+---
+resource_descriptor:
+  spec_version: '1.0.0'
+  version: '${project.version}'
+
+  resources:
+    - name: java:/app/listing-service/DS.eventstore
+      type: xa-datasource
+      setup:
+        - type: liquibase
+          maven:
+            groupId: uk.gov.justice.services
+            artifactId: event-repository-liquibase
+            type: jar
+            version: '${cpp.framework.version}'
+        - type: liquibase
+          maven:
+            groupId: uk.gov.justice.services
+            artifactId: aggregate-snapshot-repository-liquibase
+            type: jar
+            version: '${project.version}'
+
+    - name: java:/DS.listing
+      type: xa-datasource
+      setup:
+        - type: liquibase
+          maven:
+            groupId: uk.gov.justice.services
+            artifactId: event-buffer-liquibase
+            type: jar
+            version: '${cpp.framework.version}'
+        - type: liquibase
+          maven:
+            groupId: uk.gov.moj.cpp.listing
+            artifactId: listing-viewstore-liquibase
+            type: jar
+            version: '${project.version}'
+
+    - name: listing.handler.command
+      type: queue
+    - name: listing.event
+      type: topic
+    - name: public.event
+      type: topic
+
+  services:
+    # listing provides these service mappings
+    - name: 'listing-service'
+      id: 'listing_service'
+      target: '/listing-service'
+      map:
+        - '/listing-command-api'
+        - '/listing-event-listener'
+        - '/listing-event-processor'
+        - '/listing-query-api'
+        - '/listing-query-view'
+      matcher: '/listing-[^/]+'
