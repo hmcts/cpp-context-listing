@@ -50,6 +50,7 @@ resource_descriptor:
       target: '/listing-service'
       map:
         - '/listing-command-api'
+        - '/listing-command-handler'
         - '/listing-event-listener'
         - '/listing-event-processor'
         - '/listing-query-api'
