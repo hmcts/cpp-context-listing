@@ -15,8 +15,8 @@ import java.util.stream.IntStream;
 
 public class CaseDataFactory {
 
-    public static final int HEARING_ESTIMATE_MINUTES = 15;
-    public static final String HEARING_TYPE = "PTP";
+    private static final int HEARING_ESTIMATE_MINUTES = 15;
+    private static final String HEARING_TYPE = "PTP";
 
     public static CaseData caseData() {
         return new CaseData(randomUUID(), STRING.next(),

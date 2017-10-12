@@ -1,24 +1,5 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
-import uk.gov.justice.services.core.enveloper.Enveloper;
-import uk.gov.justice.services.eventsourcing.source.core.EventSource;
-import uk.gov.justice.services.eventsourcing.source.core.EventStream;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
-import uk.gov.moj.cpp.listing.event.CourtCentreAdded;
-import uk.gov.moj.cpp.listing.event.CourtRoomAdded;
-import uk.gov.moj.cpp.listing.event.JudgeAdded;
-
-import javax.json.JsonObject;
-import java.util.UUID;
-
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -31,6 +12,27 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetad
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeStreamMatcher.streamContaining;
 
+import uk.gov.justice.services.core.enveloper.Enveloper;
+import uk.gov.justice.services.eventsourcing.source.core.EventSource;
+import uk.gov.justice.services.eventsourcing.source.core.EventStream;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
+import uk.gov.moj.cpp.listing.event.CourtCentreAdded;
+import uk.gov.moj.cpp.listing.event.CourtRoomAdded;
+import uk.gov.moj.cpp.listing.event.JudgeAdded;
+
+import java.util.UUID;
+
+import javax.json.JsonObject;
+
+import org.hamcrest.MatcherAssert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.runners.MockitoJUnitRunner;
+
 @RunWith(MockitoJUnitRunner.class)
 public class ReferenceDataCommandHandlerTest {
 
@@ -38,8 +40,8 @@ public class ReferenceDataCommandHandlerTest {
     private static final String TITLE = "HHS";
     private static final String FIRST_NAME = "Test Recipe";
     private static final String LAST_NAME = "Last Name";
-    public static final String COURT_CENTRE = "Liverpool";
-    public static final String COURT_CENTRE_ROOM = "Court room 1";
+    private static final String COURT_CENTRE = "Liverpool";
+    private static final String COURT_CENTRE_ROOM = "Court room 1";
 
     @Mock
     private EventSource eventSource;

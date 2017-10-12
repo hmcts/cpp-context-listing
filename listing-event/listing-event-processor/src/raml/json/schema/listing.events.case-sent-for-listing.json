@@ -102,7 +102,8 @@
           "lastName",
           "dateOfBirth",
           "bailStatus",
-          "defenceOrganisation"
+          "defenceOrganisation",
+          "offences"
         ]
       }
     },
@@ -140,6 +141,7 @@
     "caseId",
     "urn",
     "sendingCommittalDate",
+    "defendants",
     "hearing"
   ],
   "additionalProperties": false

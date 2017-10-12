@@ -29,18 +29,23 @@ public class Hearing implements Serializable {
     @JoinColumn(name = "case_id")
     private ListingCase listingCase;
 
+    @Column(name = "allocated")
+    private Boolean allocated;
+
     public Hearing() {
         // for JPA
     }
 
     public Hearing(final UUID id, final LocalDate startDateTime, final Integer estimateMinutes,
-                   final String type, final String courtCentreId, final ListingCase listingCase) {
+                   final String type, final String courtCentreId, final ListingCase listingCase,
+                   final Boolean allocated) {
         this.id = id;
         this.startDateTime = startDateTime;
         this.estimateMinutes = estimateMinutes;
         this.type = type;
         this.courtCentreId = courtCentreId;
         this.listingCase = listingCase;
+        this.allocated = allocated;
     }
 
     public UUID getId() {
@@ -64,6 +69,10 @@ public class Hearing implements Serializable {
     }
 
     public ListingCase getListingCase() { return listingCase; }
+
+    public Boolean getAllocated() {
+        return allocated;
+    }
 
     @Override
     public boolean equals(final Object o) {

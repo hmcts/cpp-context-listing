@@ -140,6 +140,7 @@
     "caseId",
     "urn",
     "sendingCommittalDate",
+    "defendants",
     "hearing"
   ],
   "additionalProperties": false

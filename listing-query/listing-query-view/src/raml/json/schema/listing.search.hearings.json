@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "hearings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/hearing"
+      }
+    }
+  },
+  "required": [
+    "hearings"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "offence": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/uuid"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "additionalProperties": false
+    },
+    "defendant": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "bailStatus": {
+          "type": "string"
+        },
+        "offences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/offence"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "bailStatus",
+        "offences"
+      ],
+      "additionalProperties": false
+    },
+    "hearing": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/uuid"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["PTP", "SENTENCING", "TRIAL"]
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "estimateMinutes": {
+          "type": "string"
+        },
+        "defendants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/defendant"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "date",
+        "estimateMinutes",
+        "defendants"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "definitions": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    }
+  }
+}

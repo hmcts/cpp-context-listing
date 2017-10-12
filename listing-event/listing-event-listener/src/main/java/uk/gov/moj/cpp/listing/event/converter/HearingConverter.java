@@ -51,6 +51,7 @@ public class HearingConverter implements Converter<CaseSentForListing, Hearing> 
         hearingBuilder.setStartDateTime(hearingPartOfEvent.getStartDate());
         hearingBuilder.setEstimateMinutes(hearingPartOfEvent.getEstimateMinutes());
         hearingBuilder.setListingCase(listingCase);
+        hearingBuilder.setAllocated(hearingPartOfEvent.isAllocated());
 
         return hearingBuilder.build();
     }

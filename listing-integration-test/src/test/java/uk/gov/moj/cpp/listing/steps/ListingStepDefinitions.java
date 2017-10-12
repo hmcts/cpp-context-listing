@@ -1,11 +1,19 @@
 package uk.gov.moj.cpp.listing.steps;
 
+import static com.jayway.jsonpath.Criteria.where;
+import static com.jayway.jsonpath.Filter.filter;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static javax.json.Json.createObjectBuilder;
+import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
+import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
@@ -23,6 +31,7 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
 
+import com.jayway.jsonpath.Filter;
 import com.jayway.restassured.path.json.JsonPath;
 import org.hamcrest.CoreMatchers;
 
@@ -31,6 +40,9 @@ public class ListingStepDefinitions extends AbstractIT {
 
     private static final String MEDIA_TYPE_LIST_CASE_FOR_HEARING = "application/vnd.listing" +
             ".command.send-case-for-listing+json";
+    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
+            ".search.hearings+json";
+
 
     private static final String FIELD_GENERIC_ID = "id";
     private static final String FIELD_PERSON_ID = "personId";
@@ -58,6 +70,7 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String FIELD_SENDING_COMMITTAL_DATE = "sendingCommittalDate";
     private static final String LISTING_COMMAND_SEND_CASE_FOR_LISTING = "listing.command" +
             ".send-case-for-listing";
+    private static final String UNALLOCATED = "unallocated";
 
     public static void givenAUserHasLoggedInAsAListingOfficers(final UUID validUserId) {
         setLoggedInUser(validUserId);
@@ -141,9 +154,21 @@ public class ListingStepDefinitions extends AbstractIT {
     }
 
 
-    private static void verifyInPublicMQ(String caseId, MessageConsumerClient
+    private static void verifyInPublicMQ(final String caseId, final MessageConsumerClient
             publicMessageConsumer) throws JMSException {
         JsonPath response = new JsonPath(publicMessageConsumer.retrieveMessage().get());
         assertThat(response.get(FIELD_CASE_ID), CoreMatchers.equalTo(caseId));
+    }
+
+    public static void thenUnallocatedHearingsAreReturnedWhenQueried(final CaseData caseData) {
+        final String searchHearingUrl = String.format("%s%s", baseUri,
+                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData.getHearingData().getCourtCentreId(), UNALLOCATED));
+        final Filter myFilter = filter(where("id").is(caseData.getHearingData().getId().toString()));
+        final com.jayway.jsonpath.JsonPath hearingFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", myFilter);
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(withJsonPath(hearingFilter)));
     }
 }

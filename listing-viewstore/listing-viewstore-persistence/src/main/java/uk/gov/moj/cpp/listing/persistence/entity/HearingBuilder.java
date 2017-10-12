@@ -10,6 +10,7 @@ public class HearingBuilder {
     private String type;
     private String courtCentreId;
     private ListingCase listingCase;
+    private Boolean allocated;
 
     public HearingBuilder setId(final UUID id) {
         this.id = id;
@@ -41,7 +42,12 @@ public class HearingBuilder {
         return this;
     }
 
+    public HearingBuilder setAllocated(final Boolean allocated) {
+        this.allocated = allocated;
+        return this;
+    }
+
     public Hearing build() {
-        return new Hearing(id, startDateTime, estimateMinutes, type, courtCentreId, listingCase);
+        return new Hearing(id, startDateTime, estimateMinutes, type, courtCentreId, listingCase, allocated);
     }
 }

@@ -23,7 +23,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class HearingConverterTest {
 
-    public static final int ESTIMATE_MINUTES = 15;
+    private static final int ESTIMATE_MINUTES = 15;
+    private static final boolean ALLOCATED = true;
 
     @InjectMocks
     private HearingConverter hearingConverter;
@@ -44,7 +45,7 @@ public class HearingConverterTest {
                 (offence));
 
         Hearing hearingPart = new Hearing(randomUUID().toString(), STRING.next(), STRING.next(), LocalDate.now
-                (), ESTIMATE_MINUTES);
+                (), ESTIMATE_MINUTES, ALLOCATED);
 
         CaseSentForListing event = new CaseSentForListing(randomUUID().toString(), STRING.next(), LocalDate
                 .now(), Collections.singletonList(defendant), hearingPart);
@@ -56,6 +57,7 @@ public class HearingConverterTest {
         assertThat(hearing.getId().toString(), is(hearingPart.getId()));
         assertThat(hearing.getStartDateTime(), is(hearingPart.getStartDate()));
         assertThat(hearing.getType(), is(hearingPart.getType()));
+        assertThat(hearing.getAllocated(), is(hearingPart.isAllocated()));
 
         assertThat(hearing.getListingCase().getId().toString(), is(event.getCaseId()));
         assertThat(hearing.getListingCase().getSendingCommittalDate(), is(event.getSendingCommittalDate()));

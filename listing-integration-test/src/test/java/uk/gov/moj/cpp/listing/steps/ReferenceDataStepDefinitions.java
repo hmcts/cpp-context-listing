@@ -29,7 +29,7 @@ import com.jayway.jsonpath.Filter;
 import com.jayway.jsonpath.JsonPath;
 
 @SuppressWarnings("unchecked")
-public class ReferenceDataDefinitions extends AbstractIT {
+public class ReferenceDataStepDefinitions extends AbstractIT {
 
     private static final String MEDIA_TYPE_ADD_JUDGE = "application/vnd.listing" +
             ".command.add-judge+json";
@@ -149,7 +149,7 @@ public class ReferenceDataDefinitions extends AbstractIT {
         final String getCourtRoomUrl = String.format("%s/%s", baseUri, ENDPOINT_PROPERTIES.getProperty("listing.get.reference-data"));
 
         final Filter myFilter = filter(
-                where("id").is(courtRoomData.getId().toString())
+                where("id").is(courtRoomData.getId())
                         .and("courtCentre").is(courtRoomData.getCourtCentre())
                         .and("courtRoomName").is(courtRoomData.getCourtRoomName()));
         final JsonPath courtRoomFilter = JsonPath.compile("$.courtRooms[?]", myFilter);

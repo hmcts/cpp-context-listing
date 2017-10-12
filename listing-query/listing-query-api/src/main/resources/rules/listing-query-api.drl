@@ -32,3 +32,12 @@ rule "Query - API - listing.get.court-rooms"
   then
     $outcome.setSuccess(true);
 end
+
+rule "Query - API - listing.search.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, "Listing Officers"));
+  then
+    $outcome.setSuccess(true);
+end

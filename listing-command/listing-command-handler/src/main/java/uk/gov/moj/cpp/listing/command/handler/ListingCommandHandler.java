@@ -2,8 +2,6 @@ package uk.gov.moj.cpp.listing.command.handler;
 
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.justice.services.messaging.JsonObjects.getJsonObject;
-import static uk.gov.justice.services.messaging.JsonObjects.getList;
 import static uk.gov.justice.services.messaging.JsonObjects.getString;
 
 import uk.gov.justice.services.core.annotation.Handles;
@@ -12,11 +10,11 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.event.CaseSentForListing;
 import uk.gov.moj.cpp.listing.domain.Defendant;
 import uk.gov.moj.cpp.listing.domain.Hearing;
 import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
+import uk.gov.moj.cpp.listing.event.CaseSentForListing;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -28,6 +26,7 @@ import javax.json.JsonObject;
 
 @ServiceComponent(COMMAND_HANDLER)
 public class ListingCommandHandler {
+    private static final boolean UNALLOCATED = false;
 
     @Inject
     EventSource eventSource;
@@ -110,7 +109,8 @@ public class ListingCommandHandler {
                 getStringOrNull(hearing, "courtCentreId"),
                 hearingType,
                 getLocalDate(hearing, "startDate"),
-                estimateMinutes
+                estimateMinutes,
+                UNALLOCATED
         );
     }
 

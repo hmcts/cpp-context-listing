@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static uk.gov.moj.cpp.listing.steps.ReferenceDataDefinitions.*;
+import static uk.gov.moj.cpp.listing.steps.ReferenceDataStepDefinitions.*;
 import static uk.gov.moj.cpp.listing.steps.data.factory.ReferenceDataFactory.courtRoomData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.ReferenceDataFactory.judgeData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.ReferenceDataFactory.courtCentreData;

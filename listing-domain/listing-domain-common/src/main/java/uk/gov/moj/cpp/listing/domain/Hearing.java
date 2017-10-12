@@ -16,18 +16,25 @@ public class Hearing implements Serializable {
     private final String type;
     private final LocalDate startDate;
     private final int estimateMinutes;
+    private final boolean allocated;
 
     @JsonCreator
     public Hearing(@JsonProperty(value = "id") final String id,
                    @JsonProperty(value = "courtCentreId") final String courtCentreId,
                    @JsonProperty(value = "type") final String type,
                    @JsonProperty(value = "startDate") final LocalDate startDate,
-                   @JsonProperty(value = "estimateMinutes") final int estimateMinutes) {
+                   @JsonProperty(value = "estimateMinutes") final int estimateMinutes,
+                   @JsonProperty(value = "allocated") final boolean allocated) {
         this.id = id;
         this.courtCentreId = courtCentreId;
         this.type = type;
         this.startDate = startDate;
         this.estimateMinutes = estimateMinutes;
+        this.allocated = allocated;
+    }
+
+    public boolean isAllocated() {
+        return allocated;
     }
 
     public String getId() { return id; }

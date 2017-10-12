@@ -2,7 +2,7 @@
 title: Listing Query API
 baseUri: http://localhost:8080/listing-query-api/query/api/rest/listing
 protocols: [ HTTP, HTTPS ]
-                       
+
 /reference-data:
    get:
       description: |
@@ -31,3 +31,33 @@ protocols: [ HTTP, HTTPS ]
                   application/vnd.listing.get.court-rooms+json:
                     example:  !include json/listing.get.court-rooms.json
                     schema:  !include  json/schema/listing.get.court-rooms.json
+
+/hearings:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.search.hearings
+        ...
+      queryParameters:
+        type:
+          description: allocated vs unallocated cases
+          type: string
+          enum: [allocated, unallocated]
+          required: true
+        courtCentreId:
+          description: location of the court
+          type: string
+          required: true
+
+
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+
+

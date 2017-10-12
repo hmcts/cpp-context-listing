@@ -1,0 +1,72 @@
+package uk.gov.moj.cpp.listing.query.view;
+
+
+import uk.gov.justice.services.common.converter.Converter;
+import uk.gov.justice.services.core.annotation.Component;
+import uk.gov.justice.services.core.annotation.Handles;
+import uk.gov.justice.services.core.annotation.ServiceComponent;
+import uk.gov.justice.services.core.enveloper.Enveloper;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingSummary;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingSummaryConverter;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.json.Json;
+import javax.json.JsonArray;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+@ServiceComponent(Component.QUERY_VIEW)
+public class HearingQueryView {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HearingQueryView.class);
+    private static final String COURT_CENTRE_ID = "courtCentreId";
+    private static final String TYPE = "type";
+    private static final String UNALLOCATED = "unallocated";
+
+    @Inject
+    private HearingRepository repository;
+
+    @Inject
+    private HearingSummaryConverter hearingSummaryConverter;
+
+    @Inject
+    private Converter<List<HearingSummary>, JsonArray> jsonConverter;
+
+    @Inject
+    private Enveloper enveloper;
+
+
+    @Handles("listing.search.hearings")
+    public JsonEnvelope searchHearings(final JsonEnvelope query) {
+
+        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID);
+        final String type = query.payloadAsJsonObject().getString(TYPE);
+
+        LOGGER.info("Query params - courtCentreId:" + courtCentreId + ", type:" + type);
+
+        List<Hearing> hearings = new ArrayList<>();
+
+        if (UNALLOCATED.equalsIgnoreCase(type)) {
+            hearings = repository.findByAllocatedAndCourtCentreId(false, courtCentreId);
+        }
+
+        List<HearingSummary> hearingSummaryList = hearings.stream()
+                .map(h -> hearingSummaryConverter.convert(h))
+                .collect(Collectors.toList());
+
+        return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
+                Json.createObjectBuilder()
+                        .add("hearings", jsonConverter.convert(hearingSummaryList))
+                        .build()
+        );
+    }
+}
