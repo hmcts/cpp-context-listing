@@ -17,6 +17,7 @@ public class CaseDataFactory {
 
     private static final int HEARING_ESTIMATE_MINUTES = 15;
     private static final String HEARING_TYPE = "PTP";
+    private static final String UNCONDITIONAL_BAIL_STATUS = "unconditional";
 
     public static CaseData caseData() {
         return new CaseData(randomUUID(), STRING.next(),
@@ -42,7 +43,7 @@ public class CaseDataFactory {
 
     private static DefendantData randomDefendant() {
         return new DefendantData(randomUUID(), randomUUID(), STRING.next(), STRING.next(),
-                LocalDate.now(), STRING.next(), STRING.next(), manyRandomOffences(2));
+                LocalDate.now(), UNCONDITIONAL_BAIL_STATUS, STRING.next(), manyRandomOffences(2));
     }
 
     private static HearingData randomHearing() {

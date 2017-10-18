@@ -9,7 +9,7 @@
       "firstName": "David",
       "lastName": "Lloyd",
       "dateOfBirth": "1995-03-23",
-      "bailStatus" : "bailed",
+      "bailStatus" : "unconditional",
       "defenceOrganisation": "Solicitor XYZ",
       "offences": [
         {
