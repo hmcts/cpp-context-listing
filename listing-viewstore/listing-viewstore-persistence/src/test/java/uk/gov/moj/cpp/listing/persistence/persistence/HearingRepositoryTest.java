@@ -31,17 +31,16 @@ public class HearingRepositoryTest {
     private HearingRepository hearingRepository;
 
     @Test
-    public void shouldFindCaseById() {
-
+    public void shouldFindHearingById() {
         final Hearing actualHearing = saveHearing();
 
-        final Hearing expectedCaseDetail = hearingRepository.findBy(actualHearing.getId());
+        final Hearing expectedHearing = hearingRepository.findBy(actualHearing.getId());
 
-        assertTrue(EqualsBuilder.reflectionEquals(expectedCaseDetail, actualHearing));
+        assertTrue(EqualsBuilder.reflectionEquals(expectedHearing, actualHearing));
     }
 
     @Test
-    public void shouldFindCaseByAllocatedAndCourtCentreId() {
+    public void shouldFindHearingsByAllocatedAndCourtCentreId() {
         final Hearing expectedHearingToBeReturned = saveHearing(COURT_CENTRE_ID, UNALLOCATED);
         final Hearing expectedHearingNotToBeReturned = saveHearing(OTHER_COURT_CENTRE, ALLOCATED);
 
