@@ -8,7 +8,9 @@ public class DefendantSummary  implements Serializable {
 
     private final UUID id;
 
-    private final String name;
+    private final String firstName;
+
+    private final String lastName;
 
     private final String bailStatus;
 
@@ -16,25 +18,19 @@ public class DefendantSummary  implements Serializable {
 
     public DefendantSummary(final UUID id, final String firstName, final String lastName, final String bailStatus, final Set<OffenceSummary> offences) {
         this.id = id;
-        this.name = firstName+" "+lastName;
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.bailStatus = bailStatus;
         this.offences = offences;
     }
 
-    public String getName() {
-        return name;
-    }
+    public String getFirstName() { return firstName; }
 
-    public String getBailStatus() {
-        return bailStatus;
-    }
+    public String getLastName() { return lastName;  }
 
-    public Set<OffenceSummary> getOffences() {
-        return offences;
-    }
+    public String getBailStatus() { return bailStatus; }
 
-    public UUID getId() {
+    public Set<OffenceSummary> getOffences() { return offences; }
 
-        return id;
-    }
+    public UUID getId() { return id; }
 }

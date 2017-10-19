@@ -36,7 +36,10 @@
         "id": {
           "$ref": "#/definitions/uuid"
         },
-        "name": {
+        "firstName": {
+          "type": "string"
+        },
+        "lastName": {
           "type": "string"
         },
         "bailStatus": {
@@ -51,7 +54,8 @@
       },
       "required": [
         "id",
-        "name",
+        "firstName",
+        "lastName",
         "bailStatus",
         "offences"
       ],

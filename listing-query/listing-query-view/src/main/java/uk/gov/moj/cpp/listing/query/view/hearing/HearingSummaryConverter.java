@@ -28,6 +28,4 @@ public class HearingSummaryConverter implements Converter<Hearing, HearingSummar
                 .map(o -> new OffenceSummary(o.getId().toString(), o.getStatementOfOffence().getTitle()))
                 .collect(Collectors.toSet());
     }
-
-
 }
