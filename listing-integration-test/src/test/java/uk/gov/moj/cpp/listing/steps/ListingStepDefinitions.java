@@ -7,6 +7,7 @@ import static java.text.MessageFormat.format;
 import static javax.json.Json.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -169,6 +170,14 @@ public class ListingStepDefinitions extends AbstractIT {
         poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
-                        payload().isJson(withJsonPath(hearingFilter)));
+                        payload().isJson(allOf(
+                                withJsonPath(hearingFilter),
+                                withJsonPath("$.hearings[0].defendants[0].firstName",
+                                        equalTo(caseData
+                                                .getDefendants().get(0).getFirstName())),
+                                withJsonPath("$.hearings[0].defendants[0].lastName",
+                                        equalTo(caseData
+                                                .getDefendants().get(0).getLastName()))
+                        )));
     }
 }

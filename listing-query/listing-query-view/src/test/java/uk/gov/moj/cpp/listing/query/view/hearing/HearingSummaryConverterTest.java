@@ -69,7 +69,8 @@ public class HearingSummaryConverterTest {
         assertThat(hearingSummary.getEstimate(), is(hearing.getEstimateMinutes()));
         assertThat(hearingSummary.getDefendants().size(), is(1));
         assertThat(hearingSummary.getDefendants(), contains(allOf(hasProperty("id", is(ID)),
-                hasProperty("name", is(FIRST_NAME + " " + LAST_NAME)),
+                hasProperty("firstName", is(FIRST_NAME)),
+                hasProperty("lastName", is(LAST_NAME)),
                 hasProperty("bailStatus", is(BAIL_STATUS)))));
 
         List<DefendantSummary> defendantSummaries = hearingSummary.getDefendants().stream().limit(1).collect(Collectors.toList());
