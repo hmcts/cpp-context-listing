@@ -7,6 +7,7 @@ import static java.text.MessageFormat.format;
 import static javax.json.Json.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.apache.http.HttpStatus.SC_BAD_REQUEST;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -71,7 +72,8 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String FIELD_SENDING_COMMITTAL_DATE = "sendingCommittalDate";
     private static final String LISTING_COMMAND_SEND_CASE_FOR_LISTING = "listing.command" +
             ".send-case-for-listing";
-    private static final String UNALLOCATED = "unallocated";
+    private static final boolean IS_ALLOCATED = false;
+    private static final String NOT_A_BOOLEAN = "not_a_boolean";
 
     public static void givenAUserHasLoggedInAsAListingOfficers(final UUID validUserId) {
         setLoggedInUser(validUserId);
@@ -163,7 +165,7 @@ public class ListingStepDefinitions extends AbstractIT {
 
     public static void thenUnallocatedHearingsAreReturnedWhenQueried(final CaseData caseData) {
         final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData.getHearingData().getCourtCentreId(), UNALLOCATED));
+                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData.getHearingData().getCourtCentreId(), IS_ALLOCATED));
         final Filter myFilter = filter(where("id").is(caseData.getHearingData().getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", myFilter);
 
@@ -179,5 +181,17 @@ public class ListingStepDefinitions extends AbstractIT {
                                         equalTo(caseData
                                                 .getDefendants().get(0).getLastName()))
                         )));
+    }
+
+    public static void thenQueryValidationFailureOccursWhenQueried(final CaseData caseData) {
+        final String searchHearingUrl = String.format("%s/%s", baseUri,
+                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData
+                        .getHearingData().getCourtCentreId(), NOT_A_BOOLEAN));
+
+        final Response response = restClient.query(searchHearingUrl,
+                MEDIA_TYPE_SEARCH_HEARINGS_JSON, getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_BAD_REQUEST));
+
     }
 }
