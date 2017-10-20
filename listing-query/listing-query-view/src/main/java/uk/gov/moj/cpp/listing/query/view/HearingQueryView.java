@@ -12,7 +12,6 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingSummary;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingSummaryConverter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,8 +28,7 @@ public class HearingQueryView {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingQueryView.class);
     private static final String COURT_CENTRE_ID = "courtCentreId";
-    private static final String TYPE = "type";
-    private static final String UNALLOCATED = "unallocated";
+    private static final String ALLOCATED_QUERY_PARAMETER = "allocated";
 
     @Inject
     private HearingRepository repository;
@@ -49,15 +47,12 @@ public class HearingQueryView {
     public JsonEnvelope searchHearings(final JsonEnvelope query) {
 
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID);
-        final String type = query.payloadAsJsonObject().getString(TYPE);
+        final boolean allocated = query.payloadAsJsonObject().getBoolean(ALLOCATED_QUERY_PARAMETER);
 
-        LOGGER.info("Query params - courtCentreId:" + courtCentreId + ", type:" + type);
+        LOGGER.info("Query params - courtCentreId:" + courtCentreId + ", allocated:" + allocated);
 
-        List<Hearing> hearings = new ArrayList<>();
-
-        if (UNALLOCATED.equalsIgnoreCase(type)) {
-            hearings = repository.findByAllocatedAndCourtCentreId(false, courtCentreId);
-        }
+        final List<Hearing> hearings = repository.findByAllocatedAndCourtCentreId(allocated,
+                courtCentreId);
 
         List<HearingSummary> hearingSummaryList = hearings.stream()
                 .map(h -> hearingSummaryConverter.convert(h))

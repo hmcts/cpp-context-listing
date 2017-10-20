@@ -41,13 +41,12 @@ protocols: [ HTTP, HTTPS ]
             name: listing.search.hearings
         ...
       queryParameters:
-        type:
-          description: allocated vs unallocated cases
-          type: string
-          enum: [allocated, unallocated]
+        allocated:
+          description: true for allocated hearings, false for unallocated hearings
+          type: boolean
           required: true
         courtCentreId:
-          description: location of the court
+          description: reference data id for the court centre
           type: string
           required: true
 

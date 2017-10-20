@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.it;
 
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.givenAUserHasLoggedInAsAListingOfficers;
+import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenQueryValidationFailureOccursWhenQueried;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenUnallocatedHearingsAreReturnedWhenQueried;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.whenCaseIsSubmittedForListing;
 import static uk.gov.moj.cpp.listing.steps.data.factory.CaseDataFactory.caseData;
@@ -27,6 +28,17 @@ public class HearingIT extends AbstractIT {
         whenCaseIsSubmittedForListing(hearingId, caseData);
 
         thenUnallocatedHearingsAreReturnedWhenQueried(caseData);
+    }
+
+    @Test
+    public void shouldFailQueryValidationForSearchForUnallocatedHearings() throws
+            JMSException {
+
+        final CaseData caseData = caseData();
+
+        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+
+        thenQueryValidationFailureOccursWhenQueried(caseData);
     }
 
 
