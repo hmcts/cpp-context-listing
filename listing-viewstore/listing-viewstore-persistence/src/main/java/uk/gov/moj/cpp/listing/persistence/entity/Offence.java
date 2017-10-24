@@ -1,17 +1,28 @@
 package uk.gov.moj.cpp.listing.persistence.entity;
 
-import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import javax.persistence.Column;
+import javax.persistence.Embedded;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+
 @Entity
 @Table(name = "offence")
+@SuppressWarnings("squid:S00107")
 public class Offence implements Serializable {
 
     @Id
-    @Column(name = "id", unique = true, nullable = false)
-    private UUID id;
+    @Column(name = "listing_offence_id", unique = true, nullable = false)
+    private UUID listingOffenceId;
+
+    @Column(name = "offence_id", nullable = false)
+    private UUID offenceId;
 
     @Column(name = "offence_code")
     private String offenceCode;
@@ -29,17 +40,18 @@ public class Offence implements Serializable {
     private StatementOfOffence statementOfOffence;
 
     @ManyToOne
-    @JoinColumn(name = "defendant_id")
+    @JoinColumn(name = "listing_defendant_id")
     private Defendant defendant;
 
     public Offence() {
         //Required for JPA
     }
 
-    public Offence(final UUID id, final String offenceCode, final LocalDate startDate,
+    public Offence(final UUID listingOffenceId, final UUID offenceId, final String offenceCode, final LocalDate startDate,
                    final LocalDate endDate, final String plea,
                    final StatementOfOffence statementOfOffence, final Defendant defendant) {
-        this.id = id;
+        this.offenceId = offenceId;
+        this.listingOffenceId = listingOffenceId;
         this.offenceCode = offenceCode;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -48,7 +60,13 @@ public class Offence implements Serializable {
         this.defendant = defendant;
     }
 
-    public UUID getId() { return id; }
+    public UUID getListingOffenceId() {
+        return listingOffenceId;
+    }
+
+    public UUID getOffenceId() {
+        return offenceId;
+    }
 
     public String getOffenceCode() { return offenceCode; }
 
@@ -71,12 +89,12 @@ public class Offence implements Serializable {
 
         Offence offence = (Offence) o;
 
-        return id.equals(offence.id);
+        return listingOffenceId.equals(offence.listingOffenceId);
     }
 
     @Override
     public int hashCode() {
-        return id.hashCode();
+        return listingOffenceId.hashCode();
     }
 }
 

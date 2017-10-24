@@ -4,7 +4,8 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 public class OffenceBuilder {
-    private UUID id;
+    private UUID listingOffenceId;
+    private UUID offenceId;
     private String offenceCode;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -12,8 +13,13 @@ public class OffenceBuilder {
     private StatementOfOffence statementOfOffence;
     private Defendant defendant;
 
-    public OffenceBuilder setId(final UUID id) {
-        this.id = id;
+    public OffenceBuilder setOffenceId(final UUID offenceId) {
+        this.offenceId = offenceId;
+        return this;
+    }
+
+    public OffenceBuilder setListingOffenceId(final UUID listingOffenceId) {
+        this.listingOffenceId = listingOffenceId;
         return this;
     }
 
@@ -48,6 +54,6 @@ public class OffenceBuilder {
     }
 
     public Offence build() {
-        return new Offence(id, offenceCode, startDate, endDate, plea, statementOfOffence, defendant);
+        return new Offence(listingOffenceId, offenceId, offenceCode, startDate, endDate, plea, statementOfOffence, defendant);
     }
 }

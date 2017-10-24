@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.listing.domain;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -17,6 +19,7 @@ public class Hearing implements Serializable {
     private final LocalDate startDate;
     private final int estimateMinutes;
     private final boolean allocated;
+    private final List<Defendant> defendants;
 
     @JsonCreator
     public Hearing(@JsonProperty(value = "id") final String id,
@@ -24,13 +27,16 @@ public class Hearing implements Serializable {
                    @JsonProperty(value = "type") final String type,
                    @JsonProperty(value = "startDate") final LocalDate startDate,
                    @JsonProperty(value = "estimateMinutes") final int estimateMinutes,
-                   @JsonProperty(value = "allocated") final boolean allocated) {
+                   @JsonProperty(value = "allocated") final boolean allocated,
+                   @JsonProperty(value = "defendants") final List<Defendant> defendants
+                   ) {
         this.id = id;
         this.courtCentreId = courtCentreId;
         this.type = type;
         this.startDate = startDate;
         this.estimateMinutes = estimateMinutes;
         this.allocated = allocated;
+        this.defendants = new ArrayList(defendants);
     }
 
     public boolean isAllocated() {
@@ -46,4 +52,8 @@ public class Hearing implements Serializable {
     public LocalDate getStartDate() { return startDate; }
 
     public int getEstimateMinutes() { return estimateMinutes; }
+
+    public List<Defendant> getDefendants() {
+        return new ArrayList(defendants);
+    }
 }

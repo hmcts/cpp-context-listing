@@ -48,13 +48,12 @@ public class ListingCommandHandler {
                 getStringOrNull(command, "caseId"),
                 getStringOrNull(command, "urn"),
                 getLocalDate(command, "sendingCommittalDate"),
-                createDefendantsFrom(command),
                 createHearingFrom(command)
         );
     }
 
-    private List<Defendant> createDefendantsFrom(JsonObject command) {
-        return command.getJsonArray("defendants")
+    private List<Defendant> createDefendantsFrom(JsonObject hearing) {
+        return hearing.getJsonArray("defendants")
                 .getValuesAs(JsonObject.class).stream()
                 .map(this::createDefendantFrom)
                 .collect(toList());
@@ -110,7 +109,8 @@ public class ListingCommandHandler {
                 hearingType,
                 getLocalDate(hearing, "startDate"),
                 estimateMinutes,
-                UNALLOCATED
+                UNALLOCATED,
+                createDefendantsFrom(hearing)
         );
     }
 

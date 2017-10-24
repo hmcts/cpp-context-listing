@@ -54,7 +54,7 @@ public class HearingQueryView {
         final List<Hearing> hearings = repository.findByAllocatedAndCourtCentreId(allocated,
                 courtCentreId);
 
-        List<HearingSummary> hearingSummaryList = hearings.stream()
+        final List<HearingSummary> hearingSummaryList = hearings.stream()
                 .map(h -> hearingSummaryConverter.convert(h))
                 .collect(Collectors.toList());
 

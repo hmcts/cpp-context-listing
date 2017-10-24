@@ -5,18 +5,26 @@ import java.util.Set;
 import java.util.UUID;
 
 public class DefendantBuilder {
-    private UUID id;
+    private UUID listingDefendantId;
+    private UUID defendantId;
     private UUID personId;
     private String firstName;
     private String lastName;
     private String bailStatus;
     private String defenceOrganisation;
     private LocalDate dateOfBirth;
-    private Set<Offence> offences;
-    private ListingCase listingCase;
 
-    public DefendantBuilder setId(final UUID id) {
-        this.id = id;
+    private Set<Offence> offences;
+
+    private Hearing hearing;
+
+    public DefendantBuilder setDefendantId(final UUID defendantId) {
+        this.defendantId = defendantId;
+        return this;
+    }
+
+    public DefendantBuilder setListingDefendantId(final UUID listingDefendantId) {
+        this.listingDefendantId = listingDefendantId;
         return this;
     }
 
@@ -40,6 +48,10 @@ public class DefendantBuilder {
         return this;
     }
 
+    public void setHearing(Hearing hearing) {
+        this.hearing = hearing;
+    }
+
     public DefendantBuilder setDefenceOrganisation(final String defenceOrganisation) {
         this.defenceOrganisation = defenceOrganisation;
         return this;
@@ -55,12 +67,7 @@ public class DefendantBuilder {
         return this;
     }
 
-    public DefendantBuilder setListingCase(final ListingCase listingCase) {
-        this.listingCase = listingCase;
-        return this;
-    }
-
     public Defendant build() {
-        return new Defendant(id, personId, firstName, lastName, bailStatus, defenceOrganisation, dateOfBirth, offences, listingCase);
+        return new Defendant(listingDefendantId, defendantId, personId, firstName, lastName, bailStatus, defenceOrganisation, dateOfBirth, offences, hearing);
     }
 }

@@ -11,15 +11,18 @@ public class HearingData {
     private final String hearingType;
     private final LocalDate hearingStartDate;
     private final int hearingEstimateMinutes;
+    private final List<DefendantData> defendants;
 
     public HearingData(final UUID id, final String courtCentreId, final String hearingType,
-                       final LocalDate hearingStartDate, final int hearingEstimateMinutes) {
+                       final LocalDate hearingStartDate, final int hearingEstimateMinutes,
+                       final List<DefendantData> defendants) {
 
         this.id = id;
         this.courtCentreId = courtCentreId;
         this.hearingEstimateMinutes = hearingEstimateMinutes;
         this.hearingStartDate = hearingStartDate;
         this.hearingType = hearingType;
+        this.defendants = defendants;
     }
 
     public UUID getId() { return id; }
@@ -31,4 +34,8 @@ public class HearingData {
     public LocalDate getHearingStartDate() { return hearingStartDate; }
 
     public int getHearingEstimateMinutes() { return hearingEstimateMinutes; }
+
+    public List<DefendantData> getDefendants() {
+        return defendants;
+    }
 }
