@@ -15,31 +15,3 @@ rule "Command - API - Action - listing.command.send-case-for-listing"
     $outcome.setSuccess(true);
 end
 
-rule "Command - API - Action - listing.command.add-judge"
-  when
-    $outcome: Outcome();
-    $action: Action(name == "listing.command.add-judge");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action,"System Users"));
-  then
-    $outcome.setSuccess(true);
-end
-
-rule "Command - API - Action - listing.command.add-court-centre"
-  when
-    $outcome: Outcome();
-    $action: Action(name == "listing.command.add-court-centre");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action,"System Users"));
-  then
-    $outcome.setSuccess(true);
-end
-
-
-rule "Command - API - Action - listing.command.add-court-room"
-  when
-    $outcome: Outcome();
-    $action: Action(name == "listing.command.add-court-room");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action,"System Users"));
-  then
-    $outcome.setSuccess(true);
-end
-

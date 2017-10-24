@@ -3,35 +3,6 @@ title: Listing Query API
 baseUri: http://localhost:8080/listing-query-api/query/api/rest/listing
 protocols: [ HTTP, HTTPS ]
 
-/reference-data:
-   get:
-      description: |
-        ...
-        (mapping):
-            responseType: application/vnd.listing.get.judges+json
-            name: listing.get.judges
-        (mapping):
-            responseType: application/vnd.listing.get.court-centres+json
-            name: listing.get.court-centres
-        (mapping):
-            responseType: application/vnd.listing.get.court-rooms+json
-            name: listing.get.court-rooms
-        ...
-
-      responses:
-            200:
-                description: OK
-                body:
-                  application/vnd.listing.get.judges+json:
-                    example:  !include json/listing.get.judges.json
-                    schema:  !include  json/schema/listing.get.judges.json
-                  application/vnd.listing.get.court-centres+json:
-                    example:  !include json/listing.get.court-centres.json
-                    schema:  !include  json/schema/listing.get.court-centres.json
-                  application/vnd.listing.get.court-rooms+json:
-                    example:  !include json/listing.get.court-rooms.json
-                    schema:  !include  json/schema/listing.get.court-rooms.json
-
 /hearings:
    get:
       description: |
@@ -58,5 +29,3 @@ protocols: [ HTTP, HTTPS ]
                   application/vnd.listing.search.hearings+json:
                     example:  !include json/listing.search.hearings.json
                     schema:  !include  json/schema/listing.search.hearings.json
-
-
