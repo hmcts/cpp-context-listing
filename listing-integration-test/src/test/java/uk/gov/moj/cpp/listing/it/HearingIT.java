@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.givenAUserHasLoggedInAsAListingOfficers;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenQueryValidationFailureOccursWhenQueried;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried;
@@ -20,21 +19,19 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void shouldReturnMultipleHearingsScheduled() throws JMSException {
-        final String hearingId = randomUUID().toString();
-
         final CaseData caseData = caseData();
         final CaseData caseDataNew = caseDataExisting(
                 caseData.getCaseId().toString(),
-                caseData.getHearingData().getCourtCentreId().toString()
+                caseData.getHearingData().get(0).getCourtCentreId().toString()
         );
 
         givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
         // Receive a caseForListing first time in to Listing
-        whenCaseIsSubmittedForListing(hearingId, caseData);
+        whenCaseIsSubmittedForListing(caseData);
         thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried(caseData);
 
         // Receive a caseForListing that was received before
-        whenCaseIsSubmittedForListing(hearingId, caseDataNew);
+        whenCaseIsSubmittedForListing(caseDataNew);
         thenUnallocatedHearingsForACourtCentreShouldContainTwoExpectedHearingsWhenQueried(caseData, caseDataNew);
     }
 

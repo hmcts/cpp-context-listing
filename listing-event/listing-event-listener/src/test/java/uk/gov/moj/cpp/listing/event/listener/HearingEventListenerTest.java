@@ -10,6 +10,10 @@ import uk.gov.moj.cpp.listing.event.converter.HearingConverter;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.json.JsonObject;
 
 import org.junit.Test;
@@ -50,7 +54,8 @@ public class HearingEventListenerTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectToObjectConverter.convert(payload, CaseSentForListing.class))
                 .willReturn(caseSentForListing);
-        given(hearingConverter.convert(caseSentForListing)).willReturn(hearing);
+        Set<Hearing> hearings = new HashSet<>(Arrays.asList(hearing));
+        given(hearingConverter.convert(caseSentForListing)).willReturn(hearings);
 
         hearingEventListener.caseSentForListing(envelope);
 

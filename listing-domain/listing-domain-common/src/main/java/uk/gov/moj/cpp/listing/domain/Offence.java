@@ -14,7 +14,6 @@ public class Offence implements Serializable {
 
     private final String id;
     private final String offenceCode;
-    private final String plea;
     private final LocalDate startDate;
     private final LocalDate endDate;
     private final StatementOfOffence statementOfOffence;
@@ -22,13 +21,11 @@ public class Offence implements Serializable {
     @JsonCreator
     public Offence(@JsonProperty(value = "id") final String id,
                    @JsonProperty(value = "offenceCode") final String offenceCode,
-                   @JsonProperty(value = "plea") final String plea,
                    @JsonProperty(value = "startDate") final LocalDate startDate,
                    @JsonProperty(value = "endDate") final LocalDate endDate,
                    @JsonProperty(value = "statementOfOffence") final StatementOfOffence statementOfOffence) {
         this.id = id;
         this.offenceCode = offenceCode;
-        this.plea = plea;
         this.startDate = startDate;
         this.endDate = endDate;
         this.statementOfOffence = statementOfOffence;
@@ -37,8 +34,6 @@ public class Offence implements Serializable {
     public String getId() { return id; }
 
     public String getOffenceCode() { return offenceCode; }
-
-    public String getPlea() { return plea; }
 
     public LocalDate getStartDate() { return startDate; }
 
@@ -53,7 +48,6 @@ public class Offence implements Serializable {
         Offence offence = (Offence) o;
         return Objects.equals(id, offence.id) &&
                 Objects.equals(offenceCode, offence.offenceCode) &&
-                Objects.equals(plea, offence.plea) &&
                 Objects.equals(startDate, offence.startDate) &&
                 Objects.equals(endDate, offence.endDate) &&
                 Objects.equals(statementOfOffence, offence.statementOfOffence);
@@ -61,6 +55,6 @@ public class Offence implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, offenceCode, plea, startDate, endDate, statementOfOffence);
+        return Objects.hash(id, offenceCode, startDate, endDate, statementOfOffence);
     }
 }

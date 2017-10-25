@@ -68,6 +68,7 @@ public class DefendantBuilder {
     }
 
     public Defendant build() {
-        return new Defendant(listingDefendantId, defendantId, personId, firstName, lastName, bailStatus, defenceOrganisation, dateOfBirth, offences, hearing);
+        return new Defendant(listingDefendantId, defendantId, bailStatus, defenceOrganisation,
+                offences, hearing, new Defendant.PersonalDetails(personId, firstName, lastName, dateOfBirth));
     }
 }

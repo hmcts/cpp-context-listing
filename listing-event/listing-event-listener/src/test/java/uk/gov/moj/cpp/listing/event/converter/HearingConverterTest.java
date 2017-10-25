@@ -20,7 +20,9 @@ import uk.gov.moj.cpp.listing.persistence.entity.ListingCaseBuilder;
 import uk.gov.moj.cpp.listing.persistence.repository.ListingCaseRepository;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Set;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,9 +59,12 @@ public class HearingConverterTest {
         CaseSentForListing event = createCaseSentForListing(hearingPart);
 
         // When
-        uk.gov.moj.cpp.listing.persistence.entity.Hearing actual = hearingConverter.convert(event);
+        Set<uk.gov.moj.cpp.listing.persistence.entity.Hearing> actualHearings = hearingConverter.convert(event);
 
         // Then
+        assertThat(actualHearings.size(), is(1));
+        uk.gov.moj.cpp.listing.persistence.entity.Hearing actual = actualHearings.iterator().next();;
+
         assertHearing(actual, hearingPart);
         assertEventCaseDataUsedToCreateHearing(actual, event);
 
@@ -88,9 +93,12 @@ public class HearingConverterTest {
         CaseSentForListing event = createCaseSentForListing(hearingPart);
 
         // When
-        uk.gov.moj.cpp.listing.persistence.entity.Hearing actual = hearingConverter.convert(event);
+        Set<uk.gov.moj.cpp.listing.persistence.entity.Hearing> actualHearings = hearingConverter.convert(event);
 
         // Then
+        assertThat(actualHearings.size(), is(1));
+        uk.gov.moj.cpp.listing.persistence.entity.Hearing actual = actualHearings.iterator().next();;
+
         assertHearing(actual, hearingPart);
         assertRetrievedListingCaseDataUsedToCreateHearing(actual, retrievedListingCase);
 
@@ -117,7 +125,7 @@ public class HearingConverterTest {
 
     private CaseSentForListing createCaseSentForListing(final Hearing hearingPart) {
         return new CaseSentForListing(randomUUID().toString(), STRING.next(), LocalDate
-                .now(), hearingPart);
+                .now(), Arrays.asList(hearingPart));
     }
 
     private Defendant createDefendant(final Offence offence) {
@@ -136,7 +144,7 @@ public class HearingConverterTest {
     }
 
     private Offence createOffence(final StatementOfOffence statementOfOffence) {
-        return new Offence(randomUUID().toString(), STRING.next(), STRING.next(), LocalDate.now
+        return new Offence(randomUUID().toString(),  STRING.next(), LocalDate.now
                 (), LocalDate.now(), statementOfOffence);
     }
 
@@ -179,7 +187,6 @@ public class HearingConverterTest {
         assertThat(actual.getEndDate(), is(offence.getEndDate()));
         assertThat(actual.getOffenceId().toString(), is(offence.getId()));
         assertThat(actual.getOffenceCode(), is(offence.getOffenceCode()));
-        assertThat(actual.getPlea(), is(offence.getPlea()));
         assertThat(actual.getStartDate(), is(offence.getStartDate()));
 
         assertThat(actual.getStatementOfOffence().getLegislation(), is(offence

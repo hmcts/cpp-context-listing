@@ -9,7 +9,6 @@ public class OffenceBuilder {
     private String offenceCode;
     private LocalDate startDate;
     private LocalDate endDate;
-    private String plea;
     private StatementOfOffence statementOfOffence;
     private Defendant defendant;
 
@@ -38,11 +37,6 @@ public class OffenceBuilder {
         return this;
     }
 
-    public OffenceBuilder setPlea(final String plea) {
-        this.plea = plea;
-        return this;
-    }
-
     public OffenceBuilder setStatementOfOffence(final StatementOfOffence statementOfOffence) {
         this.statementOfOffence = statementOfOffence;
         return this;
@@ -54,6 +48,6 @@ public class OffenceBuilder {
     }
 
     public Offence build() {
-        return new Offence(listingOffenceId, offenceId, offenceCode, startDate, endDate, plea, statementOfOffence, defendant);
+        return new Offence(listingOffenceId, offenceId, offenceCode, statementOfOffence, defendant, new Offence.OffencePeriod(startDate, endDate));
     }
 }

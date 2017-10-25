@@ -14,7 +14,10 @@
       "type": "string",
       "format": "date"
     },
-    "hearing": {
+    "hearings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
       "type": "object",
       "properties": {
         "id": {
@@ -81,9 +84,6 @@
                     "offenceCode": {
                       "type": "string"
                     },
-                    "plea": {
-                      "type": "string"
-                    },
                     "startDate": {
                       "type": "string"
                     },
@@ -109,7 +109,6 @@
                   "required": [
                     "id",
                     "offenceCode",
-                    "plea",
                     "startDate",
                     "endDate",
                     "statementOfOffence"
@@ -135,13 +134,14 @@
         "startDate",
         "defendants"
       ]
+      }
     }
   },
   "required": [
     "caseId",
     "urn",
     "sendingCommittalDate",
-    "hearing"
+    "hearings"
   ],
   "additionalProperties": false
 }

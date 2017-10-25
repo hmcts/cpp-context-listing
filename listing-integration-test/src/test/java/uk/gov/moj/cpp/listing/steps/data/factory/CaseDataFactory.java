@@ -10,6 +10,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -22,11 +23,12 @@ public class CaseDataFactory {
 
     public static CaseData caseData() {
         return new CaseData(randomUUID(), STRING.next(),
-                 LocalDate.now(), randomHearing());
+                LocalDate.now(), manyRandomHearings(2));
     }
 
     public static CaseData caseDataExisting(final String existingCaseId, final String courtCentreId) {
-        return new CaseData(UUID.fromString(existingCaseId), STRING.next(),LocalDate.now(), randomHearing(courtCentreId));
+        return new CaseData(UUID.fromString(existingCaseId), STRING.next(),LocalDate.now(),
+                Arrays.asList(randomHearing(courtCentreId)));
     }
 
     private static List<OffenceData> manyRandomOffences(final Integer numberOfOffences) {
@@ -41,8 +43,14 @@ public class CaseDataFactory {
                 .collect(toList());
     }
 
+    private static List<HearingData> manyRandomHearings(final Integer numberOfHearings) {
+        return IntStream.range(0, numberOfHearings)
+                .mapToObj((int i) -> randomHearing())
+                .collect(toList());
+    }
+
     private static OffenceData randomOffence() {
-        return new OffenceData(randomUUID(), STRING.next(), STRING.next(), LocalDate.now(),
+        return new OffenceData(randomUUID(), STRING.next(), LocalDate.now(),
                 LocalDate.now(), STRING.next(), STRING.next());
     }
 
@@ -50,6 +58,7 @@ public class CaseDataFactory {
         return new DefendantData(randomUUID(), randomUUID(), STRING.next(), STRING.next(),
                 LocalDate.now(), STRING.next(), STRING.next(), manyRandomOffences(2));
     }
+
 
     private static HearingData randomHearing() {
         return new HearingData(randomUUID(), STRING.next(), HEARING_TYPE, LocalDate.now(),

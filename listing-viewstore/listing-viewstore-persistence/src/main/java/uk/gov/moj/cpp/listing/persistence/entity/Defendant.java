@@ -56,16 +56,16 @@ public class Defendant implements Serializable {
         // Required by JPA
     }
 
-    public Defendant(final UUID listingDefendantId, final UUID defendantId, final UUID personId,
-                     final String firstName, final String lastName, final String bailStatus,
-                     final String defenceOrganisation, final LocalDate dateOfBirth,
-                     final Set<Offence> offences, final Hearing hearing) {
+    public Defendant(final UUID listingDefendantId, final UUID defendantId,
+                     final String bailStatus, final String defenceOrganisation,
+                     final Set<Offence> offences, final Hearing hearing,
+                     final PersonalDetails personalDetails) {
         this.listingDefendantId = listingDefendantId;
         this.defendantId = defendantId;
-        this.personId = personId;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.dateOfBirth = dateOfBirth;
+        this.personId = personalDetails.getPersonId();
+        this.firstName = personalDetails.getFirstName();
+        this.lastName = personalDetails.getLastName();
+        this.dateOfBirth = personalDetails.getDateOfBirth();
         this.bailStatus = bailStatus;
         this.defenceOrganisation = defenceOrganisation;
         this.offences = offences;
@@ -120,6 +120,41 @@ public class Defendant implements Serializable {
     @Override
     public int hashCode() {
         return listingDefendantId.hashCode();
+    }
+
+
+    public static class PersonalDetails {
+
+        private UUID personId;
+
+        private String firstName;
+
+        private String lastName;
+
+        private LocalDate dateOfBirth;
+
+        public PersonalDetails(UUID personId, String firstName, String lastName, LocalDate dateOfBirth) {
+            this.personId = personId;
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.dateOfBirth = dateOfBirth;
+        }
+
+        public UUID getPersonId() {
+            return personId;
+        }
+
+        public String getFirstName() {
+            return firstName;
+        }
+
+        public String getLastName() {
+            return lastName;
+        }
+
+        public LocalDate getDateOfBirth() {
+            return dateOfBirth;
+        }
     }
 }
 

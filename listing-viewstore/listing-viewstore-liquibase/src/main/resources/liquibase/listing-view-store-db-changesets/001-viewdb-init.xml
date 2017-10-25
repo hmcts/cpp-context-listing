@@ -12,25 +12,9 @@
             <column name="sending_committal_date" type="DATE"/>
         </createTable>
 
-        <createTable tableName="defendant">
-            <column name="id" type="UUID">
-                <constraints primaryKey="true" nullable="false" />
-            </column>
-            <column name="case_id" type="UUID">
-                <constraints nullable="false" foreignKeyName="fk_defendant_case"
-                             references="listing_case(id)"/>
-            </column>
-            <column name="person_id" type="UUID"/>
-            <column name="first_name" type="TEXT"/>
-            <column name="last_name" type="TEXT"/>
-            <column name="date_of_birth" type="DATE"/>
-            <column name="bail_status" type="TEXT"/>
-            <column name="defence_organisation" type="TEXT"/>
-        </createTable>
-
         <createTable tableName="hearing">
             <column name="id" type="UUID">
-                <constraints primaryKey="true" nullable="false" />
+                <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="case_id" type="UUID">
                 <constraints nullable="false" foreignKeyName="fk_hearing_case"
@@ -40,23 +24,47 @@
             <column name="type" type="TEXT"/>
             <column name="start_date_time" type="DATE"/>
             <column name="estimate_minutes" type="INTEGER"/>
+            <column name="allocated" type="BOOLEAN"/>
         </createTable>
 
-        <createTable tableName="offence">
-            <column name="id" type="UUID">
+        <createTable tableName="defendant">
+            <column name="listing_defendant_id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="defendant_id" type="UUID">
+
+            <column name="defendant_id" type="UUID"/>
+            
+            <column name="hearing_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_defendant_hearing"
+                             references="hearing(id)"/>
+            </column>
+
+            <column name="person_id" type="UUID"/>
+            <column name="first_name" type="TEXT"/>
+            <column name="last_name" type="TEXT"/>
+            <column name="date_of_birth" type="DATE"/>
+            <column name="bail_status" type="TEXT"/>
+            <column name="defence_organisation" type="TEXT"/>
+        </createTable>
+
+
+
+        <createTable tableName="offence">
+            <column name="listing_offence_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="offence_id" type="UUID"/>
+            <column name="listing_defendant_id" type="UUID">
                 <constraints nullable="false" foreignKeyName="fk_offence_defendant"
-                             references="defendant(id)"/>
+                             references="defendant(listing_defendant_id)"/>
             </column>
             <column name="offence_code" type="TEXT"/>
-            <column name="plea" type="TEXT"/>
             <column name="start_date_time" type="DATE"/>
             <column name="end_date_time" type="DATE"/>
             <column name="statement_of_offence_title" type="TEXT"/>
             <column name="statement_of_offence_legislation" type="TEXT"/>
         </createTable>
     </changeSet>
+
 
 </databaseChangeLog>

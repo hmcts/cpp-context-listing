@@ -33,9 +33,6 @@ public class Offence implements Serializable {
     @Column(name = "end_date_time")
     private LocalDate endDate;
 
-    @Column(name = "plea")
-    private String plea;
-
     @Embedded
     private StatementOfOffence statementOfOffence;
 
@@ -47,15 +44,14 @@ public class Offence implements Serializable {
         //Required for JPA
     }
 
-    public Offence(final UUID listingOffenceId, final UUID offenceId, final String offenceCode, final LocalDate startDate,
-                   final LocalDate endDate, final String plea,
-                   final StatementOfOffence statementOfOffence, final Defendant defendant) {
+     public Offence(final UUID listingOffenceId, final UUID offenceId, final String offenceCode,
+                   final StatementOfOffence statementOfOffence, final Defendant defendant,
+                    final OffencePeriod offencePeriod) {
         this.offenceId = offenceId;
         this.listingOffenceId = listingOffenceId;
         this.offenceCode = offenceCode;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.plea = plea;
+        this.startDate = offencePeriod.getStartDate();
+        this.endDate = offencePeriod.getEndDate();
         this.statementOfOffence = statementOfOffence;
         this.defendant = defendant;
     }
@@ -73,8 +69,6 @@ public class Offence implements Serializable {
     public LocalDate getStartDate() { return startDate; }
 
     public LocalDate getEndDate() { return endDate; }
-
-    public String getPlea() { return plea; }
 
     public StatementOfOffence getStatementOfOffence() { return statementOfOffence; }
 
@@ -95,6 +89,28 @@ public class Offence implements Serializable {
     @Override
     public int hashCode() {
         return listingOffenceId.hashCode();
+    }
+
+     public static class OffencePeriod {
+
+
+        private LocalDate startDate;
+        private LocalDate endDate;
+
+        public OffencePeriod(final LocalDate startDate, final LocalDate endDate) {
+            this.startDate = startDate;
+            this.endDate = endDate;
+        }
+
+        public LocalDate getStartDate() {
+            return startDate;
+        }
+
+
+        public LocalDate getEndDate() {
+            return endDate;
+        }
+
     }
 }
 

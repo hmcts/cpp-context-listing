@@ -58,7 +58,6 @@ public class ListingCommandHandlerTest {
     private static final UUID CASE_ID = UUID.randomUUID();
     private static final String STATEMENT_OF_OFFENCE_TITLE = "title";
     private static final String STATEMENT_OF_OFFENCE_LEGISLATION = "Legislation";
-    private static final String PLEA = "Plea";
 
     @Mock
     private EventSource eventSource;
@@ -90,67 +89,80 @@ public class ListingCommandHandlerTest {
                                 .isJson(allOf(
                                     withJsonPath("$.caseId", equalTo(commandPayload.getString("caseId"))),
                                     withJsonPath("$.urn", equalTo(commandPayload.getString("urn"))),
-                                    withJsonPath("$.sendingCommittalDate", equalTo(commandPayload.getString("sendingCommittalDate"))),
-                                        withJsonPath("$.hearing.id", equalTo(commandPayload.getJsonObject("hearing").getString("id"))),
-                                        withJsonPath("$.hearing.courtCentreId", equalTo(commandPayload
-                                                .getJsonObject("hearing").getString("courtCentreId"))),
-                                        withJsonPath("$.hearing.type", equalTo(commandPayload
-                                                .getJsonObject("hearing").getString("type"))),
-                                        withJsonPath("$.hearing.startDate", equalTo(commandPayload
-                                                .getJsonObject("hearing").getString("startDate"))),
-                                        withJsonPath("$.hearing.estimateMinutes",
-                                                equalTo(commandPayload.getJsonObject("hearing")
-                                                        .getInt("estimateMinutes"))),
-                                        withJsonPath("$.hearing.defendants[0].id",
-                                                equalTo(commandPayload.getJsonObject("hearing")
-                                                        .getJsonArray("defendants")
+                                    withJsonPath("$.sendingCommittalDate",
+                                            equalTo(commandPayload.getString("sendingCommittalDate"))),
+                                        withJsonPath("$.hearings[0].id",
+                                                equalTo(commandPayload.getJsonArray("hearings")
                                                         .getJsonObject(0).getString("id"))),
-                                        withJsonPath("$.hearing.defendants[0].personId",
-                                                equalTo(commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                        withJsonPath("$.hearings[0].courtCentreId",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getString("courtCentreId"))),
+                                        withJsonPath("$.hearings[0].type",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getString("type"))),
+                                        withJsonPath("$.hearings[0].startDate",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getString("startDate"))),
+                                        withJsonPath("$.hearings[0].estimateMinutes",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getInt("estimateMinutes"))),
+                                        withJsonPath("$.hearings[0].defendants[0].id",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
+                                                        .getJsonObject(0).getString("id"))),
+                                        withJsonPath("$.hearings[0].defendants[0].personId",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getString("personId"))),
-                                        withJsonPath("$.hearing.defendants[0].firstName",
-                                                equalTo(commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                        withJsonPath("$.hearings[0].defendants[0].firstName",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getString("firstName"))),
-                                        withJsonPath("$.hearing.defendants[0].lastName",
-                                                equalTo(commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                        withJsonPath("$.hearings[0].defendants[0].lastName",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getString("lastName"))),
-                                        withJsonPath("$.hearing.defendants[0].dateOfBirth",
-                                                equalTo(commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                        withJsonPath("$.hearings[0].defendants[0].dateOfBirth",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getString("dateOfBirth"))),
-                                        withJsonPath("$.hearing.defendants[0].bailStatus",
-                                                equalTo(commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                        withJsonPath("$.hearings[0].defendants[0].bailStatus",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getString("bailStatus"))),
-                                        withJsonPath("$.hearing.defendants[0].defenceOrganisation",
-                                                equalTo(commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                        withJsonPath("$.hearings[0].defendants[0].defenceOrganisation",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0)
                                                         .getString("defenceOrganisation"))),
-                                        withJsonPath("$.hearing.defendants[0].offences[0].id",
-                                                equalTo(commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                        withJsonPath("$.hearings[0].defendants[0].offences[0].id",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getJsonArray("offences")
                                                         .getJsonObject(0).getString("id"))),
-                                        withJsonPath("$.hearing.defendants[0].offences[0].offenceCode", equalTo
-                                                (commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                        withJsonPath("$.hearings[0].defendants[0].offences[0].offenceCode", equalTo
+                                                (commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getJsonArray("offences")
                                                         .getJsonObject(0).getString("offenceCode"))),
-                                        withJsonPath("$.hearing.defendants[0].offences[0].plea", equalTo
-                                                (commandPayload.getJsonObject("hearing").getJsonArray("defendants")
-                                                        .getJsonObject(0).getJsonArray("offences")
-                                                        .getJsonObject(0).getString("plea"))),
-                                        withJsonPath("$.hearing.defendants[0].offences[0].startDate",
-                                                equalTo(commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                        withJsonPath("$.hearings[0].defendants[0].offences[0].startDate",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getJsonArray("offences")
                                                         .getJsonObject(0).getString("endDate"))),
 
-                                        withJsonPath("$.hearing.defendants[0].offences[0]" +
+                                        withJsonPath("$.hearings[0].defendants[0].offences[0]" +
                                                         ".statementOfOffence.title",
-                                                equalTo(commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getJsonArray("offences")
                                                         .getJsonObject(0).getJsonObject
                                                                 ("statementOfOffence").getString
                                                                 ("title"))),
-                                        withJsonPath("$.hearing.defendants[0].offences[0]" +
+                                        withJsonPath("$.hearings[0].defendants[0].offences[0]" +
                                                         ".statementOfOffence.legislation",
-                                                equalTo(commandPayload.getJsonObject("hearing").getJsonArray("defendants")
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getJsonArray("offences")
                                                         .getJsonObject(0).getJsonObject("statementOfOffence")
                                                         .getString("legislation")))
@@ -172,13 +184,13 @@ public class ListingCommandHandlerTest {
                 .add("caseId", CASE_ID.toString())
                 .add("urn", URN)
                 .add("sendingCommittalDate", SENDING_COMMITTAL_DATE)
-                .add("hearing", createHearingJson())
+                .add("hearings", createHearingsJson())
                 .build();
 
     }
 
-    private JsonObject createHearingJson() {
-        return createObjectBuilder()
+    private JsonArray createHearingsJson() {
+        JsonObject hearing1 =  createObjectBuilder()
                 .add("id", HEARING_ID.toString())
                 .add("courtCentreId", COURT_CENTRE)
                 .add("type", HEARING_TYPE)
@@ -186,6 +198,9 @@ public class ListingCommandHandlerTest {
                 .add("estimateMinutes", ESTIMATE_MINUTES)
                 .add("defendants", createDefendantsJson())
                 .build();
+
+        JsonArrayBuilder hearings = createArrayBuilder().add(hearing1);
+        return hearings.build();
     }
 
     private JsonArray createDefendantsJson() {
@@ -214,7 +229,6 @@ public class ListingCommandHandlerTest {
         JsonObject offence1 = createObjectBuilder()
                 .add("id", OFFENCE_ID1.toString())
                 .add("offenceCode", PERSON_ID.toString())
-                .add("plea", PLEA)
                 .add("startDate", OFFENCE_START_DATE)
                 .add("endDate", OFFENCE_END_DATE)
                 .add("statementOfOffence", statementOfOffence)

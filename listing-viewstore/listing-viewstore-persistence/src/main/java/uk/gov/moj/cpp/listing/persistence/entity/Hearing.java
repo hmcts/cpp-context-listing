@@ -18,7 +18,6 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "hearing")
-@SuppressWarnings("squid:S00107")
 public class Hearing implements Serializable {
 
     @Id
@@ -51,14 +50,13 @@ public class Hearing implements Serializable {
         // for JPA
     }
 
-    public Hearing(final UUID id, final LocalDate startDateTime, final Integer estimateMinutes,
-                   final String type, final String courtCentreId, final ListingCase listingCase,
-                   final Boolean allocated, Set<Defendant> defendants) {
+    public Hearing(final UUID id, final ListingCase listingCase, final Boolean allocated,
+                   final Set<Defendant> defendants, final HearingDetails hearingDetails) {
         this.id = id;
-        this.startDateTime = startDateTime;
-        this.estimateMinutes = estimateMinutes;
-        this.type = type;
-        this.courtCentreId = courtCentreId;
+        this.startDateTime = hearingDetails.getStartDateTime();
+        this.estimateMinutes = hearingDetails.getEstimateMinutes();
+        this.type = hearingDetails.getType();
+        this.courtCentreId = hearingDetails.getCourtCentreId();
         this.listingCase = listingCase;
         this.allocated = allocated;
         this.defendants = defendants;
@@ -108,4 +106,35 @@ public class Hearing implements Serializable {
     public int hashCode() {
         return id.hashCode();
     }
+
+    public static class HearingDetails {
+        private LocalDate startDateTime;
+        private Integer estimateMinutes;
+        private String type;
+        private String courtCentreId;
+
+        public HearingDetails(LocalDate startDateTime, Integer estimateMinutes, String type, String courtCentreId) {
+            this.startDateTime = startDateTime;
+            this.estimateMinutes = estimateMinutes;
+            this.type = type;
+            this.courtCentreId = courtCentreId;
+        }
+
+        public LocalDate getStartDateTime() {
+            return startDateTime;
+        }
+
+        public Integer getEstimateMinutes() {
+            return estimateMinutes;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public String getCourtCentreId() {
+            return courtCentreId;
+        }
+    }
+
 }

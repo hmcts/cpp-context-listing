@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.givenAUserHasLoggedInAsAListingOfficers;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenCaseSentForListingPublicEventShouldBePublished;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.whenCaseIsSubmittedForListing;
@@ -32,13 +31,11 @@ public class ListingIT extends AbstractIT {
 
     @Test
     public void shouldSendCaseForListing() throws JMSException {
-        final String hearingId = randomUUID().toString();
-
         final CaseData caseData = caseData();
 
         givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
 
-        whenCaseIsSubmittedForListing(hearingId, caseData);
+        whenCaseIsSubmittedForListing(caseData);
 
         thenCaseSentForListingPublicEventShouldBePublished(caseData, publicMessageConsumer);
     }

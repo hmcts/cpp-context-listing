@@ -57,6 +57,7 @@ public class HearingBuilder {
     }
 
     public Hearing build() {
-        return new Hearing(id, startDateTime, estimateMinutes, type, courtCentreId, listingCase, allocated, defendants);
+        return new Hearing(id, listingCase, allocated, defendants,
+                new Hearing.HearingDetails(startDateTime,estimateMinutes,type,courtCentreId));
     }
-}
+}    

@@ -48,7 +48,7 @@ public class ListingCommandHandler {
                 getStringOrNull(command, "caseId"),
                 getStringOrNull(command, "urn"),
                 getLocalDate(command, "sendingCommittalDate"),
-                createHearingFrom(command)
+                createHearingsFrom(command)
         );
     }
 
@@ -84,7 +84,6 @@ public class ListingCommandHandler {
         return new Offence(
                 getStringOrNull(offence, "id"),
                 getStringOrNull(offence, "offenceCode"),
-                getStringOrNull(offence, "plea"),
                 getLocalDate(offence, "startDate"),
                 getLocalDate(offence, "endDate"),
                 createStatementOfOffenceFrom(offence)
@@ -99,8 +98,16 @@ public class ListingCommandHandler {
         );
     }
 
-    private Hearing createHearingFrom(final JsonObject command) {
-        final JsonObject hearing = command.getJsonObject("hearing");
+    private List<Hearing> createHearingsFrom(final JsonObject command) {
+        return command.getJsonArray("hearings")
+                .getValuesAs(JsonObject.class).stream()
+                .map(this::createHearingFrom)
+                .collect(toList());
+    }
+
+
+
+    private Hearing createHearingFrom(JsonObject hearing) {
         final String hearingType = getString(hearing, "type").get();
         final Integer estimateMinutes = hearing.getInt("estimateMinutes", getHearingEstimateMinutes());
         return new Hearing(

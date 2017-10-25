@@ -41,7 +41,6 @@ public class HearingSummaryConverterTest {
     private static final UUID HEARING_ID = UUID.randomUUID();
     private static final UUID DEFENDANT_ID = UUID.randomUUID();
     private static final UUID PERSON_ID = UUID.randomUUID();
-    private static final String PLEA = RandomGenerator.STRING.next();
     private static final String TYPE = RandomGenerator.STRING.next();
     private static final String FIRST_NAME = RandomGenerator.STRING.next();
     private static final String LAST_NAME = "Testing";
@@ -92,7 +91,6 @@ public class HearingSummaryConverterTest {
                 .setOffenceCode(OFFENCE_CODE)
                 .setListingOffenceId(LISTING_OFFENCE_ID)
                 .setOffenceId(OFFENCE_ID)
-                .setPlea(PLEA)
                 .setEndDate(DATE)
                 .setStartDate(DATE)
                 .build();

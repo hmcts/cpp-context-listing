@@ -21,26 +21,37 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-public class HearingConverter implements Converter<CaseSentForListing, Hearing> {
+public class HearingConverter implements Converter<CaseSentForListing,  Set<Hearing>> {
     @Inject
     private ListingCaseRepository listingCaseRepository;
 
     @Override
-    public Hearing convert(final CaseSentForListing event) {
+    public Set<Hearing> convert(final CaseSentForListing event) {
 
+        final ListingCase listingCase = findListingCase(event);
+        return event.getHearings()
+                .stream()
+                .map(eventHearing -> createHearing(listingCase, eventHearing))
+                .collect(Collectors.toSet());
+    }
+
+    private Hearing createHearing(final ListingCase listingCase, final uk.gov.moj.cpp.listing.domain.Hearing eventHearing) {
+        final Hearing hearing = buildHearing(eventHearing, listingCase);
+        final Set<Defendant> defendants = buildDefendants(eventHearing.getDefendants(), hearing);
+        hearing.getDefendants().addAll(defendants);
+        return hearing;
+    }
+
+    private ListingCase findListingCase(final CaseSentForListing event) {
         ListingCase listingCase = listingCaseRepository.findBy(UUID.fromString(event.getCaseId()));
         if (listingCase == null) {
             listingCase = buildListingCase(event);
         }
-
-        final Hearing hearing = buildHearing(event.getHearing(), listingCase);
-        final Set<Defendant> defendants = buildDefendants(event.getHearing().getDefendants(), hearing);
-        hearing.getDefendants().addAll(defendants);
-
-        return hearing;
+        return listingCase;
     }
 
     private ListingCase buildListingCase(final CaseSentForListing event) {
@@ -52,7 +63,7 @@ public class HearingConverter implements Converter<CaseSentForListing, Hearing> 
         return listingCaseBuilder.build();
     }
 
-    private Hearing buildHearing(final uk.gov.moj.cpp.listing.domain.Hearing hearingPartOfEvent, ListingCase listingCase) {
+    private Hearing buildHearing(final uk.gov.moj.cpp.listing.domain.Hearing hearingPartOfEvent, final ListingCase listingCase) {
         final HearingBuilder hearingBuilder = new HearingBuilder();
 
         hearingBuilder.setId(UUID.fromString(hearingPartOfEvent.getId()));
@@ -111,7 +122,6 @@ public class HearingConverter implements Converter<CaseSentForListing, Hearing> 
         offenceBuilder.setListingOffenceId(randomUUID());
         offenceBuilder.setOffenceId(UUID.fromString(offencePartOfPayload.getId()));
         offenceBuilder.setOffenceCode(offencePartOfPayload.getOffenceCode());
-        offenceBuilder.setPlea(offencePartOfPayload.getPlea());
         offenceBuilder.setStartDate(offencePartOfPayload.getStartDate());
         offenceBuilder.setEndDate(offencePartOfPayload.getEndDate());
         offenceBuilder.setStatementOfOffence(statementOfOffence);

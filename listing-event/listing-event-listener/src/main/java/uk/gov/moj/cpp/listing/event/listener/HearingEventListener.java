@@ -11,6 +11,8 @@ import uk.gov.moj.cpp.listing.event.converter.HearingConverter;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
+import java.util.Set;
+
 import javax.inject.Inject;
 
 @ServiceComponent(Component.EVENT_LISTENER)
@@ -28,8 +30,9 @@ public class HearingEventListener {
 
     @Handles("listing.events.case-sent-for-listing")
     public void caseSentForListing(final JsonEnvelope event) {
-        final Hearing hearing = hearingConverter.convert(jsonObjectConverter
+        final Set<Hearing> hearings = hearingConverter.convert(jsonObjectConverter
                 .convert(event.payloadAsJsonObject(), CaseSentForListing.class));
-        hearingRepository.save(hearing);
+        hearings.stream().forEach(hearingRepository::save);
+
     }
 }
