@@ -164,7 +164,7 @@ public class ListingStepDefinitions extends AbstractIT {
     }
 
     public static void thenUnallocatedHearingsForACourtCentreShouldContainTwoExpectedHearingsWhenQueried(final CaseData caseData, final CaseData caseDataNew) {
-        final String searchHearingUrl = String.format("%s%s", baseUri,
+        final String searchHearingUrl = String.format("%s/%s", baseUri,
                 format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData.getHearingData().getCourtCentreId(), UNALLOCATED));
         final Filter myFilterInitial = filter(where("id").contains(caseData.getHearingData().getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingFilterInitial = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", myFilterInitial);
@@ -181,7 +181,7 @@ public class ListingStepDefinitions extends AbstractIT {
     }
 
     public static void thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried(final CaseData caseData) {
-        final String searchHearingUrl = String.format("%s%s", baseUri,
+        final String searchHearingUrl = String.format("%s/%s", baseUri,
                 format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData.getHearingData().getCourtCentreId(), UNALLOCATED));
         final Filter myFilter = filter(where("id").is(caseData.getHearingData().getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", myFilter);
