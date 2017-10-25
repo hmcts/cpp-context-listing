@@ -1,7 +1,10 @@
 package uk.gov.moj.cpp.listing.persistence.entity;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
+
 
 public class HearingBuilder {
     private UUID id;
@@ -11,6 +14,7 @@ public class HearingBuilder {
     private String courtCentreId;
     private ListingCase listingCase;
     private Boolean allocated;
+    private Set<Defendant> defendants = new LinkedHashSet<>();
 
     public HearingBuilder setId(final UUID id) {
         this.id = id;
@@ -47,7 +51,12 @@ public class HearingBuilder {
         return this;
     }
 
+    public HearingBuilder setDefendants(final Set<Defendant> defendants) {
+        this.defendants = defendants;
+        return this;
+    }
+
     public Hearing build() {
-        return new Hearing(id, startDateTime, estimateMinutes, type, courtCentreId, listingCase, allocated);
+        return new Hearing(id, startDateTime, estimateMinutes, type, courtCentreId, listingCase, allocated, defendants);
     }
 }

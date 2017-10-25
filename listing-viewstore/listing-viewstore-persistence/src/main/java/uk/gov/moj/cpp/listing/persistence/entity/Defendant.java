@@ -1,21 +1,31 @@
 package uk.gov.moj.cpp.listing.persistence.entity;
 
-import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static java.util.Collections.unmodifiableSet;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "defendant")
 public class Defendant implements Serializable {
 
     @Id
-    @Column(name = "id", unique = true, nullable = false)
-    private UUID id;
+    @Column(name = "listing_defendant_id", unique = true, nullable = false)
+    private UUID listingDefendantId;
+
+    @Column(name = "defendant_id", nullable = false)
+    private UUID defendantId;
 
     @Column(name = "person_id")
     private UUID personId;
@@ -36,21 +46,22 @@ public class Defendant implements Serializable {
     private String defenceOrganisation;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "defendant")
-    private Set<Offence> offences = new LinkedHashSet<>();;
+    private Set<Offence> offences = new LinkedHashSet<>();
 
     @ManyToOne
-    @JoinColumn(name = "case_id")
-    private ListingCase listingCase;
+    @JoinColumn(name = "hearing_id")
+    private Hearing hearing;
 
     public Defendant() {
         // Required by JPA
     }
 
-    public Defendant(final UUID id, final UUID personId, final String firstName,
-                     final String lastName, final String bailStatus, final String defenceOrganisation,
-                     final LocalDate dateOfBirth, final Set<Offence> offences,
-                     final ListingCase listingCase) {
-        this.id = id;
+    public Defendant(final UUID listingDefendantId, final UUID defendantId, final UUID personId,
+                     final String firstName, final String lastName, final String bailStatus,
+                     final String defenceOrganisation, final LocalDate dateOfBirth,
+                     final Set<Offence> offences, final Hearing hearing) {
+        this.listingDefendantId = listingDefendantId;
+        this.defendantId = defendantId;
         this.personId = personId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -61,11 +72,15 @@ public class Defendant implements Serializable {
         if (offences != null) {
             offences.forEach(offence -> offence.setDefendant(this));
         }
-        this.listingCase = listingCase;
+        this.hearing = hearing;
     }
 
-    public UUID getId() {
-        return id;
+    public UUID getListingDefendantId() {
+        return listingDefendantId;
+    }
+
+    public UUID getDefendantId() {
+        return defendantId;
     }
 
     public UUID getPersonId() {
@@ -73,10 +88,6 @@ public class Defendant implements Serializable {
     }
 
     public Set<Offence> getOffences() { return offences; }
-
-    public ListingCase getListingCase() {
-        return listingCase;
-    }
 
     public String getFirstName() { return firstName; }
 
@@ -88,23 +99,27 @@ public class Defendant implements Serializable {
 
     public String getDefenceOrganisation() { return defenceOrganisation; }
 
-    public void setListingCase(final ListingCase listingCase) {
-        this.listingCase = listingCase;
+    public Hearing getHearing() {
+        return hearing;
     }
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         Defendant defendant = (Defendant) o;
 
-        return id.equals(defendant.id);
+        return listingDefendantId.equals(defendant.listingDefendantId);
     }
 
     @Override
     public int hashCode() {
-        return id.hashCode();
+        return listingDefendantId.hashCode();
     }
 }
 

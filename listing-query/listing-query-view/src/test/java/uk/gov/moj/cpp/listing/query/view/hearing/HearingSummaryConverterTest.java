@@ -35,6 +35,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class HearingSummaryConverterTest {
     private static final UUID ID = UUID.randomUUID();
+    private static final UUID CASE_ID = UUID.randomUUID();
+    private static final UUID OFFENCE_ID = UUID.randomUUID();
+    private static final UUID LISTING_OFFENCE_ID = UUID.randomUUID();
+    private static final UUID HEARING_ID = UUID.randomUUID();
+    private static final UUID DEFENDANT_ID = UUID.randomUUID();
     private static final UUID PERSON_ID = UUID.randomUUID();
     private static final String PLEA = RandomGenerator.STRING.next();
     private static final String TYPE = RandomGenerator.STRING.next();
@@ -49,6 +54,7 @@ public class HearingSummaryConverterTest {
     private static final String URN = RandomGenerator.STRING.next();
     private static final String COURT_CENTRE_ID = RandomGenerator.STRING.next();
     private static final Boolean ALLOCATED = Boolean.TRUE;
+    private static final UUID LISTING_DEFENDANT_ID = UUID.randomUUID();
 
     @InjectMocks
     private HearingSummaryConverter hearingSummaryConverter;
@@ -68,48 +74,36 @@ public class HearingSummaryConverterTest {
         assertThat(hearingSummary.getDate(), is(hearing.getStartDateTime()));
         assertThat(hearingSummary.getEstimate(), is(hearing.getEstimateMinutes()));
         assertThat(hearingSummary.getDefendants().size(), is(1));
-        assertThat(hearingSummary.getDefendants(), contains(allOf(hasProperty("id", is(ID)),
+        assertThat(hearingSummary.getDefendants(), contains(allOf(hasProperty("id", is(LISTING_DEFENDANT_ID)),
                 hasProperty("firstName", is(FIRST_NAME)),
                 hasProperty("lastName", is(LAST_NAME)),
                 hasProperty("bailStatus", is(BAIL_STATUS)))));
 
         List<DefendantSummary> defendantSummaries = hearingSummary.getDefendants().stream().limit(1).collect(Collectors.toList());
 
-        assertThat(defendantSummaries.get(0).getOffences(), contains(allOf(hasProperty("id", is(ID.toString())),
+        assertThat(defendantSummaries.get(0).getOffences(), contains(allOf(hasProperty("id", is(OFFENCE_ID.toString())),
                 hasProperty("title", is(TITLE)))));
     }
 
 
-    private Hearing createHearing() {
-        return new HearingBuilder()
-                .setId(UUID.randomUUID())
-                .setEstimateMinutes(RandomGenerator.INTEGER.next())
-                .setCourtCentreId(COURT_CENTRE_ID)
-                .setListingCase(createListingCase())
-                .setType(TYPE)
-                .setAllocated(ALLOCATED)
-                .build();
-    }
-
-    private ListingCase createListingCase() {
-
-        StatementOfOffence statementOfOffence = new StatementOfOffenceBuilder()
-                .setLegislation(LEGISLATION)
-                .setTitle(TITLE)
-                .build();
-
+    private Offence createOffence(final StatementOfOffence sof) {
         Offence offence = new OffenceBuilder()
-                .setStatementOfOffence(statementOfOffence)
+                .setStatementOfOffence(sof)
                 .setOffenceCode(OFFENCE_CODE)
-                .setId(ID)
+                .setListingOffenceId(LISTING_OFFENCE_ID)
+                .setOffenceId(OFFENCE_ID)
                 .setPlea(PLEA)
                 .setEndDate(DATE)
                 .setStartDate(DATE)
                 .build();
+        return offence;
+    }
 
+    private Defendant createDefendant(final Offence offence) {
         Defendant defandant = new DefendantBuilder()
+                .setListingDefendantId(LISTING_DEFENDANT_ID)
                 .setBailStatus(BAIL_STATUS)
-                .setId(ID)
+                .setDefendantId(DEFENDANT_ID)
                 .setPersonId(PERSON_ID)
                 .setFirstName(FIRST_NAME)
                 .setLastName(LAST_NAME)
@@ -117,10 +111,37 @@ public class HearingSummaryConverterTest {
                 .setDateOfBirth(DATE)
                 .setOffences(new HashSet<>(Arrays.asList(offence)))
                 .build();
+        return defandant;
+    }
+
+    private StatementOfOffence createStatementOfOffence() {
+        StatementOfOffence statementOfOffence = new StatementOfOffenceBuilder()
+                .setLegislation(LEGISLATION)
+                .setTitle(TITLE)
+                .build();
+        return statementOfOffence;
+    }
+
+    private Hearing createHearing() {
+        StatementOfOffence sof = createStatementOfOffence();
+        Offence offence = createOffence(sof);
+        Defendant defendant = createDefendant(offence);
+
+        return new HearingBuilder()
+                .setId(HEARING_ID)
+                .setEstimateMinutes(RandomGenerator.INTEGER.next())
+                .setCourtCentreId(COURT_CENTRE_ID)
+                .setListingCase(createListingCase())
+                .setType(TYPE)
+                .setAllocated(ALLOCATED)
+                .setDefendants(new HashSet<>(Arrays.asList(defendant)))
+                .build();
+    }
+
+    private ListingCase createListingCase() {
 
         ListingCase aCase = new ListingCaseBuilder()
-                .setDefendants(new HashSet<>(Arrays.asList(defandant)))
-                .setId(ID)
+                .setId(CASE_ID)
                 .setUrn(URN)
                 .setSendingCommittalDate(DATE)
                 .build();

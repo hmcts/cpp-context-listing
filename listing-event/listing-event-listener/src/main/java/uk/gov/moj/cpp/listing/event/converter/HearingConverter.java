@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.converter;
 
+import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toSet;
 
 import uk.gov.justice.services.common.converter.Converter;
@@ -14,21 +15,30 @@ import uk.gov.moj.cpp.listing.persistence.entity.Offence;
 import uk.gov.moj.cpp.listing.persistence.entity.OffenceBuilder;
 import uk.gov.moj.cpp.listing.persistence.entity.StatementOfOffence;
 import uk.gov.moj.cpp.listing.persistence.entity.StatementOfOffenceBuilder;
+import uk.gov.moj.cpp.listing.persistence.repository.ListingCaseRepository;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.inject.Inject;
+
 public class HearingConverter implements Converter<CaseSentForListing, Hearing> {
+    @Inject
+    private ListingCaseRepository listingCaseRepository;
 
     @Override
     public Hearing convert(final CaseSentForListing event) {
 
-        final ListingCase listingCase = buildListingCase(event);
+        ListingCase listingCase = listingCaseRepository.findBy(UUID.fromString(event.getCaseId()));
+        if (listingCase == null) {
+            listingCase = buildListingCase(event);
+        }
+
         final Hearing hearing = buildHearing(event.getHearing(), listingCase);
-        final Set<Defendant> defendants = buildDefendants(event.getDefendants(), listingCase);
-        listingCase.getDefendants().addAll(defendants);
+        final Set<Defendant> defendants = buildDefendants(event.getHearing().getDefendants(), hearing);
+        hearing.getDefendants().addAll(defendants);
 
         return hearing;
     }
@@ -57,21 +67,22 @@ public class HearingConverter implements Converter<CaseSentForListing, Hearing> 
     }
 
     private Set<Defendant> buildDefendants(final List<uk.gov.moj.cpp.listing.domain.Defendant> defendantsPartOfEvent,
-                                           final ListingCase listingCase) {
+                                           final Hearing hearing) {
         if (defendantsPartOfEvent == null) {
             return Collections.emptySet();
         }
         return defendantsPartOfEvent.stream()
-                .map(defendant -> this.buildDefendant(defendant, listingCase))
+                .map(defendant -> this.buildDefendant(defendant, hearing))
                 .collect(toSet());
     }
 
     private Defendant buildDefendant(final uk.gov.moj.cpp.listing.domain.Defendant defendantPartOfEvent,
-                                     final ListingCase listingCase) {
+                                     final Hearing hearing) {
         final DefendantBuilder defendantBuilder = new DefendantBuilder();
         final Set<Offence> offences = buildOffences(defendantPartOfEvent.getOffences());
 
-        defendantBuilder.setId(UUID.fromString(defendantPartOfEvent.getId()));
+        defendantBuilder.setListingDefendantId(randomUUID());
+        defendantBuilder.setDefendantId(UUID.fromString(defendantPartOfEvent.getId()));
         defendantBuilder.setPersonId(UUID.fromString((defendantPartOfEvent.getPersonId())));
         defendantBuilder.setFirstName(defendantPartOfEvent.getFirstName());
         defendantBuilder.setLastName(defendantPartOfEvent.getLastName());
@@ -79,7 +90,7 @@ public class HearingConverter implements Converter<CaseSentForListing, Hearing> 
         defendantBuilder.setDateOfBirth(defendantPartOfEvent.getDateOfBirth());
         defendantBuilder.setDefenceOrganisation(defendantPartOfEvent.getDefenceOrganisation());
         defendantBuilder.setOffences(offences);
-        defendantBuilder.setListingCase(listingCase);
+        defendantBuilder.setHearing(hearing);
 
         return defendantBuilder.build();
     }
@@ -97,7 +108,8 @@ public class HearingConverter implements Converter<CaseSentForListing, Hearing> 
         final StatementOfOffence statementOfOffence = buildStatementOfOffence
                 (offencePartOfPayload.getStatementOfOffence());
 
-        offenceBuilder.setId(UUID.fromString(offencePartOfPayload.getId()));
+        offenceBuilder.setListingOffenceId(randomUUID());
+        offenceBuilder.setOffenceId(UUID.fromString(offencePartOfPayload.getId()));
         offenceBuilder.setOffenceCode(offencePartOfPayload.getOffenceCode());
         offenceBuilder.setPlea(offencePartOfPayload.getPlea());
         offenceBuilder.setStartDate(offencePartOfPayload.getStartDate());

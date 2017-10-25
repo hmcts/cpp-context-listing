@@ -59,8 +59,12 @@ public class Defendant implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Defendant defendant = (Defendant) o;
         return Objects.equals(id, defendant.id) &&
                 Objects.equals(personId, defendant.personId) &&

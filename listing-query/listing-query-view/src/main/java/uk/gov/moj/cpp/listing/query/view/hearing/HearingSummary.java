@@ -22,10 +22,10 @@ public class HearingSummary implements Serializable {
 
     private final String type;
 
-    private final Set<DefendantSummary> defendants;
+    private Set<DefendantSummary> defendants;
 
     public HearingSummary(final UUID id, final LocalDate date, final Integer estimate,
-                          final String type, final  Set<DefendantSummary> defendants ){
+                          final String type, final Set<DefendantSummary> defendants ){
         this.id = id;
         this.date = date;
         this.estimate = estimate;

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="1" logicalFilePath="004-associate-defendant-to-hearing-from-case.xml">
+
+        <dropForeignKeyConstraint baseTableName="defendant" constraintName="fk_defendant_case"/>
+
+        <dropColumn schemaName="public"
+                   tableName="defendant">
+            <column name="case_id" type="UUID"/>
+        </dropColumn>
+
+        <addColumn schemaName="public"
+                   tableName="defendant">
+            <column name="hearing_id" type="UUID"/>
+        </addColumn>
+
+        <addForeignKeyConstraint baseColumnNames="hearing_id"
+                                 baseTableName="defendant"
+                                 constraintName="fk_defendant_hearing"
+                                 referencedColumnNames="id"
+                                 referencedTableName="hearing"/>
+
+
+        <dropForeignKeyConstraint baseTableName="offence" constraintName="fk_offence_defendant"/>
+        <dropPrimaryKey constraintName="pk_defendant"
+                        schemaName="public"
+                        tableName="defendant"/>
+
+        <dropColumn schemaName="public"
+                    tableName="defendant">
+            <column name="id" type="UUID"/>
+        </dropColumn>
+
+        <addColumn schemaName="public"
+                   tableName="defendant">
+            <column name="defendant_id" type="UUID"/>
+        </addColumn>
+
+        <addColumn schemaName="public"
+                   tableName="defendant">
+            <column name="listing_defendant_id" type="UUID"/>
+        </addColumn>
+
+        <addPrimaryKey columnNames="listing_defendant_id"
+                       constraintName="pk_defendant"
+                       schemaName="public"
+                       tableName="defendant"/>
+
+        <renameColumn columnDataType="UUID"
+                      newColumnName="listing_defendant_id"
+                      oldColumnName="defendant_id"
+                      remarks="Rename defendant_id to listing_defendant_id"
+                      schemaName="public"
+                      tableName="offence"/>
+
+        <addForeignKeyConstraint baseColumnNames="listing_defendant_id"
+                                 baseTableName="offence"
+                                 constraintName="fk_listing_defendant"
+                                 referencedColumnNames="listing_defendant_id"
+                                 referencedTableName="defendant"/>
+
+        <dropPrimaryKey constraintName="pk_offence"
+                        schemaName="public"
+                        tableName="offence"/>
+
+        <dropColumn schemaName="public"
+                    tableName="offence">
+            <column name="id" type="UUID"/>
+        </dropColumn>
+
+        <addColumn schemaName="public"
+                   tableName="offence">
+            <column name="offence_id" type="UUID"/>
+        </addColumn>
+
+        <addColumn schemaName="public"
+                   tableName="offence">
+            <column name="listing_offence_id" type="UUID"/>
+        </addColumn>
+
+        <addPrimaryKey columnNames="listing_offence_id"
+                       constraintName="pk_offence"
+                       schemaName="public"
+                       tableName="offence"/>
+
+    </changeSet>
+</databaseChangeLog>
