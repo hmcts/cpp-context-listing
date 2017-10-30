@@ -24,8 +24,8 @@ public class HearingRepositoryTest {
 
     private static final boolean ALLOCATED = true;
     private static final Boolean UNALLOCATED = false;
-    private static final String COURT_CENTRE_ID = "Cardiff";
-    private static final String OTHER_COURT_CENTRE = "Liverpool";
+    private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
+    private static final UUID OTHER_COURT_CENTRE_ID = UUID.randomUUID();
 
     @Inject
     private HearingRepository hearingRepository;
@@ -42,7 +42,7 @@ public class HearingRepositoryTest {
     @Test
     public void shouldFindHearingsByAllocatedAndCourtCentreId() {
         final Hearing expectedHearingToBeReturned = saveHearing(COURT_CENTRE_ID, UNALLOCATED);
-        final Hearing expectedHearingNotToBeReturned = saveHearing(OTHER_COURT_CENTRE, ALLOCATED);
+        final Hearing expectedHearingNotToBeReturned = saveHearing(OTHER_COURT_CENTRE_ID, ALLOCATED);
 
         final List<Hearing> actualHearings = hearingRepository.findByAllocatedAndCourtCentreId(UNALLOCATED, COURT_CENTRE_ID);
 
@@ -51,7 +51,7 @@ public class HearingRepositoryTest {
         assertThat(actualHearings.get(0).getCourtCentreId(), is(COURT_CENTRE_ID));
     }
 
-    private Hearing saveHearing(final String courtCentreId, final boolean allocated) {
+    private Hearing saveHearing(final UUID courtCentreId, final boolean allocated) {
         final Hearing hearing = createHearing(courtCentreId,allocated) ;
 
         hearingRepository.save(hearing);
@@ -67,7 +67,7 @@ public class HearingRepositoryTest {
         return hearing;
     }
 
-    private Hearing createHearing(final String courtCentreId, final boolean allocated) {
+    private Hearing createHearing(final UUID courtCentreId, final boolean allocated) {
         return new HearingBuilder()
                 .setId(UUID.randomUUID())
                 .setAllocated(allocated)

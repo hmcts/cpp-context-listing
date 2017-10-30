@@ -67,9 +67,9 @@ public class HearingConverter implements Converter<CaseSentForListing,  Set<Hear
         final HearingBuilder hearingBuilder = new HearingBuilder();
 
         hearingBuilder.setId(UUID.fromString(hearingPartOfEvent.getId()));
-        hearingBuilder.setCourtCentreId(hearingPartOfEvent.getCourtCentreId());
+        hearingBuilder.setCourtCentreId(UUID.fromString(hearingPartOfEvent.getCourtCentreId()));
         hearingBuilder.setType(hearingPartOfEvent.getType());
-        hearingBuilder.setStartDateTime(hearingPartOfEvent.getStartDate());
+        hearingBuilder.setStartDate(hearingPartOfEvent.getStartDate());
         hearingBuilder.setEstimateMinutes(hearingPartOfEvent.getEstimateMinutes());
         hearingBuilder.setListingCase(listingCase);
         hearingBuilder.setAllocated(hearingPartOfEvent.isAllocated());

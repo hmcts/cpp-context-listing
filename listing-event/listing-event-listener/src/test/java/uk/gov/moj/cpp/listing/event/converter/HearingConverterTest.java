@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
+import java.util.UUID;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -139,7 +140,7 @@ public class HearingConverterTest {
     }
 
     private Hearing createHearing(final Defendant defendant) {
-        return new Hearing(randomUUID().toString(), STRING.next(), STRING.next(), LocalDate.now
+        return new Hearing(randomUUID().toString(), UUID.randomUUID().toString(), STRING.next(), LocalDate.now
                 (), ESTIMATE_MINUTES, ALLOCATED, Collections.singletonList(defendant));
     }
 
@@ -163,10 +164,10 @@ public class HearingConverterTest {
     }
 
     private void assertHearing(final uk.gov.moj.cpp.listing.persistence.entity.Hearing actual, final Hearing hearingPart) {
-        assertThat(actual.getCourtCentreId(), is(hearingPart.getCourtCentreId()));
+        assertThat(actual.getCourtCentreId().toString(), is(hearingPart.getCourtCentreId()));
         assertThat(actual.getEstimateMinutes(), is(hearingPart.getEstimateMinutes()));
         assertThat(actual.getId().toString(), is(hearingPart.getId()));
-        assertThat(actual.getStartDateTime(), is(hearingPart.getStartDate()));
+        assertThat(actual.getStartDate(), is(hearingPart.getStartDate()));
         assertThat(actual.getType(), is(hearingPart.getType()));
         assertThat(actual.getAllocated(), is(hearingPart.isAllocated()));
     }

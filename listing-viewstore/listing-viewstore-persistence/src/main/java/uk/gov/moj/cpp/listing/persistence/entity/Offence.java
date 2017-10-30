@@ -27,10 +27,10 @@ public class Offence implements Serializable {
     @Column(name = "offence_code")
     private String offenceCode;
 
-    @Column(name = "start_date_time")
+    @Column(name = "start_date")
     private LocalDate startDate;
 
-    @Column(name = "end_date_time")
+    @Column(name = "end_date")
     private LocalDate endDate;
 
     @Embedded

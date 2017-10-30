@@ -43,7 +43,7 @@
           "type": "string"
         },
         "bailStatus": {
-          "type": "string"
+          "enum": ["conditional","unconditional","inCustody"]
         },
         "offences": {
           "type": "array",
@@ -71,9 +71,25 @@
           "type": "string",
           "enum": ["PTP", "SENTENCING", "TRIAL"]
         },
-        "date": {
+        "startDate": {
           "type": "string",
           "format": "date"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "time"
+        },
+        "courtCentreId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "courtRoomId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "judgeId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "notBefore": {
+          "type": "boolean"
         },
         "estimateMinutes": {
           "type": "string"
@@ -88,7 +104,12 @@
       "required": [
         "id",
         "type",
-        "date",
+        "startDate",
+        "startTime",
+        "courtCentreId",
+        "courtRoomId",
+        "judgeId",
+        "notBefore",
         "estimateMinutes",
         "defendants"
       ],

@@ -3,8 +3,13 @@
     {
       "id": "4bb4cd5a-ce2a-467d-8984-76b62ec92072",
       "type": "PTPH",
-      "date":"2017-05-19",
-      "estimate": "15",
+      "startDate": "2017-05-19",
+      "startTime": "10:00",
+      "estimateMinutes": "15",
+      "courtCentreId": "52ece02c-bb00-11e7-abc4-cec278b6b50a",
+      "courtRoomId": "82487aa2-bb00-11e7-abc4-cec278b6b50a",
+      "judgeId": "b810bcda-bb00-11e7-abc4-cec278b6b50a",
+      "notBefore": false,
       "defendants": [
         {
           "id": "2deafea2-2f76-8109-82d9-2e60544a6c03",
@@ -28,7 +33,7 @@
               "title": "Robbery"
             }
           ],
-          "bailStatus": "On bail"
+          "bailStatus": "conditional"
         }
       ]
     }

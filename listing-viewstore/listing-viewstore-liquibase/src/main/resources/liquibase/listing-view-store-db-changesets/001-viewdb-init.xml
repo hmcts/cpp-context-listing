@@ -20,11 +20,15 @@
                 <constraints nullable="false" foreignKeyName="fk_hearing_case"
                              references="listing_case(id)"/>
             </column>
-            <column name="court_centre_id" type="TEXT"/>
+            <column name="court_centre_id" type="UUID"/>
+            <column name="court_room_id" type="UUID"/>
+            <column name="judge_id" type="UUID"/>
             <column name="type" type="TEXT"/>
-            <column name="start_date_time" type="DATE"/>
+            <column name="start_date" type="DATE"/>
+            <column name="start_time" type="TIME"/>
             <column name="estimate_minutes" type="INTEGER"/>
             <column name="allocated" type="BOOLEAN"/>
+            <column name="not_before" type="BOOLEAN"/>
         </createTable>
 
         <createTable tableName="defendant">
@@ -59,8 +63,8 @@
                              references="defendant(listing_defendant_id)"/>
             </column>
             <column name="offence_code" type="TEXT"/>
-            <column name="start_date_time" type="DATE"/>
-            <column name="end_date_time" type="DATE"/>
+            <column name="start_date" type="DATE"/>
+            <column name="end_date" type="DATE"/>
             <column name="statement_of_offence_title" type="TEXT"/>
             <column name="statement_of_offence_legislation" type="TEXT"/>
         </createTable>

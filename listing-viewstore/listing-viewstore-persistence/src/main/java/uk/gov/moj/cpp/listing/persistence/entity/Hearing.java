@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.persistence.entity;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -24,8 +25,11 @@ public class Hearing implements Serializable {
     @Column(name = "id", unique = true, nullable = false)
     private UUID id;
 
-    @Column(name = "start_date_time")
-    private LocalDate startDateTime;
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "start_time")
+    private LocalTime startTime;
 
     @Column(name = "estimate_minutes")
     private Integer estimateMinutes;
@@ -34,7 +38,13 @@ public class Hearing implements Serializable {
     private String type;
 
     @Column(name = "court_centre_id")
-    private String courtCentreId;
+    private UUID courtCentreId;
+
+    @Column(name = "court_room_id")
+    private UUID courtRoomId;
+
+    @Column(name = "judge_id")
+    private UUID judgeId;
 
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "case_id")
@@ -46,17 +56,25 @@ public class Hearing implements Serializable {
     @Column(name = "allocated")
     private Boolean allocated;
 
+    @Column(name = "not_before")
+    private boolean notBefore;
+
     public Hearing() {
         // for JPA
     }
 
     public Hearing(final UUID id, final ListingCase listingCase, final Boolean allocated,
-                   final Set<Defendant> defendants, final HearingDetails hearingDetails) {
+                   final Set<Defendant> defendants, boolean notBefore,
+                   final HearingDetails hearingDetails) {
         this.id = id;
-        this.startDateTime = hearingDetails.getStartDateTime();
+        this.startDate = hearingDetails.getStartDate();
+        this.startTime = hearingDetails.getStartTime();
         this.estimateMinutes = hearingDetails.getEstimateMinutes();
         this.type = hearingDetails.getType();
         this.courtCentreId = hearingDetails.getCourtCentreId();
+        this.courtRoomId = hearingDetails.getCourtRoomId();
+        this.judgeId = hearingDetails.getJudgeId();
+        this.notBefore = notBefore;
         this.listingCase = listingCase;
         this.allocated = allocated;
         this.defendants = defendants;
@@ -66,8 +84,12 @@ public class Hearing implements Serializable {
         return id;
     }
 
-    public LocalDate getStartDateTime() {
-        return startDateTime;
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public LocalTime getStartTime() {
+        return startTime;
     }
 
     public Integer getEstimateMinutes() {
@@ -78,7 +100,7 @@ public class Hearing implements Serializable {
         return type;
     }
 
-    public String getCourtCentreId() {
+    public UUID getCourtCentreId() {
         return courtCentreId;
     }
 
@@ -90,6 +112,18 @@ public class Hearing implements Serializable {
 
     public Set<Defendant> getDefendants() {
         return defendants;
+    }
+
+    public UUID getCourtRoomId() {
+        return courtRoomId;
+    }
+
+    public UUID getJudgeId() {
+        return judgeId;
+    }
+
+    public boolean getNotBefore() {
+        return notBefore;
     }
 
     @Override
@@ -108,20 +142,31 @@ public class Hearing implements Serializable {
     }
 
     public static class HearingDetails {
-        private LocalDate startDateTime;
+        private LocalDate startDate;
+        private LocalTime startTime;
         private Integer estimateMinutes;
         private String type;
-        private String courtCentreId;
+        private UUID courtCentreId;
+        private UUID courtRoomId;
+        private UUID judgeId;
 
-        public HearingDetails(LocalDate startDateTime, Integer estimateMinutes, String type, String courtCentreId) {
-            this.startDateTime = startDateTime;
+        public HearingDetails(LocalDate startDate, LocalTime startTime, Integer estimateMinutes, String type,
+                              UUID courtCentreId, UUID courtRoomId, UUID judgeId) {
+            this.startDate = startDate;
+            this.startTime = startTime;
             this.estimateMinutes = estimateMinutes;
             this.type = type;
             this.courtCentreId = courtCentreId;
+            this.courtRoomId = courtRoomId;
+            this.judgeId = judgeId;
         }
 
-        public LocalDate getStartDateTime() {
-            return startDateTime;
+        public LocalDate getStartDate() {
+            return startDate;
+        }
+
+        public LocalTime getStartTime() {
+            return startTime;
         }
 
         public Integer getEstimateMinutes() {
@@ -132,8 +177,16 @@ public class Hearing implements Serializable {
             return type;
         }
 
-        public String getCourtCentreId() {
+        public UUID getCourtCentreId() {
             return courtCentreId;
+        }
+
+        public UUID getCourtRoomId() {
+            return courtRoomId;
+        }
+
+        public UUID getJudgeId() {
+            return judgeId;
         }
     }
 

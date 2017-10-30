@@ -13,6 +13,7 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingSummary;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingSummaryConverter;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -21,6 +22,8 @@ import javax.json.JsonArray;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.UUID.fromString;
 
 
 @ServiceComponent(Component.QUERY_VIEW)
@@ -46,7 +49,7 @@ public class HearingQueryView {
     @Handles("listing.search.hearings")
     public JsonEnvelope searchHearings(final JsonEnvelope query) {
 
-        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID);
+        final UUID courtCentreId = fromString(query.payloadAsJsonObject().getString(COURT_CENTRE_ID));
         final boolean allocated = query.payloadAsJsonObject().getBoolean(ALLOCATED_QUERY_PARAMETER);
 
         LOGGER.info("Query params - courtCentreId:" + courtCentreId + ", allocated:" + allocated);

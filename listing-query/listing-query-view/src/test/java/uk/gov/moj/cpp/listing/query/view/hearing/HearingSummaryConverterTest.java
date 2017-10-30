@@ -21,6 +21,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.StatementOfOffence;
 import uk.gov.moj.cpp.listing.persistence.entity.StatementOfOffenceBuilder;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -51,7 +52,12 @@ public class HearingSummaryConverterTest {
     private static final String LEGISLATION = RandomGenerator.STRING.next();
     private static final String TITLE = RandomGenerator.STRING.next();
     private static final String URN = RandomGenerator.STRING.next();
-    private static final String COURT_CENTRE_ID = RandomGenerator.STRING.next();
+    private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
+    private static final UUID COURT_ROOM_ID = UUID.randomUUID();
+    private static final UUID JUDGE_ID = UUID.randomUUID();
+    private static final LocalDate START_DATE = LocalDate.now();
+    private static final LocalTime START_TIME = LocalTime.now();
+    private static final boolean NOT_BEFORE = false;
     private static final Boolean ALLOCATED = Boolean.TRUE;
     private static final UUID LISTING_DEFENDANT_ID = UUID.randomUUID();
 
@@ -70,8 +76,13 @@ public class HearingSummaryConverterTest {
 
         assertThat(hearingSummary.getId().toString(), is(hearing.getId().toString()));
         assertThat(hearingSummary.getType(), is(hearing.getType()));
-        assertThat(hearingSummary.getDate(), is(hearing.getStartDateTime()));
-        assertThat(hearingSummary.getEstimate(), is(hearing.getEstimateMinutes()));
+        assertThat(hearingSummary.getStartDate(), is(hearing.getStartDate()));
+        assertThat(hearingSummary.getStartTime(), is(hearing.getStartTime()));
+        assertThat(hearingSummary.getCourtCentreId(), is(hearing.getCourtCentreId()));
+        assertThat(hearingSummary.getCourtRoomId(), is(hearing.getCourtRoomId()));
+        assertThat(hearingSummary.getJudgeId(), is(hearing.getJudgeId()));
+        assertThat(hearingSummary.getNotBefore(), is(hearing.getNotBefore()));
+        assertThat(hearingSummary.getEstimateMinutes(), is(hearing.getEstimateMinutes()));
         assertThat(hearingSummary.getDefendants().size(), is(1));
         assertThat(hearingSummary.getDefendants(), contains(allOf(hasProperty("id", is(LISTING_DEFENDANT_ID)),
                 hasProperty("firstName", is(FIRST_NAME)),
@@ -129,6 +140,11 @@ public class HearingSummaryConverterTest {
                 .setId(HEARING_ID)
                 .setEstimateMinutes(RandomGenerator.INTEGER.next())
                 .setCourtCentreId(COURT_CENTRE_ID)
+                .setCourtRoomId(COURT_ROOM_ID)
+                .setJudgeId(JUDGE_ID)
+                .setNotBefore(NOT_BEFORE)
+                .setStartDate(START_DATE)
+                .setStartTime(START_TIME)
                 .setListingCase(createListingCase())
                 .setType(TYPE)
                 .setAllocated(ALLOCATED)

@@ -23,7 +23,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
      * @param allocated property of the hearing to retrieve.
      * @return Hearings.
      */
-    public abstract List<Hearing> findByAllocatedAndCourtCentreId(final Boolean allocated, final String courtCentreId);
+    public abstract List<Hearing> findByAllocatedAndCourtCentreId(final Boolean allocated, final UUID courtCentreId);
 
 
 }

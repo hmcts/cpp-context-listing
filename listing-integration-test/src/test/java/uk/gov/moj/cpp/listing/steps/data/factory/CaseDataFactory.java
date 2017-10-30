@@ -20,6 +20,7 @@ public class CaseDataFactory {
     private static final int HEARING_ESTIMATE_MINUTES = 15;
     private static final String HEARING_TYPE = "PTP";
     private static final String HEARING_TYPE_TRIAL = "TRIAL";
+    private static final String BAIL_CONDITIONAL = "conditional";
 
     public static CaseData caseData() {
         return new CaseData(randomUUID(), STRING.next(),
@@ -56,12 +57,12 @@ public class CaseDataFactory {
 
     private static DefendantData randomDefendant() {
         return new DefendantData(randomUUID(), randomUUID(), STRING.next(), STRING.next(),
-                LocalDate.now(), STRING.next(), STRING.next(), manyRandomOffences(2));
+                LocalDate.now(), BAIL_CONDITIONAL, STRING.next(), manyRandomOffences(2));
     }
 
 
     private static HearingData randomHearing() {
-        return new HearingData(randomUUID(), STRING.next(), HEARING_TYPE, LocalDate.now(),
+        return new HearingData(randomUUID(), randomUUID().toString(), HEARING_TYPE, LocalDate.now(),
                 HEARING_ESTIMATE_MINUTES, manyRandomDefendants(2));
     }
 

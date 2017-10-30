@@ -70,7 +70,7 @@
                   "format": "date"
                 },
                 "bailStatus": {
-                  "type": "string"
+                  "enum": ["conditional","unconditional","inCustody"]
                 },
                 "defenceOrganisation": {
                   "type": "string"

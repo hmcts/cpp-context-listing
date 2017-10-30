@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.persistence.entity;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -8,10 +9,14 @@ import java.util.UUID;
 
 public class HearingBuilder {
     private UUID id;
-    private LocalDate startDateTime;
+    private LocalDate startDate;
+    private LocalTime startTime;
     private Integer estimateMinutes;
     private String type;
-    private String courtCentreId;
+    private UUID courtCentreId;
+    private UUID courtRoomId;
+    private UUID judgeId;
+    private boolean notBefore = false;
     private ListingCase listingCase;
     private Boolean allocated;
     private Set<Defendant> defendants = new LinkedHashSet<>();
@@ -21,8 +26,13 @@ public class HearingBuilder {
         return this;
     }
 
-    public HearingBuilder setStartDateTime(final LocalDate startDateTime) {
-        this.startDateTime = startDateTime;
+    public HearingBuilder setStartDate(final LocalDate startDate) {
+        this.startDate = startDate;
+        return this;
+    }
+
+    public HearingBuilder setStartTime(final LocalTime startTime) {
+        this.startTime = startTime;
         return this;
     }
 
@@ -36,8 +46,23 @@ public class HearingBuilder {
         return this;
     }
 
-    public HearingBuilder setCourtCentreId(final String courtCentreId) {
+    public HearingBuilder setCourtCentreId(final UUID courtCentreId) {
         this.courtCentreId = courtCentreId;
+        return this;
+    }
+
+    public HearingBuilder setCourtRoomId(final UUID courtRoomId) {
+        this.courtRoomId = courtRoomId;
+        return this;
+    }
+
+    public HearingBuilder setJudgeId(final UUID judgeId) {
+        this.judgeId = judgeId;
+        return this;
+    }
+
+    public HearingBuilder setNotBefore(final boolean notBefore) {
+        this.notBefore = notBefore;
         return this;
     }
 
@@ -57,7 +82,8 @@ public class HearingBuilder {
     }
 
     public Hearing build() {
-        return new Hearing(id, listingCase, allocated, defendants,
-                new Hearing.HearingDetails(startDateTime,estimateMinutes,type,courtCentreId));
+        return new Hearing(id, listingCase, allocated, defendants, notBefore,
+                new Hearing.HearingDetails(startDate, startTime, estimateMinutes, type, courtCentreId,
+                        courtRoomId, judgeId));
     }
 }    
