@@ -14,10 +14,12 @@ public class DefendantData {
     private final List<OffenceData> offences;
     private final String bailStatus;
     private final LocalDate dateOfBirth;
+    private final LocalDate custodyTimeLimit;
     private final String defenceOrganisation;
 
     public DefendantData(final UUID defendantId, final UUID personId, final String firstName,
-                         final String lastName, final LocalDate dateOfBirth, final String bailStatus,
+                         final String lastName, final LocalDate dateOfBirth,
+                         final LocalDate custodyTimeLimit, final String bailStatus,
                          final String defenceOrganisation, final List<OffenceData> offences) {
         this.defendantId = defendantId;
         this.personId = personId;
@@ -25,6 +27,7 @@ public class DefendantData {
         this.lastName = lastName;
         this.dateOfBirth = dateOfBirth;
         this.bailStatus = bailStatus;
+        this.custodyTimeLimit = custodyTimeLimit;
         this.offences  = offences;
         this.defenceOrganisation = defenceOrganisation;
     }
@@ -46,6 +49,10 @@ public class DefendantData {
     public LocalDate getDateOfBirth() { return dateOfBirth; }
 
     public String getBailStatus() { return bailStatus; }
+
+    public LocalDate getCustodyTimeLimit() {
+        return custodyTimeLimit;
+    }
 
     public List<OffenceData> getOffences() { return offences; }
 

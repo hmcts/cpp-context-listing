@@ -24,11 +24,11 @@ public class CaseDataFactory {
 
     public static CaseData caseData() {
         return new CaseData(randomUUID(), STRING.next(),
-                LocalDate.now(), manyRandomHearings(2));
+                manyRandomHearings(2));
     }
 
     public static CaseData caseDataExisting(final String existingCaseId, final String courtCentreId) {
-        return new CaseData(UUID.fromString(existingCaseId), STRING.next(),LocalDate.now(),
+        return new CaseData(UUID.fromString(existingCaseId), STRING.next(),
                 Arrays.asList(randomHearing(courtCentreId)));
     }
 
@@ -57,7 +57,8 @@ public class CaseDataFactory {
 
     private static DefendantData randomDefendant() {
         return new DefendantData(randomUUID(), randomUUID(), STRING.next(), STRING.next(),
-                LocalDate.now(), BAIL_CONDITIONAL, STRING.next(), manyRandomOffences(2));
+                LocalDate.now(), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
+                manyRandomOffences(2));
     }
 
 

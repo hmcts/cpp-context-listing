@@ -19,6 +19,7 @@ public class Defendant implements Serializable {
     private final String lastName;
     private final LocalDate dateOfBirth;
     private final String bailStatus;
+    private final LocalDate custodyTimeLimit;
     private final String defenceOrganisation;
     private final List<Offence> offences;
 
@@ -29,6 +30,7 @@ public class Defendant implements Serializable {
                      @JsonProperty(value = "lastName") final String lastName,
                      @JsonProperty(value = "dateOfBirth") final LocalDate dateOfBirth,
                      @JsonProperty(value = "bailStatus") final String bailStatus,
+                     @JsonProperty(value = "custodyTimeLimit") final LocalDate custodyTimeLimit,
                      @JsonProperty(value = "defenceOrganisation") final String defenceOrganisation,
                      @JsonProperty(value = "offences") final List<Offence> offences) {
         this.id = id;
@@ -37,6 +39,7 @@ public class Defendant implements Serializable {
         this.lastName = lastName;
         this.dateOfBirth = dateOfBirth;
         this.bailStatus = bailStatus;
+        this.custodyTimeLimit = custodyTimeLimit;
         this.defenceOrganisation = defenceOrganisation;
         this.offences = offences;
     }
@@ -52,6 +55,8 @@ public class Defendant implements Serializable {
     public LocalDate getDateOfBirth() { return dateOfBirth; }
 
     public String getBailStatus() { return bailStatus; }
+
+    public LocalDate getCustodyTimeLimit() { return custodyTimeLimit; }
 
     public String getDefenceOrganisation() { return defenceOrganisation; }
 
@@ -72,6 +77,7 @@ public class Defendant implements Serializable {
                 Objects.equals(lastName, defendant.lastName) &&
                 Objects.equals(dateOfBirth, defendant.dateOfBirth) &&
                 Objects.equals(bailStatus, defendant.bailStatus) &&
+                Objects.equals(custodyTimeLimit, defendant.custodyTimeLimit) &&
                 Objects.equals(defenceOrganisation, defendant.defenceOrganisation) &&
                 Objects.equals(offences, defendant.offences);
     }
@@ -79,6 +85,6 @@ public class Defendant implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(id, personId, firstName, lastName,
-                dateOfBirth, bailStatus, defenceOrganisation, offences);
+                dateOfBirth, bailStatus, custodyTimeLimit, defenceOrganisation, offences);
     }
 }

@@ -13,6 +13,7 @@ public class DefendantBuilder {
     private String bailStatus;
     private String defenceOrganisation;
     private LocalDate dateOfBirth;
+    private LocalDate custodyTimeLimit;
 
     private Set<Offence> offences;
 
@@ -20,6 +21,11 @@ public class DefendantBuilder {
 
     public DefendantBuilder setDefendantId(final UUID defendantId) {
         this.defendantId = defendantId;
+        return this;
+    }
+
+    public DefendantBuilder setCustodyTimeLimit(final LocalDate custodyTimeLimit) {
+        this.custodyTimeLimit = custodyTimeLimit;
         return this;
     }
 
@@ -68,7 +74,8 @@ public class DefendantBuilder {
     }
 
     public Defendant build() {
-        return new Defendant(listingDefendantId, defendantId, bailStatus, defenceOrganisation,
-                offences, hearing, new Defendant.PersonalDetails(personId, firstName, lastName, dateOfBirth));
+        return new Defendant(new Defendant.DefendantDetails(listingDefendantId, defendantId,
+                bailStatus, defenceOrganisation, custodyTimeLimit), offences, hearing,
+                new Defendant.PersonalDetails(personId, firstName, lastName, dateOfBirth));
     }
 }

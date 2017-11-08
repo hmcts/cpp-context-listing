@@ -45,9 +45,8 @@ public class ListingCommandHandler {
 
     private CaseSentForListing createCaseSentForListingFrom(final JsonObject command) {
         return new CaseSentForListing(
-                getStringOrNull(command, "caseId"),
+                getStringOrNull(command, "caseProgressionId"),
                 getStringOrNull(command, "urn"),
-                getLocalDate(command, "sendingCommittalDate"),
                 createHearingsFrom(command)
         );
     }
@@ -67,6 +66,7 @@ public class ListingCommandHandler {
                 getStringOrNull(defendant, "lastName"),
                 getLocalDate(defendant, "dateOfBirth"),
                 getStringOrNull(defendant, "bailStatus"),
+                getLocalDate(defendant, "custodyTimeLimit"),
                 getStringOrNull(defendant, "defenceOrganisation"),
                 createOffencesFrom(defendant)
         );
@@ -108,7 +108,7 @@ public class ListingCommandHandler {
 
 
     private Hearing createHearingFrom(JsonObject hearing) {
-        final String hearingType = getString(hearing, "type").get();
+        final String hearingType = getStringOrNull(hearing, "type");
         final Integer estimateMinutes = hearing.getInt("estimateMinutes", getHearingEstimateMinutes());
         return new Hearing(
                 getStringOrNull(hearing, "id"),

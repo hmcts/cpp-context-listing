@@ -1,7 +1,6 @@
 {
-  "caseId": "0baecac5-222b-402d-9047-84803679edae",
+  "caseProgressionId": "0baecac5-222b-402d-9047-84803679edae",
   "urn": "87GD9945217",
-  "sendingCommittalDate": "2017-05-19",
   "hearings": [
     {
       "id": "0baecac5-222b-402d-9047-84803679edaf",
@@ -17,6 +16,7 @@
           "lastName": "Lloyd",
           "dateOfBirth": "1995-03-23",
           "bailStatus" : "inCustody",
+          "custodyTimeLimit": "1995-03-23",
           "defenceOrganisation": "Solicitor XYZ",
           "offences": [
             {

@@ -53,11 +53,11 @@ public class ListingCommandHandlerTest {
     private static final int ESTIMATE_MINUTES = 7200;
     private static final String BAIL_STATUS = "OnBail";
     private static final String DEFENCE_ORGANISATION = "XYZ Organisation";
-    private static final String SENDING_COMMITTAL_DATE = "2017-05-19";
     private static final String URN = "urn";
     private static final UUID CASE_ID = UUID.randomUUID();
     private static final String STATEMENT_OF_OFFENCE_TITLE = "title";
     private static final String STATEMENT_OF_OFFENCE_LEGISLATION = "Legislation";
+    private static final String CUSTODY_TIME_LIMIT = "2017-10-05";
 
     @Mock
     private EventSource eventSource;
@@ -87,10 +87,8 @@ public class ListingCommandHandlerTest {
                                 .withName("listing.events.case-sent-for-listing")
                                 .withCausationIds(commandEnvelope.metadata().id()),payload()
                                 .isJson(allOf(
-                                    withJsonPath("$.caseId", equalTo(commandPayload.getString("caseId"))),
+                                    withJsonPath("$.caseProgressionId", equalTo(commandPayload.getString("caseProgressionId"))),
                                     withJsonPath("$.urn", equalTo(commandPayload.getString("urn"))),
-                                    withJsonPath("$.sendingCommittalDate",
-                                            equalTo(commandPayload.getString("sendingCommittalDate"))),
                                         withJsonPath("$.hearings[0].id",
                                                 equalTo(commandPayload.getJsonArray("hearings")
                                                         .getJsonObject(0).getString("id"))),
@@ -130,6 +128,10 @@ public class ListingCommandHandlerTest {
                                                 equalTo(commandPayload.getJsonArray("hearings")
                                                         .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getString("bailStatus"))),
+                                        withJsonPath("$.hearings[0].defendants[0].custodyTimeLimit",
+                                                equalTo(commandPayload.getJsonArray("hearings")
+                                                        .getJsonObject(0).getJsonArray("defendants")
+                                                        .getJsonObject(0).getString("custodyTimeLimit"))),
                                         withJsonPath("$.hearings[0].defendants[0].defenceOrganisation",
                                                 equalTo(commandPayload.getJsonArray("hearings")
                                                         .getJsonObject(0).getJsonArray("defendants")
@@ -181,9 +183,8 @@ public class ListingCommandHandlerTest {
 
     private JsonObject createCaseJson() {
         return createObjectBuilder()
-                .add("caseId", CASE_ID.toString())
+                .add("caseProgressionId", CASE_ID.toString())
                 .add("urn", URN)
-                .add("sendingCommittalDate", SENDING_COMMITTAL_DATE)
                 .add("hearings", createHearingsJson())
                 .build();
 
@@ -211,6 +212,7 @@ public class ListingCommandHandlerTest {
                 .add("lastName", LAST_NAME)
                 .add("dateOfBirth", DATE_OF_BIRTH)
                 .add("bailStatus", BAIL_STATUS)
+                .add("custodyTimeLimit", CUSTODY_TIME_LIMIT)
                 .add("defenceOrganisation", DEFENCE_ORGANISATION)
                 .add("offences", createOffencesJson())
                 .build();

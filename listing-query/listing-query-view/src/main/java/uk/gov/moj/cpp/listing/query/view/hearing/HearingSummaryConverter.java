@@ -21,8 +21,9 @@ public class HearingSummaryConverter implements Converter<Hearing, HearingSummar
 
     private Set<DefendantSummary> getDefendantSummaries(final Hearing hearing) {
         return hearing.getDefendants().stream()
-                .map(d -> new DefendantSummary(d.getListingDefendantId(), d.getFirstName(), d.getLastName(), d.getBailStatus()
-                        , getOffenceSummaries(d.getOffences())))
+                .map(d -> new DefendantSummary(d.getListingDefendantId(), d.getFirstName(),
+                        d.getLastName(), d.getBailStatus(), d.getCustodyTimeLimit(),
+                        getOffenceSummaries(d.getOffences())))
                 .collect(Collectors.toSet());
     }
 

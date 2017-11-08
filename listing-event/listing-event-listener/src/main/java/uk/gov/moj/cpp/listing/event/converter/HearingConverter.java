@@ -47,7 +47,7 @@ public class HearingConverter implements Converter<CaseSentForListing,  Set<Hear
     }
 
     private ListingCase findListingCase(final CaseSentForListing event) {
-        ListingCase listingCase = listingCaseRepository.findBy(UUID.fromString(event.getCaseId()));
+        ListingCase listingCase = listingCaseRepository.findBy(UUID.fromString(event.getCaseProgressionId()));
         if (listingCase == null) {
             listingCase = buildListingCase(event);
         }
@@ -56,9 +56,8 @@ public class HearingConverter implements Converter<CaseSentForListing,  Set<Hear
 
     private ListingCase buildListingCase(final CaseSentForListing event) {
         final ListingCaseBuilder listingCaseBuilder = new ListingCaseBuilder();
-        listingCaseBuilder.setId(UUID.fromString(event.getCaseId()));
+        listingCaseBuilder.setCaseProgressionId(UUID.fromString(event.getCaseProgressionId()));
         listingCaseBuilder.setUrn(event.getUrn());
-        listingCaseBuilder.setSendingCommittalDate(event.getSendingCommittalDate());
 
         return listingCaseBuilder.build();
     }
@@ -99,6 +98,7 @@ public class HearingConverter implements Converter<CaseSentForListing,  Set<Hear
         defendantBuilder.setLastName(defendantPartOfEvent.getLastName());
         defendantBuilder.setBailStatus(defendantPartOfEvent.getBailStatus());
         defendantBuilder.setDateOfBirth(defendantPartOfEvent.getDateOfBirth());
+        defendantBuilder.setCustodyTimeLimit(defendantPartOfEvent.getCustodyTimeLimit());
         defendantBuilder.setDefenceOrganisation(defendantPartOfEvent.getDefenceOrganisation());
         defendantBuilder.setOffences(offences);
         defendantBuilder.setHearing(hearing);

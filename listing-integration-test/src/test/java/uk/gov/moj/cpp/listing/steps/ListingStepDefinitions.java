@@ -59,7 +59,7 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String FIELD_DEFENCE_ORGANISATION = "defenceOrganisation";
     private static final String FIELD_FIRST_NAME = "firstName";
     private static final String FIELD_LAST_NAME = "lastName";
-    private static final String FIELD_CASE_ID = "caseId";
+    private static final String FIELD_CASE_PROGRESSION_ID = "caseProgressionId";
     private static final String FIELD_URN = "urn";
     private static final String FIELD_COURT_CENTRE_ID = "courtCentreId";
     private static final String FIELD_OFFENCES = "offences";
@@ -68,7 +68,7 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String FIELD_HEARING_TYPE = "type";
     private static final String FIELD_HEARING_START_DATE = "startDate";
     private static final String FIELD_HEARING_ESTIMATE_MINUTES = "estimateMinutes";
-    private static final String FIELD_SENDING_COMMITTAL_DATE = "sendingCommittalDate";
+    private static final String FIELD_CUSTODY_TIME_LIMIT = "custodyTimeLimit";
     private static final String LISTING_COMMAND_SEND_CASE_FOR_LISTING = "listing.command" +
             ".send-case-for-listing";
     private static final String NOT_A_BOOLEAN = "not_a_boolean";
@@ -95,16 +95,15 @@ public class ListingStepDefinitions extends AbstractIT {
             final CaseData caseData,
             final MessageConsumerClient publicMessageConsumer) throws JMSException {
 
-        verifyInPublicMQ(caseData.getCaseId().toString(), publicMessageConsumer);
+        verifyInPublicMQ(caseData.getCaseProgressionId().toString(), publicMessageConsumer);
 
     }
 
     private static JsonObjectBuilder prepareJsonForCaseData(final CaseData caseData) {
         final JsonObjectBuilder caseDataJson = createObjectBuilder();
 
-        return caseDataJson.add(FIELD_CASE_ID, caseData.getCaseId().toString())
+        return caseDataJson.add(FIELD_CASE_PROGRESSION_ID, caseData.getCaseProgressionId().toString())
                 .add(FIELD_URN, caseData.getUrn())
-                .add(FIELD_SENDING_COMMITTAL_DATE, caseData.getSendingCommittalDate().toString())
                 .add(FIELD_HEARINGS, prepareJsonForHearings(caseData.getHearingData()));
     }
 
@@ -149,6 +148,7 @@ public class ListingStepDefinitions extends AbstractIT {
                         .add(FIELD_FIRST_NAME, defendantData.getFirstName())
                         .add(FIELD_LAST_NAME, defendantData.getLastName())
                         .add(FIELD_DATE_BIRTH, defendantData.getDateOfBirth().toString())
+                        .add(FIELD_CUSTODY_TIME_LIMIT, defendantData.getCustodyTimeLimit().toString())
                         .add(FIELD_BAIL_STATUS, defendantData.getBailStatus())
                         .add(FIELD_DEFENCE_ORGANISATION, defendantData.getDefenceOrganisation())
                         .add(FIELD_OFFENCES, prepareJsonForOffences(defendantData.getOffences()))
@@ -160,7 +160,8 @@ public class ListingStepDefinitions extends AbstractIT {
     private static void verifyInPublicMQ(final String caseId, final MessageConsumerClient
             publicMessageConsumer) throws JMSException {
         JsonPath response = new JsonPath(publicMessageConsumer.retrieveMessage().get());
-        assertThat(response.get(FIELD_CASE_ID), CoreMatchers.equalTo(caseId));
+        System.out.println(response);
+        assertThat(response.get(FIELD_CASE_PROGRESSION_ID), CoreMatchers.equalTo(caseId));
     }
 
     public static void thenUnallocatedHearingsForACourtCentreShouldContainTwoExpectedHearingsWhenQueried(final CaseData caseData, final CaseData caseDataNew) {

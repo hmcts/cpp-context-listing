@@ -64,7 +64,7 @@ public class HearingConverterTest {
 
         // Then
         assertThat(actualHearings.size(), is(1));
-        uk.gov.moj.cpp.listing.persistence.entity.Hearing actual = actualHearings.iterator().next();;
+        uk.gov.moj.cpp.listing.persistence.entity.Hearing actual = actualHearings.iterator().next();
 
         assertHearing(actual, hearingPart);
         assertEventCaseDataUsedToCreateHearing(actual, event);
@@ -98,7 +98,7 @@ public class HearingConverterTest {
 
         // Then
         assertThat(actualHearings.size(), is(1));
-        uk.gov.moj.cpp.listing.persistence.entity.Hearing actual = actualHearings.iterator().next();;
+        uk.gov.moj.cpp.listing.persistence.entity.Hearing actual = actualHearings.iterator().next();
 
         assertHearing(actual, hearingPart);
         assertRetrievedListingCaseDataUsedToCreateHearing(actual, retrievedListingCase);
@@ -117,21 +117,19 @@ public class HearingConverterTest {
 
     private ListingCase createListingCase() {
         ListingCaseBuilder listingCaseBuilder = new ListingCaseBuilder();
-        listingCaseBuilder.setId(randomUUID())
-                .setUrn(STRING.next())
-                .setSendingCommittalDate(LocalDate.now());
+        listingCaseBuilder.setCaseProgressionId(randomUUID())
+                .setUrn(STRING.next());
 
         return listingCaseBuilder.build();
     }
 
     private CaseSentForListing createCaseSentForListing(final Hearing hearingPart) {
-        return new CaseSentForListing(randomUUID().toString(), STRING.next(), LocalDate
-                .now(), Arrays.asList(hearingPart));
+        return new CaseSentForListing(randomUUID().toString(), STRING.next(), Arrays.asList(hearingPart));
     }
 
     private Defendant createDefendant(final Offence offence) {
         return new Defendant(randomUUID().toString(), randomUUID().toString(),STRING.next(), STRING
-                .next(), LocalDate.now(), STRING.next(), STRING.next(), Collections.singletonList
+                .next(), LocalDate.now(), STRING.next(), LocalDate.now(), STRING.next(), Collections.singletonList
                 (offence));
     }
 
@@ -151,15 +149,13 @@ public class HearingConverterTest {
 
     private void assertRetrievedListingCaseDataUsedToCreateHearing(final uk.gov.moj.cpp.listing.persistence.entity.Hearing actual,
                                                                    final ListingCase retrievedListingCase) {
-        assertThat(actual.getListingCase().getId().toString(), is(retrievedListingCase.getId().toString()));
-        assertThat(actual.getListingCase().getSendingCommittalDate(), is(retrievedListingCase.getSendingCommittalDate()));
+        assertThat(actual.getListingCase().getCaseProgressionId().toString(), is(retrievedListingCase.getCaseProgressionId().toString()));
         assertThat(actual.getListingCase().getUrn(), is(retrievedListingCase.getUrn()));
     }
 
     private void assertEventCaseDataUsedToCreateHearing(final uk.gov.moj.cpp.listing.persistence.entity.Hearing actual,
                                                         final CaseSentForListing event) {
-        assertThat(actual.getListingCase().getId().toString(), is(event.getCaseId()));
-        assertThat(actual.getListingCase().getSendingCommittalDate(), is(event.getSendingCommittalDate()));
+        assertThat(actual.getListingCase().getCaseProgressionId().toString(), is(event.getCaseProgressionId()));
         assertThat(actual.getListingCase().getUrn(), is(event.getUrn()));
     }
 
@@ -176,6 +172,7 @@ public class HearingConverterTest {
     private void assertDefendant(final uk.gov.moj.cpp.listing.persistence.entity.Defendant actual, final  Defendant defendant) {
         assertThat(actual.getBailStatus(), is(defendant.getBailStatus()));
         assertThat(actual.getDateOfBirth(), is(defendant.getDateOfBirth()));
+        assertThat(actual.getCustodyTimeLimit(), is(defendant.getCustodyTimeLimit()));
         assertThat(actual.getDefenceOrganisation(), is(defendant.getDefenceOrganisation()));
         assertThat(actual.getFirstName(), is(defendant.getFirstName()));
         assertThat(actual.getDefendantId().toString(), is(defendant.getId()));

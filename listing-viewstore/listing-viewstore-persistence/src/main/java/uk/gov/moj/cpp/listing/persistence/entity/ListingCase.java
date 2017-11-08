@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.persistence.entity;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.util.UUID;
 
 import javax.persistence.Column;
@@ -15,34 +14,26 @@ public class ListingCase implements Serializable {
 
     @Id
     @Column(name = "id", unique = true)
-    private UUID id;
+    private UUID caseProgressionId;
 
     @Column(name = "urn")
     private String urn;
-
-    @Column(name = "sending_committal_date")
-    private LocalDate sendingCommittalDate;
 
     public ListingCase() {
         // Required by JPA
     }
 
-    ListingCase(final UUID id, final String urn, final LocalDate sendingCommittalDate) {
-        this.id = id;
+    ListingCase(final UUID caseProgressionId, final String urn) {
+        this.caseProgressionId = caseProgressionId;
         this.urn = urn;
-        this.sendingCommittalDate = sendingCommittalDate;
     }
 
-    public UUID getId() {
-        return id;
+    public UUID getCaseProgressionId() {
+        return caseProgressionId;
     }
 
     public String getUrn() {
         return urn;
-    }
-
-    public LocalDate getSendingCommittalDate() {
-        return sendingCommittalDate;
     }
 
     @Override
@@ -52,12 +43,12 @@ public class ListingCase implements Serializable {
 
         ListingCase that = (ListingCase) o;
 
-        return id != null ? id.equals(that.id) : that.id == null;
+        return caseProgressionId != null ? caseProgressionId.equals(that.caseProgressionId) : that.caseProgressionId == null;
     }
 
     @Override
     public int hashCode() {
-        return id != null ? id.hashCode() : 0;
+        return caseProgressionId != null ? caseProgressionId.hashCode() : 0;
     }
 }
 

@@ -9,7 +9,6 @@
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="urn" type="TEXT"/>
-            <column name="sending_committal_date" type="DATE"/>
         </createTable>
 
         <createTable tableName="hearing">
@@ -48,6 +47,7 @@
             <column name="last_name" type="TEXT"/>
             <column name="date_of_birth" type="DATE"/>
             <column name="bail_status" type="TEXT"/>
+            <column name="custody_time_limit" type="DATE"/>
             <column name="defence_organisation" type="TEXT"/>
         </createTable>
 

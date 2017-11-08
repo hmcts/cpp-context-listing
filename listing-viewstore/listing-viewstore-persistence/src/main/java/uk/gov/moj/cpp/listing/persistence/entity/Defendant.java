@@ -42,6 +42,9 @@ public class Defendant implements Serializable {
     @Column(name = "bail_status")
     private String bailStatus;
 
+    @Column(name = "custody_time_limit")
+    private LocalDate custodyTimeLimit;
+
     @Column(name = "defence_organisation")
     private String defenceOrganisation;
 
@@ -56,18 +59,18 @@ public class Defendant implements Serializable {
         // Required by JPA
     }
 
-    public Defendant(final UUID listingDefendantId, final UUID defendantId,
-                     final String bailStatus, final String defenceOrganisation,
+    public Defendant(final DefendantDetails defendantDetails,
                      final Set<Offence> offences, final Hearing hearing,
                      final PersonalDetails personalDetails) {
-        this.listingDefendantId = listingDefendantId;
-        this.defendantId = defendantId;
+        this.listingDefendantId = defendantDetails.listingDefendantId;
+        this.defendantId = defendantDetails.defendantId;
         this.personId = personalDetails.getPersonId();
         this.firstName = personalDetails.getFirstName();
         this.lastName = personalDetails.getLastName();
         this.dateOfBirth = personalDetails.getDateOfBirth();
-        this.bailStatus = bailStatus;
-        this.defenceOrganisation = defenceOrganisation;
+        this.custodyTimeLimit = defendantDetails.custodyTimeLimit;
+        this.bailStatus = defendantDetails.bailStatus;
+        this.defenceOrganisation = defendantDetails.defenceOrganisation;
         this.offences = offences;
         if (offences != null) {
             offences.forEach(offence -> offence.setDefendant(this));
@@ -95,6 +98,8 @@ public class Defendant implements Serializable {
 
     public LocalDate getDateOfBirth() { return dateOfBirth; }
 
+    public LocalDate getCustodyTimeLimit() { return custodyTimeLimit; }
+
     public String getBailStatus() { return bailStatus; }
 
     public String getDefenceOrganisation() { return defenceOrganisation; }
@@ -120,6 +125,43 @@ public class Defendant implements Serializable {
     @Override
     public int hashCode() {
         return listingDefendantId.hashCode();
+    }
+
+    public static class DefendantDetails {
+        private UUID listingDefendantId;
+        private UUID defendantId;
+        private String bailStatus;
+        private String defenceOrganisation;
+        private LocalDate custodyTimeLimit;
+
+        public DefendantDetails(UUID listingDefendantId, UUID defendantId, String bailStatus,
+                                String defenceOrganisation, LocalDate custodyTimeLimit) {
+            this.listingDefendantId = listingDefendantId;
+            this.defendantId = defendantId;
+            this.bailStatus = bailStatus;
+            this.defenceOrganisation = defenceOrganisation;
+            this.custodyTimeLimit = custodyTimeLimit;
+        }
+
+        public UUID getListingDefendantId() {
+            return listingDefendantId;
+        }
+
+        public UUID getDefendantId() {
+            return defendantId;
+        }
+
+        public String getBailStatus() {
+            return bailStatus;
+        }
+
+        public String getDefenceOrganisation() {
+            return defenceOrganisation;
+        }
+
+        public LocalDate getCustodyTimeLimit() {
+            return custodyTimeLimit;
+        }
     }
 
 

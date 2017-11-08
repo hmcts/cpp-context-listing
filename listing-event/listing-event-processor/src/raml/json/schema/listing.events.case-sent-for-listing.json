@@ -2,17 +2,13 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "caseId": {
+    "caseProgressionId": {
       "type": "string",
       "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
     },
     "urn": {
       "type": "string",
       "maxLength": 15
-    },
-    "sendingCommittalDate": {
-      "type": "string",
-      "format": "date"
     },
     "hearings": {
       "type": "array",
@@ -71,6 +67,11 @@
                 },
                 "bailStatus": {
                   "type": "string"
+                },
+                "custodyTimeLimit": {
+                  "description": "Custody Time Limit",
+                  "type": "string",
+                  "format": "date"
                 },
                 "defenceOrganisation": {
                   "type": "string"
@@ -137,15 +138,15 @@
           "courtCentreId",
           "type",
           "startDate",
+          "estimateMinutes",
           "defendants"
         ]
       }
     }
   },
   "required": [
-    "caseId",
+    "caseProgressionId",
     "urn",
-    "sendingCommittalDate",
     "hearings"
   ],
   "additionalProperties": false

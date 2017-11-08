@@ -1,15 +1,13 @@
 package uk.gov.moj.cpp.listing.persistence.entity;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 public class ListingCaseBuilder {
-    private UUID id;
+    private UUID caseProgressionId;
     private String urn;
-    private LocalDate sendingCommittalDate;
 
-    public ListingCaseBuilder setId(final UUID id) {
-        this.id = id;
+    public ListingCaseBuilder setCaseProgressionId(final UUID caseProgressionId) {
+        this.caseProgressionId = caseProgressionId;
         return this;
     }
 
@@ -18,12 +16,7 @@ public class ListingCaseBuilder {
         return this;
     }
 
-    public ListingCaseBuilder setSendingCommittalDate(final LocalDate sendingCommittalDate) {
-        this.sendingCommittalDate = sendingCommittalDate;
-        return this;
-    }
-
     public ListingCase build() {
-        return new ListingCase(id, urn, sendingCommittalDate);
+        return new ListingCase(caseProgressionId, urn);
     }
 }

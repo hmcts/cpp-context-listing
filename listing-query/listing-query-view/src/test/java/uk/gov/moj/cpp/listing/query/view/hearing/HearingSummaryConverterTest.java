@@ -155,9 +155,8 @@ public class HearingSummaryConverterTest {
     private ListingCase createListingCase() {
 
         ListingCase aCase = new ListingCaseBuilder()
-                .setId(CASE_ID)
+                .setCaseProgressionId(CASE_ID)
                 .setUrn(URN)
-                .setSendingCommittalDate(DATE)
                 .build();
         return aCase;
     }

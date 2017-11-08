@@ -33,7 +33,8 @@
               "title": "Robbery"
             }
           ],
-          "bailStatus": "inCustody"
+          "bailStatus": "inCustody",
+          "custodyTimeLimit": "2017-10-27"
         }
       ]
     }
