@@ -73,7 +73,6 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String FIELD_HEARING_START_DATE = "startDate";
     private static final String FIELD_HEARING_ESTIMATE_MINUTES = "estimateMinutes";
     private static final String FIELD_CUSTODY_TIME_LIMIT = "custodyTimeLimit";
-    private static final String FIELD_SENDING_COMMITTAL_DATE = "sendingCommittalDate";
     private static final String FIELD_JUDGE_ID = "judgeId";
     private static final String FIELD_COURT_ROOM_ID = "courtRoomId";
     private static final String FIELD_TYPE = "type";
@@ -113,6 +112,7 @@ public class ListingStepDefinitions extends AbstractIT {
                 caseDataJson.build().toString(), getLoggedInHeader());
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+
     }
 
 

@@ -15,3 +15,13 @@ rule "Command - API - Action - listing.command.send-case-for-listing"
     $outcome.setSuccess(true);
 end
 
+
+rule "Command - API - Action - listing.command.update-hearing-for-listing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.update-hearing-for-listing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, "Listing Officers", "Crown Court Admin"));
+  then
+    $outcome.setSuccess(true);
+end
+
