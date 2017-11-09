@@ -72,7 +72,7 @@ public class ListingCommandHandler {
 
     private CaseSentForListing createCaseSentForListingFrom(final JsonObject command) {
         return new CaseSentForListing(
-                getStringOrNull(command, "caseProgressionId"),
+                getStringOrNull(command, "caseId"),
                 getStringOrNull(command, "urn"),
                 createHearingsFrom(command)
         );

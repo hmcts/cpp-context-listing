@@ -14,20 +14,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(value = Include.NON_NULL)
 public class CaseSentForListing {
 
-    private final String caseProgressionId;
+    private final String caseId;
     private final String urn;
     private final List<Hearing> hearings;
 
-    public CaseSentForListing(@JsonProperty(value = "caseProgressionId") final String caseProgressionId,
+    public CaseSentForListing(@JsonProperty(value = "caseId") final String caseId,
                               @JsonProperty(value = "urn") final String urn,
                               @JsonProperty(value = "hearings") final List<Hearing> hearings) {
-        this.caseProgressionId = caseProgressionId;
+        this.caseId = caseId;
         this.urn = urn;
         this.hearings = hearings;
     }
 
-    public String getCaseProgressionId() {
-        return caseProgressionId;
+    public String getCaseId() {
+        return caseId;
     }
 
     public String getUrn() {
@@ -43,13 +43,13 @@ public class CaseSentForListing {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CaseSentForListing that = (CaseSentForListing) o;
-        return Objects.equals(caseProgressionId, that.caseProgressionId) &&
+        return Objects.equals(caseId, that.caseId) &&
                 Objects.equals(urn, that.urn) &&
                 Objects.equals(hearings, that.hearings);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(caseProgressionId, urn, hearings);
+        return Objects.hash(caseId, urn, hearings);
     }
 }

@@ -3,11 +3,11 @@ package uk.gov.moj.cpp.listing.persistence.entity;
 import java.util.UUID;
 
 public class ListingCaseBuilder {
-    private UUID caseProgressionId;
+    private UUID caseId;
     private String urn;
 
-    public ListingCaseBuilder setCaseProgressionId(final UUID caseProgressionId) {
-        this.caseProgressionId = caseProgressionId;
+    public ListingCaseBuilder setCaseId(final UUID caseId) {
+        this.caseId = caseId;
         return this;
     }
 
@@ -17,6 +17,6 @@ public class ListingCaseBuilder {
     }
 
     public ListingCase build() {
-        return new ListingCase(caseProgressionId, urn);
+        return new ListingCase(caseId, urn);
     }
 }

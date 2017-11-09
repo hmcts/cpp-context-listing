@@ -94,7 +94,7 @@ public class ListingCommandHandlerTest {
                                 .withName("listing.events.case-sent-for-listing")
                                 .withCausationIds(commandEnvelope.metadata().id()),payload()
                                 .isJson(allOf(
-                                    withJsonPath("$.caseProgressionId", equalTo(commandPayload.getString("caseProgressionId"))),
+                                    withJsonPath("$.caseId", equalTo(commandPayload.getString("caseId"))),
                                     withJsonPath("$.urn", equalTo(commandPayload.getString("urn"))),
                                         withJsonPath("$.hearings[0].id",
                                                 equalTo(commandPayload.getJsonArray("hearings")
@@ -243,7 +243,7 @@ public class ListingCommandHandlerTest {
 
     private JsonObject createCaseJson() {
         return createObjectBuilder()
-                .add("caseProgressionId", CASE_ID.toString())
+                .add("caseId", CASE_ID.toString())
                 .add("urn", URN)
                 .add("hearings", createHearingsJson())
                 .build();

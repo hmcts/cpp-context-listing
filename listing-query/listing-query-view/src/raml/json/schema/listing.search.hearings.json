@@ -45,6 +45,10 @@
         "bailStatus": {
           "enum": ["conditional","unconditional","inCustody"]
         },
+        "custodyTimeLimit": {
+          "type": "string",
+          "format": "date"
+        },
         "offences": {
           "type": "array",
           "items": {

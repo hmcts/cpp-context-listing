@@ -250,7 +250,7 @@ public class HearingUpdatedConverterTest {
 
     private ListingCase createListingCase() {
         ListingCaseBuilder listingCaseBuilder = new ListingCaseBuilder();
-        listingCaseBuilder.setCaseProgressionId(randomUUID())
+        listingCaseBuilder.setCaseId(randomUUID())
                 .setUrn(STRING.next());
 
         return listingCaseBuilder.build();

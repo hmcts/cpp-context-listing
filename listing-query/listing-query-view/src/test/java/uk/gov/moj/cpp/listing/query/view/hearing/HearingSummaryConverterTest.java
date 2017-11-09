@@ -155,7 +155,7 @@ public class HearingSummaryConverterTest {
     private ListingCase createListingCase() {
 
         ListingCase aCase = new ListingCaseBuilder()
-                .setCaseProgressionId(CASE_ID)
+                .setCaseId(CASE_ID)
                 .setUrn(URN)
                 .build();
         return aCase;

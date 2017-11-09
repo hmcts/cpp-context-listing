@@ -63,7 +63,7 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String FIELD_DEFENCE_ORGANISATION = "defenceOrganisation";
     private static final String FIELD_FIRST_NAME = "firstName";
     private static final String FIELD_LAST_NAME = "lastName";
-    private static final String FIELD_CASE_PROGRESSION_ID = "caseProgressionId";
+    private static final String FIELD_CASE_ID = "caseId";
     private static final String FIELD_URN = "urn";
     private static final String FIELD_COURT_CENTRE_ID = "courtCentreId";
     private static final String FIELD_OFFENCES = "offences";
@@ -120,14 +120,14 @@ public class ListingStepDefinitions extends AbstractIT {
             final CaseData caseData,
             final MessageConsumerClient publicMessageConsumer) throws JMSException {
 
-        verifyInPublicMQ(caseData.getCaseProgressionId().toString(), publicMessageConsumer);
+        verifyInPublicMQ(caseData.getCaseId().toString(), publicMessageConsumer);
 
     }
 
     private static JsonObjectBuilder prepareJsonForCaseData(final CaseData caseData) {
         final JsonObjectBuilder caseDataJson = createObjectBuilder();
 
-        return caseDataJson.add(FIELD_CASE_PROGRESSION_ID, caseData.getCaseProgressionId().toString())
+        return caseDataJson.add(FIELD_CASE_ID, caseData.getCaseId().toString())
                 .add(FIELD_URN, caseData.getUrn())
                 .add(FIELD_HEARINGS, prepareJsonForHearings(caseData.getHearingData()));
     }
@@ -197,7 +197,7 @@ public class ListingStepDefinitions extends AbstractIT {
     private static void verifyInPublicMQ(final String caseId, final MessageConsumerClient
             publicMessageConsumer) throws JMSException {
         JsonPath response = new JsonPath(publicMessageConsumer.retrieveMessage().get());
-        assertThat(response.get(FIELD_CASE_PROGRESSION_ID), CoreMatchers.equalTo(caseId));
+        assertThat(response.get(FIELD_CASE_ID), CoreMatchers.equalTo(caseId));
     }
 
     public static void thenUnallocatedHearingsForACourtCentreShouldContainTwoExpectedHearingsWhenQueried(final CaseData caseData, final CaseData caseDataNew) {

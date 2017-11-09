@@ -47,7 +47,7 @@ public class HearingConverter implements Converter<CaseSentForListing,  Set<Hear
     }
 
     private ListingCase findListingCase(final CaseSentForListing event) {
-        ListingCase listingCase = listingCaseRepository.findBy(UUID.fromString(event.getCaseProgressionId()));
+        ListingCase listingCase = listingCaseRepository.findBy(UUID.fromString(event.getCaseId()));
         if (listingCase == null) {
             listingCase = buildListingCase(event);
         }
@@ -56,7 +56,7 @@ public class HearingConverter implements Converter<CaseSentForListing,  Set<Hear
 
     private ListingCase buildListingCase(final CaseSentForListing event) {
         final ListingCaseBuilder listingCaseBuilder = new ListingCaseBuilder();
-        listingCaseBuilder.setCaseProgressionId(UUID.fromString(event.getCaseProgressionId()));
+        listingCaseBuilder.setCaseId(UUID.fromString(event.getCaseId()));
         listingCaseBuilder.setUrn(event.getUrn());
 
         return listingCaseBuilder.build();

@@ -25,7 +25,7 @@ public class HearingIT extends AbstractIT {
     public void shouldReturnMultipleHearingsScheduled() throws JMSException {
         final CaseData caseData = caseData();
         final CaseData caseDataNew = caseDataExisting(
-                caseData.getCaseProgressionId().toString(),
+                caseData.getCaseId().toString(),
                 caseData.getHearingData().get(0).getCourtCentreId().toString()
         );
 

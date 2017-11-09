@@ -14,7 +14,7 @@ public class ListingCase implements Serializable {
 
     @Id
     @Column(name = "id", unique = true)
-    private UUID caseProgressionId;
+    private UUID caseId;
 
     @Column(name = "urn")
     private String urn;
@@ -23,13 +23,13 @@ public class ListingCase implements Serializable {
         // Required by JPA
     }
 
-    ListingCase(final UUID caseProgressionId, final String urn) {
-        this.caseProgressionId = caseProgressionId;
+    ListingCase(final UUID caseId, final String urn) {
+        this.caseId = caseId;
         this.urn = urn;
     }
 
-    public UUID getCaseProgressionId() {
-        return caseProgressionId;
+    public UUID getCaseId() {
+        return caseId;
     }
 
     public String getUrn() {
@@ -43,12 +43,12 @@ public class ListingCase implements Serializable {
 
         ListingCase that = (ListingCase) o;
 
-        return caseProgressionId != null ? caseProgressionId.equals(that.caseProgressionId) : that.caseProgressionId == null;
+        return caseId != null ? caseId.equals(that.caseId) : that.caseId == null;
     }
 
     @Override
     public int hashCode() {
-        return caseProgressionId != null ? caseProgressionId.hashCode() : 0;
+        return caseId != null ? caseId.hashCode() : 0;
     }
 }
 

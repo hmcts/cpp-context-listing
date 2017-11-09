@@ -117,7 +117,7 @@ public class HearingConverterTest {
 
     private ListingCase createListingCase() {
         ListingCaseBuilder listingCaseBuilder = new ListingCaseBuilder();
-        listingCaseBuilder.setCaseProgressionId(randomUUID())
+        listingCaseBuilder.setCaseId(randomUUID())
                 .setUrn(STRING.next());
 
         return listingCaseBuilder.build();
@@ -149,13 +149,13 @@ public class HearingConverterTest {
 
     private void assertRetrievedListingCaseDataUsedToCreateHearing(final uk.gov.moj.cpp.listing.persistence.entity.Hearing actual,
                                                                    final ListingCase retrievedListingCase) {
-        assertThat(actual.getListingCase().getCaseProgressionId().toString(), is(retrievedListingCase.getCaseProgressionId().toString()));
+        assertThat(actual.getListingCase().getCaseId().toString(), is(retrievedListingCase.getCaseId().toString()));
         assertThat(actual.getListingCase().getUrn(), is(retrievedListingCase.getUrn()));
     }
 
     private void assertEventCaseDataUsedToCreateHearing(final uk.gov.moj.cpp.listing.persistence.entity.Hearing actual,
                                                         final CaseSentForListing event) {
-        assertThat(actual.getListingCase().getCaseProgressionId().toString(), is(event.getCaseProgressionId()));
+        assertThat(actual.getListingCase().getCaseId().toString(), is(event.getCaseId()));
         assertThat(actual.getListingCase().getUrn(), is(event.getUrn()));
     }
 
