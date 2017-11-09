@@ -1,0 +1,9 @@
+{
+  "judgeId": "0baecac5-222b-402d-9047-84803679edae",
+  "courtRoomId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+  "type":"TRIAL",
+  "startDate":"2018-06-01",
+  "startTime": "10:30",
+  "notBefore":true,
+  "estimateMinutes":7200
+}

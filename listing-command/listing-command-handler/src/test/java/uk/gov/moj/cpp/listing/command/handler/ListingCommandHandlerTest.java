@@ -19,6 +19,7 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
 import uk.gov.moj.cpp.listing.event.CaseSentForListing;
+import uk.gov.moj.cpp.listing.event.HearingUpdatedForListing;
 
 import java.util.UUID;
 
@@ -55,8 +56,14 @@ public class ListingCommandHandlerTest {
     private static final String DEFENCE_ORGANISATION = "XYZ Organisation";
     private static final String URN = "urn";
     private static final UUID CASE_ID = UUID.randomUUID();
+    private static final UUID JUDGE_ID = UUID.randomUUID();
+    private static final UUID COURT_ROOM_ID = UUID.randomUUID();
     private static final String STATEMENT_OF_OFFENCE_TITLE = "title";
     private static final String STATEMENT_OF_OFFENCE_LEGISLATION = "Legislation";
+    private static final String TYPE = "TRIAL";
+    private static final String START_TIME = "10:44";
+    private static final int ESTIMATE_MINS = 7200;
+    private static final boolean NOT_BEFORE = true;
     private static final String CUSTODY_TIME_LIMIT = "2017-10-05";
 
     @Mock
@@ -66,7 +73,7 @@ public class ListingCommandHandlerTest {
     private EventStream eventStream;
 
     @Spy
-    private Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CaseSentForListing.class);
+    private Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CaseSentForListing.class, HearingUpdatedForListing.class);
 
     @InjectMocks
     private ListingCommandHandler listingCommandHandler;
@@ -128,10 +135,6 @@ public class ListingCommandHandlerTest {
                                                 equalTo(commandPayload.getJsonArray("hearings")
                                                         .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getString("bailStatus"))),
-                                        withJsonPath("$.hearings[0].defendants[0].custodyTimeLimit",
-                                                equalTo(commandPayload.getJsonArray("hearings")
-                                                        .getJsonObject(0).getJsonArray("defendants")
-                                                        .getJsonObject(0).getString("custodyTimeLimit"))),
                                         withJsonPath("$.hearings[0].defendants[0].defenceOrganisation",
                                                 equalTo(commandPayload.getJsonArray("hearings")
                                                         .getJsonObject(0).getJsonArray("defendants")
@@ -175,10 +178,67 @@ public class ListingCommandHandlerTest {
         );
     }
 
+    @Test
+    public void listingCommandHandlerShouldTriggerHearingUpdatedListingEvent() throws Exception {
+        final JsonEnvelope commandEnvelope = updateHearingCommandEnvelope(COMMAND_ID);
+
+        JsonObject commandPayload = commandEnvelope.payloadAsJsonObject();
+
+        when(eventSource.getStreamById(commandEnvelope.metadata().id())).thenReturn(eventStream);
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+
+        MatcherAssert.assertThat(verifyAppendAndGetArgumentFrom(eventStream),
+                streamContaining(jsonEnvelope(
+                        withMetadataEnvelopedFrom(commandEnvelope)
+                                .withName("listing.events.hearing-updated-for-listing")
+                                .withCausationIds(commandEnvelope.metadata().id()), payload()
+                                .isJson(allOf(
+                                        withJsonPath("$.hearingId",
+                                                equalTo(commandPayload.getString("hearingId"))),
+                                        withJsonPath("$.courtRoomId",
+                                                equalTo(commandPayload.getString("courtRoomId"))),
+                                        withJsonPath("$.judgeId",
+                                                equalTo(commandPayload.getString("judgeId"))),
+                                        withJsonPath("$.type",
+                                                equalTo(commandPayload.getString("type"))),
+                                        withJsonPath("$.hearingPeriod.startDate",
+                                                equalTo(commandPayload.getString("startDate"))),
+                                        withJsonPath("$.hearingPeriod.startTime",
+                                                equalTo(commandPayload.getString("startTime"))),
+                                        withJsonPath("$.hearingPeriod.notBefore",
+                                                equalTo(commandPayload.getBoolean("notBefore"))),
+                                        withJsonPath("$.estimateMinutes",
+                                                equalTo(commandPayload.getInt("estimateMinutes")
+                                       ))
+                                )))));
+    }
+
     private JsonEnvelope listingCommandEnvelope(final UUID id) {
 
         JsonObject caseJson = createCaseJson();
         return createEnvelope("listing.command.send-case-for-listing" , caseJson);
+    }
+
+    private JsonEnvelope updateHearingCommandEnvelope(final UUID id) {
+
+        JsonObject hearingJson = createUpdateHearingJson();
+        return createEnvelope("listing.command.update-hearing-for-listing" , hearingJson);
+    }
+
+    private JsonObject createUpdateHearingJson() {
+        return createObjectBuilder()
+                .add("hearingId", HEARING_ID.toString())
+                .add("judgeId", JUDGE_ID.toString())
+                .add("courtRoomId", COURT_ROOM_ID.toString())
+                .add("type", "TRIAL")
+                .add("startDate", START_DATE)
+                .add("startTime", START_TIME)
+                .add("notBefore", NOT_BEFORE)
+                .add("estimateMinutes", ESTIMATE_MINS)
+                .build();
+
     }
 
     private JsonObject createCaseJson() {

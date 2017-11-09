@@ -15,8 +15,11 @@ import uk.gov.moj.cpp.listing.domain.Hearing;
 import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.event.CaseSentForListing;
+import uk.gov.moj.cpp.listing.event.HearingUpdatedForListing;
+import uk.gov.moj.cpp.listing.event.HearingPeriod;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -27,6 +30,7 @@ import javax.json.JsonObject;
 @ServiceComponent(COMMAND_HANDLER)
 public class ListingCommandHandler {
     private static final boolean UNALLOCATED = false;
+    private static final String START_DATE = "startDate";
 
     @Inject
     EventSource eventSource;
@@ -43,6 +47,29 @@ public class ListingCommandHandler {
 
     }
 
+    @Handles("listing.command.update-hearing-for-listing")
+    public void updateHearingForListing(final JsonEnvelope command) throws EventStreamException {
+        final JsonObject payload = command.payloadAsJsonObject();
+        final UUID streamId = command.metadata().id();
+        final Stream<HearingUpdatedForListing> events = Stream.of(createHearingUpdatedForListing(payload));
+        eventSource.getStreamById(streamId).append(events.map(enveloper.withMetadataFrom(command)));
+
+    }
+
+    private HearingUpdatedForListing createHearingUpdatedForListing(final JsonObject command) {
+        return new HearingUpdatedForListing(
+                getStringOrNull(command, "hearingId"),
+                getStringOrNull(command, "judgeId"),
+                getStringOrNull(command, "courtRoomId"),
+                getStringOrNull(command, "type"),
+                new HearingPeriod(getLocalDateOrNull(command, START_DATE),
+                        getLocalTimeOrNull(command, "startTime"),
+                        getBooleanOrNull(command, "notBefore")),
+                getIntegerOrNull(command, "estimateMinutes")
+
+        );
+    }
+
     private CaseSentForListing createCaseSentForListingFrom(final JsonObject command) {
         return new CaseSentForListing(
                 getStringOrNull(command, "caseProgressionId"),
@@ -51,7 +78,7 @@ public class ListingCommandHandler {
         );
     }
 
-    private List<Defendant> createDefendantsFrom(JsonObject hearing) {
+    private List<Defendant> createDefendantsFrom(final JsonObject hearing) {
         return hearing.getJsonArray("defendants")
                 .getValuesAs(JsonObject.class).stream()
                 .map(this::createDefendantFrom)
@@ -64,16 +91,16 @@ public class ListingCommandHandler {
                 getStringOrNull(defendant, "personId"),
                 getStringOrNull(defendant, "firstName"),
                 getStringOrNull(defendant, "lastName"),
-                getLocalDate(defendant, "dateOfBirth"),
+                getLocalDateOrNull(defendant, "dateOfBirth"),
                 getStringOrNull(defendant, "bailStatus"),
-                getLocalDate(defendant, "custodyTimeLimit"),
+                getLocalDateOrNull(defendant, "custodyTimeLimit"),
                 getStringOrNull(defendant, "defenceOrganisation"),
                 createOffencesFrom(defendant)
         );
     }
 
 
-    private List<Offence> createOffencesFrom(JsonObject defendant) {
+    private List<Offence> createOffencesFrom(final JsonObject defendant) {
         return defendant.getJsonArray("offences")
                 .getValuesAs(JsonObject.class).stream()
                 .map(this::createOffenceFrom)
@@ -84,8 +111,8 @@ public class ListingCommandHandler {
         return new Offence(
                 getStringOrNull(offence, "id"),
                 getStringOrNull(offence, "offenceCode"),
-                getLocalDate(offence, "startDate"),
-                getLocalDate(offence, "endDate"),
+                getLocalDateOrNull(offence, START_DATE),
+                getLocalDateOrNull(offence, "endDate"),
                 createStatementOfOffenceFrom(offence)
         );
     }
@@ -107,14 +134,14 @@ public class ListingCommandHandler {
 
 
 
-    private Hearing createHearingFrom(JsonObject hearing) {
+    private Hearing createHearingFrom(final JsonObject hearing) {
         final String hearingType = getStringOrNull(hearing, "type");
         final Integer estimateMinutes = hearing.getInt("estimateMinutes", getHearingEstimateMinutes());
         return new Hearing(
                 getStringOrNull(hearing, "id"),
                 getStringOrNull(hearing, "courtCentreId"),
                 hearingType,
-                getLocalDate(hearing, "startDate"),
+                getLocalDateOrNull(hearing, START_DATE),
                 estimateMinutes,
                 UNALLOCATED,
                 createDefendantsFrom(hearing)
@@ -125,9 +152,31 @@ public class ListingCommandHandler {
         return getString(object, fieldName).orElse(null);
     }
 
-    private LocalDate getLocalDate(JsonObject command, final String fieldName) {
+    private Integer getIntegerOrNull(final JsonObject object, final String fieldName) {
+        Integer fieldValue = null;
+        if (object.containsKey(fieldName)) {
+            fieldValue = object.getInt(fieldName);
+        }
+        return fieldValue;
+
+    }
+
+    private LocalDate getLocalDateOrNull(final JsonObject command, final String fieldName) {
         return getString(command, fieldName)
                 .map(LocalDate::parse).orElse(null);
+    }
+
+    private LocalTime getLocalTimeOrNull(final JsonObject command, final String fieldName) {
+        return getString(command, fieldName)
+                .map(LocalTime::parse).orElse(null);
+    }
+
+    private Boolean getBooleanOrNull(final JsonObject command, final String fieldName) {
+        Boolean fieldValue = null;
+        if (command.containsKey(fieldName)) {
+            fieldValue = command.getBoolean(fieldName);
+        }
+        return fieldValue;
     }
 
     private int getHearingEstimateMinutes() {

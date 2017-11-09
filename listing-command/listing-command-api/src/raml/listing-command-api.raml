@@ -19,3 +19,20 @@ protocols: [ HTTP, HTTPS ]
     responses:
       202:
         description: Request accepted
+
+/hearings/{hearingId}:
+  post:
+    description: |
+      Update hearing for listing
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.update-hearing-for-listing+json
+        name: listing.command.update-hearing-for-listing
+      ...
+    body:
+      application/vnd.listing.command.update-hearing-for-listing+json:
+        example: !include json/listing.command.update-hearing-for-listing.json
+        schema: !include json/schema/listing.command.update-hearing-for-listing.json
+    responses:
+      202:
+        description: Request accepted

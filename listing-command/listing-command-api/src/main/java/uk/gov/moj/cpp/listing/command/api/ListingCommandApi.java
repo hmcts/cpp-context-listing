@@ -20,4 +20,9 @@ public class ListingCommandApi {
         sender.send(envelope);
     }
 
+
+    @Handles("listing.command.update-hearing-for-listing")
+    public void updateHearingForListing(final JsonEnvelope envelope) {
+        sender.send(envelope);
+    }
 }
