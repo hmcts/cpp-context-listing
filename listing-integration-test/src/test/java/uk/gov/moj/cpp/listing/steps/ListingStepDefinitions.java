@@ -74,6 +74,7 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String FIELD_HEARING_ESTIMATE_MINUTES = "estimateMinutes";
     private static final String FIELD_CUSTODY_TIME_LIMIT = "custodyTimeLimit";
     private static final String FIELD_JUDGE_ID = "judgeId";
+    private static final String FIELD_HEARING_ID = "hearingId";
     private static final String FIELD_COURT_ROOM_ID = "courtRoomId";
     private static final String FIELD_TYPE = "type";
     private static final String FIELD_START_TIME = "startTime";
@@ -135,7 +136,8 @@ public class ListingStepDefinitions extends AbstractIT {
     private static JsonObjectBuilder prepareJsonForUpdatedHearingData(final UpdatedHearingData updatedHearingData) {
         final JsonObjectBuilder builder = createObjectBuilder();
 
-        return builder.add(FIELD_JUDGE_ID, updatedHearingData.getJudgeId().toString())
+        return builder.add(FIELD_HEARING_ID, updatedHearingData.getHearingId().toString())
+                .add(FIELD_JUDGE_ID, updatedHearingData.getJudgeId().toString())
                 .add(FIELD_COURT_ROOM_ID, updatedHearingData.getCourtRoomId().toString())
                 .add(FIELD_TYPE, updatedHearingData.getType())
                 .add(FIELD_START_DATE, updatedHearingData.getStartDate().toString())
