@@ -6,8 +6,6 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.HearingBuilder;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -34,60 +32,24 @@ public class HearingUpdatedConverter implements Converter<HearingUpdatedForListi
         hearingBuilder.setCourtCentreId(existingHearing.getCourtCentreId());
         hearingBuilder.setAllocated(existingHearing.getAllocated());
 
-        hearingBuilder.setCourtRoomId(chooseHearingData(existingHearing.getCourtRoomId(), hearingEvent.getCourtRoomId()));
-        hearingBuilder.setJudgeId(chooseHearingData(existingHearing.getJudgeId(),hearingEvent.getJudgeId()));
-        hearingBuilder.setType(chooseHearingData(existingHearing.getType(), hearingEvent.getType()));
-        hearingBuilder.setNotBefore(chooseHearingData(existingHearing.getNotBefore(), hearingEvent.getHearingPeriod().getNotBefore()));
-        hearingBuilder.setStartDate(chooseHearingData(existingHearing.getStartDate(), hearingEvent.getHearingPeriod().getStartDate()));
-        hearingBuilder.setStartTime(chooseHearingData(existingHearing.getStartTime(), hearingEvent.getHearingPeriod().getStartTime()));
-        hearingBuilder.setEstimateMinutes(chooseHearingData(existingHearing.getEstimateMinutes(), hearingEvent.getEstimateMinutes()));
+        hearingBuilder.setCourtRoomId(chooseHearingDataOrNull(hearingEvent.getCourtRoomId()));
+        hearingBuilder.setJudgeId(chooseHearingDataOrNull(hearingEvent.getJudgeId()));
+        hearingBuilder.setType(hearingEvent.getType());
+        hearingBuilder.setNotBefore(hearingEvent.getHearingPeriod().getNotBefore());
+        hearingBuilder.setStartDate(hearingEvent.getHearingPeriod().getStartDate());
+        hearingBuilder.setStartTime(hearingEvent.getHearingPeriod().getStartTime());
+        hearingBuilder.setEstimateMinutes(hearingEvent.getEstimateMinutes());
 
         final Hearing hearing = hearingBuilder.build();
         hearing.getDefendants().addAll(existingHearing.getDefendants());
         return hearing;
     }
 
-    private String chooseHearingData(final String existingHearingData, final String newHearingData){
+    private UUID chooseHearingDataOrNull(final String newHearingData){
+        UUID uuid = null;
         if(StringUtils.isNotEmpty(newHearingData)){
-            return newHearingData;
+            uuid = UUID.fromString(newHearingData);
         }
-        return existingHearingData;
+        return uuid;
     }
-
-    private UUID chooseHearingData(final UUID existingHearingData, final String newHearingData){
-        if(StringUtils.isNotEmpty(newHearingData)){
-            return UUID.fromString(newHearingData);
-        }
-        return existingHearingData;
-    }
-
-    private LocalDate chooseHearingData(final LocalDate existingHearingData, final LocalDate newHearingData){
-        if(newHearingData!=null){
-            return newHearingData;
-        }
-        return existingHearingData;
-    }
-
-    private LocalTime chooseHearingData(final LocalTime existingHearingData, final  LocalTime newHearingData){
-        if(newHearingData!=null){
-            return newHearingData;
-        }
-        return existingHearingData;
-    }
-
-    private Integer chooseHearingData(final Integer existingHearingData, final Integer newHearingData){
-        if(newHearingData!=null){
-            return newHearingData;
-        }
-        return existingHearingData;
-    }
-
-    private Boolean chooseHearingData(final Boolean existingHearingData, final Boolean newHearingData){
-        if(newHearingData!=null){
-            return newHearingData;
-        }
-        return existingHearingData;
-    }
-
-
 }

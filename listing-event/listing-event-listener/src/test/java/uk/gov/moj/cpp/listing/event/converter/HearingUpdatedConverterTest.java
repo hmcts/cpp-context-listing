@@ -54,7 +54,6 @@ public class HearingUpdatedConverterTest {
     private static final String OFFENCE_CODE = RandomGenerator.STRING.next();
     private static final String LEGISLATION = RandomGenerator.STRING.next();
     private static final String TITLE = RandomGenerator.STRING.next();
-    private static final String URN = RandomGenerator.STRING.next();
     private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
     private static final UUID COURT_ROOM_ID = UUID.randomUUID();
     private static final UUID COURT_ROOM_ID_2 = UUID.randomUUID();
@@ -107,28 +106,6 @@ public class HearingUpdatedConverterTest {
         assertOffence(actualOffence, offenceBeforeUpdate);
     }
 
-    @Test
-    public void shouldConvertHearingUpdatedForListingForOnlyMandatoryChangesToHearing() throws Exception {
-        // Given
-        HearingUpdatedForListing hearingUpdatedForListing = createHearingUpdatedForListingForOnlyMandatoryChanges();
-        Hearing hearingBeforeUpdate = createHearing();
-        given(hearingRepository.findBy(anyObject())).willReturn(hearingBeforeUpdate);
-
-        //when
-        Hearing actual = hearingUpdatedConverter.convert(hearingUpdatedForListing);
-
-        //then
-        assertHearing(actual, hearingBeforeUpdate);
-        assertHearingMandatoryChanges(actual, hearingUpdatedForListing);
-        assertHearingDetailsNotChanged(hearingBeforeUpdate, actual);
-
-    }
-
-    private void assertHearingDetailsNotChanged(final Hearing hearingBeforeUpdate, final Hearing actual) {
-        assertThat(actual.getCourtRoomId(), is(hearingBeforeUpdate.getCourtRoomId()));
-        assertThat(actual.getJudgeId(), is(hearingBeforeUpdate.getJudgeId()));
-        assertThat(actual.getNotBefore(), is(hearingBeforeUpdate.getNotBefore()));
-    }
 
 
     private void assertHearingOnAllPossibleChanges(final uk.gov.moj.cpp.listing.persistence.entity.Hearing actual, final HearingUpdatedForListing hearingUpdatedForListing) {
@@ -139,13 +116,6 @@ public class HearingUpdatedConverterTest {
         assertThat(actual.getStartDate(), is(hearingUpdatedForListing.getHearingPeriod().getStartDate()));
         assertThat(actual.getStartTime(), is(hearingUpdatedForListing.getHearingPeriod().getStartTime()));
         assertThat(actual.getNotBefore(), is(hearingUpdatedForListing.getHearingPeriod().getNotBefore()));
-        assertThat(actual.getType(), is(hearingUpdatedForListing.getType()));
-    }
-
-    private void assertHearingMandatoryChanges(final uk.gov.moj.cpp.listing.persistence.entity.Hearing actual, final HearingUpdatedForListing hearingUpdatedForListing) {
-        assertThat(actual.getEstimateMinutes(), is(hearingUpdatedForListing.getEstimateMinutes()));
-        assertThat(actual.getId().toString(), is(hearingUpdatedForListing.getHearingId()));
-        assertThat(actual.getStartDate(), is(hearingUpdatedForListing.getHearingPeriod().getStartDate()));
         assertThat(actual.getType(), is(hearingUpdatedForListing.getType()));
     }
 

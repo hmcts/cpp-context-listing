@@ -3,13 +3,16 @@
   "type": "object",
   "properties": {
     "hearingId": {
-      "$ref": "#/definitions/uuid"
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
     },
     "judgeId": {
-      "$ref": "#/definitions/uuid"
+      "type": ["string" , "null"],
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
     },
     "courtRoomId": {
-      "$ref": "#/definitions/uuid"
+      "type": ["string" , "null"],
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
     },
     "type": {
       "type": "string",
@@ -20,7 +23,7 @@
       "format": "date"
     },
     "startTime": {
-      "type": "string",
+      "type": ["string" , "null"],
       "format": "time"
     },
     "notBefore": {
@@ -37,11 +40,5 @@
     "startDate",
     "estimateMinutes"
   ],
-  "additionalProperties": false,
-  "definitions": {
-    "uuid": {
-      "type": "string",
-      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
-    }
-  }
+  "additionalProperties": false
 }
