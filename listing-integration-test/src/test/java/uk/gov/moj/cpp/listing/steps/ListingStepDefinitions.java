@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasNoJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static javax.json.Json.createObjectBuilder;
@@ -86,6 +87,7 @@ public class ListingStepDefinitions extends AbstractIT {
             ".update-hearing-for-listing";
     private static final String NOT_A_BOOLEAN = "not_a_boolean";
     private static final boolean UNALLOCATED = false;
+    private static final boolean ALLOCATED = true;
 
     public static void givenAUserHasLoggedInAsAListingOfficers(final UUID validUserId) {
         setLoggedInUser(validUserId);
@@ -103,6 +105,19 @@ public class ListingStepDefinitions extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
+    public static void whenHearingIsUpdatedForListingWithoutJudgeId(final UpdatedHearingData updatedHearingData) {
+        final String updatedHearingUrl = String.format("%s/%s", baseUri, format
+                (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING), updatedHearingData.getHearingId()));
+
+        final JsonObjectBuilder caseDataJson = prepareJsonForUpdatedHearingDataWithoutJudgeId(updatedHearingData);
+
+        final Response response = restClient.postCommand(updatedHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                caseDataJson.build().toString(), getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+
+    }
+
     public static void whenHearingIsUpdatedForListing(final UpdatedHearingData updatedHearingData) {
         final String updatedHearingUrl = String.format("%s/%s", baseUri, format
                 (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING), updatedHearingData.getHearingId()));
@@ -115,6 +130,9 @@ public class ListingStepDefinitions extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
 
     }
+
+
+
 
 
     public static void thenCaseSentForListingPublicEventShouldBePublished(
@@ -133,6 +151,19 @@ public class ListingStepDefinitions extends AbstractIT {
                 .add(FIELD_HEARINGS, prepareJsonForHearings(caseData.getHearingData()));
     }
 
+    private static JsonObjectBuilder prepareJsonForUpdatedHearingDataWithoutJudgeId(final UpdatedHearingData updatedHearingData) {
+        final JsonObjectBuilder builder = createObjectBuilder();
+
+        return builder.add(FIELD_HEARING_ID, updatedHearingData.getHearingId().toString())
+                .addNull(FIELD_JUDGE_ID)
+                .add(FIELD_COURT_ROOM_ID, updatedHearingData.getCourtRoomId().toString())
+                .add(FIELD_TYPE, updatedHearingData.getType())
+                .add(FIELD_START_DATE, updatedHearingData.getStartDate().toString())
+                .add(FIELD_START_TIME, updatedHearingData.getStartTime().toString())
+                .add(FIELD_NOT_BEFORE, updatedHearingData.getNotBefore())
+                .add(FIELD_ESTIMATE_MINUTES, updatedHearingData.getEstimateMinutes());
+    }
+
     private static JsonObjectBuilder prepareJsonForUpdatedHearingData(final UpdatedHearingData updatedHearingData) {
         final JsonObjectBuilder builder = createObjectBuilder();
 
@@ -145,6 +176,8 @@ public class ListingStepDefinitions extends AbstractIT {
                 .add(FIELD_NOT_BEFORE, updatedHearingData.getNotBefore())
                 .add(FIELD_ESTIMATE_MINUTES, updatedHearingData.getEstimateMinutes());
     }
+
+
 
     private static JsonArrayBuilder prepareJsonForHearings(final List<HearingData> hearings) {
         return hearings.stream()
@@ -242,6 +275,34 @@ public class ListingStepDefinitions extends AbstractIT {
     public static void thenUnallocatedHearingsForACourtCentreShouldContainUpdatedHearingData(final CaseData caseData, final UpdatedHearingData updatedHearingData) {
         final String searchHearingUrl = String.format("%s/%s", baseUri,
                 format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData.getHearingData().get(0).getCourtCentreId(), UNALLOCATED));
+        final Filter myFilter = filter(where("id").is(caseData.getHearingData().get(0).getId().toString()));
+        final com.jayway.jsonpath.JsonPath hearingFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", myFilter);
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath(hearingFilter),
+                                withJsonPath("$.hearings[0].id",
+                                        equalTo(updatedHearingData.getHearingId().toString())),
+                                hasNoJsonPath("$.hearings[0].judgeId"),
+                                withJsonPath("$.hearings[0].courtRoomId",
+                                        equalTo(updatedHearingData.getCourtRoomId().toString())),
+                                withJsonPath("$.hearings[0].type",
+                                        equalTo(updatedHearingData.getType())),
+                                withJsonPath("$.hearings[0].startDate",
+                                        equalTo(updatedHearingData.getStartDate().toString())),
+                                withJsonPath("$.hearings[0].startTime",
+                                        equalTo(updatedHearingData.getStartTime().toString())),
+                                hasNoJsonPath("$.hearings[0].notBefore"),
+                                withJsonPath("$.hearings[0].estimateMinutes",
+                                        equalTo(updatedHearingData.getEstimateMinutes()))
+                        )));
+    }
+
+    public static void thenAllocatedHearingsForACourtCentreShouldContainUpdatedHearingData(final CaseData caseData, final UpdatedHearingData updatedHearingData) {
+        final String searchHearingUrl = String.format("%s/%s", baseUri,
+                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData.getHearingData().get(0).getCourtCentreId(), ALLOCATED));
         final Filter myFilter = filter(where("id").is(caseData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", myFilter);
 

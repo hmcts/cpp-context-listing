@@ -4,7 +4,6 @@ import uk.gov.justice.domain.annotation.Event;
 import uk.gov.moj.cpp.listing.domain.Hearing;
 
 import java.util.List;
-import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -38,18 +37,4 @@ public class CaseSentForListing {
         return hearings;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CaseSentForListing that = (CaseSentForListing) o;
-        return Objects.equals(caseId, that.caseId) &&
-                Objects.equals(urn, that.urn) &&
-                Objects.equals(hearings, that.hearings);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(caseId, urn, hearings);
-    }
 }

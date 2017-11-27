@@ -13,8 +13,6 @@ import uk.gov.moj.cpp.listing.persistence.entity.Defendant;
 import uk.gov.moj.cpp.listing.persistence.entity.DefendantBuilder;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.HearingBuilder;
-import uk.gov.moj.cpp.listing.persistence.entity.ListingCase;
-import uk.gov.moj.cpp.listing.persistence.entity.ListingCaseBuilder;
 import uk.gov.moj.cpp.listing.persistence.entity.Offence;
 import uk.gov.moj.cpp.listing.persistence.entity.OffenceBuilder;
 import uk.gov.moj.cpp.listing.persistence.entity.StatementOfOffence;
@@ -145,19 +143,10 @@ public class HearingSummaryConverterTest {
                 .setNotBefore(NOT_BEFORE)
                 .setStartDate(START_DATE)
                 .setStartTime(START_TIME)
-                .setListingCase(createListingCase())
+                .setListingCaseId(CASE_ID)
                 .setType(TYPE)
                 .setAllocated(ALLOCATED)
                 .setDefendants(new HashSet<>(Arrays.asList(defendant)))
                 .build();
-    }
-
-    private ListingCase createListingCase() {
-
-        ListingCase aCase = new ListingCaseBuilder()
-                .setCaseId(CASE_ID)
-                .setUrn(URN)
-                .build();
-        return aCase;
     }
 }

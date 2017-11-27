@@ -33,7 +33,8 @@
           "format": "date"
         },
         "estimateMinutes": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1
         },
         "defendants": {
           "type": "array",
@@ -120,6 +121,7 @@
             },
             "required": [
               "id",
+              "personId",
               "firstName",
               "lastName",
               "dateOfBirth",

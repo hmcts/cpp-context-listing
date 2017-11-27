@@ -14,23 +14,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Hearing implements Serializable {
 
     private final String id;
+    private final String caseId;
     private final String courtCentreId;
     private final String type;
     private final LocalDate startDate;
     private final int estimateMinutes;
-    private final boolean allocated;
     private final List<Defendant> defendants;
+    private final boolean allocated;
 
     @JsonCreator
     public Hearing(@JsonProperty(value = "id") final String id,
+                   @JsonProperty(value = "caseId") final String caseId,
                    @JsonProperty(value = "courtCentreId") final String courtCentreId,
                    @JsonProperty(value = "type") final String type,
                    @JsonProperty(value = "startDate") final LocalDate startDate,
                    @JsonProperty(value = "estimateMinutes") final int estimateMinutes,
-                   @JsonProperty(value = "allocated") final boolean allocated,
-                   @JsonProperty(value = "defendants") final List<Defendant> defendants
+                   @JsonProperty(value = "defendants") final List<Defendant> defendants,
+                   @JsonProperty(value = "allocated") final boolean allocated
                    ) {
         this.id = id;
+        this.caseId = caseId;
         this.courtCentreId = courtCentreId;
         this.type = type;
         this.startDate = startDate;
@@ -41,6 +44,10 @@ public class Hearing implements Serializable {
 
     public boolean isAllocated() {
         return allocated;
+    }
+
+    public String getCaseId() {
+        return caseId;
     }
 
     public String getId() { return id; }

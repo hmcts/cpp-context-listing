@@ -42,4 +42,30 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>uk.gov.justice.maven</groupId>
+                <artifactId>raml-maven-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.listing</groupId>
+                        <artifactId>listing-command-handler</artifactId>
+                        <version>${project.version}</version>
+                        <classifier>raml</classifier>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <generatorProperties>
+                        <actionMapping>${cpp.framework.action.mapping.enabled}</actionMapping>
+                    </generatorProperties>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

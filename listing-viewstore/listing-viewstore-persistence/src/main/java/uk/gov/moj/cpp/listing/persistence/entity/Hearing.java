@@ -12,8 +12,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
@@ -46,9 +44,8 @@ public class Hearing implements Serializable {
     @Column(name = "judge_id")
     private UUID judgeId;
 
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "case_id")
-    private ListingCase listingCase;
+    @Column(name = "case_id")
+    private UUID listingCaseId;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "hearing")
     private Set<Defendant> defendants = new LinkedHashSet<>();
@@ -63,7 +60,7 @@ public class Hearing implements Serializable {
         // for JPA
     }
 
-    public Hearing(final UUID id, final ListingCase listingCase, final Boolean allocated,
+    public Hearing(final UUID id, final UUID listingCaseId, final Boolean allocated,
                    final Set<Defendant> defendants, boolean notBefore,
                    final HearingDetails hearingDetails) {
         this.id = id;
@@ -75,7 +72,7 @@ public class Hearing implements Serializable {
         this.courtRoomId = hearingDetails.getCourtRoomId();
         this.judgeId = hearingDetails.getJudgeId();
         this.notBefore = notBefore;
-        this.listingCase = listingCase;
+        this.listingCaseId = listingCaseId;
         this.allocated = allocated;
         this.defendants = defendants;
     }
@@ -104,7 +101,7 @@ public class Hearing implements Serializable {
         return courtCentreId;
     }
 
-    public ListingCase getListingCase() { return listingCase; }
+    public UUID getListingCaseId() { return listingCaseId; }
 
     public Boolean getAllocated() {
         return allocated;

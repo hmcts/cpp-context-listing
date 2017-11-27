@@ -30,9 +30,9 @@
       "type": "boolean"
     },
     "estimateMinutes": {
-      "type": "integer"
+      "type": "integer",
+      "minimum": 1
     }
-
   },
   "required": [
     "hearingId",

@@ -17,7 +17,7 @@ public class HearingBuilder {
     private UUID courtRoomId;
     private UUID judgeId;
     private boolean notBefore = false;
-    private ListingCase listingCase;
+    private UUID listingCaseId;
     private Boolean allocated;
     private Set<Defendant> defendants = new LinkedHashSet<>();
 
@@ -66,8 +66,8 @@ public class HearingBuilder {
         return this;
     }
 
-    public HearingBuilder setListingCase(final ListingCase listingCase) {
-        this.listingCase = listingCase;
+    public HearingBuilder setListingCaseId(final UUID listingCaseId) {
+        this.listingCaseId = listingCaseId;
         return this;
     }
 
@@ -82,7 +82,7 @@ public class HearingBuilder {
     }
 
     public Hearing build() {
-        return new Hearing(id, listingCase, allocated, defendants, notBefore,
+        return new Hearing(id, listingCaseId, allocated, defendants, notBefore,
                 new Hearing.HearingDetails(startDate, startTime, estimateMinutes, type, courtCentreId,
                         courtRoomId, judgeId));
     }

@@ -15,10 +15,7 @@
             <column name="id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="case_id" type="UUID">
-                <constraints nullable="false" foreignKeyName="fk_hearing_case"
-                             references="listing_case(id)"/>
-            </column>
+            <column name="case_id" type="UUID"/>
             <column name="court_centre_id" type="UUID"/>
             <column name="court_room_id" type="UUID"/>
             <column name="judge_id" type="UUID"/>

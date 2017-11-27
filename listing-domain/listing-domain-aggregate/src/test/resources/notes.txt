@@ -1,0 +1,97 @@
+1. 'the no events' doesn't work
+2. You can't have a space after comma in multiple events
+3. The order of the output events is critical in the feature file
+
+
+4. If you have event members with nulls as these are not included in output json
+
+[ERROR] Scenario: An unallocated hearing has been listed and a courtroom has been assigned,  Time elapsed: 0.007 s  <<< FAILURE!
+java.lang.AssertionError:
+
+Expected:
+<{"hearingId":"5c5a1d30-0414-11e7-93ae-92361f002671","type":"PTP","startDate":"2018-01-21","estimateMinutes":15,"judgeId":"b3b83875-8f59-4a5e-9c36-c65490282690","courtRoomId":"ad80a0b4-d285-4496-a514-43cb8d500051","startTime":"","notBefore":false}>
+but: was
+<{"hearingId":"5c5a1d30-0414-11e7-93ae-92361f002671","type":"PTP","startDate":"2018-01-21","estimateMinutes":15,"judgeId":"b3b83875-8f59-4a5e-9c36-c65490282690","courtRoomId":"ad80a0b4-d285-4496-a514-43cb8d500051","notBefore":false}>
+       at org.hamcrest.MatcherAssert.assertThat(MatcherAssert.java:20)
+        at org.junit.Assert.assertThat(Assert.java:956)
+        at org.junit.Assert.assertThat(Assert.java:923)
+        at uk.gov.justice.services.test.utils.domain.DomainTestSteps.assert_events_generated(DomainTestSteps.java:51)
+        at ✽.Then the court-room-assigned-for-hearing,hearing-allocated-for-listing(allocate-hearing.feature:13)
+
+So have to add in unnecessary events like 'start-time-assigned-for-hearing'
+
+    Given there are previous events unallocated-hearing-listed,start-time-assigned-for-hearing,court-room-assigned-for-hearing,start-time-assigned-for-hearing
+    When assignJudge to a uk.gov.moj.cpp.listing.domain.aggregate.HearingAggregate using a-judge
+    Then the judge-assigned-for-hearing,hearing-allocated-for-listing
+
+
+
+
+
+5. Doesn't support Times, ie. LocalTime
+
+Don't seem to be able to parse times, ie. DateTime (with a time element) or *LocalTime* specifically
+
+JSON:
+
+{
+  "_metadata": {
+    "name": "listing.events.start-time-assigned-for-hearing"
+  },
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "startTime": "2017-01-21T16:42:03.522Z"
+}
+
+Class:
+
+@Event("listing.events.start-time-assigned-for-hearing")
+public class StartTimeAssignedForHearing extends HearingEvent {
+
+    private final LocalDate startTime;
+
+    public StartTimeAssignedForHearing(final LocalDate startTime, final String hearingId) {
+        super(hearingId);
+        this.startTime = startTime;
+    }
+
+    public LocalDate getStartTime() {
+        return startTime;
+    }
+}
+
+Exception:
+
+Caused by: com.fasterxml.jackson.databind.JsonMappingException: Text '2017-01-21T16:42:03.522Z' could not be parsed, unparsed text found at index 23 (through reference chain: uk.gov.moj.cpp.listing.event.StartTimeAssignedForHearing["startTime"])
+        at com.fasterxml.jackson.databind.JsonMappingException.wrapWithPath(JsonMappingException.java:210)
+        at com.fasterxml.jackson.databind.JsonMappingException.wrapWithPath(JsonMappingException.java:177)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.wrapAndThrow(BeanDeserializerBase.java:1474)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializer._deserializeWithErrorWrapping(BeanDeserializer.java:465)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializer._deserializeUsingPropertyBased(BeanDeserializer.java:378)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializerBase.deserializeFromObjectUsingNonDefault(BeanDeserializerBase.java:1099)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserializeFromObject(BeanDeserializer.java:296)
+        at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserialize(BeanDeserializer.java:133)
+        at com.fasterxml.jackson.databind.ObjectMapper._readMapAndClose(ObjectMapper.java:3736)
+        at com.fasterxml.jackson.databind.ObjectMapper.readValue(ObjectMapper.java:2726)
+        at uk.gov.justice.services.test.utils.domain.AggregateUnderTest.eventObjectFrom(AggregateUnderTest.java:137)
+        at uk.gov.justice.services.test.utils.domain.AggregateUnderTest.lambda$eventsFromFileNames$0(AggregateUnderTest.java:51)
+        at uk.gov.justice.services.test.utils.domain.AggregateUnderTest$$Lambda$33/1755229011.apply(Unknown Source)
+
+
+6. Syntax for invoking a method with no parameters is a bit awkward:
+
+    Given there are previous events unallocated-hearing-listed
+    When removeJudge to a uk.gov.moj.cpp.listing.domain.aggregate.HearingAggregate using no-judge
+    Then the judge-removed-from-hearing
+
+
+
+Advantages:
+
+1. How many scenarios you can easily cover
+
+31 Scenarios (1 failed, 30 passed)
+71 Steps (1 failed, 70 passed)
+
+Doing this programatically would be a massive job and a lot more of a maintenance overhead if things change
+
+2. Language is comprehensible to non-technical people.

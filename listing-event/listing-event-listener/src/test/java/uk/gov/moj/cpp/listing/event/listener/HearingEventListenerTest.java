@@ -1,25 +1,32 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.UUID.randomUUID;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.event.CaseSentForListing;
-import uk.gov.moj.cpp.listing.event.HearingUpdatedForListing;
-import uk.gov.moj.cpp.listing.event.converter.HearingConverter;
-import uk.gov.moj.cpp.listing.event.converter.HearingUpdatedConverter;
+import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
+import uk.gov.moj.cpp.listing.event.HearingAllocatedForListing;
+import uk.gov.moj.cpp.listing.event.UnallocatedHearingListed;
+import uk.gov.moj.cpp.listing.event.converter.UnallocatedHearingListedConverter;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.ListingCase;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.ListingCaseRepository;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.UUID;
 
 import javax.json.JsonObject;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -27,29 +34,33 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class HearingEventListenerTest {
 
-    @Mock
-    private HearingRepository hearingRepository;
+    private static final UUID HEARING_ID = randomUUID();
+    private static final boolean ALLOCATED = true;
+    private static final String URN_PARAM = "urn";
+    private static final String URN = RandomGenerator.STRING.next();
+    private static final String CASE_ID_PARAM = "caseId";
+    private static final UUID CASE_ID = UUID.randomUUID();
 
     @InjectMocks
     private HearingEventListener hearingEventListener;
 
     @Mock
+    private HearingRepository hearingRepository;
+
+    @Mock
+    private ListingCaseRepository listingCaseRepository;
+
+    @Mock
     private JsonObjectToObjectConverter jsonObjectToObjectConverter;
 
     @Mock
-    private HearingConverter hearingConverter;
-
-    @Mock
-    private HearingUpdatedConverter hearingUpdatedConverter;
+    private UnallocatedHearingListedConverter unallocatedHearingListedConverter;
 
     @Mock
     private JsonEnvelope envelope;
 
     @Mock
-    private CaseSentForListing caseSentForListing;
-
-    @Mock
-    private HearingUpdatedForListing hearingUpdatedForListing;
+    private UnallocatedHearingListed unallocatedHearingListed;
 
     @Mock
     private Hearing hearing;
@@ -57,34 +68,64 @@ public class HearingEventListenerTest {
     @Mock
     private JsonObject payload;
 
+
     @Test
-    public void shouldHandleCaseSentForListingEvent() throws Exception {
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(jsonObjectToObjectConverter.convert(payload, CaseSentForListing.class))
-                .willReturn(caseSentForListing);
-        Set<Hearing> hearings = new HashSet<>(Arrays.asList(hearing));
-        given(hearingConverter.convert(caseSentForListing)).willReturn(hearings);
+    public void shouldHandleCaseSentForListingEventAndPersistListingCase() throws Exception {
+        givenAPayloadWithListingCaseData();
+        given(listingCaseRepository.findBy(any())).willReturn(null);
 
         hearingEventListener.caseSentForListing(envelope);
 
         verify(envelope).payloadAsJsonObject();
-        verify(jsonObjectToObjectConverter).convert(payload, CaseSentForListing.class);
-        verify(hearingConverter).convert(caseSentForListing);
+        ArgumentCaptor<ListingCase> listingCaseCaptor = ArgumentCaptor.forClass(ListingCase.class);
+        verify(listingCaseRepository).save(listingCaseCaptor.capture());
+        List<ListingCase> listingCases = listingCaseCaptor.getAllValues();
+        assertThat(listingCases.get(0).getCaseId(), is(CASE_ID));
+        assertThat(listingCases.get(0).getUrn(), is(URN));
+    }
+
+    @Test
+    public void shouldHandleCaseSentForListingEventAndNotPersistListingCaseIfItAlreadyExists() throws Exception {
+        givenAPayloadWithListingCaseData();
+        given(listingCaseRepository.findBy(any())).willReturn(new ListingCase());
+
+        hearingEventListener.caseSentForListing(envelope);
+
+        verify(listingCaseRepository, never()).save(any());
+    }
+
+    private void givenAPayloadWithListingCaseData() {
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(payload.getString(URN_PARAM)).willReturn(URN);
+        given(payload.getString(CASE_ID_PARAM)).willReturn(CASE_ID.toString());
+    }
+
+    @Test
+    public void shouldHandleUnallocatedHearingListedEvent() throws Exception {
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectToObjectConverter.convert(payload, UnallocatedHearingListed.class))
+                .willReturn(unallocatedHearingListed);
+   
+        given(unallocatedHearingListedConverter.convert(unallocatedHearingListed)).willReturn(hearing);
+
+        hearingEventListener.unallocatedHearingListed(envelope);
+
+        verify(envelope).payloadAsJsonObject();
+        verify(jsonObjectToObjectConverter).convert(payload, UnallocatedHearingListed.class);
+        verify(unallocatedHearingListedConverter).convert(unallocatedHearingListed);
         verify(hearingRepository).save(hearing);
     }
 
     @Test
-    public void shouldHandleHearingUpdatedForListingEvent() throws Exception {
+    public void shouldAllocatedHearingForListing() throws Exception {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(jsonObjectToObjectConverter.convert(payload, HearingUpdatedForListing.class))
-                .willReturn(hearingUpdatedForListing);
-        given(hearingUpdatedConverter.convert(hearingUpdatedForListing)).willReturn(hearing);
+        HearingAllocatedForListing hearingData = new HearingAllocatedForListing( HEARING_ID.toString(),
+                null,null,null,null,null,null,false);
 
-        hearingEventListener.hearingUpdatedForListing(envelope);
+        given(jsonObjectToObjectConverter.convert(payload, HearingAllocatedForListing.class))
+                .willReturn(hearingData);
 
-        verify(envelope).payloadAsJsonObject();
-        verify(jsonObjectToObjectConverter).convert(payload, HearingUpdatedForListing.class);
-        verify(hearingUpdatedConverter).convert(hearingUpdatedForListing);
-        verify(hearingRepository).save(hearing);
+        hearingEventListener.hearingAllocatedForHearing(envelope);
+        verify(hearingRepository).updateAllocated(ALLOCATED, HEARING_ID);
     }
 }

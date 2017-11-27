@@ -1,13 +1,16 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.givenAUserHasLoggedInAsAListingOfficers;
+import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenAllocatedHearingsForACourtCentreShouldContainUpdatedHearingData;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenQueryValidationFailureOccursWhenQueried;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenUnallocatedHearingsForACourtCentreShouldContainTwoExpectedHearingsWhenQueried;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenUnallocatedHearingsForACourtCentreShouldContainUpdatedHearingData;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.whenCaseIsSubmittedForListing;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.whenHearingIsUpdatedForListing;
-import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingData;
+import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.whenHearingIsUpdatedForListingWithoutJudgeId;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithEnoughDataToBeAllocated;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithoutJudgeData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.CaseDataFactory.caseData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.CaseDataFactory.caseDataExisting;
 
@@ -51,16 +54,29 @@ public class HearingIT extends AbstractIT {
     }
 
     @Test
-    public void shouldUpdateAnExistingHearing() throws JMSException {
+    public void shouldUpdateAnExistingHearingWithoutJudgeId() throws JMSException {
         final CaseData caseData = caseData();
-        final UpdatedHearingData updatedHearingData = updatedHearingData(caseData.getHearingData().get(0).getId());
+        final UpdatedHearingData updatedHearingData = updatedHearingDataWithoutJudgeData(caseData.getHearingData().get(0).getId());
+
+        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        whenCaseIsSubmittedForListing(caseData);
+        thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried(caseData);
+
+        whenHearingIsUpdatedForListingWithoutJudgeId(updatedHearingData);
+        thenUnallocatedHearingsForACourtCentreShouldContainUpdatedHearingData(caseData, updatedHearingData);
+    }
+
+    @Test
+    public void shouldUpdateAnExistingHearingToBeAllocated() throws JMSException {
+        final CaseData caseData = caseData();
+        final UpdatedHearingData updatedHearingData = updatedHearingDataWithEnoughDataToBeAllocated(caseData.getHearingData().get(0).getId());
 
         givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
         whenCaseIsSubmittedForListing(caseData);
         thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried(caseData);
 
         whenHearingIsUpdatedForListing(updatedHearingData);
-        thenUnallocatedHearingsForACourtCentreShouldContainUpdatedHearingData(caseData, updatedHearingData);
+        thenAllocatedHearingsForACourtCentreShouldContainUpdatedHearingData(caseData, updatedHearingData);
     }
 
 }

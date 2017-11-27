@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
@@ -27,7 +28,12 @@ public class UpdatedHearingData {
 
 
 
-    public static UpdatedHearingData updatedHearingData(final UUID hearingId) {
+    public static UpdatedHearingData updatedHearingDataWithoutJudgeData(final UUID hearingId) {
+        return new UpdatedHearingData(hearingId, null, randomUUID(), "TRIAL",
+                LocalDate.now().toString(), LocalTime.now().format(dtf), FALSE, INTEGER.next());
+    }
+
+    public static UpdatedHearingData updatedHearingDataWithEnoughDataToBeAllocated(final UUID hearingId) {
         return new UpdatedHearingData(hearingId, randomUUID(), randomUUID(), "TRIAL",
                 LocalDate.now().toString(), LocalTime.now().format(dtf), TRUE, INTEGER.next());
     }
