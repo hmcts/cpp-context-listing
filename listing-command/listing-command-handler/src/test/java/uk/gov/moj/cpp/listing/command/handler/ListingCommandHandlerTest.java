@@ -83,7 +83,7 @@ public class ListingCommandHandlerTest {
     private static final String LAST_NAME = "Last Name";
     private static final String DATE_OF_BIRTH = "1980-07-15";
     private static final String PTP_TYPE = "PTP";
-    private static final String TRIAL_TYPE = "Trial";
+    private static final String TRIAL_TYPE = "TRIAL";
     private static final String INITIAL_START_DATE = "2018-05-01";
     private static final String UPDATED_START_DATE = "2018-06-01";
     private static final String OFFENCE_START_DATE = "2018-06-01";
@@ -192,8 +192,8 @@ public class ListingCommandHandlerTest {
                                                         .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getJsonArray("offences")
                                                         .getJsonObject(0).getString("id"))),
-                                        withJsonPath("$.hearings[0].defendants[0].offences[0].offenceCode", equalTo
-                                                (command.getJsonArray("hearings")
+                                        withJsonPath("$.hearings[0].defendants[0].offences[0].offenceCode",
+                                                equalTo(command.getJsonArray("hearings")
                                                         .getJsonObject(0).getJsonArray("defendants")
                                                         .getJsonObject(0).getJsonArray("offences")
                                                         .getJsonObject(0).getString("offenceCode"))),
@@ -218,9 +218,7 @@ public class ListingCommandHandlerTest {
                                                         .getJsonObject(0).getJsonArray("offences")
                                                         .getJsonObject(0).getJsonObject("statementOfOffence")
                                                         .getString("legislation")))
-                                        )
-                                )
-                        )
+                                        ))).thatMatchesSchema()
                 )
         );
     }
@@ -302,9 +300,7 @@ public class ListingCommandHandlerTest {
                                                         .getJsonObject(0).getJsonArray("offences")
                                                         .getJsonObject(0).getJsonObject("statementOfOffence")
                                                         .getString("legislation")))
-                                        )
-                                )
-                        )
+                                        ))).thatMatchesSchema()
                 )
         );
     }
@@ -331,21 +327,22 @@ public class ListingCommandHandlerTest {
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
                                 withJsonPath("$.type", equalTo(command.getString("type")))
-                        ))),
+                        ))).thatMatchesSchema(),
                 jsonEnvelope(
                         withMetadataEnvelopedFrom(updateHearingEnvelope)
                                 .withName(START_DATE_CHANGED_FOR_HEARING_EVENT ),
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
                                 withJsonPath("$.startDate", equalTo(command.getString("startDate")))
-                        ))),
+                        ))).thatMatchesSchema(),
                 jsonEnvelope(
                         withMetadataEnvelopedFrom(updateHearingEnvelope)
                                 .withName(ESTIMATE_MINUTES_CHANGED_FOR_HEARING_EVENT),
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
                                 withJsonPath("$.estimateMinutes", equalTo(command.getInt("estimateMinutes")))
-                        )))));
+                        ))).thatMatchesSchema()
+        ));
     }
 
     @Test
@@ -369,61 +366,62 @@ public class ListingCommandHandlerTest {
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
                                 withJsonPath("$.type", equalTo(command.getString("type")))
-                        ))),
+                        ))).thatMatchesSchema(),
                 jsonEnvelope(
                         withMetadataEnvelopedFrom(updateHearingEnvelope)
                                 .withName(START_DATE_CHANGED_FOR_HEARING_EVENT ),
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
                                 withJsonPath("$.startDate", equalTo(command.getString("startDate")))
-                        ))),
+                        ))).thatMatchesSchema(),
                 jsonEnvelope(
                         withMetadataEnvelopedFrom(updateHearingEnvelope)
                                 .withName(ESTIMATE_MINUTES_CHANGED_FOR_HEARING_EVENT),
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
                                 withJsonPath("$.estimateMinutes", equalTo(command.getInt("estimateMinutes")))
-                        ))),
+                        ))).thatMatchesSchema(),
                 jsonEnvelope(
                         withMetadataEnvelopedFrom(updateHearingEnvelope)
                                 .withName(START_TIME_ASSIGNED_TO_HEARING_EVENT),
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
                                 withJsonPath("$.startTime", equalTo(command.getString("startTime")))
-                        ))),
+                        ))).thatMatchesSchema(),
                 jsonEnvelope(
                         withMetadataEnvelopedFrom(updateHearingEnvelope)
                                 .withName(NOT_BEFORE_SELECTED_FOR_HEARING_EVENT),
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString()))
-                        ))),
+                        ))).thatMatchesSchema(),
                 jsonEnvelope(
                         withMetadataEnvelopedFrom(updateHearingEnvelope)
                                 .withName(JUDGE_ASSIGNED_TO_HEARING_EVENT),
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
                                 withJsonPath("$.judgeId", equalTo(command.getString("judgeId")))
-                        ))),
+                        ))).thatMatchesSchema(),
                 jsonEnvelope(
                         withMetadataEnvelopedFrom(updateHearingEnvelope)
                                 .withName(COURT_ROOM_ASSIGNED_TO_HEARING_EVENT),
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
                                 withJsonPath("$.courtRoomId", equalTo(command.getString("courtRoomId")))
-                        ))),
+                        ))).thatMatchesSchema(),
                 jsonEnvelope(
                         withMetadataEnvelopedFrom(updateHearingEnvelope)
                                 .withName(HEARING_ALLOCATED_FOR_LISTING_EVENT),
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
                                 withJsonPath("$.type", equalTo(command.getString("type"))),
-                                withJsonPath("$.startDate", equalTo(command.getString("startDate"))),
                                 withJsonPath("$.estimateMinutes", equalTo(command.getInt("estimateMinutes"))),
                                 withJsonPath("$.judgeId", equalTo(command.getString("judgeId"))),
                                 withJsonPath("$.courtRoomId", equalTo(command.getString("courtRoomId"))),
-                                withJsonPath("$.startTime", equalTo(command.getString("startTime"))),
-                                withJsonPath("$.notBefore", equalTo(command.getBoolean("notBefore")))
-                        )))));
+                                withJsonPath("$.hearingDate.startDate", equalTo(command.getString("startDate"))),
+                                withJsonPath("$.hearingDate.startTime", equalTo(command.getString("startTime"))),
+                                withJsonPath("$.hearingDate.notBefore", equalTo(command.getBoolean("notBefore")))
+                        ))).thatMatchesSchema()
+        ));
     }
 
     private void givenHearingHasBeenListed(HearingAggregate hearingAggregate) throws Exception {

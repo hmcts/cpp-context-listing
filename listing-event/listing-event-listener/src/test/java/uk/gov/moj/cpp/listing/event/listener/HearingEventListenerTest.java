@@ -12,6 +12,7 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.moj.cpp.listing.event.HearingAllocatedForListing;
+import uk.gov.moj.cpp.listing.event.HearingDate;
 import uk.gov.moj.cpp.listing.event.UnallocatedHearingListed;
 import uk.gov.moj.cpp.listing.event.converter.UnallocatedHearingListedConverter;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
@@ -120,7 +121,7 @@ public class HearingEventListenerTest {
     public void shouldAllocatedHearingForListing() throws Exception {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         HearingAllocatedForListing hearingData = new HearingAllocatedForListing( HEARING_ID.toString(),
-                null,null,null,null,null,null,false);
+                null,null,null,null,new HearingDate(null,null,false));
 
         given(jsonObjectToObjectConverter.convert(payload, HearingAllocatedForListing.class))
                 .willReturn(hearingData);

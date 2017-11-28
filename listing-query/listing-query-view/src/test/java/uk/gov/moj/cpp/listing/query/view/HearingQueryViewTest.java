@@ -26,7 +26,7 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingSummary;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingSummaryConverter;
 
 import java.util.List;
-import java.util.function.Function;
+import java.util.UUID;
 
 import javax.json.JsonArray;
 
@@ -42,7 +42,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class HearingQueryViewTest {
 
 
-    public static final String COURT_CENTRE_ID = "Liverpool";
+    public static final UUID COURT_CENTRE_ID = UUID.randomUUID();
     public static final boolean ALLOCATED = true;
     public static final String ALLOCATED_QUERY_PARAMETER = "allocated";
     private static final String COURT_CENTRE_QUERY_PARAMETER = "courtCentreId";
@@ -78,7 +78,7 @@ public class HearingQueryViewTest {
                 metadataWithRandomUUIDAndName(),
                 createObjectBuilder()
                         .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
-                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
                         .build());
 
         final JsonEnvelope results = hearingsQueryView.searchHearings(query);

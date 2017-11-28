@@ -12,6 +12,7 @@ import uk.gov.moj.cpp.listing.event.CourtRoomChangedForHearing;
 import uk.gov.moj.cpp.listing.event.CourtRoomRemovedFromHearing;
 import uk.gov.moj.cpp.listing.event.EstimateMinutesChangedForHearing;
 import uk.gov.moj.cpp.listing.event.HearingAllocatedForListing;
+import uk.gov.moj.cpp.listing.event.HearingDate;
 import uk.gov.moj.cpp.listing.event.HearingEvent;
 import uk.gov.moj.cpp.listing.event.HearingUnallocatedForListing;
 import uk.gov.moj.cpp.listing.event.JudgeAssignedToHearing;
@@ -237,20 +238,20 @@ public class HearingAggregate implements Aggregate {
 
     private HearingAllocatedForListing hearingAllocatedForListingEvent() {
         return new HearingAllocatedForListing(this.hearingId, this.type,
-                this.startDate, this.estimateMinutes, this.judgeId,
-                this.courtRoomId, this.startTime, this.notBefore);
+               this.estimateMinutes, this.judgeId, this.courtRoomId,
+                new HearingDate(this.startDate, this.startTime, this.notBefore));
     }
 
     private AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListingEvent() {
         return new AllocatedHearingUpdatedForListing(this.hearingId, this.type,
-                this.startDate, this.estimateMinutes, this.judgeId,
-                this.courtRoomId, this.startTime, this.notBefore);
+               this.estimateMinutes, this.judgeId, this.courtRoomId,
+                new HearingDate(this.startDate, this.startTime, this.notBefore));
     }
 
     private HearingUnallocatedForListing hearingUnallocatedForListingEvent() {
         return new HearingUnallocatedForListing(this.hearingId, this.type,
-                this.startDate, this.estimateMinutes, this.judgeId,
-                this.courtRoomId, this.startTime, this.notBefore);
+                this.estimateMinutes, this.judgeId, this.courtRoomId,
+                new HearingDate(this.startDate, this.startTime, this.notBefore));
     }
 
 

@@ -14,7 +14,6 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "offence")
-@SuppressWarnings("squid:S00107")
 public class Offence implements Serializable {
 
     @Id
