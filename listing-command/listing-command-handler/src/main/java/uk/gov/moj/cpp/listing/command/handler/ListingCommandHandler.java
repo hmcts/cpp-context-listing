@@ -28,7 +28,7 @@ import javax.inject.Inject;
 import javax.json.JsonObject;
 
 @ServiceComponent(COMMAND_HANDLER)
-@SuppressWarnings({"squid:S1188", "squid:S1135", "squid:CommentedOutCodeLine"})
+@SuppressWarnings({"squid:S1188"})
 public class ListingCommandHandler {
 
     private static final String HEARING_ID = "hearingId";
@@ -57,62 +57,66 @@ public class ListingCommandHandler {
     public void sendCaseForListing(final JsonEnvelope command) throws EventStreamException {
         final JsonObject payload = command.payloadAsJsonObject();
         final String caseId = payload.getString(CASE_ID);
-        updateCaseEventStream(command, caseId, (CaseAggregate listingCase) -> {
-            final String urn = payload.getString(URN);
-            final List<Hearing> hearings = createHearingsFrom(payload);
-            return listingCase.sendForListing(caseId, urn, hearings);
-        });
+        final String urn = payload.getString(URN);
+        final List<Hearing> hearings = createHearingsFrom(payload);
+
+        updateCaseEventStream(command, caseId, (CaseAggregate listingCase) ->
+                listingCase.sendForListing(caseId, urn, hearings));
     }
 
     @Handles("listing.command.list-hearing")
     public void listHearing(final JsonEnvelope command) throws EventStreamException {
         final JsonObject payload = command.payloadAsJsonObject();
         final String hearingId = payload.getString(HEARING_ID);
-        updateHearingEventStream(command, hearingId, (HearingAggregate hearing) -> {
-            final String type = payload.getString(TYPE);
-            final LocalDate startDate = LocalDates.from(payload.getString(START_DATE));
-            final Integer estimateMinutes = payload.getInt(ESTIMATE_MINUTES);
-            final String caseId = payload.getString(CASE_ID);
-            final String courtCentreId = payload.getString(COURT_CENTRE_ID);
-            final List<Defendant> defendants = createDefendantsFrom(payload);
-            return hearing.list(hearingId, type, startDate, estimateMinutes, caseId, courtCentreId, defendants);
-        });
+        final String type = payload.getString(TYPE);
+        final LocalDate startDate = LocalDates.from(payload.getString(START_DATE));
+        final Integer estimateMinutes = payload.getInt(ESTIMATE_MINUTES);
+        final String caseId = payload.getString(CASE_ID);
+        final String courtCentreId = payload.getString(COURT_CENTRE_ID);
+        final List<Defendant> defendants = createDefendantsFrom(payload);
+
+        updateHearingEventStream(command, hearingId, (HearingAggregate hearing) ->
+                hearing.list(hearingId, type, startDate, estimateMinutes, caseId, courtCentreId, defendants));
     }
 
     @Handles("listing.command.update-hearing-for-listing")
     public void updateHearingForListing(final JsonEnvelope command) throws EventStreamException {
         final JsonObject payload = command.payloadAsJsonObject();
+
+        // Mandatory fields
         final String hearingId = payload.getString(HEARING_ID);
+        final String type = payload.getString(TYPE);
+        final LocalDate startDate = LocalDates.from(payload.getString(START_DATE));
+        final Integer estimateMinutes = payload.getInt(ESTIMATE_MINUTES);
+        // Optional fields
+        final LocalTime startTime = getStartTime(payload);
+        final boolean notBefore = payload.getBoolean(NOT_BEFORE, false);
+        final String judgeId = payload.getString(JUDGE_ID, null);
+        final String courtRoomId = payload.getString(COURT_ROOM_ID, null);
+
         updateHearingEventStream(command, hearingId, (HearingAggregate hearing) -> {
-            final String type = payload.getString(TYPE);
             final Stream<Object> typeEvents = hearing.changeType(type, hearingId);
-            final LocalDate startDate = LocalDates.from(payload.getString(START_DATE));
             final Stream<Object> startDateEvents = hearing.changeStartDate(startDate, hearingId);
-            final Integer estimateMinutes = payload.getInt(ESTIMATE_MINUTES);
             final Stream<Object> estimateEvents = hearing.changeEstimate(estimateMinutes, hearingId);
 
             Stream<Object> startTimeEvents = Stream.empty();
             if (payload.containsKey(START_TIME)) {
-                final LocalTime startTime = LocalTime.parse(payload.getString(START_TIME));
                 startTimeEvents = startTime != null ? hearing.assignStartTime(startTime, hearingId) : hearing.removeStartTime(hearingId);
             }
 
             Stream<Object> notBeforeEvents = Stream.empty();
             if (payload.containsKey(NOT_BEFORE)) {
-                final boolean notBefore = payload.getBoolean(NOT_BEFORE);
                 notBeforeEvents = hearing.selectNotBefore(notBefore, hearingId);
             }
 
             // Check judge and court-room last as these are the key fields for allocation
             Stream<Object> judgeEvents = Stream.empty();
             if (payload.containsKey(JUDGE_ID)) {
-                final String judgeId = payload.getString(JUDGE_ID);
                 judgeEvents = judgeId != null ? hearing.assignJudge(judgeId, hearingId) : hearing.removeJudge(hearingId);
             }
 
             Stream<Object> courtRoomEvents = Stream.empty();
             if (payload.containsKey(COURT_ROOM_ID)) {
-                final String courtRoomId = payload.getString(COURT_ROOM_ID);
                 courtRoomEvents = courtRoomId != null ? hearing.assignCourtRoom(courtRoomId, hearingId) : hearing.removeCourtRoom(hearingId);
             }
 
@@ -139,25 +143,16 @@ public class ListingCommandHandler {
         eventStream.append(events.map(enveloper.withMetadataFrom(command)));
     }
 
-
-    // TODO: Must be able to combine both of these into one method
-
-/*    private void updateEventStream(final JsonEnvelope command, final String aggregateId, Class aggregateClass,
-                                       final Function<Aggregate, Stream<Object>> aggregatorFunction) throws EventStreamException {
-        final EventStream eventStream = eventSource.getStreamById(UUID.fromString(aggregateId));
-        final Aggregate aggregate = aggregateService.get(eventStream, aggregateClass);
-
-        final Stream<Object> events = aggregatorFunction.apply(aggregate);
-        eventStream.append(events.map(enveloper.withMetadataFrom(command)));
-    }*/
-
-
     private List<Hearing> createHearingsFrom(final JsonObject caseJson) {
         return JsonDomainUtils.createHearingsFrom(caseJson);
     }
 
     private List<Defendant> createDefendantsFrom(JsonObject hearingJson) {
         return JsonDomainUtils.createDefendantsFrom(hearingJson);
+    }
+
+    private LocalTime getStartTime(JsonObject payload) {
+        return payload.containsKey(START_TIME) ? LocalTime.parse(payload.getString(START_TIME)) : null;
     }
 
 }
