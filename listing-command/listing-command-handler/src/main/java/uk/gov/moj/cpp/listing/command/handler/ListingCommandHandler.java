@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
+import static java.lang.String.format;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
 
 import uk.gov.justice.services.common.converter.LocalDates;
@@ -27,9 +28,14 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.json.JsonObject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @ServiceComponent(COMMAND_HANDLER)
 @SuppressWarnings({"squid:S1188"})
 public class ListingCommandHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandHandler.class);
 
     private static final String HEARING_ID = "hearingId";
     private static final String TYPE = "type";
@@ -56,6 +62,8 @@ public class ListingCommandHandler {
     @Handles("listing.command.send-case-for-listing")
     public void sendCaseForListing(final JsonEnvelope command) throws EventStreamException {
         final JsonObject payload = command.payloadAsJsonObject();
+        LOGGER.debug(format("'listing.command.send-case-for-listing' received with payload %s", payload));
+
         final String caseId = payload.getString(CASE_ID);
         final String urn = payload.getString(URN);
         final List<Hearing> hearings = createHearingsFrom(payload);
@@ -67,6 +75,8 @@ public class ListingCommandHandler {
     @Handles("listing.command.list-hearing")
     public void listHearing(final JsonEnvelope command) throws EventStreamException {
         final JsonObject payload = command.payloadAsJsonObject();
+        LOGGER.debug(format("'listing.command.list-hearing' received with payload %s", payload));
+
         final String hearingId = payload.getString(HEARING_ID);
         final String type = payload.getString(TYPE);
         final LocalDate startDate = LocalDates.from(payload.getString(START_DATE));
@@ -82,6 +92,7 @@ public class ListingCommandHandler {
     @Handles("listing.command.update-hearing-for-listing")
     public void updateHearingForListing(final JsonEnvelope command) throws EventStreamException {
         final JsonObject payload = command.payloadAsJsonObject();
+        LOGGER.debug(format("'listing.command.update-hearing-for-listing' received with payload %s", payload));
 
         // Mandatory fields that always require a value
         final String hearingId = payload.getString(HEARING_ID);
