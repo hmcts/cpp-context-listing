@@ -89,6 +89,7 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final boolean UNALLOCATED = false;
     private static final boolean ALLOCATED = true;
 
+
     public static void givenAUserHasLoggedInAsAListingOfficers(final UUID validUserId) {
         setLoggedInUser(validUserId);
     }
@@ -115,7 +116,6 @@ public class ListingStepDefinitions extends AbstractIT {
                 caseDataJson.build().toString(), getLoggedInHeader());
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
-
     }
 
     public static void whenHearingIsUpdatedForListing(final UpdatedHearingData updatedHearingData) {
@@ -131,108 +131,11 @@ public class ListingStepDefinitions extends AbstractIT {
 
     }
 
-
-
-
-
     public static void thenCaseSentForListingPublicEventShouldBePublished(
             final CaseData caseData,
             final MessageConsumerClient publicMessageConsumer) throws JMSException {
 
         verifyInPublicMQ(caseData.getCaseId().toString(), publicMessageConsumer);
-
-    }
-
-    private static JsonObjectBuilder prepareJsonForCaseData(final CaseData caseData) {
-        final JsonObjectBuilder caseDataJson = createObjectBuilder();
-
-        return caseDataJson.add(FIELD_CASE_ID, caseData.getCaseId().toString())
-                .add(FIELD_URN, caseData.getUrn())
-                .add(FIELD_HEARINGS, prepareJsonForHearings(caseData.getHearingData()));
-    }
-
-    private static JsonObjectBuilder prepareJsonForUpdatedHearingDataWithoutJudgeId(final UpdatedHearingData updatedHearingData) {
-        final JsonObjectBuilder builder = createObjectBuilder();
-
-        return builder.add(FIELD_HEARING_ID, updatedHearingData.getHearingId().toString())
-                .addNull(FIELD_JUDGE_ID)
-                .add(FIELD_COURT_ROOM_ID, updatedHearingData.getCourtRoomId().toString())
-                .add(FIELD_TYPE, updatedHearingData.getType())
-                .add(FIELD_START_DATE, updatedHearingData.getStartDate().toString())
-                .add(FIELD_START_TIME, updatedHearingData.getStartTime().toString())
-                .add(FIELD_NOT_BEFORE, updatedHearingData.getNotBefore())
-                .add(FIELD_ESTIMATE_MINUTES, updatedHearingData.getEstimateMinutes());
-    }
-
-    private static JsonObjectBuilder prepareJsonForUpdatedHearingData(final UpdatedHearingData updatedHearingData) {
-        final JsonObjectBuilder builder = createObjectBuilder();
-
-        return builder.add(FIELD_HEARING_ID, updatedHearingData.getHearingId().toString())
-                .add(FIELD_JUDGE_ID, updatedHearingData.getJudgeId().toString())
-                .add(FIELD_COURT_ROOM_ID, updatedHearingData.getCourtRoomId().toString())
-                .add(FIELD_TYPE, updatedHearingData.getType())
-                .add(FIELD_START_DATE, updatedHearingData.getStartDate().toString())
-                .add(FIELD_START_TIME, updatedHearingData.getStartTime().toString())
-                .add(FIELD_NOT_BEFORE, updatedHearingData.getNotBefore())
-                .add(FIELD_ESTIMATE_MINUTES, updatedHearingData.getEstimateMinutes());
-    }
-
-
-
-    private static JsonArrayBuilder prepareJsonForHearings(final List<HearingData> hearings) {
-        return hearings.stream()
-                .map(hearing -> {
-                            return createObjectBuilder().add(FIELD_GENERIC_ID, hearing.getId().toString())
-                                    .add(FIELD_COURT_CENTRE_ID, hearing.getCourtCentreId())
-                                    .add(FIELD_HEARING_TYPE, hearing.getHearingType())
-                                    .add(FIELD_HEARING_START_DATE, hearing.getHearingStartDate().toString())
-                                    .add(FIELD_HEARING_ESTIMATE_MINUTES, hearing.getHearingEstimateMinutes())
-                                    .add(FIELD_DEFENDANTS, prepareJsonForDefendants(hearing.getDefendants()));
-                        }
-                )
-                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
-    }
-
-    private static JsonArrayBuilder prepareJsonForOffences(final List<OffenceData> offences) {
-        return offences.stream()
-                .map(offenceData -> {
-
-                    JsonObjectBuilder statementOfOffenceBuilder = createObjectBuilder()
-                            .add(FIELD_TITLE, offenceData.getStatementOfOffenceTitle())
-                            .add(FIELD_LEGISLATION, offenceData.getStatementOfOffenceLegislation());
-
-                    return createObjectBuilder()
-                            .add(FIELD_GENERIC_ID, offenceData.getOffenceId().toString())
-                            .add(FIELD_OFFENCE_CODE, offenceData.getOffenceCode())
-                            .add(FIELD_START_DATE, offenceData.getStartDate().toString())
-                            .add(FIELD_END_DATE, offenceData.getEndDate().toString())
-                            .add(FIELD_STATEMENT_OF_OFFENCE, statementOfOffenceBuilder);
-                        }
-                )
-                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
-    }
-
-    private static JsonArrayBuilder prepareJsonForDefendants(final List<DefendantData> defendants) {
-        return defendants.stream()
-                .map(defendantData -> createObjectBuilder()
-                        .add(FIELD_GENERIC_ID, defendantData.getDefendantId().toString())
-                        .add(FIELD_PERSON_ID, defendantData.getPersonId().toString())
-                        .add(FIELD_FIRST_NAME, defendantData.getFirstName())
-                        .add(FIELD_LAST_NAME, defendantData.getLastName())
-                        .add(FIELD_DATE_BIRTH, defendantData.getDateOfBirth().toString())
-                        .add(FIELD_CUSTODY_TIME_LIMIT, defendantData.getCustodyTimeLimit().toString())
-                        .add(FIELD_BAIL_STATUS, defendantData.getBailStatus())
-                        .add(FIELD_DEFENCE_ORGANISATION, defendantData.getDefenceOrganisation())
-                        .add(FIELD_OFFENCES, prepareJsonForOffences(defendantData.getOffences()))
-                )
-                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
-    }
-
-
-    private static void verifyInPublicMQ(final String caseId, final MessageConsumerClient
-            publicMessageConsumer) throws JMSException {
-        JsonPath response = new JsonPath(publicMessageConsumer.retrieveMessage().get());
-        assertThat(response.get(FIELD_CASE_ID), CoreMatchers.equalTo(caseId));
     }
 
     public static void thenUnallocatedHearingsForACourtCentreShouldContainTwoExpectedHearingsWhenQueried(final CaseData caseData, final CaseData caseDataNew) {
@@ -330,9 +233,6 @@ public class ListingStepDefinitions extends AbstractIT {
                         )));
     }
 
-
-
-
     public static void thenQueryValidationFailureOccursWhenQueried(final CaseData caseData) {
         final String searchHearingUrl = String.format("%s/%s", baseUri,
                 format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData
@@ -341,6 +241,98 @@ public class ListingStepDefinitions extends AbstractIT {
         final Response response = restClient.query(searchHearingUrl,
                 MEDIA_TYPE_SEARCH_HEARINGS_JSON, getLoggedInHeader());
         assertThat(response.getStatus(), equalTo(SC_BAD_REQUEST));
-
     }
+
+
+    // Private Helpers
+
+    private static JsonObjectBuilder prepareJsonForCaseData(final CaseData caseData) {
+        final JsonObjectBuilder caseDataJson = createObjectBuilder();
+
+        return caseDataJson.add(FIELD_CASE_ID, caseData.getCaseId().toString())
+                .add(FIELD_URN, caseData.getUrn())
+                .add(FIELD_HEARINGS, prepareJsonForHearings(caseData.getHearingData()));
+    }
+
+    private static JsonObjectBuilder prepareJsonForUpdatedHearingDataWithoutJudgeId(final UpdatedHearingData updatedHearingData) {
+        final JsonObjectBuilder builder = createObjectBuilder();
+
+        return builder.add(FIELD_HEARING_ID, updatedHearingData.getHearingId().toString())
+                .add(FIELD_COURT_ROOM_ID, updatedHearingData.getCourtRoomId().toString())
+                .add(FIELD_TYPE, updatedHearingData.getType())
+                .add(FIELD_START_DATE, updatedHearingData.getStartDate().toString())
+                .add(FIELD_START_TIME, updatedHearingData.getStartTime().toString())
+                .add(FIELD_NOT_BEFORE, updatedHearingData.getNotBefore())
+                .add(FIELD_ESTIMATE_MINUTES, updatedHearingData.getEstimateMinutes());
+    }
+
+    private static JsonObjectBuilder prepareJsonForUpdatedHearingData(final UpdatedHearingData updatedHearingData) {
+        final JsonObjectBuilder builder = createObjectBuilder();
+
+        return builder.add(FIELD_HEARING_ID, updatedHearingData.getHearingId().toString())
+                .add(FIELD_JUDGE_ID, updatedHearingData.getJudgeId().toString())
+                .add(FIELD_COURT_ROOM_ID, updatedHearingData.getCourtRoomId().toString())
+                .add(FIELD_TYPE, updatedHearingData.getType())
+                .add(FIELD_START_DATE, updatedHearingData.getStartDate().toString())
+                .add(FIELD_START_TIME, updatedHearingData.getStartTime().toString())
+                .add(FIELD_NOT_BEFORE, updatedHearingData.getNotBefore())
+                .add(FIELD_ESTIMATE_MINUTES, updatedHearingData.getEstimateMinutes());
+    }
+
+    private static JsonArrayBuilder prepareJsonForHearings(final List<HearingData> hearings) {
+        return hearings.stream()
+                .map(hearing -> {
+                            return createObjectBuilder().add(FIELD_GENERIC_ID, hearing.getId().toString())
+                                    .add(FIELD_COURT_CENTRE_ID, hearing.getCourtCentreId())
+                                    .add(FIELD_HEARING_TYPE, hearing.getHearingType())
+                                    .add(FIELD_HEARING_START_DATE, hearing.getHearingStartDate().toString())
+                                    .add(FIELD_HEARING_ESTIMATE_MINUTES, hearing.getHearingEstimateMinutes())
+                                    .add(FIELD_DEFENDANTS, prepareJsonForDefendants(hearing.getDefendants()));
+                        }
+                )
+                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+    }
+
+    private static JsonArrayBuilder prepareJsonForOffences(final List<OffenceData> offences) {
+        return offences.stream()
+                .map(offenceData -> {
+
+                            JsonObjectBuilder statementOfOffenceBuilder = createObjectBuilder()
+                                    .add(FIELD_TITLE, offenceData.getStatementOfOffenceTitle())
+                                    .add(FIELD_LEGISLATION, offenceData.getStatementOfOffenceLegislation());
+
+                            return createObjectBuilder()
+                                    .add(FIELD_GENERIC_ID, offenceData.getOffenceId().toString())
+                                    .add(FIELD_OFFENCE_CODE, offenceData.getOffenceCode())
+                                    .add(FIELD_START_DATE, offenceData.getStartDate().toString())
+                                    .add(FIELD_END_DATE, offenceData.getEndDate().toString())
+                                    .add(FIELD_STATEMENT_OF_OFFENCE, statementOfOffenceBuilder);
+                        }
+                )
+                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+    }
+
+    private static JsonArrayBuilder prepareJsonForDefendants(final List<DefendantData> defendants) {
+        return defendants.stream()
+                .map(defendantData -> createObjectBuilder()
+                        .add(FIELD_GENERIC_ID, defendantData.getDefendantId().toString())
+                        .add(FIELD_PERSON_ID, defendantData.getPersonId().toString())
+                        .add(FIELD_FIRST_NAME, defendantData.getFirstName())
+                        .add(FIELD_LAST_NAME, defendantData.getLastName())
+                        .add(FIELD_DATE_BIRTH, defendantData.getDateOfBirth().toString())
+                        .add(FIELD_CUSTODY_TIME_LIMIT, defendantData.getCustodyTimeLimit().toString())
+                        .add(FIELD_BAIL_STATUS, defendantData.getBailStatus())
+                        .add(FIELD_DEFENCE_ORGANISATION, defendantData.getDefenceOrganisation())
+                        .add(FIELD_OFFENCES, prepareJsonForOffences(defendantData.getOffences()))
+                )
+                .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+    }
+
+
+    private static void verifyInPublicMQ(final String caseId, final MessageConsumerClient
+            publicMessageConsumer) throws JMSException {
+        JsonPath response = new JsonPath(publicMessageConsumer.retrieveMessage().get());
+        assertThat(response.get(FIELD_CASE_ID), CoreMatchers.equalTo(caseId));
+    }
+
 }
