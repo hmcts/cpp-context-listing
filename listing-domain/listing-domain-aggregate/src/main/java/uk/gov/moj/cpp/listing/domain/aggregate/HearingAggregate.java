@@ -147,7 +147,7 @@ public class HearingAggregate implements Aggregate {
         if (currentlyAssigned(this.startTime)) {
             return apply(Stream.of(new StartTimeRemovedFromHearing(hearingId)));
         } else {
-            LOGGER.error("No start time is currently assigned for hearing with id '%s' so cannot be removed", hearingId);
+            LOGGER.info("No start time is currently assigned for hearing with id '%s' so cannot be removed - Ignore", hearingId);
             return Stream.empty();
         }
     }
@@ -183,7 +183,7 @@ public class HearingAggregate implements Aggregate {
         if (currentlyAssigned(this.judgeId)) {
             return applyAndUnallocateIfRequired(Stream.of(new JudgeRemovedFromHearing(hearingId)));
         } else {
-            LOGGER.error("No judge is currently assigned for hearing with id '%s' so cannot be removed", hearingId);
+            LOGGER.info("No judge is currently assigned for hearing with id '%s' so cannot be removed - Ignore", hearingId);
             return Stream.empty();
         }
     }
@@ -203,7 +203,7 @@ public class HearingAggregate implements Aggregate {
         if (currentlyAssigned(this.courtRoomId)) {
             return applyAndUnallocateIfRequired(Stream.of(new CourtRoomRemovedFromHearing(hearingId)));
         } else {
-            LOGGER.error("No court room is currently assigned for hearing with id '%s' so cannot be removed", hearingId);
+            LOGGER.info("No court room is currently assigned for hearing with id '%s' so cannot be removed - Ignore", hearingId);
             return Stream.empty();
         }
     }

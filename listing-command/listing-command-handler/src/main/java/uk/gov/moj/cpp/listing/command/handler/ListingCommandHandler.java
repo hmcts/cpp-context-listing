@@ -83,12 +83,12 @@ public class ListingCommandHandler {
     public void updateHearingForListing(final JsonEnvelope command) throws EventStreamException {
         final JsonObject payload = command.payloadAsJsonObject();
 
-        // Mandatory fields
+        // Mandatory fields that always require a value
         final String hearingId = payload.getString(HEARING_ID);
         final String type = payload.getString(TYPE);
         final LocalDate startDate = LocalDates.from(payload.getString(START_DATE));
         final Integer estimateMinutes = payload.getInt(ESTIMATE_MINUTES);
-        // Optional fields
+        // Fields that may not have a value
         final LocalTime startTime = getStartTime(payload);
         final boolean notBefore = payload.getBoolean(NOT_BEFORE, false);
         final String judgeId = payload.getString(JUDGE_ID, null);
@@ -99,26 +99,17 @@ public class ListingCommandHandler {
             final Stream<Object> startDateEvents = hearing.changeStartDate(startDate, hearingId);
             final Stream<Object> estimateEvents = hearing.changeEstimate(estimateMinutes, hearingId);
 
-            Stream<Object> startTimeEvents = Stream.empty();
-            if (payload.containsKey(START_TIME)) {
-                startTimeEvents = startTime != null ? hearing.assignStartTime(startTime, hearingId) : hearing.removeStartTime(hearingId);
-            }
+            final Stream<Object> startTimeEvents = startTime != null ?
+                    hearing.assignStartTime(startTime, hearingId) : hearing.removeStartTime(hearingId);
 
-            Stream<Object> notBeforeEvents = Stream.empty();
-            if (payload.containsKey(NOT_BEFORE)) {
-                notBeforeEvents = hearing.selectNotBefore(notBefore, hearingId);
-            }
+            final Stream<Object> notBeforeEvents = hearing.selectNotBefore(notBefore, hearingId);
 
             // Check judge and court-room last as these are the key fields for allocation
-            Stream<Object> judgeEvents = Stream.empty();
-            if (payload.containsKey(JUDGE_ID)) {
-                judgeEvents = judgeId != null ? hearing.assignJudge(judgeId, hearingId) : hearing.removeJudge(hearingId);
-            }
+            final Stream<Object> judgeEvents = judgeId != null ?
+                    hearing.assignJudge(judgeId, hearingId) : hearing.removeJudge(hearingId);
 
-            Stream<Object> courtRoomEvents = Stream.empty();
-            if (payload.containsKey(COURT_ROOM_ID)) {
-                courtRoomEvents = courtRoomId != null ? hearing.assignCourtRoom(courtRoomId, hearingId) : hearing.removeCourtRoom(hearingId);
-            }
+            final Stream<Object> courtRoomEvents = courtRoomId != null ?
+                    hearing.assignCourtRoom(courtRoomId, hearingId) : hearing.removeCourtRoom(hearingId);
 
             return Stream.of(typeEvents, startDateEvents, estimateEvents,
                     startTimeEvents, notBeforeEvents, judgeEvents, courtRoomEvents).flatMap(i -> i);
