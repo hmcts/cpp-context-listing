@@ -233,6 +233,7 @@ public class ListingStepDefinitions extends AbstractIT {
                         )));
     }
 
+
     public static void thenQueryValidationFailureOccursWhenQueried(final CaseData caseData) {
         final String searchHearingUrl = String.format("%s/%s", baseUri,
                 format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData
@@ -258,6 +259,7 @@ public class ListingStepDefinitions extends AbstractIT {
         final JsonObjectBuilder builder = createObjectBuilder();
 
         return builder.add(FIELD_HEARING_ID, updatedHearingData.getHearingId().toString())
+                .addNull(FIELD_JUDGE_ID)
                 .add(FIELD_COURT_ROOM_ID, updatedHearingData.getCourtRoomId().toString())
                 .add(FIELD_TYPE, updatedHearingData.getType())
                 .add(FIELD_START_DATE, updatedHearingData.getStartDate().toString())
