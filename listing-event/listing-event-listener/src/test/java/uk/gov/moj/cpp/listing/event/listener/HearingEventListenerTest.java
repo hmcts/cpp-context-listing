@@ -13,6 +13,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.moj.cpp.listing.event.HearingAllocatedForListing;
 import uk.gov.moj.cpp.listing.event.HearingDate;
+import uk.gov.moj.cpp.listing.event.HearingUnallocatedForListing;
 import uk.gov.moj.cpp.listing.event.UnallocatedHearingListed;
 import uk.gov.moj.cpp.listing.event.converter.UnallocatedHearingListedConverter;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
@@ -41,6 +42,7 @@ public class HearingEventListenerTest {
     private static final String URN = RandomGenerator.STRING.next();
     private static final String CASE_ID_PARAM = "caseId";
     private static final UUID CASE_ID = UUID.randomUUID();
+    private static final boolean UNALLOCATED = false;
 
     @InjectMocks
     private HearingEventListener hearingEventListener;
@@ -118,7 +120,7 @@ public class HearingEventListenerTest {
     }
 
     @Test
-    public void shouldAllocatedHearingForListing() throws Exception {
+    public void shouldAllocateHearingForListing() throws Exception {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         HearingAllocatedForListing hearingData = new HearingAllocatedForListing( HEARING_ID.toString(),
                 null,null,null,null,new HearingDate(null,null,false));
@@ -128,5 +130,18 @@ public class HearingEventListenerTest {
 
         hearingEventListener.hearingAllocatedForHearing(envelope);
         verify(hearingRepository).updateAllocated(ALLOCATED, HEARING_ID);
+    }
+
+    @Test
+    public void shouldUnallocateHearingForListing() throws Exception {
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        HearingUnallocatedForListing hearingData = new HearingUnallocatedForListing( HEARING_ID.toString(),
+                null,null,null,null, new HearingDate(null,null,false));
+
+        given(jsonObjectToObjectConverter.convert(payload, HearingUnallocatedForListing.class))
+                .willReturn(hearingData);
+
+        hearingEventListener.hearingUnallocatedForHearing(envelope);
+        verify(hearingRepository).updateAllocated(UNALLOCATED, HEARING_ID);
     }
 }

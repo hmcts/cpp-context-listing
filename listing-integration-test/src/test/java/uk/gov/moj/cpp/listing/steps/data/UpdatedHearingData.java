@@ -28,9 +28,19 @@ public class UpdatedHearingData {
 
 
 
-    public static UpdatedHearingData updatedHearingDataWithoutJudgeData(final UUID hearingId) {
+    public static UpdatedHearingData updatedHearingDataWithoutJudgeId(final UUID hearingId) {
         return new UpdatedHearingData(hearingId, null, randomUUID(), "TRIAL",
                 LocalDate.now().toString(), LocalTime.now().format(dtf), FALSE, INTEGER.next());
+    }
+
+    public static UpdatedHearingData updatedHearingDataWithoutCourtRoomId(final UUID hearingId) {
+        return new UpdatedHearingData(hearingId, randomUUID(), null, "TRIAL",
+                LocalDate.now().toString(), LocalTime.now().format(dtf), FALSE, INTEGER.next());
+    }
+
+    public static UpdatedHearingData updatedHearingDataWithoutCourtRoomIdAndStartTime(final UUID hearingId) {
+        return new UpdatedHearingData(hearingId, randomUUID(), null, "TRIAL",
+                LocalDate.now().toString(), null, FALSE, INTEGER.next());
     }
 
     public static UpdatedHearingData updatedHearingDataWithEnoughDataToBeAllocated(final UUID hearingId) {
