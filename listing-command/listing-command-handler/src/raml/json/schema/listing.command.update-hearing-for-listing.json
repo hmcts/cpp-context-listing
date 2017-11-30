@@ -38,11 +38,7 @@
     "hearingId",
     "type",
     "startDate",
-    "estimateMinutes",
-    "startTime",
-    "notBefore",
-    "judgeId",
-    "courtRoomId"
+    "estimateMinutes"
   ],
   "additionalProperties": false
 }

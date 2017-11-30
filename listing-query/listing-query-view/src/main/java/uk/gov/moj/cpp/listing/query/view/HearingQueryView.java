@@ -23,6 +23,7 @@ import javax.json.JsonArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.lang.String.format;
 import static java.util.UUID.fromString;
 
 
@@ -52,7 +53,7 @@ public class HearingQueryView {
         final UUID courtCentreId = fromString(query.payloadAsJsonObject().getString(COURT_CENTRE_ID));
         final boolean allocated = query.payloadAsJsonObject().getBoolean(ALLOCATED_QUERY_PARAMETER);
 
-        LOGGER.info("Query params - courtCentreId: %s , allocated: %s", courtCentreId, allocated);
+        LOGGER.info(format("Query params - courtCentreId: %s , allocated: %s", courtCentreId, allocated));
 
         final List<Hearing> hearings = repository.findByAllocatedAndCourtCentreId(allocated,
                 courtCentreId);
