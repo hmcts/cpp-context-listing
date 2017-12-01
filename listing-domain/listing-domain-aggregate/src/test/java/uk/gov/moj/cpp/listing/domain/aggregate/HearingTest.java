@@ -21,7 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class HearingAggregateTest {
+public class HearingTest {
 
     private static final UUID HEARING_ID = UUID.randomUUID();
     private static final UUID CASE_ID = UUID.randomUUID();
@@ -30,11 +30,11 @@ public class HearingAggregateTest {
     private static final int ESTIMATE_MINUTES = 7200;
     private static final String TYPE = "TRIAL";
 
-    private HearingAggregate hearingAggregate;
+    private Hearing hearing;
 
     @Before
     public void setUp() {
-        hearingAggregate = new HearingAggregate();
+        hearing = new Hearing();
     }
     
 
@@ -44,7 +44,7 @@ public class HearingAggregateTest {
         Defendant defendant = buildDefendant();
 
         //when
-        List<Object> events = hearingAggregate.list(HEARING_ID.toString(), TYPE, START_DATE, ESTIMATE_MINUTES,
+        List<Object> events = hearing.list(HEARING_ID.toString(), TYPE, START_DATE, ESTIMATE_MINUTES,
                 CASE_ID.toString(), COURT_CENTRE, Arrays.asList(defendant)).collect(toList());
 
         //then
@@ -60,11 +60,11 @@ public class HearingAggregateTest {
         //given
         Defendant defendant = buildDefendant();
 
-        hearingAggregate.list(HEARING_ID.toString(), TYPE, START_DATE, ESTIMATE_MINUTES,
+        hearing.list(HEARING_ID.toString(), TYPE, START_DATE, ESTIMATE_MINUTES,
                 CASE_ID.toString(), COURT_CENTRE, Arrays.asList(defendant)).collect(toList());
 
         //when
-        List<Object> events = hearingAggregate.list(HEARING_ID.toString(), TYPE, START_DATE, ESTIMATE_MINUTES,
+        List<Object> events = hearing.list(HEARING_ID.toString(), TYPE, START_DATE, ESTIMATE_MINUTES,
                 CASE_ID.toString(), COURT_CENTRE, Arrays.asList(defendant)).collect(toList());
 
         //then
@@ -75,7 +75,7 @@ public class HearingAggregateTest {
     public void teardown() {
         try {
             // ensure aggregate is serializable
-            SerializationUtils.serialize(hearingAggregate);
+            SerializationUtils.serialize(hearing);
         } catch (SerializationException e) {
             fail("Aggregate should be serializable");
         }

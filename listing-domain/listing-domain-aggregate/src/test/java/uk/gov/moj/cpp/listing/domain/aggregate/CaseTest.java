@@ -19,16 +19,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CaseAggregateTest {
+public class CaseTest {
 
     private static final UUID CASE_ID = UUID.randomUUID();
     private static final String URN = "92GX685120";
 
-    private CaseAggregate caseAggregate;
+    private Case aCase;
 
     @Before
     public void setUp() {
-        caseAggregate = new CaseAggregate();
+        aCase = new Case();
     }
 
     @Test
@@ -37,7 +37,7 @@ public class CaseAggregateTest {
         List<Hearing> hearings = buildHearings();
 
         //when
-        List<Object> events = caseAggregate.sendForListing(CASE_ID.toString(), URN, hearings).collect(toList());
+        List<Object> events = aCase.sendForListing(CASE_ID.toString(), URN, hearings).collect(toList());
 
         //then
         assertThat(events.size(), is(1));
@@ -50,7 +50,7 @@ public class CaseAggregateTest {
     public void teardown() {
         try {
             // ensure aggregate is serializable
-            SerializationUtils.serialize(caseAggregate);
+            SerializationUtils.serialize(aCase);
         } catch (SerializationException e) {
             fail("Aggregate should be serializable");
         }

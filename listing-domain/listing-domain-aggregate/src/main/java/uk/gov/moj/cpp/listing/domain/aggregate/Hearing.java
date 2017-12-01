@@ -39,9 +39,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("squid:S1172")
-public class HearingAggregate implements Aggregate {
+public class Hearing implements Aggregate {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(HearingAggregate.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
     private static final long serialVersionUID = 1L;
 

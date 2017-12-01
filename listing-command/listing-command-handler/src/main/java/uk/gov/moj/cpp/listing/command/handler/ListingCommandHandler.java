@@ -14,9 +14,8 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.utils.JsonDomainUtils;
 import uk.gov.moj.cpp.listing.domain.Defendant;
-import uk.gov.moj.cpp.listing.domain.Hearing;
-import uk.gov.moj.cpp.listing.domain.aggregate.CaseAggregate;
-import uk.gov.moj.cpp.listing.domain.aggregate.HearingAggregate;
+import uk.gov.moj.cpp.listing.domain.aggregate.Case;
+import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -66,9 +65,9 @@ public class ListingCommandHandler {
 
         final String caseId = payload.getString(CASE_ID);
         final String urn = payload.getString(URN);
-        final List<Hearing> hearings = createHearingsFrom(payload);
+        final List<uk.gov.moj.cpp.listing.domain.Hearing> hearings = createHearingsFrom(payload);
 
-        updateCaseEventStream(command, caseId, (CaseAggregate listingCase) ->
+        updateCaseEventStream(command, caseId, (Case listingCase) ->
                 listingCase.sendForListing(caseId, urn, hearings));
     }
 
@@ -85,7 +84,7 @@ public class ListingCommandHandler {
         final String courtCentreId = payload.getString(COURT_CENTRE_ID);
         final List<Defendant> defendants = createDefendantsFrom(payload);
 
-        updateHearingEventStream(command, hearingId, (HearingAggregate hearing) ->
+        updateHearingEventStream(command, hearingId, (Hearing hearing) ->
                 hearing.list(hearingId, type, startDate, estimateMinutes, caseId, courtCentreId, defendants));
     }
 
@@ -105,7 +104,7 @@ public class ListingCommandHandler {
         final String judgeId = payload.getString(JUDGE_ID, null);
         final String courtRoomId = payload.getString(COURT_ROOM_ID, null);
 
-        updateHearingEventStream(command, hearingId, (HearingAggregate hearing) -> {
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
             final Stream<Object> typeEvents = hearing.changeType(type, hearingId);
             final Stream<Object> startDateEvents = hearing.changeStartDate(startDate, hearingId);
             final Stream<Object> estimateEvents = hearing.changeEstimate(estimateMinutes, hearingId);
@@ -128,24 +127,24 @@ public class ListingCommandHandler {
     }
 
     private void updateHearingEventStream(final JsonEnvelope command, final String hearingId,
-                                   final Function<HearingAggregate, Stream<Object>> aggregatorFunction) throws EventStreamException {
+                                   final Function<Hearing, Stream<Object>> aggregatorFunction) throws EventStreamException {
         final EventStream eventStream = eventSource.getStreamById(UUID.fromString(hearingId));
-        final HearingAggregate hearing = aggregateService.get(eventStream, HearingAggregate.class);
+        final Hearing hearing = aggregateService.get(eventStream, Hearing.class);
 
         final Stream<Object> events = aggregatorFunction.apply(hearing);
         eventStream.append(events.map(enveloper.withMetadataFrom(command)));
     }
 
     private void updateCaseEventStream(final JsonEnvelope command, final String caseId,
-                                          final Function<CaseAggregate, Stream<Object>> aggregatorFunction) throws EventStreamException {
+                                          final Function<Case, Stream<Object>> aggregatorFunction) throws EventStreamException {
         final EventStream eventStream = eventSource.getStreamById(UUID.fromString(caseId));
-        final CaseAggregate listingCase = aggregateService.get(eventStream, CaseAggregate.class);
+        final Case listingCase = aggregateService.get(eventStream, Case.class);
 
         final Stream<Object> events = aggregatorFunction.apply(listingCase);
         eventStream.append(events.map(enveloper.withMetadataFrom(command)));
     }
 
-    private List<Hearing> createHearingsFrom(final JsonObject caseJson) {
+    private List<uk.gov.moj.cpp.listing.domain.Hearing> createHearingsFrom(final JsonObject caseJson) {
         return JsonDomainUtils.createHearingsFrom(caseJson);
     }
 

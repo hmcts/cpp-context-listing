@@ -21,8 +21,8 @@ import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
-import uk.gov.moj.cpp.listing.domain.aggregate.CaseAggregate;
-import uk.gov.moj.cpp.listing.domain.aggregate.HearingAggregate;
+import uk.gov.moj.cpp.listing.domain.aggregate.Case;
+import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.event.AllocatedHearingUpdatedForListing;
 import uk.gov.moj.cpp.listing.event.CaseSentForListing;
 import uk.gov.moj.cpp.listing.event.CourtRoomAssignedToHearing;
@@ -131,7 +131,7 @@ public class ListingCommandHandlerTest {
         final JsonObject command = commandEnvelope.payloadAsJsonObject();
 
         when(eventSource.getStreamById(CASE_ID)).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, CaseAggregate.class)).thenReturn(new CaseAggregate());
+        when(aggregateService.get(eventStream, Case.class)).thenReturn(new Case());
 
         listingCommandHandler.sendCaseForListing(commandEnvelope);
 
@@ -230,7 +230,7 @@ public class ListingCommandHandlerTest {
         final JsonObject command = commandEnvelope.payloadAsJsonObject();
 
         when(eventSource.getStreamById(HEARING_ID)).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, HearingAggregate.class)).thenReturn(new HearingAggregate());
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(new Hearing());
 
         listingCommandHandler.listHearing(commandEnvelope);
 
@@ -308,12 +308,12 @@ public class ListingCommandHandlerTest {
 
     @Test
     public void listingCommandHandlerShouldOnlyTriggerEventsForDataThatHasChangedWhenUpdating() throws Exception {
-        HearingAggregate hearingAggregate = new HearingAggregate();
+        Hearing hearing = new Hearing();
 
-        givenHearingHasBeenListed(hearingAggregate);
+        givenHearingHasBeenListed(hearing);
 
         when(eventSource.getStreamById(HEARING_ID)).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, HearingAggregate.class)).thenReturn(hearingAggregate);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
 
         final JsonEnvelope updateHearingEnvelope = updateHearingCommandEnvelopeWithOnlyMandatoryDataChanges();
         final JsonObject command = updateHearingEnvelope.payloadAsJsonObject();
@@ -347,12 +347,12 @@ public class ListingCommandHandlerTest {
 
     @Test
     public void listingCommandHandlerShouldTriggerHearingAllocatedForListingEvent() throws Exception {
-        HearingAggregate hearingAggregate = new HearingAggregate();
+        Hearing hearing = new Hearing();
 
-        givenHearingHasBeenListed(hearingAggregate);
+        givenHearingHasBeenListed(hearing);
 
         when(eventSource.getStreamById(HEARING_ID)).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, HearingAggregate.class)).thenReturn(hearingAggregate);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
 
         final JsonEnvelope updateHearingEnvelope = updateHearingCommandEnvelopeWithCompleteChanges();
         final JsonObject command = updateHearingEnvelope.payloadAsJsonObject();
@@ -424,9 +424,9 @@ public class ListingCommandHandlerTest {
         ));
     }
 
-    private void givenHearingHasBeenListed(HearingAggregate hearingAggregate) throws Exception {
+    private void givenHearingHasBeenListed(Hearing hearing) throws Exception {
         when(eventSource.getStreamById(HEARING_ID)).thenReturn(listHearingEventStream);
-        when(aggregateService.get(listHearingEventStream, HearingAggregate.class)).thenReturn(hearingAggregate);
+        when(aggregateService.get(listHearingEventStream, Hearing.class)).thenReturn(hearing);
 
         final JsonEnvelope listHearingEnvelope = listHearingCommandEnvelope();
         listingCommandHandler.listHearing(listHearingEnvelope);
