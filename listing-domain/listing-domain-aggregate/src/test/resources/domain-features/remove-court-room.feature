@@ -7,6 +7,7 @@ Feature: Remove a court-room from a hearing
     When removeCourtRoom to a uk.gov.moj.cpp.listing.domain.aggregate.Hearing using hearing-id
     Then the court-room-removed-from-hearing
 
+
   Scenario: An unallocated hearing has been listed and no court-room has been assigned. A request to remove
             a court-room from the hearing does not result in any change
 

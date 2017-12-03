@@ -121,8 +121,10 @@ public class ListingCommandHandler {
             final Stream<Object> courtRoomEvents = courtRoomId != null ?
                     hearing.assignCourtRoom(courtRoomId, hearingId) : hearing.removeCourtRoom(hearingId);
 
-            return Stream.of(typeEvents, startDateEvents, estimateEvents,
-                    startTimeEvents, notBeforeEvents, judgeEvents, courtRoomEvents).flatMap(i -> i);
+            final Stream<Object> allocationEvents = hearing.applyAllocationRules();
+
+            return Stream.of(typeEvents, startDateEvents, estimateEvents, startTimeEvents,
+                    notBeforeEvents, judgeEvents, courtRoomEvents, allocationEvents).flatMap(i -> i);
         });
     }
 

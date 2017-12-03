@@ -45,6 +45,8 @@ public class Hearing implements Aggregate {
 
     private static final long serialVersionUID = 1L;
 
+    private static final String DEFAULT_START_TIME = "10:30";
+
     private String hearingId;
     private String type;
     private LocalDate startDate;
@@ -98,7 +100,7 @@ public class Hearing implements Aggregate {
         }
 
         if (hasChanged(this.type, type)) {
-            return applyAndAllocateIfRequired(Stream.of(new TypeChangedForHearing(type, hearingId)));
+            return apply(Stream.of(new TypeChangedForHearing(type, hearingId)));
         } else {
             LOGGER.info(format("Incoming type '%s' is the same as current type '%s' for hearing with id '%s' - Ignore", type, this.type, hearingId));
             return Stream.empty();
@@ -112,7 +114,7 @@ public class Hearing implements Aggregate {
         }
 
         if (hasChanged(this.startDate, startDate)) {
-            return applyAndAllocateIfRequired(Stream.of(new StartDateChangedForHearing(startDate, hearingId)));
+            return apply(Stream.of(new StartDateChangedForHearing(startDate, hearingId)));
         } else {
             LOGGER.info(format("Incoming start date '%s' is the same as current start date '%s' for hearing with id '%s' - Ignore", startDate, this.startDate, hearingId));
             return Stream.empty();
@@ -126,7 +128,7 @@ public class Hearing implements Aggregate {
         }
 
         if (hasChanged(this.estimateMinutes, estimateMinutes)) {
-            return applyAndAllocateIfRequired(Stream.of(new EstimateMinutesChangedForHearing(estimateMinutes, hearingId)));
+            return apply(Stream.of(new EstimateMinutesChangedForHearing(estimateMinutes, hearingId)));
         } else {
             LOGGER.info(format("Incoming estimated minutes '%s' is the same as current estimated minutees '%s' for hearing with id '%s' - Ignore", estimateMinutes, this.estimateMinutes, hearingId));
             return Stream.empty();
@@ -171,9 +173,9 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> assignJudge(final String judgeId, final String hearingId) {
         if (notCurrentlyAssigned(this.judgeId)) {
-            return applyAndAllocateIfRequired(Stream.of(new JudgeAssignedToHearing(judgeId, hearingId)));
+            return apply(Stream.of(new JudgeAssignedToHearing(judgeId, hearingId)));
         } else if (hasChanged(this.judgeId, judgeId)) {
-            return applyAndAllocateIfRequired(Stream.of(new JudgeChangedForHearing(judgeId, hearingId)));
+            return apply(Stream.of(new JudgeChangedForHearing(judgeId, hearingId)));
         } else {
             LOGGER.info(format("Incoming judge id '%s' is the same as current judge id '%s' for hearing with id '%s' - Ignore", judgeId, this.judgeId, hearingId));
             return Stream.empty();
@@ -182,7 +184,7 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> removeJudge(final String hearingId) {
         if (currentlyAssigned(this.judgeId)) {
-            return applyAndUnallocateIfRequired(Stream.of(new JudgeRemovedFromHearing(hearingId)));
+            return apply(Stream.of(new JudgeRemovedFromHearing(hearingId)));
         } else {
             LOGGER.info(format("No judge is currently assigned for hearing with id '%s' so cannot be removed - Ignore", hearingId));
             return Stream.empty();
@@ -191,9 +193,9 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> assignCourtRoom(final String courtRoomId, final String hearingId) {
         if (notCurrentlyAssigned(this.courtRoomId)) {
-            return applyAndAllocateIfRequired(Stream.of(new CourtRoomAssignedToHearing(courtRoomId, hearingId)));
+            return apply(Stream.of(new CourtRoomAssignedToHearing(courtRoomId, hearingId)));
         } else if (hasChanged(this.courtRoomId, courtRoomId)) {
-            return applyAndAllocateIfRequired(Stream.of(new CourtRoomChangedForHearing(courtRoomId, hearingId)));
+            return apply(Stream.of(new CourtRoomChangedForHearing(courtRoomId, hearingId)));
         } else {
             LOGGER.info(format("Incoming court room id '%s' is the same as current court room id '%s' for hearing with id '%s' - Ignore", courtRoomId, this.courtRoomId, hearingId));
             return Stream.empty();
@@ -202,31 +204,54 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> removeCourtRoom(final String hearingId) {
         if (currentlyAssigned(this.courtRoomId)) {
-            return applyAndUnallocateIfRequired(Stream.of(new CourtRoomRemovedFromHearing(hearingId)));
+            return apply(Stream.of(new CourtRoomRemovedFromHearing(hearingId)));
         } else {
             LOGGER.info(format("No court room is currently assigned for hearing with id '%s' so cannot be removed - Ignore", hearingId));
             return Stream.empty();
         }
     }
 
-
-    private Stream<Object> applyAndAllocateIfRequired(Stream<Object> events) {
-        final Stream<Object> appliedEvents = apply(events);
+    public Stream<Object> applyAllocationRules() {
         if (canAllocate()) {
-            final HearingEvent allocateEvent = allocated ? allocatedHearingUpdatedForListingEvent() : hearingAllocatedForListingEvent();
-            return Stream.concat(appliedEvents, apply(Stream.of(allocateEvent)));
+            return onAllocationEvents();
+        } else if (canUnallocate()) {
+            return onUnallocationEvents();
         } else {
-            return appliedEvents;
+            return Stream.empty();
         }
     }
 
-    private Stream<Object> applyAndUnallocateIfRequired(Stream<Object> events) {
-        final Stream<Object> appliedEvents = apply(events);
-        if (canUnallocate()) {
-            return Stream.concat(appliedEvents, apply(Stream.of(hearingUnallocatedForListingEvent())));
+    private Stream<Object> onAllocationEvents() {
+        final Stream<Object> appliedBusinessRuleEvents = apply(onAllocationBusinessRules());
+        final HearingEvent allocateEvent = allocated ? allocatedHearingUpdatedForListingEvent() : hearingAllocatedForListingEvent();
+        return Stream.concat(appliedBusinessRuleEvents, apply(Stream.of(allocateEvent)));
+    }
+
+    private Stream<Object> onUnallocationEvents() {
+        final Stream<Object> appliedBusinessRuleEvents = apply(onUnallocationBusinessRules());
+        final HearingUnallocatedForListing unallocateEvent = hearingUnallocatedForListingEvent();
+        return Stream.concat(appliedBusinessRuleEvents, apply(Stream.of(unallocateEvent)));
+    }
+
+    private Stream<Object> onAllocationBusinessRules() {
+        return onAllocationStartTimeRule();
+    }
+
+    /*
+     * When allocating, if startTime is not assigned then default it to 10.30am.
+     */
+    private Stream<Object> onAllocationStartTimeRule() {
+        if (notCurrentlyAssigned(this.startTime)) {
+            final LocalTime defaultStartTime = LocalTime.parse(DEFAULT_START_TIME);
+            return Stream.of(new StartTimeAssignedToHearing(defaultStartTime, this.hearingId));
         } else {
-            return appliedEvents;
+            return Stream.empty();
         }
+    }
+
+    private Stream<Object> onUnallocationBusinessRules() {
+        // Currently no unallocation business rules to apply
+        return Stream.empty();
     }
 
     private boolean canAllocate() {
@@ -236,25 +261,6 @@ public class Hearing implements Aggregate {
     private boolean canUnallocate() {
         return this.allocated && (notCurrentlyAssigned(this.judgeId) || notCurrentlyAssigned(this.courtRoomId));
     }
-
-    private HearingAllocatedForListing hearingAllocatedForListingEvent() {
-        return new HearingAllocatedForListing(this.hearingId, this.type,
-               this.estimateMinutes, this.judgeId, this.courtRoomId,
-                new HearingDate(this.startDate, this.startTime, this.notBefore));
-    }
-
-    private AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListingEvent() {
-        return new AllocatedHearingUpdatedForListing(this.hearingId, this.type,
-               this.estimateMinutes, this.judgeId, this.courtRoomId,
-                new HearingDate(this.startDate, this.startTime, this.notBefore));
-    }
-
-    private HearingUnallocatedForListing hearingUnallocatedForListingEvent() {
-        return new HearingUnallocatedForListing(this.hearingId, this.type,
-                this.estimateMinutes, this.judgeId, this.courtRoomId,
-                new HearingDate(this.startDate, this.startTime, this.notBefore));
-    }
-
 
     private boolean notCurrentlyListed() {
         return notCurrentlyAssigned(this.hearingId) && notCurrentlyAssigned(this.type)
@@ -279,6 +285,27 @@ public class Hearing implements Aggregate {
 
     private <T> boolean hasChanged(T currentValue, T newValue) {
         return !Objects.equals(currentValue, newValue);
+    }
+
+
+    // Allocate / Unallocate Events
+
+    private HearingAllocatedForListing hearingAllocatedForListingEvent() {
+        return new HearingAllocatedForListing(this.hearingId, this.type,
+                this.estimateMinutes, this.judgeId, this.courtRoomId,
+                new HearingDate(this.startDate, this.startTime, this.notBefore));
+    }
+
+    private AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListingEvent() {
+        return new AllocatedHearingUpdatedForListing(this.hearingId, this.type,
+                this.estimateMinutes, this.judgeId, this.courtRoomId,
+                new HearingDate(this.startDate, this.startTime, this.notBefore));
+    }
+
+    private HearingUnallocatedForListing hearingUnallocatedForListingEvent() {
+        return new HearingUnallocatedForListing(this.hearingId, this.type,
+                this.estimateMinutes, this.judgeId, this.courtRoomId,
+                new HearingDate(this.startDate, this.startTime, this.notBefore));
     }
 
 

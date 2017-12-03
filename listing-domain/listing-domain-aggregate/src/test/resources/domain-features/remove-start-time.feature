@@ -7,6 +7,7 @@ Feature: Remove a start time from a hearing
     When removeStartTime to a uk.gov.moj.cpp.listing.domain.aggregate.Hearing using hearing-id
     Then the start-time-removed-from-hearing
 
+
   Scenario: An unallocated hearing has been listed and no start time has been assigned. A request to remove
             a start time from the hearing does not result in any change
 

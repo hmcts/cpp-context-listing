@@ -1,4 +1,11 @@
-Feature: Allocate a hearing
+Feature: Unallocate a hearing
+
+  # TODO: Think about what tests go in here
+  # The allocate-hearing event only sets allocate=true. Rather than having to list each event
+  # separately is it possible to specify a file name which contains multiple events that can
+  # be applied so as to ensure clarity in the test specification, eg.
+  # hearing-allocated-for-listing-with-mandatory-data = a file containing 4/5 events,
+  # unallocated-hearing-listed, judge-assigned-to-hearing, court-room-assigned-to-hearing, hearing-allocated-for-listing
 
   Scenario: An unallocated hearing has been listed and a courtroom has been assigned. However, a judge
             has not been assigned which is mandatory for allocation. Applying allocation rules does
@@ -33,22 +40,3 @@ Feature: Allocate a hearing
     Given there are previous events unallocated-hearing-listed,court-room-assigned-to-hearing,judge-assigned-to-hearing
     When applyAllocationRules to a uk.gov.moj.cpp.listing.domain.aggregate.Hearing using no-args
     Then the default-1030-start-time-assigned-to-hearing,hearing-allocated-for-listing-at-1030
-
-
-  Scenario: An unallocated hearing has been listed, all mandatory fields have been assigned, start time has been set to
-            09:00am and the hearing has been allocated. The allocated hearing is then updated by removing the start time.
-            Applying allocation rules results in the default start time of 10.30am being reassigned and the hearing is
-            still allocated at 10.30am.
-
-    Given there are previous events unallocated-hearing-listed,court-room-assigned-to-hearing,judge-assigned-to-hearing,start-time-assigned-to-hearing-at-0900,hearing-allocated-for-listing,start-time-removed-from-hearing
-    When applyAllocationRules to a uk.gov.moj.cpp.listing.domain.aggregate.Hearing using no-args
-    Then the default-1030-start-time-assigned-to-hearing,allocated-hearing-updated-for-listing-at-1030
-
-
-  Scenario: An unallocated hearing has been listed, a courtroom has been assigned and a judge has been assigned which
-            are all the mandatory requirements for allocation. However, the judge is then removed. Applying allocation
-            rules results does not result in any change.
-
-    Given there are previous events unallocated-hearing-listed,court-room-assigned-to-hearing,judge-assigned-to-hearing,court-room-removed-from-hearing
-    When applyAllocationRules to a uk.gov.moj.cpp.listing.domain.aggregate.Hearing using no-args
-    #Then the no events occurred
