@@ -16,12 +16,14 @@ import org.junit.Test;
 
 public class ListingIT extends AbstractIT {
 
+    private static final String PUBLIC_EVENT_CASE_SENT_FOR_LISTING = "public.listing.case-sent-for-listing";
+    private static final String TOPIC_NAME = "public.event";
 
     private MessageConsumerClient publicMessageConsumer = new MessageConsumerClient();
 
     @Before
     public void setup() {
-        publicMessageConsumer.startConsumer("listing.case-sent-for-listing", "public.event");
+        publicMessageConsumer.startConsumer(PUBLIC_EVENT_CASE_SENT_FOR_LISTING, TOPIC_NAME);
     }
 
     @After
