@@ -27,7 +27,8 @@ public class ListingEventProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
 
-    static final String PUBLIC_EVENT_CASE_SENT_FOR_LISTING = "listing.case-sent-for-listing";
+    static final String PUBLIC_EVENT_CASE_SENT_FOR_LISTING = "public.listing.case-sent-for-listing";
+    static final String PRIVATE_EVENT_CASE_SENT_FOR_LISTING = "listing.events.case-sent-for-listing";
     static final String COMMAND_LIST_HEARING = "listing.command.list-hearing";
 
     @Inject
@@ -42,9 +43,9 @@ public class ListingEventProcessor {
     @Inject
     private ObjectToJsonValueConverter objectToJsonValueConverter;
 
-    @Handles("listing.events.case-sent-for-listing")
+    @Handles(PRIVATE_EVENT_CASE_SENT_FOR_LISTING)
     public void handleCaseSentForListingMessage(final JsonEnvelope envelope) {
-        LOGGER.debug(format("'listing.events.case-sent-for-listing' event received %s", envelope.payloadAsJsonObject()));
+        LOGGER.debug(format("Received '%s' event with payload %s", PRIVATE_EVENT_CASE_SENT_FOR_LISTING, envelope.payloadAsJsonObject()));
 
         sendListHearingCommands(envelope);
 
@@ -60,9 +61,11 @@ public class ListingEventProcessor {
         final List<ListHearingCommand> listHearingCommands = convertCaseSentForListingToListHearingCommands(event);
 
         listHearingCommands.forEach(
-                hearings -> sender
-                        .send(enveloper.withMetadataFrom(envelope, COMMAND_LIST_HEARING)
-                                .apply(objectToJsonValueConverter.convert(hearings)))
+                listHearingCommand -> {
+                    LOGGER.debug(format("Sending '%s' command with payload %s", COMMAND_LIST_HEARING, listHearingCommand));
+                    sender.send(enveloper.withMetadataFrom(envelope, COMMAND_LIST_HEARING)
+                            .apply(objectToJsonValueConverter.convert(listHearingCommand)));
+                }
         );
     }
 
@@ -71,6 +74,7 @@ public class ListingEventProcessor {
      */
     private void publishCaseSentForListingPublicEvent(final JsonEnvelope envelope) {
         final CaseSentForListing event = getCaseSentForListing(envelope);
+        LOGGER.debug(format("Publishing '%s' public event with payload %s", PUBLIC_EVENT_CASE_SENT_FOR_LISTING, event));
         sender.send(enveloper.withMetadataFrom(envelope, PUBLIC_EVENT_CASE_SENT_FOR_LISTING).apply(event));
     }
 
