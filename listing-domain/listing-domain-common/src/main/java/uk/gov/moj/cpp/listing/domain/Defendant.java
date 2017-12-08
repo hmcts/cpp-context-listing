@@ -87,4 +87,19 @@ public class Defendant implements Serializable {
         return Objects.hash(id, personId, firstName, lastName,
                 dateOfBirth, bailStatus, custodyTimeLimit, defenceOrganisation, offences);
     }
+
+    @Override
+    public String toString() {
+        return "Defendant{" +
+                "id='" + id + '\'' +
+                ", personId='" + personId + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", dateOfBirth=" + dateOfBirth +
+                ", bailStatus='" + bailStatus + '\'' +
+                ", custodyTimeLimit=" + custodyTimeLimit +
+                ", defenceOrganisation='" + defenceOrganisation + '\'' +
+                ", offences=" + offences +
+                '}';
+    }
 }

@@ -38,4 +38,12 @@ public class StatementOfOffence implements Serializable {
     public int hashCode() {
         return Objects.hash(title, legislation);
     }
+
+    @Override
+    public String toString() {
+        return "StatementOfOffence{" +
+                "title='" + title + '\'' +
+                ", legislation='" + legislation + '\'' +
+                '}';
+    }
 }

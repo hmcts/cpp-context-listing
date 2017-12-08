@@ -14,6 +14,7 @@ import java.util.UUID;
 
 public class UpdatedHearingData {
 
+    private static final String TYPE = "TRIAL";
     private final UUID hearingId;
     private final UUID judgeId;
     private final UUID courtRoomId;
@@ -29,24 +30,30 @@ public class UpdatedHearingData {
 
 
     public static UpdatedHearingData updatedHearingDataWithoutJudgeId(final UUID hearingId) {
-        return new UpdatedHearingData(hearingId, null, randomUUID(), "TRIAL",
+        return new UpdatedHearingData(hearingId, null, randomUUID(), TYPE,
                 LocalDate.now().toString(), LocalTime.now().format(dtf), FALSE, INTEGER.next());
     }
 
     public static UpdatedHearingData updatedHearingDataWithoutCourtRoomId(final UUID hearingId) {
-        return new UpdatedHearingData(hearingId, randomUUID(), null, "TRIAL",
+        return new UpdatedHearingData(hearingId, randomUUID(), null, TYPE,
                 LocalDate.now().toString(), LocalTime.now().format(dtf), FALSE, INTEGER.next());
     }
 
     public static UpdatedHearingData updatedHearingDataWithoutCourtRoomIdAndStartTime(final UUID hearingId) {
-        return new UpdatedHearingData(hearingId, randomUUID(), null, "TRIAL",
+        return new UpdatedHearingData(hearingId, randomUUID(), null, TYPE,
                 LocalDate.now().toString(), null, FALSE, INTEGER.next());
     }
 
-    public static UpdatedHearingData updatedHearingDataWithEnoughDataToBeAllocated(final UUID hearingId) {
-        return new UpdatedHearingData(hearingId, randomUUID(), randomUUID(), "TRIAL",
+    public static UpdatedHearingData updatedHearingDataWithAllFieldsSet(final UUID hearingId) {
+        return new UpdatedHearingData(hearingId, randomUUID(), randomUUID(), TYPE,
                 LocalDate.now().toString(), LocalTime.now().format(dtf), TRUE, INTEGER.next());
     }
+
+    public static UpdatedHearingData updatedHearingDataWithoutStartTime(final UUID hearingId) {
+        return new UpdatedHearingData(hearingId, randomUUID(), randomUUID(), TYPE,
+                LocalDate.now().toString(), null, FALSE, INTEGER.next());
+    }
+
 
     public UpdatedHearingData(final UUID hearingId, final UUID judgeId, final UUID courtRoomId,
                               final String type, final String startDate, final String startTime,

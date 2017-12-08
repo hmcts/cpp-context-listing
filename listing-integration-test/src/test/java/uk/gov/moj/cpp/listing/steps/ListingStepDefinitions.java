@@ -17,15 +17,22 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudge;
 
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CaseData;
+import uk.gov.moj.cpp.listing.steps.data.CourtReferenceData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,19 +58,15 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
 
-    private static final String FIELD_GENERIC_ID = "id";
     private static final String FIELD_PERSON_ID = "personId";
     private static final String FIELD_DATE_BIRTH = "dateOfBirth";
     private static final String FIELD_OFFENCE_CODE = "offenceCode";
     private static final String FIELD_START_DATE = "startDate";
     private static final String FIELD_END_DATE = "endDate";
-    private static final String FIELD_TITLE = "title";
     private static final String FIELD_LEGISLATION = "legislation";
     private static final String FIELD_STATEMENT_OF_OFFENCE = "statementOfOffence";
     private static final String FIELD_BAIL_STATUS = "bailStatus";
     private static final String FIELD_DEFENCE_ORGANISATION = "defenceOrganisation";
-    private static final String FIELD_FIRST_NAME = "firstName";
-    private static final String FIELD_LAST_NAME = "lastName";
     private static final String FIELD_CASE_ID = "caseId";
     private static final String FIELD_URN = "urn";
     private static final String FIELD_COURT_CENTRE_ID = "courtCentreId";
@@ -76,6 +79,8 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String FIELD_CUSTODY_TIME_LIMIT = "custodyTimeLimit";
     private static final String FIELD_JUDGE_ID = "judgeId";
     private static final String FIELD_HEARING_ID = "hearingId";
+    private static final String FIELD_HEARING_DOT_ID = "hearing.id";
+    private static final String FIELD_HEARING_DOT_START_DATE_TIME = "hearing.startDateTime";
     private static final String FIELD_COURT_ROOM_ID = "courtRoomId";
     private static final String FIELD_TYPE = "type";
     private static final String FIELD_START_TIME = "startTime";
@@ -87,11 +92,25 @@ public class ListingStepDefinitions extends AbstractIT {
             ".update-hearing-for-listing";
     private static final String NOT_A_BOOLEAN = "not_a_boolean";
     private static final boolean UNALLOCATED = false;
-    private static final boolean ALLOCATED = true;
+    private static final String FIELD_GENERIC_ID = "id";
+    private static final String FIELD_TITLE = "title";
+    private static final String FIELD_FIRST_NAME = "firstName";
+    private static final String FIELD_LAST_NAME = "lastName";
+    private static final Boolean ALLOCATED = Boolean.TRUE;
+    private static final String DEFAULT_START_TIME = "10:30";
+    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
 
 
     public static void givenAUserHasLoggedInAsAListingOfficers(final UUID validUserId) {
         setLoggedInUser(validUserId);
+    }
+
+
+
+    public static void andReferenceDataForCourtsAreAvailable(CourtReferenceData courtReferenceData) {
+        stubGetReferenceDataCourtCentre(courtReferenceData);
+        stubGetReferenceDataJudge(courtReferenceData.getJudge());
     }
 
     public static void whenCaseIsSubmittedForListing(final CaseData caseData) {
@@ -123,8 +142,26 @@ public class ListingStepDefinitions extends AbstractIT {
             final CaseData caseData,
             final MessageConsumerClient publicMessageConsumer) throws JMSException {
 
-        verifyInPublicMQ(caseData.getCaseId().toString(), publicMessageConsumer);
+        verifyInPublicMQ(FIELD_CASE_ID, caseData.getCaseId().toString(), publicMessageConsumer);
     }
+
+    public static void thenHearingScheduledPublicEventShouldBePublished(
+            final UUID hearingId,
+            final MessageConsumerClient publicMessageConsumer) throws JMSException {
+
+        verifyInPublicMQ(FIELD_HEARING_DOT_ID, hearingId.toString(), publicMessageConsumer);
+    }
+
+    public static void thenHearingScheduledPublicEventShouldBePublishedWithDefaultStartTime(
+            final UpdatedHearingData updatedHearingData,
+            final MessageConsumerClient publicMessageConsumer) throws JMSException{
+
+        final LocalDateTime startDateTime = LocalDateTime.of(LocalDate.parse(updatedHearingData.getStartDate()), LocalTime.parse(DEFAULT_START_TIME));
+        verifyInPublicMQ(FIELD_HEARING_DOT_START_DATE_TIME,  DATE_TIME_FORMAT.format(startDateTime), publicMessageConsumer);
+    }
+
+
+    
 
     public static void thenUnallocatedHearingsForACourtCentreShouldContainTwoExpectedHearingsWhenQueried(final CaseData caseData, final CaseData caseDataNew) {
         final String searchHearingUrl = String.format("%s/%s", baseUri,
@@ -276,6 +313,36 @@ public class ListingStepDefinitions extends AbstractIT {
                         )));
     }
 
+    public static void thenAllocatedHearingsForACourtCentreShouldContainUpdatedHearingDataWithDefaultStartTime(final CaseData caseData, final UpdatedHearingData updatedHearingData) {
+        final String searchHearingUrl = String.format("%s/%s", baseUri,
+                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData.getHearingData().get(0).getCourtCentreId(), ALLOCATED));
+        final Filter myFilter = filter(where("id").is(caseData.getHearingData().get(0).getId().toString()));
+        final com.jayway.jsonpath.JsonPath hearingFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", myFilter);
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath(hearingFilter),
+                                withJsonPath("$.hearings[0].id",
+                                        equalTo(updatedHearingData.getHearingId().toString())),
+                                withJsonPath("$.hearings[0].judgeId",
+                                        equalTo(updatedHearingData.getJudgeId().toString())),
+                                withJsonPath("$.hearings[0].courtRoomId",
+                                        equalTo(updatedHearingData.getCourtRoomId().toString())),
+                                withJsonPath("$.hearings[0].type",
+                                        equalTo(updatedHearingData.getType())),
+                                withJsonPath("$.hearings[0].startDate",
+                                        equalTo(updatedHearingData.getStartDate().toString())),
+                                withJsonPath("$.hearings[0].startTime",
+                                        equalTo(LocalTime.parse(DEFAULT_START_TIME).toString())),
+                                withJsonPath("$.hearings[0].notBefore",
+                                        equalTo(updatedHearingData.getNotBefore())),
+                                withJsonPath("$.hearings[0].estimateMinutes",
+                                        equalTo(updatedHearingData.getEstimateMinutes()))
+                        )));
+    }
+
 
     public static void thenQueryValidationFailureOccursWhenQueried(final CaseData caseData) {
         final String searchHearingUrl = String.format("%s/%s", baseUri,
@@ -377,10 +444,9 @@ public class ListingStepDefinitions extends AbstractIT {
                 .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
     }
 
-
-    private static void verifyInPublicMQ(final String caseId, final MessageConsumerClient
+    private static void verifyInPublicMQ(final String key, final String expectedValue, final MessageConsumerClient
             publicMessageConsumer) throws JMSException {
         JsonPath response = new JsonPath(publicMessageConsumer.retrieveMessage().get());
-        assertThat(response.get(FIELD_CASE_ID), CoreMatchers.equalTo(caseId));
+        assertThat(response.get(key), CoreMatchers.equalTo(expectedValue));
     }
 }

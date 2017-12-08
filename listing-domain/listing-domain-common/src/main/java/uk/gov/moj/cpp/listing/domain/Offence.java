@@ -57,4 +57,15 @@ public class Offence implements Serializable {
     public int hashCode() {
         return Objects.hash(id, offenceCode, startDate, endDate, statementOfOffence);
     }
+
+    @Override
+    public String toString() {
+        return "Offence{" +
+                "id='" + id + '\'' +
+                ", offenceCode='" + offenceCode + '\'' +
+                ", startDate=" + startDate +
+                ", endDate=" + endDate +
+                ", statementOfOffence=" + statementOfOffence +
+                '}';
+    }
 }
