@@ -54,6 +54,7 @@ public class HearingConfirmedFactoryTest {
     private static final String FIELD_TITLE = "title";
     private static final String FIELD_FIRST_NAME = "firstName";
     private static final String FIELD_LAST_NAME = "lastName";
+    private static final String FIELD_COURT_CENTRES = "courtCentres";
 
     private static final UUID CASE_ID = UUID.randomUUID();
     private static final UUID OFFENCE_ID = UUID.randomUUID();
@@ -164,6 +165,7 @@ public class HearingConfirmedFactoryTest {
 
 
     private JsonEnvelope courtCentre() {
+
         final JsonArrayBuilder courtRooms = createArrayBuilder()
                 .add(createObjectBuilder()
                         .add(FIELD_GENERIC_ID, COURT_ROOM_1_ID.toString())
@@ -172,12 +174,16 @@ public class HearingConfirmedFactoryTest {
                         .add(FIELD_GENERIC_ID, COURT_ROOM_2_ID.toString())
                         .add(FIELD_NAME, COURT_ROOM_2_NAME));
 
-        final JsonObjectBuilder courtCentreJson = createObjectBuilder()
+        final JsonArrayBuilder  courtCentres = createArrayBuilder()
+                .add(createObjectBuilder()
                 .add(FIELD_GENERIC_ID, COURT_CENTRE_ID.toString())
                 .add(FIELD_NAME, COURT_CENTRE_NAME)
-                .add(FIELD_COURT_ROOMS, courtRooms.build());
+                .add(FIELD_COURT_ROOMS, courtRooms.build()));
 
-        return envelopeFrom(metadataWithRandomUUIDAndName(), courtCentreJson.build());
+        final JsonObjectBuilder courtCentresJsonObject = createObjectBuilder()
+                .add(FIELD_COURT_CENTRES, courtCentres.build());
+
+        return envelopeFrom(metadataWithRandomUUIDAndName(), courtCentresJsonObject.build());
     }
 
     private JsonEnvelope judge() {
