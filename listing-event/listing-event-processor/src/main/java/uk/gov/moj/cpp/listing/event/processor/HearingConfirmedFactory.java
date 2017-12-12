@@ -75,7 +75,15 @@ public class HearingConfirmedFactory {
 
     private String getCourtCentreName(final UUID courtCentreId, final JsonEnvelope event) {
         final JsonObject courtCentrePayload = getCourtCentrePayload(courtCentreId, event);
-        return courtCentrePayload.getString(FIELD_NAME, null);
+        return courtCentrePayload.getString(FIELD_NAME);
+    }
+
+
+    private String getCourtRoomName(final UUID courtCentreId, final UUID courtRoomId, final JsonEnvelope event) {
+        final JsonObject courtCentrePayload = getCourtCentrePayload(courtCentreId, event);
+        return courtCentrePayload.getJsonArray(COURT_ROOMS).getValuesAs(JsonObject.class).stream()
+                .filter(cr -> courtRoomId.toString().equals(cr.getString(ID)))
+                .map(cr -> cr.getString(FIELD_NAME)).findFirst().get();
     }
 
     private JsonObject getCourtCentrePayload(UUID courtCentreId, JsonEnvelope event) {
@@ -83,13 +91,6 @@ public class HearingConfirmedFactory {
         final JsonObject courtCentresPayload = courtCentresEnvelope.payloadAsJsonObject();
         final JsonArray courtCentresArray = courtCentresPayload.getJsonArray(FIELD_COURT_CENTRES);
         return courtCentresArray.getJsonObject(0);
-    }
-
-    private String getCourtRoomName(final UUID courtCentreId, final UUID courtRoomId, final JsonEnvelope event) {
-        final JsonObject courtCentrePayload = getCourtCentrePayload(courtCentreId, event);
-        return courtCentrePayload.getJsonArray(COURT_ROOMS).getValuesAs(JsonObject.class).stream()
-                .filter(cr -> courtRoomId.toString().equals(cr.getString(ID)))
-                .map(cr -> cr.getString(FIELD_NAME, null)).findFirst().get();
     }
 
     private Judge getJudge(final UUID judgeId, final JsonEnvelope event) {
