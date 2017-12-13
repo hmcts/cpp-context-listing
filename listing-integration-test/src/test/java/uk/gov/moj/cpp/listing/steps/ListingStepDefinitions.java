@@ -369,8 +369,7 @@ public class ListingStepDefinitions extends AbstractIT {
     private static JsonObjectBuilder prepareJsonForUpdatedHearingData(final UpdatedHearingData updatedHearingData) {
         final JsonObjectBuilder builder = createObjectBuilder();
 
-        builder.add(FIELD_HEARING_ID, updatedHearingData.getHearingId().toString())
-                .add(FIELD_TYPE, updatedHearingData.getType())
+        builder.add(FIELD_TYPE, updatedHearingData.getType())
                 .add(FIELD_START_DATE, updatedHearingData.getStartDate())
                 .add(FIELD_NOT_BEFORE, updatedHearingData.getNotBefore())
                 .add(FIELD_ESTIMATE_MINUTES, updatedHearingData.getEstimateMinutes());
