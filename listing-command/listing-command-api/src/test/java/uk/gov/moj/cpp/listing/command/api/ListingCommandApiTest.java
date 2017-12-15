@@ -9,8 +9,10 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class ListingCommandApiTest {
 
+    private static final String[] PUBLIC_API_COMMANDS = {"sendCaseForListing", "updateHearingForListing"};
+
     @Test
     public void testIfAllMethodsArePassThrough() throws Exception {
-        verifyPassThroughCommandHandlerMethod(ListingCommandApi.class, "sendCaseForListing", "updateHearingForListing");
+        verifyPassThroughCommandHandlerMethod(ListingCommandApi.class, PUBLIC_API_COMMANDS);
     }
 }
