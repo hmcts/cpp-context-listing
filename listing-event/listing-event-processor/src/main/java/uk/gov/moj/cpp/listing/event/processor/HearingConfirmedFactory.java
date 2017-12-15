@@ -19,13 +19,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 public class HearingConfirmedFactory {
 
-
-    private static final String FIELD_COURT_CENTRES = "courtCentres";
     private static final String FIELD_NAME = "name";
     private static final String COURT_ROOMS = "courtRooms";
     private static final String FIRST_NAME = "firstName";
@@ -87,10 +84,8 @@ public class HearingConfirmedFactory {
     }
 
     private JsonObject getCourtCentrePayload(UUID courtCentreId, JsonEnvelope event) {
-        final JsonEnvelope courtCentresEnvelope = referenceDataService.getCourtCentreById(courtCentreId, event);
-        final JsonObject courtCentresPayload = courtCentresEnvelope.payloadAsJsonObject();
-        final JsonArray courtCentresArray = courtCentresPayload.getJsonArray(FIELD_COURT_CENTRES);
-        return courtCentresArray.getJsonObject(0);
+        final JsonEnvelope courtCentreEnvelope = referenceDataService.getCourtCentreById(courtCentreId, event);
+        return courtCentreEnvelope.payloadAsJsonObject();
     }
 
     private Judge getJudge(final UUID judgeId, final JsonEnvelope event) {

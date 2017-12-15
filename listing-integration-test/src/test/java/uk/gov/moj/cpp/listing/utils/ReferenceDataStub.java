@@ -14,8 +14,8 @@ import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.waitForStubToBeRead
 
 import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
-import uk.gov.moj.cpp.listing.steps.data.CourtReferenceData;
 import uk.gov.moj.cpp.listing.steps.data.Judge;
+import uk.gov.moj.cpp.listing.steps.data.CourtReferenceData;
 
 import java.util.UUID;
 
@@ -27,7 +27,6 @@ public class ReferenceDataStub {
     private static final String FIELD_GENERIC_ID = "id";
     private static final String FIELD_NAME = "name";
     private static final String FIELD_COURT_ROOMS = "courtRooms";
-    private static final String FIELD_COURT_CENTRES = "courtCentres";
 
     private static final String FIELD_TITLE = "title";
     private static final String FIELD_FIRST_NAME = "firstName";
@@ -67,7 +66,7 @@ public class ReferenceDataStub {
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", UUID.randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
-                        .withBody(getCourtCentresJsonBuilder(courtReferenceData).build().toString())));
+                        .withBody(getCourtCentreJsonBuilder(courtReferenceData).build().toString())));
 
 
         waitForStubToBeReady(format(REFERENCE_DATA_COURT_CENTRE_QUERY_URL, courtReferenceData.getCourtCentreId()), REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
@@ -148,7 +147,7 @@ public class ReferenceDataStub {
     }
 
 
-    private static JsonObjectBuilder getCourtCentresJsonBuilder(final CourtReferenceData rd) {
+    private static JsonObjectBuilder getCourtCentreJsonBuilder(final CourtReferenceData rd) {
         final JsonArrayBuilder courtRooms = createArrayBuilder()
                 .add(createObjectBuilder()
                         .add(FIELD_GENERIC_ID, rd.getCourtRoomId().toString())
@@ -157,17 +156,11 @@ public class ReferenceDataStub {
                         .add(FIELD_GENERIC_ID, UUID.randomUUID().toString())
                         .add(FIELD_NAME, RandomGenerator.STRING.next()));
 
-        final JsonArrayBuilder courtCentresArray = createArrayBuilder()
-                .add(createObjectBuilder()
-                        .add(FIELD_GENERIC_ID, rd.getCourtCentreId().toString())
-                        .add(FIELD_NAME, rd.getCourtCentreName())
-                        .add(FIELD_COURT_ROOMS, courtRooms.build()));
-
-        final JsonObjectBuilder courtCentresJsonObject = createObjectBuilder()
-                 .add(FIELD_COURT_CENTRES, courtCentresArray.build());
-        return courtCentresJsonObject;
+        return createObjectBuilder()
+                .add(FIELD_GENERIC_ID, rd.getCourtCentreId().toString())
+                .add(FIELD_NAME, rd.getCourtCentreName())
+                .add(FIELD_COURT_ROOMS, courtRooms.build());
     }
-    
 
 
 
@@ -181,5 +174,5 @@ public class ReferenceDataStub {
     }
 
 
-  
+
 }
