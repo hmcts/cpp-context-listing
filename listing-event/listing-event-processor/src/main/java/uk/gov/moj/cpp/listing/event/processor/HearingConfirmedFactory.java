@@ -23,13 +23,14 @@ import javax.json.JsonObject;
 
 public class HearingConfirmedFactory {
 
+    static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
     private static final String FIELD_NAME = "name";
     private static final String COURT_ROOMS = "courtRooms";
     private static final String FIRST_NAME = "firstName";
     private static final String TITLE = "title";
     private static final String LAST_NAME = "lastName";
     private static final String ID = "id";
-    static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     @Inject
     private ReferenceDataService referenceDataService;
@@ -50,7 +51,6 @@ public class HearingConfirmedFactory {
         return new HearingConfirmed(hearing.getListingCaseId().toString(), listingCase.getUrn(), externalHearing);
     }
 
-
     private List<Defendant> getDefendants(final Hearing hearing) {
         return hearing.getDefendants().stream()
                 .map(d -> new uk.gov.moj.cpp.listing.domain.Defendant(d.getDefendantId().toString(), d.getPersonId().toString(), d.getFirstName(), d.getLastName(),
@@ -69,12 +69,10 @@ public class HearingConfirmedFactory {
                 .collect(Collectors.toList());
     }
 
-
     private String getCourtCentreName(final UUID courtCentreId, final JsonEnvelope event) {
         final JsonObject courtCentrePayload = getCourtCentrePayload(courtCentreId, event);
         return courtCentrePayload.getString(FIELD_NAME);
     }
-
 
     private String getCourtRoomName(final UUID courtCentreId, final UUID courtRoomId, final JsonEnvelope event) {
         final JsonObject courtCentrePayload = getCourtCentrePayload(courtCentreId, event);

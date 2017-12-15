@@ -166,6 +166,4 @@ public class HearingIT extends AbstractIT {
         thenHearingScheduledPublicEventShouldBePublishedWithDefaultStartTime(updatedHearingData, publicMessageConsumer);
     }
 
-   
-
 }

@@ -59,7 +59,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class ListingEventProcessorTest {
 
-
     private static final UUID CASE_ID = UUID.randomUUID();
     private static final UUID OFFENCE_ID = UUID.randomUUID();
     private static final UUID HEARING_ID = UUID.randomUUID();
@@ -90,30 +89,31 @@ public class ListingEventProcessorTest {
     private static final String LAST_NAME = RandomGenerator.STRING.next();
     private static final String URN = RandomGenerator.STRING.next();
 
-    @InjectMocks
-    private ListingEventProcessor listingEventProcessor;
 
-
-    @Spy
-    private Enveloper enveloper = createEnveloper();
-
-    
     @Mock
     private Sender sender;
+
     @Mock
     private JsonEnvelope envelope;
+
     @Mock
     private JsonObject payload;
+
     @Mock
     private JsonObjectToObjectConverter jsonObjectConverter;
+
     @Mock
     private ObjectToJsonValueConverter objectToJsonValueConverter;
+
     @Mock
     private Function<Object, JsonEnvelope> enveloperFunction;
+
     @Mock
     private JsonEnvelope finalEnvelope;
+
     @Mock
     private CaseSentForListing caseSentForListing;
+
     @Mock
     private HearingAllocatedForListing hearingAllocatedForListing;
 
@@ -135,9 +135,14 @@ public class ListingEventProcessorTest {
     @Mock
     private HearingConfirmedFactory hearingConfirmedFactory;
 
-
     @Captor
     private ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor;
+
+    @Spy
+    private Enveloper enveloper = createEnveloper();
+
+    @InjectMocks
+    private ListingEventProcessor listingEventProcessor;
 
 
     @Test
@@ -220,7 +225,6 @@ public class ListingEventProcessorTest {
         ));
     }
 
-
     private JsonEnvelope hearingAllocatedEvent() {
 
         final JsonObjectBuilder hearingDate = createObjectBuilder()
@@ -239,8 +243,6 @@ public class ListingEventProcessorTest {
         return envelopeFrom(metadataWithRandomUUIDAndName(), hearingAllocated.build());
     }
 
-
-
     private HearingConfirmed hearingConfirmed() {
 
         uk.gov.moj.cpp.listing.domain.StatementOfOffence statementOfOffence = new uk.gov.moj.cpp.listing.domain.StatementOfOffence(TITLE, LEGISLATION);
@@ -252,7 +254,6 @@ public class ListingEventProcessorTest {
                 (HEARING_ID.toString(), TYPE, CASE_ID.toString(), COURT_CENTRE_ID.toString(), COURT_CENTRE_NAME, COURT_ROOM_ID.toString(), COURT_ROOM_1_NAME, judge, DATE_TIME_FORMAT.format(START_DATE_TIME), NOT_BEFORE, ESTIMATED_MINUTES, Arrays.asList(defendant));
 
         return new HearingConfirmed(CASE_ID.toString(), URN, hearing);
-
     }
 
 }

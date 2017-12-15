@@ -159,9 +159,7 @@ public class HearingConfirmedFactoryTest {
                 hasProperty("title", is(TITLE.toString())),
                 hasProperty("legislation", is(LEGISLATION))));
 
-
     }
-
 
     private JsonEnvelope courtCentre() {
         final JsonArrayBuilder courtRooms = createArrayBuilder()
@@ -194,7 +192,6 @@ public class HearingConfirmedFactoryTest {
         return new HearingAllocatedForListing(HEARING_ID.toString(), TYPE, ESTIMATED_MINUTES,
                 JUDGE_ID.toString(), COURT_ROOM_1_ID.toString(), new HearingDate(UPDATED_START_DATE, UPDATED_START_TIME, NOT_BEFORE));
     }
-
 
     private ListingCase listingCase() {
         ListingCaseBuilder listingCaseBuilder = new ListingCaseBuilder()
@@ -260,6 +257,5 @@ public class HearingConfirmedFactoryTest {
                 .build();
         return statementOfOffence;
     }
-
   
 }

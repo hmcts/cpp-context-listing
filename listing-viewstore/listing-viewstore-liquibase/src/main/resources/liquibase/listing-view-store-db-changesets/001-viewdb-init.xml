@@ -4,6 +4,7 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
 
     <changeSet author="listing" id="1" logicalFilePath="001-viewdb-init.xml">
+
         <createTable tableName="listing_case">
             <column name="id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
@@ -31,14 +32,11 @@
             <column name="listing_defendant_id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-
-            <column name="defendant_id" type="UUID"/>
-            
+            <column name="defendant_id" type="UUID"/>   
             <column name="hearing_id" type="UUID">
                 <constraints nullable="false" foreignKeyName="fk_defendant_hearing"
                              references="hearing(id)"/>
             </column>
-
             <column name="person_id" type="UUID"/>
             <column name="first_name" type="TEXT"/>
             <column name="last_name" type="TEXT"/>
@@ -47,8 +45,6 @@
             <column name="custody_time_limit" type="DATE"/>
             <column name="defence_organisation" type="TEXT"/>
         </createTable>
-
-
 
         <createTable tableName="offence">
             <column name="listing_offence_id" type="UUID">
@@ -66,6 +62,5 @@
             <column name="statement_of_offence_legislation" type="TEXT"/>
         </createTable>
     </changeSet>
-
 
 </databaseChangeLog>

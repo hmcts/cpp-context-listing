@@ -37,9 +37,9 @@ public class ListingEventProcessor {
     static final String PUBLIC_EVENT_CASE_SENT_FOR_LISTING = "public.listing.case-sent-for-listing";
     static final String PUBLIC_EVENT_HEARING_CONFIRMED = "public.hearing-confirmed";
     static final String PRIVATE_EVENT_CASE_SENT_FOR_LISTING = "listing.events.case-sent-for-listing";
-    static final String COMMAND_LIST_HEARING = "listing.command.list-hearing";
     static final String PRIVATE_EVENT_HEARING_ALLOCATED_FOR_LISTING = "listing.events.hearing-allocated-for-listing";
-
+    static final String COMMAND_LIST_HEARING = "listing.command.list-hearing";
+    
     @Inject
     private Sender sender;
 
@@ -73,21 +73,9 @@ public class ListingEventProcessor {
 
     @Handles(PRIVATE_EVENT_HEARING_ALLOCATED_FOR_LISTING)
     public void handleHearingAllocatedForListingMessage(final JsonEnvelope envelope) {
-        LOGGER.info(format("'listing.events.hearing-allocated-for-listing' event received %s", envelope.payloadAsJsonObject()));
+        LOGGER.info(format("Received '%s' event with payload %s", PRIVATE_EVENT_HEARING_ALLOCATED_FOR_LISTING, envelope.payloadAsJsonObject()));
 
         publishHearingConfirmedPublicEvent(envelope);
-    }
-
-    private void publishHearingConfirmedPublicEvent(JsonEnvelope envelope) {
-        final HearingAllocatedForListing hearingAllocatedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
-
-        final Hearing hearing = hearingRepository.findBy(UUID.fromString(hearingAllocatedForListing.getHearingId()));
-        final ListingCase aCase = listingCaseRepository.findBy(hearing.getListingCaseId());
-
-        final HearingConfirmed hearingConfirmed = hearingConfirmedFactory.create(hearing, aCase, hearingAllocatedForListing, envelope);
-
-        LOGGER.info(format("Sending '%s' public event with payload %s", PUBLIC_EVENT_HEARING_CONFIRMED, hearingConfirmed));
-        sender.send(enveloper.withMetadataFrom(envelope, PUBLIC_EVENT_HEARING_CONFIRMED).apply(hearingConfirmed));
     }
 
 
@@ -109,12 +97,27 @@ public class ListingEventProcessor {
     }
 
     /*
-     * Publish a public event to notify  that the case has been listed.
+     * Publish a public event to notify that the case has been listed.
      */
     private void publishCaseSentForListingPublicEvent(final JsonEnvelope envelope) {
         final CaseSentForListing event = getCaseSentForListing(envelope);
-        LOGGER.debug(format("Publishing '%s' public event with payload %s", PUBLIC_EVENT_CASE_SENT_FOR_LISTING, event));
+        LOGGER.info(format("Publishing '%s' public event with payload %s", PUBLIC_EVENT_CASE_SENT_FOR_LISTING, event));
         sender.send(enveloper.withMetadataFrom(envelope, PUBLIC_EVENT_CASE_SENT_FOR_LISTING).apply(event));
+    }
+
+    /*
+     * Publish a public event to notify that the hearing has been confirmed.
+     */
+    private void publishHearingConfirmedPublicEvent(JsonEnvelope envelope) {
+        final HearingAllocatedForListing hearingAllocatedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
+
+        final Hearing hearing = hearingRepository.findBy(UUID.fromString(hearingAllocatedForListing.getHearingId()));
+        final ListingCase aCase = listingCaseRepository.findBy(hearing.getListingCaseId());
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmedFactory.create(hearing, aCase, hearingAllocatedForListing, envelope);
+
+        LOGGER.info(format("Publishing '%s' public event with payload %s", PUBLIC_EVENT_HEARING_CONFIRMED, hearingConfirmed));
+        sender.send(enveloper.withMetadataFrom(envelope, PUBLIC_EVENT_HEARING_CONFIRMED).apply(hearingConfirmed));
     }
 
     private CaseSentForListing getCaseSentForListing(final JsonEnvelope envelope) {
