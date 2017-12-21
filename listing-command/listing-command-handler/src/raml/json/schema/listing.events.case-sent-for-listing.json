@@ -10,10 +10,6 @@
       "type": "string",
       "maxLength": 15
     },
-    "sendingCommittalDate": {
-      "type": "string",
-      "format": "date"
-    },
     "hearings": {
       "type": "array",
       "minItems": 1,
@@ -30,14 +26,20 @@
           },
           "type": {
             "type": "string",
-            "enum": ["PTP", "SENTENCING", "TRIAL", "APPLICATIONS"]
+            "enum": [
+              "PTP",
+              "SENTENCING",
+              "TRIAL",
+              "APPLICATIONS"
+            ]
           },
           "startDate": {
             "type": "string",
             "format": "date"
           },
           "estimateMinutes": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 1
           },
           "defendants": {
             "type": "array",
@@ -54,7 +56,7 @@
                   "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
                 },
                 "firstName": {
-                  "description": "The person fore name",
+                  "description": "The person first name",
                   "type": "string"
                 },
                 "lastName": {
@@ -124,6 +126,7 @@
               },
               "required": [
                 "id",
+                "personId",
                 "firstName",
                 "lastName",
                 "dateOfBirth",

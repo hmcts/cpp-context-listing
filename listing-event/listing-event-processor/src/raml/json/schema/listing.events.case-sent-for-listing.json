@@ -21,14 +21,16 @@
             "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
           },
           "courtCentreId": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
           },
           "type": {
             "type": "string",
             "enum": [
               "PTP",
               "SENTENCING",
-              "TRIAL"
+              "TRIAL",
+              "APPLICATIONS"
             ]
           },
           "startDate": {
@@ -36,7 +38,8 @@
             "format": "date"
           },
           "estimateMinutes": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 1
           },
           "defendants": {
             "type": "array",
@@ -53,7 +56,7 @@
                   "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
                 },
                 "firstName": {
-                  "description": "The person fore name",
+                  "description": "The person first name",
                   "type": "string"
                 },
                 "lastName": {
@@ -66,7 +69,7 @@
                   "format": "date"
                 },
                 "bailStatus": {
-                  "type": "string"
+                  "enum": ["conditional","unconditional","inCustody"]
                 },
                 "custodyTimeLimit": {
                   "description": "Custody Time Limit",
@@ -123,6 +126,7 @@
               },
               "required": [
                 "id",
+                "personId",
                 "firstName",
                 "lastName",
                 "dateOfBirth",
