@@ -1,4 +1,18 @@
 {
-  "hearingId": "e8821a38-546d-4b56-9992-ebdd772a561f",
-  "estimateMinutes": 222
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "estimateMinutes": {
+      "type": "integer"
+    },
+    "hearingId": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    }
+  },
+  "required": [
+    "estimateMinutes",
+    "hearingId"
+  ],
+  "additionalProperties": false
 }

@@ -100,18 +100,18 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String DEFAULT_START_TIME = "10:30";
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-
+    // Given steps
 
     public static void givenAUserHasLoggedInAsAListingOfficers(final UUID validUserId) {
         setLoggedInUser(validUserId);
     }
 
-
-
     public static void andReferenceDataForCourtsAreAvailable(CourtReferenceData courtReferenceData) {
         stubGetReferenceDataCourtCentre(courtReferenceData);
         stubGetReferenceDataJudge(courtReferenceData.getJudge());
     }
+
+    // When steps
 
     public static void whenCaseIsSubmittedForListing(final CaseData caseData) {
         final String listCaseForHearingUrl = String.format("%s/%s", baseUri, format
@@ -138,6 +138,8 @@ public class ListingStepDefinitions extends AbstractIT {
 
     }
 
+    // Then steps
+
     public static void thenCaseSentForListingPublicEventShouldBePublished(
             final CaseData caseData,
             final MessageConsumerClient publicMessageConsumer) throws JMSException {
@@ -160,9 +162,6 @@ public class ListingStepDefinitions extends AbstractIT {
         verifyInPublicMQ(FIELD_HEARING_DOT_START_DATE_TIME,  DATE_TIME_FORMAT.format(startDateTime), publicMessageConsumer);
     }
 
-
-    
-
     public static void thenUnallocatedHearingsForACourtCentreShouldContainTwoExpectedHearingsWhenQueried(final CaseData caseData, final CaseData caseDataNew) {
         final String searchHearingUrl = String.format("%s/%s", baseUri,
                 format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings"), caseData.getHearingData().get(0).getCourtCentreId(), UNALLOCATED));
@@ -177,7 +176,6 @@ public class ListingStepDefinitions extends AbstractIT {
                         status().is(OK),
                         payload().isJson(withJsonPath(hearingFilterNew)),
                         payload().isJson(withJsonPath(hearingFilterInitial)));
-
     }
 
     public static void thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried(final CaseData caseData) {
@@ -365,7 +363,6 @@ public class ListingStepDefinitions extends AbstractIT {
                 .add(FIELD_HEARINGS, prepareJsonForHearings(caseData.getHearingData()));
     }
 
-
     private static JsonObjectBuilder prepareJsonForUpdatedHearingData(final UpdatedHearingData updatedHearingData) {
         final JsonObjectBuilder builder = createObjectBuilder();
 
@@ -392,7 +389,6 @@ public class ListingStepDefinitions extends AbstractIT {
     private static String getStringOrNull(UUID id) {
         return id!=null ? id.toString() : null;
     }
-
 
     private static JsonArrayBuilder prepareJsonForHearings(final List<HearingData> hearings) {
         return hearings.stream()
@@ -448,4 +444,5 @@ public class ListingStepDefinitions extends AbstractIT {
         JsonPath response = new JsonPath(publicMessageConsumer.retrieveMessage().get());
         assertThat(response.get(key), CoreMatchers.equalTo(expectedValue));
     }
+
 }
