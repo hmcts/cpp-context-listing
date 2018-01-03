@@ -31,14 +31,14 @@ public class ReferenceDataStub {
     private static final String FIELD_FIRST_NAME = "firstName";
     private static final String FIELD_LAST_NAME = "lastName";
 
-    private static final String REFERENCE_DATA_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/court/centres/{0}";
-    private static final String REFERENCE_DATA_JUDGE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/court/judges/{0}";
+    private static final String REFERENCE_DATA_COURT_CENTRE_QUERY_URL = "/referencedata-query-api/query/api/rest/referencedata/court/centres/{0}";
+    private static final String REFERENCE_DATA_JUDGE_QUERY_URL = "/referencedata-query-api/query/api/rest/referencedata/court/judges/{0}";
 
     private static final String REFERENCE_DATA_JUDGE_MEDIA_TYPE = "application/vnd.referencedata.get-judge+json";
     private static final String REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE = "application/vnd.referencedata.get.court-centre+json";
 
     public static void stubGetReferenceDataCourtCentre(final CourtReferenceData courtReferenceData) {
-        InternalEndpointMockUtils.stubPingFor("referencedata-service");
+        InternalEndpointMockUtils.stubPingFor("referencedata-query-api");
 
         stubFor(get(urlPathEqualTo(format(REFERENCE_DATA_COURT_CENTRE_QUERY_URL, courtReferenceData.getCourtCentreId())))
                 .willReturn(aResponse().withStatus(SC_OK)
@@ -51,7 +51,7 @@ public class ReferenceDataStub {
     }
 
     public static void stubGetReferenceDataJudge(final Judge judge) {
-        InternalEndpointMockUtils.stubPingFor("referencedata-service");
+        InternalEndpointMockUtils.stubPingFor("referencedata-query-api");
 
         stubFor(get(urlPathEqualTo(format(REFERENCE_DATA_JUDGE_QUERY_URL, judge.getJudgeId())))
                 .willReturn(aResponse().withStatus(SC_OK)
