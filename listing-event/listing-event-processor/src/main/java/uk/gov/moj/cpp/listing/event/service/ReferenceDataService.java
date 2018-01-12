@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
 
 public class ReferenceDataService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReferenceDataService.class);
+    private static final String REFERENCEDATA_GET_JUDGE = "referencedata.get.judge";
+    private static final String REFERENCEDATA_GET_COURT_CENTRE = "referencedata.get.court-centre";
 
     @Inject
     private Enveloper enveloper;
@@ -30,14 +32,14 @@ public class ReferenceDataService {
     public JsonEnvelope getJudgeById(final UUID judgeId, final JsonEnvelope event) {
         final JsonObject payload = createObjectBuilder().add("id", judgeId.toString()).build();
         LOGGER.debug(format("'referencedata.get.judge' received with payload %s", payload));
-        final JsonEnvelope request = enveloper.withMetadataFrom(event, "referencedata.get.judge").apply(payload);
+        final JsonEnvelope request = enveloper.withMetadataFrom(event, REFERENCEDATA_GET_JUDGE).apply(payload);
         return requester.request(request);
     }
     
     public JsonEnvelope getCourtCentreById(final UUID courtCentreId, final JsonEnvelope event) {
         final JsonObject payload = createObjectBuilder().add("id", courtCentreId.toString()).build();
         LOGGER.debug(format("'referencedata.get.court-centre' received with payload %s", payload));
-        final JsonEnvelope request = enveloper.withMetadataFrom(event, "referencedata.get.court-centre").apply(payload);
+        final JsonEnvelope request = enveloper.withMetadataFrom(event, REFERENCEDATA_GET_COURT_CENTRE).apply(payload);
         return requester.request(request);
     }
 }

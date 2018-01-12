@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.Judge;
+import uk.gov.moj.cpp.listing.domain.Judge;
 import uk.gov.moj.cpp.listing.domain.Defendant;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.event.HearingAllocatedForListing;

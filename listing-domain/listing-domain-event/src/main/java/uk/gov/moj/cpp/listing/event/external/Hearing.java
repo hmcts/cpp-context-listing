@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.event.external;
 
 
-import uk.gov.moj.cpp.listing.Judge;
+import uk.gov.moj.cpp.listing.domain.Judge;
 import uk.gov.moj.cpp.listing.domain.Defendant;
 
 import java.io.Serializable;
