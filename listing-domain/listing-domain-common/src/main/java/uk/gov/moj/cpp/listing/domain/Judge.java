@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing;
+package uk.gov.moj.cpp.listing.domain;
 
 import java.io.Serializable;
 import java.util.Objects;

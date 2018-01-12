@@ -6,6 +6,9 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.io.FileUtils.readLines;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
+import static uk.gov.justice.services.test.utils.core.matchers.HandlerClassMatcher.isHandlerClass;
+import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
 
 import uk.gov.justice.services.core.annotation.Handles;
 
@@ -43,6 +46,15 @@ public class HearingQueryApiTest {
                 .collect(toList());
 
         assertThat(apiMethodsToHandlerNames.values(), containsInAnyOrder(ramlActionNames.toArray()));
+    }
+
+    @Test
+    public void testHandleNamesPassThroughRequester() throws Exception {
+        apiMethodsToHandlerNames.forEach((key, value) -> assertThat(HearingQueryApi.class,
+                isHandlerClass(QUERY_API)
+                        .with(method(key)
+                                .thatHandles(value)
+                                .withRequesterPassThrough())));
     }
 
 

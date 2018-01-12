@@ -27,7 +27,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.justice.services.test.utils.core.random.StringGenerator;
-import uk.gov.moj.cpp.listing.Judge;
+import uk.gov.moj.cpp.listing.domain.Judge;
 import uk.gov.moj.cpp.listing.domain.Hearing;
 import uk.gov.moj.cpp.listing.event.CaseSentForListing;
 import uk.gov.moj.cpp.listing.event.HearingAllocatedForListing;
