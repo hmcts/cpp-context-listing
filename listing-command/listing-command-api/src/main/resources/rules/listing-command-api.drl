@@ -2,15 +2,17 @@ package uk.gov.moj.cpp.accesscontrol;
 
 import uk.gov.moj.cpp.accesscontrol.drools.Outcome;
 import uk.gov.moj.cpp.accesscontrol.drools.Action;
+import uk.gov.moj.cpp.listing.domain.RuleConstants;
 import java.util.Arrays;
 global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAndGroupProvider;
+
 
 
 rule "Command - API - Action - listing.command.send-case-for-listing"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.command.send-case-for-listing");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, "Listing Officers", "Crown Court Admin"));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN));
   then
     $outcome.setSuccess(true);
 end
@@ -20,7 +22,7 @@ rule "Command - API - Action - listing.command.update-hearing-for-listing"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.command.update-hearing-for-listing");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, "Listing Officers", "Crown Court Admin"));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS));
   then
     $outcome.setSuccess(true);
 end

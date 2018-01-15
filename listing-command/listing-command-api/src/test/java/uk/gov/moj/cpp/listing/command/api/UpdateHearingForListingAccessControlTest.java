@@ -1,7 +1,8 @@
 package uk.gov.moj.cpp.listing.command.api;
 
 import static org.mockito.BDDMockito.given;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.*;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.CROWN_COURT_ADMIN;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.LISTING_OFFICERS;
 
 import uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider;
 import uk.gov.moj.cpp.accesscontrol.drools.Action;
@@ -14,20 +15,17 @@ import org.junit.Test;
 import org.kie.api.runtime.ExecutionResults;
 import org.mockito.Mock;
 
-public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
+public class UpdateHearingForListingAccessControlTest extends BaseDroolsAccessControlTest {
 
-    private static final String ACTION_SEND_CASE_FOR_LISTING = "listing.command.send-case-for-listing";
-    private static final String RANDOM_GROUP = "Random group";
-
+    private static final String ACTION_UPDATE_HEARING_FOR_LISTING = "listing.command.update-hearing-for-listing";
 
     @Mock
     private UserAndGroupProvider userAndGroupProvider;
 
     @Test
-    public void shouldAllowAuthorisedUserToSendCaseForListing() {
-        final Action action = createActionFor(ACTION_SEND_CASE_FOR_LISTING);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
-                CROWN_COURT_ADMIN))
+    public void shouldAllowAuthorisedUserToUpdateHearingForListing() {
+        final Action action = createActionFor(ACTION_UPDATE_HEARING_FOR_LISTING);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS))
                 .willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);
@@ -35,9 +33,9 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     }
 
     @Test
-    public void shouldNotAllowUnauthorisedUserToSendCaseForListing() {
-        final Action action = createActionFor(ACTION_SEND_CASE_FOR_LISTING);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RANDOM_GROUP)).willReturn(false);
+    public void shouldNotAllowUnauthorisedUserToUpdateHearingForListing() {
+        final Action action = createActionFor(ACTION_UPDATE_HEARING_FOR_LISTING);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, CROWN_COURT_ADMIN)).willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);

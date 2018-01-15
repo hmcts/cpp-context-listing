@@ -44,6 +44,14 @@
             <artifactId>authorisation-interceptor</artifactId>
         </dependency>
 
+        <!-- Listing Dependencies -->
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-domain-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- End of Listing Dependencies -->
+        
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>

@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.accesscontrol;
 
 import uk.gov.moj.cpp.accesscontrol.drools.Outcome;
 import uk.gov.moj.cpp.accesscontrol.drools.Action;
+import uk.gov.moj.cpp.listing.domain.RuleConstants;
+
 import java.util.Arrays;
 
 global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAndGroupProvider;
@@ -10,7 +12,7 @@ rule "Query - API - listing.search.hearings"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.search.hearings");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, "Listing Officers"));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS));
   then
     $outcome.setSuccess(true);
 end
