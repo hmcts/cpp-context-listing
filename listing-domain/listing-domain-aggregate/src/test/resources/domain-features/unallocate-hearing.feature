@@ -11,32 +11,32 @@ Feature: Unallocate a hearing
             has not been assigned which is mandatory for allocation. Applying allocation rules does
             not result in any change.
 
-    Given there are previous events unallocated-hearing-listed,court-room-assigned-to-hearing
-    When applyAllocationRules to a uk.gov.moj.cpp.listing.domain.aggregate.Hearing using no-args
-    #Then the no events occurred
+    Given unallocated-hearing-listed, court-room-assigned-to-hearing
+    When you applyAllocationRules to a Hearing using a no-args
+    Then no events occured
 
 
   Scenario: An unallocated hearing has been listed and a judge has been assigned. However, a court
             room not been assigned which is mandatory for allocation. Applying allocation rules does
             not result in any change.
 
-    Given there are previous events unallocated-hearing-listed,judge-assigned-to-hearing
-    When applyAllocationRules to a uk.gov.moj.cpp.listing.domain.aggregate.Hearing using no-args
-    #Then the no events occurred
+    Given unallocated-hearing-listed, judge-assigned-to-hearing
+    When you applyAllocationRules to a Hearing using a no-args
+    Then no events occured
 
 
   Scenario: An unallocated hearing has been listed, a courtroom has been assigned, a judge has been assigned and
             a start time has been assigned. Applying allocation rules results in hearing being allocated
 
-    Given there are previous events unallocated-hearing-listed,court-room-assigned-to-hearing,judge-assigned-to-hearing,start-time-assigned-to-hearing
-    When applyAllocationRules to a uk.gov.moj.cpp.listing.domain.aggregate.Hearing using no-args
-    Then the hearing-allocated-for-listing
+    Given unallocated-hearing-listed, court-room-assigned-to-hearing, judge-assigned-to-hearing, start-time-assigned-to-hearing
+    When you applyAllocationRules to a Hearing using a no-args
+    Then hearing-allocated-for-listing
 
 
   Scenario: An unallocated hearing has been listed, a courtroom has been assigned, a judge has been assigned
             but a start time has NOT been assigned. Applying allocation rules results in start time being
             assigned to default value of 10.30am and the hearing being allocated at 10.30am.
 
-    Given there are previous events unallocated-hearing-listed,court-room-assigned-to-hearing,judge-assigned-to-hearing
-    When applyAllocationRules to a uk.gov.moj.cpp.listing.domain.aggregate.Hearing using no-args
-    Then the default-1030-start-time-assigned-to-hearing,hearing-allocated-for-listing-at-1030
+    Given unallocated-hearing-listed,court-room-assigned-to-hearing,judge-assigned-to-hearing
+    When you applyAllocationRules to a Hearing using a no-args
+    Then default-1030-start-time-assigned-to-hearing, hearing-allocated-for-listing-at-1030

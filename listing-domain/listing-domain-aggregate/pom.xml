@@ -18,7 +18,7 @@
             <id>dsl-domain</id>
             <activation>
                 <file>
-                    <!--<exists>src/test/resources/domain-features/</exists>-->
+                    <exists>src/test/resources/domain-features/</exists>
                 </file>
             </activation>
             <build>
@@ -82,12 +82,12 @@
             <scope>test</scope>
         </dependency>
 
-        <!--<dependency>-->
-            <!--<groupId>uk.gov.justice.services</groupId>-->
-            <!--<artifactId>domain-test-dsl</artifactId>-->
-            <!--<version>0.1.0-SNAPSHOT</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>domain-test-dsl</artifactId>
+            <version>0.1.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>
