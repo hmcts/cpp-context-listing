@@ -44,23 +44,16 @@
         </dependency>
 
         <dependency>
+            <groupId>uk.gov.moj.cpp.system.authorisation</groupId>
+            <artifactId>authorisation-interceptor</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>uk.gov.justice.services</groupId>
-            <artifactId>query-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>uk.gov.moj.cpp.access-control</groupId>
-            <artifactId>access-control-common-providers</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>uk.gov.moj.cpp.authorisation.service</groupId>
-            <artifactId>authorisation-service-interceptor</artifactId>
-            <version>${authorisation.service.version}</version>
-        </dependency>
+
 
         <!-- Test dependencies -->
         <dependency>
@@ -68,12 +61,12 @@
             <artifactId>test-utils-core</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>uk.gov.moj.cpp.access-control</groupId>
             <artifactId>access-control-test-utils</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
 </project>

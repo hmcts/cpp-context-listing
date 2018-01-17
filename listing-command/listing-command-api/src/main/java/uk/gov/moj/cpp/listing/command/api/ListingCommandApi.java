@@ -4,6 +4,7 @@ import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
+import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
@@ -15,6 +16,9 @@ public class ListingCommandApi {
     @Inject
     private Sender sender;
 
+    @Inject
+    private Enveloper enveloper;
+
     @Handles("listing.command.send-case-for-listing")
     public void sendCaseForListing(final JsonEnvelope envelope) {
         sender.send(envelope);
@@ -23,6 +27,7 @@ public class ListingCommandApi {
 
     @Handles("listing.command.update-hearing-for-listing")
     public void updateHearingForListing(final JsonEnvelope envelope) {
-        sender.send(envelope);
+        final JsonEnvelope newEnvelope = enveloper.withMetadataFrom(envelope, "listing.command.handler.update-hearing-for-listing").apply(envelope.payloadAsJsonObject());
+        sender.send(newEnvelope);
     }
 }

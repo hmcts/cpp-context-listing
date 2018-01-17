@@ -88,10 +88,10 @@ public class ListingCommandHandler {
                 hearing.list(hearingId, type, startDate, estimateMinutes, caseId, courtCentreId, defendants));
     }
 
-    @Handles("listing.command.update-hearing-for-listing")
+    @Handles("listing.command.handler.update-hearing-for-listing")
     public void updateHearingForListing(final JsonEnvelope command) throws EventStreamException {
         final JsonObject payload = command.payloadAsJsonObject();
-        LOGGER.debug(format("'listing.command.update-hearing-for-listing' received with payload %s", payload));
+        LOGGER.debug(format("'listing.command.handler.update-hearing-for-listing' received with payload %s", payload));
 
         // Mandatory fields that always require a value
         final String hearingId = payload.getString(HEARING_ID);
