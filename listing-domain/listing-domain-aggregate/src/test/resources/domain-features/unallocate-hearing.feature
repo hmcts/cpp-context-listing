@@ -1,42 +1,28 @@
 Feature: Unallocate a hearing
 
-  # TODO: Think about what tests go in here
-  # The allocate-hearing event only sets allocate=true. Rather than having to list each event
-  # separately is it possible to specify a file name which contains multiple events that can
-  # be applied so as to ensure clarity in the test specification, eg.
-  # hearing-allocated-for-listing-with-mandatory-data = a file containing 4/5 events,
-  # unallocated-hearing-listed, judge-assigned-to-hearing, court-room-assigned-to-hearing, hearing-allocated-for-listing
+  Scenario: A hearing has been allocated, all mandatory fields have been assigned.  The allocated hearing is then updated by removing the court-room.
+  Applying allocation rules results in the hearing being unallocated.
 
-  Scenario: An unallocated hearing has been listed and a courtroom has been assigned. However, a judge
-            has not been assigned which is mandatory for allocation. Applying allocation rules does
-            not result in any change.
-
-    Given unallocated-hearing-listed, court-room-assigned-to-hearing
-    When you applyAllocationRules to a Hearing using a no-args
-    Then no events occured
+    Given hearing allocated for listing with mandatory data
+    And   court room removed from hearing
+    When you applyAllocationRules to a Hearing using a no args
+    Then hearing unallocated for listing with court room removed
 
 
-  Scenario: An unallocated hearing has been listed and a judge has been assigned. However, a court
-            room not been assigned which is mandatory for allocation. Applying allocation rules does
-            not result in any change.
+  Scenario: A hearing has been allocated, all mandatory fields have been assigned.  The allocated hearing is then updated by removing the judge.
+  Applying allocation rules results in the hearing being unallocated.
 
-    Given unallocated-hearing-listed, judge-assigned-to-hearing
-    When you applyAllocationRules to a Hearing using a no-args
-    Then no events occured
-
-
-  Scenario: An unallocated hearing has been listed, a courtroom has been assigned, a judge has been assigned and
-            a start time has been assigned. Applying allocation rules results in hearing being allocated
-
-    Given unallocated-hearing-listed, court-room-assigned-to-hearing, judge-assigned-to-hearing, start-time-assigned-to-hearing
-    When you applyAllocationRules to a Hearing using a no-args
-    Then hearing-allocated-for-listing
+    Given hearing allocated for listing with mandatory data
+    And   judge removed from hearing
+    When you applyAllocationRules to a Hearing using a no args
+    Then hearing unallocated for listing with judge removed
 
 
-  Scenario: An unallocated hearing has been listed, a courtroom has been assigned, a judge has been assigned
-            but a start time has NOT been assigned. Applying allocation rules results in start time being
-            assigned to default value of 10.30am and the hearing being allocated at 10.30am.
+  Scenario: A hearing has been allocated, start time and judge has been removed.
+  Applying allocation rules results in the hearing being unallocated.
 
-    Given unallocated-hearing-listed,court-room-assigned-to-hearing,judge-assigned-to-hearing
-    When you applyAllocationRules to a Hearing using a no-args
-    Then default-1030-start-time-assigned-to-hearing, hearing-allocated-for-listing-at-1030
+    Given hearing allocated for listing with mandatory data
+    And   start time removed from hearing
+    And   judge removed from hearing
+    When you applyAllocationRules to a Hearing using a no args
+    Then hearing unallocated for listing with judge and start time removed
