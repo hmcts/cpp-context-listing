@@ -32,6 +32,8 @@ public class HearingSummary implements Serializable {
 
     private final UUID courtRoomId;
 
+    private final UUID caseId;
+
     public HearingSummary(final UUID id, final String type, final UUID judgeId,
                           final boolean notBefore, final Set<DefendantSummary> defendants,
                           final HearingSummaryDetails hearingSummaryDetails){
@@ -45,6 +47,7 @@ public class HearingSummary implements Serializable {
         this.courtCentreId = hearingSummaryDetails.getCourtCentreId();
         this.courtRoomId = hearingSummaryDetails.getCourtRoomId();
         this.estimateMinutes = hearingSummaryDetails.getEstimateMinutes();
+        this.caseId = hearingSummaryDetails.getCaseId();
     }
 
     public UUID getId() {
@@ -77,6 +80,10 @@ public class HearingSummary implements Serializable {
 
     public UUID getCourtRoomId() { return courtRoomId; }
 
+    public UUID getCaseId() {
+        return caseId;
+    }
+
     public static class HearingSummaryDetails {
 
         private final LocalDate startDate;
@@ -89,14 +96,17 @@ public class HearingSummary implements Serializable {
 
         private final UUID courtRoomId;
 
+        private final UUID caseId;
+
         public HearingSummaryDetails(final LocalDate startDate, final LocalTime startTime,
                                      final UUID courtCentreId, final UUID courtRoomId, final
-                                     Integer estimateMinutes) {
+                                     Integer estimateMinutes,final UUID caseId) {
             this.startDate = startDate;
             this.startTime = startTime;
             this.courtCentreId = courtCentreId;
             this.courtRoomId = courtRoomId;
             this.estimateMinutes = estimateMinutes;
+            this.caseId = caseId;
 
         }
         public LocalDate getStartDate() {
@@ -112,5 +122,9 @@ public class HearingSummary implements Serializable {
         public UUID getCourtCentreId() { return courtCentreId; }
 
         public UUID getCourtRoomId() { return courtRoomId; }
+
+        public UUID getCaseId() {
+            return caseId;
+        }
     }
 }

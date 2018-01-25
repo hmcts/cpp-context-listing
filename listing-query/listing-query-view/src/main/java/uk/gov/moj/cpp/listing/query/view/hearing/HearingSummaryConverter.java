@@ -13,7 +13,7 @@ public class HearingSummaryConverter implements Converter<Hearing, HearingSummar
     public HearingSummary convert(final Hearing hearing) {
         final HearingSummary.HearingSummaryDetails hearingSummaryDetails = new HearingSummary
                 .HearingSummaryDetails(hearing.getStartDate(), hearing.getStartTime(),
-                hearing.getCourtCentreId(), hearing.getCourtRoomId(), hearing.getEstimateMinutes());
+                hearing.getCourtCentreId(), hearing.getCourtRoomId(), hearing.getEstimateMinutes(),hearing.getListingCaseId());
 
         return new HearingSummary(hearing.getId(), hearing.getType(), hearing.getJudgeId(), hearing.getNotBefore(),
                 getDefendantSummaries(hearing), hearingSummaryDetails);

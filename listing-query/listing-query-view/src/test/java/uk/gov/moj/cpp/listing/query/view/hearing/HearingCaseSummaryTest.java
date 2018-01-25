@@ -32,7 +32,7 @@ import org.mockito.InjectMocks;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class HearingSummaryConverterTest {
+public class HearingCaseSummaryTest {
     private static final UUID ID = UUID.randomUUID();
     private static final UUID CASE_ID = UUID.randomUUID();
     private static final UUID OFFENCE_ID = UUID.randomUUID();
@@ -67,28 +67,32 @@ public class HearingSummaryConverterTest {
 
 
     @Test
-    public void shouldConvertToHearingSummary() throws Exception {
+    public void shouldConvertToHearingCaseSummaryFromHearingSummary() throws Exception {
+       //Given
         final Hearing hearing = createHearing();
+        final HearingSummary arbitraryHearingSummary = hearingSummaryConverter.convert(hearing);
+        final String arbitraryCaseUrn = "FOO";
 
-        HearingSummary hearingSummary = hearingSummaryConverter.convert(hearing);
+        //When
+        HearingCaseSummary testObj = new HearingCaseSummary(arbitraryHearingSummary,arbitraryCaseUrn);
 
-        assertThat(hearingSummary.getId().toString(), is(hearing.getId().toString()));
-        assertThat(hearingSummary.getCaseId().toString(), is(hearing.getListingCaseId().toString()));
-        assertThat(hearingSummary.getType(), is(hearing.getType()));
-        assertThat(hearingSummary.getStartDate(), is(hearing.getStartDate()));
-        assertThat(hearingSummary.getStartTime(), is(hearing.getStartTime()));
-        assertThat(hearingSummary.getCourtCentreId(), is(hearing.getCourtCentreId()));
-        assertThat(hearingSummary.getCourtRoomId(), is(hearing.getCourtRoomId()));
-        assertThat(hearingSummary.getJudgeId(), is(hearing.getJudgeId()));
-        assertThat(hearingSummary.getNotBefore(), is(hearing.getNotBefore()));
-        assertThat(hearingSummary.getEstimateMinutes(), is(hearing.getEstimateMinutes()));
-        assertThat(hearingSummary.getDefendants().size(), is(1));
-        assertThat(hearingSummary.getDefendants(), contains(allOf(hasProperty("id", is(LISTING_DEFENDANT_ID)),
+        assertThat(testObj.getId().toString(), is(hearing.getId().toString()));
+        assertThat(testObj.getUrn(), is(arbitraryCaseUrn));
+        assertThat(testObj.getType(), is(hearing.getType()));
+        assertThat(testObj.getStartDate(), is(hearing.getStartDate()));
+        assertThat(testObj.getStartTime(), is(hearing.getStartTime()));
+        assertThat(testObj.getCourtCentreId(), is(hearing.getCourtCentreId()));
+        assertThat(testObj.getCourtRoomId(), is(hearing.getCourtRoomId()));
+        assertThat(testObj.getJudgeId(), is(hearing.getJudgeId()));
+        assertThat(testObj.getNotBefore(), is(hearing.getNotBefore()));
+        assertThat(testObj.getEstimateMinutes(), is(hearing.getEstimateMinutes()));
+        assertThat(testObj.getDefendants().size(), is(1));
+        assertThat(testObj.getDefendants(), contains(allOf(hasProperty("id", is(LISTING_DEFENDANT_ID)),
                 hasProperty("firstName", is(FIRST_NAME)),
                 hasProperty("lastName", is(LAST_NAME)),
                 hasProperty("bailStatus", is(BAIL_STATUS)))));
 
-        List<DefendantSummary> defendantSummaries = hearingSummary.getDefendants().stream().limit(1).collect(Collectors.toList());
+        List<DefendantSummary> defendantSummaries = testObj.getDefendants().stream().limit(1).collect(Collectors.toList());
 
         assertThat(defendantSummaries.get(0).getOffences(), contains(allOf(hasProperty("id", is(OFFENCE_ID.toString())),
                 hasProperty("title", is(TITLE)))));

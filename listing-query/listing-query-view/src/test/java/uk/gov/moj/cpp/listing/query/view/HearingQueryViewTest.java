@@ -22,6 +22,8 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.ListingCaseRepository;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingCaseSummary;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingSummary;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingSummaryConverter;
 
@@ -54,10 +56,13 @@ public class HearingQueryViewTest {
     private HearingRepository hearingRepository;
 
     @Mock
+    private ListingCaseRepository listingCaseRepository;
+
+    @Mock
     private HearingSummaryConverter hearingSummaryConverter;
 
     @Mock
-    private Converter<List<HearingSummary>, JsonArray> jsonConverter;
+    private Converter<List<HearingCaseSummary>, JsonArray> jsonConverter;
 
     @InjectMocks
     private HearingQueryView hearingsQueryView;
@@ -93,8 +98,8 @@ public class HearingQueryViewTest {
 
     private JsonArray jsonObjectForHearingSummary() {
         return createArrayBuilder()
-            .add(createObjectBuilder()
-                .add("test", "test")).build();
+                .add(createObjectBuilder()
+                        .add("test", "test")).build();
 
     }
 

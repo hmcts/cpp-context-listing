@@ -195,6 +195,9 @@ public class ListingStepDefinitions extends AbstractIT {
                                 withJsonPath("$.hearings[0].defendants[0].lastName",
                                         equalTo(caseData.getHearingData().get(0)
                                                 .getDefendants().get(0).getLastName()))
+                                ,
+                                withJsonPath("$.hearings[0].urn",
+                                        equalTo(caseData.getUrn()))
                         )));
     }
 

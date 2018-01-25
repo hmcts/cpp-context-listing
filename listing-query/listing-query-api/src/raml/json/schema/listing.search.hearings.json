@@ -103,6 +103,9 @@
           "items": {
             "$ref": "#/definitions/defendant"
           }
+        },
+        "urn":{
+          "type":"string"
         }
       },
       "required": [
@@ -115,7 +118,8 @@
         "judgeId",
         "notBefore",
         "estimateMinutes",
-        "defendants"
+        "defendants",
+        "urn"
       ],
       "additionalProperties": false
     }

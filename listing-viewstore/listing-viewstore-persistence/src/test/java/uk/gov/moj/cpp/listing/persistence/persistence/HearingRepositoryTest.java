@@ -66,6 +66,16 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     }
 
     @Test
+    public void shouldReturnEmptyHearingsByAllocatedAndCourtCentreIdNotFound() {
+        final Hearing expectedHearingToBeReturned = saveHearing(COURT_CENTRE_ID, UNALLOCATED);
+        final Hearing expectedHearingNotToBeReturned = saveHearing(OTHER_COURT_CENTRE_ID, ALLOCATED);
+
+        final List<Hearing> actualHearings = hearingRepository.findByAllocatedAndCourtCentreId(UNALLOCATED, UUID.randomUUID());
+
+        assertThat(actualHearings.size(), is(0));
+    }
+
+    @Test
     public void shouldShouldUpdateCourtRoomIdForHearing() {
         //given
         final Hearing hearing = saveHearing(COURT_CENTRE_ID, UNALLOCATED);
