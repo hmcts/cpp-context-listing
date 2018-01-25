@@ -83,7 +83,7 @@ public class ListingCommandHandlerTest {
     private static final String LAST_NAME = "Last Name";
     private static final String DATE_OF_BIRTH = "1980-07-15";
     private static final String PTP_TYPE = "PTP";
-    private static final String TRIAL_TYPE = "TRIAL";
+    private static final String SENTENCE_TYPE = "Sentence";
     private static final String INITIAL_START_DATE = "2018-05-01";
     private static final String UPDATED_START_DATE = "2018-06-01";
     private static final String OFFENCE_START_DATE = "2018-06-01";
@@ -475,7 +475,7 @@ public class ListingCommandHandlerTest {
     private JsonObject createUpdateHearingJsonWhereOnlyMandatoryDataHasChanged() {
         return createObjectBuilder()
                 .add("hearingId", HEARING_ID.toString())
-                .add("type", TRIAL_TYPE)
+                .add("type", SENTENCE_TYPE)
                 .add("startDate", UPDATED_START_DATE)
                 .add("estimateMinutes", UPDATED_ESTIMATE_MINUTES)
                 .build();
@@ -484,7 +484,7 @@ public class ListingCommandHandlerTest {
     private JsonObject createUpdateHearingJsonWhereAllDataHasChanged() {
         return createObjectBuilder()
                 .add("hearingId", HEARING_ID.toString())
-                .add("type", TRIAL_TYPE)
+                .add("type", SENTENCE_TYPE)
                 .add("startDate", UPDATED_START_DATE)
                 .add("estimateMinutes", UPDATED_ESTIMATE_MINUTES)
                 .add("judgeId", JUDGE_ID.toString())

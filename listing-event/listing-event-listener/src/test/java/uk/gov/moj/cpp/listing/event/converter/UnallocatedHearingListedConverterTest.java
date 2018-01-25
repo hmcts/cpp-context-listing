@@ -28,7 +28,7 @@ public class UnallocatedHearingListedConverterTest {
     private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
     private static final LocalDate START_DATE = LocalDate.parse("2018-06-01");
     private static final int ESTIMATE_MINUTES = 7200;
-    private static final String TYPE = "TRIAL";
+    private static final String TYPE = "Sentence";
 
     private UnallocatedHearingListedConverter unallocatedHearingListedConverter = new UnallocatedHearingListedConverter();;
 

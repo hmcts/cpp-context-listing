@@ -11,10 +11,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 
-
 public class UpdatedHearingData {
 
-    private static final String TYPE = "TRIAL";
+    private static final String SENTENCE_HEARING_TYPE = "Sentence";
+
     private final UUID hearingId;
     private final UUID judgeId;
     private final UUID courtRoomId;
@@ -27,30 +27,28 @@ public class UpdatedHearingData {
     private static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm");
 
 
-
-
     public static UpdatedHearingData updatedHearingDataWithoutJudgeId(final UUID hearingId) {
-        return new UpdatedHearingData(hearingId, null, randomUUID(), TYPE,
+        return new UpdatedHearingData(hearingId, null, randomUUID(), SENTENCE_HEARING_TYPE,
                 LocalDate.now().toString(), LocalTime.now().format(dtf), FALSE, INTEGER.next());
     }
 
     public static UpdatedHearingData updatedHearingDataWithoutCourtRoomId(final UUID hearingId) {
-        return new UpdatedHearingData(hearingId, randomUUID(), null, TYPE,
+        return new UpdatedHearingData(hearingId, randomUUID(), null, SENTENCE_HEARING_TYPE,
                 LocalDate.now().toString(), LocalTime.now().format(dtf), FALSE, INTEGER.next());
     }
 
     public static UpdatedHearingData updatedHearingDataWithoutCourtRoomIdAndStartTime(final UUID hearingId) {
-        return new UpdatedHearingData(hearingId, randomUUID(), null, TYPE,
+        return new UpdatedHearingData(hearingId, randomUUID(), null, SENTENCE_HEARING_TYPE,
                 LocalDate.now().toString(), null, FALSE, INTEGER.next());
     }
 
     public static UpdatedHearingData updatedHearingDataWithAllFieldsSet(final UUID hearingId) {
-        return new UpdatedHearingData(hearingId, randomUUID(), randomUUID(), TYPE,
+        return new UpdatedHearingData(hearingId, randomUUID(), randomUUID(), SENTENCE_HEARING_TYPE,
                 LocalDate.now().toString(), LocalTime.now().format(dtf), TRUE, INTEGER.next());
     }
 
     public static UpdatedHearingData updatedHearingDataWithoutStartTime(final UUID hearingId) {
-        return new UpdatedHearingData(hearingId, randomUUID(), randomUUID(), TYPE,
+        return new UpdatedHearingData(hearingId, randomUUID(), randomUUID(), SENTENCE_HEARING_TYPE,
                 LocalDate.now().toString(), null, FALSE, INTEGER.next());
     }
 

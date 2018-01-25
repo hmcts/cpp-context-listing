@@ -66,7 +66,7 @@ public class ListingEventProcessorTest {
     private static final UUID COURT_ROOM_ID = UUID.randomUUID();
     private static final UUID DEFENDANT_ID = UUID.randomUUID();
     private static final UUID PERSON_ID = UUID.randomUUID();
-    private static final String TYPE = "TRIAL";
+    private static final String TYPE = "Sentence";
     private static final Integer ESTIMATED_MINUTES = RandomGenerator.INTEGER.next();
     private static final String BAIL_STATUS = RandomGenerator.STRING.next();
     private static final String DEFENCE_ORGANISATION = RandomGenerator.STRING.next();
