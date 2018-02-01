@@ -3,8 +3,7 @@
   "type": "object",
   "properties": {
     "type": {
-      "type": "string",
-      "enum": ["PTP", "SENTENCING", "TRIAL", "APPLICATIONS"]
+      "type": "string"
     },
     "startDate": {
       "type": "string",

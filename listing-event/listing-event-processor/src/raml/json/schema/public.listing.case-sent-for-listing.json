@@ -24,12 +24,7 @@
             "type": "string"
           },
           "type": {
-            "type": "string",
-            "enum": [
-              "PTP",
-              "SENTENCING",
-              "TRIAL"
-            ]
+            "type": "string"
           },
           "startDate": {
             "type": "string",

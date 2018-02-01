@@ -18,8 +18,8 @@ import java.util.stream.IntStream;
 public class CaseDataFactory {
 
     private static final int HEARING_ESTIMATE_MINUTES = 15;
-    private static final String HEARING_TYPE = "PTP";
-    private static final String HEARING_TYPE_TRIAL = "TRIAL";
+    private static final String PTP_HEARING_TYPE = "PTP";
+    private static final String SENTENCE_HEARING_TYPE = "Sentence";
     private static final String BAIL_CONDITIONAL = "conditional";
 
     public static CaseData caseData() {
@@ -63,12 +63,12 @@ public class CaseDataFactory {
 
 
     private static HearingData randomHearing() {
-        return new HearingData(randomUUID(), randomUUID().toString(), HEARING_TYPE, LocalDate.now(),
+        return new HearingData(randomUUID(), randomUUID().toString(), PTP_HEARING_TYPE, LocalDate.now(),
                 HEARING_ESTIMATE_MINUTES, manyRandomDefendants(2));
     }
 
     private static HearingData randomHearing(final String courtCentreId) {
-        return new HearingData(randomUUID(), courtCentreId, HEARING_TYPE_TRIAL, LocalDate.now(),
+        return new HearingData(randomUUID(), courtCentreId, SENTENCE_HEARING_TYPE, LocalDate.now(),
                 HEARING_ESTIMATE_MINUTES, manyRandomDefendants(2));
     }
 }

@@ -3,7 +3,7 @@
   "urn": "87GD9945217",
   "hearing": {
     "id": "RANDOM_HEARING_ID",
-    "type": "TRIAL",
+    "type": "Trial",
     "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
     "courtCentreName": "Liverpool Crown Court",
     "courtRoomId": "6bb8a527-2a23-4d7d-b6e2-dd94d2a7d63d",
