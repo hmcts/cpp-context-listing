@@ -53,7 +53,7 @@
       "name": "listing.events.start-time-assigned-to-hearing"
     },
     "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
-    "startTime": "10:00"
+    "startTime": "10:00:00"
   },
   {
     "_metadata": {
@@ -66,7 +66,7 @@
     "courtRoomId": "ad80a0b4-d285-4496-a514-43cb8d500051",
     "hearingDate": {
       "startDate": "2018-01-21",
-      "startTime": "10:00",
+      "startTime": "10:00:00",
       "notBefore": false
     }
   }

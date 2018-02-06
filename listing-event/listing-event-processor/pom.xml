@@ -12,14 +12,13 @@
 
     <properties>
         <cpp.service-component>EVENT_PROCESSOR</cpp.service-component>
-        <referencedata.version>2.0.142</referencedata.version>
+        <referencedata.version>2.0.147</referencedata.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>uk.gov.moj.cpp.common</groupId>
             <artifactId>event-processor</artifactId>
-            <type>pom</type>
         </dependency>
 
         <dependency>

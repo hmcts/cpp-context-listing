@@ -43,6 +43,8 @@ import uk.gov.moj.cpp.listing.event.StartTimeRemovedFromHearing;
 import uk.gov.moj.cpp.listing.event.TypeChangedForHearing;
 import uk.gov.moj.cpp.listing.event.UnallocatedHearingListed;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import javax.json.JsonArray;
@@ -100,6 +102,7 @@ public class ListingCommandHandlerTest {
     private static final String START_TIME = "10:30";
     private static final boolean NOT_BEFORE = true;
     private static final String CUSTODY_TIME_LIMIT = "2017-10-05";
+    private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     @Mock
     private EventSource eventSource;
@@ -386,7 +389,8 @@ public class ListingCommandHandlerTest {
                                 .withName(START_TIME_ASSIGNED_TO_HEARING_EVENT),
                         payloadIsJson(CoreMatchers.allOf(
                                 withJsonPath("$.hearingId", equalTo(HEARING_ID.toString())),
-                                withJsonPath("$.startTime", equalTo(command.getString("startTime")))
+                                withJsonPath("$.startTime",
+                                        equalTo(DTF.format(LocalTime.parse(command.getString("startTime")))))
                         ))).thatMatchesSchema(),
                 jsonEnvelope(
                         withMetadataEnvelopedFrom(updateHearingEnvelope)
@@ -418,7 +422,8 @@ public class ListingCommandHandlerTest {
                                 withJsonPath("$.judgeId", equalTo(command.getString("judgeId"))),
                                 withJsonPath("$.courtRoomId", equalTo(command.getString("courtRoomId"))),
                                 withJsonPath("$.hearingDate.startDate", equalTo(command.getString("startDate"))),
-                                withJsonPath("$.hearingDate.startTime", equalTo(command.getString("startTime"))),
+                                withJsonPath("$.hearingDate.startTime",
+                                        equalTo(DTF.format(LocalTime.parse(command.getString("startTime"))))),
                                 withJsonPath("$.hearingDate.notBefore", equalTo(command.getBoolean("notBefore")))
                         ))).thatMatchesSchema()
         ));

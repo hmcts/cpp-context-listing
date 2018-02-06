@@ -18,7 +18,6 @@
         <dependency>
             <groupId>uk.gov.moj.cpp.common</groupId>
             <artifactId>event-listener</artifactId>
-            <type>pom</type>
         </dependency>
 
         <dependency>

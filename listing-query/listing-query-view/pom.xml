@@ -18,9 +18,10 @@
         </dependency>
 
         <dependency>
-            <groupId>uk.gov.justice.services</groupId>
+            <groupId>uk.gov.moj.cpp.common</groupId>
             <artifactId>query-view</artifactId>
         </dependency>
+
 
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>

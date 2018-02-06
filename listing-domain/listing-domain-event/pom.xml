@@ -8,13 +8,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>listing-domain-event</artifactId>
+    
 
     <dependencies>
         <dependency>
-            <groupId>uk.gov.justice.services</groupId>
+            <groupId>uk.gov.justice.framework-api</groupId>
             <artifactId>framework-api-domain</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        
 
         <!-- Listing Dependencies -->
         <dependency>
@@ -23,5 +26,6 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
+
 
 </project>

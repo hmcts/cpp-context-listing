@@ -98,7 +98,8 @@ public class ListingStepDefinitions extends AbstractIT {
     private static final String FIELD_LAST_NAME = "lastName";
     private static final Boolean ALLOCATED = Boolean.TRUE;
     private static final String DEFAULT_START_TIME = "10:30";
-    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    private static final DateTimeFormatter ZONED_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     // Given steps
 
@@ -159,7 +160,7 @@ public class ListingStepDefinitions extends AbstractIT {
             final MessageConsumerClient publicMessageConsumer) throws JMSException{
 
         final LocalDateTime startDateTime = LocalDateTime.of(LocalDate.parse(updatedHearingData.getStartDate()), LocalTime.parse(DEFAULT_START_TIME));
-        verifyInPublicMQ(FIELD_HEARING_DOT_START_DATE_TIME,  DATE_TIME_FORMAT.format(startDateTime), publicMessageConsumer);
+        verifyInPublicMQ(FIELD_HEARING_DOT_START_DATE_TIME,  ZONED_DATE_TIME_FORMAT.format(startDateTime), publicMessageConsumer);
     }
 
     public static void thenUnallocatedHearingsForACourtCentreShouldContainTwoExpectedHearingsWhenQueried(final CaseData caseData, final CaseData caseDataNew) {
@@ -220,9 +221,9 @@ public class ListingStepDefinitions extends AbstractIT {
                                 withJsonPath("$.hearings[0].type",
                                         equalTo(updatedHearingData.getType())),
                                 withJsonPath("$.hearings[0].startDate",
-                                        equalTo(updatedHearingData.getStartDate().toString())),
+                                        equalTo(updatedHearingData.getStartDate())),
                                 withJsonPath("$.hearings[0].startTime",
-                                        equalTo(updatedHearingData.getStartTime().toString())),
+                                        equalTo(TIME_FORMATTER.format(LocalTime.parse(updatedHearingData.getStartTime())))),
                                 hasNoJsonPath("$.hearings[0].notBefore"),
                                 withJsonPath("$.hearings[0].estimateMinutes",
                                         equalTo(updatedHearingData.getEstimateMinutes()))
@@ -248,9 +249,9 @@ public class ListingStepDefinitions extends AbstractIT {
                                 withJsonPath("$.hearings[0].type",
                                         equalTo(updatedHearingData.getType())),
                                 withJsonPath("$.hearings[0].startDate",
-                                        equalTo(updatedHearingData.getStartDate().toString())),
+                                        equalTo(updatedHearingData.getStartDate())),
                                 withJsonPath("$.hearings[0].startTime",
-                                        equalTo(updatedHearingData.getStartTime().toString())),
+                                        equalTo(TIME_FORMATTER.format(LocalTime.parse(updatedHearingData.getStartTime())))),
                                 hasNoJsonPath("$.hearings[0].notBefore"),
                                 withJsonPath("$.hearings[0].estimateMinutes",
                                         equalTo(updatedHearingData.getEstimateMinutes()))
@@ -304,9 +305,9 @@ public class ListingStepDefinitions extends AbstractIT {
                                 withJsonPath("$.hearings[0].type",
                                         equalTo(updatedHearingData.getType())),
                                 withJsonPath("$.hearings[0].startDate",
-                                        equalTo(updatedHearingData.getStartDate().toString())),
+                                        equalTo(updatedHearingData.getStartDate())),
                                 withJsonPath("$.hearings[0].startTime",
-                                        equalTo(updatedHearingData.getStartTime().toString())),
+                                        equalTo(TIME_FORMATTER.format(LocalTime.parse(updatedHearingData.getStartTime())))),
                                 withJsonPath("$.hearings[0].notBefore",
                                         equalTo(updatedHearingData.getNotBefore())),
                                 withJsonPath("$.hearings[0].estimateMinutes",
@@ -334,9 +335,9 @@ public class ListingStepDefinitions extends AbstractIT {
                                 withJsonPath("$.hearings[0].type",
                                         equalTo(updatedHearingData.getType())),
                                 withJsonPath("$.hearings[0].startDate",
-                                        equalTo(updatedHearingData.getStartDate().toString())),
+                                        equalTo(updatedHearingData.getStartDate())),
                                 withJsonPath("$.hearings[0].startTime",
-                                        equalTo(LocalTime.parse(DEFAULT_START_TIME).toString())),
+                                        equalTo(TIME_FORMATTER.format(LocalTime.parse(DEFAULT_START_TIME)))),
                                 withJsonPath("$.hearings[0].notBefore",
                                         equalTo(updatedHearingData.getNotBefore())),
                                 withJsonPath("$.hearings[0].estimateMinutes",

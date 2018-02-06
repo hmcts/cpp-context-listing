@@ -11,6 +11,7 @@
 
     <properties>
         <maven.cucumber.reporting.plugin.version>2.0.0</maven.cucumber.reporting.plugin.version>
+        <maven.build.timestamp.format>MMddHHmmss</maven.build.timestamp.format>
     </properties>
 
     <profiles>
@@ -62,8 +63,15 @@
     </profiles>
 
     <dependencies>
+
         <dependency>
-            <groupId>uk.gov.justice.services</groupId>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.gov.justice.framework-api</groupId>
             <artifactId>framework-api-domain</artifactId>
             <scope>provided</scope>
         </dependency>

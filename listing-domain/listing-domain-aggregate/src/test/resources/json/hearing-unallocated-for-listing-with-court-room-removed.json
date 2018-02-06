@@ -8,7 +8,7 @@
   "judgeId": "b3b83875-8f59-4a5e-9c36-c65490282690",
   "hearingDate": {
     "startDate": "2018-01-21",
-    "startTime": "10:00",
+    "startTime": "10:00:00",
     "notBefore": false
   }
 }
