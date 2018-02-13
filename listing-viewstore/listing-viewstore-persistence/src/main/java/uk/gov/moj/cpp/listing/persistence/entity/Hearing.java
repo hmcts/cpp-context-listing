@@ -101,7 +101,9 @@ public class Hearing implements Serializable {
         return courtCentreId;
     }
 
-    public UUID getListingCaseId() { return listingCaseId; }
+    public UUID getListingCaseId() {
+        return listingCaseId;
+    }
 
     public Boolean getAllocated() {
         return allocated;
@@ -125,11 +127,14 @@ public class Hearing implements Serializable {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
-        Hearing hearing = (Hearing) o;
-
+        final Hearing hearing = (Hearing) o;
         return id.equals(hearing.id);
     }
 

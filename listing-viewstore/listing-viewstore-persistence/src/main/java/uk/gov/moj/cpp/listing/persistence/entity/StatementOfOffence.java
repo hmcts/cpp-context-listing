@@ -25,15 +25,23 @@ public class StatementOfOffence implements Serializable {
         this.legislation = legislation;
     }
 
-    public String getTitle() { return title; }
+    public String getTitle() {
+        return title;
+    }
 
-    public String getLegislation() { return legislation; }
+    public String getLegislation() {
+        return legislation;
+    }
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        StatementOfOffence that = (StatementOfOffence) o;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final StatementOfOffence that = (StatementOfOffence) o;
         return Objects.equals(title, that.title) &&
                 Objects.equals(legislation, that.legislation);
     }

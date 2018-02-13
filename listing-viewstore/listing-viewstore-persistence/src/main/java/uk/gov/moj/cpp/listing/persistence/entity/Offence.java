@@ -43,9 +43,9 @@ public class Offence implements Serializable {
         //Required for JPA
     }
 
-     public Offence(final UUID listingOffenceId, final UUID offenceId, final String offenceCode,
+    public Offence(final UUID listingOffenceId, final UUID offenceId, final String offenceCode,
                    final StatementOfOffence statementOfOffence, final Defendant defendant,
-                    final OffencePeriod offencePeriod) {
+                   final OffencePeriod offencePeriod) {
         this.offenceId = offenceId;
         this.listingOffenceId = listingOffenceId;
         this.offenceCode = offenceCode;
@@ -63,25 +63,40 @@ public class Offence implements Serializable {
         return offenceId;
     }
 
-    public String getOffenceCode() { return offenceCode; }
+    public String getOffenceCode() {
+        return offenceCode;
+    }
 
-    public LocalDate getStartDate() { return startDate; }
+    public LocalDate getStartDate() {
+        return startDate;
+    }
 
-    public LocalDate getEndDate() { return endDate; }
+    public LocalDate getEndDate() {
+        return endDate;
+    }
 
-    public StatementOfOffence getStatementOfOffence() { return statementOfOffence; }
+    public StatementOfOffence getStatementOfOffence() {
+        return statementOfOffence;
+    }
 
-    public Defendant getDefendant() { return defendant; }
+    public Defendant getDefendant() {
+        return defendant;
+    }
 
-    public void setDefendant(Defendant defendant) { this.defendant = defendant; }
+    public void setDefendant(Defendant defendant) {
+        this.defendant = defendant;
+    }
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
-        Offence offence = (Offence) o;
-
+        final Offence offence = (Offence) o;
         return listingOffenceId.equals(offence.listingOffenceId);
     }
 
@@ -90,8 +105,7 @@ public class Offence implements Serializable {
         return listingOffenceId.hashCode();
     }
 
-     public static class OffencePeriod {
-
+    public static class OffencePeriod {
 
         private LocalDate startDate;
         private LocalDate endDate;

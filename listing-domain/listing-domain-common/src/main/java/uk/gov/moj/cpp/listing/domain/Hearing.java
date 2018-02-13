@@ -30,8 +30,7 @@ public class Hearing implements Serializable {
                    @JsonProperty(value = "startDate") final LocalDate startDate,
                    @JsonProperty(value = "estimateMinutes") final int estimateMinutes,
                    @JsonProperty(value = "defendants") final List<Defendant> defendants,
-                   @JsonProperty(value = "allocated") final boolean allocated
-                   ) {
+                   @JsonProperty(value = "allocated") final boolean allocated) {
         this.id = id;
         this.caseId = caseId;
         this.courtCentreId = courtCentreId;
@@ -39,7 +38,7 @@ public class Hearing implements Serializable {
         this.startDate = startDate;
         this.estimateMinutes = estimateMinutes;
         this.allocated = allocated;
-        this.defendants = new ArrayList(defendants);
+        this.defendants = new ArrayList<>(defendants);
     }
 
     public boolean isAllocated() {
@@ -50,17 +49,27 @@ public class Hearing implements Serializable {
         return caseId;
     }
 
-    public String getId() { return id; }
+    public String getId() {
+        return id;
+    }
 
-    public String getCourtCentreId() { return courtCentreId; }
+    public String getCourtCentreId() {
+        return courtCentreId;
+    }
 
-    public String getType() { return type; }
+    public String getType() {
+        return type;
+    }
 
-    public LocalDate getStartDate() { return startDate; }
+    public LocalDate getStartDate() {
+        return startDate;
+    }
 
-    public int getEstimateMinutes() { return estimateMinutes; }
+    public int getEstimateMinutes() {
+        return estimateMinutes;
+    }
 
     public List<Defendant> getDefendants() {
-        return new ArrayList(defendants);
+        return new ArrayList<>(defendants);
     }
 }

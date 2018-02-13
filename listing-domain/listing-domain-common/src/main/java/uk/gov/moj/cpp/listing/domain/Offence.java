@@ -31,21 +31,35 @@ public class Offence implements Serializable {
         this.statementOfOffence = statementOfOffence;
     }
 
-    public String getId() { return id; }
+    public String getId() {
+        return id;
+    }
 
-    public String getOffenceCode() { return offenceCode; }
+    public String getOffenceCode() {
+        return offenceCode;
+    }
 
-    public LocalDate getStartDate() { return startDate; }
+    public LocalDate getStartDate() {
+        return startDate;
+    }
 
-    public LocalDate getEndDate() { return endDate; }
+    public LocalDate getEndDate() {
+        return endDate;
+    }
 
-    public StatementOfOffence getStatementOfOffence() { return statementOfOffence; }
+    public StatementOfOffence getStatementOfOffence() {
+        return statementOfOffence;
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Offence offence = (Offence) o;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final Offence offence = (Offence) o;
         return Objects.equals(id, offence.id) &&
                 Objects.equals(offenceCode, offence.offenceCode) &&
                 Objects.equals(startDate, offence.startDate) &&
