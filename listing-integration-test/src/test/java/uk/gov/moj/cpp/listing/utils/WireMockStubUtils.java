@@ -37,15 +37,15 @@ public class WireMockStubUtils {
     }
 
     public static void setupAsAuthorisedUser(final UUID userId) {
-        stubPingFor("usersgroups-query-api");
+        stubPingFor("usersgroups-service");
 
-        stubFor(get(urlPathEqualTo(format("/usersgroups-query-api/query/api/rest/usersgroups/users/{0}/groups", userId)))
+        stubFor(get(urlPathEqualTo(format("/usersgroups-service/query/api/rest/usersgroups/users/{0}/groups", userId)))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withHeader(ID, randomUUID().toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .withBody(getPayload("stub-data/usersgroups.get-groups-by-user.json"))));
 
-        waitForStubToBeReady(format("/usersgroups-query-api/query/api/rest/usersgroups/users/{0}/groups", userId), MEDIA_TYPE_QUERY_GROUPS);
+        waitForStubToBeReady(format("/usersgroups-service/query/api/rest/usersgroups/users/{0}/groups", userId), MEDIA_TYPE_QUERY_GROUPS);
     }
 
     static void waitForStubToBeReady(final String resource, final String mediaType) {
