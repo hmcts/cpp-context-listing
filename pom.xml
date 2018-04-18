@@ -50,23 +50,6 @@
                     <attachClasses>true</attachClasses>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>external.atlassian.jgitflow</groupId>
-                <artifactId>jgitflow-maven-plugin</artifactId>
-                <configuration>
-                    <flowInitContext>
-                        <masterBranchName>dev/listing-release</masterBranchName>
-                        <developBranchName>master</developBranchName>
-                        <featureBranchPrefix>dev/listing-feature-</featureBranchPrefix>
-                        <releaseBranchPrefix>dev/listing-release-</releaseBranchPrefix>
-                        <hotfixBranchPrefix>dev/listing-hotfix-</hotfixBranchPrefix>
-                        <versionTagPrefix>listing-tag-</versionTagPrefix>
-                    </flowInitContext>
-                    <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <enableSshAgent>true</enableSshAgent>
-                    <pushReleases>true</pushReleases>
-                </configuration>
-            </plugin>
 
         </plugins>
     </build>
