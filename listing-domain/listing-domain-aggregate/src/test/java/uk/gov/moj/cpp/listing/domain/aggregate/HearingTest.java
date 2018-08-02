@@ -8,9 +8,11 @@ import static org.junit.Assert.fail;
 import static uk.gov.moj.cpp.listing.domain.aggregate.utils.DomainBuilder.buildDefendant;
 
 import uk.gov.moj.cpp.listing.domain.Defendant;
-import uk.gov.moj.cpp.listing.event.UnallocatedHearingListed;
+import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -20,15 +22,19 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 public class HearingTest {
 
     private static final UUID HEARING_ID = UUID.randomUUID();
+    private static final UUID JUDGE_ID = UUID.randomUUID();
+    private static final UUID COURT_ROOM_ID = UUID.randomUUID();
     private static final UUID CASE_ID = UUID.randomUUID();
-    private static final String COURT_CENTRE = "Liverpool";
+    private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
     private static final LocalDate START_DATE = LocalDate.parse("2018-06-01");
+    private static final LocalDate END_DATE = LocalDate.parse("2018-06-02");
+    private static final LocalTime START_TIME = LocalTime.now();
     private static final int ESTIMATE_MINUTES = 7200;
     private static final String TYPE = "TRIAL";
+    private static final String URN = RandomGenerator.STRING.next();
 
     private Hearing hearing;
 
@@ -39,19 +45,31 @@ public class HearingTest {
     
 
     @Test
-    public void shouldEmitUnallocatedHearingListedEventWhenListed() throws Exception {
+    public void shouldEmitHearingListedEventWhenListed() throws Exception {
         //given
         Defendant defendant = buildDefendant();
 
         //when
-        List<Object> events = hearing.list(HEARING_ID.toString(), TYPE, START_DATE, ESTIMATE_MINUTES,
-                CASE_ID.toString(), COURT_CENTRE, Arrays.asList(defendant)).collect(toList());
+        List<Object> events = hearing.list(
+                HEARING_ID,
+                TYPE,
+                START_DATE,
+                ESTIMATE_MINUTES,
+                CASE_ID,
+                URN,
+                COURT_CENTRE_ID,
+                Arrays.asList(defendant),
+                JUDGE_ID,
+                COURT_ROOM_ID,
+                START_TIME,
+                END_DATE
+        ).collect(toList());
 
         //then
         assertThat(events.size(), is(1));
 
         Object object = events.get(0);
-        assertThat(object.getClass() , is(equalTo(UnallocatedHearingListed.class)));
+        assertThat(object.getClass() , is(equalTo(HearingListed.class)));
         
     }
 
@@ -60,12 +78,34 @@ public class HearingTest {
         //given
         Defendant defendant = buildDefendant();
 
-        hearing.list(HEARING_ID.toString(), TYPE, START_DATE, ESTIMATE_MINUTES,
-                CASE_ID.toString(), COURT_CENTRE, Arrays.asList(defendant)).collect(toList());
+        hearing.list(HEARING_ID,
+                TYPE,
+                START_DATE,
+                ESTIMATE_MINUTES,
+                CASE_ID,
+                URN,
+                COURT_CENTRE_ID,
+                Arrays.asList(defendant),
+                JUDGE_ID,
+                COURT_ROOM_ID,
+                START_TIME,
+                END_DATE
+        ).collect(toList());
 
         //when
-        List<Object> events = hearing.list(HEARING_ID.toString(), TYPE, START_DATE, ESTIMATE_MINUTES,
-                CASE_ID.toString(), COURT_CENTRE, Arrays.asList(defendant)).collect(toList());
+        List<Object> events = hearing.list(HEARING_ID,
+                TYPE,
+                START_DATE,
+                ESTIMATE_MINUTES,
+                CASE_ID,
+                URN,
+                COURT_CENTRE_ID,
+                Arrays.asList(defendant),
+                JUDGE_ID,
+                COURT_ROOM_ID,
+                START_TIME,
+                END_DATE
+        ).collect(toList());
 
         //then
         assertThat(events.size(), is(0));

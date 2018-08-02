@@ -1,0 +1,16 @@
+{
+  "hearingId": "0baecac5-222b-402d-9047-84803679edae",
+  "defendants": [
+    {
+      "id": "0baecac5-222b-402d-9047-84803679edac",
+      "personId": "0baecac5-222b-402d-9047-84803679edad",
+      "firstName": "David",
+      "lastName": "Lloyd",
+      "dateOfBirth": "1995-03-23",
+      "bailStatus": "inCustody",
+      "custodyTimeLimit": "2018-01-30",
+      "defenceOrganisation": "Solicitor XYZ",
+      "offences": [ ]
+    }
+  ]
+}

@@ -1,17 +1,18 @@
 package uk.gov.moj.cpp.listing.utils;
 
-import javax.jms.Connection;
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.Session;
-import javax.jms.TextMessage;
-import javax.jms.Topic;
+import javax.jms.*;
+import javax.json.JsonObject;
 
 import com.jayway.restassured.path.json.JsonPath;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.apache.activemq.artemis.jms.client.ActiveMQTopic;
+import org.apache.activemq.command.ActiveMQTextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.Metadata;
+
+import static uk.gov.justice.services.messaging.DefaultJsonEnvelope.envelopeFrom;
 
 public class QueueUtil {
 
@@ -54,6 +55,31 @@ public class QueueUtil {
 
     public static JsonPath retrieveMessage(final MessageConsumer consumer) {
         return retrieveMessage(consumer, RETRIEVE_TIMEOUT);
+    }
+
+    public MessageProducer createProducer() {
+        try {
+            return session.createProducer(topic);
+        } catch (final JMSException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void sendMessage(final MessageProducer messageProducer, final String commandName, final JsonObject payload, final Metadata metadata) {
+
+        final JsonEnvelope jsonEnvelope = envelopeFrom(metadata, payload);
+        final String json = jsonEnvelope.toDebugStringPrettyPrint();
+
+        try {
+            final TextMessage message = new ActiveMQTextMessage();
+
+            message.setText(json);
+            message.setStringProperty("CPPNAME", commandName);
+
+            messageProducer.send(message);
+        } catch (final JMSException e) {
+            throw new RuntimeException("Failed to send message. commandName: '" + commandName + "', json: " + json, e);
+        }
     }
 
     public static JsonPath retrieveMessage(final MessageConsumer consumer, long customTimeOutInMillis) {

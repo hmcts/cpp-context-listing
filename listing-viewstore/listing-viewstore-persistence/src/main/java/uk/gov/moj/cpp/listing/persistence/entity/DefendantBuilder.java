@@ -5,77 +5,68 @@ import java.util.Set;
 import java.util.UUID;
 
 public class DefendantBuilder {
-    private UUID listingDefendantId;
-    private UUID defendantId;
+    private CompositeDefendantId compositeDefendantId;
     private UUID personId;
     private String firstName;
     private String lastName;
-    private String bailStatus;
-    private String defenceOrganisation;
     private LocalDate dateOfBirth;
+    private String bailStatus;
     private LocalDate custodyTimeLimit;
-
+    private String defenceOrganisation;
+    private Hearing hearing;
     private Set<Offence> offences;
 
-    private Hearing hearing;
-
-    public DefendantBuilder setDefendantId(final UUID defendantId) {
-        this.defendantId = defendantId;
+    public DefendantBuilder setCompositeDefendantId(CompositeDefendantId compositeDefendantId) {
+        this.compositeDefendantId = compositeDefendantId;
         return this;
     }
 
-    public DefendantBuilder setCustodyTimeLimit(final LocalDate custodyTimeLimit) {
-        this.custodyTimeLimit = custodyTimeLimit;
-        return this;
-    }
-
-    public DefendantBuilder setListingDefendantId(final UUID listingDefendantId) {
-        this.listingDefendantId = listingDefendantId;
-        return this;
-    }
-
-    public DefendantBuilder setPersonId(final UUID personId) {
+    public DefendantBuilder setPersonId(UUID personId) {
         this.personId = personId;
         return this;
     }
 
-    public DefendantBuilder setFirstName(final String firstName) {
+    public DefendantBuilder setFirstName(String firstName) {
         this.firstName = firstName;
         return this;
     }
 
-    public DefendantBuilder setLastName(final String lastName) {
+    public DefendantBuilder setLastName(String lastName) {
         this.lastName = lastName;
         return this;
     }
 
-    public DefendantBuilder setBailStatus(final String bailStatus) {
-        this.bailStatus = bailStatus;
-        return this;
-    }
-
-    public void setHearing(Hearing hearing) {
-        this.hearing = hearing;
-    }
-
-    public DefendantBuilder setDefenceOrganisation(final String defenceOrganisation) {
-        this.defenceOrganisation = defenceOrganisation;
-        return this;
-    }
-
-    public DefendantBuilder setDateOfBirth(final LocalDate dateOfBirth) {
+    public DefendantBuilder setDateOfBirth(LocalDate dateOfBirth) {
         this.dateOfBirth = dateOfBirth;
         return this;
     }
 
-    public DefendantBuilder setOffences(final Set<Offence> offences) {
+    public DefendantBuilder setBailStatus(String bailStatus) {
+        this.bailStatus = bailStatus;
+        return this;
+    }
+
+    public DefendantBuilder setCustodyTimeLimit(LocalDate custodyTimeLimit) {
+        this.custodyTimeLimit = custodyTimeLimit;
+        return this;
+    }
+
+    public DefendantBuilder setDefenceOrganisation(String defenceOrganisation) {
+        this.defenceOrganisation = defenceOrganisation;
+        return this;
+    }
+
+    public DefendantBuilder setHearing(Hearing hearing) {
+        this.hearing = hearing;
+        return this;
+    }
+
+    public DefendantBuilder setOffences(Set<Offence> offences) {
         this.offences = offences;
         return this;
     }
 
     public Defendant build() {
-        return new Defendant(new Defendant.DefendantDetails(listingDefendantId, defendantId,
-                bailStatus, defenceOrganisation, custodyTimeLimit), offences, hearing,
-                new Defendant.PersonalDetails(personId, firstName, lastName, dateOfBirth));
+        return new Defendant(compositeDefendantId, personId, firstName, lastName, dateOfBirth, bailStatus, custodyTimeLimit, defenceOrganisation, hearing, offences);
     }
 }

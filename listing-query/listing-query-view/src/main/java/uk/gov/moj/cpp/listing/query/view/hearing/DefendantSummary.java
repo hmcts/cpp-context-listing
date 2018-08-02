@@ -7,7 +7,9 @@ import java.util.UUID;
 
 public class DefendantSummary  implements Serializable {
 
-    private final UUID id;
+    private final UUID defendantId;
+
+    private final UUID hearingId;
 
     private final String firstName;
 
@@ -19,10 +21,11 @@ public class DefendantSummary  implements Serializable {
 
     private final Set<OffenceSummary> offences;
 
-    public DefendantSummary(final UUID id, final String firstName, final String lastName,
+    public DefendantSummary(final UUID hearingId, final UUID defendantId, final String firstName, final String lastName,
                             final String bailStatus, final LocalDate custodyTimeLimit,
                             final Set<OffenceSummary> offences) {
-        this.id = id;
+        this.defendantId = defendantId;
+        this.hearingId = hearingId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.bailStatus = bailStatus;
@@ -42,5 +45,7 @@ public class DefendantSummary  implements Serializable {
 
     public Set<OffenceSummary> getOffences() { return offences; }
 
-    public UUID getId() { return id; }
+    public UUID getDefendantId() { return defendantId; }
+
+    public UUID getHearingId() { return hearingId; }
 }

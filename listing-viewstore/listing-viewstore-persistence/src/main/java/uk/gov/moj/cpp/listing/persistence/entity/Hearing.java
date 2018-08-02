@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.persistence.entity;
 
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -15,6 +14,7 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+@SuppressWarnings("squid:S00107")
 @Entity
 @Table(name = "hearing")
 public class Hearing implements Serializable {
@@ -26,8 +26,14 @@ public class Hearing implements Serializable {
     @Column(name = "start_date")
     private LocalDate startDate;
 
-    @Column(name = "start_time")
-    private LocalTime startTime;
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Column(name = "non_sitting_days")
+    private String nonSittingDays;
+
+    @Column(name = "start_times")
+    private String startTimes;
 
     @Column(name = "estimate_minutes")
     private Integer estimateMinutes;
@@ -53,29 +59,32 @@ public class Hearing implements Serializable {
     @Column(name = "allocated")
     private Boolean allocated;
 
-    @Column(name = "not_before")
-    private boolean notBefore;
+
 
     public Hearing() {
         // for JPA
     }
 
     public Hearing(final UUID id, final UUID listingCaseId, final Boolean allocated,
-                   final Set<Defendant> defendants, boolean notBefore,
+                   final Set<Defendant> defendants,
                    final HearingDetails hearingDetails) {
         this.id = id;
         this.startDate = hearingDetails.getStartDate();
-        this.startTime = hearingDetails.getStartTime();
+        this.endDate = hearingDetails.getEndDate();
+        this.startTimes = hearingDetails.getStartTimes();
+        this.nonSittingDays = hearingDetails.getNonSittingDays();
         this.estimateMinutes = hearingDetails.getEstimateMinutes();
         this.type = hearingDetails.getType();
         this.courtCentreId = hearingDetails.getCourtCentreId();
         this.courtRoomId = hearingDetails.getCourtRoomId();
         this.judgeId = hearingDetails.getJudgeId();
-        this.notBefore = notBefore;
         this.listingCaseId = listingCaseId;
         this.allocated = allocated;
         this.defendants = defendants;
     }
+
+
+
 
     public UUID getId() {
         return id;
@@ -85,8 +94,16 @@ public class Hearing implements Serializable {
         return startDate;
     }
 
-    public LocalTime getStartTime() {
-        return startTime;
+    public  String getStartTimes() {
+        return startTimes;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public String getNonSittingDays() {
+        return nonSittingDays;
     }
 
     public Integer getEstimateMinutes() {
@@ -101,9 +118,7 @@ public class Hearing implements Serializable {
         return courtCentreId;
     }
 
-    public UUID getListingCaseId() {
-        return listingCaseId;
-    }
+    public UUID getListingCaseId() { return listingCaseId; }
 
     public Boolean getAllocated() {
         return allocated;
@@ -119,10 +134,6 @@ public class Hearing implements Serializable {
 
     public UUID getJudgeId() {
         return judgeId;
-    }
-
-    public boolean getNotBefore() {
-        return notBefore;
     }
 
     @Override
@@ -145,17 +156,21 @@ public class Hearing implements Serializable {
 
     public static class HearingDetails {
         private LocalDate startDate;
-        private LocalTime startTime;
+        private LocalDate endDate;
+        private String startTimes;
+        private String nonSittingDays;
         private Integer estimateMinutes;
         private String type;
         private UUID courtCentreId;
         private UUID courtRoomId;
         private UUID judgeId;
 
-        public HearingDetails(LocalDate startDate, LocalTime startTime, Integer estimateMinutes, String type,
-                              UUID courtCentreId, UUID courtRoomId, UUID judgeId) {
+        public HearingDetails(LocalDate startDate, String startTimes, Integer estimateMinutes, String type,
+                              UUID courtCentreId, UUID courtRoomId, UUID judgeId, String nonSittingDays, LocalDate endDate) {
             this.startDate = startDate;
-            this.startTime = startTime;
+            this.endDate = endDate;
+            this.nonSittingDays = nonSittingDays;
+            this.startTimes = startTimes;
             this.estimateMinutes = estimateMinutes;
             this.type = type;
             this.courtCentreId = courtCentreId;
@@ -167,8 +182,8 @@ public class Hearing implements Serializable {
             return startDate;
         }
 
-        public LocalTime getStartTime() {
-            return startTime;
+        public String getStartTimes() {
+            return startTimes;
         }
 
         public Integer getEstimateMinutes() {
@@ -189,6 +204,14 @@ public class Hearing implements Serializable {
 
         public UUID getJudgeId() {
             return judgeId;
+        }
+
+        public LocalDate getEndDate() {
+            return endDate;
+        }
+
+        public String getNonSittingDays() {
+            return nonSittingDays;
         }
     }
 

@@ -27,7 +27,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     public void shouldAllowAuthorisedUserToSendCaseForListing() {
         final Action action = createActionFor(ACTION_SEND_CASE_FOR_LISTING);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
-                CROWN_COURT_ADMIN))
+                CROWN_COURT_ADMIN, COURT_CLERKS))
                 .willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);

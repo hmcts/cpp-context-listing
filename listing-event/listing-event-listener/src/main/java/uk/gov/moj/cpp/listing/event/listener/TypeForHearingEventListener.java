@@ -1,11 +1,10 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.listing.events.TypeChangedForHearing;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.event.TypeChangedForHearing;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.UUID;
@@ -18,15 +17,11 @@ public class TypeForHearingEventListener {
     @Inject
     private HearingRepository hearingRepository;
 
-    @Inject
-    private JsonObjectToObjectConverter jsonObjectConverter;
-
-
 
     @Handles("listing.events.type-changed-for-hearing")
-    public void typeChangedForHearing(final JsonEnvelope event) {
-        final TypeChangedForHearing typeChangedForHearing = jsonObjectConverter.convert(event.payloadAsJsonObject(), TypeChangedForHearing.class);
-        final UUID hearingId = UUID.fromString(typeChangedForHearing.getHearingId());
+    public void typeChangedForHearing(final Envelope<TypeChangedForHearing> event) {
+        final TypeChangedForHearing typeChangedForHearing =   event.payload();
+        final UUID hearingId = typeChangedForHearing.getHearingId();
         hearingRepository.updateType(typeChangedForHearing.getType(), hearingId);
     }
 }

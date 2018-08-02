@@ -4,12 +4,18 @@
       "id": "4bb4cd5a-ce2a-467d-8984-76b62ec92072",
       "type": "PTP",
       "startDate": "2017-05-19",
-      "startTime": "10:00",
+      "endDate": "2018-06-05",
+      "nonSittingDays": [
+        "2018-06-03"
+      ],
+      "startTimes": [
+        "2018-06-01T11:00:00Z",
+        "2018-06-04T11:30:00Z"
+      ],
       "estimateMinutes": "15",
       "courtCentreId": "52ece02c-bb00-11e7-abc4-cec278b6b50a",
       "courtRoomId": "82487aa2-bb00-11e7-abc4-cec278b6b50a",
-      "judgeId": "b810bcda-bb00-11e7-abc4-cec278b6b50a",
-      "notBefore": false,
+      "judgeId": "b810bcda-bb00-11e7-abc4-cec278b6b50a"
       "defendants": [
         {
           "id": "2deafea2-2f76-8109-82d9-2e60544a6c03",
@@ -41,3 +47,86 @@
     }
   ]
 }
+
+
+
+
+
+
+{
+  "hearings": [
+    {
+      "id": "366fdcbd-1bd9-4537-95e2-6d909813c7e7",
+      "type": "PTP",
+      "startDate": "2018-07-12",
+      "startTimes": [],
+      "nonSittingDays": [],
+      "estimateMinutes": 15,
+      "courtCentreId": "95325da8-253a-478d-b094-b944d0144bd1",
+      "defendants": [
+        {
+          "defendantId": "31e00ef3-a5ec-4aed-bb24-cc2ef434cadf",
+          "hearingId": "366fdcbd-1bd9-4537-95e2-6d909813c7e7",
+          "firstName": "7lqP7lOpHr",
+          "lastName": "iR9c0t69mu",
+          "bailStatus": "conditional",
+          "custodyTimeLimit": "2018-07-12",
+          "offences": [
+            {
+              "offenceId": "b3d03bf5-31c1-4988-b259-27474bc10188",
+              "defendantId": "31e00ef3-a5ec-4aed-bb24-cc2ef434cadf",
+              "title": "sckbl3Setv"
+            },
+            {
+              "offenceId": "b54528d7-3643-4d49-8a99-71272d088b0d",
+              "defendantId": "31e00ef3-a5ec-4aed-bb24-cc2ef434cadf",
+              "title": "FgTTp3UJ0c"
+            },
+            {
+              "offenceId": "ac3e0882-a746-4db6-823b-97bd3b9a7da7",
+              "defendantId": "31e00ef3-a5ec-4aed-bb24-cc2ef434cadf",
+              "title": "FgTTp3UJ0c"
+            },
+            {
+              "offenceId": "c856155d-83ef-4779-93b9-acdee792bdf0",
+              "defendantId": "31e00ef3-a5ec-4aed-bb24-cc2ef434cadf",
+              "title": "sckbl3Setv"
+            }
+          ]
+        },
+        {
+          "defendantId": "3fa6da9d-f1c9-4cc7-a1b9-44ec65c0bb8e",
+          "hearingId": "366fdcbd-1bd9-4537-95e2-6d909813c7e7",
+          "firstName": "wXQNCfQbdM",
+          "lastName": "2vJfigXK0M",
+          "bailStatus": "conditional",
+          "custodyTimeLimit": "2018-07-12",
+          "offences": []
+        },
+        {
+          "defendantId": "8f3ad731-2cb2-4c8e-aebd-fc5add90f80a",
+          "hearingId": "366fdcbd-1bd9-4537-95e2-6d909813c7e7",
+          "firstName": "Hq5YR20YdM",
+          "lastName": "bMFNWNjreG",
+          "bailStatus": "conditional",
+          "custodyTimeLimit": "2018-07-12",
+          "offences": [
+            {
+              "offenceId": "52e289ae-2cd4-46d5-91f2-a8a93e980f5c",
+              "defendantId": "8f3ad731-2cb2-4c8e-aebd-fc5add90f80a",
+              "title": "y4aEOjJLhM"
+            },
+            {
+              "offenceId": "cbb24911-25ad-44ec-a3c5-2097fa8836f5",
+              "defendantId": "8f3ad731-2cb2-4c8e-aebd-fc5add90f80a",
+              "title": "5SxtC6qv0U"
+            }
+          ]
+        }
+      ],
+      "urn": "nPQe4U01ia"
+    }
+  ]
+}
+
+

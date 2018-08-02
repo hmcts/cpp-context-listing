@@ -4,11 +4,11 @@ Feature: List a hearing
 
     Given no previous events
     When you list to a Hearing using a new hearing details
-    Then unallocated hearing listed
+    Then hearing listed
 
 
   Scenario: A request to list a hearing that has already been listed does not result in a new listing
 
-    Given unallocated-hearing-listed
+    Given hearing listed
     When you list to a Hearing using a the same hearing details
     Then no events occured

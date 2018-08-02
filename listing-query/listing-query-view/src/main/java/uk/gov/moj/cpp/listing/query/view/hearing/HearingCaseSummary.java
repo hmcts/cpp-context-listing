@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.query.view.hearing;
 
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,11 +16,11 @@ public class HearingCaseSummary implements Serializable {
 
     private final UUID judgeId;
 
-    private final boolean notBefore;
-
     private final String type;
     private final LocalDate startDate;
-    private final LocalTime startTime;
+    private final LocalDate endDate;
+    private final List<String> startTimes;
+    private final List<LocalDate> nonSittingDays;
     private final Integer estimateMinutes;
     private final UUID courtCentreId;
     private final UUID courtRoomId;
@@ -31,11 +31,12 @@ public class HearingCaseSummary implements Serializable {
                               final String urn) {
         this.id = hearingSummary.getId();
         this.judgeId = hearingSummary.getJudgeId();
-        this.notBefore = hearingSummary.getNotBefore();
         this.type = hearingSummary.getType();
         this.defendants = hearingSummary.getDefendants();
         this.startDate = hearingSummary.getStartDate();
-        this.startTime = hearingSummary.getStartTime();
+        this.endDate = hearingSummary.getEndDate();
+        this.startTimes = hearingSummary.getStartTimes();
+        this.nonSittingDays = hearingSummary.getNonSittingDays();
         this.courtCentreId = hearingSummary.getCourtCentreId();
         this.courtRoomId = hearingSummary.getCourtRoomId();
         this.estimateMinutes = hearingSummary.getEstimateMinutes();
@@ -58,8 +59,16 @@ public class HearingCaseSummary implements Serializable {
         return judgeId;
     }
 
-    public boolean getNotBefore() {
-        return notBefore;
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public List<String> getStartTimes() {
+        return startTimes;
+    }
+
+    public List<LocalDate> getNonSittingDays() {
+        return nonSittingDays;
     }
 
     public LocalDate getStartDate() {
@@ -70,9 +79,6 @@ public class HearingCaseSummary implements Serializable {
         return estimateMinutes;
     }
 
-    public LocalTime getStartTime() {
-        return startTime;
-    }
 
     public UUID getCourtCentreId() {
         return courtCentreId;

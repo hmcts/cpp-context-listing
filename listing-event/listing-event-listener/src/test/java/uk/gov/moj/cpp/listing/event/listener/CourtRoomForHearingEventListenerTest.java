@@ -2,18 +2,16 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.event.CourtRoomAssignedToHearing;
-import uk.gov.moj.cpp.listing.event.CourtRoomChangedForHearing;
-import uk.gov.moj.cpp.listing.event.CourtRoomRemovedFromHearing;
+import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
+import uk.gov.justice.listing.events.CourtRoomChangedForHearing;
+import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.UUID;
-
-import javax.json.JsonObject;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,22 +32,15 @@ public class CourtRoomForHearingEventListenerTest {
     @InjectMocks
     private CourtRoomForHearingEventListener courtRoomForHearingEventListener;
 
-    @Mock
-    private JsonObjectToObjectConverter jsonObjectToObjectConverter;
-
-    @Mock
-    private JsonObject payload;
-
-    @Mock
-    private JsonEnvelope envelope;
 
     @Test
     public void shouldAssignCourtRoomToHearing() throws Exception {
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        CourtRoomAssignedToHearing hearingData = new CourtRoomAssignedToHearing(COURT_ROOM_ID.toString(), HEARING_ID.toString());
-        
-        given(jsonObjectToObjectConverter.convert(payload, CourtRoomAssignedToHearing.class))
-                .willReturn(hearingData);
+        Envelope<CourtRoomAssignedToHearing> envelope = (Envelope<CourtRoomAssignedToHearing>) mock(Envelope.class);
+        CourtRoomAssignedToHearing hearingData = CourtRoomAssignedToHearing.courtRoomAssignedToHearing()
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withHearingId(HEARING_ID)
+                .build();
+        given(envelope.payload()).willReturn(hearingData);
 
         courtRoomForHearingEventListener.courtRoomAssignedToHearing(envelope);
         verify(hearingRepository).updateCourtRoomId(COURT_ROOM_ID, HEARING_ID);
@@ -59,11 +50,13 @@ public class CourtRoomForHearingEventListenerTest {
 
     @Test
     public void shouldChangeCourtRoomForHearing() throws Exception {
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        CourtRoomChangedForHearing hearingData = new CourtRoomChangedForHearing(COURT_ROOM_ID.toString(), HEARING_ID.toString());
+        Envelope<CourtRoomChangedForHearing> envelope = (Envelope<CourtRoomChangedForHearing>) mock(Envelope.class);
+        CourtRoomChangedForHearing hearingData = CourtRoomChangedForHearing.courtRoomChangedForHearing()
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withHearingId(HEARING_ID)
+                .build();
+        given(envelope.payload()).willReturn(hearingData);
 
-        given(jsonObjectToObjectConverter.convert(payload, CourtRoomChangedForHearing.class))
-                .willReturn(hearingData);
 
         courtRoomForHearingEventListener.courtRoomChangedForHearing(envelope);
         verify(hearingRepository).updateCourtRoomId(COURT_ROOM_ID, HEARING_ID);
@@ -71,11 +64,11 @@ public class CourtRoomForHearingEventListenerTest {
 
     @Test
     public void shouldRemoveCourtRoomFromHearing() throws Exception {
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        CourtRoomRemovedFromHearing hearingData = new CourtRoomRemovedFromHearing(HEARING_ID.toString());
-
-        given(jsonObjectToObjectConverter.convert(payload, CourtRoomRemovedFromHearing.class))
-                .willReturn(hearingData);
+        Envelope<CourtRoomRemovedFromHearing> envelope = (Envelope<CourtRoomRemovedFromHearing>) mock(Envelope.class);
+        CourtRoomRemovedFromHearing hearingData = CourtRoomRemovedFromHearing.courtRoomRemovedFromHearing()
+                .withHearingId(HEARING_ID)
+                .build();
+        given(envelope.payload()).willReturn(hearingData);
 
         courtRoomForHearingEventListener.courtRoomRemovedFromHearing(envelope);
         verify(hearingRepository).updateCourtRoomId(null, HEARING_ID);

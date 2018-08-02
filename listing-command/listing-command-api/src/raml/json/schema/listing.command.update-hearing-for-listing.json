@@ -9,16 +9,23 @@
       "type": "string",
       "format": "date"
     },
-    "estimateMinutes": {
-      "type": "integer",
-      "minimum": 1
+    "endDate": {
+      "type": "string",
+      "format": "date"
     },
-    "startTime": {
-      "type": ["string" , "null"],
-      "format": "time"
+    "nonSittingDays": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date"
+      }
     },
-    "notBefore": {
-      "type": "boolean"
+    "startTimes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date-time"
+      }
     },
     "judgeId": {
       "type": ["string" , "null"],
@@ -32,9 +39,9 @@
   "required": [
     "type",
     "startDate",
-    "estimateMinutes",
-    "startTime",
-    "notBefore",
+    "endDate",
+    "nonSittingDays",
+    "startTimes",
     "judgeId",
     "courtRoomId"
   ],

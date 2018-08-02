@@ -7,9 +7,18 @@
   "estimateMinutes": 15,
   "judgeId": "b3b83875-8f59-4a5e-9c36-c65490282690",
   "courtRoomId": "ad80a0b4-d285-4496-a514-43cb8d500051",
+  "courtCentreId": "419874a6-add0-4a6b-9cc9-36d002dba599",
+  "caseId": "183082fe-4962-49f8-a5b1-8cca2d425755",
+  "hearingDays":["2018-01-21T10:00:00.000Z","2018-01-22T10:30:00.000Z"],
+  "urn": "87GD9945217",
+  "defendantsOffenceIds":   [{
+    "id": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+    "offenceIds": [
+      "8b6add6d-5584-41fa-9796-b219a668fffa"
+    ]}
+  ],
   "hearingDate": {
     "startDate": "2018-01-21",
-    "startTime": "10:00:00",
-    "notBefore": false
+    "startTime": "10:00"
   }
 }

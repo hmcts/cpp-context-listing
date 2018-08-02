@@ -11,3 +11,28 @@ baseUri: message://event/processor/message/listing
         application/vnd.listing.events.hearing-allocated-for-listing+json:
             schema: !include json/schema/listing.events.hearing-allocated-for-listing.json
             example: !include json/listing.events.hearing-allocated-for-listing.json
+        application/vnd.listing.events.allocated-hearing-updated-for-listing+json:
+            schema: !include json/schema/listing.events.allocated-hearing-updated-for-listing.json
+            example: !include json/listing.events.allocated-hearing-updated-for-listing.json
+        application/vnd.listing.events.defendants-to-be-updated+json:
+            schema: !include json/schema/listing.events.defendants-to-be-updated.json
+            example: !include json/listing.events.defendants-to-be-updated.json
+        application/vnd.listing.events.offences-to-be-updated+json:
+            schema: !include json/schema/listing.events.offences-to-be-updated.json
+            example: !include json/listing.events.offences-to-be-updated.json
+        application/vnd.listing.events.offences-to-be-deleted+json:
+            schema: !include json/schema/listing.events.offences-to-be-deleted.json
+            example: !include json/listing.events.offences-to-be-deleted.json
+        application/vnd.listing.events.offences-to-be-added+json:
+            schema: !include json/schema/listing.events.offences-to-be-added.json
+            example: !include json/listing.events.offences-to-be-added.json
+
+/public.event:
+    post:
+      body:
+        application/vnd.public.progression.case-defendant-changed+json:
+            schema: !include json/schema/public.progression.case-defendant-changed.json
+            example: !include json/public.progression.case-defendant-changed.json
+        application/vnd.public.progression.defendant-offences-changed+json:
+            schema: !include json/schema/public.progression.defendant-offences-changed.json
+            example: !include json/public.progression.defendant-offences-changed.json

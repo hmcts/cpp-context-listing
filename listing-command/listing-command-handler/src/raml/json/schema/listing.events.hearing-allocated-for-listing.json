@@ -1,22 +1,50 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.hearing-allocated-for-listing.json",
   "type": "object",
   "properties": {
     "hearingId": {
-      "$ref": "#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
     },
     "judgeId": {
-      "$ref": "#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
     },
     "courtRoomId": {
-      "$ref": "#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
     },
     "type": {
       "type": "string"
     },
+    "caseId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "urn": {
+      "type": "string"
+    },
+
+    "defendantsOffenceIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": [
+        {
+          "$ref": "http://justice.gov.uk/listing/events/defendant-offence-ids.json"
+        }
+      ]
+    },
 
     "estimateMinutes": {
       "type": "integer"
+    },
+    "hearingDays": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "format": "date-time"
+      }
     },
     "hearingDate": {
       "type": "object",
@@ -28,14 +56,12 @@
         "startTime": {
           "type": "string",
           "format": "time"
-        },
-        "notBefore": {
-          "type": "boolean"
         }
       },
       "required": [
         "startDate"
-      ]
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
@@ -43,14 +69,13 @@
     "type",
     "judgeId",
     "courtRoomId",
+    "courtCentreId",
+    "caseId",
+    "urn",
     "estimateMinutes",
-    "hearingDate"
+    "hearingDate",
+    "hearingDays",
+    "defendantsOffenceIds"
   ],
-  "additionalProperties": false,
-  "definitions": {
-    "uuid": {
-      "type": "string",
-      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
-    }
-  }
+  "additionalProperties": false
 }

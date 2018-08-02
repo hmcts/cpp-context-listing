@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.allocated-hearing-updated-for-listing.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "judgeId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "courtRoomId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "type": {
+      "type": "string"
+    },
+    "hearingDays": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "format": "date-time"
+      }
+    }
+  },
+  "required": [
+    "hearingId",
+    "type",
+    "judgeId",
+    "courtRoomId",
+    "courtCentreId",
+    "hearingDays"
+  ],
+  "additionalProperties": false
+}

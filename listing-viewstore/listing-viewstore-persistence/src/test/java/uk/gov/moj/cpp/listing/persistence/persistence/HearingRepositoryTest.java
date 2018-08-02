@@ -14,7 +14,6 @@ import uk.gov.moj.cpp.listing.persistence.entity.HearingBuilder;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,8 +36,9 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final Integer ESTIMATED_MINUTES = INTEGER.next();
     private static final String TYPE = STRING.next();
     private static final LocalDate START_DATE = PAST_LOCAL_DATE.next();
-    private static final LocalTime START_TIME = LocalTime.now();
-    private static final Boolean NOT_BEFORE = BOOLEAN.next();
+    private static final LocalDate END_DATE = PAST_LOCAL_DATE.next();
+
+
     private static final Boolean ALLOCATED = BOOLEAN.next();
 
     @Inject
@@ -90,21 +90,6 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     }
 
     @Test
-
-    public void shouldShouldUpdateEstimateMinutesForHearing() {
-        //given
-        final Hearing hearing = saveHearing(COURT_CENTRE_ID, UNALLOCATED);
-
-        //when
-        hearingRepository.updateEstimateMinutes(ESTIMATED_MINUTES, hearing.getId());
-        hearingRepository.refresh(hearing);
-
-        //then
-        final Hearing actualHearing = hearingRepository.findBy(hearing.getId());
-        assertThat(actualHearing.getEstimateMinutes(), is(ESTIMATED_MINUTES));
-    }
-
-    @Test
     public void shouldShouldUpdateJudgeIdForHearing() {
         //given
         final Hearing hearing = saveHearing(COURT_CENTRE_ID, UNALLOCATED);
@@ -133,18 +118,19 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     }
 
     @Test
-    public void shouldShouldUpdateStartTimeForHearing() {
+    public void shouldShouldUpdateEndDateForHearing() {
         //given
         final Hearing hearing = saveHearing(COURT_CENTRE_ID, UNALLOCATED);
 
         //when
-        hearingRepository.updateStartTime(START_TIME, hearing.getId());
+        hearingRepository.updateEndDate(END_DATE, hearing.getId());
         hearingRepository.refresh(hearing);
 
         //then
         final Hearing actualHearing = hearingRepository.findBy(hearing.getId());
-        assertThat(actualHearing.getStartTime(), is(START_TIME));
+        assertThat(actualHearing.getEndDate(), is(END_DATE));
     }
+
 
     @Test
     public void shouldShouldUpdateTypeForHearing() {
@@ -172,20 +158,6 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         //then
         final Hearing actualHearing = hearingRepository.findBy(hearing.getId());
         assertThat(actualHearing.getAllocated(), is(ALLOCATED));
-    }
-
-    @Test
-    public void shouldShouldUpdateNotBeforeForHearing() {
-        //given
-        final Hearing hearing = saveHearing(COURT_CENTRE_ID, UNALLOCATED);
-
-        //when
-        hearingRepository.updateNotBefore(NOT_BEFORE, hearing.getId());
-        hearingRepository.refresh(hearing);
-
-        //then
-        final Hearing actualHearing = hearingRepository.findBy(hearing.getId());
-        assertThat(actualHearing.getNotBefore(), is(NOT_BEFORE));
     }
 
     private Hearing saveHearing(final UUID courtCentreId, final boolean allocated) {

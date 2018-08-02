@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.end-date-changed-for-hearing.json",
+  "type": "object",
+  "properties": {
+    "endDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "endDate",
+    "hearingId"
+  ],
+  "additionalProperties": false
+}

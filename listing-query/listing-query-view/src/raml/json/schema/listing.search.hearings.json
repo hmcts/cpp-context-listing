@@ -17,7 +17,10 @@
     "offence": {
       "type": "object",
       "properties": {
-        "id": {
+        "offenceId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "defendantId": {
           "$ref": "#/definitions/uuid"
         },
         "title": {
@@ -33,7 +36,10 @@
     "defendant": {
       "type": "object",
       "properties": {
-        "id": {
+        "hearingId": {
+          "$ref": "#/definitions/uuid"
+        },
+        "defendantId": {
           "$ref": "#/definitions/uuid"
         },
         "firstName": {
@@ -57,7 +63,8 @@
         }
       },
       "required": [
-        "id",
+        "hearingId",
+        "defendantId",
         "firstName",
         "lastName",
         "bailStatus",
@@ -91,9 +98,6 @@
         "judgeId": {
           "$ref": "#/definitions/uuid"
         },
-        "notBefore": {
-          "type": "boolean"
-        },
         "estimateMinutes": {
           "type": "string"
         },
@@ -111,11 +115,11 @@
         "id",
         "type",
         "startDate",
-        "startTime",
+        "startTimes",
+        "nonSittingDays",
         "courtCentreId",
         "courtRoomId",
         "judgeId",
-        "notBefore",
         "estimateMinutes",
         "defendants",
         "urn"

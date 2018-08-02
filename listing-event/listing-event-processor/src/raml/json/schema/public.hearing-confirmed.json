@@ -3,8 +3,7 @@
   "type": "object",
   "properties": {
     "caseId": {
-      "type": "string",
-      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+      "$ref": "#/definitions/uuid"
     },
     "urn": {
       "type": "string"
@@ -26,60 +25,27 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+          "$ref": "#/definitions/uuid"
         },
         "type": {
           "type": "string"
         },
         "courtCentreId": {
-          "type": "string",
-          "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
-        },
-        "courtCentreName": {
-          "type": "string",
-          "maxLength": 200
+          "$ref": "#/definitions/uuid"
         },
         "courtRoomId": {
-          "type": "string",
-          "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+          "$ref": "#/definitions/uuid"
         },
-        "courtRoomName": {
-          "type": "string",
-          "maxLength": 200
+        "judgeId": {
+          "$ref": "#/definitions/uuid"
         },
-        "judge": {
-          "type": "object",
-          "properties": {
-            "id": {
-              "$ref": "#/definitions/uuid"
-            },
-            "title": {
-              "type": "string"
-            },
-            "firstName": {
-              "type": "string"
-            },
-            "lastName": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "id",
-            "title",
-            "lastName"
-          ],
-          "additionalProperties": false
-        },
-        "startDateTime": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "notBefore": {
-          "type": "boolean"
-        },
-        "estimateMinutes": {
-          "type": "integer"
+        "hearingDays": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "format": "date-time"
+          }
         },
         "defendants": {
           "type": "array",
@@ -93,9 +59,8 @@
         "type",
         "courtCentreId",
         "courtRoomId",
-        "startDateTime",
-        "judge",
-        "estimateMinutes",
+        "judgeId",
+        "hearingDays",
         "defendants"
       ],
       "additionalProperties": false
@@ -104,30 +69,7 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
-        },
-        "personId": {
-          "type": "string",
-          "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
-        },
-        "firstName": {
-          "type": "string"
-        },
-        "lastName": {
-          "type": "string"
-        },
-        "dateOfBBirth": {
-          "$ref": "#/definitions/datePattern"
-        },
-        "bailStatus": {
-          "type": "string"
-        },
-        "custodyTimeLimit": {
-          "$ref": "#/definitions/datePattern"
-        },
-        "defenceOrganisation": {
-          "type": "string"
+          "$ref": "#/definitions/uuid"
         },
         "offences": {
           "type": "array",
@@ -145,21 +87,7 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
-        },
-        "offenceCode": {
-          "type": "string"
-        },
-        "startDate": {
-          "$ref": "#/definitions/datePattern"
-        },
-        "endDate": {
-          "$ref": "#/definitions/datePattern"
-        },
-        "statementOfOffence": {
-          "type": "object",
-          "$ref": "#/definitions/statementOfOffence"
+          "$ref": "#/definitions/uuid"
         }
       },
       "required": [
@@ -167,16 +95,9 @@
       ],
       "additionalProperties": false
     },
-    "statementOfOffence": {
-      "properties": {
-        "title": {
-          "type": "string"
-        },
-        "legislation": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
+    "uuid": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
     },
     "datePattern": {
       "type": "string",

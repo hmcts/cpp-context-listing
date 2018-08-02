@@ -1,0 +1,17 @@
+{
+  "_metadata": {
+    "name": "listing.events.offence-updated"
+  },
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "offence": {
+    "defendantId": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+    "endDate": "2011-08-01",
+    "id": "8b6add6d-5584-41fa-9796-b219a668fffa",
+    "offenceCode": "H8189",
+    "startDate": "2010-08-01",
+    "statementOfOffence": {
+      "legislation": "legislation",
+      "title": "Wounding with intent"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "offences": [
+    {
+      "id": "8b6add6d-5584-41fa-9796-b219a668fffa",
+      "defendantId": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+      "offenceCode": "H8189",
+      "startDate": "2010-08-01",
+      "endDate": "2011-08-01",
+      "statementOfOffence": {
+        "title": "Wounding with intent",
+        "legislation": "legislation"
+      }
+    },
+    {
+      "id": "d5e03eb8-3274-457c-9db3-e67638c0e8b0",
+      "defendantId": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+      "offenceCode": "H8189",
+      "startDate": "2010-08-01",
+      "endDate": "2011-08-01",
+      "statementOfOffence": {
+        "title": "Wounding with intent",
+        "legislation": "legislation"
+      }
+    }
+  ]
+}

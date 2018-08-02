@@ -1,15 +1,16 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.hearing-unallocated-for-listing.json",
   "type": "object",
   "properties": {
     "hearingId": {
-      "$ref": "#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
     },
     "judgeId": {
-      "$ref": "#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
     },
     "courtRoomId": {
-      "$ref": "#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
     },
     "type": {
       "type": "string"
@@ -28,9 +29,6 @@
         "startTime": {
           "type": "string",
           "format": "time"
-        },
-        "notBefore": {
-          "type": "boolean"
         }
       },
       "required": [
@@ -44,11 +42,5 @@
     "estimateMinutes",
     "hearingDate"
   ],
-  "additionalProperties": false,
-  "definitions": {
-    "uuid": {
-      "type": "string",
-      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
-    }
-  }
+  "additionalProperties": false
 }

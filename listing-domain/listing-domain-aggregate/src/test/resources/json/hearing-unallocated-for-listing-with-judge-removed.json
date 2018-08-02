@@ -8,8 +8,7 @@
   "courtRoomId": "ad80a0b4-d285-4496-a514-43cb8d500051",
   "hearingDate": {
     "startDate": "2018-01-21",
-    "startTime": "10:00:00",
-    "notBefore": false
+    "startTime": "10:00"
   }
 }
 

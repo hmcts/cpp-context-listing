@@ -6,6 +6,7 @@ import java.util.UUID;
 public class OffenceData {
 
     private final UUID offenceId;
+    private final UUID randomOffenceId;
     private final String offenceCode;
     private final LocalDate startDate;
     private final LocalDate endDate;
@@ -19,6 +20,7 @@ public class OffenceData {
         this.endDate = endDate;
         this.offenceCode = offenceCode;
         this.offenceId = offenceId;
+        this.randomOffenceId = UUID.randomUUID();
         this.startDate = startDate;
         this.statementOfOffenceLegislation = statementOfOffenceLegislation;
         this.statementOfOffenceTitle = statementOfOffenceTitle;
@@ -26,7 +28,13 @@ public class OffenceData {
 
     public UUID getOffenceId() { return offenceId; }
 
+    public UUID getRandomOffenceId() { return randomOffenceId; }
+
+    public String getNewOffenceCode() { return offenceCode + "-new"; }
+
     public String getOffenceCode() { return offenceCode; }
+
+    public String getChangedOffenceCode() { return offenceCode + "-changed"; }
 
     public LocalDate getStartDate() { return startDate; }
 
@@ -34,5 +42,9 @@ public class OffenceData {
 
     public String getStatementOfOffenceTitle() { return statementOfOffenceTitle; }
 
+    public String getChangedStatementOfOffenceTitle() { return statementOfOffenceTitle + "-changed"; }
+
     public String getStatementOfOffenceLegislation() { return statementOfOffenceLegislation; }
+
+    public String getChangedStatementOfOffenceLegislation() { return statementOfOffenceLegislation + "-changed"; }
 }

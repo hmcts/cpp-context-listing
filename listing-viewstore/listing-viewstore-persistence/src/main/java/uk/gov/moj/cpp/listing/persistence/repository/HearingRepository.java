@@ -4,7 +4,6 @@ package uk.gov.moj.cpp.listing.persistence.repository;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,47 +31,37 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
     /**
      * Update {@link Hearing} with type
      *
-     * @param type property of the hearing to update.
+     * @param type      property of the hearing to update.
      * @param hearingId property of the hearing to update.
      * @return number of rows updated.
      */
     @Modifying
     @Query(value = "update Hearing as h SET h.type = ?1 WHERE h.id = ?2")
-    int updateType(String type, UUID hearingId);
+    int updateType(final String type, final UUID hearingId);
 
     /**
      * Update {@link Hearing} with courtRoomId
      *
      * @param courtRoomId property of the hearing to update.
-     * @param hearingId property of the hearing to update.
+     * @param hearingId   property of the hearing to update.
      * @return number of rows updated.
      */
     @Modifying
     @Query(value = "update Hearing as h SET h.courtRoomId = ?1 WHERE h.id = ?2")
-    int updateCourtRoomId(UUID courtRoomId , UUID hearingId);
+    int updateCourtRoomId(final UUID courtRoomId, final UUID hearingId);
 
 
     /**
      * Update {@link Hearing} with judgeId
      *
-     * @param judgeId property of the hearing to update.
+     * @param judgeId   property of the hearing to update.
      * @param hearingId property of the hearing to update.
      * @return number of rows updated.
      */
     @Modifying
     @Query(value = "update Hearing as h SET h.judgeId = ?1 WHERE h.id = ?2")
-    int updateJudgeId(UUID judgeId , UUID hearingId);
+    int updateJudgeId(final UUID judgeId, final UUID hearingId);
 
-    /**
-     * Update {@link Hearing} with estimateMinutes
-     *
-     * @param estimateMinutes property of the hearing to update.
-     * @param hearingId property of the hearing to update.
-     * @return number of rows updated.
-     */
-    @Modifying
-    @Query(value = "update Hearing as h SET h.estimateMinutes = ?1 WHERE h.id = ?2")
-    int updateEstimateMinutes(Integer estimateMinutes, UUID hearingId);
 
     /**
      * Update {@link Hearing} with startDate
@@ -83,18 +72,42 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
      */
     @Modifying
     @Query(value = "update Hearing as h SET h.startDate = ?1 WHERE h.id = ?2")
-    int updateStartDate(LocalDate startDate , UUID hearingId);
+    int updateStartDate(final LocalDate startDate, final UUID hearingId);
+
 
     /**
-     * Update {@link Hearing} with startTime
+     * Update {@link Hearing} with startTimes
      *
-     * @param startTime property of the hearing to update.
+     * @param startTimes property of the hearing to update.
      * @param hearingId property of the hearing to update.
      * @return number of rows updated.
      */
     @Modifying
-    @Query(value = "update Hearing as h SET h.startTime = ?1 WHERE h.id = ?2")
-    int updateStartTime(LocalTime startTime , UUID hearingId);
+    @Query(value = "update Hearing as h SET h.startTimes = ?1 WHERE h.id = ?2")
+    int updateStartTimes(final String startTimes, final UUID hearingId);
+
+
+    /**
+     * Update {@link Hearing} with nonSittingDays
+     *
+     * @param nonSittingDays property of the hearing to update.
+     * @param hearingId property of the hearing to update.
+     * @return number of rows updated.
+     */
+    @Modifying
+    @Query(value = "update Hearing as h SET h.nonSittingDays = ?1 WHERE h.id = ?2")
+    int updateNonSittingDays(final String nonSittingDays, final UUID hearingId);
+
+    /**
+     * Update {@link Hearing} with endDate
+     *
+     * @param endDate   property of the hearing to update.
+     * @param hearingId property of the hearing to update.
+     * @return number of rows updated.
+     */
+    @Modifying
+    @Query(value = "update Hearing as h SET h.endDate = ?1 WHERE h.id = ?2")
+    int updateEndDate(final LocalDate endDate, final UUID hearingId);
 
     /**
      * Update {@link Hearing} with allocated
@@ -104,17 +117,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
      * @return number of rows updated.
      */
     @Modifying
-    @Query( value = "update Hearing as h SET h.allocated = ?1 WHERE h.id = ?2")
-    int updateAllocated(boolean allocated , UUID hearingId);
-
-    /**
-     * Update {@link Hearing} with notBefore
-     *
-     * @param notBefore property of the hearing to update.
-     * @param hearingId property of the hearing to update.
-     * @return number of rows updated.
-     */
-    @Modifying
-    @Query( value = "update Hearing as h SET h.notBefore = ?1 WHERE h.id = ?2")
-    int updateNotBefore(boolean notBefore , UUID hearingId);
+    @Query(value = "update Hearing as h SET h.allocated = ?1 WHERE h.id = ?2")
+    int updateAllocated(boolean allocated, final UUID hearingId);
 }
+
+

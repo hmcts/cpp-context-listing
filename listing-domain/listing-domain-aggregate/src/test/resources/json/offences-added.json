@@ -1,0 +1,36 @@
+[
+  {
+    "_metadata": {
+      "name": "listing.events.offence-added"
+    },
+    "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+    "offence": {
+      "defendantId": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+      "endDate": "2011-08-01",
+      "id": "7e2f843e-d639-40b3-8611-8015f3a18958",
+      "offenceCode": "H8189",
+      "startDate": "2010-08-01",
+      "statementOfOffence": {
+        "legislation": "legislation",
+        "title": "Wounding with intent"
+      }
+    }
+  },
+  {
+    "_metadata": {
+      "name": "listing.events.offence-added"
+    },
+    "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+    "offence": {
+      "defendantId": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+      "endDate": "2011-08-01",
+      "id": "d5e03eb8-3274-457c-9db3-e67638c0e8b0",
+      "offenceCode": "H8189",
+      "startDate": "2010-08-01",
+      "statementOfOffence": {
+        "legislation": "legislation",
+        "title": "Wounding with intent"
+      }
+    }
+  }
+]

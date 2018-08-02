@@ -17,12 +17,31 @@
     "type": {
       "type": "string"
     },
+    "urn": {
+      "type": "string"
+    },
     "startDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "endDate": {
       "type": "string",
       "format": "date"
     },
     "estimateMinutes": {
       "type": "integer"
+    },
+    "startTime": {
+      "type":  "string",
+      "format": "time"
+    },
+    "judgeId": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+    },
+    "courtRoomId": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
     },
     "defendants": {
       "type": "array",
@@ -128,6 +147,7 @@
     "caseId",
     "courtCentreId",
     "type",
+    "urn",
     "startDate",
     "estimateMinutes",
     "defendants"

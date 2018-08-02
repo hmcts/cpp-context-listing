@@ -3,7 +3,7 @@
     <parent>
         <artifactId>listing-event</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>1.0.6-SNAPSHOT</version>
+        <version>1.0.7-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -12,7 +12,6 @@
 
     <properties>
         <cpp.service-component>EVENT_PROCESSOR</cpp.service-component>
-        <referencedata.version>2.0.147</referencedata.version>
     </properties>
 
     <dependencies>
@@ -46,15 +45,49 @@
             <artifactId>test-utils-core</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>uk.gov.moj.cpp.listing</groupId>
-            <artifactId>listing-viewstore-persistence</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>generator-plugin</artifactId>
+                <groupId>uk.gov.justice.maven.generator</groupId>
+                <executions>
+                    <execution>
+                        <id>event-pojo-generation</id>
+                        <configuration>
+                            <skip>false</skip>
+                            <sourceDirectory>src/raml/json/schema</sourceDirectory>
+                            <generatorProperties>
+                                <typeMappings>
+                                    <typeMapping>
+                                        <name>date-time</name>
+                                        <type>format</type>
+                                        <implementation>java.time.ZonedDateTime</implementation>
+                                    </typeMapping>
+                                    <typeMapping>
+                                        <name>uuid</name>
+                                        <type>reference</type>
+                                        <implementation>java.util.UUID</implementation>
+                                    </typeMapping>
+                                    <typeMapping>
+                                        <name>localDate</name>
+                                        <type>reference</type>
+                                        <implementation>java.time.LocalDate</implementation>
+                                    </typeMapping>
+                                </typeMappings>
+                            </generatorProperties>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.listing</groupId>
+                        <artifactId>listing-json</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
@@ -68,18 +101,6 @@
                         <artifactId>listing-command-handler</artifactId>
                         <version>${project.version}</version>
                         <classifier>raml</classifier>
-                    </dependency>
-                    <dependency>
-                        <groupId>uk.gov.moj.cpp.referencedata</groupId>
-                        <artifactId>referencedata-query-api</artifactId>
-                        <version>${referencedata.version}</version>
-                        <classifier>raml</classifier>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>*</groupId>
-                                <artifactId>*</artifactId>
-                            </exclusion>
-                        </exclusions>
                     </dependency>
                 </dependencies>
                 <configuration>

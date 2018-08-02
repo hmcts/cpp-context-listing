@@ -4,16 +4,22 @@ import java.io.Serializable;
 
 public class OffenceSummary  implements Serializable {
 
-    private final String id;
+    private final String offenceId;
+    private final String defendantId;
     private final String title;
 
-    public OffenceSummary(final String id, final String title) {
-        this.id = id;
+    public OffenceSummary(final String offenceId, final String defendantId, final String title) {
+        this.offenceId = offenceId;
+        this.defendantId = defendantId;
         this.title = title;
     }
 
-    public String getId() {
-        return id;
+    public String getOffenceId() {
+        return offenceId;
+    }
+
+    public String getDefendantId() {
+        return defendantId;
     }
 
     public String getTitle() {

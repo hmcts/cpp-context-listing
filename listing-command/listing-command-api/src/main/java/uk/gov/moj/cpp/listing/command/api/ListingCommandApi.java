@@ -24,10 +24,39 @@ public class ListingCommandApi {
         sender.send(envelope);
     }
 
-
     @Handles("listing.command.update-hearing-for-listing")
     public void updateHearingForListing(final JsonEnvelope envelope) {
         final JsonEnvelope newEnvelope = enveloper.withMetadataFrom(envelope, "listing.command.handler.update-hearing-for-listing").apply(envelope.payloadAsJsonObject());
         sender.send(newEnvelope);
+    }
+
+    @Handles("listing.command.update-case-defendant-details")
+    public void updateCaseDefendantDetails(final JsonEnvelope envelope) {
+        sender.send(envelope);
+    }
+
+    @Handles("listing.command.update-case-defendant-offences")
+    public void updateCaseDefendantOffencesDetails(final JsonEnvelope envelope) {
+        sender.send(envelope);
+    }
+
+    @Handles("listing.command.update-defendants-for-hearing")
+    public void updateDefendantForHearing(final JsonEnvelope envelope) {
+        sender.send(envelope);
+    }
+
+    @Handles("listing.command.update-offences-for-hearing")
+    public void updateOffencesForHearing(final JsonEnvelope envelope) {
+        sender.send(envelope);
+    }
+
+    @Handles("listing.command.delete-offences-for-hearing")
+    public void deleteOffencesForHearing(final JsonEnvelope envelope) {
+        sender.send(envelope);
+    }
+
+    @Handles("listing.command.add-offences-for-hearing")
+    public void addOffencesForHearing(final JsonEnvelope envelope) {
+        sender.send(envelope);
     }
 }

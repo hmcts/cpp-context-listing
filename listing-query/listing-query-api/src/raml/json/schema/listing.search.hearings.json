@@ -78,6 +78,10 @@
           "type": "string",
           "format": "date"
         },
+        "endDate": {
+          "type": "string",
+          "format": "date"
+        },
         "startTime": {
           "type": "string",
           "format": "time"
@@ -90,9 +94,6 @@
         },
         "judgeId": {
           "$ref": "#/definitions/uuid"
-        },
-        "notBefore": {
-          "type": "boolean"
         },
         "estimateMinutes": {
           "type": "string"
@@ -111,11 +112,11 @@
         "id",
         "type",
         "startDate",
-        "startTime",
+        "startTimes",
+        "nonSittingDays",
         "courtCentreId",
         "courtRoomId",
         "judgeId",
-        "notBefore",
         "estimateMinutes",
         "defendants",
         "urn"

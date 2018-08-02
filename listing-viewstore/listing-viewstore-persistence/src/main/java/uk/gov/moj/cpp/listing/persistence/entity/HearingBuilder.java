@@ -1,22 +1,33 @@
 package uk.gov.moj.cpp.listing.persistence.entity;
 
+import static javax.json.Json.createObjectBuilder;
+
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
 
+
+@SuppressWarnings("squid:S00107")
 public class HearingBuilder {
+
+    private static final String START_TIMES = "startTimes";
     private UUID id;
     private LocalDate startDate;
-    private LocalTime startTime;
+    private LocalDate endDate;
+    private String startTimes;
+    private String nonSittingDays;
     private Integer estimateMinutes;
     private String type;
     private UUID courtCentreId;
     private UUID courtRoomId;
     private UUID judgeId;
-    private boolean notBefore = false;
     private UUID listingCaseId;
     private Boolean allocated;
     private Set<Defendant> defendants = new LinkedHashSet<>();
@@ -31,8 +42,33 @@ public class HearingBuilder {
         return this;
     }
 
-    public HearingBuilder setStartTime(final LocalTime startTime) {
-        this.startTime = startTime;
+    public HearingBuilder setEndDate(final LocalDate endDate) {
+        this.endDate = endDate;
+        return this;
+    }
+
+
+    public HearingBuilder setStartTimes(final List<ZonedDateTime> startTimes) {
+        JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        if(startTimes!=null && !startTimes.isEmpty()) {
+            startTimes.forEach(st -> arrayBuilder.add(st.toInstant().toString()));
+            final JsonObjectBuilder startTimesJsonStringBuilder = createObjectBuilder();
+
+            startTimesJsonStringBuilder.add(START_TIMES, arrayBuilder.build());
+            this.startTimes = startTimesJsonStringBuilder.build().toString();
+        }
+        return this;
+    }
+
+    public HearingBuilder setNonSittingDays(final List<LocalDate> nonSittingDays) {
+        if(nonSittingDays!=null && !nonSittingDays.isEmpty()) {
+            JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+            nonSittingDays.forEach(d -> arrayBuilder.add(d.toString()));
+            final JsonObjectBuilder nonSittingDaysJsonStringBuilder = createObjectBuilder();
+
+            nonSittingDaysJsonStringBuilder.add("nonSittingDays", arrayBuilder.build());
+            this.nonSittingDays = nonSittingDaysJsonStringBuilder.build().toString();
+        }
         return this;
     }
 
@@ -61,11 +97,6 @@ public class HearingBuilder {
         return this;
     }
 
-    public HearingBuilder setNotBefore(final boolean notBefore) {
-        this.notBefore = notBefore;
-        return this;
-    }
-
     public HearingBuilder setListingCaseId(final UUID listingCaseId) {
         this.listingCaseId = listingCaseId;
         return this;
@@ -81,9 +112,11 @@ public class HearingBuilder {
         return this;
     }
 
+
+
     public Hearing build() {
-        return new Hearing(id, listingCaseId, allocated, defendants, notBefore,
-                new Hearing.HearingDetails(startDate, startTime, estimateMinutes, type, courtCentreId,
-                        courtRoomId, judgeId));
+        return new Hearing(id, listingCaseId, allocated, defendants,
+                new Hearing.HearingDetails(startDate, startTimes, estimateMinutes, type, courtCentreId,
+                        courtRoomId, judgeId, nonSittingDays, endDate));
     }
-}    
+}                                      

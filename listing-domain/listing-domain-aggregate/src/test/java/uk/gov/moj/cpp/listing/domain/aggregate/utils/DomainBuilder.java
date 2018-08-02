@@ -4,15 +4,14 @@ import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 
+import uk.gov.justice.listing.events.BailStatus;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
-import uk.gov.moj.cpp.listing.domain.Defendant;
-import uk.gov.moj.cpp.listing.domain.Hearing;
-import uk.gov.moj.cpp.listing.domain.Offence;
-import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
+import uk.gov.moj.cpp.listing.domain.*;
 
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.IntStream;
 
 public class DomainBuilder {
@@ -25,8 +24,24 @@ public class DomainBuilder {
     public static List<Hearing> buildHearings() {
         return buildHearings(1);
     }
+
     public static List<Hearing> buildHearings(int total) {
-        return IntStream.range(0, total-1).mapToObj(i -> buildHearing()).collect(toList());
+        return IntStream.range(0, total).mapToObj(i -> buildHearing()).collect(toList());
+    }
+
+    public static CaseSimpleOffences buildCaseSimpleOffences() {
+        return CaseSimpleOffences.createCaseSimpleOffencesBuilder()
+                .setCaseId(randomUUID())
+                .setOffences(Collections.singletonList(createSimpleOffence()))
+                .build();
+    }
+
+    public static CaseOffences buildCaseOffences() {
+        StatementOfOffence statementOfOffence = createStatementOfOffence();
+        return CaseOffences.createCaseOffencesBuilder()
+                .setCaseId(randomUUID())
+                .setOffences(Collections.singletonList(createOffence(statementOfOffence)))
+                .build();
     }
 
     public static Defendant buildDefendant() {
@@ -36,13 +51,16 @@ public class DomainBuilder {
     }
 
     private static Hearing buildHearing() {
-        return new Hearing(randomUUID().toString(), RandomGenerator.STRING.next(), RandomGenerator.STRING.next(), RandomGenerator.STRING.next(),
-                LocalDate.now(), ONE_HOUR_ESTIMATE, asList(buildDefendant()), UNALLOCATED);
+        return new Hearing(randomUUID().toString(), randomUUID().toString(), randomUUID().toString(),
+                RandomGenerator.STRING.next(), LocalDate.now(),  LocalDate.now().plusDays(2),
+                ONE_HOUR_ESTIMATE, null, null, null, 
+                asList(buildDefendant()), UNALLOCATED);
     }
 
     private static Defendant createDefendant(final Offence offence) {
+        String bailStatus = BailStatus.values()[new Random().nextInt(BailStatus.values().length)].toString();
         return new Defendant(randomUUID().toString(), randomUUID().toString(), RandomGenerator.STRING.next(), RandomGenerator.STRING.next(),
-                LocalDate.now(), RandomGenerator.STRING.next(), LocalDate.now(), RandomGenerator.STRING.next(), Collections.singletonList
+                LocalDate.now(), bailStatus, LocalDate.now(), RandomGenerator.STRING.next(), Collections.singletonList
                 (offence));
     }
 
@@ -51,7 +69,20 @@ public class DomainBuilder {
     }
 
     private static Offence createOffence(final StatementOfOffence statementOfOffence) {
-        return new Offence(randomUUID().toString(),  RandomGenerator.STRING.next(), LocalDate.now
-                (), LocalDate.now(), statementOfOffence);
+        return Offence.createOffenceBuilder()
+                .setId(randomUUID().toString())
+                .setOffenceCode(RandomGenerator.STRING.next())
+                .setStartDate(LocalDate.now())
+                .setEndDate(LocalDate.now())
+                .setStatementOfOffence(statementOfOffence)
+                .setDefendantId(randomUUID().toString())
+                .build();
+    }
+
+    private static SimpleOffence createSimpleOffence() {
+        return SimpleOffence.createSimpleOffenceBuilder()
+                .setId(randomUUID().toString())
+                .setDefendantId(randomUUID().toString())
+                .build();
     }
 }

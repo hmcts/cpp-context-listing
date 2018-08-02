@@ -2,8 +2,13 @@
   "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
   "type": "PTP",
   "startDate": "2018-01-21",
+  "endDate": null,
   "estimateMinutes": 15,
   "caseId": "183082fe-4962-49f8-a5b1-8cca2d425755",
+  "urn": "631374a6-add0-4a6b-9cc9-36d002dba244",
+  "courtRoomId": null,
+  "judgeId": null,
+  "startTime" : null,
   "courtCentreId": "419874a6-add0-4a6b-9cc9-36d002dba599",
   "defendants": [{
     "id": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
@@ -16,6 +21,7 @@
     "defenceOrganisation": "Freedom Partners",
     "offences": [{
       "id": "8b6add6d-5584-41fa-9796-b219a668fffa",
+      "defendantId": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
       "offenceCode": "OF61131",
       "startDate": "2017-09-09",
       "endDate": "2017-09-10",

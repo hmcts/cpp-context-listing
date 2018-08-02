@@ -18,13 +18,3 @@ Feature: Unallocate a hearing
       And judge removed from hearing
     When you applyAllocationRules to a Hearing using a no args
     Then hearing unallocated for listing with judge removed
-
-
-  Scenario: A hearing has been allocated, start time and judge has been removed.
-            Applying allocation rules results in the hearing being unallocated.
-
-    Given hearing allocated for listing with mandatory data
-      And start time removed from hearing
-      And judge removed from hearing
-    When you applyAllocationRules to a Hearing using a no args
-    Then hearing unallocated for listing with judge and start time removed

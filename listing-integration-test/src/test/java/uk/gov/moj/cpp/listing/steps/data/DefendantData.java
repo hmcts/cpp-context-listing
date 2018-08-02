@@ -44,7 +44,13 @@ public class DefendantData {
         return firstName;
     }
 
+    public String getChangedFirstName() {
+        return firstName + "-Changed";
+    }
+
     public String getLastName() { return lastName; }
+
+    public String getChangedLastName() { return lastName + "-Changed"; }
 
     public LocalDate getDateOfBirth() { return dateOfBirth; }
 

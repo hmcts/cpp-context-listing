@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
+import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -7,8 +8,8 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.fail;
 import static uk.gov.moj.cpp.listing.domain.aggregate.utils.DomainBuilder.buildHearings;
 
+import uk.gov.justice.listing.events.CaseSentForListing;
 import uk.gov.moj.cpp.listing.domain.Hearing;
-import uk.gov.moj.cpp.listing.event.CaseSentForListing;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,9 +20,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+
 public class CaseTest {
 
-    private static final UUID CASE_ID = UUID.randomUUID();
+    private static final UUID CASE_ID = randomUUID();
     private static final String URN = "92GX685120";
 
     private Case aCase;
@@ -32,12 +34,12 @@ public class CaseTest {
     }
 
     @Test
-    public void shouldEmitUnallocatedHearingListedEventWhenListed() throws Exception {
+    public void shouldEmitCaseSentForListingEventWhenListed() throws Exception {
         //given
         List<Hearing> hearings = buildHearings();
 
         //when
-        List<Object> events = aCase.sendForListing(CASE_ID.toString(), URN, hearings).collect(toList());
+        List<Object> events = aCase.sendForListing(CASE_ID, URN, hearings).collect(toList());
 
         //then
         assertThat(events.size(), is(1));
@@ -45,6 +47,7 @@ public class CaseTest {
         Object object = events.get(0);
         assertThat(object.getClass() , is(equalTo(CaseSentForListing.class)));
     }
+
 
     @After
     public void teardown() {
@@ -55,4 +58,5 @@ public class CaseTest {
             fail("Aggregate should be serializable");
         }
     }
+
 }

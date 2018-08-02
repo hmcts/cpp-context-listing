@@ -2,12 +2,14 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import uk.gov.justice.listing.events.TypeChangedForHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
-import uk.gov.moj.cpp.listing.event.TypeChangedForHearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.UUID;
@@ -43,11 +45,12 @@ public class TypeForHearingEventListenerTest {
 
     @Test
     public void shouldChangeTypeForHearing() throws Exception {
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        TypeChangedForHearing hearingData = new TypeChangedForHearing(TYPE, HEARING_ID.toString());
-
-        given(jsonObjectToObjectConverter.convert(payload, TypeChangedForHearing.class))
-                .willReturn(hearingData);
+         Envelope<TypeChangedForHearing> envelope = (Envelope<TypeChangedForHearing>) mock(Envelope.class);
+        TypeChangedForHearing hearingData = TypeChangedForHearing.typeChangedForHearing()
+                .withType(TYPE)
+                .withHearingId(HEARING_ID)
+                .build();
+        given(envelope.payload()).willReturn(hearingData);
 
         typeForHearingEventListener.typeChangedForHearing(envelope);
         verify(hearingRepository).updateType(TYPE, HEARING_ID);

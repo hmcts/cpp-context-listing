@@ -1,0 +1,15 @@
+{
+  "_metadata": {
+    "name": "listing.events.defendant-details-updated"
+  },
+  "defendant": {
+    "custodyTimeLimit": "2018-01-30",
+    "dateOfBirth": "1980-07-15",
+    "defenceOrganisation": "XYZ Solicitors",
+    "firstName": "David",
+    "id": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+    "lastName": "LLOYD",
+    "personId": "32f2ce4e-4b4f-4ac0-8071-610e2813e3f8"
+  },
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671"
+}

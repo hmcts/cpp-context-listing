@@ -1,32 +1,28 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.andReferenceDataForCourtsAreAvailable;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.givenAUserHasLoggedInAsAListingOfficers;
+import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenAllocatedHearingsForACourtCentreShouldContainAllocatedHearingData;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenAllocatedHearingsForACourtCentreShouldContainUpdatedHearingData;
-import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenAllocatedHearingsForACourtCentreShouldContainUpdatedHearingDataWithDefaultStartTime;
-import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenHearingScheduledPublicEventShouldBePublished;
-import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenHearingScheduledPublicEventShouldBePublishedWithDefaultStartTime;
+import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenHearingConfirmedPublicEventShouldBePublished;
+import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenHearingUpdatedPublicEventShouldBePublished;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenQueryValidationFailureOccursWhenQueried;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenUnallocatedHearingsForACourtCentreShouldContainTwoExpectedHearingsWhenQueried;
-import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenUnallocatedHearingsForACourtCentreShouldContainUpdatedHearingDataWithoutCourtRoomAndStartTime;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenUnallocatedHearingsForACourtCentreShouldContainUpdatedHearingDataWithoutCourtRoomId;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.thenUnallocatedHearingsForACourtCentreShouldContainUpdatedHearingDataWithoutJudgeId;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.whenCaseIsSubmittedForListing;
 import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.whenHearingIsUpdatedForListing;
-import static uk.gov.moj.cpp.listing.steps.data.CourtReferenceData.courtReferenceData;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithAllFieldsSet;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithoutCourtRoomId;
-import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithoutCourtRoomIdAndStartTime;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithoutJudgeId;
-import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithoutStartTime;
 import static uk.gov.moj.cpp.listing.steps.data.factory.CaseDataFactory.caseData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.CaseDataFactory.caseDataExisting;
 
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
 import uk.gov.moj.cpp.listing.steps.data.CaseData;
-import uk.gov.moj.cpp.listing.steps.data.CourtReferenceData;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.steps.data.factory.CaseDataFactory;
 
 import javax.jms.JMSException;
 
@@ -38,22 +34,26 @@ import org.junit.Test;
 public class HearingIT extends AbstractIT {
 
     private static final String PUBLIC_HEARING_CONFIRMED = "public.hearing-confirmed";
+    private static final String PUBLIC_HEARING_UPDATED = "public.hearing-updated";
     private static final String TOPIC_NAME = "public.event";
 
-    private MessageConsumerClient publicMessageConsumer = new MessageConsumerClient();
+    private MessageConsumerClient hearingConfirmedMessageConsumer = new MessageConsumerClient();
+    private MessageConsumerClient hearingUpdatedMessageConsumer = new MessageConsumerClient();
 
     @Before
     public void setup() {
-        publicMessageConsumer.startConsumer(PUBLIC_HEARING_CONFIRMED, TOPIC_NAME);
+        hearingConfirmedMessageConsumer.startConsumer(PUBLIC_HEARING_CONFIRMED, TOPIC_NAME);
+        hearingUpdatedMessageConsumer.startConsumer(PUBLIC_HEARING_UPDATED, TOPIC_NAME);
     }
 
     @After
     public void tearDown() {
-        publicMessageConsumer.close();
+        hearingConfirmedMessageConsumer.close();
+        hearingUpdatedMessageConsumer.close();
     }
 
     @Test
-    public void shouldReturnMultipleHearingsScheduled() throws JMSException {
+    public void shouldReturnMultipleHearingsListed() throws JMSException {
         final CaseData caseData = caseData();
         final CaseData caseDataNew = caseDataExisting(
                 caseData.getCaseId().toString(),
@@ -116,54 +116,54 @@ public class HearingIT extends AbstractIT {
     }
 
     @Test
-    public void shouldUpdateAnExistingHearingWithoutCourtRoomAndStartTime() throws JMSException {
-        final CaseData caseData = caseData();
-        final UpdatedHearingData hearingDataWithoutJudgeData = updatedHearingDataWithoutJudgeId(caseData.getHearingData().get(0).getId());
-        final UpdatedHearingData updatedHearingDataWithoutCourtRoomAndStartTime = updatedHearingDataWithoutCourtRoomIdAndStartTime(caseData.getHearingData().get(0).getId());
-
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
-        whenCaseIsSubmittedForListing(caseData);
-        thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried(caseData);
-
-        whenHearingIsUpdatedForListing(hearingDataWithoutJudgeData);
-        thenUnallocatedHearingsForACourtCentreShouldContainUpdatedHearingDataWithoutJudgeId(caseData, hearingDataWithoutJudgeData);
-
-        whenHearingIsUpdatedForListing(updatedHearingDataWithoutCourtRoomAndStartTime);
-        thenUnallocatedHearingsForACourtCentreShouldContainUpdatedHearingDataWithoutCourtRoomAndStartTime(caseData, updatedHearingDataWithoutCourtRoomAndStartTime);
-    }
-
-    @Test
-    public void shouldUpdateAnExistingHearingToBeAllocated() throws JMSException {
+    public void shouldUpdateAnExistingHearingToBeAllocatedAndRaiseHearingConfirmedPublicEvent()
+            throws JMSException {
         final CaseData caseData = caseData();
         final UpdatedHearingData updatedHearingData = updatedHearingDataWithAllFieldsSet(caseData.getHearingData().get(0).getId());
-        final CourtReferenceData courtReferenceData =  courtReferenceData(caseData, updatedHearingData);
 
         givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
-        andReferenceDataForCourtsAreAvailable(courtReferenceData);
+
         whenCaseIsSubmittedForListing(caseData);
         thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried(caseData);
 
         whenHearingIsUpdatedForListing(updatedHearingData);
         thenAllocatedHearingsForACourtCentreShouldContainUpdatedHearingData(caseData, updatedHearingData);
 
-        thenHearingScheduledPublicEventShouldBePublished(updatedHearingData.getHearingId(), publicMessageConsumer);
+        thenHearingConfirmedPublicEventShouldBePublished(updatedHearingData.getHearingId(), hearingConfirmedMessageConsumer);
     }
 
     @Test
-    public void shouldUpdateAnExistingHearingToBeAllocatedWhereNoStartTimeHasBeenSet() throws JMSException {
+    public void shouldUpdateAnAllocatedHearingAndRaiseHearingConfirmedPublicEventFollowedByHearingUpdatedPublicEvent()
+            throws JMSException {
         final CaseData caseData = caseData();
-        final UpdatedHearingData updatedHearingData = updatedHearingDataWithoutStartTime(caseData.getHearingData().get(0).getId());
-        final CourtReferenceData courtReferenceData =  courtReferenceData(caseData, updatedHearingData);
+        final UpdatedHearingData updatedHearingData = updatedHearingDataWithAllFieldsSet(caseData.getHearingData().get(0).getId());
 
         givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
-        andReferenceDataForCourtsAreAvailable(courtReferenceData);
+
         whenCaseIsSubmittedForListing(caseData);
         thenUnallocatedHearingsForACourtCentreShouldContainExpectedHearingWhenQueried(caseData);
 
         whenHearingIsUpdatedForListing(updatedHearingData);
-        thenAllocatedHearingsForACourtCentreShouldContainUpdatedHearingDataWithDefaultStartTime(caseData, updatedHearingData);
+        thenAllocatedHearingsForACourtCentreShouldContainUpdatedHearingData(caseData, updatedHearingData);
 
-        thenHearingScheduledPublicEventShouldBePublishedWithDefaultStartTime(updatedHearingData, publicMessageConsumer);
+        thenHearingConfirmedPublicEventShouldBePublished(updatedHearingData.getHearingId(), hearingConfirmedMessageConsumer);
+
+        whenHearingIsUpdatedForListing(updatedHearingData);
+        thenHearingUpdatedPublicEventShouldBePublished(updatedHearingData.getHearingId(), hearingUpdatedMessageConsumer);
+
     }
 
+    @Test
+    public void shouldSendCaseForListingAndAllocateHearingAndRaiseHearingConfirmedPublicEvent()
+            throws JMSException {
+        final CaseData caseData = CaseDataFactory.caseWithAllocationHearingData();
+        final HearingData hearingData = caseData.getHearingData().get(0);
+
+        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        whenCaseIsSubmittedForListing(caseData);
+
+        thenAllocatedHearingsForACourtCentreShouldContainAllocatedHearingData(hearingData);
+
+        thenHearingConfirmedPublicEventShouldBePublished(hearingData.getId(), hearingConfirmedMessageConsumer);
+    }
 }

@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.start-times-assigned-to-hearing.json",
+  "type": "object",
+  "properties": {
+    "startTimes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date-time"
+      }
+    },
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "startTimes",
+    "hearingId"
+  ],
+  "additionalProperties": false
+}

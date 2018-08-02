@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>listing-parent</artifactId>
+        <groupId>uk.gov.moj.cpp.listing</groupId>
+        <version>1.0.7-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>listing-json</artifactId>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>generator-plugin</artifactId>
+                <groupId>uk.gov.justice.maven.generator</groupId>
+                <executions>
+                    <execution>
+                        <id>schema-catalog-generation</id>
+                        <configuration>
+                            <sourceDirectory>src/main/resources/json/schema</sourceDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

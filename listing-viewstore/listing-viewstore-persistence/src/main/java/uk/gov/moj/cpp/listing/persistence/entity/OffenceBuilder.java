@@ -1,53 +1,46 @@
 package uk.gov.moj.cpp.listing.persistence.entity;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 public class OffenceBuilder {
-    private UUID listingOffenceId;
-    private UUID offenceId;
+    private CompositeOffenceId id;
     private String offenceCode;
     private LocalDate startDate;
     private LocalDate endDate;
     private StatementOfOffence statementOfOffence;
     private Defendant defendant;
 
-    public OffenceBuilder setOffenceId(final UUID offenceId) {
-        this.offenceId = offenceId;
+    public OffenceBuilder setId(CompositeOffenceId id) {
+        this.id = id;
         return this;
     }
 
-    public OffenceBuilder setListingOffenceId(final UUID listingOffenceId) {
-        this.listingOffenceId = listingOffenceId;
-        return this;
-    }
-
-    public OffenceBuilder setOffenceCode(final String offenceCode) {
+    public OffenceBuilder setOffenceCode(String offenceCode) {
         this.offenceCode = offenceCode;
         return this;
     }
 
-    public OffenceBuilder setStartDate(final LocalDate startDate) {
+    public OffenceBuilder setStartDate(LocalDate startDate) {
         this.startDate = startDate;
         return this;
     }
 
-    public OffenceBuilder setEndDate(final LocalDate endDate) {
+    public OffenceBuilder setEndDate(LocalDate endDate) {
         this.endDate = endDate;
         return this;
     }
 
-    public OffenceBuilder setStatementOfOffence(final StatementOfOffence statementOfOffence) {
+    public OffenceBuilder setStatementOfOffence(StatementOfOffence statementOfOffence) {
         this.statementOfOffence = statementOfOffence;
         return this;
     }
 
-    public OffenceBuilder setDefendant(final Defendant defendant) {
+    public OffenceBuilder setDefendant(Defendant defendant) {
         this.defendant = defendant;
         return this;
     }
 
     public Offence build() {
-        return new Offence(listingOffenceId, offenceId, offenceCode, statementOfOffence, defendant, new Offence.OffencePeriod(startDate, endDate));
+        return new Offence(id, offenceCode, startDate, endDate, statementOfOffence, defendant);
     }
 }

@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.hearing-listed.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "caseId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "type": {
+      "type": "string"
+    },
+    "urn": {
+      "type": "string"
+    },
+    "startDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "endDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "estimateMinutes": {
+      "type": "integer"
+    },
+    "startTimes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date-time"
+      }
+    },
+    "judgeId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "courtRoomId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "defendants": {
+      "type": "array",
+      "minItems": 1,
+      "items": [
+        {
+          "$ref": "http://justice.gov.uk/listing/events/defendant.json"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "localDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "hearingId",
+    "caseId",
+    "courtCentreId",
+    "type",
+    "urn",
+    "startDate",
+    "estimateMinutes",
+    "defendants"
+  ],
+  "additionalProperties": false
+}

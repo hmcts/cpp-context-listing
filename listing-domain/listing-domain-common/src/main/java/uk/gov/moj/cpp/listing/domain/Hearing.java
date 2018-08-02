@@ -18,9 +18,14 @@ public class Hearing implements Serializable {
     private final String courtCentreId;
     private final String type;
     private final LocalDate startDate;
+    private final LocalDate endDate;
     private final int estimateMinutes;
+    private final String courtRoomId;
+    private final String judgeId;
+    private final String startDateTime;
     private final List<Defendant> defendants;
     private final boolean allocated;
+
 
     @JsonCreator
     public Hearing(@JsonProperty(value = "id") final String id,
@@ -28,15 +33,24 @@ public class Hearing implements Serializable {
                    @JsonProperty(value = "courtCentreId") final String courtCentreId,
                    @JsonProperty(value = "type") final String type,
                    @JsonProperty(value = "startDate") final LocalDate startDate,
+                   @JsonProperty(value = "endDate") final LocalDate endDate,
                    @JsonProperty(value = "estimateMinutes") final int estimateMinutes,
+                   @JsonProperty(value = "courtRoomId") final String courtRoomId,
+                   @JsonProperty(value = "judgeId") final String judgeId,
+                   @JsonProperty(value = "startDateTime") final String startDateTime,
                    @JsonProperty(value = "defendants") final List<Defendant> defendants,
-                   @JsonProperty(value = "allocated") final boolean allocated) {
+                   @JsonProperty(value = "allocated") final boolean allocated
+                   ) {
         this.id = id;
         this.caseId = caseId;
         this.courtCentreId = courtCentreId;
         this.type = type;
         this.startDate = startDate;
+        this.endDate = endDate;
         this.estimateMinutes = estimateMinutes;
+        this.judgeId = judgeId;
+        this.courtRoomId = courtRoomId;
+        this.startDateTime = startDateTime;
         this.allocated = allocated;
         this.defendants = new ArrayList<>(defendants);
     }
@@ -65,8 +79,24 @@ public class Hearing implements Serializable {
         return startDate;
     }
 
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
     public int getEstimateMinutes() {
         return estimateMinutes;
+    }
+
+    public String getCourtRoomId() {
+        return courtRoomId;
+    }
+
+    public String getJudgeId() {
+        return judgeId;
+    }
+
+    public String getStartDateTime() {
+        return startDateTime;
     }
 
     public List<Defendant> getDefendants() {

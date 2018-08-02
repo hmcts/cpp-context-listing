@@ -1,13 +1,12 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
+import uk.gov.justice.listing.events.CourtRoomChangedForHearing;
+import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.event.CourtRoomAssignedToHearing;
-import uk.gov.moj.cpp.listing.event.CourtRoomChangedForHearing;
-import uk.gov.moj.cpp.listing.event.CourtRoomRemovedFromHearing;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.UUID;
@@ -20,30 +19,27 @@ public class CourtRoomForHearingEventListener {
     @Inject
     private HearingRepository hearingRepository;
 
-    @Inject
-    private JsonObjectToObjectConverter jsonObjectConverter;
-
 
     @Handles("listing.events.court-room-assigned-to-hearing")
-    public void courtRoomAssignedToHearing(final JsonEnvelope event) {
-        final  CourtRoomAssignedToHearing courtRoomAssignedToHearing = jsonObjectConverter.convert(event.payloadAsJsonObject(), CourtRoomAssignedToHearing.class);
-        final UUID courtRoomId = UUID.fromString(courtRoomAssignedToHearing.getCourtRoomId());
-        final UUID hearingId = UUID.fromString(courtRoomAssignedToHearing.getHearingId());
+    public void courtRoomAssignedToHearing(final Envelope<CourtRoomAssignedToHearing> event) {
+        final CourtRoomAssignedToHearing courtRoomAssignedToHearing = event.payload();
+        final UUID courtRoomId = courtRoomAssignedToHearing.getCourtRoomId();
+        final UUID hearingId = courtRoomAssignedToHearing.getHearingId();
         hearingRepository.updateCourtRoomId(courtRoomId, hearingId);
     }
 
     @Handles("listing.events.court-room-changed-for-hearing")
-    public void courtRoomChangedForHearing(final JsonEnvelope event) {
-        final CourtRoomChangedForHearing courtRoomChangedForHearing = jsonObjectConverter.convert(event.payloadAsJsonObject(), CourtRoomChangedForHearing.class);
-        final UUID courtRoomId = UUID.fromString(courtRoomChangedForHearing.getCourtRoomId());
-        final UUID hearingId = UUID.fromString(courtRoomChangedForHearing.getHearingId());
+    public void courtRoomChangedForHearing(final Envelope<CourtRoomChangedForHearing> event) {
+        final CourtRoomChangedForHearing courtRoomChangedForHearing = event.payload();
+        final UUID courtRoomId = courtRoomChangedForHearing.getCourtRoomId();
+        final UUID hearingId = courtRoomChangedForHearing.getHearingId();
         hearingRepository.updateCourtRoomId(courtRoomId, hearingId);
     }
 
     @Handles("listing.events.court-room-removed-from-hearing")
-    public void courtRoomRemovedFromHearing(final JsonEnvelope event) {
-        final CourtRoomRemovedFromHearing courtRoomRemovedFromHearing = jsonObjectConverter.convert(event.payloadAsJsonObject(), CourtRoomRemovedFromHearing.class);
-        final UUID hearingId = UUID.fromString(courtRoomRemovedFromHearing.getHearingId());
+    public void courtRoomRemovedFromHearing(final Envelope<CourtRoomRemovedFromHearing> event) {
+        final CourtRoomRemovedFromHearing courtRoomRemovedFromHearing = event.payload();
+        final UUID hearingId = courtRoomRemovedFromHearing.getHearingId();
         hearingRepository.updateCourtRoomId(null, hearingId);
     }
 }

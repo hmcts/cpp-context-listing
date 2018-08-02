@@ -12,16 +12,23 @@
       "type": "string",
       "format": "date"
     },
-    "estimateMinutes": {
-      "type": "integer",
-      "minimum": 1
-    },
-    "startTime": {
+    "endDate": {
       "type": "string",
-      "format": "time"
+      "format": "date"
     },
-    "notBefore": {
-      "type": "boolean"
+    "nonSittingDays": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date"
+      }
+    },
+    "startTimes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date-time"
+      }
     },
     "judgeId": {
       "$ref": "#/definitions/uuid"
@@ -34,7 +41,9 @@
     "hearingId",
     "type",
     "startDate",
-    "estimateMinutes"
+    "endDate",
+    "nonSittingDays",
+    "startTimes"
   ],
   "additionalProperties": false,
   "definitions": {

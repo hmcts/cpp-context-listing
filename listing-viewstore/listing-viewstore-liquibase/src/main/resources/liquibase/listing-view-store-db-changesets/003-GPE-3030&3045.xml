@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet author="listing" id="1" logicalFilePath="003-GPE-3830&amp;3045.xml">
+
+
+        <dropColumn
+                tableName="offence"
+                columnName="listing_offence_id"
+        />
+
+        <dropColumn
+                tableName="offence"
+                columnName="listing_defendant_id"
+        />
+
+        <dropColumn
+                tableName="defendant"
+                columnName="listing_defendant_id"
+        />
+
+        <dropColumn
+                tableName="defendant"
+                columnName="hearing_id"
+        />
+
+        <addColumn tableName="defendant">
+            <column name="hearing_id" type="UUID" />
+            <column name="mapped_hearing_id" type="UUID"/>
+        </addColumn>
+
+        <addColumn tableName="offence">
+            <column name="hearing_id" type="UUID"/>
+            <column name="defendant_id" type="UUID"/>
+            <column name="mapped_hearing_id" type="UUID"/>
+            <column name="mapped_defendant_id" type="UUID"/>
+        </addColumn>
+
+        <addNotNullConstraint
+                tableName="defendant"
+                columnName="hearing_id"
+        />
+
+        <addNotNullConstraint
+                tableName="defendant"
+                columnName="defendant_id"
+        />
+
+        <addNotNullConstraint
+                tableName="offence"
+                columnName="mapped_hearing_id"
+        />
+
+        <addNotNullConstraint
+                tableName="offence"
+                columnName="mapped_defendant_id"
+        />
+
+        <addPrimaryKey
+                tableName="defendant"
+                columnNames="hearing_id, defendant_id"
+                constraintName="pk_defendant"
+        />
+
+        <addPrimaryKey
+                tableName="offence"
+                columnNames="hearing_id, offence_id, defendant_id"
+                constraintName="pk_offence"
+        />
+
+        <addForeignKeyConstraint
+                baseTableName="defendant"
+                baseColumnNames="mapped_hearing_id"
+                constraintName="fk_hearing"
+                onDelete="CASCADE"
+                onUpdate="RESTRICT"
+                referencedColumnNames="id"
+                referencedTableName="hearing"
+        />
+
+        <addForeignKeyConstraint
+                baseTableName="offence"
+                baseColumnNames="mapped_hearing_id, mapped_defendant_id"
+                constraintName="fk_defendant"
+                onDelete="CASCADE"
+                onUpdate="RESTRICT"
+                referencedColumnNames="hearing_id, defendant_id"
+                referencedTableName="defendant"
+        />
+
+    </changeSet>
+
+</databaseChangeLog>

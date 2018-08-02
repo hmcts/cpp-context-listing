@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.offence-updated.json",
+  "type": "object",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    },
+    "offence": {
+      "$ref": "http://justice.gov.uk/listing/events/offence.json"
+    }
+  },
+  "required": [
+    "offence",
+    "hearingId"
+  ],
+  "additionalProperties": false
+}
