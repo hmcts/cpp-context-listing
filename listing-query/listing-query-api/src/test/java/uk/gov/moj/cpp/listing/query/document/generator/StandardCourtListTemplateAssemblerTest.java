@@ -13,8 +13,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.DefaultJsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataOf;
-import static uk.gov.justice.services.test.utils.common.reflection.ReflectionUtils.setField;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -62,7 +62,7 @@ public class StandardCourtListTemplateAssemblerTest {
     private static final UUID COURT_CENTRE_ID = randomUUID();
     private static final String START_DATE = "2019-01-29";
     private static final String COURT_CENTRE_NAME = STRING.next();
-    private static final String WELSH  = "Welsh";
+    private static final String WELSH = "Welsh";
     private static final String ADDRESS_1 = STRING.next();
     private static final String ADDRESS_2 = STRING.next();
     private static final String ADDRESS_3 = STRING.next();
@@ -102,7 +102,7 @@ public class StandardCourtListTemplateAssemblerTest {
 
 
     @Before
-    public void setup() {
+    public void setup() throws IllegalAccessException {
         setField(this.jsonObjectToObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
     }

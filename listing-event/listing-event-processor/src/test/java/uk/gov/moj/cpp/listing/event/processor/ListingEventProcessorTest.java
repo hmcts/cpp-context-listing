@@ -17,13 +17,13 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataWithRandomUUIDAndName;
-import static uk.gov.justice.services.test.utils.common.reflection.ReflectionUtils.setField;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
 import static uk.gov.justice.services.test.utils.core.messaging.JsonEnvelopeBuilder.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.string;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_ADD_OFFENCES_FOR_HEARING;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_DELETE_OFFENCES_FOR_HEARING;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_CASE_DEFENDANT_DETAILS;
@@ -411,7 +411,7 @@ public class ListingEventProcessorTest {
     private HearingUpdated hearingUpdated() {
         String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
-        return  HearingUpdated.hearingUpdated()
+        return HearingUpdated.hearingUpdated()
                 .withUpdatedHearing(buildHearing(formattedDateTime))
                 .build();
     }
@@ -419,7 +419,7 @@ public class ListingEventProcessorTest {
     @Test
     public void shouldHandleCaseDefendantChangedMessage() throws Exception {
         final DefendantUpdated defendantUpdated = defendantUpdated();
-        final JsonObject caseDefendantChangeJsonObject =  this.objectToJsonObjectConverter.convert(defendantUpdated);
+        final JsonObject caseDefendantChangeJsonObject = this.objectToJsonObjectConverter.convert(defendantUpdated);
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), caseDefendantChangeJsonObject);
         final JsonEnvelopeMatcher jsonEnvelopeMatcher = new JsonEnvelopeMatcher();
 
@@ -445,7 +445,7 @@ public class ListingEventProcessorTest {
     @Test
     public void shouldHandleDefendantOffencesChangedMessage() throws Exception {
         final OffencesForDefendantUpdated offencesForDefendantUpdated = offencesForDefendantUpdated();
-        final JsonObject defendantOffencesChangedJsonObject =  this.objectToJsonObjectConverter.convert(offencesForDefendantUpdated);
+        final JsonObject defendantOffencesChangedJsonObject = this.objectToJsonObjectConverter.convert(offencesForDefendantUpdated);
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), defendantOffencesChangedJsonObject);
         final JsonEnvelopeMatcher jsonEnvelopeMatcher = new JsonEnvelopeMatcher();
 
@@ -467,7 +467,7 @@ public class ListingEventProcessorTest {
         assertThat(resultPayload, not(equalTo(offencesForDefendantUpdated())));
     }
 
-    private OffencesForDefendantUpdated offencesForDefendantUpdated() {
+    private OffencesForDefendantUpdated offencesForDefendantUpdated() throws IllegalAccessException {
 
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
 
@@ -524,7 +524,7 @@ public class ListingEventProcessorTest {
         return defendantOffencesChanged;
     }
 
-    private DefendantUpdated defendantUpdated() {
+    private DefendantUpdated defendantUpdated() throws IllegalAccessException {
 
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
 
@@ -587,17 +587,17 @@ public class ListingEventProcessorTest {
                 .withWitnessStatementWelsh(empty())
                 .build();
 
-         final DefendantUpdated defendantUpdated = defendantUpdatedBuilder.withDefendant(defendant)
-                 .build();
+        final DefendantUpdated defendantUpdated = defendantUpdatedBuilder.withDefendant(defendant)
+                .build();
 
-         return defendantUpdated;
+        return defendantUpdated;
     }
 
     private HearingConfirmed hearingConfirmed() {
 
         String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
-        return  HearingConfirmed.hearingConfirmed()
+        return HearingConfirmed.hearingConfirmed()
                 .withConfirmedHearing(buildHearing(formattedDateTime))
                 .build();
     }

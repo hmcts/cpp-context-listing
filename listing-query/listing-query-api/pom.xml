@@ -17,14 +17,20 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>uk.gov.justice.maven</groupId>
-                <artifactId>raml-maven-plugin</artifactId>
+                <artifactId>generator-plugin</artifactId>
+                <groupId>uk.gov.justice.maven.generator</groupId>
                 <dependencies>
                     <dependency>
                         <groupId>uk.gov.moj.cpp.listing</groupId>
                         <artifactId>listing-query-view</artifactId>
                         <version>${project.version}</version>
                         <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
                     </dependency>
                     <dependency>
                         <groupId>uk.gov.moj.cpp.referencedata</groupId>
@@ -39,11 +45,6 @@
                         </exclusions>
                     </dependency>
                 </dependencies>
-                <configuration>
-                    <generatorProperties>
-                        <actionMapping>${cpp.framework.action.mapping.enabled}</actionMapping>
-                    </generatorProperties>
-                </configuration>
             </plugin>
         </plugins>
     </build>

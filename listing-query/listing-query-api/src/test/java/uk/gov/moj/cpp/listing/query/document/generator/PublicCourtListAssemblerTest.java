@@ -9,8 +9,8 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.DefaultJsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataOf;
-import static uk.gov.justice.services.test.utils.common.reflection.ReflectionUtils.setField;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -87,7 +87,7 @@ public class PublicCourtListAssemblerTest {
 
 
     @Before
-    public void setup() {
+    public void setup() throws IllegalAccessException {
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
     }
 
@@ -150,7 +150,7 @@ public class PublicCourtListAssemblerTest {
 
         JsonObject courtRoomsJo = hearingDateJo.getJsonArray("courtRooms").getJsonObject(0);
         assertThat(courtRoomsJo.getString("welshJudiciaryNames"), is("Welsh_Mr Welsh_Recorder Ainsworth Welsh_suffix"));
-        assertThat(courtRoomsJo.getString("welshCourtRoomName"), is(WELSH+COURT_ROOM_NAME_1));
+        assertThat(courtRoomsJo.getString("welshCourtRoomName"), is(WELSH + COURT_ROOM_NAME_1));
 
         JsonObject timeslot = courtRoomsJo.getJsonArray("timeslots").getJsonObject(0);
 
@@ -167,7 +167,7 @@ public class PublicCourtListAssemblerTest {
         assertThat(defendant.getString("surname"), is(LAST_NAME));
 
         JsonObject offence = defendant.getJsonArray("offences").getJsonObject(0);
-        assertThat(offence.getString("welshOffenceTitle"), is(WELSH+OFFENCE_TITLE));
+        assertThat(offence.getString("welshOffenceTitle"), is(WELSH + OFFENCE_TITLE));
     }
 
 

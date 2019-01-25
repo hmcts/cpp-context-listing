@@ -10,7 +10,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.DefaultJsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataOf;
-import static uk.gov.justice.services.test.utils.common.reflection.ReflectionUtils.setField;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
@@ -73,7 +73,7 @@ public class AlphabeticalCourtListServiceTest {
     private static final String QUERY_NAME = "listing.search.court.list";
 
     @Before
-    public void setup() {
+    public void setup() throws IllegalAccessException {
         setField(this.jsonObjectToObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
     }

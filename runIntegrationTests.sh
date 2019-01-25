@@ -7,8 +7,8 @@
 ${VAGRANT_DIR:?"Please export VAGRANT_DIR environment variable to point at atcm-vagrant"}
 WILDFLY_DEPLOYMENT_DIR="${VAGRANT_DIR}/deployments"
 CONTEXT_NAME=listing
-EVENT_LOG_VERSION=4.1.2
-EVENT_BUFFER_VERSION=4.1.2
+EVENT_LOG_VERSION=1.1.4
+EVENT_BUFFER_VERSION=1.1.4
 
 
 #fail script on error
@@ -28,14 +28,14 @@ function startVagrant {
   vagrant up;
 }
 
-function deleteAndDeployWars {
+function deleteWars {
   echo
   echo "Deleting wars from $WILDFLY_DEPLOYMENT_DIR....."
   rm -rf $WILDFLY_DEPLOYMENT_DIR/*.war
   rm -rf $WILDFLY_DEPLOYMENT_DIR/*.deployed
+}
 
-  sleep 10
-
+function deployWars {
   rm -rf $WILDFLY_DEPLOYMENT_DIR/*.undeployed
   find . \( -iname "${CONTEXT_NAME}-service-*.war" \) -exec cp {} $WILDFLY_DEPLOYMENT_DIR \;
   echo "Copied wars to $WILDFLY_DEPLOYMENT_DIR"
@@ -100,21 +100,21 @@ function integrationTests {
 
 function runEventLogLiquibase() {
     echo "Executing event log Liquibase"
-    mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:copy -DoutputDirectory=target -Dartifact=uk.gov.justice.services:event-repository-liquibase:${EVENT_LOG_VERSION}:jar
+    mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:copy -DoutputDirectory=target -Dartifact=uk.gov.justice.event-store:event-repository-liquibase:${EVENT_LOG_VERSION}:jar
     java -jar target/event-repository-liquibase-${EVENT_LOG_VERSION}.jar --url=jdbc:postgresql://localhost:5432/${CONTEXT_NAME}eventstore --username=${CONTEXT_NAME} --password=${CONTEXT_NAME} --logLevel=info update
     echo "Finished executing event log liquibase"
 }
 
 function runEventLogAggregateSnapshotLiquibase() {
     echo "Running EventLogAggregateSnapshotLiquibase"
-    mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:copy -DoutputDirectory=target -Dartifact=uk.gov.justice.services:aggregate-snapshot-repository-liquibase:${EVENT_LOG_VERSION}:jar
+    mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:copy -DoutputDirectory=target -Dartifact=uk.gov.justice.event-store:aggregate-snapshot-repository-liquibase:${EVENT_LOG_VERSION}:jar
     java -jar target/aggregate-snapshot-repository-liquibase-${EVENT_LOG_VERSION}.jar --url=jdbc:postgresql://localhost:5432/${CONTEXT_NAME}eventstore --username=${CONTEXT_NAME} --password=${CONTEXT_NAME} --logLevel=info update
     echo "Finished executing EventLogAggregateSnapshotLiquibase liquibase"
 }
 
 function runEventBufferLiquibase() {
     echo "running event buffer liquibase"
-    mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:copy -DoutputDirectory=target -Dartifact=uk.gov.justice.services:event-buffer-liquibase:${EVENT_BUFFER_VERSION}:jar
+    mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:copy -DoutputDirectory=target -Dartifact=uk.gov.justice.event-store:event-buffer-liquibase:${EVENT_BUFFER_VERSION}:jar
     java -jar target/event-buffer-liquibase-${EVENT_BUFFER_VERSION}.jar --url=jdbc:postgresql://localhost:5432/${CONTEXT_NAME}viewstore --username=${CONTEXT_NAME} --password=${CONTEXT_NAME} --logLevel=info update
     echo "finished running event buffer liquibase"
 }
@@ -132,13 +132,14 @@ function buildDeployAndTest {
 }
 
 function deployAndTest {
-  deleteAndDeployWars
-  deployWiremock
+  deleteWars
   startVagrant
   runEventLogLiquibase
   runEventLogAggregateSnapshotLiquibase
   runEventBufferLiquibase
   runViewStoreLiquibase
+  deployWiremock
+  deployWars
   healthCheck
   integrationTests
 }
