@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/commands/update-hearing-for-listing-enriched.json",
+  "type": "object",
+  "properties": {
+    "updateHearingForListing": {
+      "$ref": "http://justice.gov.uk/listing/commands/listing.command.handler.update-hearing-for-listing.json"
+    },
+    "courtCentreDetails": {
+      "$ref": "http://justice.gov.uk/listing/commands/court-centre-details.json"
+    }
+
+  },
+  "required": [
+    "updateHearingForListing",
+    "courtCentreDetails"
+  ],
+  "additionalProperties": false
+}

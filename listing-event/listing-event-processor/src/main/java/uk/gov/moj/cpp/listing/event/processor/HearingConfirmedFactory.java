@@ -1,33 +1,63 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import uk.gov.justice.listing.events.DefendantOffenceIds;
+import static java.util.stream.Collectors.toList;
+
+import uk.gov.justice.core.courts.ConfirmedDefendant;
+import uk.gov.justice.core.courts.ConfirmedHearing;
+import uk.gov.justice.core.courts.ConfirmedOffence;
+import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
+import uk.gov.justice.listing.courts.HearingConfirmed;
+import uk.gov.justice.listing.courts.HearingLanguage;
+import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
-import uk.gov.moj.cpp.listing.event.external.Defendant;
-import uk.gov.moj.cpp.listing.event.external.Hearing;
-import uk.gov.moj.cpp.listing.event.external.HearingConfirmed;
-import uk.gov.moj.cpp.listing.event.external.Offence;
+import uk.gov.justice.listing.events.Type;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class HearingConfirmedFactory {
 
+public class HearingConfirmedFactory extends PublicHearingFactory {
 
     public HearingConfirmed create(final HearingAllocatedForListing hearingAllocated) {
 
-        final Hearing externalHearing = new Hearing(hearingAllocated.getHearingId().toString(), hearingAllocated.getType(), hearingAllocated.getCaseId().toString(),
-                hearingAllocated.getCourtCentreId().toString(), hearingAllocated.getCourtRoomId().toString(), hearingAllocated.getJudgeId().toString(),
-                hearingAllocated.getHearingDays(), getDefendants(hearingAllocated.getDefendantsOffenceIds()));
+        final List<uk.gov.justice.listing.events.JudicialRole> judicialRoles = hearingAllocated.getJudiciary();
+        final Type type = hearingAllocated.getType();
+        return uk.gov.justice.listing.courts.HearingConfirmed.hearingConfirmed()
+                .withConfirmedHearing(buildConfirmedHearing(hearingAllocated, judicialRoles, type))
+                .build();
 
-        return new HearingConfirmed(hearingAllocated.getCaseId().toString(), hearingAllocated.getUrn(), externalHearing);
+
     }
 
-
-    private List<Defendant> getDefendants(final List<DefendantOffenceIds> defendantsOffenceIds) {
-        return defendantsOffenceIds.stream()
-                .map(d -> new Defendant(d.getId().toString(), d.getOffenceIds().stream().map(id -> new Offence(id.toString())).collect(Collectors.toList())))
-                .collect(Collectors.toList());
+    private ConfirmedHearing buildConfirmedHearing(HearingAllocatedForListing hearingAllocated, List<uk.gov.justice.listing.events.JudicialRole> judicialRoles, Type type) {
+        ConfirmedHearing.Builder builder = ConfirmedHearing.confirmedHearing()
+                .withId(hearingAllocated.getHearingId())
+                .withCourtCentre(buildCourtCentre(hearingAllocated.getCourtCentreId(), hearingAllocated.getCourtRoomId()))
+                .withHearingDays(hearingAllocated.getHearingDays().stream()
+                        .map(this::buildHearingDay)
+                        .collect(toList()))
+                .withHearingLanguage(HearingLanguage.valueFor(hearingAllocated.getHearingLanguage().toString()))
+                .withJurisdictionType(JurisdictionType.valueFor(hearingAllocated.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
+                .withProsecutionCases(hearingAllocated.getProsecutionCaseDefendantsOffenceIds().stream()
+                        .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
+                                .withDefendants(pcdo.getDefendants().stream()
+                                        .map(d -> ConfirmedDefendant.confirmedDefendant()
+                                                .withId(d.getId())
+                                                .withOffences(d.getOffenceIds().stream()
+                                                        .map(o -> ConfirmedOffence.confirmedOffence().withId(o).build())
+                                                        .collect(toList()))
+                                                .build())
+                                        .collect(toList()))
+                                .withId(pcdo.getId())
+                                .build())
+                        .collect(toList()))
+                .withReportingRestrictionReason(hearingAllocated.getReportingRestrictionReason())
+                .withType(buildType(type));
+        if(!judicialRoles.isEmpty()){
+            builder.withJudiciary(judicialRoles.stream()
+                    .map(this::buildJudicialRole)
+                    .collect(toList()));
+        }
+        return builder.build();
     }
-
 
 }

@@ -4,13 +4,13 @@
   "type": "object",
   "properties": {
     "id": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
     "hearingId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
     "personId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
     "firstName": {
       "description": "The person first name",
@@ -27,9 +27,9 @@
     },
     "bailStatus": {
       "enum": [
-        "conditional",
-        "unconditional",
-        "inCustody"
+        "CONDITIONAL",
+        "UNCONDITIONAL",
+        "IN_CUSTODY"
       ]
     },
     "custodyTimeLimit": {

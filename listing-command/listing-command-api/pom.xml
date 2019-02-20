@@ -15,6 +15,7 @@
         <cpp.service-component>COMMAND_API</cpp.service-component>
     </properties>
 
+
     <build>
         <plugins>
             <plugin>
@@ -27,12 +28,69 @@
                         <version>${project.version}</version>
                         <classifier>raml</classifier>
                     </dependency>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.referencedata</groupId>
+                        <artifactId>referencedata-query-api</artifactId>
+                        <version>${referencedata.version}</version>
+                        <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <artifactId>generator-plugin</artifactId>
+                <groupId>uk.gov.justice.maven.generator</groupId>
+                <executions>
+                    <execution>
+                        <id>pojo-generation</id>
+                        <configuration>
+                            <skip>false</skip>
+                            <sourceDirectory>src/raml/json/schema</sourceDirectory>
+                            <generatorProperties>
+                                <typeMappings>
+                                    <typeMapping>
+                                        <name>localTime</name>
+                                        <type>reference</type>
+                                        <implementation>java.time.LocalTime</implementation>
+                                    </typeMapping>
+                                    <typeMapping>
+                                        <name>date-time</name>
+                                        <type>format</type>
+                                        <implementation>java.time.ZonedDateTime</implementation>
+                                    </typeMapping>
+                                    <typeMapping>
+                                        <name>uuid</name>
+                                        <type>reference</type>
+                                        <implementation>java.util.UUID</implementation>
+                                    </typeMapping>
+                                    <typeMapping>
+                                        <name>localDate</name>
+                                        <type>reference</type>
+                                        <implementation>java.time.LocalDate</implementation>
+                                    </typeMapping>
+                                </typeMappings>
+                            </generatorProperties>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.listing</groupId>
+                        <artifactId>listing-json</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
                 </dependencies>
             </plugin>
         </plugins>
     </build>
 
     <dependencies>
+
         <dependency>
             <groupId>uk.gov.moj.cpp.common</groupId>
             <artifactId>command-api</artifactId>
@@ -76,6 +134,7 @@
             <artifactId>access-control-test-utils</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
 </project>

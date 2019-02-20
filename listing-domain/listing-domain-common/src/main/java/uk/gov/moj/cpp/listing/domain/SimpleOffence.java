@@ -1,29 +1,30 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import java.io.Serializable;
+import java.util.Objects;
+import java.util.UUID;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.io.Serializable;
-import java.util.Objects;
-
 @JsonInclude(value = Include.NON_NULL)
 public class SimpleOffence implements Serializable {
 
-    private final String id;
-    private final String defendantId;
+    private final UUID id;
+    private final UUID defendantId;
 
     @JsonCreator
-    public SimpleOffence(@JsonProperty(value = "id") final String id,
-                         @JsonProperty(value = "defendantId") final String defendantId) {
+    public SimpleOffence(@JsonProperty(value = "id") final UUID id,
+                         @JsonProperty(value = "defendantId") final UUID defendantId) {
         this.id = id;
         this.defendantId = defendantId;
     }
 
-    public String getId() { return id; }
+    public UUID getId() { return id; }
 
-    public String getDefendantId() { return defendantId; }
+    public UUID getDefendantId() { return defendantId; }
 
 
     @Override
@@ -58,15 +59,15 @@ public class SimpleOffence implements Serializable {
     }
 
     public static class SimpleOffenceBuilder {
-        private String id;
-        private String defendantId;
+        private UUID id;
+        private UUID defendantId;
 
-        public SimpleOffenceBuilder setId(String id) {
+        public SimpleOffenceBuilder withId(UUID id) {
             this.id = id;
             return this;
         }
 
-        public SimpleOffenceBuilder setDefendantId(String defendantId) {
+        public SimpleOffenceBuilder withDefendantId(UUID defendantId) {
             this.defendantId = defendantId;
             return this;
         }

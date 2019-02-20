@@ -2,14 +2,14 @@ Feature: Change defendant details following public event from Progression
 
   Scenario: Defendant details are changed following a public event from the Progression context
 
-    Given case sent for ptp listing
-    When you updateDefendants to a Case with a changed defendants
+    Given hearing added to case
+    When you updateDefendant to a Case with a changed defendant
     Then defendants to be updated for hearing
 
   Scenario: Defendant details for a hearing are updated
 
     Given hearing listed
-      And end date assigned to hearing way in the future
+      And end date changed for hearing way in the future
     When you updateDefendants to a Hearing with a changed defendants
     Then defendant details updated
 

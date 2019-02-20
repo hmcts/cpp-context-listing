@@ -9,6 +9,11 @@
 
     <artifactId>listing-domain-common</artifactId>
 
+    <properties>
+        <skip.schema.pojo.generation>false</skip.schema.pojo.generation>
+        <schema.generation.source.directory>src/main/resources/json/schema</schema.generation.source.directory>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>uk.gov.justice.services</groupId>
@@ -31,6 +36,14 @@
             <groupId>uk.gov.justice.utils</groupId>
             <artifactId>utilities-core</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>uk.gov.moj.cpp.core.domain</groupId>
+            <artifactId>criminal-court-public-model</artifactId>
+            <version>${criminal-court-public-model.version}</version>
+        </dependency>
     </dependencies>
+
+
 
 </project>

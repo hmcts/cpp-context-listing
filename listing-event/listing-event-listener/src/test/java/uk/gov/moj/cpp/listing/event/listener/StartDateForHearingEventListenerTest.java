@@ -1,31 +1,39 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import static java.util.UUID.randomUUID;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
-import uk.gov.justice.listing.events.StartDateChangedForHearing;
-import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
-import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-
-import java.time.LocalDate;
-import java.util.UUID;
-
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import uk.gov.justice.listing.events.StartDateChangedForHearing;
+import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+import static java.util.UUID.randomUUID;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StartDateForHearingEventListenerTest {
     private static final UUID HEARING_ID = randomUUID();
     private static final LocalDate START_DATE = RandomGenerator.PAST_LOCAL_DATE.next();
+    private static final String START_DATE_FIELD = "startDate";
 
     @Mock
     private HearingRepository hearingRepository;
+
+    @Mock
+    private Hearing hearing;
+
+    @Mock
+    private ObjectNode properties;
 
     @InjectMocks
     private StartDateForHearingEventListener startDateForHearingEventListener;
@@ -39,7 +47,12 @@ public class StartDateForHearingEventListenerTest {
                 .build();
         given(envelope.payload()).willReturn(hearingData);
 
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
         startDateForHearingEventListener.startDateChangedForHearing(envelope);
-        verify(hearingRepository).updateStartDate(START_DATE, HEARING_ID);
+
+        verify(properties).put(eq(START_DATE_FIELD), eq(START_DATE.toString()));
+        verify(hearingRepository).save(hearing);
     }
 }

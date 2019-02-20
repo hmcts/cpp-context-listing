@@ -6,7 +6,10 @@
       "id": "1baecac5-222b-402d-9047-84803679edaf",
       "caseId": "0baecac5-222b-402d-9047-84803679edae",
       "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
-      "type": "Trial",
+      "type": {
+        "id": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6",
+        "description": "Trial"
+      },
       "startDate": "2018-07-01",
       "estimateMinutes": 3600,
       "judgeId": "c3b83875-8f59-4a5e-9c36-c65490282691",
@@ -18,7 +21,7 @@
           "firstName": "David",
           "lastName": "Lloyd",
           "dateOfBirth": "1995-03-23",
-          "bailStatus": "inCustody",
+          "bailStatus": "IN_CUSTODY",
           "custodyTimeLimit": "1995-03-23",
           "defenceOrganisation": "Solicitor XYZ",
           "offences": [

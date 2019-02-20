@@ -11,6 +11,7 @@ import uk.gov.justice.services.test.utils.core.rest.RestClient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -33,8 +34,15 @@ public class AbstractIT {
     protected static final Properties ENDPOINT_PROPERTIES = new Properties();
     protected static String baseUri;
     protected static RestClient restClient = new RestClient();
+    protected static final DateTimeFormatter ZONED_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    protected static final boolean ALLOCATED = true;
+    protected static final boolean UNALLOCATED = false;
 
-    private static final ThreadLocal<UUID> USER_CONTEXT = new ThreadLocal<>();
+    private final static ThreadLocal<UUID> USER_CONTEXT = new ThreadLocal<>();
+
+    public static void givenAUserHasLoggedInAsAListingOfficers(final UUID validUserId) {
+        setLoggedInUser(validUserId);
+    }
 
     @Before
     public void setUp() {

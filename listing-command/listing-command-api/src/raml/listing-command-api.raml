@@ -11,26 +11,34 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.command.send-case-for-listing+json
         name: listing.command.send-case-for-listing
-      (mapping):
-        requestType: application/vnd.listing.command.update-case-defendant-details+json
-        name: listing.command.update-case-defendant-details
-      (mapping):
-        requestType: application/vnd.listing.command.update-case-defendant-offences+json
-        name: listing.command.update-case-defendant-offences
       ...
     body:
       application/vnd.listing.command.send-case-for-listing+json:
         example: !include json/listing.command.send-case-for-listing.json
         schema: !include json/schema/listing.command.send-case-for-listing.json
-      application/vnd.listing.command.update-case-defendant-details+json:
-        example: !include json/listing.command.update-case-defendant-details.json
-        schema: !include json/schema/listing.command.update-case-defendant-details.json
-      application/vnd.listing.command.update-case-defendant-offences+json:
-        example: !include json/listing.command.update-case-defendant-offences.json
-        schema: !include json/schema/listing.command.update-case-defendant-offences.json
+
     responses:
       202:
         description: Request accepted
+
+/hearings:
+  post:
+    description: |
+      Update hearings for a listing
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.change-judiciary-for-hearings+json
+        name: listing.command.change-judiciary-for-hearings
+      ...
+    body:
+      application/vnd.listing.command.change-judiciary-for-hearings+json:
+        schema: !include json/schema/listing.command.change-judiciary-for-hearings.json
+        example: !include json/listing.command.change-judiciary-for-hearings.json
+
+    responses:
+      202:
+        description: Request accepted
+
 
 /hearings/{hearingId}:
   post:
@@ -69,6 +77,24 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.update-offences-for-hearing+json:
         example: !include json/listing.command.update-offences-for-hearing.json
         schema: !include json/schema/listing.command.update-offences-for-hearing.json
+    responses:
+      202:
+        description: Request accepted
+
+/hearings/sequence:
+  post:
+    description: |
+      Squence  hearings
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.sequence-hearings+json
+        name: listing.command.sequence-hearings
+      ...
+    body:
+      application/vnd.listing.command.sequence-hearings+json:
+        schema: !include json/schema/listing.command.sequence-hearings.json
+        example: !include json/listing.command.sequence-hearings.json
+
     responses:
       202:
         description: Request accepted

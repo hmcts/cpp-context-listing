@@ -4,7 +4,13 @@
   "type": "object",
   "properties": {
     "hearingId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "caseId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "defendantId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
     "offence": {
       "$ref": "http://justice.gov.uk/listing/events/offence.json"
@@ -12,7 +18,9 @@
   },
   "required": [
     "offence",
-    "hearingId"
+    "hearingId",
+    "caseId",
+    "defendantId"
   ],
   "additionalProperties": false
 }

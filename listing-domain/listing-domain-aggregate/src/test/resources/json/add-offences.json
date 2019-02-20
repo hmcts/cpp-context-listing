@@ -1,25 +1,31 @@
 {
+  "caseId": "31bf5d91-f90e-4117-a018-d1290e107692",
+  "defendantId": "0baecac5-222b-402d-9047-84803679edac",
   "offences": [
     {
-      "id": "7e2f843e-d639-40b3-8611-8015f3a18958",
-      "defendantId": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+      "id": "0baecac5-222b-402d-9047-84803679edad",
       "offenceCode": "H8189",
       "startDate": "2010-08-01",
       "endDate": "2011-08-01",
+      "offenceWording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, John Smith",
       "statementOfOffence": {
         "title": "Wounding with intent",
-        "legislation": "legislation"
+        "welshTitle": "Wounding with intent in Welsh",
+        "legislation": "legislation",
+        "welshLegislation": "legislation in welsh"
       }
     },
     {
       "id": "d5e03eb8-3274-457c-9db3-e67638c0e8b0",
-      "defendantId": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
       "offenceCode": "H8189",
       "startDate": "2010-08-01",
       "endDate": "2011-08-01",
+      "offenceWording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Fred Jones",
       "statementOfOffence": {
         "title": "Wounding with intent",
-        "legislation": "legislation"
+        "welshTitle": "Wounding with intent in Welsh",
+        "legislation": "legislation",
+        "welshLegislation": "legislation in welsh"
       }
     }
   ]

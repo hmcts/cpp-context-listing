@@ -4,14 +4,15 @@
   "type": "object",
   "properties": {
     "id": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
     "defendantId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     }
   },
   "required": [
     "id",
     "defendantId"
-  ]
+  ],
+  "additionalProperties": false
 }

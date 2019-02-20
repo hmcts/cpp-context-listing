@@ -1,6 +1,17 @@
 package uk.gov.moj.cpp.listing.utils;
 
-import javax.jms.*;
+import static uk.gov.justice.services.messaging.DefaultJsonEnvelope.envelopeFrom;
+
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.Metadata;
+
+import javax.jms.Connection;
+import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+import javax.jms.Topic;
 import javax.json.JsonObject;
 
 import com.jayway.restassured.path.json.JsonPath;
@@ -9,10 +20,6 @@ import org.apache.activemq.artemis.jms.client.ActiveMQTopic;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.justice.services.messaging.Metadata;
-
-import static uk.gov.justice.services.messaging.DefaultJsonEnvelope.envelopeFrom;
 
 public class QueueUtil {
 
@@ -30,6 +37,9 @@ public class QueueUtil {
     private Topic topic;
 
     public static final QueueUtil publicEvents = new QueueUtil("public.event");
+
+    public static final QueueUtil privateEvents = new QueueUtil("listing.event");
+
 
     private QueueUtil(final String topicName) {
         try {
@@ -55,6 +65,10 @@ public class QueueUtil {
 
     public static JsonPath retrieveMessage(final MessageConsumer consumer) {
         return retrieveMessage(consumer, RETRIEVE_TIMEOUT);
+    }
+
+    public static String retrieveMessageString(final MessageConsumer consumer) {
+        return retrieveMessageString(consumer, RETRIEVE_TIMEOUT);
     }
 
     public MessageProducer createProducer() {
@@ -83,13 +97,18 @@ public class QueueUtil {
     }
 
     public static JsonPath retrieveMessage(final MessageConsumer consumer, long customTimeOutInMillis) {
+        String messageString = retrieveMessageString(consumer, customTimeOutInMillis);
+        return new JsonPath(messageString);
+    }
+
+    public static String retrieveMessageString(final MessageConsumer consumer, long customTimeOutInMillis) {
         try {
             final TextMessage message = (TextMessage) consumer.receive(customTimeOutInMillis);
             if (message == null) {
                 LOGGER.error("No message retrieved using consumer with selector {}", consumer.getMessageSelector());
                 return null;
             }
-            return new JsonPath(message.getText());
+            return message.getText();
         } catch (JMSException e) {
             throw new RuntimeException(e);
         }

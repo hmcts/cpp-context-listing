@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.send-case-for-listing-enriched.json",
+  "type": "object",
+  "properties": {
+    "sendCaseForListing": {
+      "$ref": "http://justice.gov.uk/listing/courts/send-case-for-listing.json"
+    },
+    "courtCentresDetails": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/commands/court-centre-details.json"
+      }
+    }
+  },
+  "required": [
+    "sendCaseForListing",
+    "courtCentresDetails"
+  ],
+  "additionalProperties": false
+}

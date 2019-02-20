@@ -1,57 +1,58 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
 public class HearingData {
 
     private final UUID id;
-    private final String courtCentreId;
-    private final String hearingType;
+    private final UUID courtCentreId;
+    private final HearingTypeData hearingTypeData;
     private final LocalDate hearingStartDate;
     private final LocalDate hearingEndDate;
     private final int hearingEstimateMinutes;
-    private final List<DefendantData> defendants;
-    private final UUID judgeId;
-    private final UUID courtRoomId;
-    private final String hearingStartTime;
 
-    public HearingData(final UUID id, final String courtCentreId, final String hearingType,
-                       final LocalDate hearingStartDate,  final LocalDate hearingEndDate,
-                       final int hearingEstimateMinutes,final List<DefendantData> defendants,
-                       final UUID courtRoomId, final UUID judgeId, final String hearingStartTime) {
+    private final UUID courtRoomId;
+    private final ZonedDateTime hearingStartTime;
+    private final List<ListedCaseData> listedCases;
+    private final List<JudicialRoleData> judiciary;
+    private final String reportingRestrictionReason;
+
+    private final String jurisdictionType;
+
+    public HearingData(final UUID id, final UUID courtCentreId, final HearingTypeData hearingTypeData,
+                       final LocalDate hearingStartDate, final LocalDate hearingEndDate,
+                       final int hearingEstimateMinutes, final UUID courtRoomId,
+                       final ZonedDateTime hearingStartTime, final List<ListedCaseData> listedCases,
+                       final List<JudicialRoleData> judiciary, final String jurisdictionType,
+                       final String reportingRestrictionReason) {
 
         this.id = id;
         this.courtCentreId = courtCentreId;
         this.hearingEstimateMinutes = hearingEstimateMinutes;
         this.hearingStartDate = hearingStartDate;
         this.hearingEndDate = hearingEndDate;
-        this.hearingType = hearingType;
-        this.defendants = defendants;
-        this.judgeId = judgeId;
+        this.hearingTypeData = hearingTypeData;
         this.courtRoomId = courtRoomId;
         this.hearingStartTime = hearingStartTime;
+        this.listedCases = listedCases;
+        this.judiciary = judiciary;
+        this.jurisdictionType = jurisdictionType;
+        this.reportingRestrictionReason = reportingRestrictionReason;
 
     }
 
     public UUID getId() { return id; }
 
-    public String getCourtCentreId() { return courtCentreId; }
+    public UUID getCourtCentreId() { return courtCentreId; }
 
-    public String getHearingType() { return hearingType; }
+    public HearingTypeData getHearingTypeData() { return hearingTypeData; }
 
     public LocalDate getHearingStartDate() { return hearingStartDate; }
 
     public int getHearingEstimateMinutes() { return hearingEstimateMinutes; }
-
-    public List<DefendantData> getDefendants() {
-        return defendants;
-    }
-
-    public UUID getJudgeId() {
-        return judgeId;
-    }
 
     public UUID getCourtRoomId() {
         return courtRoomId;
@@ -61,7 +62,23 @@ public class HearingData {
         return hearingEndDate;
     }
 
-    public String getHearingStartTime() {
+    public ZonedDateTime getHearingStartTime() {
         return hearingStartTime;
+    }
+
+    public List<ListedCaseData> getListedCases() {
+        return listedCases;
+    }
+
+    public List<JudicialRoleData> getJudiciary() {
+        return judiciary;
+    }
+
+    public String getJurisdictionType() {
+        return jurisdictionType;
+    }
+
+    public String getReportingRestrictionReason() {
+        return reportingRestrictionReason;
     }
 }

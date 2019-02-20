@@ -5,9 +5,9 @@ baseUri: message://event/processor/message/listing
 /listing.event:
     post:
       body:
-        application/vnd.listing.events.case-sent-for-listing+json:
-            schema: !include json/schema/listing.events.case-sent-for-listing.json
-            example: !include json/listing.events.case-sent-for-listing.json
+        application/vnd.listing.events.hearing-listed+json:
+            schema: !include json/schema/listing.events.hearing-listed.json
+            example: !include json/listing.events.hearing-listed.json
         application/vnd.listing.events.hearing-allocated-for-listing+json:
             schema: !include json/schema/listing.events.hearing-allocated-for-listing.json
             example: !include json/listing.events.hearing-allocated-for-listing.json
@@ -30,9 +30,11 @@ baseUri: message://event/processor/message/listing
 /public.event:
     post:
       body:
-        application/vnd.public.progression.case-defendant-changed+json:
-            schema: !include json/schema/public.progression.case-defendant-changed.json
-            example: !include json/public.progression.case-defendant-changed.json
+
         application/vnd.public.progression.defendant-offences-changed+json:
             schema: !include json/schema/public.progression.defendant-offences-changed.json
             example: !include json/public.progression.defendant-offences-changed.json
+        application/vnd.public.progression.case-defendant-changed+json:
+            schema: !include json/schema/public.progression.case-defendant-changed.json
+            example: !include json/public.progression.case-defendant-changed.json
+

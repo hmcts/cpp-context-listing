@@ -8,9 +8,12 @@
           "offenceCode": "H8189",
           "startDate": "2010-08-01",
           "endDate": "2011-08-01",
+          "offenceWording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, John Smith",
           "statementOfOffence": {
             "title": "Wounding with intent",
-            "legislation": "legislation"
+            "welshTitle": "Wounding with intent in Welsh",
+            "legislation": "legislation",
+            "welshLegislation": "legislation in welsh"
           }
         },
         {
@@ -19,9 +22,12 @@
           "offenceCode": "H8189",
           "startDate": "2010-08-01",
           "endDate": "2011-08-01",
+          "offenceWording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Fred Jones",
           "statementOfOffence": {
             "title": "Wounding with intent",
-            "legislation": "legislation"
+            "welshTitle": "Wounding with intent in Welsh",
+            "legislation": "legislation",
+            "welshLegislation": "legislation in welsh"
           }
         }
     ]

@@ -4,78 +4,62 @@
   "type": "object",
   "properties": {
     "hearingId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
-    "judgeId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    "jurisdictionType": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/jurisdictionType"
+    },
+    "judiciary": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/judicialRole.json"
+      }
     },
     "courtRoomId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
     "courtCentreId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
     "type": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/hearingType"
+    },
+    "reportingRestrictionReason": {
       "type": "string"
     },
-    "caseId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    "hearingLanguage": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/hearingLanguage"
     },
-    "urn": {
-      "type": "string"
-    },
-
-    "defendantsOffenceIds": {
+    "prosecutionCaseDefendantsOffenceIds": {
       "type": "array",
       "minItems": 1,
       "items": [
         {
-          "$ref": "http://justice.gov.uk/listing/events/defendant-offence-ids.json"
+          "$ref": "http://justice.gov.uk/listing/events/prosecution-case-defendant-offence-ids.json"
         }
       ]
     },
-
-    "estimateMinutes": {
+    "estimatedMinutes": {
       "type": "integer"
     },
+
     "hearingDays": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "type": "string",
-        "format": "date-time"
+        "$ref": "http://justice.gov.uk/listing/events/hearingDay.json"
       }
-    },
-    "hearingDate": {
-      "type": "object",
-      "properties": {
-        "startDate": {
-          "type": "string",
-          "format": "date"
-        },
-        "startTime": {
-          "type": "string",
-          "format": "time"
-        }
-      },
-      "required": [
-        "startDate"
-      ],
-      "additionalProperties": false
     }
   },
   "required": [
     "hearingId",
     "type",
-    "judgeId",
-    "courtRoomId",
-    "courtCentreId",
-    "caseId",
-    "urn",
-    "estimateMinutes",
-    "hearingDate",
+    "jurisdictionType",
+    "hearingLanguage",
     "hearingDays",
-    "defendantsOffenceIds"
+    "courtCentreId",
+    "courtRoomId",
+    "prosecutionCaseDefendantsOffenceIds"
   ],
   "additionalProperties": false
 }

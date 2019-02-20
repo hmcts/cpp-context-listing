@@ -10,15 +10,22 @@ public class CaseSimpleOffences implements Serializable {
 
     private final UUID caseId;
 
+    private final UUID defendantId;
+
     private final List<SimpleOffence> offences;
 
-    public CaseSimpleOffences(final UUID caseId, final List<SimpleOffence> offences) {
+    public CaseSimpleOffences(final UUID caseId, final UUID defendantId, final List<SimpleOffence> offences) {
         this.caseId = caseId;
+        this.defendantId = defendantId;
         this.offences = new ArrayList<>(offences);
     }
 
     public UUID getCaseId() {
         return caseId;
+    }
+
+    public UUID getDefendantId() {
+        return defendantId;
     }
 
     public List<SimpleOffence> getOffences() {
@@ -35,13 +42,14 @@ public class CaseSimpleOffences implements Serializable {
         }
         final CaseSimpleOffences that = (CaseSimpleOffences) o;
         return Objects.equals(caseId, that.caseId) &&
+                Objects.equals(defendantId, that.defendantId) &&
                 Objects.equals(offences, that.offences);
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(caseId, offences);
+        return Objects.hash(caseId, defendantId, offences);
     }
 
     public static CaseSimpleOffencesBuilder createCaseSimpleOffencesBuilder() {
@@ -50,6 +58,7 @@ public class CaseSimpleOffences implements Serializable {
 
     public static class CaseSimpleOffencesBuilder {
         private UUID caseId;
+        private UUID defendantId;
         private List<SimpleOffence> offences;
 
         private CaseSimpleOffencesBuilder() {
@@ -60,12 +69,18 @@ public class CaseSimpleOffences implements Serializable {
             return this;
         }
 
+        public CaseSimpleOffencesBuilder setDefendantId(UUID defendantId) {
+            this.defendantId = defendantId;
+            return this;
+        }
+
         public CaseSimpleOffencesBuilder setOffences(List<SimpleOffence> offences) {
             this.offences = offences;
             return this;
         }
 
         public CaseSimpleOffences build() {
-            return new CaseSimpleOffences(caseId, offences);
+            return new CaseSimpleOffences(caseId, defendantId, offences);
         }
-    }}
+    }
+}

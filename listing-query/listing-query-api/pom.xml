@@ -26,6 +26,18 @@
                         <version>${project.version}</version>
                         <classifier>raml</classifier>
                     </dependency>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.referencedata</groupId>
+                        <artifactId>referencedata-query-api</artifactId>
+                        <version>${referencedata.version}</version>
+                        <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
                 </dependencies>
                 <configuration>
                     <generatorProperties>
@@ -43,16 +55,36 @@
         </dependency>
 
         <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-viewstore-persistence</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>uk.gov.moj.cpp.system.authorisation</groupId>
             <artifactId>authorisation-interceptor</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-domain-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.system.documentgenerator</groupId>
+            <artifactId>system-documentgenerator-client</artifactId>
+            <version>${documentgenerator-client.version}</version>
+        </dependency>
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>uk.gov.moj.cpp.system.documentgenerator</groupId>
+            <artifactId>system-documentgenerator-client</artifactId>
+            <version>${documentgenerator-client.version}</version>
+        </dependency>
 
         <!-- Test dependencies -->
         <dependency>

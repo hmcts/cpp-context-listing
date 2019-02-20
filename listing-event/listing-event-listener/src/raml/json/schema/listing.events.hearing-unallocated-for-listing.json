@@ -4,43 +4,11 @@
   "type": "object",
   "properties": {
     "hearingId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
-    },
-    "judgeId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
-    },
-    "courtRoomId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
-    },
-    "type": {
-      "type": "string"
-    },
-
-    "estimateMinutes": {
-      "type": "integer"
-    },
-    "hearingDate": {
-      "type": "object",
-      "properties": {
-        "startDate": {
-          "type": "string",
-          "format": "date"
-        },
-        "startTime": {
-          "type": "string",
-          "format": "time"
-        }
-      },
-      "required": [
-        "startDate"
-      ]
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     }
   },
   "required": [
-    "hearingId",
-    "type",
-    "estimateMinutes",
-    "hearingDate"
+    "hearingId"
   ],
   "additionalProperties": false
 }

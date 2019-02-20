@@ -5,17 +5,13 @@ baseUri: message://command/handler/message/listing
 /listing.handler.command:
   post:
     body:
-      application/vnd.listing.command.send-case-for-listing+json:
-        example: !include json/listing.command.send-case-for-listing.json
-        schema:  !include json/schema/listing.command.send-case-for-listing.json
+      application/vnd.listing.command.send-case-for-listing-enriched+json:
+        example: !include json/listing.command.send-case-for-listing-enriched.json
+        schema:  !include json/schema/listing.command.send-case-for-listing-enriched.json
 
-      application/vnd.listing.command.list-hearing+json:
-        example: !include json/listing.command.list-hearing.json
-        schema:  !include json/schema/listing.command.list-hearing.json
-
-      application/vnd.listing.command.handler.update-hearing-for-listing+json:
-        example: !include json/listing.command.handler.update-hearing-for-listing.json
-        schema: !include json/schema/listing.command.handler.update-hearing-for-listing.json
+      application/vnd.listing.command.update-hearing-for-listing-enriched+json:
+        example: !include json/listing.command.update-hearing-for-listing-enriched.json
+        schema: !include json/schema/listing.command.update-hearing-for-listing-enriched.json
 
       application/vnd.listing.command.update-case-defendant-details+json:
         schema: !include json/schema/listing.command.update-case-defendant-details.json
@@ -37,6 +33,19 @@ baseUri: message://command/handler/message/listing
         schema: !include json/schema/listing.command.delete-offences-for-hearing.json
         example: !include json/listing.command.delete-offences-for-hearing.json
 
+      application/vnd.listing.command.add-hearing-to-case+json:
+        schema: !include json/schema/listing.command.add-hearing-to-case.json
+        example: !include json/listing.command.add-hearing-to-case.json
+
       application/vnd.listing.command.add-offences-for-hearing+json:
         schema: !include json/schema/listing.command.add-offences-for-hearing.json
         example: !include json/listing.command.add-offences-for-hearing.json
+
+      application/vnd.listing.command.change-judiciary-for-hearings+json:
+        schema: !include json/schema/listing.command.change-judiciary-for-hearings.json
+        example: !include json/listing.command.change-judiciary-for-hearings.json
+
+      application/vnd.listing.command.sequence-hearings+json:
+        schema: !include json/schema/listing.command.sequence-hearings.json
+        example: !include json/listing.command.sequence-hearings.json
+

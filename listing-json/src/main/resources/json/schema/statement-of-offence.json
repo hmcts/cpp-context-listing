@@ -6,13 +6,19 @@
     "title": {
       "type": "string"
     },
+    "welshTitle": {
+      "type": "string"
+    },
     "legislation": {
+      "type": "string"
+    },
+    "welshLegislation": {
       "type": "string"
     }
   },
   "required": [
     "title",
-    "legislation"
+    "welshTitle"
   ],
-  "additionalProperties":false
+  "additionalProperties": false
 }

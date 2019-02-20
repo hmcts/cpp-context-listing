@@ -1,7 +1,15 @@
-{
-  "_metadata": {
-    "name": "listing.events.court-room-assigned-to-hearing"
+[
+  {
+    "_metadata": {
+      "name": "listing.events.court-room-assigned-to-hearing"
+    },
+    "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+    "courtRoomId": "ad80a0b4-d285-4496-a514-43cb8d500051"
   },
-  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
-  "courtRoomId": "ad80a0b4-d285-4496-a514-43cb8d500051"
-}
+  {
+    "_metadata": {
+      "name": "listing.events.sequences-reset-on-hearing-days"
+    },
+    "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671"
+  }
+]

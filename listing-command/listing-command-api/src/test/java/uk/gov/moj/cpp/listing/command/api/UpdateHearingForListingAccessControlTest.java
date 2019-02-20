@@ -1,7 +1,10 @@
 package uk.gov.moj.cpp.listing.command.api;
 
 import static org.mockito.BDDMockito.given;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ADMINISTRATORS;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_CLERKS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.CROWN_COURT_ADMIN;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.LEGAL_ADVISERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LISTING_OFFICERS;
 
 import uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider;
@@ -25,7 +28,8 @@ public class UpdateHearingForListingAccessControlTest extends BaseDroolsAccessCo
     @Test
     public void shouldAllowAuthorisedUserToUpdateHearingForListing() {
         final Action action = createActionFor(ACTION_UPDATE_HEARING_FOR_LISTING);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS))
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS))
                 .willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);

@@ -28,7 +28,6 @@
             <artifactId>listing-viewstore-persistence</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <!-- Test dependencies -->
         <dependency>
             <groupId>uk.gov.justice.services</groupId>

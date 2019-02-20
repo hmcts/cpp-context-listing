@@ -1,0 +1,178 @@
+{
+  "hearings": [
+    {
+      "judiciary": [
+        {
+          "judicialId": "JUDICIARY_ID"
+        }
+      ],
+      "courtCentreId": "COURT_CENTRE_ID",
+      "hearingsByCourtCentreId": [
+        {
+          "hearingDate": "START_DATE1",
+          "hearingsByHearingDate": [
+            {
+
+              "hearing":
+                {
+                  "id": "1f889523-4a2b-4662-a5a8-9fa949d97697",
+                  "courtRoomId": "COURT_ROOM_ID",
+                  "reportingRestrictionReason": "REPORTING_RESTRICTION_REASON",
+                  "welshReportingRestrictionReason": "WelshREPORTING_RESTRICTION_REASON",
+                  "judiciary": [
+                    {
+                      "isDeputy": true,
+                      "judicialId": "JUDICIARY_ID",
+                      "isBenchChairman": true,
+                      "judicialRoleType": {
+                        "judiciaryType": "MAGISTRATE"
+                      }
+                    }
+                  ],
+                  "hearingDays": [
+                    {
+                      "endTime": "2018-11-21T14:37:00.000Z",
+                      "sequence": 65,
+                      "startTime": "2018-11-21T12:37:00.000Z",
+                      "hearingDate": "2018-11-21",
+                      "durationMinutes": 120
+                    },
+                    {
+                      "endTime": "2018-11-20T14:37:00.000Z",
+                      "sequence": 0,
+                      "startTime": "2018-11-20T12:37:00.000Z",
+                      "hearingDate": "2018-11-20",
+                      "durationMinutes": 120
+                    },
+                    {
+                      "endTime": "2018-11-22T14:37:00.000Z",
+                      "sequence": 0,
+                      "startTime": "2018-11-22T10:30:00.000Z",
+                      "hearingDate": "2018-11-22",
+                      "durationMinutes": 120
+                    }
+                  ],
+                  "listedCases": [
+                    {
+                      "id": "9a93f51e-7938-4abc-9156-1656aca7177e",
+                      "defendants": [
+                        {
+                          "id": "788e242e-fcfd-41ba-b06a-b1156d37e191",
+                          "lastName": "LAST_NAME",
+                          "offences": [
+                            {
+                              "id": "785c2a46-175c-4032-ad26-4c79642048ad",
+                              "startDate": "2018-11-21",
+                              "offenceCode": "yGRsfUEVpn",
+                              "statementOfOffence": {
+                                "title": "OFFENCE_TITLE",
+                                "welshTitle": "WelshOFFENCE_TITLE"
+                              }
+                            }
+                          ],
+                          "firstName": "FIRST_NAME",
+                          "bailStatus": "CONDITIONAL"
+                        }
+                      ],
+                      "caseIdentifier": {
+                        "authorityId": "fa356cdf-6697-41e1-bfb5-a3813469b666",
+                        "authorityCode": "GytGt7BqP4",
+                        "caseReference": "CASE_REFERENCE1"
+                      }
+                    }
+                  ],
+                  "type": {
+                    "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                    "description": "HEARING_TYPE"
+                  }
+                }
+
+            }
+          ]
+        },
+        {
+          "hearingDate": "START_DATE2",
+          "hearingsByHearingDate": [
+            {
+
+              "hearing":
+              {
+                "id": "2a889523-4a2b-4662-a5a8-9fa949d97697",
+                "courtRoomId": "COURT_ROOM_ID",
+                "reportingRestrictionReason": "REPORTING_RESTRICTION_REASON",
+                "welshReportingRestrictionReason": "Welsh_REPORTING_RESTRICTION_REASON",
+                "judiciary": [
+                  {
+                    "isDeputy": true,
+                    "judicialId": "JUDICIARY_ID",
+                    "isBenchChairman": true,
+                    "judicialRoleType": {
+                      "judiciaryType": "MAGISTRATE"
+                    }
+                  }
+                ],
+                "hearingDays": [
+                  {
+                    "endTime": "2018-11-21T14:37:00.000Z",
+                    "sequence": 0,
+                    "startTime": "2018-11-21T12:37:00.000Z",
+                    "hearingDate": "2018-11-21",
+                    "durationMinutes": 120
+                  },
+                  {
+                    "endTime": "2018-11-20T14:37:00.000Z",
+                    "sequence": 0,
+                    "startTime": "2018-11-20T12:37:00.000Z",
+                    "hearingDate": "2018-11-20",
+                    "durationMinutes": 120
+                  },
+                  {
+                    "endTime": "2018-11-22T14:37:00.000Z",
+                    "sequence": 1,
+                    "startTime": "2018-11-22T10:30:00.000Z",
+                    "hearingDate": "2018-11-22",
+                    "durationMinutes": 120
+                  }
+                ],
+                "listedCases": [
+                  {
+                    "id": "10a93f51e-7938-4abc-9156-1656aca7177e",
+                    "defendants": [
+                      {
+                        "id": "788e242e-fcfd-41ba-b06a-b1156d37e191",
+                        "lastName": "LAST_NAME",
+                        "offences": [
+                          {
+                            "id": "785c2a46-175c-4032-ad26-4c79642048ad",
+                            "startDate": "2018-11-21",
+                            "offenceCode": "yGRsfUEVpn",
+                            "statementOfOffence": {
+                              "title": "OFFENCE_TITLE",
+                              "welshTitle": "welshOFFENCE_TITLE"
+                            }
+                          }
+                        ],
+                        "firstName": "FIRST_NAME",
+                        "bailStatus": "CONDITIONAL"
+                      }
+                    ],
+                    "caseIdentifier": {
+                      "authorityId": "fa356cdf-6697-41e1-bfb5-a3813469b666",
+                      "authorityCode": "GytGt7BqP4",
+                      "caseReference": "CASE_REFERENCE2"
+                    }
+                  }
+                ],
+                "type": {
+                  "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                  "description": "HEARING_TYPE"
+                }
+              }
+
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,128 +1,134 @@
 package uk.gov.moj.cpp.listing.domain;
 
-import java.io.Serializable;
-import java.time.LocalDate;
-import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
+@SuppressWarnings({"squid:S1067", "squid:S00121"})
+public class Offence {
+    private final Optional<String> endDate;
 
-@JsonInclude(value = Include.NON_NULL)
-public class Offence extends SimpleOffence implements Serializable {
+    private final UUID id;
 
     private final String offenceCode;
-    private final LocalDate startDate;
-    private final LocalDate endDate;
+
+    private final String offenceWording;
+
+    private final String startDate;
+
     private final StatementOfOffence statementOfOffence;
 
-    @JsonCreator
-    public Offence(@JsonProperty(value = "id") final String id,
-                   @JsonProperty(value = "offenceCode") final String offenceCode,
-                   @JsonProperty(value = "startDate") final LocalDate startDate,
-                   @JsonProperty(value = "endDate") final LocalDate endDate,
-                   @JsonProperty(value = "statementOfOffence") final StatementOfOffence statementOfOffence,
-                   @JsonProperty(value = "defendantId") final String defendantId) {
-        super(id, defendantId);
-        this.offenceCode = offenceCode;
-        this.startDate = startDate;
+    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence) {
         this.endDate = endDate;
+        this.id = id;
+        this.offenceCode = offenceCode;
+        this.offenceWording = offenceWording;
+        this.startDate = startDate;
         this.statementOfOffence = statementOfOffence;
     }
 
-    public String getOffenceCode() { return offenceCode; }
-
-    public LocalDate getStartDate() {
-        return startDate;
+    public Optional<String> getEndDate() {
+        return endDate;
     }
 
-    public LocalDate getEndDate() {
-        return endDate;
+    public UUID getId() {
+        return id;
+    }
+
+    public String getOffenceCode() {
+        return offenceCode;
+    }
+
+    public String getOffenceWording() {
+        return offenceWording;
+    }
+
+    public String getStartDate() {
+        return startDate;
     }
 
     public StatementOfOffence getStatementOfOffence() {
         return statementOfOffence;
     }
 
+    public static Builder offence() {
+        return new Offence.Builder();
+    }
+
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        Offence offence = (Offence) o;
-        return Objects.equals(offenceCode, offence.offenceCode) &&
-                Objects.equals(startDate, offence.startDate) &&
-                Objects.equals(endDate, offence.endDate) &&
-                Objects.equals(statementOfOffence, offence.statementOfOffence);
+    public boolean equals(final Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        final Offence that = (Offence) obj;
+
+        return java.util.Objects.equals(this.endDate, that.endDate) &&
+                java.util.Objects.equals(this.id, that.id) &&
+                java.util.Objects.equals(this.offenceCode, that.offenceCode) &&
+                java.util.Objects.equals(this.offenceWording, that.offenceWording) &&
+                java.util.Objects.equals(this.startDate, that.startDate) &&
+                java.util.Objects.equals(this.statementOfOffence, that.statementOfOffence);
     }
 
     @Override
     public int hashCode() {
-
-        return Objects.hash(super.hashCode(), offenceCode, startDate, endDate, statementOfOffence);
-    }
+        return java.util.Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence);}
 
     @Override
     public String toString() {
         return "Offence{" +
-                "offenceCode='" + offenceCode + '\'' +
-                ", startDate=" + startDate +
-                ", endDate=" + endDate +
-                ", statementOfOffence=" + statementOfOffence +
-                '}';
+                "endDate='" + endDate + "'," +
+                "id='" + id + "'," +
+                "offenceCode='" + offenceCode + "'," +
+                "offenceWording='" + offenceWording + "'," +
+                "startDate='" + startDate + "'," +
+                "statementOfOffence='" + statementOfOffence + "'" +
+                "}";
     }
 
+    public static class Builder {
+        private Optional<String> endDate;
 
-    public static OffenceBuilder createOffenceBuilder() {
-        return new OffenceBuilder();
-    }
+        private UUID id;
 
-    public static class OffenceBuilder {
-        private String id;
         private String offenceCode;
-        private LocalDate startDate;
-        private LocalDate endDate;
+
+        private String offenceWording;
+
+        private String startDate;
+
         private StatementOfOffence statementOfOffence;
-        private String defendantId;
 
-        public OffenceBuilder setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public OffenceBuilder setOffenceCode(String offenceCode) {
-            this.offenceCode = offenceCode;
-            return this;
-        }
-
-        public OffenceBuilder setStartDate(LocalDate startDate) {
-            this.startDate = startDate;
-            return this;
-        }
-
-        public OffenceBuilder setEndDate(LocalDate endDate) {
+        public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
             return this;
         }
 
-        public OffenceBuilder setStatementOfOffence(StatementOfOffence statementOfOffence) {
+        public Builder withId(final UUID id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder withOffenceCode(final String offenceCode) {
+            this.offenceCode = offenceCode;
+            return this;
+        }
+
+        public Builder withOffenceWording(final String offenceWording) {
+            this.offenceWording = offenceWording;
+            return this;
+        }
+
+        public Builder withStartDate(final String startDate) {
+            this.startDate = startDate;
+            return this;
+        }
+
+        public Builder withStatementOfOffence(final StatementOfOffence statementOfOffence) {
             this.statementOfOffence = statementOfOffence;
             return this;
         }
 
-        public OffenceBuilder setDefendantId(String defendantId) {
-            this.defendantId = defendantId;
-            return this;
-        }
-
         public Offence build() {
-            return new Offence(id, offenceCode, startDate, endDate, statementOfOffence, defendantId);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence);
         }
-    }}
+    }
+}

@@ -1,0 +1,13 @@
+{
+  "hearingId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+  "judiciary": [
+    {
+      "judicialId": "d1a22d9e-088b-4af4-acb5-bc6e78aaf5ea",
+      "judicialRoleType": {
+        "judiciaryType": "CIRCUIT_JUDGE"
+      },
+      "isDeputy": false,
+      "isBenchChairman": false
+    }
+  ]
+}

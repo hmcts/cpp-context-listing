@@ -1,0 +1,36 @@
+{
+  "updateHearingForListing": {
+    "type": {
+      "id": "52edf232-3c09-4c74-a6ad-737985c2e662",
+      "description": "PTP"
+    },
+    "startDate": "2018-10-09",
+    "jurisdictionType": "CROWN",
+    "hearingLanguage": "ENGLISH",
+    "courtCentreId": "9689207b-a9d2-4c2e-bd38-269b78a132a8",
+    "judiciary": [
+      {
+        "judicialId": "1cc7aa0d-fa17-4a79-9cdf-c71751e1bc37",
+        "judicialRoleType": {
+        "judiciaryType": "MAGISTRATE"
+      },
+        "isDeputy": true,
+        "isBenchChairman": null
+      }
+    ],
+    "nonDefaultDays": [
+      {
+        "startTime": "2018-10-09T15:16:56Z",
+        "duration": null
+      }
+    ],
+    "nonSittingDays": [],
+    "endDate": null,
+    "courtRoomId": "e0e04581-8f66-4bbf-b5b4-2d41fcc2ae7c"
+  },
+  "courtCentre": {
+    "id": "f0e04581-8f66-4bbf-b5b4-2d41fcc2ae7c",
+    "defaultDuration": "6",
+    "defaultStartTime": "10:30"
+  }
+}

@@ -1,15 +1,18 @@
 package uk.gov.moj.cpp.listing.it;
 
+import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
+import uk.gov.moj.cpp.listing.steps.SendCaseForListingSteps;
+import uk.gov.moj.cpp.listing.steps.UpdateDefendantSteps;
+import uk.gov.moj.cpp.listing.steps.data.DefendantData;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData;
+
+import java.util.UUID;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
-import uk.gov.moj.cpp.listing.steps.data.CaseData;
-
-import javax.jms.JMSException;
-
-import static uk.gov.moj.cpp.listing.steps.ListingStepDefinitions.*;
-import static uk.gov.moj.cpp.listing.steps.data.factory.CaseDataFactory.caseData;
 
 public class DefendantsChangedIT extends AbstractIT {
 
@@ -29,15 +32,26 @@ public class DefendantsChangedIT extends AbstractIT {
     }
 
     @Test
-    public void shouldUpdateDefendantsFollowingPublicDefendantsChangedEventFromProgression() throws JMSException {
-        final CaseData caseData = caseData();
+    public void shouldUpdateDefendantsFollowingPublicDefendantsChangedEventFromProgression() {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        try (final SendCaseForListingSteps sendCaseForListingSteps = new SendCaseForListingSteps(hearingsData)) {
+            sendCaseForListingSteps.whenCaseIsSubmittedForListing();
+            sendCaseForListingSteps.verifyHearingListedInActiveMQ();
+            sendCaseForListingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
+        UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
+        HearingData hearingData = hearingsData.getHearingData().get(0);
+        UpdatedDefendantData updatedDefendantData = UpdatedDefendantData.updatedDefendantData(defendantData);
 
-        whenCaseIsSubmittedForListing(caseData);
-        thenCaseSentForListingPublicEventShouldBePublished(caseData, publicMessageConsumer);
-
-        whenCaseDefendantsChangedPublicEventIsPublished(caseData);
-        thenDefendantsShouldHaveChangedWhenQueried(caseData);
+        try (final UpdateDefendantSteps updateDefendantSteps = new UpdateDefendantSteps(caseId, hearingData, updatedDefendantData)) {
+            updateDefendantSteps.whenCaseDefendantsUpdatedPublicEventIsPublished();
+            updateDefendantSteps.verifyEventDefendantUpdatedInActiveMQ();
+            updateDefendantSteps.verifyEventDefendantsToBeUpdateInActiveMQ();
+            updateDefendantSteps.verifyEventDefendantDetailsUpdatedInActiveMQ();
+            updateDefendantSteps.verifyHearingListedFromAPI(false);
+        }
     }
+
 }

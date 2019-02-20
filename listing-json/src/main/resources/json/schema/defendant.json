@@ -4,10 +4,17 @@
   "type": "object",
   "properties": {
     "id": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
-    "personId": {
-      "$ref": "http://justice.gov.uk/json/schemas/core/data-types.json#/definitions/uuid"
+    "datesToAvoid": {
+      "type": "string"
+    },
+    "hearingLanguageNeeds": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/hearingLanguage"
+    },
+    "specificRequirements": {
+      "description": "The person special needs indicted any special needs that must be met by the courts process e.g. wheelchair access",
+      "type": "string"
     },
     "firstName": {
       "description": "The person first name",
@@ -23,23 +30,22 @@
       "format": "date"
     },
     "bailStatus": {
-      "enum": [
-        "conditional",
-        "unconditional",
-        "inCustody"
-      ]
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/bailStatus"
     },
     "custodyTimeLimit": {
       "description": "Custody Time Limit",
       "type": "string",
       "format": "date"
     },
+    "organisationName": {
+      "description": "Where the defendant is an organisation",
+      "type": "string"
+    },
     "defenceOrganisation": {
       "type": "string"
     },
     "offences": {
       "type": "array",
-      "minItems": 0,
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/offence.json"
       }
@@ -47,13 +53,7 @@
   },
   "required": [
     "id",
-    "personId",
-    "firstName",
-    "lastName",
-    "dateOfBirth",
-    "bailStatus",
-    "defenceOrganisation",
     "offences"
   ],
-  "additionalProperties":false
+  "additionalProperties": false
 }

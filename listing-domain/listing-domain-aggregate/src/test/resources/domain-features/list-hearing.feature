@@ -6,6 +6,13 @@ Feature: List a hearing
     When you list to a Hearing using a new hearing details
     Then hearing listed
 
+  Scenario: A request to list a hearing with no end date results in an unallocated hearing
+            being listed with end date equal to start date
+
+    Given no previous events
+    When you list to a Hearing using a new hearing details with no end date
+    Then hearing listed with end date equal to start date
+
 
   Scenario: A request to list a hearing that has already been listed does not result in a new listing
 

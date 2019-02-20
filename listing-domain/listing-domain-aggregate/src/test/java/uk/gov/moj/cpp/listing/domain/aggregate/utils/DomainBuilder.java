@@ -1,12 +1,20 @@
 package uk.gov.moj.cpp.listing.domain.aggregate.utils;
 
 import static java.util.Arrays.asList;
+import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 import uk.gov.justice.listing.events.BailStatus;
-import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
-import uk.gov.moj.cpp.listing.domain.*;
+import uk.gov.moj.cpp.listing.domain.CaseOffences;
+import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
+import uk.gov.moj.cpp.listing.domain.Defendant;
+import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
+import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.SimpleOffence;
+import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
+import uk.gov.moj.cpp.listing.domain.legacy.Hearing;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -52,37 +60,54 @@ public class DomainBuilder {
 
     private static Hearing buildHearing() {
         return new Hearing(randomUUID().toString(), randomUUID().toString(), randomUUID().toString(),
-                RandomGenerator.STRING.next(), LocalDate.now(),  LocalDate.now().plusDays(2),
+                STRING.next(), LocalDate.now(),  LocalDate.now().plusDays(2),
                 ONE_HOUR_ESTIMATE, null, null, null, 
                 asList(buildDefendant()), UNALLOCATED);
     }
 
     private static Defendant createDefendant(final Offence offence) {
-        String bailStatus = BailStatus.values()[new Random().nextInt(BailStatus.values().length)].toString();
-        return new Defendant(randomUUID().toString(), randomUUID().toString(), RandomGenerator.STRING.next(), RandomGenerator.STRING.next(),
-                LocalDate.now(), bailStatus, LocalDate.now(), RandomGenerator.STRING.next(), Collections.singletonList
-                (offence));
+
+        uk.gov.moj.cpp.listing.domain.BailStatus bailStatus = uk.gov.moj.cpp.listing.domain.BailStatus.values()[new Random().nextInt(BailStatus.values().length)];
+
+        return Defendant.defendant()
+                .withHearingLanguageNeeds(of(HearingLanguageNeeds.ENGLISH))
+                .withDatesToAvoid(of(STRING.next()))
+                .withDefenceOrganisation(of(STRING.next()))
+                .withOffences(Collections.singletonList(offence))
+                .withId(randomUUID())
+                .withBailStatus(of(bailStatus))
+                .withCustodyTimeLimit(of(STRING.next()))
+                .withDateOfBirth(of(STRING.next()))
+                .withFirstName(of(STRING.next()))
+                .withLastName(of(STRING.next()))
+                .withOrganisationName(of(STRING.next()))
+                .withSpecificRequirements(of(STRING.next()))
+                .build();
     }
 
     private static StatementOfOffence createStatementOfOffence() {
-        return new StatementOfOffence(RandomGenerator.STRING.next(), RandomGenerator.STRING.next());
+        return StatementOfOffence.statementOfOffence()
+                .withLegislation(of(STRING.next()))
+                .withTitle(STRING.next())
+                .withWelshLegislation(of(STRING.next()))
+                .withWelshTitle(STRING.next())
+                .build();
     }
 
     private static Offence createOffence(final StatementOfOffence statementOfOffence) {
-        return Offence.createOffenceBuilder()
-                .setId(randomUUID().toString())
-                .setOffenceCode(RandomGenerator.STRING.next())
-                .setStartDate(LocalDate.now())
-                .setEndDate(LocalDate.now())
-                .setStatementOfOffence(statementOfOffence)
-                .setDefendantId(randomUUID().toString())
+        return Offence.offence()
+                .withId(randomUUID())
+                .withOffenceCode(STRING.next())
+                .withStartDate(LocalDate.now().toString())
+                .withEndDate(of(LocalDate.now().toString()))
+                .withStatementOfOffence(statementOfOffence)
                 .build();
     }
 
     private static SimpleOffence createSimpleOffence() {
         return SimpleOffence.createSimpleOffenceBuilder()
-                .setId(randomUUID().toString())
-                .setDefendantId(randomUUID().toString())
+                .withId(randomUUID())
+                .withDefendantId(randomUUID())
                 .build();
     }
 }

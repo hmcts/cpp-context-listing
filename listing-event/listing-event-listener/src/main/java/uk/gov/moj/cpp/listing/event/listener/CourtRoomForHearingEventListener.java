@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
+
 import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
 import uk.gov.justice.listing.events.CourtRoomChangedForHearing;
 import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
@@ -16,16 +18,24 @@ import javax.inject.Inject;
 @ServiceComponent(Component.EVENT_LISTENER)
 public class CourtRoomForHearingEventListener {
 
-    @Inject
+    private static final String COURT_ROOM_ID_FIELD = "courtRoomId";
+
     private HearingRepository hearingRepository;
 
+    @Inject
+    public CourtRoomForHearingEventListener(final HearingRepository hearingRepository) {
+        this.hearingRepository = hearingRepository;
+    }
 
     @Handles("listing.events.court-room-assigned-to-hearing")
     public void courtRoomAssignedToHearing(final Envelope<CourtRoomAssignedToHearing> event) {
         final CourtRoomAssignedToHearing courtRoomAssignedToHearing = event.payload();
         final UUID courtRoomId = courtRoomAssignedToHearing.getCourtRoomId();
         final UUID hearingId = courtRoomAssignedToHearing.getHearingId();
-        hearingRepository.updateCourtRoomId(courtRoomId, hearingId);
+        using(hearingRepository)
+                .find(hearingId)
+                .put(COURT_ROOM_ID_FIELD, courtRoomId)
+                .save();
     }
 
     @Handles("listing.events.court-room-changed-for-hearing")
@@ -33,13 +43,19 @@ public class CourtRoomForHearingEventListener {
         final CourtRoomChangedForHearing courtRoomChangedForHearing = event.payload();
         final UUID courtRoomId = courtRoomChangedForHearing.getCourtRoomId();
         final UUID hearingId = courtRoomChangedForHearing.getHearingId();
-        hearingRepository.updateCourtRoomId(courtRoomId, hearingId);
+        using(hearingRepository)
+                .find(hearingId)
+                .put(COURT_ROOM_ID_FIELD, courtRoomId)
+                .save();
     }
 
     @Handles("listing.events.court-room-removed-from-hearing")
     public void courtRoomRemovedFromHearing(final Envelope<CourtRoomRemovedFromHearing> event) {
         final CourtRoomRemovedFromHearing courtRoomRemovedFromHearing = event.payload();
         final UUID hearingId = courtRoomRemovedFromHearing.getHearingId();
-        hearingRepository.updateCourtRoomId(null, hearingId);
+        using(hearingRepository)
+                .find(hearingId)
+                .remove(COURT_ROOM_ID_FIELD)
+                .save();
     }
 }

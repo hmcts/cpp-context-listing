@@ -12,17 +12,34 @@ rule "Command - API - Action - listing.command.send-case-for-listing"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.command.send-case-for-listing");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_CLERKS));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_CLERKS));
   then
     $outcome.setSuccess(true);
 end
-
 
 rule "Command - API - Action - listing.command.update-hearing-for-listing"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.command.update-hearing-for-listing");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.change-judiciary-for-hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.change-judiciary-for-hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Command - API - Action - listing.command.sequence-hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.sequence-hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS));
   then
     $outcome.setSuccess(true);
 end

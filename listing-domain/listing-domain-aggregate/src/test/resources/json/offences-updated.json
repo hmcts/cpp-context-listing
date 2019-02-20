@@ -2,16 +2,20 @@
   "_metadata": {
     "name": "listing.events.offence-updated"
   },
+  "caseId": "31bf5d91-f90e-4117-a018-d1290e107692",
+  "defendantId": "0baecac5-222b-402d-9047-84803679edac",
   "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
   "offence": {
-    "defendantId": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
     "endDate": "2011-08-01",
-    "id": "8b6add6d-5584-41fa-9796-b219a668fffa",
+    "id": "0baecac5-222b-402d-9047-84803679edad",
     "offenceCode": "H8189",
+    "offenceWording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, John Smith",
     "startDate": "2010-08-01",
     "statementOfOffence": {
       "legislation": "legislation",
-      "title": "Wounding with intent"
+      "title": "Wounding with intent",
+      "welshLegislation": "legislation in welsh",
+      "welshTitle": "Wounding with intent in Welsh"
     }
   }
 }

@@ -19,8 +19,35 @@ protocols: [ HTTP, HTTPS ]
         courtCentreId:
           description: reference data id for the court centre
           type: string
-          required: true
-
+          required: false
+        courtRoomId:
+          description: reference data id for the court room
+          type: string
+          required: false
+        authorityId:
+          description: reference data id for the authority code
+          type: string
+          required: false
+        hearingTypeId:
+          description: reference data id for the hearng type
+          type: string
+          required: false
+        jurisdictionType:
+          description: the jurisdiction under which the hearing is being prosecuted, for example CROWN or MAGISTRATE
+          type: string
+          required: false
+        searchDate:
+          description: hearing startDate must be between search startDate and search endDate in order to match
+          type: date
+          required: false
+        startTime:
+          description: e.g. '10:30'. Search for hearings that have a start time greater than or equal to this startTime parameter.  Default is 00:00 (midnight) on the day of the searchDate
+          type: string
+          required: false
+        endTime:
+          description: e.g. '11:30'. Search for hearings that have a start time less than or equal to this endTime parameter.  Default is '23:59:59.999999999' on the day of the searchDate
+          type: string
+          required: false
 
       responses:
             200:
@@ -30,4 +57,89 @@ protocols: [ HTTP, HTTPS ]
                     example:  !include json/listing.search.hearings.json
                     schema:  !include  json/schema/listing.search.hearings.json
 
+/hearings/range-search:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.range.search.hearings
+        ...
+      queryParameters:
+        allocated:
+          description: true for allocated hearings, false for unallocated hearings
+          type: boolean
+          required: true
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: false
+        courtRoomId:
+          description: reference data id for the court room
+          type: string
+          required: false
+        authorityId:
+          description: reference data id for the authority code
+          type: string
+          required: false
+        hearingTypeId:
+          description: reference data id for the hearng type
+          type: string
+          required: false
+        jurisdictionType:
+          description: the jurisdiction under which the hearing is being prosecuted, for example CROWN or MAGISTRATE
+          type: string
+          required: false
+        startDate:
+          description: If not provided then startdate is defaulted to '1900-01-01'.  (hearingStartDate between startDate and endDate) or (hearingEndDate between startDate and endDate) or (hearingStartDate <= startDate and hearingEndDate >= endDate)
+          type: date
+          required: false
+        endDate:
+          description: If not provided then endDate is defaulted to '9999-01-01'.  (hearingStartDate between startDate and endDate) or (hearingEndDate between startDate and endDate) or (hearingStartDate <= startDate and hearingEndDate >= endDate)
+          type: date
+          required: false
 
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+
+/courtlist:
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.court.list+json
+          name: listing.search.court.list
+      ...
+    queryParameters:
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: true
+        courtRoomId:
+          description: reference data id for the court room
+          type: string
+          required: false
+        listId:
+          description: court list name to generate ( e.g. PUBLIC, STANDAND, ALPHABETICAL)
+          type: string
+          required: true
+        startDate:
+          description: hearing start date in format 'YYYY-MM-DD'.
+          type: date
+          required: true
+        endDate:
+          description: hearing end date in format 'YYYY-MM-DD'
+          type: date
+          required: true
+    responses:
+        200:
+            description: OK
+            body:
+              application/vnd.listing.search.court.list+json:
+                example:  !include json/listing.search.court.list.json
+                schema:  !include  json/schema/listing.search.court.list.json

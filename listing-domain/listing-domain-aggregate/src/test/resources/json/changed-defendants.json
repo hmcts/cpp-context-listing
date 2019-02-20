@@ -1,12 +1,13 @@
 {
+  "caseId": "31bf5d91-f90e-4117-a018-d1290e107692",
   "defendants": [
     {
-      "id": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
+      "id": "0baecac5-222b-402d-9047-84803679edac",
       "personId": "32f2ce4e-4b4f-4ac0-8071-610e2813e3f8",
       "firstName": "David",
       "lastName": "LLOYD",
       "dateOfBirth": "1980-07-15",
-      "bailStatus": "in custody",
+      "bailStatus": "IN_CUSTODY",
       "custodyTimeLimit": "2018-01-30",
       "defenceOrganisation": "XYZ Solicitors",
       "offences": []

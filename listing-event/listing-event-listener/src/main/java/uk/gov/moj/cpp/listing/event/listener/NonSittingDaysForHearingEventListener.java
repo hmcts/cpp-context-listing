@@ -6,24 +6,22 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.listing.event.converter.NonSittingDaysJsonConverter;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
+import javax.inject.Inject;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class NonSittingDaysForHearingEventListener {
 
+    private static final String NON_SITTING_DAYS = "nonSittingDays";
+
     @Inject
     private HearingRepository hearingRepository;
-
-
-    @Inject
-    private NonSittingDaysJsonConverter nonSittingDaysConverter;
 
 
     @Handles("listing.events.non-sitting-days-assigned-to-hearing")
@@ -32,8 +30,10 @@ public class NonSittingDaysForHearingEventListener {
         final List<LocalDate> nonSittingDays = nonSittingDaysAssignedToHearing.getNonSittingDays();
         final UUID hearingId = nonSittingDaysAssignedToHearing.getHearingId();
 
-        final String nonSittingDaysJson = nonSittingDaysConverter.convertNonSittingDaysTo(nonSittingDays);
-        hearingRepository.updateNonSittingDays(nonSittingDaysJson, hearingId);
+        using(hearingRepository)
+                .find(hearingId)
+                .putLocalDateList(NON_SITTING_DAYS, nonSittingDays)
+                .save();
     }
 
     @Handles("listing.events.non-sitting-days-changed-for-hearing")
@@ -42,7 +42,10 @@ public class NonSittingDaysForHearingEventListener {
         final List<LocalDate> nonSittingDays = nonSittingDaysChangedForHearing.getNonSittingDays();
         final UUID hearingId = nonSittingDaysChangedForHearing.getHearingId();
 
-        final String nonSittingDaysJson = nonSittingDaysConverter.convertNonSittingDaysTo(nonSittingDays);
-        hearingRepository.updateNonSittingDays(nonSittingDaysJson, hearingId);
+        using(hearingRepository)
+                .find(hearingId)
+                .putLocalDateList(NON_SITTING_DAYS, nonSittingDays)
+                .save();
     }
+
 }

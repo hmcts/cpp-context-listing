@@ -68,7 +68,7 @@
           &quot;firstName&quot;: &quot;David&quot;,&#xd;
           &quot;lastName&quot;: &quot;Lloyd&quot;,&#xd;
           &quot;dateOfBirth&quot;: &quot;1995-03-23&quot;,&#xd;
-          &quot;bailStatus&quot;: &quot;inCustody&quot;,&#xd;
+          &quot;bailStatus&quot;: &quot;IN_CUSTODY&quot;,&#xd;
           &quot;custodyTimeLimit&quot;: &quot;2018-01-30&quot;,&#xd;
           &quot;defenceOrganisation&quot;: &quot;Solicitor XYZ&quot;,&#xd;
           &quot;offences&quot;: [&#xd;

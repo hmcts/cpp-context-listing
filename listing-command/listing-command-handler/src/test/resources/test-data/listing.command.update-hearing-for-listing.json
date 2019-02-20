@@ -1,0 +1,39 @@
+{
+  "updateHearingForListing": {
+    "hearingId": "HEARING_ID",
+    "type": {
+      "id": "HEARING_TYPE_ID",
+      "description": "HEARING_TYPE_DESCRIPTION"
+    },
+    "startDate": "START_DATE",
+    "endDate": "END_DATE",
+    "hearingLanguage": "HEARING_LANGUAGE",
+    "courtCentreId": "COURT_CENTRE_ID",
+    "jurisdictionType": "JURISDICTION_TYPE",
+    "judiciary": [
+      {
+        "judicialId": "JUDICIAL_ID",
+        "isBenchChairman": "IS_BENCH_CHAIRMAN",
+        "isDeputy": "IS_DEPUTY",
+        "judicialRoleType": {
+          "judiciaryType": "JUDICIAL_ROLE_TYPE"
+        }
+      }
+    ],
+    "nonDefaultDays": [
+      {
+        "startTime": "NON_DEFAULT_DAY",
+        "duration": null
+      }
+    ],
+    "nonSittingDays": [
+      "NON_SITTING_DAY"
+    ],
+    "courtRoomId": "COURT_ROOM_ID"
+  },
+  "courtCentreDetails": {
+    "id": "f0e04581-8f66-4bbf-b5b4-2d41fcc2ae7c",
+    "defaultDuration": "DEFAULT_DURATION",
+    "defaultStartTime": "DEFAULT_START_TIME"
+  }
+}

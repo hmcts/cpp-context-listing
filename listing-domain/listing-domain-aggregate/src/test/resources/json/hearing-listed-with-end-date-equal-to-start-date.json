@@ -1,0 +1,72 @@
+{
+  "_metadata": {
+    "name": "listing.events.hearing-listed"
+  },
+  "hearing": {
+    "allocated": false,
+    "hearingDays": [
+      {
+        "durationMinutes": 30,
+        "endTime": "2018-06-01T10:00:00.000Z",
+        "sequence": 0,
+        "hearingDate":"2018-06-01",
+        "startTime": "2018-06-01T09:30:00.000Z"
+      }
+    ],
+    "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+    "estimatedMinutes": 15,
+    "hearingLanguage": "WELSH",
+    "id": "5c5a1d30-0414-11e7-93ae-92361f002671",
+    "judiciary": [],
+    "jurisdictionType": "CROWN",
+    "listedCases": [
+      {
+        "caseIdentifier": {
+          "authorityCode": "POLICE",
+          "authorityId": "31fd0edf-9692-46fa-a6be-4b78bf88fec6",
+          "caseReference": "87GD9945217"
+        },
+        "defendants": [
+          {
+            "bailStatus": "IN_CUSTODY",
+            "custodyTimeLimit": "2018-01-30",
+            "dateOfBirth": "1995-03-23",
+            "datesToAvoid": "Hospital appointment 2018-11-07",
+            "defenceOrganisation": "Flynch and Fleece Solicitors",
+            "firstName": "David",
+            "hearingLanguageNeeds": "WELSH",
+            "id": "0baecac5-222b-402d-9047-84803679edac",
+            "lastName": "Lloyd",
+            "offences": [
+              {
+                "endDate": "2017-08-01",
+                "id": "0baecac5-222b-402d-9047-84803679edad",
+                "offenceCode": "OF61131",
+                "startDate": "2016-06-21",
+                "statementOfOffence": {
+                  "legislation": "Offences against the Person Act 1861",
+                  "title": "Wounding with intent",
+                  "welshLegislation": "Deddf Troseddau yn erbyn y Person 1861",
+                  "welshTitle": "Colli â bwriad"
+                }
+              }
+            ],
+            "specificRequirements": "wheelchair access required"
+          }
+        ],
+        "id": "31bf5d91-f90e-4117-a018-d1290e107692"
+      }
+    ],
+    "listingDirections": "Child care difficulty on Tuesdays",
+    "nonDefaultDays": [],
+    "nonSittingDays": [],
+    "prosecutorDatesToAvoid": "Prosecutor on holiday 2018-11-01",
+    "reportingRestrictionReason": "aReason",
+    "startDate": "2018-06-01",
+    "endDate": "2018-06-01",
+    "type": {
+      "description": "Trial",
+      "id": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6"
+    }
+  }
+}

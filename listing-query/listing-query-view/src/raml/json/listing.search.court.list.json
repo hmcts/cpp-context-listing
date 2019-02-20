@@ -1,0 +1,21 @@
+[
+  {
+    "hearingdate":"2018-11-11",
+    "hearingsbyhearingdate":[
+      {
+        "defendant":[
+          {
+            "id":"ec51cb9f-4684-41c8-ad6f-9bfde6f9607a",
+            "lastName":"NLjlzlLc7P",
+            "firstName":"zFJL0dHc5c"
+          }
+        ],
+        "starttime":"2018-11-06T10:30:00.000Z",
+        "courtcentreid":"62f2fcae-e3cc-49be-bb88-5856b322af6b",
+        "caseidentifier":{
+          "caseReference":"Nyo69yHAKI"
+        }
+      }
+    ]
+  }
+]

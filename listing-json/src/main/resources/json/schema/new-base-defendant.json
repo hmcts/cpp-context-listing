@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/new-base-defendant.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "specificRequirements": {
+      "description": "The person special needs indicted any special needs that must be met by the courts process e.g. wheelchair access",
+      "type": "string"
+    },
+    "firstName": {
+      "description": "The person first name",
+      "type": "string"
+    },
+    "lastName": {
+      "description": "The person last name",
+      "type": "string"
+    },
+    "dateOfBirth": {
+      "description": "The person date of birth",
+      "type": "string",
+      "format": "date"
+    },
+    "bailStatus": {
+      "enum": [
+        "CONDITIONAL",
+        "UNCONDITIONAL",
+        "IN_CUSTODY"
+      ]
+    },
+    "custodyTimeLimit": {
+      "description": "Custody Time Limit",
+      "type": "string",
+      "format": "date"
+    },
+    "organisationName": {
+      "description": "Where the defendant is an organisation",
+      "type": "string"
+    },
+    "defenceOrganisation": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "additionalProperties": false
+}

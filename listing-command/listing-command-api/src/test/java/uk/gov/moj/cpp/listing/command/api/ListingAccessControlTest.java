@@ -17,6 +17,9 @@ import org.mockito.Mock;
 public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
 
     private static final String ACTION_SEND_CASE_FOR_LISTING = "listing.command.send-case-for-listing";
+    public static final String ACTION_UPDATE_HEARING_FOR_LISTING = "listing.command.update-hearing-for-listing";
+    public static final String ACTION_CHANGE_JUDICIARY_FOR_HEARING = "listing.command.change-judiciary-for-hearings";
+    public static final String ACTION_SEQUENCE_HEARINGS = "listing.command.sequence-hearings";
     private static final String RANDOM_GROUP = "Random group";
 
 
@@ -27,7 +30,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     public void shouldAllowAuthorisedUserToSendCaseForListing() {
         final Action action = createActionFor(ACTION_SEND_CASE_FOR_LISTING);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
-                CROWN_COURT_ADMIN, COURT_CLERKS))
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS ))
                 .willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);
@@ -37,10 +40,42 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowUnauthorisedUserToSendCaseForListing() {
         final Action action = createActionFor(ACTION_SEND_CASE_FOR_LISTING);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RANDOM_GROUP)).willReturn(false);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToUpdateHearingForListing() {
+        final Action action = createActionFor(ACTION_UPDATE_HEARING_FOR_LISTING);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS))
+                .willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToChangeJudiciaryForHearing() {
+        final Action action = createActionFor(ACTION_CHANGE_JUDICIARY_FOR_HEARING);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS))
+                .willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToSequenceHearings() {
+        final Action action = createActionFor(ACTION_SEQUENCE_HEARINGS);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS))
+                .willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
     }
 
     @Override

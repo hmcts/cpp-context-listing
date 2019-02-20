@@ -1,33 +1,36 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
+import static java.util.Collections.singletonList;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
+
 import uk.gov.justice.domain.aggregate.Aggregate;
-import uk.gov.justice.listing.events.*;
-import uk.gov.moj.cpp.listing.domain.*;
+import uk.gov.justice.listing.events.DefendantsToBeUpdated;
+import uk.gov.justice.listing.events.HearingAddedToCase;
+import uk.gov.justice.listing.events.OffencesToBeAdded;
+import uk.gov.justice.listing.events.OffencesToBeDeleted;
+import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.moj.cpp.listing.domain.Defendant;
-import uk.gov.moj.cpp.listing.domain.Hearing;
+import uk.gov.moj.cpp.listing.domain.CaseOffences;
+import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.*;
-import static uk.gov.moj.cpp.listing.domain.aggregate.DomainToEventConverter.createHearingsFrom;
 
 @SuppressWarnings("squid:S1068")
 public class Case implements Aggregate {
 
     private static final long serialVersionUID = 1L;
 
-    private UUID caseId;
-    private String urn;
-    private List<Hearing> hearings = new ArrayList<>();
+    private final List<UUID> hearingIds = new ArrayList<>();
 
     @Override
     public Object apply(final Object event) {
         return match(event).with(
-                when(CaseSentForListing.class).apply(this::onCaseSentForListing),
+                when(HearingAddedToCase.class).apply(this::onHearingAddedToCase),
                 when(DefendantsToBeUpdated.class).apply(e -> onDefendantsToBeUpdated()),
                 when(OffencesToBeAdded.class).apply(e -> onOffencesToBeAdded()),
                 when(OffencesToBeDeleted.class).apply(e -> onOffencesToBeDeleted()),
@@ -35,79 +38,66 @@ public class Case implements Aggregate {
                 otherwiseDoNothing());
     }
 
-    public Stream<Object> sendForListing(final UUID caseId, final String urn, final List<Hearing> hearings) {
+    public Stream<Object> addHearing(final UUID caseId, final UUID hearingId) {
 
-        return apply(Stream.of(new CaseSentForListing(caseId,  createHearingsFrom(hearings), urn)));
+        return apply(Stream.of(new HearingAddedToCase(caseId,  hearingId)));
     }
 
-    public Stream<Object> updateDefendants(List<Defendant> defendants) {
-        final List<UUID> hearingIds = this.hearings.stream().map(hearing ->
-                UUID.fromString(hearing.getId())).collect(Collectors.toList());
-
+    public Stream<Object> updateDefendant(UUID caseId, Defendant defendant) {
         if (hearingIds.isEmpty()) {
             return Stream.empty();
         }
 
         return apply(Stream.of(DefendantsToBeUpdated.defendantsToBeUpdated()
-            .withDefendants(DomainToEventConverter.createDefendantsFrom(defendants))
+            .withCaseId(caseId)
+            .withDefendants(singletonList(NewDomainToEventConverter.buildDefendant(defendant)))
             .withHearings(hearingIds)
             .build()));
     }
 
     public Stream<Object> updateDefendantOffences(CaseOffences caseOffences) {
-        final List<UUID> hearingIds = this.hearings.stream().map(hearing ->
-                UUID.fromString(hearing.getId())).collect(Collectors.toList());
-
         if (hearingIds.isEmpty()) {
             return Stream.empty();
         }
 
         return apply(Stream.of(OffencesToBeUpdated.offencesToBeUpdated()
-                .withOffences(DomainToEventConverter.createOffencesFrom(caseOffences))
+                .withCaseId(caseOffences.getCaseId())
+                .withDefendantId(caseOffences.getDefendantId())
+                .withOffences(NewDomainToEventConverter.buildOffences(caseOffences.getOffences()))
                 .withHearings(hearingIds)
                 .build()));
     }
 
     public Stream<Object> deleteDefendantOffences(CaseSimpleOffences caseSimpleOffences) {
-        final List<UUID> hearingIds = this.hearings.stream().map(hearing ->
-                UUID.fromString(hearing.getId())).collect(Collectors.toList());
-
         if (hearingIds.isEmpty()) {
             return Stream.empty();
         }
 
         return apply(Stream.of(OffencesToBeDeleted.offencesToBeDeleted()
-                .withOffences(DomainToEventConverter.createDeletedOffencesFrom(caseSimpleOffences))
+                .withCaseId(caseSimpleOffences.getCaseId())
+                .withDefendantId(caseSimpleOffences.getDefendantId())
+                .withOffences(NewDomainToEventConverter.buildSimpleOffences(caseSimpleOffences.getOffences()))
                 .withHearings(hearingIds)
                 .build()));
     }
 
-    public Stream<Object> addedDefendantOffences(CaseOffences defendants) {
-        final List<UUID> hearingIds = this.hearings.stream().map(hearing ->
-                UUID.fromString(hearing.getId())).collect(Collectors.toList());
-
+    public Stream<Object> addedDefendantOffences(CaseOffences caseOffences) {
         if (hearingIds.isEmpty()) {
             return Stream.empty();
         }
 
         return apply(Stream.of(OffencesToBeAdded.offencesToBeAdded()
-                .withOffences(DomainToEventConverter.createOffencesFrom(defendants))
+                .withCaseId(caseOffences.getCaseId())
+                .withDefendantId(caseOffences.getDefendantId())
+                .withOffences(NewDomainToEventConverter.buildOffences(caseOffences.getOffences()))
                 .withHearings(hearingIds)
                 .build()));
     }
 
     // Methods to apply aggregate state
 
-    private void onCaseSentForListing(CaseSentForListing event) {
-        this.caseId = event.getCaseId();
-        this.urn = event.getUrn();
-
-        if(this.hearings==null){
-            this.hearings = EventToDomainConverter.createHearingsFrom(event.getHearings());
-        }
-        else {
-            this.hearings.addAll(EventToDomainConverter.createHearingsFrom(event.getHearings()));
-        }
+    private void onHearingAddedToCase(HearingAddedToCase event) {
+        this.hearingIds.add(event.getHearingId());
     }
 
     private void onDefendantsToBeUpdated() {

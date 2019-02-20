@@ -1,0 +1,130 @@
+{
+  "id": "HEARING_ID_FIELD",
+  "type": {
+    "id": "HEARING_TYPE_ID_FIELD",
+    "description": "Trial"
+  },
+  "endDate": "END_DATE_FIELD",
+  "allocated": ALLOCATED_FIELD,
+  "judiciary": [
+    {
+      "isDeputy": false,
+      "judicialId": "d1a22d9e-088b-4af4-acb5-bc6e78aaf5ea",
+      "isBenchChairman": false,
+      "judicialRoleType": {
+        "judiciaryType": "CIRCUIT_JUDGE"
+      }
+    },
+    {
+      "isDeputy": false,
+      "judicialId": "JUDICIAL_ID",
+      "isBenchChairman": false,
+      "judicialRoleType": {
+        "judiciaryType": "CIRCUIT_JUDGE"
+      }
+    }
+  ],
+  "startDate": "START_DATE_FIELD",
+  "courtRoomId": "COURT_ROOM_ID_FIELD",
+  "hearingDays": [
+    {
+      "endTime": "END_TIME_FIELD",
+      "sequence": 1,
+      "startTime": "START_TIME_FIELD",
+      "hearingDate": "HEARING_DATE_FIELD",
+      "durationMinutes": 15
+    },
+    {
+      "endTime": "2018-11-04T11:30:00+00:00",
+      "sequence": 1,
+      "startTime": "2018-11-04T10:30:00+00:00",
+      "hearingDate": "2018-11-04",
+      "durationMinutes": 15
+    }
+  ],
+  "listedCases": [
+    {
+      "id": "e2b13dc0-de95-11e8-9df5-e56feb0784f6",
+      "defendants": [
+        {
+          "id": "e2b13dc1-de95-11e8-9df5-e56feb0784f6",
+          "lastName": "JAMES",
+          "offences": [
+            {
+              "id": "e2b18be0-de95-11e8-9df5-e56feb0784f6",
+              "endDate": "2018-11-04",
+              "startDate": "2018-11-03",
+              "offenceCode": "OF61131",
+              "statementOfOffence": {
+                "title": "Wounding with intent",
+                "legislation": "legislation"
+              }
+            },
+            {
+              "id": "e2b18be2-de95-11e8-9df5-e56feb0784f6",
+              "endDate": "2018-11-04",
+              "startDate": "2018-11-03",
+              "offenceCode": "OF61131",
+              "statementOfOffence": {
+                "title": "Robbery",
+                "legislation": "legislation"
+              }
+            }
+          ],
+          "firstName": "Lina",
+          "bailStatus": "CONDITIONAL",
+          "dateOfBirth": "1988-11-02",
+          "custodyTimeLimit": "2018-12-02",
+          "specificRequirements": "Ren ke od vih tosavupum opaesah ligta oroiro lodu hajev uv cuzuc hom kiv rudem ez oho cafsinfu."
+        },
+        {
+          "id": "e2b1b2f0-de95-11e8-9df5-e56feb0784f6",
+          "lastName": "PALMER",
+          "offences": [
+            {
+              "id": "e2b1b2f1-de95-11e8-9df5-e56feb0784f6",
+              "endDate": "2018-11-04",
+              "startDate": "2018-11-03",
+              "offenceCode": "OF61131",
+              "statementOfOffence": {
+                "title": "Wounding with intent",
+                "legislation": "legislation"
+              }
+            },
+            {
+              "id": "e2b1da00-de95-11e8-9df5-e56feb0784f6",
+              "endDate": "2018-11-04",
+              "startDate": "2018-11-03",
+              "offenceCode": "OF61131",
+              "statementOfOffence": {
+                "title": "Robbery",
+                "legislation": "legislation"
+              }
+            }
+          ],
+          "firstName": "Virgie",
+          "bailStatus": "CONDITIONAL",
+          "dateOfBirth": "1988-11-02",
+          "custodyTimeLimit": "2018-12-02",
+          "specificRequirements": "Awifuha hutuz tod put sojeif un tojogse soh raw ojoul pofe nonzoani kizicu."
+        }
+      ],
+      "caseIdentifier": {
+        "authorityId": "AUTHORITY_ID_FIELD",
+        "authorityCode": "CPS",
+        "caseReference": "45DI277164"
+      }
+    }
+  ],
+  "courtCentreId": "COURT_CENTRE_ID_FIELD",
+  "nonDefaultDays": [
+    {
+      "startTime": "2018-11-03T11:53:16.000Z"
+    }
+  ],
+  "nonSittingDays": [],
+  "hearingLanguage": "ENGLISH",
+  "estimatedMinutes": 45,
+  "jurisdictionType": "JURISDICTION_TYPE_FIELD",
+  "reportingRestrictionReason": "ZJljvnxVPx"
+}

@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.time.LocalDate.parse;
+import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
 import uk.gov.justice.services.core.annotation.Component;
@@ -17,17 +18,21 @@ import javax.inject.Inject;
 @ServiceComponent(Component.EVENT_LISTENER)
 public class StartDateForHearingEventListener {
 
+    private static final String START_DATE = "startDate";
+
     @Inject
     private HearingRepository hearingRepository;
-
 
     @Handles("listing.events.start-date-changed-for-hearing")
     public void startDateChangedForHearing(final Envelope<StartDateChangedForHearing> event) {
         final StartDateChangedForHearing startDateChangedForHearing = event.payload();
         final LocalDate startDate = parse(startDateChangedForHearing.getStartDate());
         final UUID hearingId = startDateChangedForHearing.getHearingId();
-        hearingRepository.updateStartDate(startDate, hearingId);
+
+        using(hearingRepository)
+                .find(hearingId)
+                .put(START_DATE, startDate)
+                .save();
     }
 
- 
 }

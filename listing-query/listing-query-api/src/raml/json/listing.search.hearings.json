@@ -1,132 +1,93 @@
 {
   "hearings": [
     {
-      "id": "4bb4cd5a-ce2a-467d-8984-76b62ec92072",
-      "type": "PTP",
-      "startDate": "2017-05-19",
-      "endDate": "2018-06-05",
-      "nonSittingDays": [
-        "2018-06-03"
-      ],
-      "startTimes": [
-        "2018-06-01T11:00:00Z",
-        "2018-06-04T11:30:00Z"
-      ],
-      "estimateMinutes": "15",
-      "courtCentreId": "52ece02c-bb00-11e7-abc4-cec278b6b50a",
-      "courtRoomId": "82487aa2-bb00-11e7-abc4-cec278b6b50a",
-      "judgeId": "b810bcda-bb00-11e7-abc4-cec278b6b50a"
-      "defendants": [
-        {
-          "id": "2deafea2-2f76-8109-82d9-2e60544a6c03",
-          "firstName": "Love",
-          "lastName": "Davegrove",
-          "offences": [
-            {
-              "id": "4bb4cd5a-ce2a-467d-8984-76b62ec92077",
-              "title": "Wounding with intent"
-            }
-          ],
-          "bailStatus": "unconditional"
+      "id": "0baecac5-222b-402d-9047-84803679edaf",
+      "allocated": true,
+      "type": {
+        "id": "2f8b624a-9912-49e5-a229-ad301893c694",
+        "description": "Trial"
+      },
+      "sequence": 1,
+      "jurisdictionType": "CROWN",
+      "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+      "courtRoomId": "9d324f4f-6c3b-451f-ac1e-f459db781153",
+      "judiciary": [{
+        "judicialId": "d1a22d9e-088b-4af4-acb5-bc6e78aaf5ea",
+        "judicialRoleType": {
+          "judiciaryType": "CIRCUIT_JUDGE"
         },
+        "isDeputy": false,
+        "isBenchChairman": false
+      }],
+      "reportingRestrictionReason": "aReason",
+      "hearingLanguage": "WELSH",
+      "estimatedMinutes": 100,
+      "prosecutorDatesToAvoid": "Prosecutor on holiday 2018-11-01",
+      "listingDirections": "Child care difficulty on Tuesdays",
+      "listedCases": [
         {
-          "id": "1daefec3-2f76-8109-82d9-2e60544a6c01",
-          "firstName": "Gil",
-          "lastName": "Carlbert",
-          "offences": [
+          "id": "31bf5d91-f90e-4117-a018-d1290e107692",
+          "caseIdentifier": {
+            "authorityId": "31fd0edf-9692-46fa-a6be-4b78bf88fec6",
+            "authorityCode": "POLICE",
+            "caseReference": "87GD9945217"
+          },
+          "defendants": [
             {
-              "id": "4bb4cd5a-ce2a-467d-8984-76b62ec92077",
-              "title": "Robbery"
-            }
-          ],
-          "bailStatus": "inCustody",
-          "custodyTimeLimit": "2017-10-27"
-        }
-      ],
-      "urn": "87GD9945217"
-    }
-  ]
-}
-
-
-
-
-
-
-{
-  "hearings": [
-    {
-      "id": "366fdcbd-1bd9-4537-95e2-6d909813c7e7",
-      "type": "PTP",
-      "startDate": "2018-07-12",
-      "startTimes": [],
-      "nonSittingDays": [],
-      "estimateMinutes": 15,
-      "courtCentreId": "95325da8-253a-478d-b094-b944d0144bd1",
-      "defendants": [
-        {
-          "defendantId": "31e00ef3-a5ec-4aed-bb24-cc2ef434cadf",
-          "hearingId": "366fdcbd-1bd9-4537-95e2-6d909813c7e7",
-          "firstName": "7lqP7lOpHr",
-          "lastName": "iR9c0t69mu",
-          "bailStatus": "conditional",
-          "custodyTimeLimit": "2018-07-12",
-          "offences": [
-            {
-              "offenceId": "b3d03bf5-31c1-4988-b259-27474bc10188",
-              "defendantId": "31e00ef3-a5ec-4aed-bb24-cc2ef434cadf",
-              "title": "sckbl3Setv"
-            },
-            {
-              "offenceId": "b54528d7-3643-4d49-8a99-71272d088b0d",
-              "defendantId": "31e00ef3-a5ec-4aed-bb24-cc2ef434cadf",
-              "title": "FgTTp3UJ0c"
-            },
-            {
-              "offenceId": "ac3e0882-a746-4db6-823b-97bd3b9a7da7",
-              "defendantId": "31e00ef3-a5ec-4aed-bb24-cc2ef434cadf",
-              "title": "FgTTp3UJ0c"
-            },
-            {
-              "offenceId": "c856155d-83ef-4779-93b9-acdee792bdf0",
-              "defendantId": "31e00ef3-a5ec-4aed-bb24-cc2ef434cadf",
-              "title": "sckbl3Setv"
-            }
-          ]
-        },
-        {
-          "defendantId": "3fa6da9d-f1c9-4cc7-a1b9-44ec65c0bb8e",
-          "hearingId": "366fdcbd-1bd9-4537-95e2-6d909813c7e7",
-          "firstName": "wXQNCfQbdM",
-          "lastName": "2vJfigXK0M",
-          "bailStatus": "conditional",
-          "custodyTimeLimit": "2018-07-12",
-          "offences": []
-        },
-        {
-          "defendantId": "8f3ad731-2cb2-4c8e-aebd-fc5add90f80a",
-          "hearingId": "366fdcbd-1bd9-4537-95e2-6d909813c7e7",
-          "firstName": "Hq5YR20YdM",
-          "lastName": "bMFNWNjreG",
-          "bailStatus": "conditional",
-          "custodyTimeLimit": "2018-07-12",
-          "offences": [
-            {
-              "offenceId": "52e289ae-2cd4-46d5-91f2-a8a93e980f5c",
-              "defendantId": "8f3ad731-2cb2-4c8e-aebd-fc5add90f80a",
-              "title": "y4aEOjJLhM"
-            },
-            {
-              "offenceId": "cbb24911-25ad-44ec-a3c5-2097fa8836f5",
-              "defendantId": "8f3ad731-2cb2-4c8e-aebd-fc5add90f80a",
-              "title": "5SxtC6qv0U"
+              "id": "0baecac5-222b-402d-9047-84803679edac",
+              "datesToAvoid": "Hospital appointment 2018-11-07",
+              "hearingLanguageNeeds": "WELSH",
+              "specificRequirements": "wheelchair access required",
+              "personId": "0baecac5-222b-402d-9047-84803679edad",
+              "firstName": "David",
+              "lastName": "Lloyd",
+              "dateOfBirth": "1995-03-23",
+              "bailStatus": "IN_CUSTODY",
+              "custodyTimeLimit": "2018-01-30",
+              "defenceOrganisation": "Flynch and Fleece Solicitors",
+              "offences": [
+                {
+                  "id": "0baecac5-222b-402d-9047-84803679edad",
+                  "offenceCode": "OF61131",
+                  "startDate": "2016-06-21",
+                  "endDate": "2017-08-01",
+                  "statementOfOffence": {
+                    "title": "Wounding with intent",
+                    "welshTitle": "Colli â bwriad",
+                    "legislation": "Offences against the Person Act 1861",
+                    "welshLegislation": "Deddf Troseddau yn erbyn y Person 1861"
+                  }
+                }
+              ]
             }
           ]
         }
       ],
-      "urn": "nPQe4U01ia"
+      "startDate": "2018-11-01",
+      "endDate": "2018-11-10",
+      "calendarDays": [
+        {
+          "startTime": "2018-09-01T10:00+00:00",
+          "endTime": "2018-09-01T12:00+00:00",
+          "durationMinutes": 120,
+          "sequence": 1
+        },
+        {
+          "startTime": "2018-09-02T11:00+00:00",
+          "endTime": "2018-09-02T14:00+00:00",
+          "durationMinutes": 180,
+          "sequence": 2
+        }
+      ],
+      "nonDefaultDays": [
+        {
+          "startTime" : "2018-06-01T11:00:00.000Z"
+        },
+        {
+          "startTime" : "2018-06-04T11:30:00.000Z"
+        }
+      ],
+      "nonSittingDays": ["2018-01-21","2018-01-22"]
     }
   ]
 }
-
-

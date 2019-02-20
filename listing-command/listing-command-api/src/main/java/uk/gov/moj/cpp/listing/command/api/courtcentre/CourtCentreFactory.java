@@ -1,0 +1,63 @@
+package uk.gov.moj.cpp.listing.command.api.courtcentre;
+
+import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
+
+import java.time.LocalTime;
+import java.util.UUID;
+
+import javax.inject.Inject;
+import javax.json.JsonObject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class CourtCentreFactory {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CourtCentreFactory.class);
+    private static final String COLON = ":";
+
+
+    @Inject
+    private ReferenceDataService referenceDataService;
+
+    public CourtCentreDetails getCourtCentre(UUID courtCentreId, JsonEnvelope envelope) {
+        final JsonEnvelope courtCentreEnvelope = referenceDataService.getCourtCentreById(courtCentreId, envelope);
+        final JsonObject jsonObject = courtCentreEnvelope.payloadAsJsonObject();
+        if(LOGGER.isInfoEnabled()) {
+            LOGGER.info("courtCentreEnvelope response: {}", courtCentreEnvelope.toObfuscatedDebugString());
+        }
+
+        final String defaultDurationHoursMins = getJsonObjectString("defaultDurationHrs", jsonObject, courtCentreId);
+        final Integer defaultDurationMinutes = transformToDurationMinutes(defaultDurationHoursMins);
+
+        final String defaultStartTimeStr = getJsonObjectString("defaultStartTime", jsonObject, courtCentreId);
+        final LocalTime defaultStartTime = LocalTime.parse(defaultStartTimeStr);
+
+        return CourtCentreDetails.courtCentreDetails()
+                .withDefaultStartTime(defaultStartTime)
+                .withDefaultDuration(defaultDurationMinutes)
+                .withId(courtCentreId)
+                .build();
+    }
+
+    private Integer transformToDurationMinutes(String defaultDurationHoursMins) {
+        final String[] hoursMins = defaultDurationHoursMins.split(COLON);
+
+        final Integer hours = Integer.valueOf(hoursMins[0]);
+        if (hoursMins.length > 1) {
+            final Integer minutes = Integer.valueOf(hoursMins[1]);
+            return (hours * 60) + minutes;
+        }
+        return (hours * 60);
+
+    }
+
+    private String getJsonObjectString(String searchString, JsonObject jsonObject, UUID courtCentreId) {
+        final String jsonObjectStringValue = jsonObject.getString(searchString);
+        if (jsonObjectStringValue == null || jsonObjectStringValue.isEmpty()) {
+            throw new IllegalArgumentException(searchString + " not found for courtCentreId:" + courtCentreId);
+        }
+        return jsonObjectStringValue;
+    }
+}

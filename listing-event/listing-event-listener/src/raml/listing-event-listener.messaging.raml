@@ -5,13 +5,14 @@ baseUri: message://event/listener/message/listing
 /listing.event:
   post:
     body:
-      application/vnd.listing.events.case-sent-for-listing+json:
-        schema: !include json/schema/listing.events.case-sent-for-listing.json
-        example: !include json/listing.events.case-sent-for-listing.json
 
       application/vnd.listing.events.hearing-listed+json:
         example: !include json/listing.events.hearing-listed.json
         schema: !include json/schema/listing.events.hearing-listed.json
+
+      application/vnd.listing.events.court-centre-changed-for-hearing+json:
+        example: !include json/listing.events.court-centre-changed-for-hearing.json
+        schema: !include json/schema/listing.events.court-centre-changed-for-hearing.json
 
       application/vnd.listing.events.court-room-assigned-to-hearing+json:
         example: !include json/listing.events.court-room-assigned-to-hearing.json
@@ -25,17 +26,25 @@ baseUri: message://event/listener/message/listing
         example: !include json/listing.events.court-room-removed-from-hearing.json
         schema: !include json/schema/listing.events.court-room-removed-from-hearing.json
 
-      application/vnd.listing.events.judge-assigned-to-hearing+json:
-        example: !include json/listing.events.judge-assigned-to-hearing.json
-        schema: !include json/schema/listing.events.judge-assigned-to-hearing.json
+      application/vnd.listing.events.hearing-days-changed-for-hearing+json:
+        example: !include json/listing.events.hearing-days-changed-for-hearing.json
+        schema: !include json/schema/listing.events.hearing-days-changed-for-hearing.json
 
-      application/vnd.listing.events.judge-changed-for-hearing+json:
-        example: !include json/listing.events.judge-changed-for-hearing.json
-        schema: !include json/schema/listing.events.judge-changed-for-hearing.json
+      application/vnd.listing.events.judiciary-assigned-to-hearing+json:
+        example: !include json/listing.events.judiciary-assigned-to-hearing.json
+        schema: !include json/schema/listing.events.judiciary-assigned-to-hearing.json
 
-      application/vnd.listing.events.judge-removed-from-hearing+json:
-        example: !include json/listing.events.judge-removed-from-hearing.json
-        schema: !include json/schema/listing.events.judge-removed-from-hearing.json
+      application/vnd.listing.events.jurisdiction-changed-for-hearing+json:
+        example: !include json/listing.events.jurisdiction-changed-for-hearing.json
+        schema: !include json/schema/listing.events.jurisdiction-changed-for-hearing.json
+
+      application/vnd.listing.events.judiciary-changed-for-hearing+json:
+        example: !include json/listing.events.judiciary-changed-for-hearing.json
+        schema: !include json/schema/listing.events.judiciary-changed-for-hearing.json
+
+      application/vnd.listing.events.judiciary-removed-from-hearing+json:
+        example: !include json/listing.events.judiciary-removed-from-hearing.json
+        schema: !include json/schema/listing.events.judiciary-removed-from-hearing.json
 
       application/vnd.listing.events.non-sitting-days-assigned-to-hearing+json:
         example: !include json/listing.events.non-sitting-days-assigned-to-hearing.json
@@ -45,13 +54,13 @@ baseUri: message://event/listener/message/listing
         example: !include json/listing.events.non-sitting-days-changed-for-hearing.json
         schema: !include json/schema/listing.events.non-sitting-days-changed-for-hearing.json
 
-      application/vnd.listing.events.start-times-assigned-to-hearing+json:
-        example: !include json/listing.events.start-times-assigned-to-hearing.json
-        schema: !include json/schema/listing.events.start-times-assigned-to-hearing.json
+      application/vnd.listing.events.non-default-days-assigned-to-hearing+json:
+        example: !include json/listing.events.non-default-days-assigned-to-hearing.json
+        schema: !include json/schema/listing.events.non-default-days-assigned-to-hearing.json
 
-      application/vnd.listing.events.start-times-changed-for-hearing+json:
-        example: !include json/listing.events.start-times-changed-for-hearing.json
-        schema: !include json/schema/listing.events.start-times-changed-for-hearing.json
+      application/vnd.listing.events.non-default-days-changed-for-hearing+json:
+        example: !include json/listing.events.non-default-days-changed-for-hearing.json
+        schema: !include json/schema/listing.events.non-default-days-changed-for-hearing.json
 
       application/vnd.listing.events.start-date-changed-for-hearing+json:
         example: !include json/listing.events.start-date-changed-for-hearing.json
@@ -60,10 +69,6 @@ baseUri: message://event/listener/message/listing
       application/vnd.listing.events.end-date-changed-for-hearing+json:
         example: !include json/listing.events.end-date-changed-for-hearing.json
         schema: !include json/schema/listing.events.end-date-changed-for-hearing.json
-
-      application/vnd.listing.events.end-date-assigned-to-hearing+json:
-        example: !include json/listing.events.end-date-assigned-to-hearing.json
-        schema: !include json/schema/listing.events.end-date-assigned-to-hearing.json
 
       application/vnd.listing.events.type-changed-for-hearing+json:
         example: !include json/listing.events.type-changed-for-hearing.json
@@ -77,9 +82,13 @@ baseUri: message://event/listener/message/listing
         example: !include json/listing.events.hearing-unallocated-for-listing.json
         schema: !include json/schema/listing.events.hearing-unallocated-for-listing.json
 
-      application/vnd.listing.events.defendant-details-updated+json:
-        schema: !include json/schema/listing.events.defendant-details-updated.json
-        example: !include json/listing.events.defendant-details-updated.json
+      application/vnd.listing.events.hearing-language-changed-for-hearing+json:
+        example: !include json/listing.events.hearing-language-changed-for-hearing.json
+        schema: !include json/schema/listing.events.hearing-language-changed-for-hearing.json
+
+      application/vnd.listing.events.new-defendant-details-updated+json:
+        schema: !include json/schema/listing.events.new-defendant-details-updated.json
+        example: !include json/listing.events.new-defendant-details-updated.json
 
       application/vnd.listing.events.offence-added+json:
         schema: !include json/schema/listing.events.offence-added.json
@@ -92,3 +101,8 @@ baseUri: message://event/listener/message/listing
       application/vnd.listing.events.offence-deleted+json:
         schema: !include json/schema/listing.events.offence-deleted.json
         example: !include json/listing.events.offence-deleted.json
+
+      application/vnd.listing.events.hearing-days-sequenced+json:
+        schema: !include json/schema/listing.events.hearing-days-sequenced.json
+        example: !include json/listing.events.hearing-days-sequenced.json
+

@@ -1,0 +1,35 @@
+{
+  "hearingId": "HEARING_ID",
+  "caseId": "CASE_ID",
+  "defendantId": "DEFENDANT_ID1",
+  "offences": [
+    {
+      "id": "UPDATED_OFFENCE_ID1",
+      "offenceCode": "H8189",
+      "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, John Smith",
+      "startDate": "2010-08-01",
+      "endDate": "2011-08-01",
+      "convictionDate": "2017-08-01",
+      "statementOfOffence": {
+        "title": "Wounding with intent",
+        "legislation": "Welsh legislation",
+        "welshTitle": "Wounding with intent in Welsh",
+        "welshLegislation": "legislation"
+      }
+    },
+    {
+      "id": "UPDATED_OFFENCE_ID2",
+      "offenceCode": "H8189X",
+      "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Fred Smith",
+      "startDate": "2010-08-10",
+      "endDate": "2011-08-20",
+      "convictionDate": "2017-08-02",
+      "statementOfOffence": {
+        "title": "Wounding with intent2",
+        "legislation": "Welsh legislation2",
+        "welshTitle": "Wounding with intent in Welsh2",
+        "welshLegislation": "legislation2"
+      }
+    }
+  ]
+}

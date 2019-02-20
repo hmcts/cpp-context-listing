@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>listing-domain-event</artifactId>
-    
+
     <dependencies>
         <dependency>
             <groupId>uk.gov.justice.framework-api</groupId>
@@ -64,15 +64,8 @@
                                 </typeMappings>
                             </generatorProperties>
                         </configuration>
-                    </execution>                                                       
+                    </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>uk.gov.moj.cpp.listing</groupId>
-                        <artifactId>listing-json</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>

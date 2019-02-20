@@ -1,9 +1,29 @@
 {
-  "type":"Sentence",
-  "startDate":"2018-06-01",
-  "endDate":"2018-06-05",
-  "nonSittingDays": ["2018-06-03"],
-  "startTimes": ["2018-06-01T11:00:00Z", "2018-06-04T11:30:00Z"],
-  "judgeId": "0baecac5-222b-402d-9047-84803679edae",
-  "courtRoomId": "e8821a38-546d-4b56-9992-ebdd772a561f"
+  "type": {
+    "id": "52edf232-3c09-4c74-a6ad-737985c2e662",
+    "description": "PTP"
+  },
+  "startDate": "2018-10-09",
+  "jurisdictionType": "CROWN",
+  "hearingLanguage": "ENGLISH",
+  "courtCentreId": "9689207b-a9d2-4c2e-bd38-269b78a132a8",
+  "judiciary": [
+    {
+      "judicialId": "1cc7aa0d-fa17-4a79-9cdf-c71751e1bc37",
+      "judicialRoleType": {
+        "judiciaryType": "MAGISTRATE"
+      },
+      "isDeputy": true,
+      "isBenchChairman": null
+    }
+  ],
+  "nonDefaultDays": [
+    {
+      "startTime": "2018-10-09T15:16:56Z",
+      "duration": null
+    }
+  ],
+  "nonSittingDays": [],
+  "endDate": null,
+  "courtRoomId": "e0e04581-8f66-4bbf-b5b4-2d41fcc2ae7c"
 }

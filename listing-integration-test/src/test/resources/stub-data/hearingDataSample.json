@@ -1,0 +1,84 @@
+{
+  "hearings": [
+    {
+      "courtCentre": {
+        "id": "38a0b0f1-c323-4307-ad57-8981403c1afb"
+      },
+      "defendantListingNeeds": [
+        {
+          "defendantId": "f0c2154b-b474-498f-9a0b-38bdd06ad5e5",
+          "prosecutionCaseId": "35c8640d-a826-42bd-aed7-c0a7fe500e36"
+        }
+      ],
+      "earliestStartDateTime": "2018-12-06T10:48:39.451Z",
+      "estimatedMinutes": 15,
+      "id": "5c38faea-f2b1-44cc-96a3-e35f4606ae03",
+      "jurisdictionType": "CROWN",
+      "prosecutionCases": [
+        {
+          "defendants": [
+            {
+              "associatedPersons": [
+                {
+                  "person": {
+                    "additionalNationalityId": "d9b9e379-e94b-44c3-8f6f-18a5ca4d3f2b",
+                    "ethnicityId": "38ec1f1a-bf9b-440d-8e56-4f54eab0ce8d",
+                    "gender": "FEMALE",
+                    "lastName": "qrKhboUQSq",
+                    "nationalityId": "254aa92d-4a84-44d5-ab48-ea496ccff036",
+                    "title": "MISS"
+                  },
+                  "role": "pI8Leaukjv"
+                }
+              ],
+              "id": "f0c2154b-b474-498f-9a0b-38bdd06ad5e5",
+              "offences": [
+                {
+                  "count": 2117757961,
+                  "id": "0e30c28f-8190-45e5-bc91-1ea8f95f0042",
+                  "offenceCode": "GYOAtfAkwZ",
+                  "offenceDefinitionId": "bab7c7d2-7cd1-472e-8ee6-398986e7cf8b",
+                  "offenceTitle": "jhAhC7USsV",
+                  "orderIndex": 428866712,
+                  "startDate": "2018-12-06",
+                  "wording": "npu96ULgly"
+                }
+              ],
+              "personDefendant": {
+                "aliases": [
+                  "10gGoceKoB",
+                  "fjFRWuP0Ey"
+                ],
+                "bailStatus": "CONDITIONAL",
+                "observedEthnicityId": "0d59c19e-1daa-453e-99e0-b4506463d784",
+                "personDetails": {
+                  "additionalNationalityId": "c3363bde-5e70-40c5-a56d-062a6c71ee03",
+                  "ethnicityId": "df200ba5-6368-48a3-9cb8-4e69b79ceb0d",
+                  "firstName": "GjNzDwNgzF",
+                  "gender": "MALE",
+                  "lastName": "qrKhboUQSq",
+                  "nationalityId": "4acdfca7-01fb-42ea-8cf0-a2ca35e96186",
+                  "title": "MISS"
+                },
+                "selfDefinedEthnicityId": "1defe5ed-8070-4942-b970-53505a776a22"
+              },
+              "prosecutionCaseId": "35c8640d-a826-42bd-aed7-c0a7fe500e36"
+            }
+          ],
+          "id": "35c8640d-a826-42bd-aed7-c0a7fe500e36",
+          "initiationCode": "C",
+          "prosecutionCaseIdentifier": {
+            "prosecutionAuthorityCode": "lEts0sawLX",
+            "prosecutionAuthorityId": "edda3e5d-f708-441a-95c2-397aec2863fa",
+            "prosecutionAuthorityReference": "Lc61K30osg"
+          }
+        }
+      ],
+      "reportingRestrictionReason": "90i7cawKLt",
+      "type": {
+        "description": "PTP",
+        "id": "52edf232-3c09-4c74-a6ad-737985c2e662"
+      }
+    }
+  ]
+}
