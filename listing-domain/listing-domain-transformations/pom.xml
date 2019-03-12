@@ -11,6 +11,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>listing-domain-transformations-cleanup-and-archive</module>
+        <module>listing-domain-transformations-delete-all-events</module>
     </modules>
 
 
