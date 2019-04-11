@@ -18,7 +18,6 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
-import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.DEFAULT_START_TIME;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
@@ -27,6 +26,7 @@ import uk.gov.moj.cpp.listing.steps.data.SequenceHearingData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -55,7 +55,7 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
 
-
+    private static final LocalTime DEFAULT_START_TIME = LocalTime.of(9, 30);
     private MessageConsumer privateMessageConsumerHearingDaysSequenced;
     private MessageConsumer privateMessageConsumerAllocatedHearingUpdatedForListing;
     private MessageConsumer publicMessageConsumerHearingUpdated;
