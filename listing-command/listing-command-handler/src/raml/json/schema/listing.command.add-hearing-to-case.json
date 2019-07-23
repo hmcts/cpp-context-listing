@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/commands/listing.command.add-hearing-to-case-command.json",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.add-hearing-to-case-command.json",
   "type": "object",
   "properties": {
     "caseId": {

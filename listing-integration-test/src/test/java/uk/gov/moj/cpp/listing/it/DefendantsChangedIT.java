@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.it;
 
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
-import uk.gov.moj.cpp.listing.steps.SendCaseForListingSteps;
+import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantSteps;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -34,10 +34,10 @@ public class DefendantsChangedIT extends AbstractIT {
     @Test
     public void shouldUpdateDefendantsFollowingPublicDefendantsChangedEventFromProgression() {
         HearingsData hearingsData = HearingsData.hearingsData();
-        try (final SendCaseForListingSteps sendCaseForListingSteps = new SendCaseForListingSteps(hearingsData)) {
-            sendCaseForListingSteps.whenCaseIsSubmittedForListing();
-            sendCaseForListingSteps.verifyHearingListedInActiveMQ();
-            sendCaseForListingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         }
 
         DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);

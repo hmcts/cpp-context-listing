@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.it;
 
 import uk.gov.moj.cpp.listing.steps.CourtListSteps;
-import uk.gov.moj.cpp.listing.steps.SendCaseForListingSteps;
+import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
@@ -19,9 +19,9 @@ public class CourtListIT extends AbstractIT {
     @Before
     public void setupStepsForCourtList() {
         HearingsData hearingsData = HearingsData.hearingsData();
-        try (final SendCaseForListingSteps sendCaseForListingSteps = new SendCaseForListingSteps(hearingsData)) {
-            sendCaseForListingSteps.whenCaseIsSubmittedForListing();
-            sendCaseForListingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         }
 
         UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());

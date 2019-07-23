@@ -66,7 +66,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "cast(properties ->> 'allocated' as boolean) = ?1  " +
             "and (?2 is null or properties ->> 'courtCentreId' = cast(?2 as text))  " +
             "and (?3 is null or properties ->> 'courtRoomId' = cast(?3 as text))  " +
-            "and (?4 is null or properties -> 'listedCases' @> cast(?4 as jsonb))  " +
+            "and (?4  = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?4 as jsonb))  " +
             "and (?5 is null or properties -> 'type' ->> 'id' = cast(?5 as text))  " +
             "and (?6 is null or properties ->> 'jurisdictionType' = cast(?6 as text))  " +
             "and cast(?7 as date) between cast(properties ->> 'startDate' as date) and cast(properties ->> 'endDate' as date)  " +
@@ -104,7 +104,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "cast(properties ->> 'allocated' as boolean) = ?1  " +
             "and (?2 is null or properties ->> 'courtCentreId' = cast(?2 as text))  " +
             "and (?3 is null or properties ->> 'courtRoomId' = cast(?3 as text))  " +
-            "and (?4 is null or properties -> 'listedCases' @> cast(?4 as jsonb))  " +
+            "and (?4  = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?4 as jsonb))  " +
             "and (?5 is null or properties -> 'type' ->> 'id' = cast(?5 as text))  " +
             "and (?6 is null or properties ->> 'jurisdictionType' = cast(?6 as text))  " +
             "and ( " +

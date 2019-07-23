@@ -6,6 +6,7 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoN
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
+import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.HearingAddedToCase;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
@@ -64,6 +65,18 @@ public class Case implements Aggregate {
                 .withCaseId(caseOffences.getCaseId())
                 .withDefendantId(caseOffences.getDefendantId())
                 .withOffences(NewDomainToEventConverter.buildOffences(caseOffences.getOffences()))
+                .withHearings(hearingIds)
+                .build()));
+    }
+
+    public Stream<Object> addedDefendantForCourtProceedings(UUID caseId, Defendant defendant) {
+        if (hearingIds.isEmpty()) {
+            return Stream.empty();
+        }
+
+        return apply(Stream.of(DefendantsToBeAddedForCourtProceedings.defendantsToBeAddedForCourtProceedings()
+                .withCaseId(caseId)
+                .withDefendants(singletonList(NewDomainToEventConverter.buildDefendant(defendant)))
                 .withHearings(hearingIds)
                 .build()));
     }

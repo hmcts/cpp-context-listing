@@ -9,13 +9,13 @@ protocols: [ HTTP, HTTPS ]
       List case for hearing
       ...
       (mapping):
-        requestType: application/vnd.listing.command.send-case-for-listing+json
-        name: listing.command.send-case-for-listing
+        requestType: application/vnd.listing.command.list-court-hearing+json
+        name: listing.command.list-court-hearing
       ...
     body:
-      application/vnd.listing.command.send-case-for-listing+json:
-        example: !include json/listing.command.send-case-for-listing.json
-        schema: !include json/schema/listing.command.send-case-for-listing.json
+      application/vnd.listing.command.list-court-hearing+json:
+        example: !include json/listing.command.list-court-hearing.json
+        schema: !include json/schema/listing.command.list-court-hearing.json
 
     responses:
       202:

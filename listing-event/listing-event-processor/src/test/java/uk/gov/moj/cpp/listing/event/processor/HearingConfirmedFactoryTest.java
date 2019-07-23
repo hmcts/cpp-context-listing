@@ -141,6 +141,7 @@ public class HearingConfirmedFactoryTest {
 
         return HearingAllocatedForListing.hearingAllocatedForListing()
                 .withHearingDays(hearingDays)
+                .withCourtApplicationIds(Collections.singletonList(UUID.randomUUID()))
                 .withHearingLanguage(HEARING_LANGUAGE)
                 .withReportingRestrictionReason(of(REPORTING_RESTRICTION_REASON))
                 .withCourtCentreId(COURT_CENTRE_ID)

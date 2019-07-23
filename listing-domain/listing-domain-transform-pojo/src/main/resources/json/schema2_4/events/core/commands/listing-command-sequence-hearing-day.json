@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/v24/listing/commands/sequence-hearing-day.json",
+  "type": "object",
+  "properties": {
+    "hearingDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "sequence": {
+      "$ref": "http://justice.gov.uk/v24/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
+    }
+  },
+  "required": [
+    "hearingDate",
+    "sequence"
+  ],
+  "definitions": {
+    "localDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "additionalProperties": false
+}

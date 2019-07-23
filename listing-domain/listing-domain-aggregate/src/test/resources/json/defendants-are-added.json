@@ -1,0 +1,17 @@
+{
+  "_metadata": {
+    "name": "listing.events.new-defendant-added-for-court-proceedings"
+  },
+  "caseId": "31bf5d91-f90e-4117-a018-d1290e107692",
+  "defendant": {
+    "bailStatus":"IN_CUSTODY",
+    "custodyTimeLimit":"2018-01-30",
+    "dateOfBirth":"1980-07-15",
+    "defenceOrganisation":"XYZ Solicitors",
+    "firstName":"David",
+    "id":"0baecac5-222b-402d-9047-84803679edac",
+    "lastName":"LLOYD",
+    "offences":[]
+  },
+  "hearingId":"5c5a1d30-0414-11e7-93ae-92361f002671"
+  }

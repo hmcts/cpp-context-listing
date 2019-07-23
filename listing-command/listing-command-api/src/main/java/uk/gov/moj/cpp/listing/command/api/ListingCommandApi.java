@@ -4,10 +4,8 @@ import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
-import uk.gov.justice.listing.courts.SendCaseForListingEnriched;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
-import uk.gov.justice.listing.commands.UpdateHearingForListingEnriched;
-import uk.gov.justice.listing.courts.SendCaseForListing;
+import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -16,6 +14,8 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
+import uk.gov.justice.listing.courts.ListCourtHearing;
+import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,7 +32,7 @@ public class ListingCommandApi {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
-    static final String LISTING_COMMAND_SEND_CASE_FOR_LISTING_ENRICHED = "listing.command.send-case-for-listing-enriched";
+    static final String LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED = "listing.command.list-court-hearing-enriched";
 
     @Inject
     private Sender sender;
@@ -50,27 +50,27 @@ public class ListingCommandApi {
     private ObjectToJsonValueConverter objectToJsonValueConverter;
 
 
-    @Handles("listing.command.send-case-for-listing")
-    public void sendCaseForListing(final JsonEnvelope envelope) {
+    @Handles("listing.command.list-court-hearing")
+    public void listCourtHearing(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
         if(LOGGER.isInfoEnabled()) {
-            LOGGER.info("'listing.command.send-case-for-listing' received with payload {}", envelope.toObfuscatedDebugString());
+            LOGGER.info("'listing.command.list-court-hearing' received with payload {}", envelope.toObfuscatedDebugString());
         }
 
-        final SendCaseForListing sendCaseForListing = jsonObjectConverter.convert(payload, SendCaseForListing.class);
-        LOGGER.info("'listing.command.send-case-for-listing' sendCaseForListing: {}", sendCaseForListing);
+        final ListCourtHearing listCourtHearing = jsonObjectConverter.convert(payload, ListCourtHearing.class);
+        LOGGER.info("'listing.command.list-court-hearing' listCourtHearing: {}", listCourtHearing);
         Set<CourtCentreDetails> courtCentres = new HashSet<>();
 
-        for (final HearingListingNeeds commandHearing : sendCaseForListing.getHearings()) {
+        for (final HearingListingNeeds commandHearing : listCourtHearing.getHearings()) {
             courtCentres.add(courtCentreFactory.getCourtCentre(commandHearing.getCourtCentre().getId(), envelope));
         }
-        final SendCaseForListingEnriched sendCaseForListingEnriched = SendCaseForListingEnriched.sendCaseForListingEnriched()
+        final ListCourtHearingEnriched listCourtHearingEnriched = ListCourtHearingEnriched.listCourtHearingEnriched()
                 .withCourtCentresDetails(new ArrayList<>(courtCentres))
-                .withSendCaseForListing(sendCaseForListing)
+                .withListCourtHearing(listCourtHearing)
                 .build();
 
-        sender.send(enveloper.withMetadataFrom(envelope, LISTING_COMMAND_SEND_CASE_FOR_LISTING_ENRICHED)
-                .apply(objectToJsonValueConverter.convert(sendCaseForListingEnriched)));
+        sender.send(enveloper.withMetadataFrom(envelope, LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED)
+                .apply(objectToJsonValueConverter.convert(listCourtHearingEnriched)));
     }
 
     @Handles("listing.command.update-hearing-for-listing")

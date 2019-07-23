@@ -1,21 +1,24 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import java.io.Serializable;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
 @SuppressWarnings({"squid:S00107", "squid:S00121"})
-public class JudicialRoleType {
-    private final Optional<UUID> judicialRoleTypeId;
+public class JudicialRoleType implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private final UUID judicialRoleTypeId;
 
     private final String judiciaryType;
 
-    public JudicialRoleType(final Optional<UUID> judicialRoleTypeId, final String judiciaryType) {
+    public JudicialRoleType(final UUID judicialRoleTypeId, final String judiciaryType) {
         this.judicialRoleTypeId = judicialRoleTypeId;
         this.judiciaryType = judiciaryType;
     }
 
     public Optional<UUID> getJudicialRoleTypeId() {
-        return judicialRoleTypeId;
+        return  Objects.isNull(judicialRoleTypeId) ? Optional.empty() : Optional.of(judicialRoleTypeId);
     }
 
     public String getJudiciaryType() {
@@ -53,11 +56,11 @@ public class JudicialRoleType {
     }
 
     public static class Builder {
-        private Optional<UUID> judicialRoleTypeId;
+        private UUID judicialRoleTypeId;
 
         private String judiciaryType;
 
-        public Builder withJudicialRoleTypeId(final Optional<UUID> judicialRoleTypeId) {
+        public Builder withJudicialRoleTypeId(final UUID judicialRoleTypeId) {
             this.judicialRoleTypeId = judicialRoleTypeId;
             return this;
         }

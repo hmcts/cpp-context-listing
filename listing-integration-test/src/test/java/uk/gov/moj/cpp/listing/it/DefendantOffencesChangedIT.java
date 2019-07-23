@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.it;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
-import uk.gov.moj.cpp.listing.steps.SendCaseForListingSteps;
+import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantOffencesSteps;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -39,7 +39,7 @@ public class DefendantOffencesChangedIT extends AbstractIT {
 
     @Test
     public void shouldUpdateDefendantOffencesFollowingPublicDefendantOffencesChangedEventFromProgression() throws Exception {
-        HearingsData hearingsData = sendCaseForListing();
+        HearingsData hearingsData = listCourtHearing();
 
         DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
@@ -65,7 +65,7 @@ public class DefendantOffencesChangedIT extends AbstractIT {
 
     @Test
     public void shouldUpdateDefendantOffencesFollowingPublicDefendantOffencesChangedEventFromProgressionUpdatedOnly() throws Exception {
-        HearingsData hearingsData = sendCaseForListing();
+        HearingsData hearingsData = listCourtHearing();
 
         DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
@@ -85,7 +85,7 @@ public class DefendantOffencesChangedIT extends AbstractIT {
 
     @Test
     public void shouldUpdateDefendantOffencesFollowingPublicDefendantOffencesChangedEventFromProgressionAddedOnly() throws Exception {
-        HearingsData hearingsData = sendCaseForListing();
+        HearingsData hearingsData = listCourtHearing();
 
         DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
@@ -105,7 +105,7 @@ public class DefendantOffencesChangedIT extends AbstractIT {
 
     @Test
     public void shouldUpdateDefendantOffencesFollowingPublicDefendantOffencesChangedEventFromProgressionDeletedOnly() throws Exception {
-        HearingsData hearingsData = sendCaseForListing();
+        HearingsData hearingsData = listCourtHearing();
 
         DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
@@ -123,12 +123,12 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         }
     }
 
-    private HearingsData sendCaseForListing() {
+    private HearingsData listCourtHearing() {
         HearingsData hearingsData = HearingsData.hearingsData();
-        try (final SendCaseForListingSteps sendCaseForListingSteps = new SendCaseForListingSteps(hearingsData)) {
-            sendCaseForListingSteps.whenCaseIsSubmittedForListing();
-            sendCaseForListingSteps.verifyHearingListedInActiveMQ();
-            sendCaseForListingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         }
         return hearingsData;
     }

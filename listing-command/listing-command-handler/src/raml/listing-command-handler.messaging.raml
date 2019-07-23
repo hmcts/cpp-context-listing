@@ -5,9 +5,9 @@ baseUri: message://command/handler/message/listing
 /listing.handler.command:
   post:
     body:
-      application/vnd.listing.command.send-case-for-listing-enriched+json:
-        example: !include json/listing.command.send-case-for-listing-enriched.json
-        schema:  !include json/schema/listing.command.send-case-for-listing-enriched.json
+      application/vnd.listing.command.list-court-hearing-enriched+json:
+        example: !include json/listing.command.list-court-hearing-enriched.json
+        schema:  !include json/schema/listing.command.list-court-hearing-enriched.json
 
       application/vnd.listing.command.update-hearing-for-listing-enriched+json:
         example: !include json/listing.command.update-hearing-for-listing-enriched.json
@@ -49,3 +49,26 @@ baseUri: message://command/handler/message/listing
         schema: !include json/schema/listing.command.sequence-hearings.json
         example: !include json/listing.command.sequence-hearings.json
 
+      application/vnd.listing.command.update-court-application-for-hearings+json:
+        schema: !include json/schema/listing.command.update-court-application-for-hearings.json
+        example: !include json/listing.command.update-court-application-for-hearings.json
+
+      application/vnd.listing.command.add-court-application-for-hearing+json:
+        schema: !include json/schema/listing.command.add-court-application-for-hearing.json
+        example: !include json/listing.command.add-court-application-for-hearing.json
+
+      application/vnd.listing.command.add-defendants-to-court-proceedings+json:
+        schema: !include json/schema/listing.command.add-defendants-to-court-proceedings.json
+        example: !include json/listing.command.add-defendants-to-court-proceedings.json
+
+      application/vnd.listing.command.add-court-application-to-hearing+json:
+        schema: !include json/schema/listing.command.add-court-application-to-hearing.json
+        example: !include json/listing.command.add-court-application-to-hearing.json
+
+      application/vnd.listing.command.update-court-application+json:
+        schema: !include json/schema/listing.command.update-court-application.json
+        example: !include json/listing.command.update-court-application.json
+
+      application/vnd.listing.command.add-defendants-to-court-proceedings-for-hearing+json:
+        schema: !include json/schema/listing.command.add-defendants-to-court-proceedings-for-hearing.json
+        example: !include json/listing.command.add-defendants-to-court-proceedings-for-hearing.json

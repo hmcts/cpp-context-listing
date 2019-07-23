@@ -42,7 +42,13 @@
     "estimatedMinutes": {
       "type": "integer"
     },
-
+    "courtApplicationIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+      }
+    },
     "hearingDays": {
       "type": "array",
       "minItems": 1,
@@ -58,8 +64,7 @@
     "hearingLanguage",
     "hearingDays",
     "courtCentreId",
-    "courtRoomId",
-    "prosecutionCaseDefendantsOffenceIds"
+    "courtRoomId"
   ],
   "additionalProperties": false
 }

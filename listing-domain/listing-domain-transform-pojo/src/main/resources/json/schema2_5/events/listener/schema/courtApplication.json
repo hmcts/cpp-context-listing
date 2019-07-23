@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/courtApplication.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "linkedCaseId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "parentApplicationId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "respondents": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
+      }
+    },
+    "applicant": {
+           "$ref": "http://justice.gov.uk/listing/events/applicantRespondent.json"
+    },
+    "applicationType": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "applicant",
+    "applicationType"
+  ],
+  "additionalProperties": false
+}

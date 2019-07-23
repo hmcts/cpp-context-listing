@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/commands/listing.command.change-judiciary-for-hearings.json",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.change-judiciary-for-hearings.json",
   "type": "object",
   "properties": {
     "hearings": {

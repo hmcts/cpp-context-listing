@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/v24/listing/events/simple-defendant.json",
+  "type": "object",
+  "simple-defendant": {
+    "allOf": [{
+      "$ref": "http://justice.gov.uk/v24/listing/events/new-base-defendant.json"
+    }]
+  },
+  "additionalProperties": false
+}

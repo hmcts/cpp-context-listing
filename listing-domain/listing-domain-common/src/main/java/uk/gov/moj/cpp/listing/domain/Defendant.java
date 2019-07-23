@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.swing.text.html.*;
+
 @SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067"})
 public class Defendant {
   private final Optional<BailStatus> bailStatus;
@@ -26,13 +28,16 @@ public class Defendant {
 
   private final Optional<String> lastName;
 
+  private final UUID prosecutionCaseId ;
+
   private final List<Offence> offences;
 
   private final Optional<String> organisationName;
 
   private final Optional<String> specificRequirements;
 
-  public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements) {
+
+  public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final UUID prosecutionCaseId) {
     this.bailStatus = bailStatus;
     this.custodyTimeLimit = custodyTimeLimit;
     this.dateOfBirth = dateOfBirth;
@@ -42,9 +47,11 @@ public class Defendant {
     this.hearingLanguageNeeds = hearingLanguageNeeds;
     this.id = id;
     this.lastName = lastName;
+    this.prosecutionCaseId = prosecutionCaseId;
     this.offences = offences == null ? emptyList() : offences;
     this.organisationName = organisationName;
     this.specificRequirements = specificRequirements;
+
   }
 
   public Optional<BailStatus> getBailStatus() {
@@ -95,6 +102,10 @@ public class Defendant {
     return specificRequirements;
   }
 
+  public UUID getProsecutionCaseId() {
+    return prosecutionCaseId;
+  }
+
   public static Builder defendant() {
     return new Defendant.Builder();
   }
@@ -116,12 +127,13 @@ public class Defendant {
     java.util.Objects.equals(this.lastName, that.lastName) &&
     java.util.Objects.equals(this.offences, that.offences) &&
     java.util.Objects.equals(this.organisationName, that.organisationName) &&
-    java.util.Objects.equals(this.specificRequirements, that.specificRequirements);
+    java.util.Objects.equals(this.specificRequirements, that.specificRequirements) &&
+    java.util.Objects.equals(this.prosecutionCaseId, that.prosecutionCaseId);
   }
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements);}
+    return java.util.Objects.hash(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid , defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements, prosecutionCaseId);}
 
   @Override
   public String toString() {
@@ -137,7 +149,8 @@ public class Defendant {
     	"lastName='" + lastName + "'," +
     	"offences='" + offences + "'," +
     	"organisationName='" + organisationName + "'," +
-    	"specificRequirements='" + specificRequirements + "'" +
+    	"specificRequirements='" + specificRequirements + "'," +
+        "prosecutionCaseId='" + prosecutionCaseId  + "'" +
     "}";
   }
 
@@ -165,6 +178,8 @@ public class Defendant {
     private Optional<String> organisationName;
 
     private Optional<String> specificRequirements;
+
+    private UUID prosecutionCaseId ;
 
     public Builder withBailStatus(final Optional<BailStatus> bailStatus) {
       this.bailStatus = bailStatus;
@@ -226,8 +241,13 @@ public class Defendant {
       return this;
     }
 
+    public Builder withProsecutionCaseId(final UUID prosecutionCaseId) {
+      this.prosecutionCaseId = prosecutionCaseId;
+      return this;
+    }
+
     public Defendant build() {
-      return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements);
+      return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements, prosecutionCaseId);
     }
   }
 }

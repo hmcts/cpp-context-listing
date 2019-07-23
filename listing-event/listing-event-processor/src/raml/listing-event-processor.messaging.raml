@@ -17,6 +17,9 @@ baseUri: message://event/processor/message/listing
         application/vnd.listing.events.defendants-to-be-updated+json:
             schema: !include json/schema/listing.events.defendants-to-be-updated.json
             example: !include json/listing.events.defendants-to-be-updated.json
+        application/vnd.listing.events.defendants-to-be-added-for-court-proceedings+json:
+            schema: !include json/schema/listing.events.defendants-to-be-added-for-court-proceedings.json
+            example: !include json/listing.events.defendants-to-be-added-for-court-proceedings.json
         application/vnd.listing.events.offences-to-be-updated+json:
             schema: !include json/schema/listing.events.offences-to-be-updated.json
             example: !include json/listing.events.offences-to-be-updated.json
@@ -26,6 +29,13 @@ baseUri: message://event/processor/message/listing
         application/vnd.listing.events.offences-to-be-added+json:
             schema: !include json/schema/listing.events.offences-to-be-added.json
             example: !include json/listing.events.offences-to-be-added.json
+        application/vnd.listing.events.court-application-added-for-hearing+json:
+            schema: !include json/schema/listing.events.court-application-added-for-hearing.json
+            example: !include json/listing.events.court-application-added-for-hearing.json
+        application/vnd.listing.events.court-application-to-be-updated+json:
+            schema: !include json/schema/listing.events.court-application-to-be-updated.json
+            example: !include json/listing.events.court-application-to-be-updated.json
+
 
 /public.event:
     post:
@@ -37,4 +47,13 @@ baseUri: message://event/processor/message/listing
         application/vnd.public.progression.case-defendant-changed+json:
             schema: !include json/schema/public.progression.case-defendant-changed.json
             example: !include json/public.progression.case-defendant-changed.json
+        application/vnd.public.progression.courtapplication-changed+json:
+            schema: !include json/schema/public.progression.courtapplication-changed.json
+            example: !include json/public.progression.courtapplication-changed.json
+        application/vnd.public.progression.events.hearing-extended+json:
+            schema: !include json/schema/public.progression.events.hearing-extended.json
+            example: !include json/public.progression.events.hearing-extended.json
+        application/vnd.public.progression.defendants-added-to-court-proceedings+json:
+            schema: !include json/schema/public.progression.defendants-added-to-court-proceedings.json
+            example: !include json/public.progression.defendants-added-to-court-proceedings.json
 

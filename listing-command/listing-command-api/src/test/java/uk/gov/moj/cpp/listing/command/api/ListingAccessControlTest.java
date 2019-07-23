@@ -16,7 +16,7 @@ import org.mockito.Mock;
 
 public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
 
-    private static final String ACTION_SEND_CASE_FOR_LISTING = "listing.command.send-case-for-listing";
+    private static final String ACTION_LIST_COURT_HEARING = "listing.command.list-court-hearing";
     public static final String ACTION_UPDATE_HEARING_FOR_LISTING = "listing.command.update-hearing-for-listing";
     public static final String ACTION_CHANGE_JUDICIARY_FOR_HEARING = "listing.command.change-judiciary-for-hearings";
     public static final String ACTION_SEQUENCE_HEARINGS = "listing.command.sequence-hearings";
@@ -27,8 +27,8 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private UserAndGroupProvider userAndGroupProvider;
 
     @Test
-    public void shouldAllowAuthorisedUserToSendCaseForListing() {
-        final Action action = createActionFor(ACTION_SEND_CASE_FOR_LISTING);
+    public void shouldAllowAuthorisedUserToListCourtHearing() {
+        final Action action = createActionFor(ACTION_LIST_COURT_HEARING);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
                 CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS ))
                 .willReturn(true);
@@ -38,8 +38,8 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     }
 
     @Test
-    public void shouldNotAllowUnauthorisedUserToSendCaseForListing() {
-        final Action action = createActionFor(ACTION_SEND_CASE_FOR_LISTING);
+    public void shouldNotAllowUnauthorisedUserToListCourtHearing() {
+        final Action action = createActionFor(ACTION_LIST_COURT_HEARING);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);

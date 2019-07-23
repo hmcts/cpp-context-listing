@@ -18,6 +18,54 @@
   "prosecutorDatesToAvoid": "thursdays",
   "listingDirections": "wheelchair access required",
   "reportingRestrictionReason": "Automatic anonymity under the Sexual Offences (Amendment) Act 1992",
+  "courtApplications": [
+    {
+      "applicant": {
+        "id": "22b1078b-9430-4cef-ba46-eea40a129ca8",
+        "personDetails": {
+          "firstName": "5o5NzB5ewT",
+          "gender": "FEMALE",
+          "lastName": "nYhjupYT63"
+        }
+      },
+      "applicationReceivedDate": "2019-03-04",
+      "applicationReference": "Xgwcxvgqz4",
+      "applicationStatus": "LISTED",
+      "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+      "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+      "linkedCaseId": "19e9d562-6abb-4871-bfb3-2d777aa90371",
+      "respondents": [
+        {
+          "partyDetails": {
+            "id": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
+            "personDetails": {
+              "firstName": "ijgX3B9Vy7",
+              "gender": "FEMALE",
+              "lastName": "pGk5CoFbDb"
+            }
+          }
+        }
+      ],
+      "respondentsNA": true,
+      "type": {
+        "applicationCategory": "KsZPM4vFrU",
+        "applicationCode": "A9mRuXXZ9Q",
+        "applicationJurisdictionType": "CROWN",
+        "applicationLegislation": "UoLO7ofTVm",
+        "applicationType": "9vBchM49Go",
+        "id": "46171453-3b64-4a43-91af-cfc09e6d8889",
+        "linkType": "EITHER",
+        "requiresCourtHearing": false,
+        "requiresResponse": true
+      }
+    }
+  ],
+  "courtApplicationPartyListingNeeds":[
+    {
+      "courtApplicationId":"26b856a8-ae01-4aad-814c-7cdff8db19bf",
+      "courtApplicationPartyId": "48ddbd0a-31db-4814-b052-aa3ba9afb800"
+    }
+  ],
   "judiciary": [
     {
       "judicialId": "8ebc222c-9b33-402b-bfb1-4ca973058a57",
@@ -92,8 +140,6 @@
                 "additionalNationalityId": "9aa0ffba-67a4-4137-b392-3c01951eb9c2",
                 "additionalNationalityCode": "USA",
                 "disabilityStatus": "a",
-                "ethnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c",
-                "ethnicity": "IC1",
                 "gender": "MALE",
                 "interpreterLanguageNeeds": "Hindi",
                 "documentationLanguageNeeds": "WELSH",
@@ -115,6 +161,10 @@
                   "primaryEmail": "harry.kane@spurs.co.uk",
                   "secondaryEmail": "harry.kane@hotmail.com",
                   "fax": "3425678"
+                },
+                "ethnicity": {
+                  "observedEthnicityDescription": "IC1",
+                  "ethnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c"
                 }
               },
               "role": "parent"
@@ -132,8 +182,6 @@
               "additionalNationalityId": "9aa0ffba-67a4-4137-b392-3c01951eb9c2",
               "additionalNationalityCode": "USA",
               "disabilityStatus": "a",
-              "ethnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c",
-              "ethnicity": "IC1",
               "gender": "MALE",
               "interpreterLanguageNeeds": "Welsh",
               "documentationLanguageNeeds": "WELSH",
@@ -156,6 +204,10 @@
                 "primaryEmail": "harry.kanejunior@spurs.co.uk",
                 "secondaryEmail": "harry.kanejunior@hotmail.com",
                 "fax": "3425678"
+              },
+              "ethnicity": {
+                "observedEthnicityDescription": "IC1",
+                "ethnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c"
               }
             },
             "bailStatus": "IN_CUSTODY",
@@ -189,6 +241,10 @@
                 "primaryEmail": "person@hotmail.com",
                 "secondaryEmail": "associate@hotmail.com",
                 "fax": "a"
+              },
+              "ethnicity": {
+                "observedEthnicityDescription": "IC1",
+                "ethnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c"
               }
             },
             "employerPayrollReference": "payyou1234"
@@ -252,8 +308,6 @@
                 "additionalNationalityId": "9aa0ffba-67a4-4137-b392-3c01951eb9c2",
                 "additionalNationalityCode": "USA",
                 "disabilityStatus": "a",
-                "ethnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c",
-                "ethnicity": "IC1",
                 "gender": "MALE",
                 "interpreterLanguageNeeds": "Hindi",
                 "documentationLanguageNeeds": "WELSH",
@@ -275,6 +329,10 @@
                   "primaryEmail": "harry.kane@spurs.co.uk",
                   "secondaryEmail": "harry.kane@hotmail.com",
                   "fax": "3425678"
+                },
+                "ethnicity": {
+                  "observedEthnicityDescription": "IC1",
+                  "ethnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c"
                 }
               },
               "role": "parent"

@@ -69,6 +69,8 @@ public class AlphabeticalCourtListServiceTest {
     private final UUID COURT_ROOM_ID = randomUUID();
     private static final LocalDate HEARING_DATE = LocalDates.from("2018-11-21");
     private final ZonedDateTime START_DATE_TIME = ZonedDateTimes.fromString("2018-11-21T13:46:00.000Z");
+    private static final LocalDate SUMMER_HEARING_DATE = LocalDates.from("2018-07-21");
+    private final ZonedDateTime SUMMER_START_DATE_TIME = ZonedDateTimes.fromString("2018-07-21T13:46:00.000Z");
     private static final String CASE_URN = "CURN";
     private static final String QUERY_NAME = "listing.search.court.list";
 
@@ -80,20 +82,29 @@ public class AlphabeticalCourtListServiceTest {
 
     @Test
     public void shouldBuildDataForAlphabeticalList() {
-        final JsonEnvelope envelope = buildRequestEnvelope();
+        final JsonEnvelope envelope = buildRequestEnvelope(false);
         when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(false));
         Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
         final AlphabeticalCourtList courtList = jsonObjectToObjectConverter.convert(listJson.get(), AlphabeticalCourtList.class);
-        assertCourtListValues(courtList);
+        assertCourtListValues(courtList, false);
+    }
+
+    @Test
+    public void shouldBuildDataForAlphabeticalListBST() {
+        final JsonEnvelope envelope = buildRequestEnvelope(true);
+        when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(false));
+        Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
+        final AlphabeticalCourtList courtList = jsonObjectToObjectConverter.convert(listJson.get(), AlphabeticalCourtList.class);
+        assertCourtListValues(courtList, true);
     }
 
     @Test
     public void shouldBuildDataForAlphabeticalEngWelshList() {
-        final JsonEnvelope envelope = buildRequestEnvelope();
+        final JsonEnvelope envelope = buildRequestEnvelope(false);
         when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(true));
         Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
         final AlphabeticalCourtList courtList = jsonObjectToObjectConverter.convert(listJson.get(), AlphabeticalCourtList.class);
-        assertCourtListValues(courtList);
+        assertCourtListValues(courtList, false);
         assertWelshValues(courtList);
     }
 
@@ -109,28 +120,39 @@ public class AlphabeticalCourtListServiceTest {
 
     }
 
-    private void assertCourtListValues(AlphabeticalCourtList courtList) {
+    private void assertCourtListValues(AlphabeticalCourtList courtList, boolean isBST) {
         assertEquals(COURT_CENTRE_NAME, courtList.getCourtCentreName());
-        assertEquals(HEARING_DATE.getDayOfMonth() + SPACE + capitalize(lowerCase(HEARING_DATE.getMonth().name()))
-                + SPACE + HEARING_DATE.getYear(), courtList.getHearingDate());
+        if(isBST) {
+            assertEquals(SUMMER_HEARING_DATE.getDayOfMonth() + SPACE + capitalize(lowerCase(SUMMER_HEARING_DATE.getMonth().name()))
+                    + SPACE + SUMMER_HEARING_DATE.getYear(), courtList.getHearingDate());
+        }
+        else {
+            assertEquals(HEARING_DATE.getDayOfMonth() + SPACE + capitalize(lowerCase(HEARING_DATE.getMonth().name()))
+                    + SPACE + HEARING_DATE.getYear(), courtList.getHearingDate());
+        }
         assertEquals(ADDRESS_1 + ",", courtList.getCourtCentreAddress1());
         assertEquals(POST_CODE, courtList.getCourtCentreAddress2());
         assertEquals(1, courtList.getDefendants().size());
         assertEquals(StringUtils.upperCase(LAST_NAME) + "," + SPACE + FIRSTNAME, courtList.getDefendants().get(0).getDefendantFullName());
         assertEquals(CASE_URN, courtList.getDefendants().get(0).getCaseReference());
         assertEquals(COURT_ROOM_NAME, courtList.getDefendants().get(0).getCourtRoomName());
-        assertEquals("13:46", courtList.getDefendants().get(0).getHearingStartTime());
+        if(isBST) {
+            assertEquals("14:46", courtList.getDefendants().get(0).getHearingStartTime());
+        }
+        else {
+            assertEquals("13:46", courtList.getDefendants().get(0).getHearingStartTime());
+        }
 
     }
 
 
-    private JsonEnvelope buildRequestEnvelope() {
+    private JsonEnvelope buildRequestEnvelope(boolean isBST) {
         final JsonObject queryPayload = createObjectBuilder().add("hearings",
                 createArrayBuilder().add(createObjectBuilder()
-                        .add("hearingDate", LocalDates.to(HEARING_DATE))
+                        .add("hearingDate", isBST? LocalDates.to(SUMMER_HEARING_DATE) :LocalDates.to(HEARING_DATE))
                         .add("hearingsByHearingDate", createArrayBuilder()
                                 .add(createObjectBuilder()
-                                        .add("startTime", ZonedDateTimes.toString(START_DATE_TIME))
+                                        .add("startTime", isBST? ZonedDateTimes.toString(SUMMER_START_DATE_TIME):ZonedDateTimes.toString(START_DATE_TIME))
                                         .add("courtCentreId", COURT_CENTRE_ID.toString())
                                         .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN))
                                         .add("courtRoomId", COURT_ROOM_ID.toString())

@@ -50,8 +50,31 @@
   "jurisdictionType": "CROWN",
   "prosecutorDatesToAvoid": "Prosecutor on holiday 2018-11-01",
   "reportingRestrictionReason": "aReason",
-  "startDate": "2018-06-01",
+  "startDate": "2018-06-01T10:30:00.000Z",
   "endDate": "2018-06-05",
+  "courtApplications":[
+    {
+      "applicant":{
+        "firstName":"5o5NzB5ewT",
+        "isRespondent":false,
+        "lastName":"nYhjupYT63"
+      },
+      "applicationType":"9vBchM49Go",
+      "id":"26b856a8-ae01-4aad-814c-7cdff8db19bf",
+      "parentApplicationId":"9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+      "linkedCaseId":"19e9d562-6abb-4871-bfb3-2d777aa90371",
+      "applicationReference": "REF-1",
+      "respondents":[
+        {
+          "firstName":"ijgX3B9Vy7",
+          "isRespondent":true,
+          "lastName":"pGk5CoFbDb"
+        }
+      ]
+    }
+  ],
+  "courtApplicationPartyListingNeeds": [
+    ],
   "courtCentreDefaults" : {
     "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
     "defaultDuration": "30",

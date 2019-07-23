@@ -8,6 +8,7 @@
   "judgeId": "0baecac5-222b-402d-9047-84803679edae",
   "courtRoomId": "e8821a38-546d-4b56-9992-ebdd772a561f",
   "courtCentreId": "b2321a38-546d-2b56-9992-ebd4472a561a",
+  "courtApplicationIds":["26b856a8-ae01-4aad-814c-7cdff8db19bf"],
   "caseId": "46ce00f4-14cc-4049-8a12-65cd276f96e1",
   "urn": "87GD9945217",
   "defendantIdsToOffenceIdsMap": {

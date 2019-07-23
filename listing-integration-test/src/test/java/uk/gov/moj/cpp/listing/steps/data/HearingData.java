@@ -1,5 +1,8 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
+import uk.gov.justice.core.courts.CourtApplication;
+import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
+
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -21,13 +24,17 @@ public class HearingData {
     private final String reportingRestrictionReason;
 
     private final String jurisdictionType;
+    private final List<CourtApplicationData> courtApplications;
+    private final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds;
 
     public HearingData(final UUID id, final UUID courtCentreId, final HearingTypeData hearingTypeData,
                        final LocalDate hearingStartDate, final LocalDate hearingEndDate,
                        final int hearingEstimateMinutes, final UUID courtRoomId,
                        final ZonedDateTime hearingStartTime, final List<ListedCaseData> listedCases,
                        final List<JudicialRoleData> judiciary, final String jurisdictionType,
-                       final String reportingRestrictionReason) {
+                       final String reportingRestrictionReason,
+                       final List<CourtApplicationData> courtApplications,
+                       final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds) {
 
         this.id = id;
         this.courtCentreId = courtCentreId;
@@ -41,7 +48,8 @@ public class HearingData {
         this.judiciary = judiciary;
         this.jurisdictionType = jurisdictionType;
         this.reportingRestrictionReason = reportingRestrictionReason;
-
+        this.courtApplications = courtApplications;
+        this.courtApplicationPartyNeeds = courtApplicationPartyNeeds;
     }
 
     public UUID getId() { return id; }
@@ -80,5 +88,13 @@ public class HearingData {
 
     public String getReportingRestrictionReason() {
         return reportingRestrictionReason;
+    }
+
+    public List<CourtApplicationData> getCourtApplications() {
+        return courtApplications;
+    }
+
+    public List<CourtApplicationPartyListingNeeds> getCourtApplicationPartyNeeds() {
+        return courtApplicationPartyNeeds;
     }
 }

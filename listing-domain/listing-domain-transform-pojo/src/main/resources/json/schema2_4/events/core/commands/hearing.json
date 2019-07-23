@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/v24/listing/events/hearing.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/v24/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "allocated": {
+      "type": "boolean"
+    },
+    "type": {
+      "$ref": "http://justice.gov.uk/v24/listing/events/listing-definitions.json#/definitions/hearingType"
+    },
+    "sequence": {
+      "type": "integer"
+    },
+    "jurisdictionType": {
+      "$ref": "http://justice.gov.uk/v24/listing/events/listing-definitions.json#/definitions/jurisdictionType"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/v24/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "courtRoomId": {
+      "$ref": "http://justice.gov.uk/v24/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "judiciary": {
+      "type": "array",
+       "items": {
+        "$ref": "http://justice.gov.uk/v24/listing/events/judicialRole.json"
+      }
+    },
+    "reportingRestrictionReason": {
+      "type": "string"
+    },
+    "hearingLanguage": {
+      "$ref": "http://justice.gov.uk/v24/listing/events/listing-definitions.json#/definitions/hearingLanguage"
+    },
+    "estimatedMinutes": {
+      "$ref": "listing-definitions.json#/definitions/positiveInteger"
+    },
+    "prosecutorDatesToAvoid": {
+      "type": "string"
+    },
+    "listingDirections": {
+      "type": "string"
+    },
+    "listedCases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/v24/listing/events/listedCase.json"
+      }
+    },
+    "startDate": {
+      "$ref": "listing-definitions.json#/definitions/localDate"
+    },
+    "endDate": {
+      "$ref": "listing-definitions.json#/definitions/localDate"
+    },
+    "hearingDays": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/v24/listing/events/hearingDay.json"
+      }
+    },
+    "nonDefaultDays": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/v24/listing/events/nonDefaultDay.json"
+      }
+    },
+    "nonSittingDays": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/localDate"
+      }
+    }
+  },
+  "definitions": {
+    "localDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "id",
+    "allocated",
+    "type",
+    "jurisdictionType",
+    "hearingLanguage",
+    "courtCentreId",
+    "judiciary",
+    "estimatedMinutes",
+    "listedCases",
+    "startDate",
+    "endDate",
+    "hearingDays",
+    "nonDefaultDays",
+    "nonSittingDays"
+  ],
+  "additionalProperties": false
+}

@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "id": "http://justice.gov.uk/listing/commands/listing.command.update-offences-for-hearing.json",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.update-offences-for-hearing.json",
   "$schema": "http://json-schema.org/draft-04/schema#",
   "properties": {
     "hearingId": {

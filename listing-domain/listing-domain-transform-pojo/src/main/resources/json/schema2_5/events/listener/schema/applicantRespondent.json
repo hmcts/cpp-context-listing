@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/applicantRespondent.json",
+  "type": "object",
+  "properties": {
+    "firstName": {
+      "description": "The person first name",
+      "type": "string"
+    },
+    "lastName": {
+      "description": "The person last name",
+      "type": "string"
+    },
+    "isRespondent": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "lastName",
+    "isRespondent"
+  ],
+  "additionalProperties": false
+}

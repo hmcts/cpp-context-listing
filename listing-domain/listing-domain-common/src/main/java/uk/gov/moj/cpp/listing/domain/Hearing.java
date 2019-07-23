@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.domain;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,11 +42,16 @@ public class Hearing {
 
   private final Optional<Integer> sequence;
 
-  private final LocalDate startDate;
+  private final ZonedDateTime startDateTime;
 
   private final Type type;
 
-  public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, final List<HearingDay> hearingDays, final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections, final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final LocalDate startDate, final Type type) {
+  private final List<CourtApplication> courtApplications;
+
+  private final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds;
+
+  public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, final List<HearingDay> hearingDays, final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections, final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final ZonedDateTime startDateTime,
+                 final Type type, final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds) {
     this.allocated = allocated;
     this.courtCentreId = courtCentreId;
     this.courtRoomId = courtRoomId;
@@ -63,8 +69,10 @@ public class Hearing {
     this.prosecutorDatesToAvoid = prosecutorDatesToAvoid;
     this.reportingRestrictionReason = reportingRestrictionReason;
     this.sequence = sequence;
-    this.startDate = startDate;
+    this.startDateTime = startDateTime;
     this.type = type;
+    this.courtApplications = courtApplications;
+    this.courtApplicationPartyListingNeeds = courtApplicationPartyListingNeeds;
   }
 
   public Boolean getAllocated() {
@@ -135,12 +143,18 @@ public class Hearing {
     return sequence;
   }
 
-  public LocalDate getStartDate() {
-    return startDate;
+  public ZonedDateTime getStartDateTime() {
+    return startDateTime;
   }
 
   public Type getType() {
     return type;
+  }
+
+  public List<CourtApplication> getCourtApplications() { return courtApplications; }
+
+  public List<CourtApplicationPartyListingNeeds> getCourtApplicationPartyListingNeeds() {
+    return courtApplicationPartyListingNeeds;
   }
 
   public static Builder hearing() {
@@ -149,8 +163,12 @@ public class Hearing {
 
   @Override
   public boolean equals(final Object obj) {
-    if (this == obj) return true;
-    if (obj == null || getClass() != obj.getClass()) return false;
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
     final Hearing that = (Hearing) obj;
 
     return java.util.Objects.equals(this.allocated, that.allocated) &&
@@ -170,13 +188,15 @@ public class Hearing {
     java.util.Objects.equals(this.prosecutorDatesToAvoid, that.prosecutorDatesToAvoid) &&
     java.util.Objects.equals(this.reportingRestrictionReason, that.reportingRestrictionReason) &&
     java.util.Objects.equals(this.sequence, that.sequence) &&
-    java.util.Objects.equals(this.startDate, that.startDate) &&
-    java.util.Objects.equals(this.type, that.type);
+    java.util.Objects.equals(this.startDateTime, that.startDateTime) &&
+    java.util.Objects.equals(this.type, that.type) &&
+    java.util.Objects.equals(this.courtApplications, that.courtApplications) &&
+    java.util.Objects.equals(this.courtApplicationPartyListingNeeds, that.courtApplicationPartyListingNeeds);
   }
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDate, type);}
+    return java.util.Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds);}
 
   @Override
   public String toString() {
@@ -198,8 +218,10 @@ public class Hearing {
     	"prosecutorDatesToAvoid='" + prosecutorDatesToAvoid + "'," +
     	"reportingRestrictionReason='" + reportingRestrictionReason + "'," +
     	"sequence='" + sequence + "'," +
-    	"startDate='" + startDate + "'," +
-    	"type='" + type + "'" +
+    	"startDateTime='" + startDateTime + "'," +
+    	"type='" + type + "'," +
+        "courtApplications='" + courtApplications + "'" +
+            "courtApplicationPartyNeeds='" + courtApplicationPartyListingNeeds + "'" +
     "}";
   }
 
@@ -238,9 +260,13 @@ public class Hearing {
 
     private Optional<Integer> sequence;
 
-    private LocalDate startDate;
+    private ZonedDateTime startDateTime;
 
     private Type type;
+
+    private List<CourtApplication> courtApplications;
+
+    private List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds;
 
     public Builder withAllocated(final Boolean allocated) {
       this.allocated = allocated;
@@ -327,8 +353,8 @@ public class Hearing {
       return this;
     }
 
-    public Builder withStartDate(final LocalDate startDate) {
-      this.startDate = startDate;
+    public Builder withStartDateTime(final ZonedDateTime startDateTime) {
+      this.startDateTime = startDateTime;
       return this;
     }
 
@@ -337,8 +363,16 @@ public class Hearing {
       return this;
     }
 
+    public Builder withCourtApplication(final List<CourtApplication> courtApplications) {
+      this.courtApplications = courtApplications;
+      return this;
+    }
+    public Builder withCourtApplicationPartyNeeds(final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds) {
+      this.courtApplicationPartyListingNeeds = courtApplicationPartyListingNeeds;
+      return this;
+    }
     public Hearing build() {
-      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDate, type);
+      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds);
     }
   }
 }
