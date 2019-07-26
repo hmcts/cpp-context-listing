@@ -6,6 +6,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
 import static org.apache.http.HttpStatus.SC_OK;
@@ -20,7 +21,7 @@ import java.util.UUID;
 
 public class ReferenceDataStub {
 
-    private static final String REFERENCE_DATA_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms/{0}";
+    private static final String REFERENCE_DATA_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms/.*";
     private static final String REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE = "application/vnd.referencedata.courtroom+json";
     private static final String REFERENCE_DATA_JUDICIARIES_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/judiciaries";
     private static final String REFERENCE_DATA_JUDICIARIES_MEDIA_TYPE = "application/vnd.referencedata.judiciaries+json";
@@ -34,13 +35,13 @@ public class ReferenceDataStub {
                 .replace("DEFAULT_DURATION_HOURS_MINS", courtReferenceData.getDefaultDurationHoursMins())
                 .replace("COURT_ROOM_ID", courtReferenceData.getCourtRoomId() != null ? courtReferenceData.getCourtRoomId().toString() : randomUUID().toString());
 
-        stubFor(get(urlPathEqualTo(format(REFERENCE_DATA_COURT_CENTRE_QUERY_URL, courtReferenceData.getCourtCentreId().toString())))
+        stubFor(get(urlPathMatching(REFERENCE_DATA_COURT_CENTRE_QUERY_URL))
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
                         .withBody(payload)));
 
-        waitForStubToBeReady(format(REFERENCE_DATA_COURT_CENTRE_QUERY_URL, courtReferenceData.getCourtCentreId()), REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
+        waitForStubToBeReady(REFERENCE_DATA_COURT_CENTRE_QUERY_URL, REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataJudiciaries(final UUID judiciaryId) {

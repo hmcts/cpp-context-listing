@@ -1,10 +1,15 @@
 package uk.gov.moj.cpp.listing.steps.data.factory;
 
+import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOOLEAN;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
+import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
+import uk.gov.justice.listing.courts.HearingLanguageNeeds;
+import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingTypeData;
@@ -43,6 +48,10 @@ public class HearingsDataFactory {
            return manyRandomHearingsWithAllocationData(2);
     }
 
+    public static List<HearingData> hearingsDataStandaloneApplication() {
+        return manyRandomHearingsStandaloneApplication(2);
+    }
+
 
     private static List<HearingData> manyRandomHearingsWithAllocationData(final Integer numberOfHearings) {
         LocalDate hearingEndDate =  LocalDate.now().plusDays(1);
@@ -56,6 +65,12 @@ public class HearingsDataFactory {
     private static List<HearingData> manyRandomHearings(final Integer numberOfHearings) {
         return IntStream.range(0, numberOfHearings)
                 .mapToObj((int i) -> randomHearing())
+                .collect(toList());
+    }
+
+    private static List<HearingData> manyRandomHearingsStandaloneApplication(final Integer numberOfHearings) {
+        return IntStream.range(0, numberOfHearings)
+                .mapToObj((int i) -> randomHearingStandaloneApplication())
                 .collect(toList());
     }
 
@@ -105,14 +120,33 @@ public class HearingsDataFactory {
         return new HearingData(randomUUID(), randomUUID(), PTP_HEARING_TYPE, LocalDate.now(),
                 hearingEndDate, HEARING_ESTIMATE_MINUTES,
                 courtRoomId, ZonedDateTime.now(), manyRandomListingCases(2),
-                judicialRoles, JURISDICTION_TYPE, STRING.next());
+                judicialRoles, JURISDICTION_TYPE, STRING.next(),
+                singletonList(randomCourtApplicationData(randomUUID())),
+                singletonList(randomCourtApplicationPartyNeed()));
     }
 
+    private static HearingData randomHearingStandaloneApplication() {
+        return new HearingData(randomUUID(), randomUUID(), PTP_HEARING_TYPE, LocalDate.now(),
+                null, HEARING_ESTIMATE_MINUTES,
+                null, ZonedDateTime.now(), null,
+                null, JURISDICTION_TYPE, STRING.next(),
+                singletonList(randomCourtApplicationData(null)),
+                singletonList(randomCourtApplicationPartyNeed()));
+    }
 
+    private static CourtApplicationData randomCourtApplicationData(UUID linkedCaseId ){
+        return new CourtApplicationData(randomUUID(), linkedCaseId,randomUUID(),
+                new ApplicantRespondentData(STRING.next(), Boolean.FALSE, STRING.next()),
+                new ApplicantRespondentData(STRING.next(), Boolean.TRUE, STRING.next()),
+                STRING.next(), Boolean.FALSE);
+    }
     private static JudicialRoleData randomJudicalRole() {
            return new JudicialRoleData(Optional.ofNullable(null),Optional.ofNullable(BOOLEAN.next()), randomUUID(),
                    new JudicialRoleTypeData(Optional.empty(), "MAGISTRATE"));
 
+    }
+    private static CourtApplicationPartyListingNeeds randomCourtApplicationPartyNeed(){
+        return new CourtApplicationPartyListingNeeds(randomUUID(), randomUUID(), Optional.of(HearingLanguageNeeds.ENGLISH));
     }
 }
 

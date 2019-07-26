@@ -1,0 +1,23 @@
+{
+  "_metadata": {
+    "name": "listing.events.no-hearing-found-for-court-application"
+  },
+  "courtApplication": {
+    "applicant": {
+      "firstName": "App First",
+      "isRespondent": false,
+      "lastName": "App Last"
+    },
+    "applicationType": "APP Type",
+    "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+    "linkedCaseId": "19e9d562-6abb-4871-bfb3-2d777bb90371",
+    "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+    "respondents": [
+      {
+        "firstName": "Resp first",
+        "isRespondent": true,
+        "lastName": "Resp Last"
+      }
+    ]
+  }
+}

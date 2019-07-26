@@ -1,0 +1,44 @@
+{
+  "events": [
+    {
+      "eventName" : "listing.events.hearing-allocated-for-listing",
+      "fieldsToBeAnonymised": [
+        {"reportingRestrictionReason" : "StringAnonymisedString"},
+        {"firstName" : "StringAnonymisedString"},
+        {"lastName" : "StringAnonymisedString"}
+      ]
+    },
+    {
+      "eventName" : "listing.events.defendants-to-be-updated",
+      "fieldsToBeAnonymised": [
+        {"dateOfBirth" : "StringAnonymisedDOB"},
+        {"firstName" : "StringAnonymisedString"},
+        {"lastName" : "StringAnonymisedString"},
+        {"title" : "StringAnonymisedString"},
+        {"bailStatus" : "StringAnonymisedString"},
+        {"specificRequirements" : "StringAnonymisedString"}
+      ]
+    },
+    {
+      "eventName" : "listing.events.hearing-listed",
+      "fieldsToBeAnonymised": [
+        {"dateOfBirth" : "StringAnonymisedDOB"},
+        {"firstName" : "StringAnonymisedString"},
+        {"lastName" : "StringAnonymisedString"},
+        {"bailStatus" : "StringAnonymisedString"},
+        {"specificRequirements" : "StringAnonymisedString"}
+      ]
+    },
+    {
+      "eventName" : "listing.events.new-defendant-details-updated",
+      "fieldsToBeAnonymised": [
+        {"dateOfBirth" : "StringAnonymisedDOB"},
+        {"firstName" : "StringAnonymisedString"},
+        {"lastName" : "StringAnonymisedString"},
+        {"bailStatus" : "StringAnonymisedString"},
+        {"defenceOrganisation" : "StringAnonymisedString"},
+        {"specificRequirements" : "StringAnonymisedString"}
+      ]
+    }
+  ]
+}

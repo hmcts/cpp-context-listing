@@ -1,0 +1,18 @@
+{
+  "caseId": "CASE_ID",
+  "defendants": [
+    {
+      "bailStatus": "IN_CUSTODY",
+      "custodyTimeLimit": "2017-10-05",
+      "dateOfBirth": "1980-07-15",
+      "defenceOrganisation": "withOrganisationName",
+      "firstName": "Harry",
+      "id": "DEFENDANT_ID",
+      "lastName": "Kane Junior",
+      "offences": [],
+      "organisationName": "withOrganisationName",
+      "specificRequirements": "Screen"
+    }
+  ],
+  "hearingId": "HEARING_ID"
+}

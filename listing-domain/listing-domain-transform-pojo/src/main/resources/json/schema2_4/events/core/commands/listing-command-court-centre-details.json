@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/v24/listing/commands/court-centre-details.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/v24/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "defaultStartTime": {
+      "$ref": "#/definitions/localTime"
+    },
+    "defaultDuration": {
+      "$ref": "http://justice.gov.uk/v24/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
+    }
+  },
+  "required": [
+    "id",
+    "defaultStartTime",
+    "defaultDuration"
+  ],
+  "definitions": {
+    "localTime": {
+      "type": "string",
+      "format": "time"
+    }
+  },
+  "additionalProperties": false
+}

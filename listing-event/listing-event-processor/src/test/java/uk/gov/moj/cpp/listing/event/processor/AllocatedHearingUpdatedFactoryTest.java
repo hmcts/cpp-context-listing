@@ -55,6 +55,7 @@ public class AllocatedHearingUpdatedFactoryTest {
     private static final String REPORTING_RESTRICTION_REASON = RandomGenerator.STRING.next();
     private static final String JUDICIAL_ROLE_TYPE = "MAGISTRATE";
     private static final Integer DURATION_MINUTES = 60;
+    private static final UUID COURT_APPLICATION_ID = UUID.randomUUID();
 
 
     @InjectMocks
@@ -98,6 +99,7 @@ public class AllocatedHearingUpdatedFactoryTest {
         ConfirmedDefendant defendantOffenceIds = prosecutionCaseDefendantOffenceIds.getDefendants().get(0);
         assertThat(defendantOffenceIds.getId(), is(DEFENDANT_ID));
         assertThat(defendantOffenceIds.getOffences().get(0).getId(), is(OFFENCE_ID));
+        assertThat(listedHearing.getCourtApplicationIds().get(0), is(COURT_APPLICATION_ID));
     }
 
     @Test
@@ -134,6 +136,8 @@ public class AllocatedHearingUpdatedFactoryTest {
                 .withEndTime(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME.plusMinutes(DURATION_MINUTES), BST).withZoneSameInstant(UTC))
                 .build());
 
+        List<UUID> courtApplicationIds = Collections.singletonList(COURT_APPLICATION_ID);
+
 
         return AllocatedHearingUpdatedForListing.allocatedHearingUpdatedForListing()
                 .withHearingDays(hearingDays)
@@ -149,6 +153,7 @@ public class AllocatedHearingUpdatedFactoryTest {
                         .withId(TYPE_ID)
                         .build())
                 .withJudiciary(judiciary)
+                .withCourtApplicationIds(courtApplicationIds)
                 .build();
     }
 

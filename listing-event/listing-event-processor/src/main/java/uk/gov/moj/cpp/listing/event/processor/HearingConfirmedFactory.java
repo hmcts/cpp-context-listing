@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
+import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.core.courts.ConfirmedDefendant;
@@ -37,7 +38,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
                         .collect(toList()))
                 .withHearingLanguage(HearingLanguage.valueFor(hearingAllocated.getHearingLanguage().toString()))
                 .withJurisdictionType(JurisdictionType.valueFor(hearingAllocated.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
-                .withProsecutionCases(hearingAllocated.getProsecutionCaseDefendantsOffenceIds().stream()
+                .withProsecutionCases(isNull(hearingAllocated.getProsecutionCaseDefendantsOffenceIds()) ? null : hearingAllocated.getProsecutionCaseDefendantsOffenceIds().stream()
                         .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
                                 .withDefendants(pcdo.getDefendants().stream()
                                         .map(d -> ConfirmedDefendant.confirmedDefendant()
@@ -57,6 +58,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
                     .map(this::buildJudicialRole)
                     .collect(toList()));
         }
+        builder.withCourtApplicationIds(hearingAllocated.getCourtApplicationIds());
         return builder.build();
     }
 

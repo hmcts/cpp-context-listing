@@ -35,6 +35,7 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.jms.JMSException;
@@ -646,7 +647,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                 .withWording(updatedOffenceData.getOffenceWording())
                 .withOffenceLegislation(of(updatedOffenceData.getLegislation()))
                 .withOffenceLegislationWelsh(of(updatedOffenceData.getLegislationWelsh()))
-                .withCount(offenceData.getCount())
+                .withCount(Optional.of(offenceData.getCount()))
                 .withOffenceDefinitionId(offenceData.getOffenceDefinitionId())
                 .build();
     }

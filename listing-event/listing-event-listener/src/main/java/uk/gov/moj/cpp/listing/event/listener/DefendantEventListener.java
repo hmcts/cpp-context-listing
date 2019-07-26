@@ -5,6 +5,7 @@ import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.usi
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.NewBaseDefendant;
+import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.NewDefendantDetailsUpdated;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -45,6 +46,20 @@ public class DefendantEventListener {
                 .save();
     }
 
+    @Handles("listing.events.new-defendant-added-for-court-proceedings")
+    public void defendantDetailsAddedForCourtProceedings(final Envelope<NewDefendantAddedForCourtProceedings> event){
+        final NewDefendantAddedForCourtProceedings defendantDetailsAddedForCourtProceedings = event.payload() ;
+        final UUID hearingId = defendantDetailsAddedForCourtProceedings.getHearingId() ;
+        final UUID caseId = defendantDetailsAddedForCourtProceedings.getCaseId();
+        final Defendant defendant = defendantDetailsAddedForCourtProceedings.getDefendant();
+
+        TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {};
+
+        using(hearingRepository)
+                .find(hearingId)
+                .putSubList(LISTED_CASES_FIELD,typeRef, getDefendantsAddFunction(caseId, defendant)).save();
+
+    }
     private Function<List<ListedCase>, List<ListedCase>> getUpdatedListedCaseFunction(UUID caseId, NewBaseDefendant defendant) {
         return cases -> getUpdatedListedCase(caseId, defendant, cases);
     }
@@ -71,5 +86,16 @@ public class DefendantEventListener {
 
         defendants.replaceAll(defendant -> defendant.getId().equals(newDefendant.getId()) ? newDefendant : defendant);
         return listedCases;
+    }
+
+    private Function<List<ListedCase>, List<ListedCase>> getDefendantsAddFunction(UUID caseId, Defendant defendant){
+        return cases -> getDefendants(caseId, defendant, cases);
+    }
+
+    private List<ListedCase> getDefendants(UUID caseId, Defendant defendant, List<ListedCase> cases){
+        Iterables.find(cases, listedCase -> listedCase.getId().equals(caseId)).getDefendants().add(defendant);
+
+        return cases ;
+
     }
 }

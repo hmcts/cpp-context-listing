@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/v24/listing/events/listing.events.non-sitting-days-assigned-to-hearing.json",
+  "type": "object",
+  "properties": {
+    "nonSittingDays": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/localDate"
+      }
+    },
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/v24/listing/events/listing-definitions.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "nonSittingDays",
+    "hearingId"
+  ],
+  "definitions": {
+    "localDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "additionalProperties": false
+}

@@ -208,8 +208,6 @@ public class StandardCourtListTemplateAssemblerTest {
         Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataForNoJudiciary()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
-        System.out.println("courtList:" + actualCourtList);
-
         assertThat(actualCourtList.getHearingDates().size(), is(1));
 
         HearingDate actualHearingDate = actualCourtList.getHearingDates().get(0);
@@ -224,6 +222,27 @@ public class StandardCourtListTemplateAssemblerTest {
         assertThat(actualTimeslot.getHearings().size(), is(1));
     }
 
+    @Test
+    public void shouldAssembleDataForStandardCourtListTemplateWithApplication() throws Exception {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails());
+
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataForNoJudiciaryWithApplication()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD);
+        final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
+
+        assertThat(actualCourtList.getHearingDates().size(), is(1));
+
+        HearingDate actualHearingDate = actualCourtList.getHearingDates().get(0);
+
+        assertThat(actualHearingDate.getCourtRooms().size(), is(1));
+
+        CourtRoom actualCourtRoom = actualHearingDate.getCourtRooms().get(0);
+        assertThat(actualCourtRoom.getTimeslots().size(), is(1));
+
+
+        Timeslot actualTimeslot = actualCourtRoom.getTimeslots().get(0);
+        assertThat(actualTimeslot.getHearings().size(), is(1));
+    }
 
     private void assertCourtRoom(CourtRoom actualCourtRoom) {
         assertThat(actualCourtRoom.getCourtRoomName(), is(COURT_ROOM_NAME_1));
@@ -339,7 +358,15 @@ public class StandardCourtListTemplateAssemblerTest {
         }
     }
 
-
+    private JsonArray buildHearingDataForNoJudiciaryWithApplication() {
+        String jsonString = FileUtil.getPayload("stubbed.hearingRepository.findHearingsForPublicList-StandardList-StandaloneApplication.json")
+                .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
+                .replaceAll("DATE_OF_BIRTH", DATE_OF_BIRTH)
+                .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString());
+        try (JsonReader jsonReader = createReader(new StringReader(jsonString))) {
+            return jsonReader.readArray();
+        }
+    }
     private JsonEnvelope buildRequestEnvelope(JsonArray hearingData) {
         final JsonObject queryPayload = createObjectBuilder()
                 .add("hearings", hearingData)

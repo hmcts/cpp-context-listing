@@ -2,15 +2,13 @@ package uk.gov.moj.cpp.listing.command.utils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNot.not;
 
 import uk.gov.justice.core.courts.DefendantListingNeeds;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.ProsecutionCase;
-import uk.gov.moj.cpp.listing.domain.Defendant;
-import uk.gov.moj.cpp.listing.domain.JudicialRole;
-import uk.gov.moj.cpp.listing.domain.ListedCase;
-import uk.gov.moj.cpp.listing.domain.Offence;
-import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
+import uk.gov.justice.services.common.converter.ZonedDateTimes;
+import uk.gov.moj.cpp.listing.domain.*;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -55,6 +53,7 @@ public class CommandToDomainConverterTest {
         assertThat(actual.getJurisdictionType().name(), is(commandHearing.getJurisdictionType().name()));
         assertJudicialRole(commandHearing, actual);
         assertListedCases(commandHearing, actual);
+        assertCourtApplications(commandHearing, actual);
 
         assertThat(actual.getProsecutorDatesToAvoid(), is(commandHearing.getProsecutorDatesToAvoid()));
         assertThat(actual.getNonDefaultDays(), is(Collections.emptyList()));
@@ -64,10 +63,57 @@ public class CommandToDomainConverterTest {
         assertThat(actual.getCourtRoomId(), is(commandHearing.getCourtCentre().getRoomId()));
         assertThat(actual.getCourtCentreId(), is(commandHearing.getCourtCentre().getId()));
         assertThat(actual.getEstimatedMinutes(), is(commandHearing.getEstimatedMinutes()));
-        assertThat(actual.getStartDate(), is(commandHearing.getEarliestStartDateTime().toLocalDate()));
+        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().get().toString())));
         assertThat(actual.getEndDate(), is(commandHearing.getEndDate()));
         assertThat(actual.getReportingRestrictionReason(), is(commandHearing.getReportingRestrictionReason()));
 
+    }
+
+    @Test
+    public void shouldConvertHearingCommandToHearingDomainForStandaloneApplication() {
+
+        //given
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingStandalone();
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing);
+
+        //then
+        assertThat(actual.getId(), is(commandHearing.getId()));
+        assertThat(actual.getJurisdictionType().name(), is(commandHearing.getJurisdictionType().name()));
+        assertCourtApplications(commandHearing, actual);
+
+        assertThat(actual.getProsecutorDatesToAvoid(), is(commandHearing.getProsecutorDatesToAvoid()));
+        assertThat(actual.getNonDefaultDays(), is(Collections.emptyList()));
+        assertThat(actual.getListingDirections(), is(commandHearing.getListingDirections()));
+        assertThat(actual.getType().getId(), is(commandHearing.getType().getId()));
+        assertThat(actual.getType().getDescription(), is(commandHearing.getType().getDescription()));
+        assertThat(actual.getCourtRoomId(), is(commandHearing.getCourtCentre().getRoomId()));
+        assertThat(actual.getCourtCentreId(), is(commandHearing.getCourtCentre().getId()));
+        assertThat(actual.getEstimatedMinutes(), is(commandHearing.getEstimatedMinutes()));
+        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().get().toString())));
+        assertThat(actual.getEndDate(), is(commandHearing.getEndDate()));
+        assertThat(actual.getReportingRestrictionReason(), is(commandHearing.getReportingRestrictionReason()));
+
+    }
+
+    @Test
+    public void shouldUseListedStartDateOverEarliestStartDate() {
+        //given
+        HearingListingNeeds commandHearing = commandBuilder.buildHearingWithListedStartDateTime();
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing);
+
+        //then
+        assertThat(actual.getStartDateTime(), not(commandHearing.getEarliestStartDateTime().get().toLocalDate()));
+        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getListedStartDateTime().get().toString())));
+    }
+
+    private void assertCourtApplications(HearingListingNeeds commandHearing, uk.gov.moj.cpp.listing.domain.Hearing actual) {
+        CourtApplication actualCourtApplication = actual.getCourtApplications().get(0);
+        assertThat(commandHearing.getCourtApplications().size(), is(actual.getCourtApplications().size()));
+        assertThat(commandHearing.getCourtApplications().get(0).getId(), is(actualCourtApplication.getId()));
     }
 
     private void assertListedCases(HearingListingNeeds commandHearing, uk.gov.moj.cpp.listing.domain.Hearing actual) {

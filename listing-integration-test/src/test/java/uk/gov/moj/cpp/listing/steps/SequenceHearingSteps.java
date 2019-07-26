@@ -65,7 +65,6 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
 
     private String request;
 
-
     public SequenceHearingSteps(SequenceHearingData sequenceHearingData) {
         this.sequenceHearingData = sequenceHearingData;
         givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);

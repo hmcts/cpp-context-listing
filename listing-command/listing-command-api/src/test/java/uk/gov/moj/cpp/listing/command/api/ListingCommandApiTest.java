@@ -6,12 +6,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
 import static uk.gov.justice.services.test.utils.core.helper.ServiceComponents.verifyPassThroughCommandHandlerMethod;
-import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.LISTING_COMMAND_SEND_CASE_FOR_LISTING_ENRICHED;
+import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED;
 import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED;
 
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
-import uk.gov.justice.listing.commands.UpdateHearingForListingEnriched;
-import uk.gov.justice.listing.courts.SendCaseForListing;
+import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
+import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.enveloper.Enveloper;
@@ -62,7 +62,7 @@ public class ListingCommandApiTest {
     private UpdateHearingForListing updateHearingForListing;
 
     @Mock
-    private SendCaseForListing sendCaseForListing;
+    private ListCourtHearing listCourtHearing;
 
     @InjectMocks
     private ListingCommandApi ListingCommandApi;
@@ -98,12 +98,12 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void listingCommandHandlerShouldSendCaseForListing() throws Exception {
+    public void listingCommandHandlerShouldListCourtHearing() throws Exception {
 
         //given
         given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(jsonObjectConverter.convert(payload, SendCaseForListing.class)).willReturn(sendCaseForListing);
-        given(enveloper.withMetadataFrom(envelope, LISTING_COMMAND_SEND_CASE_FOR_LISTING_ENRICHED)).willReturn
+        given(jsonObjectConverter.convert(payload, ListCourtHearing.class)).willReturn(listCourtHearing);
+        given(enveloper.withMetadataFrom(envelope, LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED)).willReturn
                 (enveloperFunction);
 
         given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
@@ -112,7 +112,7 @@ public class ListingCommandApiTest {
                 ArgumentCaptor.forClass(JsonEnvelope.class);
 
         //when
-        ListingCommandApi.sendCaseForListing(envelope);
+        ListingCommandApi.listCourtHearing(envelope);
 
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());

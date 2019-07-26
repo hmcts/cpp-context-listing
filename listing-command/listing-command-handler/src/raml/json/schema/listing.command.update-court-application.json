@@ -1,0 +1,15 @@
+{
+	 "$schema": "http://json-schema.org/draft-04/schema#",
+	 "id": "http://justice.gov.uk/listing/courts/listing.command.update-court-application-command.json",
+	 "type": "object",
+	 "properties": {
+		"courtApplication": {
+			"description": "The court application that is be added to the existing listing",
+			 "$ref": "http://justice.gov.uk/core/courts/courtApplication.json"
+		}
+	 },
+	 "required": [
+		"courtApplication"
+	],
+	 "additionalProperties": false
+}

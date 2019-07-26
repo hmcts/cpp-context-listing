@@ -11,6 +11,7 @@ import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.WelshMonth;
+import uk.gov.moj.cpp.listing.domain.utils.ZonedDateTimeFormatter;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtCentreDetails;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtRoomDetails;
@@ -34,6 +35,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -45,7 +47,7 @@ import javax.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings({"squid:S00107", "squid:S1132", "squid:S1602"})
+@SuppressWarnings({"squid:S00107", "squid:S1132", "squid:S1602", "pmd:NullAssignment"})
 public class StandardPublicCourtListTemplateAssembler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardPublicCourtListTemplateAssembler.class);
@@ -129,12 +131,14 @@ public class StandardPublicCourtListTemplateAssembler {
                                 .map(hearingByCourtCentreId -> {
                                     final LocalDate hearingDate = LocalDates.from(hearingByCourtCentreId.getString(HEARING_DATE));
                                     final Optional<JsonObject> referenceDataJudiciariesJsonObject = retrieveReferenceDataForJudiciary(hearingsByCourtCentre, envelope);
-                                    return HearingDate.hearingDate()
+                                    final List<CourtRoom> courtRooms = createCourtRoomsList(courtCentreDetails, courtRoomId, hearingByCourtCentreId, referenceDataJudiciariesJsonObject);
+                                    return courtRooms.isEmpty() ? null : HearingDate.hearingDate()
                                             .withHearingDate(hearingDate.toString())
                                             .withHearingDateWelsh(createWelshHearingDate(hearingDate))
-                                            .withCourtRooms(createCourtRoomsList(courtCentreDetails, courtRoomId, hearingByCourtCentreId, referenceDataJudiciariesJsonObject))
+                                            .withCourtRooms(courtRooms)
                                             .build();
                                 })
+                                .filter(Objects::nonNull)
                                 .sorted(hearingDateComparator)
                                 .collect(toList());
                     })
@@ -191,18 +195,18 @@ public class StandardPublicCourtListTemplateAssembler {
         hearingByCourtCentreId.getJsonArray(HEARINGS_BY_HEARING_DATE).getValuesAs(JsonObject.class).stream()
                 .filter(hearingByDate -> hearingByDate != null && hearingByDate.size() > 0)
                 .map(hearingByDate -> hearingByDate.getJsonObject(HEARING))
+                .filter(hearing -> hearing.getJsonArray(LISTED_CASES) != null)
                 .forEach(hearing ->
                 {
                     hearingsByCourtRoomIdMap.computeIfAbsent(hearing.getString(COURT_ROOM_ID), k -> new ArrayList<>()).add(hearing);
                 });
 
 
-        final List<CourtRoom> courtRooms = hearingsByCourtRoomIdMap.keySet().stream()
+        return hearingsByCourtRoomIdMap.keySet().stream()
                 .filter(courtRoomId -> selectedCourtRoomId == null || selectedCourtRoomId.equals(courtRoomId) )
                 .map(courtRoomId -> createCourtRoom(hearingsByCourtRoomIdMap.get(courtRoomId), courtCentre.getCourtRooms().get(UUID.fromString(courtRoomId)), referenceDataJudiciariesJo, hearingDate))
                 .sorted(Comparator.comparing(CourtRoom::getCourtRoomName))
                 .collect(toList());
-        return courtRooms;
     }
 
     private CourtRoom createCourtRoom(List<JsonObject> hearingsByCourtRoom, CourtRoomDetails courtRoomDetails, Optional<JsonObject> referenceDataJudiciariesJoOpt, LocalDate hearingDate) {
@@ -227,7 +231,7 @@ public class StandardPublicCourtListTemplateAssembler {
                             .findFirst()
                             .orElseThrow(IllegalArgumentException::new);
 
-                    final ZonedDateTime startTime = ZonedDateTimes.fromString(hearingDay.getString(START_TIME));
+                    final ZonedDateTime startTime = ZonedDateTimeFormatter.adjustDateTime(ZonedDateTimes.fromString(hearingDay.getString(START_TIME)));
                     final Integer sequence = hearingDay.getInt(SEQUENCE);
 
                     final String hearingStartTime = START_TIME_FORMAT.format(startTime.getHour()) + COLON + START_TIME_FORMAT.format(startTime.getMinute());

@@ -62,6 +62,26 @@
     ],
     "startDate": "2018-11-01",
     "endDate": "2018-11-10",
+    "courtApplications":[
+      {
+        "applicant":{
+          "firstName":"David",
+          "isRespondent":false,
+          "lastName":"Lloyd"
+        },
+        "applicationType":"9vBchM49Go",
+        "id":"26b856a8-ae01-4aad-814c-7cdff8db19bf",
+        "parentApplicationId":"9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+        "linkedCaseId":"19e9d562-6abb-4871-bfb3-2d777aa90371",
+        "respondents":[
+          {
+            "firstName":"David",
+            "isRespondent":true,
+            "lastName":"Lloyd"
+          }
+        ]
+      }
+    ],
     "nonDefaultDays": [
       {
         "startTime" : "2018-06-01T11:00:00.000Z"

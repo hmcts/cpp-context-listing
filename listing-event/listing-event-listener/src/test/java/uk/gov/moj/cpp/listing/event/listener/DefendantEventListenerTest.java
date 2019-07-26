@@ -16,6 +16,7 @@ import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.NewBaseDefendant;
+import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.NewDefendantDetailsUpdated;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.StatementOfOffence;
@@ -58,6 +59,9 @@ public class DefendantEventListenerTest {
 
     @Mock
     private Envelope<NewDefendantDetailsUpdated> defendantDetailsUpdatedEnvelope;
+
+    @Mock
+    private Envelope<NewDefendantAddedForCourtProceedings> defendantAddedForCourtProceedingsEnvelope;
 
     @Mock
     private HearingRepository hearingRepository;
@@ -107,6 +111,39 @@ public class DefendantEventListenerTest {
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         String actualBailStatus = objectNodeCaptor.getValue().get(0).get("defendants").get(0).get("bailStatus").toString();
         assertThat(actualBailStatus, equalTo("\"" + EXPECTED_BAIL_STATUS.toString() + "\""));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldHandleDefendantAddedAndPersistSimpleDefendant() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<ListedCase> testCases = createListedCases();
+        String testCasesString =  mapper.writeValueAsString(testCases);
+        JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+        Envelope<NewDefendantAddedForCourtProceedings>  envelope = (Envelope<NewDefendantAddedForCourtProceedings>) mock(Envelope.class);
+
+        NewDefendantAddedForCourtProceedings hearingData = NewDefendantAddedForCourtProceedings.newDefendantAddedForCourtProceedings()
+                .withCaseId(CASE_ID)
+                .withHearingId(HEARING_ID)
+                .withDefendant(Defendant.defendant()
+                        .withBailStatus(of(EXPECTED_BAIL_STATUS))
+                        .withId(DEFENDANT_ID)
+                        .build())
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(defendantAddedForCourtProceedingsEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantEventListener.defendantDetailsAddedForCourtProceedings(defendantAddedForCourtProceedingsEnvelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
     }
 

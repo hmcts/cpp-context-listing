@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/v24/listing/events/offence.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/v24/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "offenceCode": {
+      "type": "string"
+    },
+    "offenceWording": {
+      "type": "string"
+    },
+    "startDate": {
+      "type": "string"
+    },
+    "endDate": {
+      "type": "string"
+    },
+    "statementOfOffence": {
+      "$ref": "http://justice.gov.uk/v24/listing/events/statementOfOffence.json"
+    }
+  },
+  "required": [
+    "id",
+    "offenceCode",
+    "offenceWording",
+    "startDate",
+    "statementOfOffence"
+  ],
+  "additionalProperties": false
+}

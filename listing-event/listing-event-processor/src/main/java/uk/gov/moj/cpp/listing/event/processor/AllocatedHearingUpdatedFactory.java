@@ -36,21 +36,25 @@ public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
                         .collect(toList()))
                 .withHearingLanguage(HearingLanguage.valueFor(hearingUpdatedForListing.getHearingLanguage().toString()))
                 .withJurisdictionType(JurisdictionType.valueFor(hearingUpdatedForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
-                .withProsecutionCases(hearingUpdatedForListing.getProsecutionCaseDefendantsOffenceIds().stream()
-                        .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
-                                .withDefendants(pcdo.getDefendants().stream()
-                                        .map(d -> ConfirmedDefendant.confirmedDefendant()
-                                                .withId(d.getId())
-                                                .withOffences(d.getOffenceIds().stream()
-                                                        .map(o -> ConfirmedOffence.confirmedOffence().withId(o).build())
-                                                        .collect(toList()))
-                                                .build())
-                                        .collect(toList()))
-                                .withId(pcdo.getId())
-                                .build())
-                        .collect(toList()))
+                .withCourtApplicationIds(hearingUpdatedForListing.getCourtApplicationIds())
                 .withReportingRestrictionReason(hearingUpdatedForListing.getReportingRestrictionReason())
                 .withType(buildType(type));
+        if (hearingUpdatedForListing.getProsecutionCaseDefendantsOffenceIds()!=null) {
+                builder.withProsecutionCases(hearingUpdatedForListing.getProsecutionCaseDefendantsOffenceIds().stream()
+                    .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
+                            .withDefendants(pcdo.getDefendants().stream()
+                                    .map(d -> ConfirmedDefendant.confirmedDefendant()
+                                            .withId(d.getId())
+                                            .withOffences(d.getOffenceIds().stream()
+                                                    .map(o -> ConfirmedOffence.confirmedOffence().withId(o).build())
+                                                    .collect(toList()))
+                                            .build())
+                                    .collect(toList()))
+                            .withId(pcdo.getId())
+                            .build())
+                    .collect(toList()));
+        }
+
         if (!judicialRoles.isEmpty()) {
             builder.withJudiciary(judicialRoles.stream()
                     .map(this::buildJudicialRole)

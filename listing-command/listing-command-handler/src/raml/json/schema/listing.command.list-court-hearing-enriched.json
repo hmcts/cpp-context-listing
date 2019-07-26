@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/listing.command.list-court-hearing-enriched.json",
+  "type": "object",
+  "properties": {
+    "listCourtHearing": {
+      "$ref": "http://justice.gov.uk/listing/courts/list-court-hearing.json"
+    },
+    "courtCentresDetails": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/commands/court-centre-details.json"
+      }
+    }
+  },
+  "required": [
+    "listCourtHearing",
+    "courtCentresDetails"
+  ],
+  "additionalProperties": false
+}

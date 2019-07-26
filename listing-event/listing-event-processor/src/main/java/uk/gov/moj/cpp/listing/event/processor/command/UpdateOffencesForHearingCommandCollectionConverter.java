@@ -29,8 +29,9 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
         return offences.stream().map(offence -> {
             final LocalDate endDate = offence.getEndDate().map(LocalDates::from).orElse(null);
             final StatementOfOffence soo = convertStatementOfOffence(offence.getStatementOfOffence());
+            final String strEndDate = endDate==null ? null : endDate.toString();
             return Offence.offence()
-                    .withEndDate(Optional.of(endDate.toString()))
+                    .withEndDate(Optional.ofNullable(strEndDate))
                     .withId(offence.getId())
                     .withOffenceCode(offence.getOffenceCode())
                     .withStartDate(offence.getStartDate())

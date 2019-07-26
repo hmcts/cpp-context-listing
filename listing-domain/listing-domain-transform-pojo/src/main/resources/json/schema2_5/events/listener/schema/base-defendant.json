@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/base-defendant.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "personId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "firstName": {
+      "description": "The person first name",
+      "type": "string"
+    },
+    "lastName": {
+      "description": "The person last name",
+      "type": "string"
+    },
+    "dateOfBirth": {
+      "description": "The person date of birth",
+      "type": "string",
+      "format": "date"
+    },
+    "bailStatus": {
+      "enum": [
+        "CONDITIONAL",
+        "UNCONDITIONAL",
+        "IN_CUSTODY"
+      ]
+    },
+    "custodyTimeLimit": {
+      "description": "Custody Time Limit",
+      "type": "string",
+      "format": "date"
+    },
+    "defenceOrganisation": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "personId",
+    "firstName",
+    "lastName",
+    "dateOfBirth",
+    "bailStatus",
+    "defenceOrganisation"
+  ]
+}

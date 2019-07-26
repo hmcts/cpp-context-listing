@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "id": "http://justice.gov.uk/v24/listing/events/listing.events.judiciary-removed-from-hearing.json",
+  "properties": {
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/v24/listing/events/listing-definitions.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "hearingId"
+  ],
+  "additionalProperties": false
+}

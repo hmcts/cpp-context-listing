@@ -18,6 +18,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary());
     }
 
+    public static HearingsData hearingsDataStandaloneApplication(){
+        return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplication());
+    }
+
     private HearingsData(List<HearingData> hearingData) {
         this.hearingData = hearingData;
     }

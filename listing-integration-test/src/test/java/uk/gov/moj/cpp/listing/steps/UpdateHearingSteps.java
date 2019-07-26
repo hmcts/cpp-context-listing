@@ -482,6 +482,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get(publicEventType+".id"), is(updatedHearingData.getHearingId().toString()));
         assertThat(jsonResponse.get(publicEventType+".courtCentre.roomId"), is(updatedHearingData.getCourtRoomId().toString()));
         assertThat(jsonResponse.get(publicEventType+".courtCentre.id"), is(updatedHearingData.getCourtCentreId().toString()));
+        assertThat(jsonResponse.get(publicEventType+".courtApplicationIds[0]"), is(hearingData.getCourtApplications().get(0).getId().toString()));
         assertThat(jsonResponse.get(publicEventType+".hearingLanguage"), is(updatedHearingData.getHearingLanguage()));
         assertThat(jsonResponse.get(publicEventType+".type.id"), is(updatedHearingData.getHearingTypData().getTypeId().toString()));
         assertThat(jsonResponse.get(publicEventType+".type.description"), is(updatedHearingData.getHearingTypData().getTypeDescription()));

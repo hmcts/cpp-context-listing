@@ -1,0 +1,174 @@
+package uk.gov.moj.cpp.listing.domain;
+
+import static java.util.Optional.ofNullable;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@SuppressWarnings({"squid:S1067", "squid:S00107" })
+public class CourtApplication {
+  private final UUID id;
+
+  private final UUID linkedCaseId;
+
+  private final UUID parentApplicationId;
+
+  private final ApplicantRespondent applicant;
+
+  private final String applicationType;
+
+  private final List<ApplicantRespondent> respondents;
+
+  private final Boolean requiresResponse;
+
+  private final Optional<String> applicationReference;
+
+  public CourtApplication(final UUID id, final UUID linkedCaseId, final UUID parentApplicationId, final ApplicantRespondent applicant,
+                          final String applicationType, final List<ApplicantRespondent> respondents, Boolean requiresResponse, Optional<String> applicationReference) {
+    this.id = id;
+    this.linkedCaseId = linkedCaseId;
+    this.parentApplicationId = parentApplicationId;
+    this.applicant = applicant;
+    this.applicationType = applicationType;
+    this.respondents = respondents;
+    this.requiresResponse = requiresResponse;
+    this.applicationReference = applicationReference;
+  }
+
+  public ApplicantRespondent getApplicant() {
+    return applicant;
+  }
+
+  public String getApplicationType() {
+    return applicationType;
+  }
+
+  public UUID getId() {
+    return id;
+  }
+
+  public List<ApplicantRespondent> getRespondents() {
+    return respondents;
+  }
+
+  public Optional<UUID> getLinkedCaseId() {
+    return ofNullable(linkedCaseId);
+  }
+
+  public Optional<UUID> getParentApplicationId() {
+    return ofNullable(parentApplicationId);
+  }
+
+  public Boolean getRequiresResponse() {
+    return requiresResponse;
+  }
+
+  public Optional<String> getApplicationReference() {
+    return applicationReference;
+  }
+
+  public static Builder courtApplication() {
+    return new CourtApplication.Builder();
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    final CourtApplication that = (CourtApplication) obj;
+
+    return java.util.Objects.equals(this.applicant, that.applicant) &&
+    java.util.Objects.equals(this.applicationType, that.applicationType) &&
+    java.util.Objects.equals(this.id, that.id) &&
+    java.util.Objects.equals(this.respondents, that.respondents) &&
+    java.util.Objects.equals(this.linkedCaseId, that.linkedCaseId) &&
+    java.util.Objects.equals(this.parentApplicationId, that.parentApplicationId)&&
+    java.util.Objects.equals(this.requiresResponse, that.requiresResponse) &&
+    java.util.Objects.equals(this.applicationReference, that.applicationReference);
+  }
+
+  @Override
+  public int hashCode() {
+    return java.util.Objects.hash(applicant, applicationType, id, respondents, linkedCaseId, parentApplicationId, requiresResponse, applicationReference);
+  }
+
+  @Override
+  public String toString() {
+    return "CourtApplication{" +
+    	"applicant='" + applicant + "'," +
+    	"applicationType='" + applicationType + "'," +
+    	"id='" + id + "'," +
+    	"respondants='" + respondents + "'" +
+        "linkedCaseId='" + linkedCaseId + "'" +
+        "parentApplicationId='" + parentApplicationId + "'" +
+        "requiresResponse='" + requiresResponse + "'" +
+        "applicationReference='" + applicationReference + "'" +
+    "}";
+  }
+
+  public static class Builder {
+    private ApplicantRespondent applicant;
+
+    private String applicationType;
+
+    private UUID id;
+
+    private List<ApplicantRespondent> respondents;
+
+    private UUID linkedCaseId;
+
+    private UUID parentApplicationId;
+
+    private Boolean requiresResponse;
+
+    private Optional<String> applicationReference;
+
+    public Builder withApplicant(final ApplicantRespondent applicant) {
+      this.applicant = applicant;
+      return this;
+    }
+
+    public Builder withApplicationType(final String applicationType) {
+      this.applicationType = applicationType;
+      return this;
+    }
+
+    public Builder withId(final UUID id) {
+      this.id = id;
+      return this;
+    }
+
+    public Builder withRespondents(final List<ApplicantRespondent> respondents) {
+      this.respondents = respondents;
+      return this;
+    }
+
+    public Builder withLinkedCaseId(final UUID linkedCaseId) {
+      this.linkedCaseId = linkedCaseId;
+      return this;
+    }
+    public Builder withParentApplicationId(final UUID parentApplicationId) {
+      this.parentApplicationId = parentApplicationId;
+      return this;
+    }
+
+    public Builder withRequiresResponse(final Boolean requiresResponse) {
+      this.requiresResponse = requiresResponse;
+      return this;
+    }
+
+    public Builder withApplicationReference(final Optional<String> applicationReference) {
+      this.applicationReference = applicationReference;
+      return this;
+    }
+
+    public CourtApplication build() {
+      return new CourtApplication(id, linkedCaseId, parentApplicationId,  applicant, applicationType,  respondents, requiresResponse, applicationReference);
+    }
+  }
+}

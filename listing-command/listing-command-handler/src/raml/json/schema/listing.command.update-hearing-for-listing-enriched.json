@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/commands/update-hearing-for-listing-enriched.json",
+  "id": "http://justice.gov.uk/listing/courts/update-hearing-for-listing-enriched.json",
   "type": "object",
   "properties": {
     "updateHearingForListing": {

@@ -12,6 +12,7 @@ import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.WelshMonth;
+import uk.gov.moj.cpp.listing.domain.utils.ZonedDateTimeFormatter;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtCentreDetails;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtRoomDetails;
@@ -75,7 +76,7 @@ public class AlphabeticalCourtListService {
         final List<AlphabeticalListDefendant> defendants = new ArrayList<>();
         final LocalDate hearingDate = LocalDates.from(hearing.getString(HEARING_DATE));
         hearing.getJsonArray(HEARINGS_BY_HEARING_DATE).getValuesAs(JsonObject.class).forEach(hearingByDate -> {
-            final ZonedDateTime dateTime = ZonedDateTimes.fromString(hearingByDate.getString(START_TIME));
+            final ZonedDateTime dateTime = ZonedDateTimeFormatter.adjustDateTime(ZonedDateTimes.fromString(hearingByDate.getString(START_TIME)));
             final DecimalFormat format = new DecimalFormat("00");
             final String hearingStartTime = format.format(dateTime.getHour()) + ":" + format.format(dateTime.getMinute());
             final String caseReference = hearingByDate.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE);

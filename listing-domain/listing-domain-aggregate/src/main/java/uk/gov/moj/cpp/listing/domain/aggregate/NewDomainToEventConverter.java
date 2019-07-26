@@ -1,17 +1,13 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 
-import uk.gov.justice.listing.events.BailStatus;
-import uk.gov.justice.listing.events.CaseIdentifier;
-import uk.gov.justice.listing.events.Defendant;
-import uk.gov.justice.listing.events.HearingLanguageNeeds;
-import uk.gov.justice.listing.events.JudicialRoleType;
-import uk.gov.justice.listing.events.NewBaseDefendant;
-import uk.gov.justice.listing.events.Offence;
-import uk.gov.justice.listing.events.SimpleOffence;
-import uk.gov.justice.listing.events.StatementOfOffence;
+import uk.gov.justice.listing.events.*;
+import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
+import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 
@@ -130,4 +126,23 @@ public class NewDomainToEventConverter {
                 .withIsBenchChairman(domainJudicialRole.getIsBenchChairman())
                 .build();
     }
+
+    public static uk.gov.justice.listing.events.CourtApplication buildCourtApplications(final CourtApplication courtApplication) {
+        return uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                .withId(courtApplication.getId())
+                .withLinkedCaseId(courtApplication.getLinkedCaseId())
+                .withParentApplicationId(courtApplication.getParentApplicationId())
+                .withApplicationType(courtApplication.getApplicationType())
+                .withApplicant(buildApplicantRespondant(courtApplication.getApplicant()))
+                .withRespondents(nonNull(courtApplication.getRespondents()) ? courtApplication.getRespondents().stream().map(NewDomainToEventConverter::buildApplicantRespondant).collect(toList()): null)
+                .withApplicationReference(courtApplication.getApplicationReference().isPresent() ? courtApplication.getApplicationReference() : empty())
+                .build();
+    }
+    private static uk.gov.justice.listing.events.ApplicantRespondent buildApplicantRespondant(final ApplicantRespondent applicant){
+        return isNull(applicant) ? null : uk.gov.justice.listing.events.ApplicantRespondent.applicantRespondent()
+                .withFirstName(applicant.getFirstName())
+                .withLastName(applicant.getLastName())
+                .withIsRespondent(applicant.getIsRespondent()).build();
+    }
+
 }

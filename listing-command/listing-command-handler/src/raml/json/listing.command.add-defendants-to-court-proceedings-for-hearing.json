@@ -1,0 +1,21 @@
+{
+  "hearingId": "0baecac5-222b-402d-9047-84803679edae",
+  "caseId": "53bdb158-5c84-43a2-8803-499508b49873",
+  "defendants": [
+    {
+      "id": "0baecac5-222b-402d-9047-84803679edac",
+      "personId": "0baecac5-222b-402d-9047-84803679edad",
+      "firstName": "David",
+      "lastName": "Lloyd",
+      "dateOfBirth": "1995-03-23",
+      "bailStatus": "IN_CUSTODY",
+      "custodyTimeLimit": "2018-01-30",
+      "defenceOrganisation": "Solicitor XYZ",
+      "datesToAvoid": ["2018-10-10", "2018-10-11"],
+      "hearingLanguageNeeds": "Welsh",
+      "specificRequirements": "Wheelchair",
+      "organisationName": "Org name",
+      "offences": [ ]
+    }
+  ]
+}

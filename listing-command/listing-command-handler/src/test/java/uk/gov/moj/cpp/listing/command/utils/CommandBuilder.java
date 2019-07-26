@@ -1,12 +1,19 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 
 import javax.inject.Inject;
+import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonReader;
+import java.io.StringReader;
 
 public class CommandBuilder {
+
+    private static final String EARLIEST_START_TIME = "2012-12-12T01:02:33Z";
+    private static final String LISTED_START_TIME = "2012-11-12T01:02:33Z";
 
     @Inject
     JsonObjectToObjectConverter jsonObjectToObjectConverter;
@@ -21,5 +28,23 @@ public class CommandBuilder {
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
     }
 
+    public HearingListingNeeds buildCommandHearingStandalone() {
+        JsonObject hearingJsonObject = FileUtil.givenPayload("/test-data/listing.commands.hearing-standalone.json");
+        return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
+    }
 
+    public HearingListingNeeds buildHearingWithListedStartDateTime() {
+        String jsonString = FileUtil.givenPayload("/test-data/listing.command.hearing-listed-date-over-earliest-date.json").toString()
+                .replace("EARLIEST_START_TIME", EARLIEST_START_TIME)
+                .replace("LISTED_START_TIME", LISTED_START_TIME);
+
+        final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+        return jsonObjectToObjectConverter.convert(jsonReader.readObject(), HearingListingNeeds.class);
+    }
+
+
+    public CourtApplication buildCourtApplication() {
+        JsonObject courtApplication = FileUtil.givenPayload("/test-data/listing.court-application-applicant-respondent.json");
+        return jsonObjectToObjectConverter.convert(courtApplication, CourtApplication.class);
+    }
 }

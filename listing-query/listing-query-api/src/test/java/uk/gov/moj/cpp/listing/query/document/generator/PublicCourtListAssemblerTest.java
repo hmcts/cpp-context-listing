@@ -112,6 +112,59 @@ public class PublicCourtListAssemblerTest {
         assertThat(hearing.getString("caseNumber"), is(CASE_REFERENCE2));
     }
 
+    @Test
+    public void shouldBuildDataForPublicCourtListBST() throws Exception {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(Arrays.asList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+
+        JsonObject publicListData = publicListService.assemble(buildRequestEnvelopeForBST(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC).get();
+
+        JsonObject hearingDateJo = publicListData.getJsonArray("hearingDates").getJsonObject(0);
+        assertThat(hearingDateJo.getString("hearingDate"), is("2018-07-21"));
+        JsonObject courtRoomsJo = hearingDateJo.getJsonArray("courtRooms").getJsonObject(0);
+        JsonObject timeslot = courtRoomsJo.getJsonArray("timeslots").getJsonObject(0);
+
+
+        JsonObject hearing = timeslot.getJsonArray("hearings").getJsonObject(0);
+        assertThat(hearing.getString("startTime"), is("2018-07-21T13:37:00.000Z".substring(11, 16)));
+        assertThat(hearing.getString("hearingType"), is(HEARING_TYPE));
+        assertThat(hearing.getString("reportingRestrictionReason"), is(REPORTING_RESTRICTION_REASON));
+
+        JsonObject hearingDate2Jo = publicListData.getJsonArray("hearingDates").getJsonObject(1);
+        assertThat(hearingDate2Jo.getString("hearingDate"), is("2018-07-22"));
+        JsonObject courtRooms2Jo = hearingDate2Jo.getJsonArray("courtRooms").getJsonObject(0);
+        JsonObject timeslot2 = courtRooms2Jo.getJsonArray("timeslots").getJsonObject(0);
+
+
+        JsonObject hearing2 = timeslot2.getJsonArray("hearings").getJsonObject(0);
+        assertThat(hearing2.getString("startTime"), is("2018-07-22T11:30:00.000Z".substring(11, 16)));
+        assertThat(hearing2.getString("hearingType"), is(HEARING_TYPE));
+        assertThat(hearing2.getString("reportingRestrictionReason"), is(REPORTING_RESTRICTION_REASON));
+    }
+
+    @Test
+    public void shouldBuildDataForPublicCourtListStandAloneApplication() throws Exception {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(Arrays.asList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+
+        JsonObject publicListData = publicListService.assemble(buildRequestEnvelope(true), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC).get();
+
+        assertPublicCourtListPayload(publicListData, CHECK_JUDICIARY);
+
+        JsonObject hearingDate2Jo = publicListData.getJsonArray("hearingDates").getJsonObject(0);
+        assertThat(hearingDate2Jo.getString("hearingDate"), is(START_DATE1));
+        JsonObject courtRoomsJo = hearingDate2Jo.getJsonArray("courtRooms").getJsonObject(0);
+        assertThat(courtRoomsJo.getString("courtRoomName"), is(COURT_ROOM_NAME_1));
+        JsonObject timeslot = courtRoomsJo.getJsonArray("timeslots").getJsonObject(0);
+        JsonObject hearing = timeslot.getJsonArray("hearings").getJsonObject(0);
+        assertThat(hearing.getString("startTime"), is(START_TIME1.substring(11, 16)));
+        assertThat(hearing.getString("caseNumber"), is(CASE_REFERENCE));
+    }
+
 
     @Test
     public void shouldBuildDataForPublicCourtListWhenJudiciaryIsEmpty() throws Exception {
@@ -157,7 +210,7 @@ public class PublicCourtListAssemblerTest {
 
         JsonObject hearing = timeslot.getJsonArray("hearings").getJsonObject(0);
         assertThat(hearing.getString("startTime"), is(START_TIME1.substring(11, 16)));
-        assertThat(hearing.getString("welshHearingType"), is(HEARING_TYPE)); //waiting for welsh hearingType description to supplied as part of sendcaseforlisting in 2.5
+        assertThat(hearing.getString("welshHearingType"), is(HEARING_TYPE)); //waiting for welsh hearingType description to supplied as part of listCourtHearing in 2.5
         assertThat(hearing.getString("welshReportingRestrictionReason"), is(WELSH + REPORTING_RESTRICTION_REASON));
 
         assertThat(hearing.getString("caseNumber"), is(CASE_REFERENCE));
@@ -254,7 +307,42 @@ public class PublicCourtListAssemblerTest {
 
     private JsonEnvelope buildRequestEnvelope() {
         final JsonObject queryPayload = createRequestPayload();
+        return buildRequestEnvelope(false);
+    }
+    private JsonEnvelope buildRequestEnvelope(final boolean withStandAloneApplication){
+        if(withStandAloneApplication) {
+            return buildJsonEnvelope(createRequestPayloadWithStandAloneApplication());
+        }
+        else{
+            return buildJsonEnvelope(createRequestPayload());
+        }
+    }
+
+    private JsonEnvelope buildRequestEnvelopeForBST() {
+        String path = FileUtil.getPayload("stubbed.queryView.getCourtListContentForPublicListBST.json")
+                .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
+                .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
+                .replaceAll("START_DATE1", "2018-07-21")
+                .replaceAll("START_DATE2", "2018-07-22")
+                .replaceAll("START_TIME1", "2018-07-21T12:37:00.000Z")
+                .replaceAll("START_TIME2", "2018-07-22T10:30:00.000Z")
+                .replaceAll("REPORTING_RESTRICTION_REASON", REPORTING_RESTRICTION_REASON)
+                .replaceAll("HEARING_TYPE", HEARING_TYPE)
+                .replaceAll("CASE_REFERENCE1", CASE_REFERENCE)
+                .replaceAll("CASE_REFERENCE2", CASE_REFERENCE2)
+                .replaceAll("FIRST_NAME", FIRST_NAME)
+                .replaceAll("LAST_NAME", LAST_NAME)
+                .replaceAll("OFFENCE_TITLE", OFFENCE_TITLE)
+                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString());
+        JsonObject queryPayload = convertToJsonObject(path);
+
         return buildJsonEnvelope(queryPayload);
+    }
+
+    private JsonObject createRequestPayloadWithStandAloneApplication() {
+        String payload = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList-StandaloneApplication.json")
+                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString());
+        return convertToJsonObject(payload);
     }
 
     private JsonEnvelope buildRequestEnvelopeWithNoJudiciary() {
