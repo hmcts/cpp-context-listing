@@ -889,8 +889,11 @@ public class Hearing implements Aggregate {
         }
         this.hearingDays = convertHearingDaysToDomain(hearing.getHearingDays());
         this.allocated = Boolean.FALSE;
-        this.confirmedCourtApplicationIds = hearing.getCourtApplications().stream()
-                .map(uk.gov.justice.listing.events.CourtApplication::getId).collect(toList());
+
+        if(hearing.getCourtApplications() != null) {
+            this.confirmedCourtApplicationIds = hearing.getCourtApplications().stream()
+                    .map(uk.gov.justice.listing.events.CourtApplication::getId).collect(toList());
+        }
     }
 
     private List<uk.gov.justice.listing.events.HearingDay> mergeHearingDaySequences(List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, Map<ZonedDateTime, HearingDay> existingHearingDays) {
