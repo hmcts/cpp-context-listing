@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
 
-import uk.gov.justice.progression.courts.Defendant;
+import uk.gov.justice.core.courts.Defendant;
 
 public class UpdateCaseDefendantData {
     private final Defendant defendant;

@@ -3,6 +3,11 @@ package uk.gov.moj.cpp.listing.steps.data;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 
+import java.util.Arrays;
+import java.util.List;
+import static java.util.Optional.of;
+
+import uk.gov.justice.core.courts.DefendantAlias;
 import uk.gov.justice.listing.courts.BailStatus;
 
 import java.util.UUID;
@@ -21,7 +26,8 @@ public class UpdatedDefendantData {
     private final String organisationName;
     private final String specificRequirements;
     private final UUID courtCentreId;
-
+    private final String pncId;
+    private final List<DefendantAlias> aliases;
 
     public static UpdatedDefendantData updatedDefendantData(DefendantData defendantData) {
         return UpdatedDefendantData.Builder.UpdatedDefendantData()
@@ -36,6 +42,11 @@ public class UpdatedDefendantData {
                 .withLegalEntityId(fromString("55b8e1fd-085d-4236-a14f-8a35d86db8b2"))
                 .withSpecificRequirements("withSpecificRequirements")
                 .withCourtCentreId(randomUUID())
+                .withPncId("pncId")
+                .withAliases(Arrays.asList(DefendantAlias.defendantAlias()
+                										.withFirstName(of("Alias First Name"))
+                										.withLastName(of("Alias Last Name"))
+                										.build()))
                 .build();
     }
 
@@ -49,7 +60,9 @@ public class UpdatedDefendantData {
                                 final String legalEntityName,
                                 final UUID legalEntityId,
                                 final String specificRequirements,
-                                final UUID courtCentreId) {
+                                final UUID courtCentreId,
+                                final String pncId,
+                                final List<DefendantAlias> aliases) {
         this.bailStatus = bailStatus;
         this.custodyTimeLimit = custodyTimeLimit;
         this.dateOfBirth = dateOfBirth;
@@ -61,6 +74,8 @@ public class UpdatedDefendantData {
         this.legalEntityId = legalEntityId;
         this.specificRequirements = specificRequirements;
         this.courtCentreId = courtCentreId;
+        this.pncId = pncId;
+        this.aliases = aliases;
     }
 
     public BailStatus getBailStatus() {
@@ -79,7 +94,7 @@ public class UpdatedDefendantData {
         return firstName;
     }
 
-    public UUID getDefendantId() { return defendantId; }
+	public UUID getDefendantId() { return defendantId; }
 
     public String getLastName() { return lastName; }
 
@@ -98,8 +113,17 @@ public class UpdatedDefendantData {
     public UUID getCourtCentreId() {
         return courtCentreId;
     }
+    
+    public String getPncId() {
+		return pncId;
+	}
+    
 
-    public static class Builder {
+    public List<DefendantAlias> getAliases() {
+		return aliases;
+	}
+
+	public static class Builder {
         private BailStatus bailStatus;
         private String custodyTimeLimit;
         private String dateOfBirth;
@@ -111,7 +135,8 @@ public class UpdatedDefendantData {
         private String organisationName;
         private String specificRequirements;
         private UUID courtCentreId;
-
+        private String pncId;
+        private List<DefendantAlias> aliases;
 
         public static Builder UpdatedDefendantData() {
             return new Builder();
@@ -141,7 +166,7 @@ public class UpdatedDefendantData {
             this.defendantId = defendantId;
             return this;
         }
-
+        
         public Builder withLastName(final String lastName) {
             this.lastName = lastName;
             return this;
@@ -172,9 +197,19 @@ public class UpdatedDefendantData {
             return this;
         }
 
+        public Builder withPncId(final String pncId) {
+            this.pncId = pncId;
+            return this;
+        }
+        
+        public Builder withAliases(final List<DefendantAlias> aliases) {
+            this.aliases = aliases;
+            return this;
+          }
+        
         public UpdatedDefendantData build() {
-            return new UpdatedDefendantData(bailStatus, custodyTimeLimit, dateOfBirth, firstName, defendantId, lastName, organisationName, legalEntityName, legalEntityId, specificRequirements, courtCentreId);
+            return new UpdatedDefendantData(bailStatus, custodyTimeLimit, dateOfBirth, firstName, defendantId, lastName, organisationName, 
+            								legalEntityName, legalEntityId, specificRequirements, courtCentreId, pncId, aliases);
         }
     }
 }
-
