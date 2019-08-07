@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 @SuppressWarnings("squid:S1068")
 public class Case implements Aggregate {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 100L;
 
     private final List<UUID> hearingIds = new ArrayList<>();
 

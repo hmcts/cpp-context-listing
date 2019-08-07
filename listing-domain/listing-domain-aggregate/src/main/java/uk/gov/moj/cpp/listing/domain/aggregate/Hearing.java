@@ -99,7 +99,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 2L;
+    private static final long serialVersionUID = 100L;
 
     private UUID hearingId;
     private boolean allocated;
