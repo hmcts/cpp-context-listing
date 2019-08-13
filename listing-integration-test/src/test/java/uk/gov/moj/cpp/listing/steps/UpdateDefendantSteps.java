@@ -20,13 +20,13 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMa
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
+import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.LegalEntityDefendant;
 import uk.gov.justice.core.courts.Organisation;
 import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.listing.courts.BailStatus;
 import uk.gov.justice.listing.courts.Gender;
-import uk.gov.justice.progression.courts.Defendant;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
@@ -56,9 +56,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
 
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED = "public.progression.case-defendant-changed";
 
-    private static final String COMMAND_SELECTOR_UPDATE_CASE_DEFENDANT_DETAILS = "listing.command.update-case-defendant-details";
     private static final String EVENT_SELECTOR_DEFENDANTS_TO_BE_UPDATED = "listing.events.defendants-to-be-updated";
-    private static final String COMMAND_SELECTOR_UPDATE_DEFENDANTS_FOR_HEARING = "listing.command.update-defendants-for-hearing";
     private static final String EVENT_SELECTOR_DEFENDANT_DETAILS_UPDATED = "listing.events.new-defendant-details-updated";
 
 
@@ -134,6 +132,9 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendant.personDefendant.personDetails.gender"), is(jsRequest.getString("defendant.personDefendant.personDetails.gender")));
         assertThat(jsonResponse.get("defendant.legalEntityDefendant.organisation.name"), is(jsRequest.getString("defendant.legalEntityDefendant.organisation.name")));
         assertThat(jsonResponse.get("defendant.legalEntityDefendant.organisation.id"), is(jsRequest.getString("defendant.legalEntityDefendant.organisation.id")));
+        assertThat(jsonResponse.get("defendant.pncId"), is(jsRequest.getString("defendant.pncId")));
+        assertThat(jsonResponse.get("defendant.aliases[0].firstName"), is(jsRequest.getString("defendant.aliases[0].firstName")));
+        assertThat(jsonResponse.get("defendant.aliases[0].lastName"), is(jsRequest.getString("defendant.aliases[0].lastName")));
     }
 
     public void verifyEventDefendantsToBeUpdateInActiveMQ() {
@@ -270,6 +271,8 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
                 .withDefenceOrganisation(of(organisation()
                         .withName(defendantData.getOrganisationName())
                         .build()))
+                .withPncId(of(defendantData.getPncId()))
+                .withAliases(defendantData.getAliases())
                 .build()
             ).build();
     }
