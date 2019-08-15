@@ -8,7 +8,8 @@
         "firstName": "David",
         "gender": "MALE",
         "lastName": "Dell"
-      }
+      },
+      "courtApplicationPartyType": "PERSON"
     },
     "applicationReceivedDate": "2019-03-04",
     "applicationReference": "REF-1",
@@ -25,7 +26,8 @@
             "gender": "FEMALE",
             "lastName": "Miller"
           }
-        }
+        },
+        "courtApplicationPartyType": "PERSON"
       }
     ],
     "respondentsNA": true,
@@ -38,6 +40,8 @@
       "id": "46171453-3b64-4a43-91af-cfc09e6d8889",
       "linkType": "EITHER",
       "requiresCourtHearing": false
-    }
+    },
+    "restrictFromCourtList":false,
+    "restrictCourtApplicationType":false
   }
 }

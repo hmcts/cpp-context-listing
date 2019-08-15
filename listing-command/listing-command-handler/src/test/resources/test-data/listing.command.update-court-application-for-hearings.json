@@ -6,9 +6,11 @@
   "courtApplication":
   {
     "applicant": {
+      "id": "22b1078b-9430-4cef-ba46-eea40a129ca8",
       "firstName": "Fred",
       "isRespondent": false,
-      "lastName": "Perry"
+      "lastName": "Perry",
+      "courtApplicationPartyType": "PERSON"
     },
     "applicationType": "App Type",
     "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
@@ -17,9 +19,11 @@
     "applicationReference": "REF-1",
     "respondents": [
       {
+        "id" : "48ddbd0a-31db-4814-b052-aa3ba9afb800",
         "firstName": "Dan",
         "isRespondent": true,
-        "lastName": "Brown"
+        "lastName": "Brown",
+        "courtApplicationPartyType": "PERSON"
       }
     ]
 

@@ -217,7 +217,9 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].specificRequirements",
                                         equalTo(updatedDefendantData.getSpecificRequirements())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].organisationName",
-                                        equalTo(updatedDefendantData.getLegalEntityName()))
+                                        equalTo(updatedDefendantData.getLegalEntityName())),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].restrictFromCourtList",
+                                        equalTo(hearingData.getListedCases().get(0).getDefendants().get(0).getRestrictFromCourtList()))
                         )));
     }
 

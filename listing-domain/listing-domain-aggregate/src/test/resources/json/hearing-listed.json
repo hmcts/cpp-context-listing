@@ -71,6 +71,7 @@
                 "id": "0baecac5-222b-402d-9047-84803679edad",
                 "offenceCode": "OF61131",
                 "startDate": "2016-06-21",
+                "restrictFromCourtList":false,
                 "statementOfOffence": {
                   "legislation": "Offences against the Person Act 1861",
                   "title": "Wounding with intent",
@@ -79,10 +80,12 @@
                 }
               }
             ],
+            "restrictFromCourtList":false,
             "specificRequirements": "wheelchair access required"
           }
         ],
-        "id": "31bf5d91-f90e-4117-a018-d1290e107692"
+        "id": "31bf5d91-f90e-4117-a018-d1290e107692",
+        "restrictFromCourtList":false
       }
     ],
     "listingDirections": "Child care difficulty on Tuesdays",
@@ -97,7 +100,9 @@
         "applicant":{
           "firstName":"5o5NzB5ewT",
           "isRespondent":false,
-          "lastName":"nYhjupYT63"
+          "lastName":"nYhjupYT63",
+          "restrictFromCourtList":false,
+          "courtApplicationPartyType": "PERSON"
         },
         "applicationType":"9vBchM49Go",
         "id":"26b856a8-ae01-4aad-814c-7cdff8db19bf",
@@ -108,9 +113,13 @@
           {
             "firstName":"ijgX3B9Vy7",
             "isRespondent":true,
-            "lastName":"pGk5CoFbDb"
+            "lastName":"pGk5CoFbDb",
+            "restrictFromCourtList":false,
+            "courtApplicationPartyType": "PERSON"
           }
-        ]
+        ],
+        "restrictFromCourtList":false,
+        "restrictCourtApplicationType":false
       }
     ],
     "type": {

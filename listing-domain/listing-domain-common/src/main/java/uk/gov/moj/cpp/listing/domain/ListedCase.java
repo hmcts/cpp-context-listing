@@ -11,6 +11,7 @@ public class ListedCase {
 
   private final UUID id;
 
+
   public ListedCase(final CaseIdentifier caseIdentifier, final List<Defendant> defendants, final UUID id) {
     this.caseIdentifier = caseIdentifier;
     this.defendants = defendants;
@@ -29,6 +30,7 @@ public class ListedCase {
     return id;
   }
 
+
   public static Builder listedCase() {
     return new ListedCase.Builder();
   }
@@ -41,7 +43,7 @@ public class ListedCase {
 
     return java.util.Objects.equals(this.caseIdentifier, that.caseIdentifier) &&
     java.util.Objects.equals(this.defendants, that.defendants) &&
-    java.util.Objects.equals(this.id, that.id);
+    java.util.Objects.equals(this.id, that.id) ;
   }
 
   @Override
@@ -64,6 +66,8 @@ public class ListedCase {
 
     private UUID id;
 
+
+
     public Builder withCaseIdentifier(final CaseIdentifier caseIdentifier) {
       this.caseIdentifier = caseIdentifier;
       return this;
@@ -78,6 +82,8 @@ public class ListedCase {
       this.id = id;
       return this;
     }
+
+
 
     public ListedCase build() {
       return new ListedCase(caseIdentifier, defendants, id);

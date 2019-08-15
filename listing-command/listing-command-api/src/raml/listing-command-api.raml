@@ -29,15 +29,22 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.command.change-judiciary-for-hearings+json
         name: listing.command.change-judiciary-for-hearings
+        (mapping):
+        requestType: application/vnd.listing.command.restrict-court-list+json
+        name: listing.command.restrict-court-list
       ...
     body:
       application/vnd.listing.command.change-judiciary-for-hearings+json:
         schema: !include json/schema/listing.command.change-judiciary-for-hearings.json
         example: !include json/listing.command.change-judiciary-for-hearings.json
+      application/vnd.listing.command.restrict-court-list+json:
+        schema: !include json/schema/listing.command.restrict-court-list.json
+        example: !include json/listing.command.restrict-court-list.json
 
     responses:
       202:
         description: Request accepted
+
 
 
 /hearings/{hearingId}:

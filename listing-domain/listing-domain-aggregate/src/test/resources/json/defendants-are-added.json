@@ -11,6 +11,7 @@
     "firstName":"David",
     "id":"0baecac5-222b-402d-9047-84803679edac",
     "lastName":"LLOYD",
+    "restrictFromCourtList":false,
     "offences":[]
   },
   "hearingId":"5c5a1d30-0414-11e7-93ae-92361f002671"

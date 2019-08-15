@@ -10,7 +10,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 
 import java.util.List;
 import java.util.UUID;
-//TODO: TP - Add test for optional (null?) parameters
+
 
 /**
  * Repository for {@link Hearing}
@@ -35,7 +35,7 @@ import java.util.UUID;
  * </ul>
  * </p>
  */
-@SuppressWarnings({"squid:S00107"})
+@SuppressWarnings({"squid:S00107", "squid:S1214"})
 @Repository
 public interface HearingRepository extends EntityRepository<Hearing, UUID>,
         EntityManagerDelegate<Hearing> {
@@ -211,7 +211,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
         "        (  "+
         "            select jsonb_agg(hearings) \"hearingsByHearingDate\" "+
         "            from (  "+
-        "                select hearingDays -> 'startTime' \"startTime\", listedCases -> 'defendants' defendants, listedCases -> 'caseIdentifier' \"caseIdentifier\", properties -> 'courtCentreId' \"courtCentreId\" , properties -> 'courtRoomId' \"courtRoomId\"  "+
+        "                select hearingDays -> 'startTime' \"startTime\", listedCases -> 'defendants' defendants, listedCases -> 'caseIdentifier' \"caseIdentifier\", listedCases -> 'restrictFromCourtList' \"restrictFromCourtList\", properties -> 'courtCentreId' \"courtCentreId\" , properties -> 'courtRoomId' \"courtRoomId\"  "+
         "                from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays, jsonb_array_elements(properties -> 'listedCases') listedCases  "+
         "                where properties -> 'hearingDays' @> cast(concat('[{\"hearingDate\": \"', hrngByHearingDate.hearingDate, '\"}]') as jsonb) "+
         "                and cast(properties ->> 'allocated' as boolean) = ?1 "+

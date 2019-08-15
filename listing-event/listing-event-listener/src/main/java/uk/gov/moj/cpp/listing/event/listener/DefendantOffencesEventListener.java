@@ -15,6 +15,7 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -93,8 +94,8 @@ public class DefendantOffencesEventListener {
         ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
         List<Defendant> defendants = listedCase.getDefendants();
         Defendant originalDefendant = Iterables.find(defendants, defendant -> defendant.getId().equals(defendantId));
-
-        originalDefendant.getOffences().replaceAll(offence -> offence.getId().equals(updatedOffence.getId()) ? updatedOffence : offence);
+        final Optional<Offence> originalOffence = originalDefendant.getOffences().stream().filter(oo -> oo.getId().equals(updatedOffence.getId())).findFirst();
+        originalDefendant.getOffences().replaceAll(offence -> offence.getId().equals(updatedOffence.getId()) ? buildOffence(updatedOffence, getRestrictCourtList(originalOffence)) : offence);
         return listedCases;
     }
 
@@ -117,4 +118,24 @@ public class DefendantOffencesEventListener {
         originalDefendant.getOffences().removeIf(offence -> offence.getId().equals(offenceId));
         return listedCases;
     }
+
+    private Offence buildOffence(Offence updatedOffence, Optional<Boolean> restrictCourtList){
+        return Offence.offence()
+                .withStatementOfOffence(updatedOffence.getStatementOfOffence())
+                .withOffenceWording(updatedOffence.getOffenceWording())
+                .withEndDate(updatedOffence.getEndDate())
+                .withId(updatedOffence.getId())
+                .withOffenceCode(updatedOffence.getOffenceCode())
+                .withStartDate(updatedOffence.getStartDate())
+                .withRestrictFromCourtList(restrictCourtList)
+                .build();
+    }
+
+    private Optional<Boolean> getRestrictCourtList(Optional<Offence> offence) {
+        if (offence.isPresent() && offence.get().getRestrictFromCourtList().isPresent()) {
+            return offence.get().getRestrictFromCourtList();
+        }
+        return Optional.empty();
+    }
+
 }

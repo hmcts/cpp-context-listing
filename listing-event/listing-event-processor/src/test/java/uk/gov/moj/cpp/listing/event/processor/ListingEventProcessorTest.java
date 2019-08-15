@@ -39,9 +39,11 @@ import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMA
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_OFFENCES_FOR_HEARING;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PRIVATE_EVENT_COURT_APPLICATION_ADDED_FOR_LISTED_HEARING;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PRIVATE_EVENT_COURT_APPLICATION_TO_BE_UPDATED;
+import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PRIVATE_EVENT_RESTRICT_COURT_LIST;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_HEARING_CONFIRMED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_HEARING_LISTED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_HEARING_UPDATED;
+import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_RESTRICT_COURT_LIST;
 
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.CourtApplication;
@@ -74,6 +76,7 @@ import uk.gov.justice.listing.courts.UpdatedOffences;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
+import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.Hearing;
@@ -204,6 +207,9 @@ public class ListingEventProcessorTest {
 
     @Mock
     private AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing;
+
+    @Mock
+    private CourtListRestricted restrictCourtList;
 
     @Mock
     private AddHearingToCaseCommandCollectionConverter addHearingToCaseCommandCollectionConverter;
@@ -439,6 +445,7 @@ public class ListingEventProcessorTest {
         ));
     }
 
+
     @Test
     public void shouldHandleAllocatedHearingUpdatedForListingMessage() throws Exception {
         //given
@@ -465,6 +472,28 @@ public class ListingEventProcessorTest {
         ));
     }
 
+    @Test
+    public void shouldHandleRestrictCourtListForListingMessage() throws Exception {
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, CourtListRestricted.class)).willReturn(restrictCourtList);
+        given(enveloper.withMetadataFrom(envelope, PRIVATE_EVENT_RESTRICT_COURT_LIST)).willReturn
+                (enveloperFunction);
+        given(enveloper.withMetadataFrom(envelope, PUBLIC_EVENT_RESTRICT_COURT_LIST)).willReturn
+                (enveloperFunction);
+
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
+                ArgumentCaptor.forClass(JsonEnvelope.class);
+
+
+        //when
+        listingEventProcessor.handleRestrictCourtListMessage(envelope);
+
+        //then
+        verify(sender).send(senderJsonEnvelopeCaptor.capture());
+
+    }
+
     private JsonEnvelope hearingAllocatedEvent() {
 
         final JsonObjectBuilder hearingDate = createObjectBuilder()
@@ -489,7 +518,11 @@ public class ListingEventProcessorTest {
                 .withUpdatedHearing(buildHearing(formattedDateTime))
                 .build();
     }
-
+    private CourtListRestricted restrictCourtList(){
+        return CourtListRestricted.courtListRestricted()
+                .withHearingId(HEARING_ID)
+                .withDefendantIds(Arrays.asList(DEFENDANT_ID)).build();
+    }
     @Test
     public void shouldHandleCaseDefendantChangedMessage() throws Exception {
         final DefendantUpdated defendantUpdated = defendantUpdated();
@@ -845,6 +878,7 @@ public class ListingEventProcessorTest {
     return defendantsAddedToCourtProceedings;
 
     }
+
     private DefendantUpdated defendantUpdated() throws IllegalAccessException {
 
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());

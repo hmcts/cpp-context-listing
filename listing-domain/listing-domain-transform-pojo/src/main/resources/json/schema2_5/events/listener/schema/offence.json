@@ -20,6 +20,9 @@
     },
     "statementOfOffence": {
       "$ref": "http://justice.gov.uk/listing/events/statementOfOffence.json"
+    },
+    "restrictFromCourtList": {
+      "type":"boolean"
     }
   },
   "required": [

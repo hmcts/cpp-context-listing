@@ -75,7 +75,7 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
 
     @Override
     public Response getCourtList(final String courtCentreId, final String courtRoomId, final String listId,
-                                 final String startDate, final String endDate, UUID userId) {
+                                 final String startDate, final String endDate, final boolean restricted, UUID userId) {
         final Optional<CourtListType> courtListType = CourtListType.valueFor(listId);
         if (courtListType.isPresent()) {
             final JsonObjectBuilder builder =
@@ -97,16 +97,16 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
 
 
             return interceptorChainProcessor.process(interceptorContextWithInput(documentQuery))
-                    .map(queryResponse -> getDocumentContent(queryResponse, courtCentreId, courtRoomId, courtListType.get()))
+                    .map(queryResponse -> getDocumentContent(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted))
                     .orElse(status(NOT_FOUND).build());
         }
         return Response.status(BAD_REQUEST).entity(String.format("Bad request - No matching list type found for %s", listId)).build();
     }
 
-    private Response getDocumentContent(final JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId, final CourtListType courtListType) {
+    private Response getDocumentContent(final JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final boolean restricted) {
         final String pdfMimeType = "application/pdf";
         if (!JsonValue.NULL.equals(queryResponse.payload())) {
-            final Optional<JsonObject> courtListData = buildCourtListData(queryResponse, courtCentreId, courtRoomId , courtListType);
+            final Optional<JsonObject> courtListData = buildCourtListData(queryResponse, courtCentreId, courtRoomId , courtListType, restricted);
             if (courtListData.isPresent()) {
                 final JsonObject courtListPayload = courtListData.get();
                 LOGGER.info("getDocumentContent() :: courtListPayload {} ", courtListPayload);
@@ -123,20 +123,20 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
         return Response.status(BAD_REQUEST).entity("Bad request - No data found for the supplied parameters").build();
     }
 
-    private Optional<JsonObject> buildCourtListData(JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId, CourtListType courtListType) {
+    private Optional<JsonObject> buildCourtListData(JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final boolean restricted) {
         LOGGER.info("Received request for listType {}", courtListType);
         if (CourtListType.ALPHABETICAL.equals(courtListType)) {
             return alpbhabeticalCourtListService.buildAlphabeticalCourtListData(queryResponse, courtCentreId);
         }
         else if(CourtListType.STANDARD.equals(courtListType) || PUBLIC.equals(courtListType)) {
-            return standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType);
+            return standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, restricted);
         }
         return Optional.empty();
     }
 
     private String getTemplateName(final CourtListType courtListType, boolean welsh){
         LOGGER.info("getTemplateName() :: isWelsh {}", welsh);
-        if( (CourtListType.ALPHABETICAL.equals(courtListType) || (CourtListType.PUBLIC.equals(courtListType))) && welsh){
+        if( CourtListType.ALPHABETICAL.equals(courtListType) && welsh){
             return courtListType.getWelshTemplateName();
         }
         return courtListType.getTemplateName();

@@ -25,7 +25,6 @@ public class HearingEventListener {
 
     private static final boolean ALLOCATED = true;
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingEventListener.class);
-
     private JsonEntityFinder jsonEntityFinder;
     private HearingRepository hearingRepository;
     private ObjectMapper mapper;
@@ -68,5 +67,6 @@ public class HearingEventListener {
     private JsonNode convertToJsonNode(Object source) {
         return mapper.valueToTree(source);
     }
+
 
 }

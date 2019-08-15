@@ -49,7 +49,7 @@ public class ReferenceDataStub {
         String payload = getPayload("stub-data/referencedata.query.judiciaries.json")
                 .replace("JUDICIARY_ID", judiciaryId.toString());
 
-        stubFor(get(urlPathEqualTo(REFERENCE_DATA_JUDICIARIES_QUERY_URL))
+        stubFor(get(urlPathMatching(REFERENCE_DATA_JUDICIARIES_QUERY_URL))
                 .withQueryParam("ids", equalTo(judiciaryId.toString()))
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", UUID.randomUUID().toString())

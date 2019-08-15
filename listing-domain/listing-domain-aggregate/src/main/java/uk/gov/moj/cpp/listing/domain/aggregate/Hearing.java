@@ -29,6 +29,7 @@ import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
 import uk.gov.justice.listing.events.CourtCentreChangedForHearing;
+import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
 import uk.gov.justice.listing.events.CourtRoomChangedForHearing;
 import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
@@ -71,6 +72,7 @@ import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.ProsecutionCaseDefendantOffenceIds;
+import uk.gov.moj.cpp.listing.domain.RestrictCourtList;
 import uk.gov.moj.cpp.listing.domain.SequenceHearing;
 import uk.gov.moj.cpp.listing.domain.SimpleOffence;
 import uk.gov.moj.cpp.listing.domain.Type;
@@ -577,6 +579,24 @@ public class Hearing implements Aggregate {
         return Stream.empty();
     }
 
+    public Stream<Object> restrictDetailsFromCourt(UUID hearingId, RestrictCourtList restrictCourtList){
+
+        if (!isHearingInThePast()) {
+            return apply(Stream.of(CourtListRestricted.courtListRestricted()
+                    .withHearingId(hearingId)
+                    .withCaseIds(restrictCourtList.getCaseIds())
+                    .withDefendantIds(restrictCourtList.getDefendantIds())
+                    .withOffenceIds(restrictCourtList.getOffenceIds())
+                    .withCourtApplicationApplicantIds(restrictCourtList.getCourtApplicationApplicantIds())
+                    .withCourtApplicationIds(restrictCourtList.getCourtApplicationIds())
+                    .withCourtApplicationRespondentIds(restrictCourtList.getCourtApplicationRespondentIds())
+                    .withRestrictCourtList(restrictCourtList.getRestrictFromCourtList())
+                    .withCourtApplicationType(restrictCourtList.getCourtApplicationType())
+                    .build()));
+        }
+
+        return Stream.empty();
+    }
     private boolean thisHearingContainsDefendant(uk.gov.moj.cpp.listing.domain.Defendant defendant) {
         return isNull(this.prosecutionCaseDefendantOffenceIds) ? Boolean.FALSE : this.prosecutionCaseDefendantOffenceIds.stream()
                 .anyMatch(prosecutionCaseDefendantOffenceId ->
@@ -650,7 +670,6 @@ public class Hearing implements Aggregate {
     private <T> boolean hasChanged(T currentValue, T newValue) {
         return !Objects.equals(currentValue, newValue);
     }
-
 
     // Helper methods to create events
 
@@ -835,6 +854,7 @@ public class Hearing implements Aggregate {
         );
 
     }
+
     private void onHearingListed(HearingListed event) {
         LOGGER.info("onHearingListed() event:{}", event);
         final uk.gov.justice.listing.events.Hearing hearing = event.getHearing();

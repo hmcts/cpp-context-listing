@@ -49,6 +49,9 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/offence.json"
       }
+    },
+    "restrictFromCourtList": {
+      "type":"boolean"
     }
   },
   "required": [

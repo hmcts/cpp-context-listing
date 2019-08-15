@@ -15,11 +15,12 @@ public class DefendantData {
     private final LocalDate dateOfBirth;
     private final LocalDate custodyTimeLimit;
     private final String defenceOrganisation;
+    private final Boolean restrictFromCourtList ;
 
     public DefendantData(final UUID defendantId, final String firstName,
                          final String lastName, final LocalDate dateOfBirth,
                          final LocalDate custodyTimeLimit, final String bailStatus,
-                         final String defenceOrganisation, final List<OffenceData> offences) {
+                         final String defenceOrganisation, final List<OffenceData> offences, final Boolean restrictFromCourtList) {
         this.defendantId = defendantId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -28,6 +29,7 @@ public class DefendantData {
         this.custodyTimeLimit = custodyTimeLimit;
         this.offences  = offences;
         this.defenceOrganisation = defenceOrganisation;
+        this.restrictFromCourtList = restrictFromCourtList;
     }
 
     public UUID getDefendantId() {
@@ -52,6 +54,10 @@ public class DefendantData {
 
     public LocalDate getCustodyTimeLimit() {
         return custodyTimeLimit;
+    }
+
+    public Boolean getRestrictFromCourtList() {
+        return restrictFromCourtList;
     }
 
     public List<OffenceData> getOffences() { return offences; }

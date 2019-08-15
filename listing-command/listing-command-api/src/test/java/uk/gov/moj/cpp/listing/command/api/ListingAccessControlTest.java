@@ -17,9 +17,10 @@ import org.mockito.Mock;
 public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
 
     private static final String ACTION_LIST_COURT_HEARING = "listing.command.list-court-hearing";
-    public static final String ACTION_UPDATE_HEARING_FOR_LISTING = "listing.command.update-hearing-for-listing";
-    public static final String ACTION_CHANGE_JUDICIARY_FOR_HEARING = "listing.command.change-judiciary-for-hearings";
-    public static final String ACTION_SEQUENCE_HEARINGS = "listing.command.sequence-hearings";
+    private static final String ACTION_UPDATE_HEARING_FOR_LISTING = "listing.command.update-hearing-for-listing";
+    private static final String ACTION_CHANGE_JUDICIARY_FOR_HEARING = "listing.command.change-judiciary-for-hearings";
+    private static final String ACTION_SEQUENCE_HEARINGS = "listing.command.sequence-hearings";
+    private static final String ACTION_RESTRICT_COURT_LIST="listing.command.restrict-court-list" ;
     private static final String RANDOM_GROUP = "Random group";
 
 
@@ -71,6 +72,16 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldAllowAuthorisedUserToSequenceHearings() {
         final Action action = createActionFor(ACTION_SEQUENCE_HEARINGS);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS))
+                .willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToRestrictCourtList() {
+        final Action action = createActionFor(ACTION_RESTRICT_COURT_LIST);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS))
                 .willReturn(true);
 

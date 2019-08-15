@@ -28,6 +28,8 @@ public class NewDomainToEventConverter {
                 .withDefendants(lc.getDefendants().stream()
                         .map(NewDomainToEventConverter::buildDefendant)
                         .collect(toList()))
+                .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+
                 .build();
     }
 
@@ -49,6 +51,7 @@ public class NewDomainToEventConverter {
                         .collect(toList()))
                 .withDefenceOrganisation(d.getDefenceOrganisation())
                 .withBailStatus(buildBailStatusEvent(d.getBailStatus()))
+                .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
                 .build();
     }
 
@@ -88,6 +91,7 @@ public class NewDomainToEventConverter {
                 .withOffenceWording(o.getOffenceWording())
                 .withStatementOfOffence(buildStatementOfOffence(o))
                 .withOffenceWording(o.getOffenceWording())
+                .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
                 .build();
     }
 
@@ -136,13 +140,23 @@ public class NewDomainToEventConverter {
                 .withApplicant(buildApplicantRespondant(courtApplication.getApplicant()))
                 .withRespondents(nonNull(courtApplication.getRespondents()) ? courtApplication.getRespondents().stream().map(NewDomainToEventConverter::buildApplicantRespondant).collect(toList()): null)
                 .withApplicationReference(courtApplication.getApplicationReference().isPresent() ? courtApplication.getApplicationReference() : empty())
+                .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+                .withRestrictCourtApplicationType(Optional.of(Boolean.FALSE))
                 .build();
     }
     private static uk.gov.justice.listing.events.ApplicantRespondent buildApplicantRespondant(final ApplicantRespondent applicant){
         return isNull(applicant) ? null : uk.gov.justice.listing.events.ApplicantRespondent.applicantRespondent()
+                .withId(applicant.getId())
                 .withFirstName(applicant.getFirstName())
                 .withLastName(applicant.getLastName())
-                .withIsRespondent(applicant.getIsRespondent()).build();
+                .withIsRespondent(applicant.getIsRespondent())
+                .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+                .withCourtApplicationPartyType(buildCourtApplicationPartyTypeEvent(applicant.getCourtApplicationPartyType()))
+                .build();
+    }
+    private static CourtApplicationPartyType buildCourtApplicationPartyTypeEvent(uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType courtApplicationPartyType) {
+
+        return CourtApplicationPartyType.valueOf(courtApplicationPartyType.name());
     }
 
 }

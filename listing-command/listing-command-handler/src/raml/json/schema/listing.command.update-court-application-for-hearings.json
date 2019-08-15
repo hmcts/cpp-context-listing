@@ -35,6 +35,9 @@
         "applicant": {
           "type": "object",
           "properties": {
+            "id": {
+              "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+            },
             "firstName": {
               "description": "The person first name",
               "type": "string"
@@ -42,11 +45,27 @@
             "lastName": {
               "description": "The person last name",
               "type": "string"
+            },
+            "restrictFromCourtList": {
+              "description": "Restrict applicant details from listing",
+              "type":"boolean"
+            },
+            "courtApplicationPartyType": {
+              "description": "The type of court application party",
+              "type": "string",
+              "enum": [
+                "PERSON",
+                "ORGANISATION",
+                "PROSECUTING_AUTHORITY",
+                "PERSON_DEFENDANT"
+              ]
             }
           },
           "required": [
+            "id",
             "lastName",
-            "isRespondent"
+            "isRespondent",
+            "courtApplicationPartyType"
           ]
         },
         "applicationType": {
@@ -61,6 +80,9 @@
           "items": {
             "type": "object",
             "properties": {
+              "id": {
+                "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+              },
               "firstName": {
                 "description": "The person first name",
                 "type": "string"
@@ -68,13 +90,35 @@
               "lastName": {
                 "description": "The person last name",
                 "type": "string"
+              },
+              "restrictFromCourtList": {
+                "description": "Restrict respondent details from listing",
+                "type":"boolean"
+              },
+              "courtApplicationPartyType": {
+                "description": "The type of court application party",
+                "type": "string",
+                "enum": [
+                  "PERSON",
+                  "ORGANISATION",
+                  "PROSECUTING_AUTHORITY",
+                  "PERSON_DEFENDANT"
+                ]
               }
             },
             "required": [
+              "id",
               "lastName",
-              "isRespondent"
+              "isRespondent",
+              "courtApplicationPartyType"
             ]
           }
+        },
+        "restrictFromCourtList": {
+          "type":"boolean"
+        },
+        "restrictCourtApplicationType": {
+          "type":"boolean"
         }
       },
       "required": [

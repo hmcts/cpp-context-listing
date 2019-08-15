@@ -99,4 +99,9 @@ public class ListingCommandApi {
 
     @Handles("listing.command.sequence-hearings")
     public void sequenceHearings(final JsonEnvelope envelope) {sender.send(envelope);}
+
+    @Handles("listing.command.restrict-court-list")
+    public void restrictCourtList(final JsonEnvelope jsonEnvelope){
+        sender.send(jsonEnvelope);
+    }
 }

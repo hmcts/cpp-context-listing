@@ -3,6 +3,9 @@
   "id": "http://justice.gov.uk/listing/events/applicantRespondent.json",
   "type": "object",
   "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
     "firstName": {
       "description": "The person first name",
       "type": "string"
@@ -13,11 +16,26 @@
     },
     "isRespondent": {
       "type": "boolean"
+    },
+    "restrictFromCourtList": {
+      "type":"boolean"
+    },
+    "courtApplicationPartyType": {
+      "description": "The type of court application party",
+      "type": "string",
+      "enum": [
+        "PERSON",
+        "ORGANISATION",
+        "PROSECUTING_AUTHORITY",
+        "PERSON_DEFENDANT"
+      ]
     }
   },
   "required": [
+    "id",
     "lastName",
-    "isRespondent"
+    "isRespondent",
+    "courtApplicationPartyType"
   ],
   "additionalProperties": false
 }

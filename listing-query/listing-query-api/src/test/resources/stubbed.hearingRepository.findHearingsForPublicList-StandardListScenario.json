@@ -91,7 +91,8 @@
                             "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
-                          }
+                          },
+                          "restrictFromCourtList" : true
                         },
                         {
                           "id": "77d5da0e-4d97-4668-8933-780e38b9dd98",
@@ -104,13 +105,15 @@
                             "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
-                          }
+                          },
+                          "restrictFromCourtList" : true
                         }
                       ],
                       "firstName": "Cheyanne",
                       "bailStatus": "UNCONDITIONAL",
                       "dateOfBirth": "DATE_OF_BIRTH",
-                      "defenceOrganisation": "TestOne"
+                      "defenceOrganisation": "TestOne",
+                      "restrictFromCourtList" : true
                     },
                     {
                       "id": "86c38cef-cdbb-46d8-96a5-9b31845e95cc",
@@ -127,7 +130,8 @@
                             "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
-                          }
+                          },
+                          "restrictFromCourtList" : true
                         },
                         {
                           "id": "bfc5a983-a064-48c5-93b4-27d992308df0",
@@ -140,20 +144,23 @@
                             "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
-                          }
+                          },
+                          "restrictFromCourtList" : true
                         }
                       ],
                       "firstName": "Rodger",
                       "bailStatus": "UNCONDITIONAL",
                       "dateOfBirth": "1980-10-12",
-                      "defenceOrganisation": "TestTwo"
+                      "defenceOrganisation": "TestTwo",
+                      "restrictFromCourtList" : false
                     }
                   ],
                   "caseIdentifier": {
                     "authorityId": "52b27284-0686-4894-b1c7-7d4b634cacdb",
                     "authorityCode": "CPS",
                     "caseReference": "42GD8525719"
-                  }
+                  },
+                  "restrictFromCourtList" : true
                 }
               ],
               "courtCentreId": "COURT_CENTRE_ID",
@@ -310,7 +317,8 @@
                     "authorityId": "52b27284-0686-4894-b1c7-7d4b634cacdb",
                     "authorityCode": "CPS",
                     "caseReference": "15GD5595019"
-                  }
+                  },
+                  "restrictFromCourtList" : true
                 }
               ],
               "courtCentreId": "COURT_CENTRE_ID",
@@ -467,7 +475,8 @@
                     "authorityId": "52b27284-0686-4894-b1c7-7d4b634cacdb",
                     "authorityCode": "CPS",
                     "caseReference": "41GD4175919"
-                  }
+                  },
+                  "restrictFromCourtList" : true
                 }
               ],
               "courtCentreId": "COURT_CENTRE_ID",
@@ -632,7 +641,8 @@
                     "authorityId": "52b27284-0686-4894-b1c7-7d4b634cacdb",
                     "authorityCode": "CPS",
                     "caseReference": "92GD9689919"
-                  }
+                  },
+                  "restrictFromCourtList" : true
                 }
               ],
               "courtCentreId": "COURT_CENTRE_ID",

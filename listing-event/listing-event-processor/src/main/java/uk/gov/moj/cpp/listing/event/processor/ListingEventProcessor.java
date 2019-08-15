@@ -10,6 +10,7 @@ import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingUpdated;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
+import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
@@ -55,6 +56,7 @@ public class ListingEventProcessor {
     static final String PUBLIC_EVENT_PROGRESSION_COURT_APPLICATION_CHANGED = "public.progression.courtapplication-changed";
     static final String PUBLIC_EVENT_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     static final String PUBLIC_EVENT_HEARING_UPDATED = "public.listing.hearing-updated";
+    static final String PUBLIC_EVENT_RESTRICT_COURT_LIST = "public.listing.court-list-restricted";
     static final String PUBLIC_EVENT_PROGRESSION_EXTEND_LISTED_HEARING_FOR_COURT_APPLICATION = "public.progression.events.hearing-extended";
     static final String PUBLIC_EVENT_PROGRESSION_DEFENDANTS_ADDED_TO_COURT_PROCEEDINGS = "public.progression.defendants-added-to-court-proceedings";
     static final String PRIVATE_EVENT_HEARING_LISTED = "listing.events.hearing-listed";
@@ -67,6 +69,7 @@ public class ListingEventProcessor {
     static final String PRIVATE_EVENT_OFFENCES_TO_BE_DELETED = "listing.events.offences-to-be-deleted";
     static final String PRIVATE_EVENT_OFFENCES_TO_BE_ADDED = "listing.events.offences-to-be-added";
     static final String PRIVATE_EVENT_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS ="listing.events.defendants-to-be-added-for-court-proceedings" ;
+    static final String PRIVATE_EVENT_RESTRICT_COURT_LIST = "listing.events.court-list-restricted";
     static final String COMMAND_ADD_HEARING_TO_CASE = "listing.command.add-hearing-to-case";
     static final String COMMAND_ADD_COURT_APPLICATION_TO_HEARING = "listing.command.add-court-application-to-hearing";
     static final String COMMAND_UPDATE_DEFENDANTS_FOR_HEARING = "listing.command.update-defendants-for-hearing";
@@ -201,6 +204,16 @@ public class ListingEventProcessor {
 
         publishHearingUpdatedPublicEvent(envelope);
     }
+
+    @Handles(PRIVATE_EVENT_RESTRICT_COURT_LIST)
+    public void handleRestrictCourtListMessage(final JsonEnvelope envelope) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENT_RESTRICT_COURT_LIST, envelope.toObfuscatedDebugString());
+        }
+
+        publishCourtListRestrictedPublicEvent(envelope);
+    }
+
     @Handles(PUBLIC_EVENT_PROGRESSION_CASE_DEFENDANT_CHANGED)
     public void handleCaseDefendantChangedMessage(final JsonEnvelope envelope) {
         if (LOGGER.isInfoEnabled()) {
@@ -373,6 +386,16 @@ public class ListingEventProcessor {
 
         LOGGER.info("Publishing '{}' public event with payload {}", PUBLIC_EVENT_HEARING_UPDATED, hearingUpdated);
         sender.send(enveloper.withMetadataFrom(envelope, PUBLIC_EVENT_HEARING_UPDATED).apply(hearingUpdated));
+    }
+
+    /*
+     * Publish a public event to notify that the hearing has been updated with restrictions on court listing.
+     */
+    private void publishCourtListRestrictedPublicEvent(final JsonEnvelope envelope) {
+        final CourtListRestricted courtListRestricted =
+                jsonObjectConverter.convert(envelope.payloadAsJsonObject(), CourtListRestricted.class);
+        LOGGER.info("Publishing '{}' public event with payload {}", PUBLIC_EVENT_RESTRICT_COURT_LIST, courtListRestricted);
+        sender.send(enveloper.withMetadataFrom(envelope, PUBLIC_EVENT_RESTRICT_COURT_LIST).apply(courtListRestricted));
     }
 
     private HearingListed getHearingListedEvent(final JsonEnvelope envelope) {

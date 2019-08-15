@@ -137,6 +137,11 @@ protocols: [ HTTP, HTTPS ]
           description: hearing end date in format 'YYYY-MM-DD'
           type: date
           required: true
+        restricted:
+          description: only applicable for standard courtlist. Set true to get restricted standard court list
+          type: boolean
+          required: false
+          default: false
     responses:
       200:
         body:

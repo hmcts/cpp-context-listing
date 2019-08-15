@@ -1,6 +1,7 @@
 package uk.gov.justice.api.resource;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.lang.Boolean.TRUE;
 import static java.time.LocalDate.now;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
@@ -117,7 +118,7 @@ public class DefaultQueryApiCourtlistResourceTest {
 
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
 
-        final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_ALPHABETICAL, START_DATE, END_DATE, UUID.randomUUID());
+        final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_ALPHABETICAL, START_DATE, END_DATE, TRUE, UUID.randomUUID());
 
         verifyResponse(headers, documentContentResponse, LIST_ID_ALPHABETICAL);
 
@@ -128,11 +129,11 @@ public class DefaultQueryApiCourtlistResourceTest {
 
         final MultivaluedMap headers = givenHeaders();
         when(standardCourtListTemplateAssembler.assemble(
-                any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class)))
+                any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(Boolean.class)))
                 .thenReturn(Optional.of(Json.createObjectBuilder().build()));
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
 
-        final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_STANDARD, START_DATE, END_DATE, UUID.randomUUID());
+        final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_STANDARD, START_DATE, END_DATE, TRUE,UUID.randomUUID());
 
         verifyResponse(headers, documentContentResponse, LIST_ID_STANDARD);
 

@@ -11,6 +11,7 @@
     "offenceCode": "H8189",
     "offenceWording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, John Smith",
     "startDate": "2010-08-01",
+    "restrictFromCourtList":false,
     "statementOfOffence": {
       "legislation": "legislation",
       "title": "Wounding with intent",

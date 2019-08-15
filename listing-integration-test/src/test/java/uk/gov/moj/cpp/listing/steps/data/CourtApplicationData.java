@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public class CourtApplicationData {
@@ -10,8 +11,10 @@ public class CourtApplicationData {
     private final ApplicantRespondentData respondent;
     private final String type;
     private final Boolean requiresResponse;
+    private final Boolean restrictCourtApplicationType;
+    private final Boolean restrictFromCourtList;
 
-    public CourtApplicationData(UUID id, UUID linkedCaseId, UUID parentApplicationId, ApplicantRespondentData applicant, ApplicantRespondentData respondent, String type, Boolean requiresResponse) {
+    public CourtApplicationData(UUID id, UUID linkedCaseId, UUID parentApplicationId, ApplicantRespondentData applicant, ApplicantRespondentData respondent, String type, Boolean requiresResponse, final Boolean restrictCourtApplicationType, final Boolean restrictFromCourtList) {
         this.id = id;
         this.linkedCaseId = linkedCaseId;
         this.parentApplicationId = parentApplicationId;
@@ -19,6 +22,8 @@ public class CourtApplicationData {
         this.respondent = respondent;
         this.type = type;
         this.requiresResponse = requiresResponse;
+        this.restrictCourtApplicationType = restrictCourtApplicationType;
+        this.restrictFromCourtList = restrictFromCourtList;
     }
 
     public UUID getId() {
@@ -43,6 +48,14 @@ public class CourtApplicationData {
 
     public String getType() {
         return type;
+    }
+
+    public Boolean getRestrictCourtApplicationType() {
+        return restrictCourtApplicationType;
+    }
+
+    public Boolean getRestrictFromCourtList() {
+        return restrictFromCourtList;
     }
 
     public Boolean getRequiresResponse() {

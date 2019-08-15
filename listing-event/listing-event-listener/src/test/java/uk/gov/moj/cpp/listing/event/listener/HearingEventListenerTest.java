@@ -1,5 +1,23 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.UUID.randomUUID;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import uk.gov.justice.listing.events.HearingAllocatedForListing;
+import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.HearingUnallocatedForListing;
+import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+
+import java.util.UUID;
+
+import javax.json.JsonObject;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -8,20 +26,6 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import uk.gov.justice.listing.events.HearingAllocatedForListing;
-import uk.gov.justice.listing.events.HearingListed;
-import uk.gov.justice.listing.events.HearingUnallocatedForListing;
-import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-
-import javax.json.JsonObject;
-import java.util.UUID;
-
-import static java.util.UUID.randomUUID;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HearingEventListenerTest {
@@ -58,23 +62,9 @@ public class HearingEventListenerTest {
     @Mock
     private JsonNode jsonNode;
 
+
     @InjectMocks
     private HearingEventListener hearingEventListener;
-
-    @Test
-    public void shouldHandleHearingListedEvent() {
-        final Envelope<HearingListed> envelope = (Envelope<HearingListed>) mock(Envelope.class);
-
-        given(envelope.payload()).willReturn(hearingListed);
-        given(envelope.payload().getHearing()).willReturn(hearingEvent);
-        given(hearingEvent.getId()).willReturn(HEARING_ID);
-        given(mapper.valueToTree(hearingEvent)).willReturn(jsonNode);
-
-        hearingEventListener.hearingListed(envelope);
-
-        final Hearing hearing = new Hearing(HEARING_ID, jsonNode);
-        verify(hearingRepository).save(hearing);
-    }
 
     @Test
     public void shouldAllocateHearingForListing() {
@@ -107,6 +97,21 @@ public class HearingEventListenerTest {
         hearingEventListener.hearingUnallocated(envelope);
 
         verify(properties).put(eq("allocated"), eq(false));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldHandleHearingListedEvent() {
+        final Envelope<HearingListed> envelope = (Envelope<HearingListed>) mock(Envelope.class);
+
+        given(envelope.payload()).willReturn(hearingListed);
+        given(envelope.payload().getHearing()).willReturn(hearingEvent);
+        given(hearingEvent.getId()).willReturn(HEARING_ID);
+        given(mapper.valueToTree(hearingEvent)).willReturn(jsonNode);
+
+        hearingEventListener.hearingListed(envelope);
+
+        final Hearing hearing = new Hearing(HEARING_ID, jsonNode);
         verify(hearingRepository).save(hearing);
     }
 }

@@ -24,6 +24,7 @@ import uk.gov.justice.listing.courts.DeleteOffencesForHearing;
 import uk.gov.justice.listing.courts.DeletedOffences;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
+import uk.gov.justice.listing.courts.RestrictCourtList;
 import uk.gov.justice.listing.courts.SequenceHearings;
 import uk.gov.justice.listing.courts.UpdateCaseDefendantDetails;
 import uk.gov.justice.listing.courts.UpdateCaseDefendantOffences;
@@ -525,6 +526,20 @@ public class ListingCommandHandler {
                 hearing.addDefendantsForCourtProceedings(caseId, domainDefendants));
     }
 
+    @Handles("listing.command.restrict-court-list")
+    public void restrictFromCourtList(final JsonEnvelope command) throws EventStreamException {
+
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.restrict-court-list' received with payload {}", command.toObfuscatedDebugString());
+        }
+
+        final RestrictCourtList restrictCourtList = jsonObjectConverter.convert(command.payloadAsJsonObject(), RestrictCourtList.class);
+
+        updateHearingEventStream(command, restrictCourtList.getHearingId(), (Hearing hearing) ->
+                hearing.restrictDetailsFromCourt(restrictCourtList.getHearingId(), convertRestrictCourtListToDomain(restrictCourtList)));
+
+
+    }
     private List<uk.gov.moj.cpp.listing.domain.SequenceHearing> convertSequenceHearingsToDomain(SequenceHearings sequenceHearingsCommand) {
         List<uk.gov.moj.cpp.listing.domain.SequenceHearing> domainSequenceHearings = Collections.emptyList();
         if (sequenceHearingsCommand != null && !sequenceHearingsCommand.getHearings().isEmpty()) {
@@ -581,7 +596,22 @@ public class ListingCommandHandler {
         return domainDefaultDays;
     }
 
+    private uk.gov.moj.cpp.listing.domain.RestrictCourtList convertRestrictCourtListToDomain(RestrictCourtList restrictCourtList){
 
+        return uk.gov.moj.cpp.listing.domain.RestrictCourtList.restrictCourtList()
+                .withCaseIds(restrictCourtList.getCaseIds())
+                .withDefendantIds(restrictCourtList.getDefendantIds())
+                .withHearingId(restrictCourtList.getHearingId())
+                .withOffenceIds(restrictCourtList.getOffenceIds())
+                .withCourtApplicationApplicantIds(restrictCourtList.getCourtApplicationApplicantIds())
+                .withCourtApplicatonIds(restrictCourtList.getCourtApplicationIds())
+                .withCourtApplicatonRespondentIds(restrictCourtList.getCourtApplicationRespondentIds())
+                .withCourtApplicationType(restrictCourtList.getCourtApplicationType().orElse(null))
+                .withRestrictFromCourtList(restrictCourtList.getRestrictCourtList())
+                .build() ;
+
+
+    }
     private void updateHearingEventStream(final JsonEnvelope command, final UUID hearingId,
                                           final Function<Hearing, Stream<Object>> aggregatorFunction) throws EventStreamException {
         final EventStream eventStream = eventSource.getStreamById(hearingId);

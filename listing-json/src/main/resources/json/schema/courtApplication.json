@@ -27,6 +27,12 @@
     },
     "applicationReference": {
       "type": "string"
+    },
+    "restrictFromCourtList": {
+      "type":"boolean"
+    },
+    "restrictCourtApplicationType": {
+      "type":"boolean"
     }
   },
   "required": [

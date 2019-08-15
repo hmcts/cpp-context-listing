@@ -8,7 +8,8 @@
         "firstName": "David",
         "gender": "MALE",
         "lastName": "Dell"
-      }
+      },
+      "courtApplicationPartyType": "PERSON"
     },
     "applicationReceivedDate": "2019-03-04",
     "applicationReference": "REF-1",
@@ -25,7 +26,8 @@
             "gender": "FEMALE",
             "lastName": "Miller"
           }
-        }
+        },
+        "courtApplicationPartyType": "PERSON"
       }
     ],
     "respondentsNA": true,

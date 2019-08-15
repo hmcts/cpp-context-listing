@@ -4,7 +4,8 @@
     "applicant":{
       "firstName":"App First",
       "isRespondent":false,
-      "lastName":"App Last"
+      "lastName":"App Last",
+      "courtApplicationPartyType": "PERSON"
     },
     "applicationType":"APP Type",
     "id":"26b856a8-ae01-4aad-814c-7cdff8db19bf",
@@ -14,7 +15,8 @@
       {
         "firstName":"Resp first",
         "isRespondent":true,
-        "lastName":"Resp Last"
+        "lastName":"Resp Last",
+        "courtApplicationPartyType": "PERSON"
       }
     ]
   }

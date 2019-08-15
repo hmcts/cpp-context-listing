@@ -7,6 +7,7 @@ import uk.gov.justice.listing.courts.Respondents;
 import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
+import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -17,6 +18,7 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 
 @SuppressWarnings({"squid:S3655"})
@@ -62,49 +64,60 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
     private ApplicantRespondent buildApplicantRespondent
             (final CourtApplicationParty courtApplicationParty, final boolean isRespondent){
         ApplicantRespondent applicantRespondent = courtApplicationParty.getPersonDetails()
-                .map(person-> getApplicantRespondent(isRespondent, person.getFirstName(), person.getLastName()))
+                .map(person-> getApplicantRespondent(courtApplicationParty.getId(), isRespondent, person.getFirstName(), person.getLastName(), CourtApplicationPartyType.PERSON))
                 .orElse(null);
         if(Objects.isNull(applicantRespondent)){
             applicantRespondent = courtApplicationParty.getOrganisation()
-                    .map(organisation -> getApplicantRespondent(isRespondent, Optional.empty(), organisation.getName())).orElse(null);
+                    .map(organisation -> getApplicantRespondent(courtApplicationParty.getId(), isRespondent, Optional.empty(), organisation.getName(), CourtApplicationPartyType.ORGANISATION)).orElse(null);
         }
         if(Objects.isNull(applicantRespondent)){
             applicantRespondent = courtApplicationParty.getProsecutingAuthority()
-                    .map(prosecutingAuthority -> getApplicantRespondent(isRespondent, Optional.empty(), prosecutingAuthority.getProsecutionAuthorityCode()))
+                    .map(prosecutingAuthority -> getApplicantRespondent(courtApplicationParty.getId(),isRespondent, Optional.empty(), prosecutingAuthority.getProsecutionAuthorityCode(), CourtApplicationPartyType.PROSECUTING_AUTHORITY))
                     .orElse(null);
         }
         if(Objects.isNull(applicantRespondent)){
             applicantRespondent = courtApplicationParty.getDefendant()
-                    .map(defendant -> getApplicantRespondent(isRespondent, defendant.getPersonDefendant())).orElse(null);
+                    .map(defendant -> getApplicantRespondent(courtApplicationParty.getId(),isRespondent, defendant.getPersonDefendant())).orElse(null);
         }
         return applicantRespondent;
     }
-    private ApplicantRespondent getApplicantRespondent(final boolean isRespondent, final Optional<PersonDefendant> personDefendant) {
+    private ApplicantRespondent getApplicantRespondent(final UUID id,final boolean isRespondent, final Optional<PersonDefendant> personDefendant) {
 
-        return personDefendant.isPresent() ? getApplicantRespondent(
+        return personDefendant.isPresent() ? getApplicantRespondent(id,
                 isRespondent,personDefendant.get().getPersonDetails().getFirstName(),
-                personDefendant.get().getPersonDetails().getLastName() ) : null;
+                personDefendant.get().getPersonDetails().getLastName(), CourtApplicationPartyType.PERSON_DEFENDANT) : null;
     }
-    private ApplicantRespondent getApplicantRespondent(final boolean isRespondent,final Optional<String> firstName, final String lastName) {
+    private ApplicantRespondent getApplicantRespondent(final UUID id, final boolean isRespondent, final Optional<String> firstName, final String lastName, final CourtApplicationPartyType type) {
         return ApplicantRespondent.applicantRespondent()
+                .withId(id)
                 .withFirstName(firstName.orElse(null))
                 .withLastName(lastName)
                 .withIsRespondent(isRespondent)
+                .withCourtApplicationPartyType(type)
                 .build();
     }
     private ApplicantRespondent getApplicant(final Applicant applicant) {
         return isNull(applicant) ? null :ApplicantRespondent.applicantRespondent()
+                .withId(applicant.getId())
                 .withFirstName(applicant.getFirstName().orElse(null))
                 .withLastName(applicant.getLastName())
                 .withIsRespondent(false)
+                .withCourtApplicationPartyType(buildCourtApplicationPartyType(applicant.getCourtApplicationPartyType()))
                 .build();
     }
     private ApplicantRespondent getRespondent(final Respondents respondents) {
         return isNull(respondents)? null : ApplicantRespondent.applicantRespondent()
+                .withId(respondents.getId())
                 .withFirstName(respondents.getFirstName().orElse(null))
                 .withLastName(respondents.getLastName())
                 .withIsRespondent(true)
+                .withCourtApplicationPartyType(buildCourtApplicationPartyType(respondents.getCourtApplicationPartyType()))
                 .build();
+    }
+
+    private CourtApplicationPartyType buildCourtApplicationPartyType(uk.gov.justice.listing.courts.CourtApplicationPartyType courtApplicationPartyType) {
+
+        return CourtApplicationPartyType.valueOf(courtApplicationPartyType.name());
     }
 }
 

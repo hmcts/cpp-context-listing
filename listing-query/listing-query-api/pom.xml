@@ -81,12 +81,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>uk.gov.moj.cpp.system.documentgenerator</groupId>
-            <artifactId>system-documentgenerator-client</artifactId>
-            <version>${documentgenerator-client.version}</version>
-        </dependency>
-
         <!-- Test dependencies -->
         <dependency>
             <groupId>uk.gov.justice.services</groupId>

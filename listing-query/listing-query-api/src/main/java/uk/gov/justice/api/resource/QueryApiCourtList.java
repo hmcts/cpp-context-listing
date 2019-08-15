@@ -20,5 +20,6 @@ public interface QueryApiCourtList {
                           @QueryParam("listId") String listId,
                           @QueryParam("startDate") String startDate,
                           @QueryParam("endDate") String endDate,
+                          @QueryParam("restricted") boolean restricted,
                           @HeaderParam(HeaderConstants.USER_ID) UUID userId);
 }

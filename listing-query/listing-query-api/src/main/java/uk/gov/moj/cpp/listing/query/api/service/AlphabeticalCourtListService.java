@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.query.api.service;
 
+import static java.lang.Boolean.FALSE;
 import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.defaultString;
@@ -50,6 +51,7 @@ public class AlphabeticalCourtListService {
     private static final String LAST_NAME = "lastName";
     private static final String FIRST_NAME = "firstName";
     private static final Logger LOGGER = LoggerFactory.getLogger(AlphabeticalCourtListService.class);
+    private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
@@ -75,12 +77,12 @@ public class AlphabeticalCourtListService {
 
         final List<AlphabeticalListDefendant> defendants = new ArrayList<>();
         final LocalDate hearingDate = LocalDates.from(hearing.getString(HEARING_DATE));
-        hearing.getJsonArray(HEARINGS_BY_HEARING_DATE).getValuesAs(JsonObject.class).forEach(hearingByDate -> {
+        hearing.getJsonArray(HEARINGS_BY_HEARING_DATE).getValuesAs(JsonObject.class).stream().filter(hearingByDate -> !hearingByDate.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE)).forEach(hearingByDate -> {
             final ZonedDateTime dateTime = ZonedDateTimeFormatter.adjustDateTime(ZonedDateTimes.fromString(hearingByDate.getString(START_TIME)));
             final DecimalFormat format = new DecimalFormat("00");
             final String hearingStartTime = format.format(dateTime.getHour()) + ":" + format.format(dateTime.getMinute());
             final String caseReference = hearingByDate.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE);
-            hearingByDate.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class).forEach(defendant ->
+            hearingByDate.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class).stream().filter(defendant -> !defendant.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE)).forEach(defendant ->
                     defendants.add(
                             getAlphabeticalListDefendant(courtCentreDetails.getCourtRooms().get(
                                     UUID.fromString(

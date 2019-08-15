@@ -60,7 +60,8 @@
           "applicant":{
             "firstName":"5o5NzB5ewT",
             "isRespondent":false,
-            "lastName":"nYhjupYT63"
+            "lastName":"nYhjupYT63",
+            "courtApplicationPartyType": "PERSON"
           },
           "applicationType":"9vBchM49Go",
           "id":"26b856a8-ae01-4aad-814c-7cdff8db19bf",
@@ -70,7 +71,8 @@
             {
               "firstName":"ijgX3B9Vy7",
               "isRespondent":true,
-              "lastName":"pGk5CoFbDb"
+              "lastName":"pGk5CoFbDb",
+              "courtApplicationPartyType": "PERSON"
             }
           ]
         }

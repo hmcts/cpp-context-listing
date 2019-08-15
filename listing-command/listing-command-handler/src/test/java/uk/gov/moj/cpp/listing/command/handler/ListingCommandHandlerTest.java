@@ -46,6 +46,7 @@ import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.BailStatus;
 import uk.gov.justice.listing.events.CourtApplicationAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
+import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
 import uk.gov.justice.listing.events.CourtRoomChangedForHearing;
 import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
@@ -100,6 +101,7 @@ import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
+import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.Defendant;
 import uk.gov.moj.cpp.listing.domain.HearingDay;
@@ -110,6 +112,7 @@ import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.RestrictCourtList;
 import uk.gov.moj.cpp.listing.domain.SequenceHearing;
 import uk.gov.moj.cpp.listing.domain.SimpleOffence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
@@ -136,7 +139,7 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
-
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -251,11 +254,7 @@ public class ListingCommandHandlerTest {
     private static final String HEARING_DATE_4 = "2012-13-15";
 
     private static final UUID COURT_APPLICATION_ID = UUID.randomUUID();
-    private static final UUID APPLICANT_ID = UUID.randomUUID();
-    private static final UUID PARTY_DETAILS_ID_1 = UUID.randomUUID();
-    private static final UUID LINKED_APPLICATION_ID = UUID.randomUUID();
-    private static final UUID LINKED_CASE_ID = UUID.randomUUID();
-    private static final UUID COURT_APPLICATION_TYPE_ID = UUID.randomUUID();
+    private static final String COURT_APPLICATION_TYPE = STRING.next();
     @Mock
     CaseOffences caseOffences;
     @Mock
@@ -290,7 +289,7 @@ public class ListingCommandHandlerTest {
             NewDefendantDetailsUpdated.class, OffencesToBeUpdated.class, OffencesToBeAdded.class, OffencesToBeDeleted.class,
             ArrayList.class, OffenceUpdated.class, HearingDaysChangedForHearing.class, OffenceAdded.class,
             OffenceDeleted.class, SequenceHearings.class, UpdateCourtApplicationForHearings.class, AddCourtApplicationForHearing.class,
-            CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class);
+            CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class);
     @InjectMocks
     @Spy
     private ListingCommandHandler listingCommandHandler;
@@ -387,13 +386,17 @@ public class ListingCommandHandlerTest {
                 .withId(UUID.fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
                 .withApplicant(ApplicantRespondent.applicantRespondent()
                         .withIsRespondent(false)
+                        .withId(UUID.fromString("22b1078b-9430-4cef-ba46-eea40a129ca8"))
                         .withFirstName("Fred")
                         .withLastName("Perry")
+                        .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
                         .build())
                 .withRespondents(Collections.singletonList(ApplicantRespondent.applicantRespondent()
                         .withIsRespondent(true)
+                        .withId(UUID.fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
                         .withFirstName("Dan")
                         .withLastName("Brown")
+                        .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
                         .build()))
                 .withApplicationReference(Optional.of("REF-1"))
                 .build();
@@ -819,6 +822,7 @@ public class ListingCommandHandlerTest {
         assertThat(courtApplicationArguments.getRespondents().get(0).getFirstName(), equalTo(courtApplication.getRespondents().get(0).getFirstName()));
         assertThat(courtApplicationArguments.getRespondents().get(0).getLastName(), equalTo(courtApplication.getRespondents().get(0).getLastName()));
         assertThat(courtApplicationArguments.getId(), equalTo(courtApplication.getId()));
+        assertThat(courtApplicationArguments.getApplicant().getCourtApplicationPartyType(), equalTo(courtApplication.getApplicant().getCourtApplicationPartyType()));
         final UUID hearingIdArguments = hearingIdCaptor.getValue();
         assertThat(hearingIdArguments, equalTo(HEARING_ID_1));
 
@@ -1007,6 +1011,29 @@ public class ListingCommandHandlerTest {
     }
 
     @Test
+    public void shouldRestrictCaseFromCourtListing() throws Exception{
+
+        final JsonEnvelope commandEnvelope = restrictCourtListCommandEnvelope();
+
+        givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
+
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.restrictDetailsFromCourt(eq(HEARING_ID_1), anyObject())).thenReturn(mock(Stream.class));
+
+        RestrictCourtList restrictCourtList = RestrictCourtList.restrictCourtList()
+                .withHearingId(HEARING_ID_1)
+                .withCaseIds(Arrays.asList(CASE_ID))
+                .withCourtApplicatonIds(Arrays.asList(COURT_APPLICATION_ID))
+                .withCourtApplicationType(COURT_APPLICATION_TYPE)
+                .build();
+        listingCommandHandler.restrictFromCourtList(commandEnvelope);
+
+        verify(hearing).restrictDetailsFromCourt((HEARING_ID_1),restrictCourtList);
+
+    }
+
+    @Test
     public void listingCommandHandlerShouldTriggerDefendantsAddedForCourtProceedingsEvents() throws Exception {
         givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
 
@@ -1106,6 +1133,20 @@ public class ListingCommandHandlerTest {
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.change-judiciary-for-hearing", jsonReader.readObject());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private JsonEnvelope restrictCourtListCommandEnvelope() {
+        String jsonString = FileUtil.givenPayload("/test-data/listing.command.restrict-court-list.json").toString()
+                .replace("HEARING_ID_1", HEARING_ID_1.toString())
+                .replace("CASE_ID_1", CASE_ID.toString())
+                .replace("COURT_APPLICATION_ID_1", COURT_APPLICATION_ID.toString())
+                .replace("COURT_APPLICATION_TYPE_1", COURT_APPLICATION_TYPE);;
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.restrict-court-list", jsonReader.readObject());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -1784,14 +1825,18 @@ public class ListingCommandHandlerTest {
                 .withApplicationType("9vBchM49Go")
                 .withId(UUID.fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
                 .withApplicant(ApplicantRespondent.applicantRespondent()
+                        .withId(UUID.fromString("22b1078b-9430-4cef-ba46-eea40a129ca8"))
                         .withIsRespondent(false)
                         .withFirstName("David")
                         .withLastName("Dell")
+                        .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
                         .build())
                 .withRespondents(Collections.singletonList(ApplicantRespondent.applicantRespondent()
                         .withIsRespondent(true)
                         .withFirstName("Luise")
                         .withLastName("Miller")
+                        .withId(UUID.fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
+                        .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
                         .build()))
                 .withApplicationReference(Optional.of("REF-1"))
                 .build();

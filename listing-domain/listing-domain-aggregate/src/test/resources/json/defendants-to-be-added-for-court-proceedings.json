@@ -12,6 +12,7 @@
       "firstName": "David",
       "id": "5b0b19ef-f50f-45fc-ad46-41821c6cf00a",
       "lastName": "LLOYD",
+      "restrictFromCourtList":false,
       "offences": []
     }
   ],

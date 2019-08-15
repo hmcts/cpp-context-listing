@@ -24,6 +24,22 @@
     },
     "applicationType": {
       "type": "string"
+    },
+    "restrictFromCourtList": {
+      "type":"boolean"
+    },
+    "restrictCourtApplicationType": {
+      "type":"boolean"
+    },
+    "courtApplicationPartyType": {
+      "description": "The type of court application party",
+      "type": "string",
+      "enum": [
+        "PERSON",
+        "ORGANISATION",
+        "PROSECUTING_AUTHORITY",
+        "PERSON_DEFENDANT"
+      ]
     }
   },
   "required": [

@@ -15,6 +15,9 @@
       "items": {
         "$ref": "http://justice.gov.uk/v24/listing/events/defendant.json"
       }
+    },
+    "restrictFromCourtList": {
+      "type":"boolean"
     }
   },
   "required": [

@@ -35,7 +35,8 @@ public class Application implements Aggregate {
         return apply(Stream.of(new CourtApplicationAddedToHearing(applicationId, hearingId)));
     }
     public Stream<Object> update(final CourtApplication courtApplication){
-        return hearingIds.isEmpty() ? apply(Stream.of(new NoHearingFoundForCourtApplication(NewDomainToEventConverter.buildCourtApplications(courtApplication)))) : apply(Stream.of(new CourtApplicationToBeUpdated(NewDomainToEventConverter.buildCourtApplications(courtApplication), hearingIds)));
+        return hearingIds.isEmpty() ? apply(Stream.of(new NoHearingFoundForCourtApplication(NewDomainToEventConverter.buildCourtApplications(courtApplication))))
+                : apply(Stream.of(new CourtApplicationToBeUpdated(NewDomainToEventConverter.buildCourtApplications(courtApplication), hearingIds)));
     }
     private void onCourtApplicationToBeUpdated() {
         //Do nothing

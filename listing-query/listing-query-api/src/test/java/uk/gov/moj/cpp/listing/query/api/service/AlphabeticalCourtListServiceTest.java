@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.query.api.service;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
@@ -44,7 +46,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AlphabeticalCourtListServiceTest {
-    private static final String FIRSTNAME = "James";
+    private static final String FIRST_NAME = "James";
     private static final String LAST_NAME = "Thomas";
     private static final String COURT_ROOM_NAME = "Room 3";
     private static final String COURT_ROOM_NAME_WELSH = "Room 3 Welsh";
@@ -75,52 +77,66 @@ public class AlphabeticalCourtListServiceTest {
     private static final String QUERY_NAME = "listing.search.court.list";
 
     @Before
-    public void setup() throws IllegalAccessException {
+    public void setup() {
         setField(this.jsonObjectToObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
     }
 
     @Test
-    public void shouldBuildDataForAlphabeticalList() {
+    public void shouldBuildDataForAlphabeticalListNoRestrictions() {
         final JsonEnvelope envelope = buildRequestEnvelope(false);
         when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(false));
         Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
         final AlphabeticalCourtList courtList = jsonObjectToObjectConverter.convert(listJson.get(), AlphabeticalCourtList.class);
-        assertCourtListValues(courtList, false);
+        assertCourtListValues(courtList, 2, false);
     }
 
     @Test
-    public void shouldBuildDataForAlphabeticalListBST() {
-        final JsonEnvelope envelope = buildRequestEnvelope(true);
+    public void shouldBuildDataForAlphabeticalListWithRestrictedCase() {
+        final JsonEnvelope envelope = buildRequestEnvelopeWithRestrictedCase();
         when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(false));
         Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
         final AlphabeticalCourtList courtList = jsonObjectToObjectConverter.convert(listJson.get(), AlphabeticalCourtList.class);
-        assertCourtListValues(courtList, true);
+        assertCourtListValues(courtList, 1, false);
     }
 
+    @Test
+    public void shouldBuildDataForAlphabeticalListWithOneRestrictedDefendant() {
+        final JsonEnvelope envelope = buildRequestEnvelopeWithOneDefendantRestricted();
+        when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(false));
+        Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
+        final AlphabeticalCourtList courtList = jsonObjectToObjectConverter.convert(listJson.get(), AlphabeticalCourtList.class);
+        assertCourtListValues(courtList, 1, false);
+    }
     @Test
     public void shouldBuildDataForAlphabeticalEngWelshList() {
         final JsonEnvelope envelope = buildRequestEnvelope(false);
         when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(true));
         Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
         final AlphabeticalCourtList courtList = jsonObjectToObjectConverter.convert(listJson.get(), AlphabeticalCourtList.class);
-        assertCourtListValues(courtList, false);
+        assertCourtListValues(courtList, 2, false);
         assertWelshValues(courtList);
     }
-
-    private void assertWelshValues(AlphabeticalCourtList courtList) {
+    public void shouldBuildDataForAlphabeticalListBST() {
+        final JsonEnvelope envelope = buildRequestEnvelope(true);
+        when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(false));
+        Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
+        final AlphabeticalCourtList courtList = jsonObjectToObjectConverter.convert(listJson.get(), AlphabeticalCourtList.class);
+        assertCourtListValues(courtList, 1, true);
+    }
+    private void assertWelshValues(final AlphabeticalCourtList courtList) {
         assertEquals(COURT_CENTRE_NAME_WELSH, courtList.getWelshCourtCentreName());
         assertEquals(HEARING_DATE.getDayOfMonth() + SPACE + capitalize(lowerCase(WelshMonth.valueFor(HEARING_DATE.getMonth()).get().name()))
                 + SPACE + HEARING_DATE.getYear(), courtList.getWelshHearingDate());
         assertEquals(ADDRESS_1_WELSH + ",", courtList.getWelshCourtCentreAddress1());
         assertEquals(POST_CODE, courtList.getWelshCourtCentreAddress2());
-        assertEquals(StringUtils.upperCase(LAST_NAME) + "," + SPACE + FIRSTNAME, courtList.getDefendants().get(0).getDefendantFullName());
+        assertEquals(StringUtils.upperCase(LAST_NAME) + "," + SPACE + FIRST_NAME, courtList.getDefendants().get(0).getDefendantFullName());
         assertEquals(CASE_URN, courtList.getDefendants().get(0).getCaseReference());
         assertEquals(COURT_ROOM_NAME_WELSH, courtList.getDefendants().get(0).getCourtRoomNameWelsh());
 
     }
 
-    private void assertCourtListValues(AlphabeticalCourtList courtList, boolean isBST) {
+    private void assertCourtListValues(final AlphabeticalCourtList courtList, final int expectedDefendantCount, boolean isBST) {
         assertEquals(COURT_CENTRE_NAME, courtList.getCourtCentreName());
         if(isBST) {
             assertEquals(SUMMER_HEARING_DATE.getDayOfMonth() + SPACE + capitalize(lowerCase(SUMMER_HEARING_DATE.getMonth().name()))
@@ -132,16 +148,19 @@ public class AlphabeticalCourtListServiceTest {
         }
         assertEquals(ADDRESS_1 + ",", courtList.getCourtCentreAddress1());
         assertEquals(POST_CODE, courtList.getCourtCentreAddress2());
-        assertEquals(1, courtList.getDefendants().size());
-        assertEquals(StringUtils.upperCase(LAST_NAME) + "," + SPACE + FIRSTNAME, courtList.getDefendants().get(0).getDefendantFullName());
-        assertEquals(CASE_URN, courtList.getDefendants().get(0).getCaseReference());
-        assertEquals(COURT_ROOM_NAME, courtList.getDefendants().get(0).getCourtRoomName());
-        if(isBST) {
-            assertEquals("14:46", courtList.getDefendants().get(0).getHearingStartTime());
-        }
-        else {
-            assertEquals("13:46", courtList.getDefendants().get(0).getHearingStartTime());
-        }
+        assertEquals(expectedDefendantCount, courtList.getDefendants().size());
+        courtList.getDefendants().stream().forEach(defendant -> {
+            assertEquals(StringUtils.upperCase(LAST_NAME) + "," + SPACE + FIRST_NAME, defendant.getDefendantFullName());
+            assertEquals(CASE_URN, defendant.getCaseReference());
+            assertEquals(COURT_ROOM_NAME, defendant.getCourtRoomName());
+            if(isBST) {
+                assertEquals("14:46", defendant.getHearingStartTime());
+            }
+            else{
+                assertEquals("13:46", defendant.getHearingStartTime());
+            }
+
+        });
 
     }
 
@@ -156,9 +175,18 @@ public class AlphabeticalCourtListServiceTest {
                                         .add("courtCentreId", COURT_CENTRE_ID.toString())
                                         .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN))
                                         .add("courtRoomId", COURT_ROOM_ID.toString())
+                                        .add("restrictFromCourtList", FALSE)
                                         .add("defendants", createArrayBuilder().add(createObjectBuilder()
-                                                .add("firstName", FIRSTNAME)
-                                                .add("lastName", LAST_NAME)))
+                                                        .add("firstName", FIRST_NAME)
+                                                        .add("lastName", LAST_NAME)
+                                                        .add("restrictFromCourtList", FALSE)
+                                                )
+                                                        .add(createObjectBuilder()
+                                                                .add("firstName", FIRST_NAME)
+                                                                .add("lastName", LAST_NAME)
+                                                                .add("restrictFromCourtList", FALSE)
+                                                        )
+                                        )
                                 ))
                         .build()).build()).build();
 
@@ -169,6 +197,75 @@ public class AlphabeticalCourtListServiceTest {
                 queryPayload);
     }
 
+    private JsonEnvelope buildRequestEnvelopeWithOneDefendantRestricted() {
+        final JsonObject queryPayload = createObjectBuilder().add("hearings",
+                createArrayBuilder().add(createObjectBuilder()
+                        .add("hearingDate", LocalDates.to(HEARING_DATE))
+                        .add("hearingsByHearingDate", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("startTime", ZonedDateTimes.toString(START_DATE_TIME))
+                                        .add("courtCentreId", COURT_CENTRE_ID.toString())
+                                        .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN))
+                                        .add("courtRoomId", COURT_ROOM_ID.toString())
+                                        .add("restrictFromCourtList", FALSE)
+                                        .add("defendants", createArrayBuilder().add(createObjectBuilder()
+                                                        .add("firstName", FIRST_NAME)
+                                                        .add("lastName", LAST_NAME)
+                                                        .add("restrictFromCourtList", FALSE)
+                                                )
+                                                        .add(createObjectBuilder()
+                                                                .add("firstName", FIRST_NAME)
+                                                                .add("lastName", LAST_NAME)
+                                                                .add("restrictFromCourtList", TRUE)
+                                                        )
+                                        )
+                                ))
+                        .build()).build()).build();
+        return envelopeFrom(
+                metadataOf(randomUUID(), QUERY_NAME)
+                        .withUserId(randomUUID().toString())
+                        .build(),
+                queryPayload);
+    }
+
+    private JsonEnvelope buildRequestEnvelopeWithRestrictedCase() {
+        final JsonObject queryPayload = createObjectBuilder().add("hearings",
+                createArrayBuilder().add(createObjectBuilder()
+                        .add("hearingDate", LocalDates.to(HEARING_DATE))
+                        .add("hearingsByHearingDate", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("startTime", ZonedDateTimes.toString(START_DATE_TIME))
+                                        .add("courtCentreId", COURT_CENTRE_ID.toString())
+                                        .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN))
+                                        .add("courtRoomId", COURT_ROOM_ID.toString())
+                                        .add("restrictFromCourtList", FALSE)
+                                        .add("defendants", createArrayBuilder().add(createObjectBuilder()
+                                                .add("firstName", FIRST_NAME)
+                                                .add("lastName", LAST_NAME)
+                                                .add("restrictFromCourtList", FALSE)
+                                        ))
+                                )
+                                .add(createObjectBuilder()
+                                        .add("startTime", ZonedDateTimes.toString(START_DATE_TIME))
+                                        .add("courtCentreId", COURT_CENTRE_ID.toString())
+                                        .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN))
+                                        .add("courtRoomId", COURT_ROOM_ID.toString())
+                                        .add("restrictFromCourtList", TRUE)
+                                        .add("defendants", createArrayBuilder().add(createObjectBuilder()
+                                                .add("firstName", FIRST_NAME)
+                                                .add("lastName", LAST_NAME)
+                                                .add("restrictFromCourtList", FALSE)
+                                        ))
+                                )
+                        )
+                        .build()).build()).build();
+
+        return envelopeFrom(
+                metadataOf(randomUUID(), QUERY_NAME)
+                        .withUserId(randomUUID().toString())
+                        .build(),
+                queryPayload);
+    }
     private CourtCentreDetails getCourtCentreDetails(final Boolean welsh) {
         final CourtRoomDetails courtRoomDetails = CourtRoomDetails.courtRoomDetails()
                 .withCourtRoomName(COURT_ROOM_NAME).withWelshCourtRoomName(COURT_ROOM_NAME_WELSH)

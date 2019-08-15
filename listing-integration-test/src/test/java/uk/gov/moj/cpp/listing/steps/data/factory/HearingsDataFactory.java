@@ -10,6 +10,7 @@ import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
 import uk.gov.justice.listing.courts.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyType;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingTypeData;
@@ -96,7 +97,7 @@ public class HearingsDataFactory {
 
 
     private static ListedCaseData randomListedCase() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendants(2));
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendants(2), false);
     }
 
     private static OffenceData randomOffence() {
@@ -108,7 +109,7 @@ public class HearingsDataFactory {
     private static DefendantData randomDefendant() {
         return new DefendantData(randomUUID(), STRING.next(), STRING.next(),
                 LocalDate.now(), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
-                manyRandomOffences(3));
+                manyRandomOffences(3), Boolean.FALSE);
     }
 
 
@@ -136,9 +137,9 @@ public class HearingsDataFactory {
 
     private static CourtApplicationData randomCourtApplicationData(UUID linkedCaseId ){
         return new CourtApplicationData(randomUUID(), linkedCaseId,randomUUID(),
-                new ApplicantRespondentData(STRING.next(), Boolean.FALSE, STRING.next()),
-                new ApplicantRespondentData(STRING.next(), Boolean.TRUE, STRING.next()),
-                STRING.next(), Boolean.FALSE);
+                new ApplicantRespondentData(randomUUID(), STRING.next(), Boolean.FALSE, STRING.next(), CourtApplicationPartyType.PERSON),
+                new ApplicantRespondentData(randomUUID(), STRING.next(), Boolean.TRUE, STRING.next(), CourtApplicationPartyType.PERSON),
+                STRING.next(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE);
     }
     private static JudicialRoleData randomJudicalRole() {
            return new JudicialRoleData(Optional.ofNullable(null),Optional.ofNullable(BOOLEAN.next()), randomUUID(),

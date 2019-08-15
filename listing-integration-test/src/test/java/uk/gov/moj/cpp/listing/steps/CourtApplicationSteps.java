@@ -1,35 +1,5 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
-import org.hamcrest.Matchers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import uk.gov.justice.core.courts.*;
-import uk.gov.justice.listing.courts.ApplicationJurisdictionType;
-import uk.gov.justice.listing.courts.ApplicationSummonsTemplateType;
-import uk.gov.justice.listing.courts.ApplicationStatus;
-import uk.gov.justice.listing.courts.Gender;
-import uk.gov.justice.listing.courts.LinkType;
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.AddCourtApplicationData;
-import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
-import uk.gov.moj.cpp.listing.steps.data.CourtApplicationUpdateData;
-import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-import uk.gov.moj.cpp.listing.utils.QueueUtil;
-
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.json.JsonObject;
-import java.time.LocalDate;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.UUID;
-
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
@@ -38,6 +8,8 @@ import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -49,6 +21,42 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMa
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
+import uk.gov.justice.core.courts.CourtApplication;
+import uk.gov.justice.core.courts.CourtApplicationParty;
+import uk.gov.justice.core.courts.CourtApplicationRespondent;
+import uk.gov.justice.core.courts.CourtApplicationType;
+import uk.gov.justice.core.courts.Person;
+import uk.gov.justice.listing.courts.ApplicationJurisdictionType;
+import uk.gov.justice.listing.courts.ApplicationStatus;
+import uk.gov.justice.listing.courts.ApplicationSummonsTemplateType;
+import uk.gov.justice.listing.courts.Gender;
+import uk.gov.justice.listing.courts.LinkType;
+import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.moj.cpp.listing.it.AbstractIT;
+import uk.gov.moj.cpp.listing.steps.data.AddCourtApplicationData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
+import uk.gov.moj.cpp.listing.steps.data.CourtApplicationUpdateData;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.utils.QueueUtil;
+
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.json.JsonObject;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.Filter;
+import com.jayway.restassured.path.json.JsonPath;
+import org.hamcrest.Matchers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtApplicationSteps.class);
@@ -58,6 +66,8 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private static final String RESPONDENT_FIRST_NAME = STRING.next();
     private static final String RESPONDENT_LAST_NAME = STRING.next();
     private static final String APPLICATION_TYPE = STRING.next();
+    public static final UUID APPLICANT_ID = UUID.randomUUID();
+    public static final UUID RESPONDENT_ID = UUID.randomUUID();
     private static final UUID LINKED_CASE_ID = UUID.randomUUID();
     private static final UUID LINKED_APPLICATION_ID = UUID.randomUUID();
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED = "public.progression.events.hearing-extended";
@@ -169,6 +179,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("courtApplication.respondents[0].partyDetails.personDetails.lastName"), is(jsRequest.getString("courtApplication.respondents[0].partyDetails.personDetails.lastName")));
         assertThat(jsonResponse.get("courtApplication.type.applicationType"), is(jsRequest.getString("courtApplication.type.applicationType")));
         assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));
+        assertThat(jsonResponse.get("courtApplication.applicant.id"), is(jsRequest.getString("courtApplication.applicant.id")));
         assertThat(jsonResponse.get("courtApplication.applicationStatus"), is(jsRequest.getString("courtApplication.applicationStatus")));
         assertThat(jsonResponse.get("courtApplication.linkedCaseId"), is(jsRequest.getString("courtApplication.linkedCaseId")));
     }
@@ -202,7 +213,11 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].courtApplications[0].id",
                                         equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getId().toString())),
                                 withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
-                                        equalTo(LINKED_APPLICATION_ID.toString()))
+                                        equalTo(LINKED_APPLICATION_ID.toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].restrictFromCourtList",
+                                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
+                                withJsonPath("$.hearings[0].courtApplications[0].restrictCourtApplicationType",
+                                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictCourtApplicationType()))
                                 )));
     }
 
@@ -235,9 +250,19 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
                                         Matchers.anyOf(equalTo(LINKED_APPLICATION_ID.toString()),
                                                 equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getParentApplicationId().toString()))),
+                                withJsonPath("$.hearings[0].courtApplications[0].restrictFromCourtList",
+                                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
+                                withJsonPath("$.hearings[0].courtApplications[0].restrictCourtApplicationType",
+                                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictCourtApplicationType())),
+                                withJsonPath("$.hearings[0].courtApplications[1].respondents[0].id",
+                                        Matchers.anyOf(equalTo(RESPONDENT_ID.toString()),
+                                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRespondent().getId().toString()))),
                                 withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
                                         Matchers.anyOf(equalTo(RESPONDENT_FIRST_NAME),
                                                 equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRespondent().getFirstName()))),
+                                withJsonPath("$.hearings[0].courtApplications[1].applicant.id",
+                                        Matchers.anyOf(equalTo(APPLICANT_ID.toString()),
+                                                equalTo(hearingsData.getHearingData().get(1).getCourtApplications().get(0).getApplicant().getId().toString()))),
                                 withJsonPath("$.hearings[0].courtApplications[1].applicant.firstName",
                                         Matchers.anyOf(equalTo(APPLICANT_FIRST_NAME),
                                                 equalTo(hearingsData.getHearingData().get(1).getCourtApplications().get(0).getApplicant().getFirstName()))),
@@ -277,7 +302,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                                     .withLastName(APPLICANT_LAST_NAME)
                                     .withGender(Gender.FEMALE)
                                     .build()))
-                            .withId(UUID.randomUUID())
+                            .withId(APPLICANT_ID)
                             .build())
                     .withRespondents(Collections.singletonList(CourtApplicationRespondent.courtApplicationRespondent()
                             .withPartyDetails(CourtApplicationParty.courtApplicationParty()
@@ -286,7 +311,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                                             .withLastName(RESPONDENT_LAST_NAME)
                                             .withGender(Gender.MALE)
                                             .build()))
-                                    .withId(UUID.randomUUID())
+                                    .withId(RESPONDENT_ID)
                                     .build())
                             .build()))
                     .withId(courtApplicationData.getId())

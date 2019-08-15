@@ -11,13 +11,16 @@ public class ListedCaseData {
     private final UUID authorityId;
     private final String caseReference;
     private final List<DefendantData> defendants;
+    private final Boolean restrictFromCourtList;
 
-    public ListedCaseData(UUID caseId, UUID authorityId, String authorityCode, String caseReference, List<DefendantData> defendantData) {
+    public ListedCaseData(UUID caseId, UUID authorityId, String authorityCode, String caseReference, List<DefendantData> defendantData, final Boolean restrictFromCourtList) {
                   this.caseId = caseId;
                   this.authorityCode = authorityCode;
                   this.authorityId = authorityId;
                   this.caseReference = caseReference;
                   this.defendants = defendantData;
+
+        this.restrictFromCourtList = restrictFromCourtList;
     }
 
     public UUID getCaseId() {
@@ -38,5 +41,9 @@ public class ListedCaseData {
 
     public List<DefendantData> getDefendants() {
         return defendants;
+    }
+
+    public Boolean getRestrictFromCourtList() {
+        return restrictFromCourtList;
     }
 }

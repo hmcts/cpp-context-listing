@@ -75,6 +75,9 @@ public class CourtApplicationEventListener {
                 .withId(origCourtApplication.getId())
                 .withParentApplicationId(updateCourtApplication.getParentApplicationId())
                 .withLinkedCaseId(updateCourtApplication.getLinkedCaseId())
+                .withRestrictCourtApplicationType(updateCourtApplication.getRestrictCourtApplicationType())
+                .withRestrictFromCourtList(updateCourtApplication.getRestrictFromCourtList())
+                .withApplicationReference(updateCourtApplication.getApplicationReference())
                 .build();
 
         courtApplications.replaceAll(courtApplication -> courtApplication.getId()
