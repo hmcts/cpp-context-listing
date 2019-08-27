@@ -1,9 +1,11 @@
 package uk.gov.moj.cpp.listing.query.api.service;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static java.lang.Boolean.FALSE;
 import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.defaultString;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.trim;
 import static org.apache.commons.lang3.StringUtils.upperCase;
@@ -48,6 +50,7 @@ public class AlphabeticalCourtListService {
     private static final String HEARINGS_BY_HEARING_DATE = "hearingsByHearingDate";
     private static final String DEFENDANTS = "defendants";
     private static final String HEARINGS = "hearings";
+    private static final String ORGANISATION_NAME = "organisationName";
     private static final String LAST_NAME = "lastName";
     private static final String FIRST_NAME = "firstName";
     private static final Logger LOGGER = LoggerFactory.getLogger(AlphabeticalCourtListService.class);
@@ -141,7 +144,8 @@ public class AlphabeticalCourtListService {
         final AlphabeticalListDefendant.AlphabeticalListDefendantBuilder alphabeticalListDefendantBuilder =
                 AlphabeticalListDefendant.AlphabeticalListDefendantBuilder.anAlphabeticalListDefendant();
         alphabeticalListDefendantBuilder.withDefendantFullName(
-                upperCase(defendant.getString(LAST_NAME)) + "," + SPACE + defendant.getString(FIRST_NAME))
+                isNotBlank(defendant.getString(ORGANISATION_NAME,EMPTY)) ? upperCase(defendant.getString(ORGANISATION_NAME)) :
+                        upperCase(defendant.getString(LAST_NAME)) + "," + SPACE + defendant.getString(FIRST_NAME))
                 .withCourtRoomName(courtRoomDetails.getCourtRoomName())
                 .withHearingStartTime(startTime)
                 .withCaseReference(caseReference);

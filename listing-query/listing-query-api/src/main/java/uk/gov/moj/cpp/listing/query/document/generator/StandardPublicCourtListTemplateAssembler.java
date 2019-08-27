@@ -88,6 +88,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String OFFENCES = "offences";
     private static final String LISTED_CASES = "listedCases";
     private static final String SEQUENCE = "sequence";
+    private static final String ORGANISATION_NAME = "organisationName";
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
     private static final String BLANK_STRING = "";
@@ -367,8 +368,9 @@ public class StandardPublicCourtListTemplateAssembler {
             builder.withDateOfBirth(EMPTY);
             builder.withAge(EMPTY);
         } else {
-            builder.withFirstName(d.getString(FIRST_NAME))
-                    .withSurname(d.getString(LAST_NAME));
+            builder.withFirstName(d.getString(FIRST_NAME, BLANK_STRING))
+                    .withSurname(d.getString(LAST_NAME, BLANK_STRING))
+                    .withOrganisationName(d.getString(ORGANISATION_NAME, BLANK_STRING));
             if (dateOfBirth != null) {
                 builder.withDateOfBirth(parse(dateOfBirth).format(DOB_FORMATTER));
                 builder.withAge(valueOf(Period.between(parse(dateOfBirth), LocalDate.now()).getYears()));

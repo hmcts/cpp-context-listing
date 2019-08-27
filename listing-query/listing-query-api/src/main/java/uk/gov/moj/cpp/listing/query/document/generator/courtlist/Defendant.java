@@ -5,6 +5,7 @@ import java.util.Objects;
 
 @SuppressWarnings({"squid:S1067", "squid:S00107", "squid:S00121"})
 public class Defendant {
+    private String organisationName;
 
     private String firstName;
 
@@ -15,6 +16,8 @@ public class Defendant {
     private String age;
 
     private List<Offence> offences;
+
+    public String getOrganisationName() { return organisationName; }
 
     public String getFirstName() {
         return firstName;
@@ -41,6 +44,7 @@ public class Defendant {
     }
 
     public static final class Builder {
+        private String organisationName;
         private String firstName;
         private String surname;
         private String dateOfBirth;
@@ -49,7 +53,11 @@ public class Defendant {
 
         private Builder() {
         }
-        
+
+        public Defendant.Builder withOrganisationName(String organisationName) {
+            this.organisationName = organisationName;
+            return this;
+        }
 
         public Defendant.Builder withFirstName(String firstName) {
             this.firstName = firstName;
@@ -79,6 +87,7 @@ public class Defendant {
 
         public Defendant build() {
             final Defendant defendant = new Defendant();
+            defendant.organisationName = organisationName;
             defendant.firstName = firstName;
             defendant.surname = surname;
             defendant.dateOfBirth = this.dateOfBirth;
@@ -93,7 +102,8 @@ public class Defendant {
         if (this == o) return true;
         if (!(o instanceof Defendant)) return false;
         final Defendant defendant = (Defendant) o;
-        return Objects.equals(firstName, defendant.firstName) &&
+        return Objects.equals(organisationName, defendant.organisationName) &&
+                Objects.equals(firstName, defendant.firstName) &&
                 Objects.equals(surname, defendant.surname) &&
                 Objects.equals(dateOfBirth, defendant.dateOfBirth) &&
                 Objects.equals(age, defendant.age) &&
@@ -102,13 +112,14 @@ public class Defendant {
 
     @Override
     public int hashCode() {
-        return Objects.hash(firstName, surname, dateOfBirth, age, offences);
+        return Objects.hash(organisationName, firstName, surname, dateOfBirth, age, offences);
     }
 
     @Override
     public String toString() {
         return "Defendant{" +
-                "firstName='" + firstName + '\'' +
+                "organisationName='" + organisationName + '\'' +
+                ", firstName='" + firstName + '\'' +
                 ", surname='" + surname + '\'' +
                 ", dateOfBirth='" + dateOfBirth + '\'' +
                 ", age='" + age + '\'' +

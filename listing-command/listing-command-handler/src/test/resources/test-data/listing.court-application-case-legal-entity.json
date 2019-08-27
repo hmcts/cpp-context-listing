@@ -1,0 +1,145 @@
+  {
+      "courtApplicationPartyListingNeeds": [
+        {
+          "courtApplicationId": "b908a0f2-9746-47c0-be99-97f3b7500f91",
+          "courtApplicationPartyId": "42ed18f8-6796-4faa-8b1e-5a4742d3a821",
+          "hearingLanguageNeeds": "ENGLISH"
+        }
+      ],
+      "courtApplications": [
+        {
+          "applicant": {
+            "id": "a1c3974a-aa81-4286-8a8b-b3e3ebe65e90",
+            "defendant":{
+              "prosecutionCaseId": "75cab9a4-cc8c-4a98-ad23-324ecb956e1d",
+              "id": "827b96e6-daae-47c3-829f-95f35fd6c759",
+              "legalEntityDefendant": {
+                "organisation": {
+                  "name": "ABC LTD",
+                  "address": {
+                    "address1": "618",
+                    "address2": "259 Huel Causeway",
+                    "address3": "Fadelland",
+                    "address4": "RO",
+                    "address5": "Yemen",
+                    "postcode": "SW11 1JU"
+                  },
+                  "contact": {
+                    "primaryEmail": "dortha.bauch@hotmail.com",
+                    "secondaryEmail": "winfield.predovic@hotmail.com",
+                    "work": "338.849.0549"
+                  }
+                }
+              },
+              "offences": [
+                {
+                  "count": 483538278,
+                  "id": "b00dd314-5471-4e6e-8dfa-a7cfaa3fa4bf",
+                  "offenceCode": "upjInH8pff",
+                  "offenceDefinitionId": "47f7880e-9f78-40a8-b28b-c88a3e77ab72",
+                  "offenceTitle": "s0mXXsi0Jw",
+                  "orderIndex": 1050715604,
+                  "startDate": "2019-07-31",
+                  "wording": "VTtJ9F2X07"
+                }
+              ]
+            },
+            "organisation": {
+              "name": "EY",
+              "address": {
+                "address1": "618",
+                "address2": "259 Huel Causeway",
+                "address3": "Fadelland",
+                "address4": "RO",
+                "address5": "Yemen",
+                "postcode": "SW11 1JU"
+              },
+              "contact": {
+                "primaryEmail": "dortha.bauch@hotmail.com",
+                "secondaryEmail": "winfield.predovic@hotmail.com",
+                "work": "338.849.0549"
+              }
+            }
+          },
+          "applicationReceivedDate": "2019-07-31",
+          "applicationReference": "k2LuBFkYwe",
+          "applicationStatus": "LISTED",
+          "id": "44ef2c05-4494-4b4a-aae7-d631a9d62dd9",
+          "linkedCaseId": "75cab9a4-cc8c-4a98-ad23-324ecb956e1d",
+          "type": {
+            "applicationCategory": "W5Z6NxLwFQ",
+            "applicationCode": "UDNytuScQq",
+            "applicationJurisdictionType": "CROWN",
+            "applicationLegislation": "a32MhhkP4p",
+            "applicationType": "PNk55pev9F",
+            "id": "b533df79-d801-4c91-8dde-083fde7620eb",
+            "linkType": "EITHER"
+          }
+        }
+      ],
+      "courtCentre": {
+        "id": "9010c176-1465-40a5-94e9-97350d68fe9f"
+      },
+      "defendantListingNeeds": [
+        {
+          "defendantId": "827b96e6-daae-47c3-829f-95f35fd6c759",
+          "prosecutionCaseId": "75cab9a4-cc8c-4a98-ad23-324ecb956e1d"
+        }
+      ],
+      "earliestStartDateTime": "2019-07-31T15:20:49.313Z",
+      "estimatedMinutes": 15,
+      "id": "cb32771f-28ed-416d-9e79-92d1fc0554ca",
+      "jurisdictionType": "CROWN",
+      "prosecutionCases": [
+        {
+          "defendants": [
+            {
+              "id": "827b96e6-daae-47c3-829f-95f35fd6c759",
+              "offences": [
+                {
+                  "count": 483538278,
+                  "id": "b00dd314-5471-4e6e-8dfa-a7cfaa3fa4bf",
+                  "offenceCode": "upjInH8pff",
+                  "offenceDefinitionId": "47f7880e-9f78-40a8-b28b-c88a3e77ab72",
+                  "offenceTitle": "s0mXXsi0Jw",
+                  "orderIndex": 1050715604,
+                  "startDate": "2019-07-31",
+                  "wording": "VTtJ9F2X07"
+                }
+              ],
+              "legalEntityDefendant": {
+                "organisation": {
+                  "name": "XYZ LTD",
+                  "address": {
+                    "address1": "618",
+                    "address2": "259 Huel Causeway",
+                    "address3": "Fadelland",
+                    "address4": "RO",
+                    "address5": "Yemen",
+                    "postcode": "SW11 1JU"
+                  },
+                  "contact": {
+                    "primaryEmail": "dortha.bauch@hotmail.com",
+                    "secondaryEmail": "winfield.predovic@hotmail.com",
+                    "work": "338.849.0549"
+                  }
+                }
+              },
+              "prosecutionCaseId": "75cab9a4-cc8c-4a98-ad23-324ecb956e1d"
+            }
+          ],
+          "id": "75cab9a4-cc8c-4a98-ad23-324ecb956e1d",
+          "initiationCode": "C",
+          "prosecutionCaseIdentifier": {
+            "prosecutionAuthorityCode": "Hk2mBFvjwk",
+            "prosecutionAuthorityId": "94c4495a-a943-4203-95b7-08a003148a26",
+            "prosecutionAuthorityReference": "CYiq9OvZmV"
+          }
+        }
+      ],
+      "reportingRestrictionReason": "Oyw09qeBqE",
+      "type": {
+        "description": "PTP",
+        "id": "52edf232-3c09-4c74-a6ad-737985c2e662"
+      }
+    }

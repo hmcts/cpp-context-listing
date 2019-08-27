@@ -14,12 +14,15 @@ public class ApplicantRespondentData {
 
     private final CourtApplicationPartyType courtApplicationPartyType;
 
-    public ApplicantRespondentData(final UUID id, String firstName, Boolean respondent, String lastName, final CourtApplicationPartyType courtApplicationPartyType) {
+    private final LegalEntityDefendantData legalEntityDefendant;
+
+    public ApplicantRespondentData(final UUID id, String firstName, Boolean respondent, String lastName, final CourtApplicationPartyType courtApplicationPartyType, final LegalEntityDefendantData legalEntityDefendant) {
         this.id = id;
         this.firstName = firstName;
         this.respondent = respondent;
         this.lastName = lastName;
         this.courtApplicationPartyType = courtApplicationPartyType;
+        this.legalEntityDefendant = legalEntityDefendant;
     }
 
     public String getFirstName() {
@@ -40,5 +43,9 @@ public class ApplicantRespondentData {
 
     public UUID getId() {
         return id;
+    }
+
+    public LegalEntityDefendantData getLegalEntityDefendant() {
+        return legalEntityDefendant;
     }
 }

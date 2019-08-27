@@ -191,4 +191,25 @@ public class CommandToDomainConverterTest {
         assertThat(actualJudicialRole.getJudicialRoleType().getJudicialRoleTypeId(), is(commandJudicialRole.getJudicialRoleType().getJudicialRoleTypeId()));
     }
 
+    @Test
+    public void shouldConvertHearingCommandToHearingDomainWithLegalEntity() {
+
+        //given
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingWithLegalEntity();
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing);
+
+        //then
+        assertThat(actual.getId(), is(commandHearing.getId()));
+        assertThat(actual.getJurisdictionType().name(), is(commandHearing.getJurisdictionType().name()));
+        assertCourtApplications(commandHearing, actual);
+        assertThat(actual.getCourtApplications().get(0).getApplicant().getLastName(),
+                is(commandHearing.getCourtApplications().get(0).getApplicant().getDefendant().get().getLegalEntityDefendant().get().getOrganisation().getName()));
+        assertThat(actual.getListedCases().get(0).getDefendants().get(0).getOrganisationName().get(),
+                is(commandHearing.getProsecutionCases().get(0).getDefendants().get(0).getLegalEntityDefendant().get().getOrganisation().getName()));
+
+
+    }
+
 }

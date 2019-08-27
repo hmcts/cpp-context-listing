@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
 import uk.gov.justice.core.courts.CourtApplicationParty;
+import uk.gov.justice.core.courts.LegalEntityDefendant;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.listing.courts.Applicant;
 import uk.gov.justice.listing.courts.Respondents;
@@ -66,6 +67,12 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
         ApplicantRespondent applicantRespondent = courtApplicationParty.getPersonDetails()
                 .map(person-> getApplicantRespondent(courtApplicationParty.getId(), isRespondent, person.getFirstName(), person.getLastName(), CourtApplicationPartyType.PERSON))
                 .orElse(null);
+
+        if(Objects.isNull(applicantRespondent)){
+            applicantRespondent = courtApplicationParty.getDefendant()
+                    .map(defendant -> getApplicantRespondentForLegalEntityDefendant(courtApplicationParty.getId(), isRespondent, defendant.getLegalEntityDefendant(), CourtApplicationPartyType.PERSON)).orElse(null);
+        }
+
         if(Objects.isNull(applicantRespondent)){
             applicantRespondent = courtApplicationParty.getOrganisation()
                     .map(organisation -> getApplicantRespondent(courtApplicationParty.getId(), isRespondent, Optional.empty(), organisation.getName(), CourtApplicationPartyType.ORGANISATION)).orElse(null);
@@ -87,6 +94,16 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
                 isRespondent,personDefendant.get().getPersonDetails().getFirstName(),
                 personDefendant.get().getPersonDetails().getLastName(), CourtApplicationPartyType.PERSON_DEFENDANT) : null;
     }
+
+    private ApplicantRespondent getApplicantRespondentForLegalEntityDefendant(final UUID id, final boolean isRespondent, final Optional<LegalEntityDefendant> legalEntityDefendant, final CourtApplicationPartyType type) {
+        return legalEntityDefendant.isPresent() ? getApplicantRespondent(
+                id,
+                isRespondent,
+                Optional.empty(),
+                legalEntityDefendant.get().getOrganisation().getName(),
+                type) : null;
+    }
+
     private ApplicantRespondent getApplicantRespondent(final UUID id, final boolean isRespondent, final Optional<String> firstName, final String lastName, final CourtApplicationPartyType type) {
         return ApplicantRespondent.applicantRespondent()
                 .withId(id)
@@ -96,6 +113,7 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
                 .withCourtApplicationPartyType(type)
                 .build();
     }
+
     private ApplicantRespondent getApplicant(final Applicant applicant) {
         return isNull(applicant) ? null :ApplicantRespondent.applicantRespondent()
                 .withId(applicant.getId())

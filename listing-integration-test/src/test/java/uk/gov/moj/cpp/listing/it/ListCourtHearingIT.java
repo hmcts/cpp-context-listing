@@ -41,5 +41,14 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedFromAPIForStandaloneApplication(UNALLOCATED);
         }
     }
+
+    @Test
+    public void listHearingWithLegalEntity() {
+        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithLegalEntity())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingWithLegalEntity();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedWithLegalEntity(UNALLOCATED);
+        }
+    }
 }
                                                                                                                                                                                                                                      

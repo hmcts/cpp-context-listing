@@ -10,6 +10,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData hearingsDataWithLegalEntity(){
+        return new HearingsData(HearingsDataFactory.hearingsDataWithLegalEntity());
+    }
+
     public static HearingsData singleHearingData(){
         return new HearingsData(HearingsDataFactory.singleHearingData());
     }

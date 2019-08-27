@@ -47,4 +47,19 @@ public class CommandBuilder {
         JsonObject courtApplication = FileUtil.givenPayload("/test-data/listing.court-application-applicant-respondent.json");
         return jsonObjectToObjectConverter.convert(courtApplication, CourtApplication.class);
     }
+
+    public HearingListingNeeds buildCommandHearingWithLegalEntity() {
+        JsonObject hearingJsonObject = FileUtil.givenPayload("/test-data/listing.court-application-case-legal-entity.json");
+        return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
+    }
+
+    public CourtApplication buildCourtApplicationWithLegalEntity() {
+        JsonObject courtApplication = FileUtil.givenPayload("/test-data/listing.court-application-applicant-legal-entity.json");
+        return jsonObjectToObjectConverter.convert(courtApplication, CourtApplication.class);
+    }
+
+    public CourtApplication buildCourtApplicationWithOrganisation() {
+        JsonObject courtApplication = FileUtil.givenPayload("/test-data/listing.court-application-applicant-organisation.json");
+        return jsonObjectToObjectConverter.convert(courtApplication, CourtApplication.class);
+    }
 }
