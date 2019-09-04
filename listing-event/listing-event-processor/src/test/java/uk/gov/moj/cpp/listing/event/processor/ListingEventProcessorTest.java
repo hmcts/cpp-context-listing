@@ -86,7 +86,7 @@ import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.listing.events.StatementOfOffence;
-import uk.gov.justice.progression.courts.CourtapplicationChanged;
+import uk.gov.justice.progression.courts.CourtApplicationChanged;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -600,14 +600,14 @@ public class ListingEventProcessorTest {
 
     @Test
     public void shouldHandleCourtApplicationUpdatedOnHearingMessage() throws Exception {
-        final CourtapplicationChanged courtapplicationChanged = courtApplicationChanged();
-        final JsonObject courtApplicationChangedJsonObject =  this.objectToJsonObjectConverter.convert(courtapplicationChanged);
+        final CourtApplicationChanged courtApplicationChanged = courtApplicationChanged();
+        final JsonObject courtApplicationChangedJsonObject =  this.objectToJsonObjectConverter.convert(courtApplicationChanged);
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), courtApplicationChangedJsonObject);
         final JsonEnvelopeMatcher jsonEnvelopeMatcher = new JsonEnvelopeMatcher();
 
         //given
         given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
-                CourtapplicationChanged.class)).willReturn(courtapplicationChanged);
+                CourtApplicationChanged.class)).willReturn(courtApplicationChanged);
 
         //when
         listingEventProcessor.handleCourtApplicationChanged(jsonEnvelope);
@@ -617,10 +617,10 @@ public class ListingEventProcessorTest {
         assertThat(senderJsonEnvelopeCaptor.getValue(), is(jsonEnvelopeMatcher.withMetadataOf(
                 withMetadataEnvelopedFrom(jsonEnvelope).withName(COMMAND_UPDATE_COURT_APPLICATION))
         ));
-        final CourtapplicationChanged resultPayload = jsonObjectConverter
-                .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), CourtapplicationChanged.class);
+        final CourtApplicationChanged resultPayload = jsonObjectConverter
+                .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), CourtApplicationChanged.class);
 
-        assertThat(resultPayload, equalTo(courtapplicationChanged));
+        assertThat(resultPayload, equalTo(courtApplicationChanged));
         assertThat(resultPayload, not(equalTo(courtApplicationChanged())));
     }
     @Test
@@ -668,9 +668,9 @@ public class ListingEventProcessorTest {
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
     }
-    private CourtapplicationChanged courtApplicationChanged() {
+    private CourtApplicationChanged courtApplicationChanged() {
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
-        final CourtapplicationChanged.Builder courtApplicationChangedBuilder = new CourtapplicationChanged.Builder();
+        final CourtApplicationChanged.Builder courtApplicationChangedBuilder = new CourtApplicationChanged.Builder();
         final CourtApplication.Builder courtApplicationBuilder = new CourtApplication.Builder();
         final CourtApplicationParty.Builder courtApplicationPartyBuilder = new CourtApplicationParty.Builder();
         final CourtApplicationRespondent.Builder courtApplicationRespondentBuilder = new CourtApplicationRespondent.Builder();
@@ -686,7 +686,7 @@ public class ListingEventProcessorTest {
                 .build();
 
 
-        CourtapplicationChanged courtapplicationChanged = courtApplicationChangedBuilder
+        CourtApplicationChanged courtapplicationChanged = courtApplicationChangedBuilder
                 .withCourtApplication(courtApplication)
                 .build();
 

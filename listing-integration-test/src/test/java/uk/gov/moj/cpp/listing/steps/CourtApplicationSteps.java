@@ -72,7 +72,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private static final UUID LINKED_APPLICATION_ID = UUID.randomUUID();
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED = "public.progression.events.hearing-extended";
     private static final String PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "listing.events.court-application-added-for-hearing";
-    private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED = "public.progression.courtapplication-changed";
+    private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED = "public.progression.court-application-changed";
     private static final String PRIVATE_EVENT_APPLICATION_UPDATED_FOR_HEARING = "listing.events.court-application-updated-for-hearing";
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +

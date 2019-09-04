@@ -10,6 +10,7 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
+import org.apache.commons.lang3.StringUtils;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
@@ -361,12 +362,16 @@ public class StandardPublicCourtListTemplateAssembler {
 
     private Defendant createDefendant(final JsonObject d, final String dateOfBirth, final boolean restricted, final String defendantSuffix, final boolean restrictedListRequired) {
         final Defendant.Builder builder = Defendant.defendant();
-
+        final String legalEntityDefendant = d.getString(ORGANISATION_NAME, BLANK_STRING);
         if (restricted) {
-            builder.withFirstName(EMPTY)
-                    .withSurname((DEFENDANT + SPACE + defendantSuffix).trim());
-            builder.withDateOfBirth(EMPTY);
-            builder.withAge(EMPTY);
+            if(!StringUtils.isBlank(legalEntityDefendant)) {
+                builder.withOrganisationName((DEFENDANT + SPACE + defendantSuffix).trim());
+            } else {
+                builder.withFirstName(EMPTY)
+                        .withSurname((DEFENDANT + SPACE + defendantSuffix).trim());
+                builder.withDateOfBirth(EMPTY);
+                builder.withAge(EMPTY);
+            }
         } else {
             builder.withFirstName(d.getString(FIRST_NAME, BLANK_STRING))
                     .withSurname(d.getString(LAST_NAME, BLANK_STRING))

@@ -1,7 +1,17 @@
 [
   {
+    "judiciary": [
+      {
+        "judicialId": "JUDICIARY_ID"
+      },
+      {
+        "judicialId": "JUDICIARY2_ID"
+      },
+      {
+        "judicialId": "JUDICIARY3_ID"
+      }
+    ],
     "courtCentreId": "COURT_CENTRE_ID",
-    "judiciary": [],
     "hearingsByCourtCentreId": [
       {
         "hearingDate": "2019-01-29",
@@ -15,7 +25,14 @@
               },
               "endDate": "2019-01-30",
               "allocated": true,
-              "judiciary": [],
+              "judiciary": [
+                {
+                  "isDeputy": true,
+                  "judicialId": "JUDICIARY_ID",
+                  "isBenchChairman": true,
+                  "judicialRoleType": "MAGISTRATE"
+                }
+              ],
               "startDate": "2019-01-25",
               "courtRoomId": "COURT_ROOM_ID",
               "hearingDays": [
@@ -74,7 +91,8 @@
                             "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
-                          }
+                          },
+                          "restrictFromCourtList" : false
                         },
                         {
                           "id": "77d5da0e-4d97-4668-8933-780e38b9dd98",
@@ -87,12 +105,13 @@
                             "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
-                          }
+                          },
+                          "restrictFromCourtList" : false
                         }
                       ],
-
                       "bailStatus": "UNCONDITIONAL",
-                      "defenceOrganisation": "TestOne"
+                      "defenceOrganisation": "TestOne",
+                      "restrictFromCourtList" : true
                     },
                     {
                       "id": "86c38cef-cdbb-46d8-96a5-9b31845e95cc",
@@ -109,7 +128,8 @@
                             "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
-                          }
+                          },
+                          "restrictFromCourtList" : false
                         },
                         {
                           "id": "bfc5a983-a064-48c5-93b4-27d992308df0",
@@ -122,19 +142,21 @@
                             "welshTitle": "Clwyfo / peri niwed corfforol difrifol heb fwriadu",
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
-                          }
+                          },
+                          "restrictFromCourtList" : false
                         }
                       ],
-
                       "bailStatus": "UNCONDITIONAL",
-                      "defenceOrganisation": "TestTwo"
+                      "defenceOrganisation": "TestTwo",
+                      "restrictFromCourtList" : false
                     }
                   ],
                   "caseIdentifier": {
                     "authorityId": "52b27284-0686-4894-b1c7-7d4b634cacdb",
                     "authorityCode": "CPS",
                     "caseReference": "42GD8525719"
-                  }
+                  },
+                  "restrictFromCourtList" : false
                 }
               ],
               "courtCentreId": "COURT_CENTRE_ID",
@@ -155,40 +177,7 @@
               "estimatedMinutes": 30,
               "jurisdictionType": "CROWN"
             }
-          },
-          {
-            "hearing": {
-              "id": "2a889523-4a2b-4662-a5a8-9fa949d97697",
-              "courtRoomId": "COURT_ROOM_ID",
-              "reportingRestrictionReason": "REPORTING_RESTRICTION_REASON",
-              "welshReportingRestrictionReason": "Welsh_REPORTING_RESTRICTION_REASON",
-              "hearingDays": [
-                {
-                  "endTime": "2018-11-21T14:37:00.000Z",
-                  "sequence": 0,
-                  "startTime": "2018-11-21T12:37:00.000Z",
-                  "hearingDate": "2018-11-21",
-                  "durationMinutes": 120
-                },
-                {
-                  "endTime": "2018-11-20T14:37:00.000Z",
-                  "sequence": 0,
-                  "startTime": "2018-11-20T12:37:00.000Z",
-                  "hearingDate": "2018-11-20",
-                  "durationMinutes": 120
-                },
-                {
-                  "endTime": "2018-11-22T14:37:00.000Z",
-                  "sequence": 1,
-                  "startTime": "2018-11-22T10:30:00.000Z",
-                  "hearingDate": "2018-11-22",
-                  "durationMinutes": 120
-                }
-              ],
-              "courtCentreId": "COURT_CENTRE_ID"
-            }
           }
-
         ]
       }
     ]

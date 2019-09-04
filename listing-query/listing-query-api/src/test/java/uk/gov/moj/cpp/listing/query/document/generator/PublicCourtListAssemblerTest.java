@@ -437,14 +437,14 @@ public class PublicCourtListAssemblerTest {
         return buildJsonEnvelope(queryPayload);
     }
 
-    private JsonObject createRequestPayloadWithStandAloneApplication() {
-        String payload = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList-StandaloneApplication.json")
+    private JsonObject createRequestPayloadWithLegalEntityDefendant() {
+        String payload = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList-LegalEntityDefendant.json")
                 .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString());
         return convertToJsonObject(payload);
     }
 
-    private JsonObject createRequestPayloadWithLegalEntityDefendant() {
-        String payload = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList-LegalEntityDefendant.json")
+    private JsonObject createRequestPayloadWithStandAloneApplication() {
+        String payload = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList-StandaloneApplication.json")
                 .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString());
         return convertToJsonObject(payload);
     }

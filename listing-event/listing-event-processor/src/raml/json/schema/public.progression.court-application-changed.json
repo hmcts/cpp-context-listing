@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/progression/courts/courtapplication-changed.json",
+  "id": "http://justice.gov.uk/progression/courts/court-application-changed.json",
   "type": "object",
   "properties": {
     "courtApplication": {
