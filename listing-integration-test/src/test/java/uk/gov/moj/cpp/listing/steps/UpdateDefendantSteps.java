@@ -268,7 +268,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
                     .withBailStatus(BailStatus.valueFor(defendantData.getBailStatus().toString()))
                     .withCustodyTimeLimit(of(defendantData.getCustodyTimeLimit()))
                     .build())
-                    
+
                 )
                 .withProsecutionCaseId(caseId)
                 .withDefenceOrganisation(of(organisation()

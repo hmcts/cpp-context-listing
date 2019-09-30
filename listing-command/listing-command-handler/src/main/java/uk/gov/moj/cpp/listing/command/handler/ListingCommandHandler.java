@@ -19,6 +19,7 @@ import uk.gov.justice.listing.courts.AddDefendantsToCourtProceedingsForHearing;
 import uk.gov.justice.listing.courts.AddHearingToCaseCommand;
 import uk.gov.justice.listing.courts.AddOffencesForHearing;
 import uk.gov.justice.listing.courts.AddedOffences;
+import uk.gov.justice.listing.courts.CaseOrApplicationEjected;
 import uk.gov.justice.listing.courts.ChangeJudiciaryForHearings;
 import uk.gov.justice.listing.courts.DeleteOffencesForHearing;
 import uk.gov.justice.listing.courts.DeletedOffences;
@@ -72,6 +73,7 @@ import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -182,21 +184,6 @@ public class ListingCommandHandler {
 
         }
     }
-
-    @Handles("listing.command.add-hearing-to-case")
-    public void addHearingToCase(final JsonEnvelope commandEnvelope) throws EventStreamException {
-        if(LOGGER.isDebugEnabled()) {
-            LOGGER.debug("'listing.command.add-hearing-to-case' received with payload {}", commandEnvelope.toObfuscatedDebugString());
-        }
-        final AddHearingToCaseCommand command = getAddHearingToCaseCommand(commandEnvelope);
-
-        final UUID caseId = command.getCaseId();
-        final UUID hearingId = command.getHearingId();
-        updateCaseEventStream(commandEnvelope, caseId, (Case listingCase) ->
-                listingCase.addHearing(caseId, hearingId));
-    }
-
-
     private AddHearingToCaseCommand getAddHearingToCaseCommand(final JsonEnvelope envelope) {
         return jsonObjectConverter.convert(envelope.payloadAsJsonObject(), AddHearingToCaseCommand.class);
     }
@@ -540,6 +527,40 @@ public class ListingCommandHandler {
 
 
     }
+    @Handles("listing.command.add-hearing-to-case")
+    public void addHearingToCase(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.add-hearing-to-case' received with payload {}", commandEnvelope.toObfuscatedDebugString());
+        }
+        final AddHearingToCaseCommand command = getAddHearingToCaseCommand(commandEnvelope);
+
+        final UUID caseId = command.getCaseId();
+        final UUID hearingId = command.getHearingId();
+        updateCaseEventStream(commandEnvelope, caseId, (Case listingCase) ->
+                listingCase.addHearing(caseId, hearingId));
+    }
+
+    @Handles("listing.command.eject-case-or-application")
+    public void ejectCaseOrApplication(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.add-hearing-to-case' received with payload {}", commandEnvelope.toObfuscatedDebugString());
+        }
+
+        final CaseOrApplicationEjected command = jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), CaseOrApplicationEjected.class);
+        final Optional<UUID> caseId = command.getProsecutionCaseId();
+        final List<UUID> hearingIds = command.getHearingIds();
+        final Optional<UUID> applicationId = command.getApplicationId();
+        if(caseId.isPresent()){
+        updateCaseEventStream(commandEnvelope, caseId.get(), (Case listingCase) ->
+                listingCase.ejectCase(hearingIds, caseId.get(), command.getRemovalReason()));
+        }
+        if(applicationId.isPresent()){
+            updateApplicationEventStream(commandEnvelope, applicationId.get(), (Application application) ->
+                    application.ejectApplication(hearingIds, applicationId.get(), (command.getRemovalReason())));
+        }
+
+    }
+
     private List<uk.gov.moj.cpp.listing.domain.SequenceHearing> convertSequenceHearingsToDomain(SequenceHearings sequenceHearingsCommand) {
         List<uk.gov.moj.cpp.listing.domain.SequenceHearing> domainSequenceHearings = Collections.emptyList();
         if (sequenceHearingsCommand != null && !sequenceHearingsCommand.getHearings().isEmpty()) {

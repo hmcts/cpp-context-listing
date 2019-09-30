@@ -80,20 +80,22 @@ public class AlphabeticalCourtListService {
 
         final List<AlphabeticalListDefendant> defendants = new ArrayList<>();
         final LocalDate hearingDate = LocalDates.from(hearing.getString(HEARING_DATE));
-        hearing.getJsonArray(HEARINGS_BY_HEARING_DATE).getValuesAs(JsonObject.class).stream().filter(hearingByDate -> !hearingByDate.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE)).forEach(hearingByDate -> {
-            final ZonedDateTime dateTime = ZonedDateTimeFormatter.adjustDateTime(ZonedDateTimes.fromString(hearingByDate.getString(START_TIME)));
-            final DecimalFormat format = new DecimalFormat("00");
-            final String hearingStartTime = format.format(dateTime.getHour()) + ":" + format.format(dateTime.getMinute());
-            final String caseReference = hearingByDate.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE);
-            hearingByDate.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class).stream().filter(defendant -> !defendant.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE)).forEach(defendant ->
-                    defendants.add(
-                            getAlphabeticalListDefendant(courtCentreDetails.getCourtRooms().get(
-                                    UUID.fromString(
-                                            hearingByDate.getString(COURT_ROOM_ID))),
-                                    hearingStartTime, defendant, caseReference, welsh)));
+        if(hearing.get(HEARINGS_BY_HEARING_DATE) != null) {
+            hearing.getJsonArray(HEARINGS_BY_HEARING_DATE).getValuesAs(JsonObject.class).stream().filter(hearingByDate -> !hearingByDate.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE)).forEach(hearingByDate -> {
+                final ZonedDateTime dateTime = ZonedDateTimeFormatter.adjustDateTime(ZonedDateTimes.fromString(hearingByDate.getString(START_TIME)));
+                final DecimalFormat format = new DecimalFormat("00");
+                final String hearingStartTime = format.format(dateTime.getHour()) + ":" + format.format(dateTime.getMinute());
+                final String caseReference = hearingByDate.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE);
+                hearingByDate.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class).stream().filter(defendant -> !defendant.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE)).forEach(defendant ->
+                        defendants.add(
+                                getAlphabeticalListDefendant(courtCentreDetails.getCourtRooms().get(
+                                        UUID.fromString(
+                                                hearingByDate.getString(COURT_ROOM_ID))),
+                                        hearingStartTime, defendant, caseReference, welsh)));
 
 
-        });
+            });
+        }
         defendants.sort(Comparator.comparing(AlphabeticalListDefendant::getDefendantFullName));
         return objectToJsonObjectConverter.convert(getAlphabeticalCourtList(courtCentreDetails, welsh, defendants, hearingDate));
     }

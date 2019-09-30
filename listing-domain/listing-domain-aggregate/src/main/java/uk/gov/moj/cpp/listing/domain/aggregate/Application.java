@@ -5,6 +5,7 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoN
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
+import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CourtApplicationAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
 import uk.gov.justice.listing.events.NoHearingFoundForCourtApplication;
@@ -12,18 +13,21 @@ import uk.gov.moj.cpp.listing.domain.CourtApplication;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 public class Application implements Aggregate {
 
-    private static final long serialVersionUID = 100L;
+    private static final long serialVersionUID = 200L;
     private final List<UUID> hearingIds = new ArrayList<>();
     @Override
     public Object apply(Object event) {
         return match(event).with(
                 when(CourtApplicationAddedToHearing.class).apply(this::onCourtApplicationAddedToHearing),
                 when(CourtApplicationToBeUpdated.class).apply(e-> onCourtApplicationToBeUpdated()),
+                when(ApplicationEjected.class).apply(e -> onApplicationEjected()),
                 otherwiseDoNothing());
     }
 
@@ -38,8 +42,31 @@ public class Application implements Aggregate {
         return hearingIds.isEmpty() ? apply(Stream.of(new NoHearingFoundForCourtApplication(NewDomainToEventConverter.buildCourtApplications(courtApplication))))
                 : apply(Stream.of(new CourtApplicationToBeUpdated(NewDomainToEventConverter.buildCourtApplications(courtApplication), hearingIds)));
     }
+    public Stream<Object> ejectApplication(List<UUID> hearingIdForApplicationToBeEjected, UUID applicationId, Optional<String> removalReason){
+
+        if(Objects.nonNull(hearingIdForApplicationToBeEjected)){
+            return apply(Stream.of(ApplicationEjected.applicationEjected()
+                    .withApplicationId(applicationId)
+                    .withHearingIds(hearingIdForApplicationToBeEjected)
+                    .withRemovalReason(String.valueOf(removalReason))
+                    .build()
+            ));
+        }
+
+        return hearingIds.isEmpty() ? Stream.empty() : apply(Stream.of(ApplicationEjected.applicationEjected()
+                .withApplicationId(applicationId)
+                .withHearingIds(hearingIds)
+                .withRemovalReason(String.valueOf(removalReason))
+                .build())
+        );
+    }
+
+
     private void onCourtApplicationToBeUpdated() {
         //Do nothing
     }
 
+    private void onApplicationEjected() {
+        //Do nothing
+    }
 }

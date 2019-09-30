@@ -1,5 +1,29 @@
 package uk.gov.moj.cpp.listing.query.view;
 
+import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.runners.MockitoJUnitRunner;
+import uk.gov.justice.services.common.converter.LocalDates;
+import uk.gov.justice.services.core.enveloper.Enveloper;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.CourtListType;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListCoverterFilterEjectCases;
+
+import javax.json.Json;
+import javax.json.JsonArray;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.UUID;
+
 import static com.google.common.collect.Lists.newArrayList;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.UUID.randomUUID;
@@ -16,32 +40,6 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetad
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
-
-import uk.gov.justice.services.common.converter.LocalDates;
-import uk.gov.justice.services.core.enveloper.Enveloper;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.domain.CourtListType;
-import uk.gov.moj.cpp.listing.domain.JurisdictionType;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListToJsonArrayConverter;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-import java.util.UUID;
-
-import javax.json.Json;
-import javax.json.JsonArray;
-
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HearingQueryViewTest {
@@ -80,7 +78,7 @@ public class HearingQueryViewTest {
     private HearingRepository hearingRepository;
 
     @Mock
-    private HearingJsonListToJsonArrayConverter hearingSummaryConverter;
+    private HearingJsonListCoverterFilterEjectCases hearingJsonListCoverterFilterEjectCases;
 
     @InjectMocks
     private HearingQueryView hearingsQueryView;
@@ -102,9 +100,8 @@ public class HearingQueryViewTest {
                 SEARCH_DATE.atTime(START_TIME).toString(),
                 SEARCH_DATE.atTime(END_TIME).toString()))
                 .thenReturn(hearingsJson);
-        when(hearingSummaryConverter.convert(hearingsJson))
+        when(hearingJsonListCoverterFilterEjectCases.convert(hearingsJson))
                 .thenReturn(hearingsJsonArray);
-
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
                 createObjectBuilder()
@@ -145,7 +142,7 @@ public class HearingQueryViewTest {
                 SEARCH_DATE.toString(),
                 SEARCH_DATE.toString()))
                 .thenReturn(hearingsJson);
-        when(hearingSummaryConverter.convert(hearingsJson))
+        when(hearingJsonListCoverterFilterEjectCases.convert(hearingsJson))
                 .thenReturn(hearingsJsonArray);
 
         final JsonEnvelope query = envelopeFrom(
@@ -189,7 +186,7 @@ public class HearingQueryViewTest {
                 LATEST_SEARCH_DATE_TIME.toString()
         ))
                 .thenReturn(hearingsJson);
-        when(hearingSummaryConverter.convert(hearingsJson))
+        when(hearingJsonListCoverterFilterEjectCases.convert(hearingsJson))
                 .thenReturn(hearingsJsonArray);
 
         final JsonEnvelope query = envelopeFrom(
@@ -226,7 +223,7 @@ public class HearingQueryViewTest {
                 LATEST_SEARCH_DATE
         ))
                 .thenReturn(hearingsJson);
-        when(hearingSummaryConverter.convert(hearingsJson))
+        when(hearingJsonListCoverterFilterEjectCases.convert(hearingsJson))
                 .thenReturn(hearingsJsonArray);
 
         final JsonEnvelope query = envelopeFrom(
@@ -252,7 +249,7 @@ public class HearingQueryViewTest {
 
         when(hearingRepository.findHearingsForAlphabeticalList(ALLOCATED, COURT_CENTRE_ID.toString(), LocalDates.to(SEARCH_DATE)))
                 .thenReturn(hearingsJson);
-        when(hearingSummaryConverter.convertHearingResult(hearingsJson))
+        when(hearingJsonListCoverterFilterEjectCases.convertHearingResultForAlphbeticalList(hearingsJson))
                 .thenReturn(hearingsJsonArray);
 
         final JsonEnvelope query = envelopeFrom(
@@ -274,6 +271,44 @@ public class HearingQueryViewTest {
         ));
 
     }
+    @Test
+    public void searchHearingsAllCaseApplicationsEjected() throws Exception {
+
+        final List<Hearing> hearingsJson = hearingJsonForEjected();
+
+        when(hearingRepository.findHearings(
+                ALLOCATED,
+                COURT_CENTRE_ID.toString(),
+                COURT_ROOM_ID.toString(),
+                AUTHORITY_ID_SEARCH,
+                HEARING_TYPE_ID.toString(),
+                JURISDICTION_TYPE.toString(),
+                SEARCH_DATE.toString(),
+                SEARCH_DATE.atTime(START_TIME).toString(),
+                SEARCH_DATE.atTime(END_TIME).toString()))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListCoverterFilterEjectCases.convert(hearingsJson))
+                .thenCallRealMethod();
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(SEARCH_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(START_TIME_QUERY_PARAMETER, START_TIME.toString())
+                        .add(END_TIME_QUERY_PARAMETER, END_TIME.toString())
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.searchHearings(query);
+        assertThat(results.payloadAsJsonObject().getJsonArray("hearings").size(), is(0));
+
+
+    }
     private List<Hearing> hearingsJson() {
         final String testJsonString = "{ \"hello\": \"world\" }";
         final Hearing hearing1 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
@@ -288,4 +323,11 @@ public class HearingQueryViewTest {
                 .build();
     }
 
+    private List<Hearing> hearingJsonForEjected(){
+        final String testJsonString = "{\"hearings\":[{\"id\":\"54482cb7-31aa-4c64-8656-3be6e3a4d158\",\"listedCases\":[{\"isEjected\":\"true\"}],\"courtApplications\":[{\"isEjected\":\"true\"}]}]}";
+        final Hearing hearing1 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        return newArrayList(hearing1, hearing2);
+
+    }
 }

@@ -18,6 +18,9 @@
     },
     "restrictFromCourtList": {
       "type":"boolean"
+    },
+    "isEjected":{
+      "type": "boolean"
     }
   },
   "required": [

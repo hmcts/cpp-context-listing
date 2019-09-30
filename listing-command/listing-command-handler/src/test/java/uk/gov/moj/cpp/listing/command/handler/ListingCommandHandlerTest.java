@@ -19,7 +19,6 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,20 +29,21 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatch
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeStreamMatcher.streamContaining;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.courts.AddCourtApplicationForHearing;
 import uk.gov.justice.listing.courts.AddCourtApplicationToHearingCommand;
-import uk.gov.justice.listing.courts.AddDefendantsToCourtProceedings;
 import uk.gov.justice.listing.courts.AddHearingToCaseCommand;
-import uk.gov.justice.listing.courts.SequenceHearings;
-import uk.gov.justice.listing.courts.UpdateCourtApplicationCommand;
 import uk.gov.justice.listing.courts.Gender;
+import uk.gov.justice.listing.courts.SequenceHearings;
 import uk.gov.justice.listing.courts.Title;
 import uk.gov.justice.listing.courts.UpdateCourtApplicationForHearings;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
+import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.BailStatus;
+import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.CourtApplicationAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
 import uk.gov.justice.listing.events.CourtListRestricted;
@@ -139,9 +139,8 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -289,7 +288,7 @@ public class ListingCommandHandlerTest {
             NewDefendantDetailsUpdated.class, OffencesToBeUpdated.class, OffencesToBeAdded.class, OffencesToBeDeleted.class,
             ArrayList.class, OffenceUpdated.class, HearingDaysChangedForHearing.class, OffenceAdded.class,
             OffenceDeleted.class, SequenceHearings.class, UpdateCourtApplicationForHearings.class, AddCourtApplicationForHearing.class,
-            CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class);
+            CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class);
     @InjectMocks
     @Spy
     private ListingCommandHandler listingCommandHandler;
@@ -1034,6 +1033,39 @@ public class ListingCommandHandlerTest {
     }
 
     @Test
+    public void shouldEjectCaseFromCourtListing() throws Exception {
+
+        final JsonEnvelope commandEnvelope = ejectCaseCommandEnvelope();
+
+        givenEventStream(CASE_ID, eventStream, aCase, Case.class);
+
+        when(eventSource.getStreamById(CASE_ID)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Case.class)).thenReturn(aCase);
+        when(aCase.ejectCase(eq(Arrays.asList(HEARING_ID_1)), eq(CASE_ID), eq(Optional.of("SomeReason")))).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.ejectCaseOrApplication(commandEnvelope);
+
+        verify(aCase).ejectCase((Arrays.asList(HEARING_ID_1)), CASE_ID, Optional.of("SomeReason"));
+
+    }
+
+    @Test
+    public void shouldEjectApplicationFromCourtListing() throws Exception {
+
+        final JsonEnvelope commandEnvelope = ejectApplicationCommandEnvelope();
+        givenEventStream(COURT_APPLICATION_ID, eventStream, anApplication, Application.class);
+
+        when(eventSource.getStreamById(COURT_APPLICATION_ID)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Application.class)).thenReturn(anApplication);
+        when(anApplication.ejectApplication(eq(Arrays.asList(HEARING_ID_1)), eq(COURT_APPLICATION_ID),eq(Optional.of("SomeReason")))).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.ejectCaseOrApplication(commandEnvelope);
+
+        verify(anApplication).ejectApplication((Arrays.asList(HEARING_ID_1)), COURT_APPLICATION_ID,Optional.of("SomeReason"));
+
+    }
+
+    @Test
     public void listingCommandHandlerShouldTriggerDefendantsAddedForCourtProceedingsEvents() throws Exception {
         givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
 
@@ -1143,10 +1175,38 @@ public class ListingCommandHandlerTest {
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("CASE_ID_1", CASE_ID.toString())
                 .replace("COURT_APPLICATION_ID_1", COURT_APPLICATION_ID.toString())
-                .replace("COURT_APPLICATION_TYPE_1", COURT_APPLICATION_TYPE);;
+                .replace("COURT_APPLICATION_TYPE_1", COURT_APPLICATION_TYPE);
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.restrict-court-list", jsonReader.readObject());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private JsonEnvelope ejectCaseCommandEnvelope() {
+        String jsonString = FileUtil.givenPayload("/test-data/listing.command.eject-case.json").toString()
+                .replace("HEARING_ID_1", HEARING_ID_1.toString())
+                .replace("CASE_ID_1", CASE_ID.toString())
+                .replace("REMOVAL_REASON", "SomeReason");
+
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.eject-case-or-application", jsonReader.readObject());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private JsonEnvelope ejectApplicationCommandEnvelope() {
+        String jsonString = FileUtil.givenPayload("/test-data/listing.command.eject-application.json").toString()
+                .replace("HEARING_ID_1", HEARING_ID_1.toString())
+                .replace("COURT_APPLICATION_ID_1", COURT_APPLICATION_ID.toString())
+                .replace("REMOVAL_REASON", "SomeReason");;
+
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.eject-case-or-application", jsonReader.readObject());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

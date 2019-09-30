@@ -12,8 +12,9 @@ public class ListedCaseData {
     private final String caseReference;
     private final List<DefendantData> defendants;
     private final Boolean restrictFromCourtList;
+    private final Boolean isEjected;
 
-    public ListedCaseData(UUID caseId, UUID authorityId, String authorityCode, String caseReference, List<DefendantData> defendantData, final Boolean restrictFromCourtList) {
+    public ListedCaseData(UUID caseId, UUID authorityId, String authorityCode, String caseReference, List<DefendantData> defendantData, final Boolean restrictFromCourtList, final Boolean isEjected) {
                   this.caseId = caseId;
                   this.authorityCode = authorityCode;
                   this.authorityId = authorityId;
@@ -21,6 +22,7 @@ public class ListedCaseData {
                   this.defendants = defendantData;
 
         this.restrictFromCourtList = restrictFromCourtList;
+        this.isEjected = isEjected;
     }
 
     public UUID getCaseId() {
@@ -37,6 +39,10 @@ public class ListedCaseData {
 
     public String getCaseReference() {
         return caseReference;
+    }
+
+    public Boolean getEjected() {
+        return isEjected;
     }
 
     public List<DefendantData> getDefendants() {

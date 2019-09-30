@@ -5,7 +5,16 @@ import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 
-import uk.gov.justice.listing.events.*;
+import uk.gov.justice.listing.events.BailStatus;
+import uk.gov.justice.listing.events.CaseIdentifier;
+import uk.gov.justice.listing.events.CourtApplicationPartyType;
+import uk.gov.justice.listing.events.Defendant;
+import uk.gov.justice.listing.events.HearingLanguageNeeds;
+import uk.gov.justice.listing.events.JudicialRoleType;
+import uk.gov.justice.listing.events.NewBaseDefendant;
+import uk.gov.justice.listing.events.Offence;
+import uk.gov.justice.listing.events.SimpleOffence;
+import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
@@ -29,7 +38,6 @@ public class NewDomainToEventConverter {
                         .map(NewDomainToEventConverter::buildDefendant)
                         .collect(toList()))
                 .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
-
                 .build();
     }
 

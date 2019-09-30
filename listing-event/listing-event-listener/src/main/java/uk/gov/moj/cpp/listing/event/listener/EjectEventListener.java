@@ -1,0 +1,131 @@
+package uk.gov.moj.cpp.listing.event.listener;
+
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
+import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
+
+import uk.gov.justice.listing.events.ApplicationEjected;
+import uk.gov.justice.listing.events.CaseEjected;
+import uk.gov.justice.listing.events.CourtApplication;
+import uk.gov.justice.listing.events.ListedCase;
+import uk.gov.justice.services.core.annotation.Component;
+import uk.gov.justice.services.core.annotation.Handles;
+import uk.gov.justice.services.core.annotation.ServiceComponent;
+import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Iterables;
+
+@ServiceComponent(Component.EVENT_LISTENER)
+public class EjectEventListener {
+
+
+    private static final String LISTED_CASES = "listedCases";
+    private static final String COURT_APPLICATION_FIELD = "courtApplications";
+
+    @Inject
+    private HearingRepository hearingRepository;
+
+    @Handles("listing.events.case-ejected")
+    public void caseEjected(final Envelope<CaseEjected> event) {
+        final CaseEjected caseEjected = event.payload();
+        final List<UUID> hearingIdList = caseEjected.getHearingIds();
+        final UUID caseId = caseEjected.getProsecutionCaseId();
+
+        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
+        };
+        final TypeReference<List<CourtApplication>> typeRefCourtApplication = new TypeReference<List<CourtApplication>>() {
+        };
+        hearingIdList.forEach(hearingId -> {
+            using(hearingRepository)
+                    .find(hearingId).putSubList(LISTED_CASES, typeRef, getCasesFunction(caseId)).save();
+                using(hearingRepository)
+                        .find(hearingId)
+                        .putSubList(COURT_APPLICATION_FIELD, typeRefCourtApplication, getCourtApplicationFunctionForLinkedCaseId(caseId)).save();
+        });
+
+    }
+
+    @Handles("listing.events.application-ejected")
+    public void applicationEjected(final Envelope<ApplicationEjected> event) {
+        final ApplicationEjected applicationEjected = event.payload();
+        final List<UUID> hearingIdList = applicationEjected.getHearingIds();
+        final UUID applicationId = applicationEjected.getApplicationId();
+
+        final TypeReference<List<CourtApplication>> typeRefCourtApplication = new TypeReference<List<CourtApplication>>() {
+        };
+        hearingIdList.forEach(hearingId ->
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putSubList(COURT_APPLICATION_FIELD, typeRefCourtApplication, getCourtApplicationFunction(applicationId)).save()
+        );
+
+    }
+
+    private Function<List<ListedCase>, List<ListedCase>> getCasesFunction(UUID caseId) {
+        return cases -> getAndUpdateCases(cases, caseId);
+    }
+    private List<ListedCase> getAndUpdateCases(List<ListedCase> cases, UUID caseId) {
+        final ListedCase listedCase = Iterables.find(cases, lc -> lc.getId().equals(caseId));
+        final ListedCase newListedCase
+                = ListedCase.listedCase()
+                .withCaseIdentifier(listedCase.getCaseIdentifier())
+                .withDefendants(listedCase.getDefendants())
+                .withId(listedCase.getId())
+                .withIsEjected(ofNullable(Boolean.TRUE)).build();
+        cases.replaceAll(lc -> lc.getId().equals(caseId) ? newListedCase : lc);
+        return cases;
+    }
+
+    private Function<List<CourtApplication>, List<CourtApplication>> getCourtApplicationFunction(UUID courtApplicationId) {
+        return courtApplications -> getAndUpdateCourtApplicationToEject(courtApplicationId, courtApplications);
+    }
+
+    private Function<List<CourtApplication>, List<CourtApplication>> getCourtApplicationFunctionForLinkedCaseId(UUID caseId) {
+        return courtApplications -> getAndUpdateCourtApplicationWithLinkedCaseIdToEject(caseId, courtApplications);
+    }
+
+    private List<CourtApplication> getAndUpdateCourtApplicationToEject(UUID courtApplicationId, List<CourtApplication> courtApplications) {
+        courtApplications.replaceAll(ca -> ca.getId().equals(courtApplicationId) ||  Optional.of(courtApplicationId).equals(ca.getParentApplicationId())? buildCourtApplication(ca) : ca);
+        return courtApplications;
+    }
+
+    private List<CourtApplication> getAndUpdateCourtApplicationWithLinkedCaseIdToEject(UUID linkedCaseId, List<CourtApplication> courtApplications) {
+        final List<CourtApplication> courtApplicationEntities = courtApplications.stream().filter(ca -> ca.getLinkedCaseId().equals(Optional.of(linkedCaseId))).collect(Collectors.toList());
+        courtApplicationEntities.forEach(
+                courtApplication -> {
+                    final UUID courtApplicationId = courtApplication.getId();
+                    final CourtApplication newCourtApplication = buildCourtApplication(courtApplication);
+                    courtApplications.replaceAll(ca -> ca.getId().equals(courtApplicationId) ? newCourtApplication : ca);
+                }
+        );
+
+        return courtApplications;
+    }
+
+    private CourtApplication buildCourtApplication(final CourtApplication courtApplication) {
+        return CourtApplication.courtApplication()
+                .withApplicant(courtApplication.getApplicant())
+                .withRespondents(courtApplication.getRespondents())
+                .withApplicationType(courtApplication.getApplicationType())
+                .withId(courtApplication.getId())
+                .withParentApplicationId(courtApplication.getParentApplicationId())
+                .withLinkedCaseId(courtApplication.getLinkedCaseId())
+                .withRestrictFromCourtList((courtApplication.getRestrictFromCourtList()))
+                .withRestrictCourtApplicationType(courtApplication.getRestrictCourtApplicationType())
+                .withApplicationReference(courtApplication.getApplicationReference())
+                .withApplicationType(courtApplication.getApplicationType())
+                .withIsEjected(of(Boolean.TRUE))
+                .build();
+    }
+
+}

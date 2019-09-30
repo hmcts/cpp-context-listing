@@ -1,14 +1,9 @@
 package uk.gov.moj.cpp.listing.query.view;
 
 
-import static java.time.LocalTime.MAX;
-import static java.time.LocalTime.MIN;
-import static javax.json.Json.createArrayBuilder;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
-
+import com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -17,20 +12,19 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListToJsonArrayConverter;
-import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonToJsonArrayConverter;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListCoverterFilterEjectCases;
 
+import javax.inject.Inject;
+import javax.json.Json;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
-import javax.inject.Inject;
-import javax.json.Json;
-
-import com.google.common.base.Strings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.time.LocalTime.MAX;
+import static java.time.LocalTime.MIN;
+import static javax.json.Json.createArrayBuilder;
+import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.*;
 
 @SuppressWarnings({"squid:S1192"})
 @ServiceComponent(Component.QUERY_VIEW)
@@ -55,10 +49,7 @@ public class HearingQueryView {
     private HearingRepository repository;
 
     @Inject
-    private HearingJsonListToJsonArrayConverter hearingJsonListToJsonArrayConverter;
-
-    @Inject
-    private HearingJsonToJsonArrayConverter hearingJsonToJsonArrayConverter;
+    private HearingJsonListCoverterFilterEjectCases hearingJsonListCoverterFilterEjectCases;
 
     @Inject
     private Enveloper enveloper;
@@ -102,7 +93,7 @@ public class HearingQueryView {
 
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
                 Json.createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListToJsonArrayConverter.convert(hearings))
+                        .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convert(hearings))
                         .build()
         );
     }
@@ -143,7 +134,7 @@ public class HearingQueryView {
 
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
                 Json.createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListToJsonArrayConverter.convert(hearings))
+                        .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convert(hearings))
                         .build()
         );
     }
@@ -184,7 +175,7 @@ public class HearingQueryView {
     private JsonEnvelope createAlphabeticalListJsonEnvelope(final JsonEnvelope query, final List<Hearing> matchedHearings) {
         return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
                 Json.createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListToJsonArrayConverter.convertHearingResult(matchedHearings))
+                        .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convertHearingResultForAlphbeticalList(matchedHearings))
                         .build()
         );
     }
@@ -192,7 +183,7 @@ public class HearingQueryView {
     private JsonEnvelope createPublicStandardCourtListJsonEnvelope(final JsonEnvelope query, final Hearing matchedHearingsJsonObject) {
         return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
                 Json.createObjectBuilder()
-                        .add(HEARINGS, hearingJsonToJsonArrayConverter.convert(matchedHearingsJsonObject))
+                        .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convertHearingResultForPublicList(matchedHearingsJsonObject))
                         .build()
         );
     }

@@ -6,25 +6,28 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoN
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
+import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.HearingAddedToCase;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
-import uk.gov.moj.cpp.listing.domain.Defendant;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
+import uk.gov.moj.cpp.listing.domain.Defendant;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 @SuppressWarnings("squid:S1068")
 public class Case implements Aggregate {
 
-    private static final long serialVersionUID = 100L;
+    private static final long serialVersionUID = 200L;
 
     private final List<UUID> hearingIds = new ArrayList<>();
 
@@ -36,6 +39,7 @@ public class Case implements Aggregate {
                 when(OffencesToBeAdded.class).apply(e -> onOffencesToBeAdded()),
                 when(OffencesToBeDeleted.class).apply(e -> onOffencesToBeDeleted()),
                 when(OffencesToBeUpdated.class).apply(e -> onOffencesToBeUpdated()),
+                when(CaseEjected.class).apply(e -> onCaseEjected()),
                 otherwiseDoNothing());
     }
 
@@ -107,6 +111,25 @@ public class Case implements Aggregate {
                 .build()));
     }
 
+    public Stream<Object> ejectCase(List<UUID> hearingIdOfEjectCase, UUID caseId, Optional<String> removalReason){
+
+        if(Objects.nonNull(hearingIdOfEjectCase)){
+            return apply(Stream.of(CaseEjected.caseEjected()
+                .withProsecutionCaseId(caseId)
+                .withHearingIds(hearingIdOfEjectCase)
+                .withRemovalReason(String.valueOf(removalReason))
+                .build()
+        ));
+        }
+
+        return hearingIds.isEmpty() ? Stream.empty() : apply(Stream.of(CaseEjected.caseEjected()
+                .withProsecutionCaseId(caseId)
+                .withHearingIds(hearingIds)
+                .withRemovalReason(String.valueOf(removalReason))
+                .build())
+        );
+    }
+
     // Methods to apply aggregate state
 
     private void onHearingAddedToCase(HearingAddedToCase event) {
@@ -126,6 +149,9 @@ public class Case implements Aggregate {
     }
 
     private void onOffencesToBeAdded() {
+        // Do nothing
+    }
+    private void onCaseEjected(){
         // Do nothing
     }
 }

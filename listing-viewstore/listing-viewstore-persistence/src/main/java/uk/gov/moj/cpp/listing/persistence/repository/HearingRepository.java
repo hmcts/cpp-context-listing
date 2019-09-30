@@ -11,7 +11,6 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import java.util.List;
 import java.util.UUID;
 
-
 /**
  * Repository for {@link Hearing}
  * <p>
@@ -169,7 +168,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "                            from  " +
             "                            ( " +
             "                                select properties as hearing" +
-            "                                from hearing" +
+            "                                from hearing " +
             "                                where properties ->> 'courtCentreId' = cast(?2 as text) " +
             "                                and cast(properties ->> 'allocated' as boolean) = ?1 " +
             "                                and properties -> 'hearingDays' @> cast(concat('[{\"hearingDate\": \"', h3.hearingDate, '\"}]') as jsonb) " +
@@ -211,10 +210,11 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
         "        (  "+
         "            select jsonb_agg(hearings) \"hearingsByHearingDate\" "+
         "            from (  "+
-        "                select hearingDays -> 'startTime' \"startTime\", listedCases -> 'defendants' defendants, listedCases -> 'caseIdentifier' \"caseIdentifier\", listedCases -> 'restrictFromCourtList' \"restrictFromCourtList\", properties -> 'courtCentreId' \"courtCentreId\" , properties -> 'courtRoomId' \"courtRoomId\"  "+
+        "                select hearingDays -> 'startTime' \"startTime\", listedCases -> 'defendants' defendants,  listedCases -> 'caseIdentifier' \"caseIdentifier\", properties -> 'courtCentreId' \"courtCentreId\" , properties -> 'courtRoomId' \"courtRoomId\" "+
         "                from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays, jsonb_array_elements(properties -> 'listedCases') listedCases  "+
         "                where properties -> 'hearingDays' @> cast(concat('[{\"hearingDate\": \"', hrngByHearingDate.hearingDate, '\"}]') as jsonb) "+
         "                and cast(properties ->> 'allocated' as boolean) = ?1 "+
+        "                and (listedCases->>'isEjected' is null or cast(listedCases->>'isEjected' as boolean) = false) "+
         "                and properties ->> 'courtCentreId' = cast(?2 as text) " +
         "                and hearingDays ->> 'hearingDate' = hrngByHearingDate.hearingDate "+
         "            ) hearings  "+

@@ -33,6 +33,9 @@
     },
     "restrictCourtApplicationType": {
       "type":"boolean"
+    },
+    "isEjected":{
+      "type": "boolean"
     }
   },
   "required": [

@@ -59,6 +59,7 @@ public class ListingEventProcessor {
     static final String PUBLIC_EVENT_RESTRICT_COURT_LIST = "public.listing.court-list-restricted";
     static final String PUBLIC_EVENT_PROGRESSION_EXTEND_LISTED_HEARING_FOR_COURT_APPLICATION = "public.progression.events.hearing-extended";
     static final String PUBLIC_EVENT_PROGRESSION_DEFENDANTS_ADDED_TO_COURT_PROCEEDINGS = "public.progression.defendants-added-to-court-proceedings";
+    static final String PUBLIC_EVENT_PROGRESSION_EVENTS_CASE_OR_APPLICATION_EJECTED = "public.progression.events.case-or-application-ejected";
     static final String PRIVATE_EVENT_HEARING_LISTED = "listing.events.hearing-listed";
     static final String PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING = "listing.events.allocated-hearing-updated-for-listing";
     static final String PRIVATE_EVENT_COURT_APPLICATION_ADDED_FOR_LISTED_HEARING = "listing.events.court-application-added-for-hearing";
@@ -83,6 +84,7 @@ public class ListingEventProcessor {
     static final String COMMAND_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS="listing.command.add-defendants-to-court-proceedings";
     static final String COMMAND_UPDATE_COURT_APPLICATION = "listing.command.update-court-application";
     static final String COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING = "listing.command.add-court-application-for-hearing";
+    static final String COMMAND_CASE_OR_APPLICATION_EJECTED = "listing.command.eject-case-or-application" ;
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
     private static final String APPLICATION_ID = "applicationId";
     private static final String HEARING_ID = "hearingId";
@@ -263,6 +265,13 @@ public class ListingEventProcessor {
         sender.send(enveloper.withMetadataFrom(envelope, COMMAND_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS).apply(envelope.payloadAsJsonObject()));
     }
 
+    @Handles(PUBLIC_EVENT_PROGRESSION_EVENTS_CASE_OR_APPLICATION_EJECTED)
+    public void handleEventsCaseOrApplicationEjected(final JsonEnvelope envelope) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PUBLIC_EVENT_PROGRESSION_EVENTS_CASE_OR_APPLICATION_EJECTED, envelope.toObfuscatedDebugString());
+        }
+        sender.send(enveloper.withMetadataFrom(envelope, COMMAND_CASE_OR_APPLICATION_EJECTED).apply(envelope.payloadAsJsonObject()));
+    }
     /*
      * For each hearing in the 'case-sent-for-listing' event, extract it
      * and send each one through as a separate 'list-hearing' command.
