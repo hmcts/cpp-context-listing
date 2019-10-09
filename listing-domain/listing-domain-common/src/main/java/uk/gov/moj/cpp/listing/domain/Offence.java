@@ -17,13 +17,16 @@ public class Offence {
 
     private final StatementOfOffence statementOfOffence;
 
-    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence) {
+    private final Optional<CustodyTimeLimit> custodyTimeLimit;
+
+    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit) {
         this.endDate = endDate;
         this.id = id;
         this.offenceCode = offenceCode;
         this.offenceWording = offenceWording;
         this.startDate = startDate;
         this.statementOfOffence = statementOfOffence;
+        this.custodyTimeLimit = custodyTimeLimit;
     }
 
     public Optional<String> getEndDate() {
@@ -50,6 +53,8 @@ public class Offence {
         return statementOfOffence;
     }
 
+    public Optional<CustodyTimeLimit> getCustodyTimeLimit(){ return custodyTimeLimit;}
+
     public static Builder offence() {
         return new Offence.Builder();
     }
@@ -65,12 +70,14 @@ public class Offence {
                 java.util.Objects.equals(this.offenceCode, that.offenceCode) &&
                 java.util.Objects.equals(this.offenceWording, that.offenceWording) &&
                 java.util.Objects.equals(this.startDate, that.startDate) &&
-                java.util.Objects.equals(this.statementOfOffence, that.statementOfOffence);
+                java.util.Objects.equals(this.statementOfOffence, that.statementOfOffence) &&
+                java.util.Objects.equals(this.custodyTimeLimit, that.custodyTimeLimit);
     }
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence);}
+        return java.util.Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit);
+    }
 
     @Override
     public String toString() {
@@ -80,7 +87,8 @@ public class Offence {
                 "offenceCode='" + offenceCode + "'," +
                 "offenceWording='" + offenceWording + "'," +
                 "startDate='" + startDate + "'," +
-                "statementOfOffence='" + statementOfOffence + "'" +
+                "statementOfOffence='" + statementOfOffence + "'," +
+                "custodyTimeLimit='" + custodyTimeLimit + "'" +
                 "}";
     }
 
@@ -96,6 +104,8 @@ public class Offence {
         private String startDate;
 
         private StatementOfOffence statementOfOffence;
+
+        private Optional<CustodyTimeLimit> custodyTimeLimit;
 
         public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
@@ -122,13 +132,17 @@ public class Offence {
             return this;
         }
 
+        public Builder withCustodyTimeLimit(final Optional<CustodyTimeLimit> custodyTimeLimit) {
+            this.custodyTimeLimit = custodyTimeLimit;
+            return this;
+        }
+
         public Builder withStatementOfOffence(final StatementOfOffence statementOfOffence) {
             this.statementOfOffence = statementOfOffence;
             return this;
         }
-
         public Offence build() {
-            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit);
         }
     }
 }

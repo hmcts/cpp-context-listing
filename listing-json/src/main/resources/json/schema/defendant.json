@@ -30,7 +30,7 @@
       "format": "date"
     },
     "bailStatus": {
-      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/bailStatus"
+      "$ref": "http://justice.gov.uk/core/courts/bailStatus.json"
     },
     "custodyTimeLimit": {
       "description": "Custody Time Limit",

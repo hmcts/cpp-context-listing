@@ -6,7 +6,7 @@ import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
-import uk.gov.justice.listing.events.BailStatus;
+import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
 import uk.gov.moj.cpp.listing.domain.Defendant;
@@ -19,7 +19,7 @@ import uk.gov.moj.cpp.listing.domain.legacy.Hearing;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 public class DomainBuilder {
@@ -67,7 +67,7 @@ public class DomainBuilder {
 
     private static Defendant createDefendant(final Offence offence) {
 
-        uk.gov.moj.cpp.listing.domain.BailStatus bailStatus = uk.gov.moj.cpp.listing.domain.BailStatus.values()[new Random().nextInt(BailStatus.values().length)];
+        final Optional<BailStatus> bailStatus =Optional.of(new BailStatus.Builder().build());
 
         return Defendant.defendant()
                 .withHearingLanguageNeeds(of(HearingLanguageNeeds.ENGLISH))
@@ -75,7 +75,7 @@ public class DomainBuilder {
                 .withDefenceOrganisation(of(STRING.next()))
                 .withOffences(Collections.singletonList(offence))
                 .withId(randomUUID())
-                .withBailStatus(of(bailStatus))
+                .withBailStatus(bailStatus)
                 .withCustodyTimeLimit(of(STRING.next()))
                 .withDateOfBirth(of(STRING.next()))
                 .withFirstName(of(STRING.next()))

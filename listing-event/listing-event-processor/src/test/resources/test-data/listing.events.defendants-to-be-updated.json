@@ -8,7 +8,11 @@
       "firstName": "David",
       "lastName": "Lloyd",
       "dateOfBirth": "1995-03-23",
-      "bailStatus" : "IN_CUSTODY",
+      "bailStatus": {
+        "id" : "12e69486-4d01-3403-a50a-7419ca040635",
+        "code": "C",
+        "description": "Custody or remanded into custody"
+      },
       "custodyTimeLimit": "2017-03-23",
       "defenceOrganisation": "Solicitor XYZ",
       "offences": [

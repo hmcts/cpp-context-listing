@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
+import uk.gov.justice.core.courts.CustodyTimeLimit;
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 public class OffenceData {
@@ -15,11 +17,12 @@ public class OffenceData {
     private final String statementOfOffenceTitleWelsh;
     private final int count;
     private final UUID offenceDefinitionId;
+    private final Optional<CustodyTimeLimit> custodyTimeLimit;
 
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                        final String statementOfOffenceTitleWelsh, final String offenceWording,
-                       final int count, UUID offenceDefinitionId) {
+                       final int count, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
@@ -31,6 +34,7 @@ public class OffenceData {
         this.statementOfOffenceTitle = statementOfOffenceTitle;
         this.count = count;
         this.offenceDefinitionId = offenceDefinitionId;
+        this.custodyTimeLimit =  custodyTimeLimit;
     }
 
     public UUID getOffenceId() { return offenceId; }
@@ -62,4 +66,7 @@ public class OffenceData {
     public int getCount() { return count;  }
 
     public UUID getOffenceDefinitionId() { return offenceDefinitionId; }
+
+    public Optional<CustodyTimeLimit> getCustodyTimeLimit() { return custodyTimeLimit; }
+
 }

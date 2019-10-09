@@ -7,8 +7,8 @@
       "$ref": "http://justice.gov.uk/v24/core/courts/person.json"
     },
     "bailStatus": {
-      "description": "The defendant bail status for the given case",
-      "$ref": "http://justice.gov.uk/v24/core/courts/courtsDefinitions.json#/definitions/bailStatus"
+      "description": "BailStatus of core domain with property of id,code,description",
+      "$ref": "http://justice.gov.uk/core/courts/bailStatus.json"
     },
     "custodyTimeLimit": {
       "description": "The custody time limit for the given case when the bail status is remanded-in-custody",

@@ -5,7 +5,11 @@
   "caseId": "31fd0edf-9692-46fa-a6be-4b78bf88fec6",
   "defendants": [
     {
-      "bailStatus": "IN_CUSTODY",
+      "bailStatus": {
+        "id":"12e69486-4d01-3403-a50a-7419ca040635",
+        "code":"C",
+        "description":"Custody or remanded into custody"
+      },
       "custodyTimeLimit": "2018-01-30",
       "dateOfBirth": "1980-07-15",
       "defenceOrganisation": "XYZ Solicitors",

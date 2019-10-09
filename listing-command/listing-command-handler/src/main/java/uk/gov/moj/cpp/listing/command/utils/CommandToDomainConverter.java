@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
@@ -16,6 +15,7 @@ import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.ListDefendantRequest;
 import uk.gov.justice.core.courts.ListHearingRequest;
+import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
@@ -39,7 +39,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-
 @SuppressWarnings({"squid:S3655", "squid:S1067", "squid:MethodCyclomaticComplexity"})
 public class CommandToDomainConverter implements Converter<uk.gov.justice.core.courts.HearingListingNeeds, Hearing> {
 
@@ -52,7 +51,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                     .collect(toList());
         }
 
-        List<ListedCase> domainListedCases = listStandAloneApplications(commandHearing) ? emptyList() :commandHearing.getProsecutionCases().stream()
+        final List<ListedCase> domainListedCases = listStandAloneApplications(commandHearing) ? emptyList() :commandHearing.getProsecutionCases().stream()
                 .map(prosecutionCase -> buildListedCases(commandHearing, prosecutionCase))
                 .collect(toList());
 
@@ -142,19 +141,18 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .build();
     }
 
-    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingListingNeeds commandHearing, uk.gov.justice.core.courts.Defendant d) {
+    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingListingNeeds commandHearing, Defendant d) {
         return defendant()
                 .withId(d.getId())
                 .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())
                 .withLastName(d.getPersonDefendant().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getLastName()) : empty())
-                .withBailStatus(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getBailStatus().isPresent()
-                        ? BailStatus.valueFor(d.getPersonDefendant().get().getBailStatus().get().toString()) : empty())
-                .withDefenceOrganisation(d.getDefenceOrganisation().isPresent() ? of(d.getDefenceOrganisation().get().getName()) : empty())
-                .withOrganisationName(d.getLegalEntityDefendant().isPresent() ? of(d.getLegalEntityDefendant().get().getOrganisation().getName()) : empty())
+                .withBailStatus(mapBailStatus(d))
                 .withSpecificRequirements(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getSpecificRequirements() : empty())
-                .withDatesToAvoid(getDatesToAvoid(commandHearing, d))
                 .withDateOfBirth(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getDateOfBirth() : empty())
                 .withCustodyTimeLimit(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getCustodyTimeLimit() : empty())
+                .withDefenceOrganisation(d.getDefenceOrganisation().isPresent() ? of(d.getDefenceOrganisation().get().getName()) : empty())
+                .withOrganisationName(d.getLegalEntityDefendant().isPresent() ? of(d.getLegalEntityDefendant().get().getOrganisation().getName()) : empty())
+                .withDatesToAvoid(getDatesToAvoid(commandHearing, d))
                 .withHearingLanguageNeeds(getHearingLanguageNeeds(commandHearing, d))
                 .withOffences(d.getOffences().stream()
                         .map(this::buildOffence)
@@ -162,8 +160,16 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .build();
     }
 
+    private Optional<BailStatus> mapBailStatus(Defendant defendant){
+        if(defendant.getPersonDefendant().isPresent()) {
+            final Optional<uk.gov.justice.core.courts.BailStatus> optBailStatus = defendant.getPersonDefendant().map(PersonDefendant::getBailStatus).orElse(Optional.empty());
+            return optBailStatus.map(bailStatus -> new BailStatus.Builder().withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).withId(bailStatus.getId()).build());
+        }
+        return empty();
+    }
+
     private Optional<String> getDatesToAvoid(HearingListingNeeds commandHearing, Defendant d) {
-        Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
+        final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
         if(listDefendantRequest.isPresent() && listDefendantRequest.get().getDatesToAvoid().isPresent()){
             return listDefendantRequest.get().getDatesToAvoid();
         }
@@ -219,8 +225,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .withId(d.getId())
                 .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())
                 .withLastName(d.getPersonDefendant().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getLastName()) : empty())
-                .withBailStatus(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getBailStatus().isPresent()
-                        ? BailStatus.valueFor(d.getPersonDefendant().get().getBailStatus().get().toString()) : empty())
+                .withBailStatus(mapBailStatus(d))
                 .withDefenceOrganisation(d.getDefenceOrganisation().isPresent() ? of(d.getDefenceOrganisation().get().getName()) : empty())
                 .withOrganisationName(d.getLegalEntityDefendant().isPresent() ? of(d.getLegalEntityDefendant().get().getOrganisation().getName()) : empty())
                 .withSpecificRequirements(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getSpecificRequirements() : empty())

@@ -63,7 +63,7 @@ import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.courts.AddedOffences;
-import uk.gov.justice.listing.courts.BailStatus;
+import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.listing.courts.CaseOrApplicationEjected;
 import uk.gov.justice.listing.courts.Defendant;
 import uk.gov.justice.listing.courts.DefendantUpdated;
@@ -862,7 +862,7 @@ public class ListingEventProcessorTest {
 
         final PersonDefendant progressionPerson = personDefendantBuilder
                 .withArrestSummonsNumber(empty())
-                .withBailStatus(of(BailStatus.CONDITIONAL))
+                .withBailStatus(of(new BailStatus.Builder().withId(UUID.fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).withCode("P").withDescription("Conditional Bail with Pre-Release conditions").build()))
                 .withCustodyTimeLimit(of("CTL"))
                 .withDriverNumber(empty())
                 .withEmployerOrganisation(empty())
@@ -944,7 +944,7 @@ public class ListingEventProcessorTest {
 
         final PersonDefendant progressionPerson = personDefendantBuilder
                 .withArrestSummonsNumber(empty())
-                .withBailStatus(of(BailStatus.CONDITIONAL))
+                .withBailStatus(of(new BailStatus.Builder().withId(UUID.fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).withCode("P").withDescription("Conditional Bail with Pre-Release conditions").build()))
                 .withCustodyTimeLimit(of("CTL"))
                 .withDriverNumber(empty())
                 .withEmployerOrganisation(empty())

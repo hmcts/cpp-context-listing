@@ -1,0 +1,45 @@
+{
+  "caseId": "9129ba38-9d26-426d-a00a-7c9879b47378",
+  "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+  "defendants": [
+    {
+      "bailStatus": "conditional",
+      "dateOfBirth": "1983-05-23",
+      "defenceOrganisation": "XYZ Solicitors",
+      "firstName": "Robert",
+      "id": "258c0f4c-97cf-4d53-9f35-26ab16a40c97",
+      "lastName": "Ormsby",
+      "offences": [
+        {
+          "defendantId": "258c0f4c-97cf-4d53-9f35-26ab16a40c97",
+          "endDate": "2018-08-01",
+          "id": "e5e535a1-920f-4157-a16f-228c19911d76",
+          "offenceCode": "OF61016",
+          "startDate": "2010-08-01",
+          "statementOfOffence": {
+            "legislation": "Contrary to section 18 of the Offences Against the    Person Act 1861.",
+            "title": "Section 18 - wounding with intent"
+          }
+        },
+        {
+          "defendantId": "258c0f4c-97cf-4d53-9f35-26ab16a40c97",
+          "endDate": "2018-08-01",
+          "id": "5585b046-33d3-4199-b1f9-c15fe48426f6",
+          "offenceCode": "TH68023",
+          "startDate": "2016-08-16",
+          "statementOfOffence": {
+            "legislation": "Contrary to section 8(1) of the Theft Act 1968.",
+            "title": "Robbery"
+          }
+        }
+      ],
+      "personId": "7e545d99-74b6-40e5-9055-db699d0e3e33"
+    }
+  ],
+  "estimateMinutes": 15,
+  "hearingId": "1260dc21-aacc-4257-ab13-2b5de49f4893",
+  "startDate": "2018-12-18",
+  "startTimes": [],
+  "type": "Plea & Trial Preparation",
+  "urn": "78N35114401"
+}

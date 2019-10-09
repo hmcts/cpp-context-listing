@@ -9,8 +9,9 @@
     "person":{
       "$ref":"http://justice.gov.uk/progression/events/progression-person.json"
     },
-    "bailStatus":{
-      "type":"string"
+    "bailStatus": {
+      "description": "BailStatus of core domain with property of id,code,description",
+      "$ref": "http://justice.gov.uk/core/courts/bailStatus.json"
     },
     "custodyTimeLimitDate":{
       "$ref":"#/definitions/datePattern"

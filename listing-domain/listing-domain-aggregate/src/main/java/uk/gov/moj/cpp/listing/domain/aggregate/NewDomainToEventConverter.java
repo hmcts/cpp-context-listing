@@ -5,7 +5,6 @@ import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 
-import uk.gov.justice.listing.events.BailStatus;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.CourtApplicationPartyType;
 import uk.gov.justice.listing.events.Defendant;
@@ -103,10 +102,9 @@ public class NewDomainToEventConverter {
                 .build();
     }
 
-    private static Optional<BailStatus> buildBailStatusEvent(Optional<uk.gov.moj.cpp.listing.domain.BailStatus> bailStatus) {
+    private static Optional<uk.gov.justice.core.courts.BailStatus> buildBailStatusEvent(Optional<uk.gov.moj.cpp.listing.domain.BailStatus> bailStatus) {
         if (bailStatus.isPresent()) {
-
-            return BailStatus.valueFor(bailStatus.get().toString());
+            return bailStatus.map(bs -> uk.gov.justice.core.courts.BailStatus.bailStatus().withCode(bs.getCode()).withDescription(bs.getDescription()).withId(bs.getId()).build());
         }
         return empty();
     }

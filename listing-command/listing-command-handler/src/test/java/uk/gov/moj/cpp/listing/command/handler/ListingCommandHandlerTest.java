@@ -42,7 +42,6 @@ import uk.gov.justice.listing.courts.Title;
 import uk.gov.justice.listing.courts.UpdateCourtApplicationForHearings;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.ApplicationEjected;
-import uk.gov.justice.listing.events.BailStatus;
 import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.CourtApplicationAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
@@ -96,6 +95,8 @@ import uk.gov.moj.cpp.listing.command.utils.CourtsOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsUpdatedOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.FileUtil;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
+
+import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
@@ -141,6 +142,8 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -1078,7 +1081,14 @@ public class ListingCommandHandlerTest {
 
         listingCommandHandler.addDefendantsToCourtProceedingsForHearing(commandEnvelope);
 
-        verify(hearing).addDefendantsForCourtProceedings(CASE_ID, defendants);
+        ArgumentCaptor<UUID> caseIdCaptor = ArgumentCaptor.forClass(UUID.class);
+        ArgumentCaptor<List> defendantListCaptor = ArgumentCaptor.forClass(List.class);
+
+        //verify(hearing).addDefendantsForCourtProceedings(CASE_ID, defendants);
+        verify(hearing).addDefendantsForCourtProceedings(caseIdCaptor.capture(), defendantListCaptor.capture());
+        Assert.assertThat(CASE_ID, Matchers.is(caseIdCaptor.getValue()));
+        List<Defendant> actualDefendantList = defendantListCaptor.getValue();
+        Assert.assertThat(actualDefendantList, Matchers.is(defendants));
     }
 
     private JsonEnvelope updateSequenceForHearingDayCommandEnvelope() {
@@ -1635,7 +1645,7 @@ public class ListingCommandHandlerTest {
                 .add("firstName", FIRST_NAME)
                 .add("lastName", LAST_NAME)
                 .add("dateOfBirth", DATE_OF_BIRTH)
-                .add("bailStatus", BailStatus.CONDITIONAL.toString())
+                .add("bailStatus", new BailStatus.Builder().withCode("P").withDescription("Conditional Bail with Pre-Release conditions").withId(UUID.fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).build().toString())
                 .add("defenceOrganisation", DEFENCE_ORGANISATION_NAME)
                 .add("offences", createAddedOrUpdatedOffences());
 
@@ -1659,7 +1669,7 @@ public class ListingCommandHandlerTest {
 
     private JsonObject createCourtsPersonDefendantJson() {
         JsonObjectBuilder defendantBuilder = createObjectBuilder()
-                .add("bailStatus", BailStatus.CONDITIONAL.toString())
+                .add("bailStatus", new BailStatus.Builder().withCode("P").withDescription("Conditional Bail with Pre-Release conditions").withId(UUID.fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).build().toString())
                 .add("personDetails", createCourtsPersonDetailsJson());
         if (hasCustodyTimeLimit) {
             defendantBuilder.add("custodyTimeLimit", CUSTODY_TIME_LIMIT);
@@ -1784,7 +1794,7 @@ public class ListingCommandHandlerTest {
 
     private Defendant createDomainDefendant() {
         return Defendant.defendant()
-                .withBailStatus(of(uk.gov.moj.cpp.listing.domain.BailStatus.IN_CUSTODY))
+                .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
                 .withCustodyTimeLimit(of(CUSTODY_TIME_LIMIT))
                 .withDateOfBirth(of(DATE_OF_BIRTH))
                 .withDatesToAvoid(of("wednesdays"))
@@ -1814,7 +1824,7 @@ public class ListingCommandHandlerTest {
 
     private Defendant createDomainDefendantForUpdateDefendant() {
         return Defendant.defendant()
-                .withBailStatus(of(uk.gov.moj.cpp.listing.domain.BailStatus.IN_CUSTODY))
+                .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
                 .withCustodyTimeLimit(of(CUSTODY_TIME_LIMIT))
                 .withDateOfBirth(of(DATE_OF_BIRTH))
                 .withDefenceOrganisation(Optional.empty())
@@ -1832,7 +1842,7 @@ public class ListingCommandHandlerTest {
     private Defendant createDomainDefendantForAddDefendantToCourtProceedings(){
         return Defendant.defendant()
                 .withId(DEFENDANT_ID1)
-                .withBailStatus(of(uk.gov.moj.cpp.listing.domain.BailStatus.IN_CUSTODY))
+                .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
                 .withCustodyTimeLimit(of(CUSTODY_TIME_LIMIT))
                 .withDateOfBirth(of(DATE_OF_BIRTH))
                 .withDefenceOrganisation(Optional.empty())
@@ -1862,7 +1872,7 @@ public class ListingCommandHandlerTest {
     }
     private Defendant createDomainDefendantForUpdateDefendantsForHearing() {
         return Defendant.defendant()
-                .withBailStatus(of(uk.gov.moj.cpp.listing.domain.BailStatus.IN_CUSTODY))
+                .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
                 .withCustodyTimeLimit(of(CUSTODY_TIME_LIMIT))
                 .withDateOfBirth(of(DATE_OF_BIRTH))
                 .withDefenceOrganisation(Optional.empty())
@@ -1902,4 +1912,71 @@ public class ListingCommandHandlerTest {
                 .build();
     }
 
+    @Test
+    public void listingCommandHandlerShouldTriggerOffenceAddedEventsWithCustodyTimeLimitData() throws Exception {
+        givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
+
+        when(eventSource.getStreamById(CASE_ID)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Case.class)).thenReturn(aCase);
+        when(hearing.addOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+
+        final JsonEnvelope commandEnvelope = addOffencesForHearingCommandEnvelopeWithCustodyTimeLimit();
+        listingCommandHandler.addOffencesForHearing(commandEnvelope);
+
+        verify(hearing, atMost(1)).addOffences(eq(CASE_ID), eq(DEFENDANT_ID1), domainOffencesCaptor.capture());
+
+        final List<Offence> capturedDomainOffences = domainOffencesCaptor.getValue();
+
+        final String expectedDomainOffences =
+                "[\n" +
+                        "  {\n" +
+                        "    \"endDate\": \"2011-08-01\",\n" +
+                        "    \"id\": \"" + UPDATED_OFFENCE_ID1 + "\",\n" +
+                        "    \"offenceCode\": \"H8189\",\n" +
+                        "    \"startDate\": \"2010-08-01\",\n" +
+                        "    \"statementOfOffence\": {\n" +
+                        "      \"legislation\": \"Welsh legislation\",\n" +
+                        "      \"title\": \"Wounding with intent\",\n" +
+                        "      \"welshLegislation\": \"legislation\",\n" +
+                        "      \"welshTitle\": \"Wounding with intent in Welsh\"\n" +
+                        "    },\n" +
+                        "    \"custodyTimeLimit\": {\n" +
+                        "      \"timeLimit\": \"2020-01-06\",\n" +
+                        "      \"daysSpent\":1 \n" +
+                        "    }\n" +
+                        "  },\n" +
+                        "  {\n" +
+                        "    \"endDate\": \"2011-08-20\",\n" +
+                        "    \"id\": \"" + UPDATED_OFFENCE_ID2 + "\",\n" +
+                        "    \"offenceCode\": \"H8189X\",\n" +
+                        "    \"startDate\": \"2010-08-10\",\n" +
+                        "    \"statementOfOffence\": {\n" +
+                        "      \"legislation\": \"Welsh legislation2\",\n" +
+                        "      \"title\": \"Wounding with intent2\",\n" +
+                        "      \"welshLegislation\": \"legislation2\",\n" +
+                        "      \"welshTitle\": \"Wounding with intent in Welsh2\"\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "]\n";
+
+        assertEquals(expectedDomainOffences, objectMapper.writeValueAsString(capturedDomainOffences), true);
+    }
+
+    private JsonEnvelope addOffencesForHearingCommandEnvelopeWithCustodyTimeLimit() {
+        String jsonString = FileUtil.givenPayload("/test-data/listing.command.add-offences-for-hearing-including-ctl.json").toString()
+                .replace("HEARING_ID", HEARING_ID_1.toString())
+                .replace("CASE_ID", CASE_ID.toString())
+                .replace("DEFENDANT_ID1", DEFENDANT_ID1.toString())
+                .replace("UPDATED_OFFENCE_ID1", UPDATED_OFFENCE_ID1.toString())
+                .replace("UPDATED_OFFENCE_ID2", UPDATED_OFFENCE_ID2.toString())
+                .replace("START_DATE", START_DATE.toString())
+                .replace("END_DATE", END_DATE);
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.add-offences-for-hearing-including-ctl", jsonReader.readObject());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

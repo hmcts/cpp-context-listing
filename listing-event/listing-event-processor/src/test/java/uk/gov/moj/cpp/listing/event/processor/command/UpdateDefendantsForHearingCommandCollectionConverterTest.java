@@ -2,13 +2,13 @@ package uk.gov.moj.cpp.listing.event.processor.command;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.Is.is;
 
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.common.converter.LocalDates;
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.Defendant;
 import uk.gov.moj.cpp.listing.event.utils.EventBuilder;
 
@@ -59,7 +59,12 @@ public class UpdateDefendantsForHearingCommandCollectionConverterTest {
         assertThat(actualDefendant.getFirstName(), is(eventDefendant.getFirstName()));
         assertThat(actualDefendant.getLastName(), is(eventDefendant.getLastName()));
         assertThat(actualDefendant.getOffences(), is(empty()));
-        assertThat(actualDefendant.getBailStatus().get().toString(), is(eventDefendant.getBailStatus().get().toString()));
+
+        BailStatus actualBailStatus = actualDefendant.getBailStatus().get();
+        uk.gov.justice.core.courts.BailStatus expectedBailStatus = eventDefendant.getBailStatus().get();
+        assertThat(actualBailStatus.getCode(), is(expectedBailStatus.getCode()));
+        assertThat(actualBailStatus.getDescription(), is(expectedBailStatus.getDescription()));
+        assertThat(actualBailStatus.getId(), equalTo(expectedBailStatus.getId()));
         assertThat(actualDefendant.getCustodyTimeLimit().get(), is(eventDefendant.getCustodyTimeLimit().get()));
         assertThat(actualDefendant.getDefenceOrganisation(), is(eventDefendant.getDefenceOrganisation()));
         assertThat(actualDefendant.getId(), is(eventDefendant.getId()));

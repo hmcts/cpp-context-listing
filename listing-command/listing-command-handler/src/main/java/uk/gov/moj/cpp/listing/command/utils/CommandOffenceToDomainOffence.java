@@ -4,10 +4,13 @@ import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.commands.Offence;
 import uk.gov.justice.services.common.converter.Converter;
+import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
 import java.util.List;
+import java.util.Optional;
 
+@SuppressWarnings({"squid:S3655"})
 public class CommandOffenceToDomainOffence implements Converter<List<Offence>, List<uk.gov.moj.cpp.listing.domain.Offence>> {
 
     public List<uk.gov.moj.cpp.listing.domain.Offence> convert(final List<Offence> commandOffences) {
@@ -32,6 +35,16 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
                     .build();
         }
 
+        Optional<CustodyTimeLimit> custodyTimeLimit = Optional.empty();
+        final Optional<uk.gov.justice.listing.commands.CustodyTimeLimit> commandSoo = commandOffence.getCustodyTimeLimit();
+
+        if (commandSoo.isPresent()){
+             custodyTimeLimit = Optional.ofNullable(CustodyTimeLimit.custodyTimeLimit()
+                    .withTimeLimit(commandSoo.get().getTimeLimit())
+                    .withDaysSpent(commandSoo.get().getDaysSpent())
+                    .build());
+        }
+
         return uk.gov.moj.cpp.listing.domain.Offence.offence()
                 .withId(commandOffence.getId())
                 .withOffenceCode(commandOffence.getOffenceCode())
@@ -39,6 +52,7 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
                 .withEndDate(commandOffence.getEndDate())
                 .withStatementOfOffence(statementOfOffence)
                 .withOffenceWording(commandOffence.getOffenceWording())
+                .withCustodyTimeLimit(custodyTimeLimit)
                 .build();
     }
 

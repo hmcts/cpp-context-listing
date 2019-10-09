@@ -15,13 +15,8 @@
       "pattern": "^[0-9()\\-\\.\\s]+$"
     },
     "bailStatus": {
-      "description": "The defendants bail status",
-      "type": "string",
-      "enum": [
-        "CONDITIONAL",
-        "UNCONDITIONAL",
-        "IN_CUSTODY"
-      ]
+      "description": "BailStatus of core domain with property of id,code,description",
+      "$ref": "http://justice.gov.uk/core/courts/bailStatus.json"
     },
     "hearingListingStatus": {
       "description": "The listing status of a hearing",
