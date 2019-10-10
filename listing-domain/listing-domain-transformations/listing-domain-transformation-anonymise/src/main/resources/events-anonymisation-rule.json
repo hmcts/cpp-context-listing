@@ -1,0 +1,52 @@
+{
+  "events": [
+    {
+      "eventName": "listing.events.allocated-hearing-updated-for-listing",
+      "fieldsToBeIgnored": [
+        "$.hearingLanguage",
+        "$.jurisdictionType"
+      ]
+    },
+
+    {
+      "eventName": "listing.events.hearing-allocated-for-listing",
+      "fieldsToBeIgnored": [
+        "$.hearingLanguage",
+        "$.jurisdictionType"
+      ]
+    },
+
+    {
+      "eventName": "listing.events.hearing-listed",
+      "fieldsToBeIgnored": [
+        "$.hearing.courtApplications[*].applicant.courtApplicationPartyType",
+        "$.hearing.courtApplications[*].respondents[*].courtApplicationPartyType",
+        "$.hearing.hearingLanguage",
+        "$.hearing.jurisdictionType",
+        "$.hearing.listedCases[*].defendants[*].bailStatus",
+        "$.hearing.listedCases[*].defendants[*].hearingLanguageNeeds"
+      ]
+    },
+
+    {
+      "eventName": "listing.events.new-defendant-details-updated",
+      "fieldsToBeIgnored": [
+        "$.defendant.bailStatus"
+      ]
+    },
+    {
+      "eventName": "listing.events.jurisdiction-changed-for-hearing",
+      "fieldsToBeIgnored": [
+        "$.jurisdictionType"
+      ]
+    },
+    {
+      "eventName": "listing.events.court-application-added-for-hearing",
+      "fieldsToBeIgnored": [
+        "$.courtApplication.applicant.courtApplicationPartyType",
+        "$.courtApplication.respondents[*].courtApplicationPartyType"
+      ]
+    }
+
+  ]
+}
