@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.domain.transformation.ctl;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Stream.of;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -13,9 +12,10 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.tools.eventsourcing.transformation.api.Action;
 import uk.gov.justice.tools.eventsourcing.transformation.api.EventTransformation;
 import uk.gov.justice.tools.eventsourcing.transformation.api.annotation.Transformation;
-import uk.gov.moj.cpp.coredomain.transform.transforms.BailStatusEnum2ObjectTransformer;
 
-import java.util.List;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.json.JsonObject;
@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 public class ListingEventStreamTransform implements EventTransformation {
 
 
+
     public static final String DEFENDANTS_TO_BE_UPDATED = "listing.events.defendants-to-be-updated";
     public static final String CASE_SENT_FOR_LISTING = "listing.events.case-sent-for-listing";
     public static final String HEARING_LISTED = "listing.events.hearing-listed";
@@ -34,25 +35,23 @@ public class ListingEventStreamTransform implements EventTransformation {
 
     private Enveloper enveloper;
 
-    private BailStatusEnum2ObjectTransformer bailStatusTransformer;
+    private uk.gov.moj.cpp.listing.domain.transformation.ctl.BailStatusEnum2ObjectTransformer bailStatusTransformer;
 
     private static final Logger LOGGER = getLogger(ListingEventStreamTransform.class);
 
-    protected static final List<String> eventsToTransform = newArrayList(DEFENDANTS_TO_BE_UPDATED,
-            CASE_SENT_FOR_LISTING, HEARING_LISTED, NEW_DEFENDANT_DETAILS_UPDATED);
+    protected static final Set<String> eventsToTransform = new HashSet<>(Arrays.asList(DEFENDANTS_TO_BE_UPDATED,
+            CASE_SENT_FOR_LISTING, HEARING_LISTED, NEW_DEFENDANT_DETAILS_UPDATED));
 
 
     public ListingEventStreamTransform() {
-        bailStatusTransformer = new BailStatusEnum2ObjectTransformer();
+        bailStatusTransformer = new uk.gov.moj.cpp.listing.domain.transformation.ctl.BailStatusEnum2ObjectTransformer();
     }
-
 
     @Override
     public Action actionFor(final JsonEnvelope event) {
-        if (eventsToTransform.stream().anyMatch(eventToTransform -> event.metadata().name().equalsIgnoreCase(eventToTransform))) {
+        if (eventsToTransform.contains(event.metadata().name())) {
             return TRANSFORM;
         }
-
         return NO_ACTION;
     }
 
@@ -78,10 +77,5 @@ public class ListingEventStreamTransform implements EventTransformation {
     public void setEnveloper(final Enveloper enveloper) {
         this.enveloper = enveloper;
     }
-
-    public void setBailStatusTransformer(final BailStatusEnum2ObjectTransformer value) {
-        this.bailStatusTransformer = value;
-    }
-
 
 }
