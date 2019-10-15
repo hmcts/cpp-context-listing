@@ -23,4 +23,4 @@ Feature: Assign a judiciary to a hearing or change the judiciary
     Given hearing listed
       And judiciary assigned to hearing
     When you assignJudiciary to a Hearing using a the same judiciary
-    Then no events occured
+    Then no events occurred

@@ -375,7 +375,7 @@ public class Hearing implements Aggregate {
 
 
     public Stream<Object> removeJudiciary(final UUID hearingId) {
-        if (currentlyAssigned(this.judiciary)) {
+        if (currentlyAssigned(this.judiciary) && !this.judiciary.isEmpty()) {
             return apply(Stream.of(JudiciaryRemovedFromHearing.judiciaryRemovedFromHearing()
                     .withHearingId(hearingId)
                     .build()));

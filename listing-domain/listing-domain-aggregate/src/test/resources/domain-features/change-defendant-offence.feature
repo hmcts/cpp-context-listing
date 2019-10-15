@@ -17,7 +17,7 @@ Feature: Change defendant offences
 
     Given hearing listed in the past
     When you updateOffences on a Hearing with a updated offences
-    Then no events occured
+    Then no events occurred
 
   Scenario: Defendant offences are added for Hearing
 
@@ -30,7 +30,7 @@ Feature: Change defendant offences
 
     Given hearing listed in the past
     When you addOffences to a Hearing with a add offences
-    Then no events occured
+    Then no events occurred
 
   Scenario: Defendant offences are deleted for Hearing
 
@@ -43,4 +43,4 @@ Feature: Change defendant offences
 
     Given hearing listed in the past
     When you deleteOffences to a Hearing with a delete offences
-    Then no events occured
+    Then no events occurred

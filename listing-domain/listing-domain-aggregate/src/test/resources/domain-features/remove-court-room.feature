@@ -14,4 +14,4 @@ Feature: Remove a court-room from a hearing
 
     Given hearing listed
     When you removeCourtRoom from a Hearing using a hearing id
-    Then no events occured
+    Then no events occurred

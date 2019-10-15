@@ -13,11 +13,11 @@ Feature: Change the jurisdiction of the hearing
 
     Given hearing listed
     When you changeJurisdictionType to a Hearing using a the same jurisdiction
-    Then no events occured
+    Then no events occurred
 
 
   Scenario: A request to change the jurisdiction for a hearing that has not been listed does not result in any change
 
     Given no previous events
     When you changeJurisdictionType to a Hearing using a magistrates jurisdiction
-    Then no events occured
+    Then no events occurred
