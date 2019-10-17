@@ -7,8 +7,10 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -23,6 +25,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
+
+import static uk.gov.justice.listing.event.PublishCourtListExportFailed.publishCourtListExportFailed;
+import static uk.gov.justice.listing.event.PublishCourtListExportSuccessful.publishCourtListExportSuccessful;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
@@ -30,6 +35,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetad
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeStreamMatcher.streamContaining;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.command.utils.FileUtil.givenPayload;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
@@ -40,6 +46,8 @@ import uk.gov.justice.listing.courts.Gender;
 import uk.gov.justice.listing.courts.SequenceHearings;
 import uk.gov.justice.listing.courts.Title;
 import uk.gov.justice.listing.courts.UpdateCourtApplicationForHearings;
+import uk.gov.justice.listing.event.PublishCourtListExportFailed;
+import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.BailStatus;
@@ -79,7 +87,6 @@ import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.aggregate.AggregateService;
-import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -94,7 +101,6 @@ import uk.gov.moj.cpp.listing.command.utils.CourtsDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CourtsDeletedOffenceToDomainCaseSimpleOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsUpdatedOffenceToDomainOffence;
-import uk.gov.moj.cpp.listing.command.utils.FileUtil;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
@@ -119,12 +125,14 @@ import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.Type;
 import uk.gov.moj.cpp.listing.domain.aggregate.Application;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
+import uk.gov.moj.cpp.listing.domain.aggregate.CourtListAggregate;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 
 import java.io.StringReader;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -141,6 +149,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -160,30 +169,30 @@ public class ListingCommandHandlerTest {
     private static final String HEARING_ADDED_TO_CASE_EVENT = "listing.events.hearing-added-to-case";
     private static final String COURT_APPLICATION_ADDED_TO_HEARING_EVENT = "listing.events.court-application-added-to-hearing";
 
-    private static final UUID PERSON_ID = UUID.randomUUID();
-    private static final UUID DEFENDANT_ID1 = UUID.randomUUID();
-    private static final UUID DEFENDANT_ID2 = UUID.randomUUID();
-    private static final UUID DEFENDANT_ID3 = UUID.randomUUID();
-    private static final UUID OFFENCE_ID1 = UUID.randomUUID();
-    private static final UUID UPDATED_OFFENCE_ID1 = UUID.randomUUID();
-    private static final UUID UPDATED_OFFENCE_ID2 = UUID.randomUUID();
-    private static final UUID UPDATED_OFFENCE_ID3 = UUID.randomUUID();
-    private static final UUID ADDED_OFFENCE_ID1 = UUID.randomUUID();
-    private static final UUID ADDED_OFFENCE_ID2 = UUID.randomUUID();
-    private static final UUID ADDED_OFFENCE_ID3 = UUID.randomUUID();
-    private static final UUID DELETED_OFFENCE_ID1 = UUID.randomUUID();
-    private static final UUID DELETED_OFFENCE_ID2 = UUID.randomUUID();
-    private static final UUID DELETED_OFFENCE_ID3 = UUID.randomUUID();
-    private static final UUID DELETED_OFFENCE_ID4 = UUID.randomUUID();
+    private static final UUID PERSON_ID = randomUUID();
+    private static final UUID DEFENDANT_ID1 = randomUUID();
+    private static final UUID DEFENDANT_ID2 = randomUUID();
+    private static final UUID DEFENDANT_ID3 = randomUUID();
+    private static final UUID OFFENCE_ID1 = randomUUID();
+    private static final UUID UPDATED_OFFENCE_ID1 = randomUUID();
+    private static final UUID UPDATED_OFFENCE_ID2 = randomUUID();
+    private static final UUID UPDATED_OFFENCE_ID3 = randomUUID();
+    private static final UUID ADDED_OFFENCE_ID1 = randomUUID();
+    private static final UUID ADDED_OFFENCE_ID2 = randomUUID();
+    private static final UUID ADDED_OFFENCE_ID3 = randomUUID();
+    private static final UUID DELETED_OFFENCE_ID1 = randomUUID();
+    private static final UUID DELETED_OFFENCE_ID2 = randomUUID();
+    private static final UUID DELETED_OFFENCE_ID3 = randomUUID();
+    private static final UUID DELETED_OFFENCE_ID4 = randomUUID();
 
-    private static final UUID HEARING_ID_1 = UUID.randomUUID();
-    private static final UUID HEARING_ID_2 = UUID.randomUUID();
-    private static final UUID CASE_ID = UUID.randomUUID();
-    private static final UUID APPLICATION_ID = UUID.randomUUID();
-    private static final UUID ADDED_OFFENCE_CASE_ID = UUID.randomUUID();
-    private static final UUID UPDATED_OFFENCE_CASE_ID = UUID.randomUUID();
-    private static final UUID DELETED_OFEENCE_CASE_ID = UUID.randomUUID();
-    private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
+    private static final UUID HEARING_ID_1 = randomUUID();
+    private static final UUID HEARING_ID_2 = randomUUID();
+    private static final UUID CASE_ID = randomUUID();
+    private static final UUID APPLICATION_ID = randomUUID();
+    private static final UUID ADDED_OFFENCE_CASE_ID = randomUUID();
+    private static final UUID UPDATED_OFFENCE_CASE_ID = randomUUID();
+    private static final UUID DELETED_OFEENCE_CASE_ID = randomUUID();
+    private static final UUID COURT_CENTRE_ID = randomUUID();
     private static final String FIRST_NAME = "Test Recipe";
     private static final String LAST_NAME = "Last Name";
     private static final String DATE_OF_BIRTH = "1980-07-15";
@@ -202,10 +211,10 @@ public class ListingCommandHandlerTest {
     private static final int INITIAL_ESTIMATE_MINUTES = 640;
     private static final int UPDATED_ESTIMATE_MINUTES = 720;
     private static final String DEFENCE_ORGANISATION_NAME = "XYZ Organisation";
-    private static final UUID DEFENCE_ORGANISATION_ID = UUID.randomUUID();
+    private static final UUID DEFENCE_ORGANISATION_ID = randomUUID();
     private static final String URN = "urn";
-    private static final UUID JUDGE_ID = UUID.randomUUID();
-    private static final UUID COURT_ROOM_ID = UUID.randomUUID();
+    private static final UUID JUDGE_ID = randomUUID();
+    private static final UUID COURT_ROOM_ID = randomUUID();
     private static final String STATEMENT_OF_OFFENCE_TITLE = "title";
     private static final String STATEMENT_OF_OFFENCE_LEGISLATION = "Legislation";
     private static final String START_TIME = "10:30";
@@ -236,12 +245,12 @@ public class ListingCommandHandlerTest {
     private static final String EARLIEST_START_TIME = "2012-12-12T01:02:33Z";
 
 
-    private static final UUID JUDICIAL_ID_1 = UUID.randomUUID();
-    private static final UUID JUDICIAL_ID_2 = UUID.randomUUID();
+    private static final UUID JUDICIAL_ID_1 = randomUUID();
+    private static final UUID JUDICIAL_ID_2 = randomUUID();
     private static final String JUDICIAL_ROLE_TYPE = "MAGISTRATE";
     private static final Boolean IS_DEPUTY = false;
     private static final Boolean IS_BENCH_CHAIRMAN = true;
-    private static final UUID AUTHORITY_ID = UUID.randomUUID();
+    private static final UUID AUTHORITY_ID = randomUUID();
     private static final String HEARING_LANGUAGE = "ENGLISH";
     private static final String DEFAULT_DURATION = "6";
     private static final String DEFAULT_START_TIME = "10:30";
@@ -249,10 +258,8 @@ public class ListingCommandHandlerTest {
     private static final String SEQUENCE_2 = "2";
     private static final String HEARING_DATE_1 = "2012-12-11";
     private static final String HEARING_DATE_2 = "2012-12-12";
-    private static final String HEARING_DATE_3 = "2012-13-13";
-    private static final String HEARING_DATE_4 = "2012-13-15";
 
-    private static final UUID COURT_APPLICATION_ID = UUID.randomUUID();
+    private static final UUID COURT_APPLICATION_ID = randomUUID();
     private static final String COURT_APPLICATION_TYPE = STRING.next();
     @Mock
     CaseOffences caseOffences;
@@ -276,19 +283,25 @@ public class ListingCommandHandlerTest {
     @InjectMocks
     private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectToObjectConverter();
     private ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
-    @Spy
-    private Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(HearingAddedToCase.class,
-            HearingListed.class, TypeChangedForHearing.class, StartDateChangedForHearing.class,
-            JudiciaryAssignedToHearing.class, JudiciaryChangedForHearing.class,
-            JudiciaryRemovedFromHearing.class, CourtRoomAssignedToHearing.class, CourtRoomChangedForHearing.class,
-            CourtRoomRemovedFromHearing.class, NonDefaultDaysAssignedToHearing.class, NonDefaultDaysChangedForHearing.class,
-            HearingAllocatedForListing.class, EndDateChangedForHearing.class,
-            NonSittingDaysAssignedToHearing.class, NonSittingDaysChangedForHearing.class,
-            AllocatedHearingUpdatedForListing.class, HearingUnallocatedForListing.class, DefendantsToBeUpdated.class,
-            NewDefendantDetailsUpdated.class, OffencesToBeUpdated.class, OffencesToBeAdded.class, OffencesToBeDeleted.class,
-            ArrayList.class, OffenceUpdated.class, HearingDaysChangedForHearing.class, OffenceAdded.class,
-            OffenceDeleted.class, SequenceHearings.class, UpdateCourtApplicationForHearings.class, AddCourtApplicationForHearing.class,
-            CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class);
+
+    @Before
+    public void setup() {
+        EnveloperFactory.createEnveloperWithEvents(HearingAddedToCase.class,
+                HearingListed.class, TypeChangedForHearing.class, StartDateChangedForHearing.class,
+                JudiciaryAssignedToHearing.class, JudiciaryChangedForHearing.class,
+                JudiciaryRemovedFromHearing.class, CourtRoomAssignedToHearing.class, CourtRoomChangedForHearing.class,
+                CourtRoomRemovedFromHearing.class, NonDefaultDaysAssignedToHearing.class, NonDefaultDaysChangedForHearing.class,
+                HearingAllocatedForListing.class, EndDateChangedForHearing.class,
+                NonSittingDaysAssignedToHearing.class, NonSittingDaysChangedForHearing.class,
+                AllocatedHearingUpdatedForListing.class, HearingUnallocatedForListing.class, DefendantsToBeUpdated.class,
+                NewDefendantDetailsUpdated.class, OffencesToBeUpdated.class, OffencesToBeAdded.class, OffencesToBeDeleted.class,
+                ArrayList.class, OffenceUpdated.class, HearingDaysChangedForHearing.class, OffenceAdded.class,
+                OffenceDeleted.class, SequenceHearings.class, UpdateCourtApplicationForHearings.class, AddCourtApplicationForHearing.class,
+                CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class,
+                PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class);
+    }
+
+
     @InjectMocks
     @Spy
     private ListingCommandHandler listingCommandHandler;
@@ -319,6 +332,8 @@ public class ListingCommandHandlerTest {
     private Case aCase;
     @Mock
     private Application anApplication;
+    @Mock
+    private CourtListAggregate courtListAggregate;
     @Mock
     private Stream<Object> events;
     @Captor
@@ -1081,8 +1096,58 @@ public class ListingCommandHandlerTest {
         verify(hearing).addDefendantsForCourtProceedings(CASE_ID, defendants);
     }
 
+    @Test
+    public void listingCommandHandlerShouldTriggerExportFailedForPublishEvent() throws Exception {
+        final UUID documentId = UUID.randomUUID();
+        final String failedTime = "2016-09-09T08:31:40Z";
+        final String errorMessage = "Error message";
+        final String documentName = randomAlphanumeric(30).toString();
+        when(eventSource.getStreamById(documentId)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, CourtListAggregate.class)).thenReturn(courtListAggregate);
+        when(courtListAggregate.recordCourtListExportFailed(any(ZonedDateTime.class), eq(documentName), eq(errorMessage))).thenReturn(Stream.of(publishCourtListExportFailed().build()));
+
+        final String jsonString = givenPayload("/test-data/listing.command.mark-as-export-failed.json").toString()
+                .replace("DOCUMENT_ID", documentId.toString())
+                .replace("DOCUMENT_NAME", documentName)
+                .replace("ERROR_MESSAGE", errorMessage)
+                .replace("FAILED_TIME", failedTime.toString());
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonEnvelope commandEnvelope = createEnvelope("listing.command.mark-export-as-failed", jsonReader.readObject());
+            listingCommandHandler.markAsExportFailed(commandEnvelope);
+            verify(courtListAggregate).recordCourtListExportFailed(any(ZonedDateTime.class), eq(documentName), eq(errorMessage));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void listingCommandHandlerShouldTriggerExportSuccessfulForPublishEvent() throws Exception {
+        final UUID documentId = UUID.randomUUID();
+        final String publishedTime = "2016-09-09T08:31:40Z";
+        final String documentName = randomAlphanumeric(30).toString();
+        when(eventSource.getStreamById(documentId)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, CourtListAggregate.class)).thenReturn(courtListAggregate);
+        when(courtListAggregate.recordCourtListExportSuccessful(any(String.class), any(ZonedDateTime.class)))
+                .thenReturn(Stream.of(publishCourtListExportSuccessful().build()));
+
+        final String jsonString = givenPayload("/test-data/listing.command.mark-as-export-successful.json").toString()
+                .replace("DOCUMENT_ID", documentId.toString())
+                .replace("DOCUMENT_NAME", documentName)
+                .replace("PUBLISHED_TIME", publishedTime.toString());
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            final JsonEnvelope commandEnvelope = createEnvelope("listing.command.mark-as-export-successful", jsonReader.readObject());
+            listingCommandHandler.markAsExportSuccessful(commandEnvelope);
+            verify(courtListAggregate).recordCourtListExportSuccessful(eq(documentName), any(ZonedDateTime.class));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     private JsonEnvelope updateSequenceForHearingDayCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-sequence-for-hearing-day.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.update-sequence-for-hearing-day.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("SEQUENCE_1", SEQUENCE_1)
                 .replace("SEQUENCE_2", SEQUENCE_2)
@@ -1130,7 +1195,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope listCourtHearingCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.list-court-hearing.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.list-court-hearing.json").toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("OFFENCE_ID", OFFENCE_ID1.toString())
                 .replace("REPORTING_RESTRICTIONS", REPORTING_RESTRICTIONS)
@@ -1157,7 +1222,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope changeJudiciaryForHearingsCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.change-judiciary-for-hearings.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.change-judiciary-for-hearings.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("HEARING_ID_2", HEARING_ID_2.toString())
                 .replace("JUDICIAL_ID_1", JUDICIAL_ID_1.toString())
@@ -1171,7 +1236,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope restrictCourtListCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.restrict-court-list.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.restrict-court-list.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("CASE_ID_1", CASE_ID.toString())
                 .replace("COURT_APPLICATION_ID_1", COURT_APPLICATION_ID.toString())
@@ -1185,7 +1250,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope ejectCaseCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.eject-case.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.eject-case.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("CASE_ID_1", CASE_ID.toString())
                 .replace("REMOVAL_REASON", "SomeReason");
@@ -1199,7 +1264,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope ejectApplicationCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.eject-application.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.eject-application.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("COURT_APPLICATION_ID_1", COURT_APPLICATION_ID.toString())
                 .replace("REMOVAL_REASON", "SomeReason");;
@@ -1213,7 +1278,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope updateCaseDefendantDetailsCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-case-defendant-details.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.update-case-defendant-details.json").toString()
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("DEFENDANT_ID1", DEFENDANT_ID1.toString());
         try {
@@ -1228,13 +1293,13 @@ public class ListingCommandHandlerTest {
                     createObjectBuilder().add("id",APPLICATION_ID.toString())
                             .add("type", createObjectBuilder().add("ApplicationType", "type"))
                             .add("applicant", createObjectBuilder()
-                                    .add("id", UUID.randomUUID().toString()))
+                                    .add("id", randomUUID().toString()))
                             .build()).build());
     }
 
 
     private JsonEnvelope updateCaseDefendantOffencesCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-case-defendant-offences.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.update-case-defendant-offences.json").toString()
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("DEFENDANT_ID1", DEFENDANT_ID1.toString())
                 .replace("DEFENDANT_ID2", DEFENDANT_ID2.toString())
@@ -1258,7 +1323,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope updateDefendantsForHearingCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-defendants-for-hearing.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.update-defendants-for-hearing.json").toString()
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("DEFENDANT_ID", DEFENDANT_ID1.toString());
@@ -1271,7 +1336,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope addDefendantsForHearingCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.add-defendants-to-court-proceedings-for-hearing.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.add-defendants-to-court-proceedings-for-hearing.json").toString()
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("DEFENDANT_ID", DEFENDANT_ID1.toString());
@@ -1284,7 +1349,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope addDefendantsForCourtProceedingsCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.add-defendants-to-court-proceedings.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.add-defendants-to-court-proceedings.json").toString()
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("DEFENDANT_ID1", DEFENDANT_ID1.toString())
                 .replace("DEFENDANT_ID2", DEFENDANT_ID2.toString())
@@ -1301,7 +1366,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope updateHearingForListingCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-hearing-for-listing.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.update-hearing-for-listing.json").toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("HEARING_TYPE_ID", HEARING_TYPE.getId().toString())
                 .replace("HEARING_TYPE_DESCRIPTION", HEARING_TYPE.getDescription())
@@ -1338,7 +1403,7 @@ public class ListingCommandHandlerTest {
         return createEnvelope("listing.command.update-court-application", commandJsonObject);
     }
     private JsonEnvelope updateOffencesForHearingCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-offences-for-hearing.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.update-offences-for-hearing.json").toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("DEFENDANT_ID1", DEFENDANT_ID1.toString())
@@ -1355,7 +1420,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope deleteOffencesForHearingCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.delete-offences-for-hearing.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.delete-offences-for-hearing.json").toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("DEFENDANT_ID1", DEFENDANT_ID1.toString())
@@ -1370,7 +1435,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope addOffencesForHearingCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.add-offences-for-hearing.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.add-offences-for-hearing.json").toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("CASE_ID", CASE_ID.toString())
                 .replace("DEFENDANT_ID1", DEFENDANT_ID1.toString())
@@ -1387,7 +1452,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope updateCourtApplicationForHearingsCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-court-application-for-hearings.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.update-court-application-for-hearings.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("HEARING_ID_2", HEARING_ID_2.toString());
         try {
@@ -1399,7 +1464,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope addCourtApplicationForHearingCommandEnvelope() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.add-court-application-for-hearing.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.add-court-application-for-hearing.json").toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString());
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));

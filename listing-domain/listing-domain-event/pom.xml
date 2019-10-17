@@ -16,8 +16,6 @@
             <scope>provided</scope>
         </dependency>
 
-        
-
         <!-- Listing Dependencies -->
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
@@ -43,7 +41,9 @@
                         <id>event-pojo-generation</id>
                         <configuration>
                             <skip>false</skip>
-                            <sourceDirectory>${basedir}/../../listing-event/listing-event-listener/src/raml/json/schema</sourceDirectory>
+                            <sourceDirectory>
+                                ${basedir}/../../listing-event/listing-event-listener/src/raml/json/schema
+                            </sourceDirectory>
                             <generatorProperties>
                                 <typeMappings>
                                     <typeMapping>
@@ -69,7 +69,4 @@
             </plugin>
         </plugins>
     </build>
-
-
-
 </project>

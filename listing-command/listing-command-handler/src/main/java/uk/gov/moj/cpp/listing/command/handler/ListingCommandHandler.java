@@ -1,7 +1,10 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 import static java.util.stream.Collectors.toList;
+import static javax.json.JsonValue.NULL;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
+import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
 
 import uk.gov.justice.core.courts.CourtApplication;
@@ -10,6 +13,8 @@ import uk.gov.justice.core.courts.ListHearingRequest;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.Defendant;
 import uk.gov.justice.listing.commands.Offence;
+import uk.gov.justice.listing.commands.RecordCourtListExportFailed;
+import uk.gov.justice.listing.commands.RecordCourtListExportSuccessful;
 import uk.gov.justice.listing.commands.SimpleOffence;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.AddCourtApplicationForHearing;
@@ -39,10 +44,10 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
-import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
@@ -66,6 +71,7 @@ import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.Type;
 import uk.gov.moj.cpp.listing.domain.aggregate.Application;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
+import uk.gov.moj.cpp.listing.domain.aggregate.CourtListAggregate;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 
 import java.time.LocalDate;
@@ -99,9 +105,6 @@ public class ListingCommandHandler {
     private AggregateService aggregateService;
 
     @Inject
-    private Enveloper enveloper;
-
-    @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
 
     @Inject
@@ -133,6 +136,7 @@ public class ListingCommandHandler {
 
     @Inject
     private CourtApplicationToDomainConverter courtApplicationToDomainConverter;
+
 
     @Handles("listing.command.list-court-hearing-enriched")
     public void listCourtHearing(final JsonEnvelope command) throws EventStreamException {
@@ -558,7 +562,35 @@ public class ListingCommandHandler {
             updateApplicationEventStream(commandEnvelope, applicationId.get(), (Application application) ->
                     application.ejectApplication(hearingIds, applicationId.get(), (command.getRemovalReason())));
         }
+    }
 
+    @Handles("listing.command.record-court-list-export-successful")
+    public void markAsExportSuccessful(final JsonEnvelope commandEnvelope) throws EventStreamException {
+
+        final RecordCourtListExportSuccessful recordCourtListExportSuccessful = jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(),
+                RecordCourtListExportSuccessful.class);
+        final UUID documentId = recordCourtListExportSuccessful.getDocumentId();
+        final EventStream eventStream = eventSource.getStreamById(documentId);
+        final CourtListAggregate aggregate = aggregateService.get(eventStream, CourtListAggregate.class);
+        final Stream<Object> events = aggregate.recordCourtListExportSuccessful(recordCourtListExportSuccessful.getDocumentName(),
+                recordCourtListExportSuccessful.getPublishedTime());
+        appendEventsToStream(commandEnvelope, eventStream, events);
+    }
+
+    @Handles("listing.command.record-court-list-export-failed")
+    public void markAsExportFailed(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        final RecordCourtListExportFailed recordCourtListExportFailed = jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), RecordCourtListExportFailed.class);
+        final UUID documentId = recordCourtListExportFailed.getDocumentId();
+        final EventStream eventStream = eventSource.getStreamById(documentId);
+        final CourtListAggregate aggregate = aggregateService.get(eventStream, CourtListAggregate.class);
+        final Stream<Object> events = aggregate.recordCourtListExportFailed(recordCourtListExportFailed.getFailedTime(), recordCourtListExportFailed.getDocumentName(),
+                recordCourtListExportFailed.getErrorMessage());
+        appendEventsToStream(commandEnvelope, eventStream, events);
+    }
+
+    private void appendEventsToStream(final Envelope<?> envelope, final EventStream eventStream, final Stream<Object> events) throws EventStreamException {
+        final JsonEnvelope jsonEnvelope = envelopeFrom(envelope.metadata(), NULL);
+        eventStream.append(events.map(toEnvelopeWithMetadataFrom(jsonEnvelope)));
     }
 
     private List<uk.gov.moj.cpp.listing.domain.SequenceHearing> convertSequenceHearingsToDomain(SequenceHearings sequenceHearingsCommand) {
@@ -639,7 +671,7 @@ public class ListingCommandHandler {
         final Hearing hearing = aggregateService.get(eventStream, Hearing.class);
 
         final Stream<Object> events = aggregatorFunction.apply(hearing);
-        eventStream.append(events.map(enveloper.withMetadataFrom(command)));
+        eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
     }
 
     private void updateCaseEventStream(final JsonEnvelope command, final UUID caseId,
@@ -648,15 +680,17 @@ public class ListingCommandHandler {
         final Case listingCase = aggregateService.get(eventStream, Case.class);
 
         final Stream<Object> events = aggregatorFunction.apply(listingCase);
-        eventStream.append(events.map(enveloper.withMetadataFrom(command)));
+        eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
+
     }
+
     private void updateApplicationEventStream(final JsonEnvelope command, final UUID applicationId,
                                        final Function<Application, Stream<Object>> aggregatorFunction) throws EventStreamException {
         final EventStream eventStream = eventSource.getStreamById(applicationId);
         final Application application = aggregateService.get(eventStream, Application.class);
 
         final Stream<Object> events = aggregatorFunction.apply(application);
-        eventStream.append(events.map(enveloper.withMetadataFrom(command)));
+        eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
     }
 
 }
