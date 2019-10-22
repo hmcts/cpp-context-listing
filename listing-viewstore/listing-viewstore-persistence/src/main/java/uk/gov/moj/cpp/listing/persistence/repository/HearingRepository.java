@@ -122,6 +122,44 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                                final String endDate);
 
     /**
+     * Find {@link Hearing}s based on the query parameters
+     *
+     * @param courtCentreId    to search for or <code>null</code> for any courtCentreId - optional.
+     * @param courtRoomId      to search for or <code>null</code> for any courtRoomId - optional.
+     * @param authorityCode    to search for or <code>null</code> for any authorityCode - optional.
+     * @param hearingTypeId    to search for or <code>null</code> for any hearingType - optional.
+     * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType -
+     *                         optional.
+     * @param weekCommencingStartDate        to search for - mandatory.
+     * @param weekCommencingEndDate          to search for - mandatory.
+     * @return Hearings.
+     */
+    @Query(value = "select id, properties  " +
+            "from hearing  " +
+            "where  " +
+            "(?1 is null or properties ->> 'courtCentreId' = cast(?1 as text))  " +
+            "and (?2 is null or properties ->> 'courtRoomId' = cast(?2 as text))  " +
+            "and (?3 = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?3 as jsonb))  " +
+            "and (?4 is null or properties -> 'type' ->> 'id' = cast(?4 as text))  " +
+            "and (?5 is null or properties ->> 'jurisdictionType' = cast(?5 as text))  " +
+            "and ( " +
+            "   ( cast(properties ->> 'weekCommencingStartDate' as date) >= cast(?6 as date) and cast(properties ->> 'weekCommencingStartDate' as date) <= cast(?7 as date) ) or " +
+            "   ( cast(properties ->> 'weekCommencingEndDate' as date) >= cast(?6 as date) and cast(properties ->> 'weekCommencingEndDate' as date) <= cast(?7 as date) ) or " +
+            "   ( cast(properties ->> 'startDate' as date) >= cast(?6 as date) and cast(properties ->> 'endDate' as date) <= cast(?7 as date) ) ) " +
+            "order by cast(properties ->> 'startDate' as date)," +
+            "cast(properties ->> 'weekCommencingStartDate' as date)," +
+            "cast(properties ->> 'weekCommencingEndDate' as date )"
+            , isNative = true)
+    List<Hearing> findHearingsByWeekCommencingRange(
+                               final String courtCentreId,
+                               final String courtRoomId,
+                               final String authorityCode,
+                               final String hearingTypeId,
+                               final String jurisdictionType,
+                               final String weekCommencingStartDate,
+                               final String weekCommencingEndDate);
+
+    /**
      * Find {@link Hearing}s based on the query parameters.  This query will be used by the 'Public
      * List'
      *

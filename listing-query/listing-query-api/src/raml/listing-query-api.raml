@@ -98,7 +98,14 @@ protocols: [ HTTP, HTTPS ]
           description: If not provided then endDate is defaulted to '9999-01-01'.  (hearingStartDate between startDate and endDate) or (hearingEndDate between startDate and endDate) or (hearingStartDate <= startDate and hearingEndDate >= endDate)
           type: date
           required: false
-
+        weekCommencingStartDate:
+          description: (hearingWeekCommencingStartDate between weekCommencingStartDate and weekCommencingEndDate) or (hearingWeekCommencingStartDate <= weekCommencingStartDate and hearingWeekCommencingEndDate >= weekCommencingEndDate)
+          type: date
+          required: false
+        weekCommencingEndDate:
+          description: (hearingWeekCommencingEndDate between weekCommencingStartDate and weekCommencingEndDate) or (hearingWeekCommencingStartDate <= weekCommencingStartDate and hearingWeekCommencingEndDate >= weekCommencingEndDate)
+          type: date
+          required: false
       responses:
             200:
                 description: OK

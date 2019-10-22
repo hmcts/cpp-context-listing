@@ -58,6 +58,16 @@
     "endDate": {
       "$ref": "listing-definitions.json#/definitions/localDate"
     },
+    "weekCommencingStartDate": {
+      "$ref": "#/definitions/localDate"
+    },
+
+    "weekCommencingEndDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "weekCommencingDuration": {
+      "$ref": "listing-definitions.json#/definitions/positiveInteger"
+    },
     "hearingDays": {
       "type": "array",
       "items": {

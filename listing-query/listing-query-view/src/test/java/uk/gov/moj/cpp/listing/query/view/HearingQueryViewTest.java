@@ -26,6 +26,7 @@ import java.util.UUID;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.time.LocalDate.now;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.Matchers.is;
@@ -52,6 +53,8 @@ public class HearingQueryViewTest {
     public static final String SEARCH_DATE_QUERY_PARAMETER = "searchDate";
     public static final String START_DATE_QUERY_PARAMETER = "startDate";
     public static final String END_DATE_QUERY_PARAMETER = "endDate";
+    public static final String WEEK_COMMENCING_START_DATE_QUERY_PARAMETER = "weekCommencingStartDate";
+    public static final String WEEK_COMMENCING_END_DATE_QUERY_PARAMETER = "weekCommencingEndDate";
     public static final String START_TIME_QUERY_PARAMETER = "startTime";
     public static final String END_TIME_QUERY_PARAMETER = "endTime";
     private static final String COURT_CENTRE_QUERY_PARAMETER = "courtCentreId";
@@ -69,6 +72,9 @@ public class HearingQueryViewTest {
     private static final LocalTime END_TIME = LocalTime.now();
     private static final LocalDateTime EARLIEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MIN);
     private static final LocalDateTime LATEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MAX);
+
+    private static final LocalDate WEEK_COMMENCING_START_DATE = now();
+    private static final LocalDate WEEK_COMMENCING_END_DATE = now().plusDays(7);
 
 
     @Spy
@@ -163,6 +169,42 @@ public class HearingQueryViewTest {
         assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
                 payloadIsJson(
                         withJsonPath("$.hearings[0].hello", equalTo("world"))
+                ))
+        ));
+
+    }
+
+    @Test
+    public void searchHearingsWithWeekCommencingDateRange() throws Exception {
+
+        final List<Hearing> hearingsJson = hearingJsonForWeekCommencing();
+        final JsonArray hearingsJsonArray = hearingsForWeekCommencingJsonArray();
+
+        when(hearingRepository.findHearingsByWeekCommencingRange(
+                null,
+                null,
+                AUTHORITY_ID_SEARCH,
+                null,
+                null,
+                WEEK_COMMENCING_START_DATE.toString(),
+                WEEK_COMMENCING_END_DATE.toString()))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListCoverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(hearingsJsonArray);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
+                        .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, WEEK_COMMENCING_END_DATE.toString())
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
+
+        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
+                payloadIsJson(
+                        withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo("2019-10-13"))
                 ))
         ));
 
@@ -329,5 +371,30 @@ public class HearingQueryViewTest {
         final Hearing hearing2 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
 
+    }
+
+    private List<Hearing> hearingJsonForWeekCommencing(){
+        final String testJsonString = "{\n" +
+                "\t\"hearings\": [{\n" +
+                "\t\t\"id\": \"54482cb7-31aa-4c64-8656-3be6e3a4d158\",\n" +
+                "\t\t\"weekCommencingStartDate\": \"2019-10-13\",\n" +
+                "\t\t\"weekCommencingEndDate\": \"2019-10-25\",\n" +
+                "\t\t\"listedCases\": [{\n" +
+                "\t\t}],\n" +
+                "\t\t\"courtApplications\": [{\n" +
+                "\t\t}]\n" +
+                "\t}]\n" +
+                "}";
+        final Hearing hearing1 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        return newArrayList(hearing1, hearing2);
+
+    }
+
+    private JsonArray hearingsForWeekCommencingJsonArray() {
+        return Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                        .add("weekCommencingStartDate", "2019-10-13"))
+                .build();
     }
 }
