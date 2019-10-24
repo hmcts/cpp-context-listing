@@ -83,6 +83,7 @@ import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
+import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CommandSimpleOffenceToDomainOffence;
@@ -322,6 +323,10 @@ public class ListingCommandHandlerTest {
     private Case aCase;
     @Mock
     private Application anApplication;
+
+    @Mock
+    private HearingTypeFactory hearingTypeFactory;
+
     @Mock
     private Stream<Object> events;
     @Captor
@@ -367,16 +372,16 @@ public class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
         when(hearing.list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicalRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
-                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds))).thenReturn(events);
+                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicalRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
-                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds));
+                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30));
 
     }
 
@@ -471,7 +476,7 @@ public class ListingCommandHandlerTest {
         when(hearing.assignJudiciary(judicialRoles, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1)).thenReturn(mock(Stream.class));
-
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), Integer.valueOf(DEFAULT_DURATION)));
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
         verify(hearing).changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1);

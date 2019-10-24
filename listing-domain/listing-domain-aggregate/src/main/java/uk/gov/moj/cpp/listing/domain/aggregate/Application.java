@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class Application implements Aggregate {
@@ -44,19 +46,16 @@ public class Application implements Aggregate {
     }
     public Stream<Object> ejectApplication(List<UUID> hearingIdForApplicationToBeEjected, UUID applicationId, Optional<String> removalReason){
 
+        final Set<UUID> mergedHearingIds = new HashSet<>(this.hearingIds);
         if(Objects.nonNull(hearingIdForApplicationToBeEjected)){
-            return apply(Stream.of(ApplicationEjected.applicationEjected()
-                    .withApplicationId(applicationId)
-                    .withHearingIds(hearingIdForApplicationToBeEjected)
-                    .withRemovalReason(String.valueOf(removalReason))
-                    .build()
-            ));
+            mergedHearingIds.addAll(hearingIdForApplicationToBeEjected);
         }
+        final String ejectReason = removalReason.isPresent()? removalReason.get() : null;
 
-        return hearingIds.isEmpty() ? Stream.empty() : apply(Stream.of(ApplicationEjected.applicationEjected()
+        return mergedHearingIds.isEmpty() ? Stream.empty() : apply(Stream.of(ApplicationEjected.applicationEjected()
                 .withApplicationId(applicationId)
-                .withHearingIds(hearingIds)
-                .withRemovalReason(String.valueOf(removalReason))
+                .withHearingIds(new ArrayList<>(mergedHearingIds))
+                .withRemovalReason(ejectReason)
                 .build())
         );
     }

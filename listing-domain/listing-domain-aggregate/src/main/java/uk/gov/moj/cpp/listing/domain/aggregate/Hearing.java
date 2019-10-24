@@ -84,7 +84,6 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -165,17 +164,16 @@ public class Hearing implements Aggregate {
                                final JurisdictionType jurisdictionType, final String prosecutorDatesToAvoid,
                                final String reportingRestrictionReason,
                                final ZonedDateTime startDate, final LocalDate endDate, CourtCentreDefaults courtCentreDefaults,
-                               final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds) {
+                               final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds,
+                               final Integer hearingTypeDuration) {
 
         if (notCurrentlyListed()) {
             final LocalTime startTime = startDate.toLocalTime();
-            List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = Collections.emptyList();
-            if(startTime.compareTo(courtCentreDefaults.getDefaultStartTime()) != 0) {
-                newNonDefaultDays = Arrays.asList(uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay()
-                        .withDuration(of(estimateMinutes))
-                        .withStartTime(startDate)
-                        .build());
-            }
+            final List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = Arrays.asList(uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay()
+                    .withDuration(of(estimateMinutes > 0 ? estimateMinutes : hearingTypeDuration))
+                    .withStartTime(startDate)
+                    .build());
+
             LocalDate hearingEndDate = HearingEndDateRule.apply(endDate, startDate.toLocalDate());
             return apply(Stream.of(hearingListed()
                     .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
@@ -201,9 +199,9 @@ public class Hearing implements Aggregate {
                             .withJurisdictionType(valueFor(jurisdictionType.name()).orElse(null))
                             .withStartDate(startDate.toLocalDate())
                             .withEndDate(hearingEndDate)
-                            .withNonDefaultDays(newNonDefaultDays)
+                            .withNonDefaultDays(startTime.compareTo(courtCentreDefaults.getDefaultStartTime()) != 0 ? newNonDefaultDays : emptyList())
                             .withNonSittingDays(emptyList())
-                            .withHearingDays(HearingDaysCalculator.calculate(startDate.toLocalDate(), hearingEndDate, emptyList(), convertEventToDomain(newNonDefaultDays), courtCentreDefaults.getDefaultStartTime(), courtCentreDefaults.getDefaultDuration()))
+                            .withHearingDays(HearingDaysCalculator.calculate(startDate.toLocalDate(), hearingEndDate, emptyList(), convertEventToDomain(newNonDefaultDays), courtCentreDefaults.getDefaultStartTime(), hearingTypeDuration))
                             .withCourtApplications(courtApplications.stream()
                                     .map(NewDomainToEventConverter::buildCourtApplications)
                                     .collect((toList())))

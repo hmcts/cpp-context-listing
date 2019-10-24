@@ -23,6 +23,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMat
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
@@ -302,7 +303,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void whenHearingIsUpdatedForListing() {
         stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId()));
-
+        stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
         final String updateHearingUrl = String.format("%s/%s", baseUri, format
                 (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING), updatedHearingData.getHearingId()));
 

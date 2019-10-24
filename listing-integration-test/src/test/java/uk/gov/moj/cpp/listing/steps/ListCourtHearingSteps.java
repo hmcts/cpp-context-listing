@@ -24,6 +24,7 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INT
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 
 import uk.gov.justice.core.courts.AssociatedPerson;
 import uk.gov.justice.core.courts.BailStatus;
@@ -171,7 +172,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         hearingsData.getHearingData().stream()
                 .map(hearingData -> hearingData.getCourtCentreId())
                 .forEach(cci -> stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null)));
-
+        hearingsData.getHearingData().stream().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
 
         final String listCaseForHearingUrl = String.format("%s/%s", baseUri, format
                 (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
@@ -196,7 +197,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         hearingsData.getHearingData().stream()
                 .map(HearingData::getCourtCentreId)
                 .forEach(cci -> stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null)));
-
+        hearingsData.getHearingData().stream().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
         final String listCaseForHearingUrl = String.format("%s/%s", baseUri, format
                 (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
 

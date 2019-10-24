@@ -67,6 +67,24 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>uk.gov.justice.maven.generator</groupId>
+                <artifactId>generator-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.referencedata</groupId>
+                        <artifactId>referencedata-query-api</artifactId>
+                        <version>${referencedata.version}</version>
+                        <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
                 <artifactId>generator-plugin</artifactId>
                 <groupId>uk.gov.justice.maven.generator</groupId>
                 <executions>

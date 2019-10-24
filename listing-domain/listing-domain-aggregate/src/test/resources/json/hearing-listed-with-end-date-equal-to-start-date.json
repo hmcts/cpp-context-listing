@@ -6,11 +6,11 @@
     "allocated": false,
     "hearingDays": [
       {
-        "durationMinutes": 30,
-        "endTime": "2018-06-01T10:00:00.000Z",
+        "durationMinutes": 15,
+        "endTime": "2018-06-01T10:45:00.000Z",
         "sequence": 0,
         "hearingDate":"2018-06-01",
-        "startTime": "2018-06-01T09:30:00.000Z"
+        "startTime": "2018-06-01T10:30:00.000Z"
       }
     ],
     "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
