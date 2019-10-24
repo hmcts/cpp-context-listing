@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
-import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
 
 import java.time.LocalDate;

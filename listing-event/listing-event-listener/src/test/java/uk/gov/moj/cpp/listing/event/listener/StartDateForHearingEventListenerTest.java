@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
+import uk.gov.justice.listing.events.StartDateRemovedForHearing;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
@@ -53,6 +54,22 @@ public class StartDateForHearingEventListenerTest {
         startDateForHearingEventListener.startDateChangedForHearing(envelope);
 
         verify(properties).put(eq(START_DATE_FIELD), eq(START_DATE.toString()));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldRemoveStartDateForHearing() throws Exception {
+        final Envelope<StartDateRemovedForHearing> envelope = (Envelope< StartDateRemovedForHearing>) mock(Envelope.class);
+       final StartDateRemovedForHearing hearingData = StartDateRemovedForHearing.startDateRemovedForHearing().withHearingId(HEARING_ID).build();
+
+        given(envelope.payload()).willReturn(hearingData);
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
+        startDateForHearingEventListener.startDateRemovedForHearing(envelope);
+
+        verify(properties).remove("startDate");
         verify(hearingRepository).save(hearing);
     }
 }

@@ -22,8 +22,10 @@ import static uk.gov.justice.listing.events.JurisdictionType.valueFor;
 import static uk.gov.justice.listing.events.NonSittingDaysAssignedToHearing.nonSittingDaysAssignedToHearing;
 import static uk.gov.justice.listing.events.NonSittingDaysChangedForHearing.nonSittingDaysChangedForHearing;
 import static uk.gov.justice.listing.events.StartDateChangedForHearing.startDateChangedForHearing;
+import static uk.gov.justice.listing.events.StartDateRemovedForHearing.startDateRemovedForHearing;
 import static uk.gov.justice.listing.events.TypeChangedForHearing.typeChangedForHearing;
-
+import static uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing.weekCommencingDateChangedForHearing;
+import static uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing.weekCommencingDateRemovedForHearing;
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
@@ -58,7 +60,10 @@ import uk.gov.justice.listing.events.OffenceDeleted;
 import uk.gov.justice.listing.events.OffenceUpdated;
 import uk.gov.justice.listing.events.SequencesResetOnHearingDays;
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
+import uk.gov.justice.listing.events.StartDateRemovedForHearing;
 import uk.gov.justice.listing.events.TypeChangedForHearing;
+import uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing;
+import uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
@@ -95,7 +100,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings({"squid:S1172", "squid:S2629", "squid:S1948", "squid:S00107", "squid:S3655", "squid:S1067", "squid:CommentedOutCodeLine"})
+@SuppressWarnings({"squid:S1172", "squid:S2629", "squid:S1948", "squid:S00107", "squid:S3655", "squid:S1067", "squid:CommentedOutCodeLine", "squid:S1068"})
 public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
@@ -119,6 +124,9 @@ public class Hearing implements Aggregate {
     private List<LocalDate> nonSittingDays;
     private List<HearingDay> hearingDays;
     private List<UUID> confirmedCourtApplicationIds = new ArrayList();
+    private LocalDate weekCommencingStartDate;
+    private LocalDate weekCommencingEndDate;
+    private Integer weekCommencingDurationInWeeks;
 
     @Override
     public Object apply(final Object event) {
@@ -127,8 +135,11 @@ public class Hearing implements Aggregate {
                 when(HearingLanguageChangedForHearing.class).apply(this::onHearingLanguageChanged),
                 when(TypeChangedForHearing.class).apply(this::onTypeChangedForHearing),
                 when(StartDateChangedForHearing.class).apply(this::onStartDateChangedForHearing),
+                when(StartDateRemovedForHearing.class).apply(this::onStartDateRemovedForHearing),
                 when(EndDateChangedForHearing.class).apply(this::onEndDateChangedForHearing),
                 when(EndDateRemovedFromHearing.class).apply(this::onEndDateRemovedFromHearing),
+                when(WeekCommencingDateChangedForHearing.class).apply(this::onWeekCommencingDateChangedForHearing),
+                when(WeekCommencingDateRemovedForHearing.class).apply(this::onWeekCommencingDateRemovedForHearing),
                 when(NonSittingDaysChangedForHearing.class).apply(this::onNonSittingDaysChangedForHearing),
                 when(NonSittingDaysAssignedToHearing.class).apply(this::onNonSittingDaysAssignedToHearing),
                 when(NonDefaultDaysChangedForHearing.class).apply(this::onNonDefaultDaysChangedForHearing),
@@ -256,11 +267,6 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> changeStartDate(final LocalDate startDate, final UUID hearingId) {
-        if (notCurrentlyAssigned(this.startDate)) {
-            LOGGER.error("Start date' for hearing with id {} is not assigned. Should have been assigned when first listed", hearingId);
-            return Stream.empty();
-        }
-
         if (hasChanged(this.startDate, startDate)) {
             return apply(Stream.of(startDateChangedForHearing()
                     .withStartDate(startDate.toString())
@@ -272,12 +278,23 @@ public class Hearing implements Aggregate {
         }
     }
 
-    public Stream<Object> changeEndDate(final LocalDate endDate, final UUID hearingId) {
-        if (notCurrentlyAssigned(this.endDate)) {
-            LOGGER.error("End date' for hearing with id {} is not assigned. Should have been assigned or defaulted when first listed", hearingId);
+    public Stream<Object> changeWeekCommencingDate(final LocalDate weekCommencingStartDate, final LocalDate weekCommencingEndDate, final Integer weekCommencingDurationInWeeks, final UUID hearingId) {
+        if (hasChanged(this.weekCommencingStartDate, weekCommencingStartDate) || hasChanged(this.weekCommencingEndDate, weekCommencingEndDate)){
+
+            return apply(Stream.of(weekCommencingDateChangedForHearing()
+                    .withWeekCommencingStartDate(weekCommencingStartDate.toString())
+                    .withWeekCommencingEndDate(weekCommencingEndDate.toString())
+                    .withWeekCommencingDurationInWeeks(weekCommencingDurationInWeeks)
+                    .withHearingId(hearingId)
+                    .build()));
+
+        } else {
+            LOGGER.info("Incoming week commencing date {} is the same as current week commencing date {} for hearing with id {} - Ignore", this.weekCommencingStartDate, this.weekCommencingEndDate, hearingId);
             return Stream.empty();
         }
+    }
 
+    public Stream<Object> changeEndDate(final LocalDate endDate, final UUID hearingId) {
         if (hasChanged(this.endDate, endDate)) {
             return apply(Stream.of(endDateChangedForHearing()
                     .withEndDate(endDate.toString())
@@ -577,7 +594,7 @@ public class Hearing implements Aggregate {
         return Stream.empty();
     }
 
-    public Stream<Object> restrictDetailsFromCourt(UUID hearingId, RestrictCourtList restrictCourtList){
+    public Stream<Object> restrictDetailsFromCourt(UUID hearingId, RestrictCourtList restrictCourtList) {
 
         if (!isHearingInThePast()) {
             return apply(Stream.of(CourtListRestricted.courtListRestricted()
@@ -595,6 +612,7 @@ public class Hearing implements Aggregate {
 
         return Stream.empty();
     }
+
     private boolean thisHearingContainsDefendant(uk.gov.moj.cpp.listing.domain.Defendant defendant) {
         return isNull(this.prosecutionCaseDefendantOffenceIds) ? Boolean.FALSE : this.prosecutionCaseDefendantOffenceIds.stream()
                 .anyMatch(prosecutionCaseDefendantOffenceId ->
@@ -644,7 +662,7 @@ public class Hearing implements Aggregate {
 
     private boolean canAllocate() {
         return currentlyAssigned(this.hearingLanguage) && currentlyAssigned(this.jurisdictionType)
-                && currentlyAssigned(this.courtRoomId) && currentlyAssigned(this.endDate);
+                && currentlyAssigned(this.courtRoomId) && currentlyAssigned(this.endDate) && currentlyAssigned(this.startDate);
     }
 
     private boolean canUnallocate() {
@@ -824,7 +842,7 @@ public class Hearing implements Aggregate {
 
 
     private Optional<DefendantOffenceIds> getDefendantOffenceIds(final UUID caseId, final UUID defendantId) {
-        if(isNull(this.prosecutionCaseDefendantOffenceIds)){
+        if (isNull(this.prosecutionCaseDefendantOffenceIds)) {
             return Optional.empty();
         }
         final Optional<ProsecutionCaseDefendantOffenceIds> caseDefendants = this.prosecutionCaseDefendantOffenceIds.stream()
@@ -946,6 +964,12 @@ public class Hearing implements Aggregate {
         this.endDate = LocalDate.parse(event.getEndDate());
     }
 
+    private void onWeekCommencingDateChangedForHearing(final WeekCommencingDateChangedForHearing event) {
+        this.weekCommencingStartDate = LocalDate.parse(event.getWeekCommencingStartDate());
+        this.weekCommencingEndDate = LocalDate.parse(event.getWeekCommencingEndDate());
+        this.weekCommencingDurationInWeeks = event.getWeekCommencingDurationInWeeks();
+    }
+
     private void onNonSittingDaysChangedForHearing(NonSittingDaysChangedForHearing event) {
         this.nonSittingDays = event.getNonSittingDays();
     }
@@ -967,6 +991,7 @@ public class Hearing implements Aggregate {
         return this.hearingDays.stream().anyMatch(d -> ((!hearingDaysSequencesMap.containsKey(d.getHearingDate()))
                 || (hearingDaysSequencesMap.containsKey(d.getHearingDate()) && !(hearingDaysSequencesMap.get(d.getHearingDate()).equals(d.getSequence())))));
     }
+
     private void onNonDefaultDaysChangedForHearing(NonDefaultDaysChangedForHearing event) {
         this.nonDefaultDays = convertNonDefaultDaysToDomain(event.getNonDefaultDays());
     }
@@ -1024,6 +1049,16 @@ public class Hearing implements Aggregate {
 
     private void onEndDateRemovedFromHearing(EndDateRemovedFromHearing event) {
         this.endDate = null;
+    }
+
+    private void onStartDateRemovedForHearing(final StartDateRemovedForHearing event) {
+        this.startDate = null;
+    }
+
+    private void onWeekCommencingDateRemovedForHearing(final WeekCommencingDateRemovedForHearing event) {
+        this.weekCommencingStartDate = null;
+        this.weekCommencingEndDate = null;
+        this.weekCommencingDurationInWeeks = null;
     }
 
     private void onHearingDaysSequenced(final HearingDaysSequenced hearingDaysSequenced) {
@@ -1141,6 +1176,29 @@ public class Hearing implements Aggregate {
     private List<HearingLanguageNeeds> getHearingLanguageNeedsForAllApplicants(final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds) {
         return courtApplicationPartyListingNeeds.stream().filter(
                 v -> v.getHearingLanguageNeeds().isPresent()).map(v -> v.getHearingLanguageNeeds().get()).collect(toList());
+    }
+
+    public Stream<Object> removeStartDate(final UUID hearingId) {
+        if (currentlyAssigned(this.startDate)) {
+            return apply(Stream.of(startDateRemovedForHearing()
+                    .withHearingId(hearingId)
+                    .build()));
+
+        } else {
+            LOGGER.info("No start date is currently assigned for hearing with id {} so cannot be removed - Ignore", hearingId);
+            return Stream.empty();
+        }
+    }
+
+    public Stream<Object> removeWeekCommencingDates(final UUID hearingId) {
+        if (currentlyAssigned(this.weekCommencingStartDate) && currentlyAssigned(this.weekCommencingEndDate)) {
+            return apply(Stream.of(weekCommencingDateRemovedForHearing()
+                    .withHearingId(hearingId)
+                    .build()));
+        } else {
+            LOGGER.info("No week commencing date is currently assigned for hearing with id {} so cannot be removed - Ignore", hearingId);
+            return Stream.empty();
+        }
     }
 
 }

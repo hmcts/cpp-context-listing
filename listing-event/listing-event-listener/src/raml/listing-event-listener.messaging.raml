@@ -66,9 +66,17 @@ baseUri: message://event/listener/message/listing
         example: !include json/listing.events.start-date-changed-for-hearing.json
         schema: !include json/schema/listing.events.start-date-changed-for-hearing.json
 
+      application/vnd.listing.events.start-date-removed-for-hearing+json:
+        example: !include json/listing.events.start-date-removed-for-hearing.json
+        schema: !include json/schema/listing.events.start-date-removed-for-hearing.json
+
       application/vnd.listing.events.end-date-changed-for-hearing+json:
         example: !include json/listing.events.end-date-changed-for-hearing.json
         schema: !include json/schema/listing.events.end-date-changed-for-hearing.json
+
+      application/vnd.listing.events.end-date-removed-from-hearing+json:
+        example: !include json/listing.events.end-date-removed-from-hearing.json
+        schema: !include json/schema/listing.events.end-date-removed-from-hearing.json
 
       application/vnd.listing.events.type-changed-for-hearing+json:
         example: !include json/listing.events.type-changed-for-hearing.json
@@ -130,6 +138,13 @@ baseUri: message://event/listener/message/listing
         schema: !include json/schema/listing.events.application-ejected.json
         example: !include json/listing.events.application-ejected.json
 
+      application/vnd.listing.events.week-commencing-date-changed-for-hearing+json:
+        schema: !include json/schema/listing.events.week-commencing-date-changed-for-hearing.json
+        example: !include json/listing.events.week-commencing-date-changed-for-hearing.json
+
+      application/vnd.listing.events.week-commencing-date-removed-for-hearing+json:
+        schema: !include json/schema/listing.events.week-commencing-date-removed-for-hearing.json
+        example: !include json/listing.events.week-commencing-date-removed-for-hearing.json
       application/vnd.listing.event.publish-court-list-export-failed+json:
         schema: !include json/schema/listing.event.publish-court-list-export-failed.json
         example: !include json/listing.event.publish-court-list-export-failed.json

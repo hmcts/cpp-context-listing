@@ -27,6 +27,20 @@
       ],
       "format": "date"
     },
+    "weekCommencingStartDate": {
+      "type": "string",
+      "format": "date"
+    },
+
+    "weekCommencingEndDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "weekCommencingDurationInWeeks": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2
+    },
     "nonSittingDays": {
       "type": "array",
       "items": {
@@ -54,16 +68,29 @@
     }
   },
   "required": [
-    "type",
-    "startDate",
-    "endDate",
-    "nonSittingDays",
     "nonDefaultDays",
+    "hearingLanguage",
+    "courtCentreId",
     "jurisdictionType",
     "judiciary",
-    "hearingLanguage",
-    "courtRoomId",
-    "courtCentreId"
+    "type"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "startDate",
+        "endDate",
+        "nonSittingDays",
+        "courtRoomId"
+      ]
+    },
+    {
+      "required": [
+        "weekCommencingStartDate",
+        "weekCommencingEndDate",
+        "weekCommencingDurationInWeeks"
+      ]
+    }
   ],
   "definitions": {
     "judicialRole": {

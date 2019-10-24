@@ -64,7 +64,6 @@ public class HearingIT extends AbstractIT {
         }
     }
 
-
     @Test
     public void updateAllocatedHearingWithNoCourtRoomResultsInUnallocatedListing() {
         HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
@@ -139,7 +138,7 @@ public class HearingIT extends AbstractIT {
         HearingsData hearingsData = HearingsData.singleHearingData();
         UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
         SequenceHearingData sequenceHearingData = new SequenceHearingData(updatedHearingDataForAllocation);
-        
+
         try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
