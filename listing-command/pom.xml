@@ -7,9 +7,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+
     <artifactId>listing-command</artifactId>
     <packaging>pom</packaging>
-
     <modules>
         <module>listing-command-api</module>
         <module>listing-command-handler</module>

@@ -12,7 +12,6 @@
 
     <properties>
         <cpp.service-component>EVENT_PROCESSOR</cpp.service-component>
-
     </properties>
 
     <dependencies>
@@ -46,7 +45,16 @@
             <version>${project.version}</version>
         </dependency>
 
-    
+        <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>file-service-api</artifactId>
+            <version>${file-service-api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.lookfirst</groupId>
+            <artifactId>sardine</artifactId>
+            <version>${sardine.version}</version>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>
