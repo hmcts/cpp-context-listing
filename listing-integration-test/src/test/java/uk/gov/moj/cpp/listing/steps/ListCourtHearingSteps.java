@@ -80,6 +80,7 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
 import com.jayway.restassured.path.json.JsonPath;
+import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +108,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String ORGANISATION_NAME = "ABC LTD";
 
     private static final boolean UNALLOCATED = false;
-    private final HearingsData hearingsData;
+    private HearingsData hearingsData;
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
     private MessageConsumer privateMessageConsumerHearingListed;
@@ -119,6 +120,14 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     public ListCourtHearingSteps(HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
+        privateMessageConsumerHearingListed = QueueUtil.privateEvents.createConsumer(EVENT_SELECTOR_HEARING_LISTED);
+        privateMessageConsumerHearingAllocatedForListing = QueueUtil.privateEvents.createConsumer(EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING);
+        privateMessageConsumerHearingDaysChanged = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_DAYS_CHANGED);
+
+        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+    }
+
+    public ListCourtHearingSteps() {
         privateMessageConsumerHearingListed = QueueUtil.privateEvents.createConsumer(EVENT_SELECTOR_HEARING_LISTED);
         privateMessageConsumerHearingAllocatedForListing = QueueUtil.privateEvents.createConsumer(EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING);
         privateMessageConsumerHearingDaysChanged = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_DAYS_CHANGED);
@@ -296,6 +305,16 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].courtApplications[0].respondents[0].lastName",
                                         equalTo(hearingData.getCourtApplications().get(0).getRespondent().getLastName()))
                         )));
+    }
+
+    public void verifyHearingForWeekCommencingRange(final String jurisdictionType, final String weekCommencingStartDate, final String weekCommencingEndDate, final Matcher... matchers){
+        final String searchHearingUrl = String.format("%s/%s", baseUri,
+                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings.for.week.commencing.range"), jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, false));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser())).
+                until(status().is(OK),
+                        payload().isJson(allOf(matchers))
+                );
     }
 
     public void verifyHearingListedWithLegalEntity(boolean isAllocated) {

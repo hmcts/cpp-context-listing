@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.steps.data.factory;
 
+import static java.time.LocalDate.now;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
@@ -65,6 +66,11 @@ public class HearingsDataFactory {
         return manyRandomHearingsStandaloneApplication(2);
     }
 
+    public static List<HearingData> hearingsDataForWeekCommencing(final UUID hearingId, final LocalDate hearingEndDate,
+                                                                       final UUID courtRoomId, final LocalDate weekCommencingStartDate,
+                                                                       final LocalDate weekCommencingEndDate, final LocalDate startDate) {
+        return singletonList(randomHearingForWeekCommencingDate(hearingId, hearingEndDate, courtRoomId, null, weekCommencingStartDate, weekCommencingEndDate, startDate));
+    }
 
     private static List<HearingData> manyRandomHearingsWithAllocationData(final Integer numberOfHearings) {
         LocalDate hearingEndDate = LocalDate.now().plusDays(1);
@@ -169,6 +175,25 @@ public class HearingsDataFactory {
                 judicialRoles, JURISDICTION_TYPE, STRING.next(),
                 singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
                 singletonList(randomCourtApplicationPartyNeed()));
+    }
+
+    private static HearingData randomHearingForWeekCommencingDate(final UUID hearingId, final LocalDate hearingEndDate, final UUID courtRoomId, List<JudicialRoleData> judicialRoles, final LocalDate weekCommencingStartDate, final LocalDate weekCommencingEndDate, final LocalDate startDate) {
+        List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
+
+        return weekCommencingStartDate == null ?
+                new HearingData(hearingId, randomUUID(), PTP_HEARING_TYPE, now(),
+                        hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                        courtRoomId, ZonedDateTime.now(), listedCaseData,
+                        judicialRoles, JURISDICTION_TYPE, STRING.next(),
+                        singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                        singletonList(randomCourtApplicationPartyNeed())) :
+                new HearingData(hearingId, randomUUID(), PTP_HEARING_TYPE, startDate,
+                        hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                        courtRoomId, ZonedDateTime.now(), listedCaseData,
+                        judicialRoles, JURISDICTION_TYPE, STRING.next(),
+                        singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                        singletonList(randomCourtApplicationPartyNeed()),
+                        weekCommencingStartDate, weekCommencingEndDate, 30);
     }
 
     private static HearingData randomHearingWithLegalEntity(LocalDate hearingEndDate, UUID courtRoomId, List<JudicialRoleData> judicialRoles) {

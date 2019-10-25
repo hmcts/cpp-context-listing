@@ -126,11 +126,11 @@ public class UpdatedHearingData {
 
     }
 
-    public static UpdatedHearingData updatedHearingDataWithWeekCommencingDate(final HearingData hearingData) {
+    public static UpdatedHearingData updatedHearingDataWithWeekCommencingDate(final HearingData hearingData, final String weekCommencingStartDate, final String weekCommencingEndDate, final int weekCommencingDurationInWeeks) {
         return new UpdatedHearingData(hearingData.getId(), hearingData.getCourtCentreId(), null, hearingData.getHearingTypeData(),
                 null, null,
                 Arrays.asList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(DURATION))),
-                Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), LocalDate.now().toString(), LocalDate.now().plusDays(7l).toString(), 1);
+                Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks);
 
     }
 

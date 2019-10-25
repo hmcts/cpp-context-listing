@@ -2,7 +2,9 @@ package uk.gov.moj.cpp.listing.steps.data;
 
 import uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 public class HearingsData {
 
@@ -20,6 +22,12 @@ public class HearingsData {
 
     public static HearingsData singleHearingData(){
         return new HearingsData(HearingsDataFactory.singleHearingData());
+    }
+
+    public static HearingsData hearingsDataForWeekCommencing(final UUID hearingId, final LocalDate hearingEndDate,
+                                                             final UUID courtRoomId, final LocalDate weekCommencingStartDate,
+                                                             final LocalDate weekCommencingEndDate, final LocalDate startDate){
+        return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing(hearingId, hearingEndDate, courtRoomId, weekCommencingStartDate, weekCommencingEndDate, startDate));
     }
 
     public static HearingsData hearingsDataWithAllocationDataAndJudiciary(){

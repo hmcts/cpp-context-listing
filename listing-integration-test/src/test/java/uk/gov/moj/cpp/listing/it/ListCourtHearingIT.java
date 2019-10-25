@@ -1,11 +1,7 @@
 package uk.gov.moj.cpp.listing.it;
 
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
-import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-import uk.gov.moj.cpp.listing.steps.data.RestrictCourtListData;
-
-import java.util.UUID;
 
 import org.junit.Test;
 

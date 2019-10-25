@@ -1,0 +1,175 @@
+package uk.gov.moj.cpp.listing.it;
+
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.time.LocalDate.now;
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
+import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
+import static uk.gov.moj.cpp.listing.it.util.ContextNameProvider.CONTEXT_NAME;
+import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.loadFixedHearingData;
+import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.updateLoadedFixedHearingToWeekCommencingHearing;
+import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.updatedHearingListedData;
+import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.verifyHearingListedForWeekCommencing;
+
+import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
+import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import org.hamcrest.Matcher;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+public class ListCourtWeekCommencingHearingIT extends AbstractIT {
+    private final static String WEEK_COMMENCING_END_DATE_FOR_ONE_WEEK = LocalDate.now().plusDays(7L).toString();
+    private final static String WEEK_COMMENCING_END_DATE_FOR_TWO_WEEKS = LocalDate.now().plusDays(14L).toString();
+
+    private static final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
+    private static final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
+    private List<HearingsData> hearingsData;
+    private List<UpdatedHearingData> updatedHearingDataList;
+
+    @Before
+    public void initialize() {
+        cleanListingTables();
+        hearingsData = loadFixedHearingData();
+
+        //update start date for a hearing
+        final UpdatedHearingData updatedHearingData1 = updatedHearingListedData(hearingsData.get(3));
+
+        //update fixed hearing to week commencing hearings
+        final UpdatedHearingData updatedHearingData2 = updateLoadedFixedHearingToWeekCommencingHearing(hearingsData.get(4), WEEK_COMMENCING_END_DATE_FOR_ONE_WEEK, 1);
+        final UpdatedHearingData updatedHearingData3 = updateLoadedFixedHearingToWeekCommencingHearing(hearingsData.get(5), WEEK_COMMENCING_END_DATE_FOR_TWO_WEEKS, 2);
+
+        updatedHearingDataList = asList(updatedHearingData1, updatedHearingData2, updatedHearingData3);
+    }
+
+    @After
+    public void tearDown() {
+        cleanListingTables();
+    }
+
+    @Test
+    public void shouldListHearingsWithinWeekCommencingDateRangeByRelevance() {
+        final String weekCommencingSearchStartDate = now().minusDays(7).toString();
+        final String weekCommencingSearchEndDate = now().plusDays(22).toString();
+
+        final HearingsData hearingsData1 = hearingsData.get(0);
+        final HearingsData hearingsData2 = hearingsData.get(1);
+        final HearingsData hearingsData3 = hearingsData.get(2);
+
+        final UpdatedHearingData updatedHearingData = updatedHearingDataList.get(0);
+        final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
+        final UpdatedHearingData secondUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(2);
+
+        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(6)),
+                withJsonPath("$.hearings[0].id", is(hearingsData2.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[0].jurisdictionType", is(hearingsData2.getHearingData().get(0).getJurisdictionType())),
+                withJsonPath("$.hearings[0].courtCentreId", is(hearingsData2.getHearingData().get(0).getCourtCentreId().toString())),
+                withJsonPath("$.hearings[0].startDate", is(hearingsData2.getHearingData().get(0).getHearingStartDate().toString())),
+                withJsonPath("$.hearings[0].endDate", is(hearingsData2.getHearingData().get(0).getHearingEndDate().toString())),
+                withJsonPath("$.hearings[1].id", is(hearingsData1.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[1].jurisdictionType", is(hearingsData1.getHearingData().get(0).getJurisdictionType())),
+                withJsonPath("$.hearings[1].courtCentreId", is(hearingsData1.getHearingData().get(0).getCourtCentreId().toString())),
+                withJsonPath("$.hearings[1].startDate", is(hearingsData1.getHearingData().get(0).getHearingStartDate().toString())),
+                withJsonPath("$.hearings[1].endDate", is(hearingsData1.getHearingData().get(0).getHearingEndDate().toString())),
+                withJsonPath("$.hearings[2].id", is(hearingsData3.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[2].jurisdictionType", is(hearingsData3.getHearingData().get(0).getJurisdictionType())),
+                withJsonPath("$.hearings[2].courtCentreId", is(hearingsData3.getHearingData().get(0).getCourtCentreId().toString())),
+                withJsonPath("$.hearings[2].startDate", is(hearingsData3.getHearingData().get(0).getHearingStartDate().toString())),
+                withJsonPath("$.hearings[2].endDate", is(hearingsData3.getHearingData().get(0).getHearingEndDate().toString())),
+                withJsonPath("$.hearings[3].id", is(updatedHearingData.getHearingId().toString())),
+                withJsonPath("$.hearings[3].jurisdictionType", is(updatedHearingData.getJurisdictionType())),
+                withJsonPath("$.hearings[3].courtCentreId", is(updatedHearingData.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[3].startDate", is(updatedHearingData.getStartDate())),
+                withJsonPath("$.hearings[3].endDate", is(updatedHearingData.getEndDate())),
+                withJsonPath("$.hearings[4].id", is(firstUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
+                withJsonPath("$.hearings[4].jurisdictionType", is(firstUpdatedHearingDataWithWeekCommencingDate.getJurisdictionType())),
+                withJsonPath("$.hearings[4].courtCentreId", is(firstUpdatedHearingDataWithWeekCommencingDate.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[4].weekCommencingStartDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
+                withJsonPath("$.hearings[4].weekCommencingEndDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
+                withJsonPath("$.hearings[5].id", is(secondUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
+                withJsonPath("$.hearings[5].jurisdictionType", is(secondUpdatedHearingDataWithWeekCommencingDate.getJurisdictionType())),
+                withJsonPath("$.hearings[5].courtCentreId", is(secondUpdatedHearingDataWithWeekCommencingDate.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[5].weekCommencingStartDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
+                withJsonPath("$.hearings[5].weekCommencingEndDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
+        };
+
+        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, matchers);
+    }
+
+    @Test
+    public void shouldListHearingsWithEndDateOrWeekCommencingDatesWithinWeekCommencingDateRangeByRelevance() {
+        final String weekCommencingSearchStartDate = now().plusDays(4).toString();
+        final String weekCommencingSearchEndDate = now().plusDays(11).toString();
+
+        final HearingsData hearingsData1 = hearingsData.get(2);
+
+        final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
+
+        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(2)),
+                withJsonPath("$.hearings[0].id", is(hearingsData1.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[0].jurisdictionType", is(hearingsData1.getHearingData().get(0).getJurisdictionType())),
+                withJsonPath("$.hearings[0].courtCentreId", is(hearingsData1.getHearingData().get(0).getCourtCentreId().toString())),
+                withJsonPath("$.hearings[0].startDate", is(hearingsData1.getHearingData().get(0).getHearingStartDate().toString())),
+                withJsonPath("$.hearings[0].endDate", is(hearingsData1.getHearingData().get(0).getHearingEndDate().toString())),
+                withJsonPath("$.hearings[1].id", is(firstUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
+                withJsonPath("$.hearings[1].jurisdictionType", is(firstUpdatedHearingDataWithWeekCommencingDate.getJurisdictionType())),
+                withJsonPath("$.hearings[1].courtCentreId", is(firstUpdatedHearingDataWithWeekCommencingDate.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[1].weekCommencingStartDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
+                withJsonPath("$.hearings[1].weekCommencingEndDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
+        };
+
+        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, matchers);
+    }
+
+    @Test
+    public void shouldListHearingsWithStartDateOrWeekCommencingDatesWithinWeekCommencingDateRangeByRelevance() {
+        final String weekCommencingSearchStartDate = now().plusDays(14).toString();
+        final String weekCommencingSearchEndDate = now().plusDays(22).toString();
+
+        final UpdatedHearingData updatedHearingData = updatedHearingDataList.get(0);
+
+        final UpdatedHearingData UpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(2);
+
+        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(2)),
+                withJsonPath("$.hearings[0].id", is(updatedHearingData.getHearingId().toString())),
+                withJsonPath("$.hearings[0].jurisdictionType", is(updatedHearingData.getJurisdictionType())),
+                withJsonPath("$.hearings[0].courtCentreId", is(updatedHearingData.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[0].startDate", is(updatedHearingData.getStartDate())),
+                withJsonPath("$.hearings[0].endDate", is(updatedHearingData.getEndDate())),
+                withJsonPath("$.hearings[1].id", is(UpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
+                withJsonPath("$.hearings[1].jurisdictionType", is(UpdatedHearingDataWithWeekCommencingDate.getJurisdictionType())),
+                withJsonPath("$.hearings[1].courtCentreId", is(UpdatedHearingDataWithWeekCommencingDate.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[1].weekCommencingStartDate", is(UpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
+                withJsonPath("$.hearings[1].weekCommencingEndDate", is(UpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
+        };
+
+        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, matchers);
+    }
+
+    @Test
+    public void shouldReturnEmptyListWhenNoHearingWithingWeekCommencingDateRangeByRelevance() {
+        final String weekCommencingSearchStartDate = now().minusDays(14).toString();
+        final String weekCommencingSearchEndDate = now().minusDays(7).toString();
+
+        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(0)),
+                withJsonPath("$.hearings", empty()),
+        };
+
+        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, matchers);
+    }
+
+    private static void cleanListingTables() {
+        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
+        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
+        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
+        viewStoreCleaner.cleanViewStoreTables();
+    }
+}

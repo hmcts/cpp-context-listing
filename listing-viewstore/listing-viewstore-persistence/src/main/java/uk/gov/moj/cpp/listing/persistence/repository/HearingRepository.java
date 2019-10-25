@@ -145,8 +145,10 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "and ( " +
             "   ( cast(properties ->> 'weekCommencingStartDate' as date) >= cast(?6 as date) and cast(properties ->> 'weekCommencingStartDate' as date) <= cast(?7 as date) ) or " +
             "   ( cast(properties ->> 'weekCommencingEndDate' as date) >= cast(?6 as date) and cast(properties ->> 'weekCommencingEndDate' as date) <= cast(?7 as date) ) or " +
-            "   ( cast(properties ->> 'startDate' as date) >= cast(?6 as date) and cast(properties ->> 'endDate' as date) <= cast(?7 as date) ) ) " +
+            "   ( cast(properties ->> 'startDate' as date) >= cast(?6 as date) and cast(properties ->> 'startDate' as date) <= cast(?7 as date) )  or " +
+            "   ( cast(properties ->> 'endDate' as date) >= cast(?6 as date) and cast(properties ->> 'endDate' as date) <= cast(?7 as date) ) ) " +
             "order by cast(properties ->> 'startDate' as date)," +
+            "cast(properties ->> 'endDate' as date)," +
             "cast(properties ->> 'weekCommencingStartDate' as date)," +
             "cast(properties ->> 'weekCommencingEndDate' as date )"
             , isNative = true)
