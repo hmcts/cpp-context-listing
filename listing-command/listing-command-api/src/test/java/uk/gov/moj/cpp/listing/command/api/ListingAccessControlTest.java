@@ -31,7 +31,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     public void shouldAllowAuthorisedUserToListCourtHearing() {
         final Action action = createActionFor(ACTION_LIST_COURT_HEARING);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
-                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS ))
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS, SYSTEM_USERS ))
                 .willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);

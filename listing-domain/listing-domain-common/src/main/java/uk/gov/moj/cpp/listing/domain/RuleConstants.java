@@ -7,6 +7,7 @@ public class RuleConstants {
     public static final String COURT_CLERKS = "Court Clerks";
     public static final String LEGAL_ADVISERS = "Legal Advisers";
     public static final String COURT_ADMINISTRATORS = "Court Administrators";
+    public static final String SYSTEM_USERS = "System Users";
 
     private RuleConstants () {
     }
