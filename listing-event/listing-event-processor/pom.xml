@@ -14,6 +14,7 @@
         <cpp.service-component>EVENT_PROCESSOR</cpp.service-component>
     </properties>
 
+
     <dependencies>
         <dependency>
             <groupId>uk.gov.moj.cpp.common</groupId>
@@ -55,7 +56,21 @@
             <artifactId>sardine</artifactId>
             <version>${sardine.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>uk.gov.justice.framework-generators</groupId>
+            <artifactId>rest-adapter-file-service</artifactId>
+            <version>${framework-generators.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>uk.gov.justice.framework-generators</groupId>
+                    <artifactId>rest-adapter-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>file-service-persistence</artifactId>
+        </dependency>
         <!-- Test Dependencies -->
         <dependency>
             <groupId>uk.gov.justice.services</groupId>

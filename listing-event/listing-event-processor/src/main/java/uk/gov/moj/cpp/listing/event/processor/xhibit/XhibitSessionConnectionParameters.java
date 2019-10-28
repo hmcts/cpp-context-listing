@@ -7,15 +7,15 @@ import javax.inject.Inject;
 public class XhibitSessionConnectionParameters {
 
     @Inject
-    @Value(key = "xhibit.outbound.url")
+    @Value(key = "xhibit.outbound.url", defaultValue = "http://localhost")
     private String outboundUrl;
 
     @Inject
-    @Value(key = "xhibit.user")
+    @Value(key = "xhibit.user", defaultValue = "user")
     private String user;
 
     @Inject
-    @Value(key = "xhibit.password")
+    @Value(key = "xhibit.password", defaultValue = "password")
     private String password;
 
     public String getOutboundUrl() {
