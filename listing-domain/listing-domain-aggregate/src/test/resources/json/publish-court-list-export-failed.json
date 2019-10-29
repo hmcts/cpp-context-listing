@@ -2,7 +2,8 @@
   "_metadata": {
     "name": "listing.event.publish-court-list-export-failed"
   },
-  "documentId": "684416a9-ef20-4500-a9c1-f64b87b424a0",
+  "courtHouseId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "documentId": "1c5a1d30-0414-11e7-93ae-92361f002671",
   "documentName":"documentName",
   "errorMessage": "Can't download file",
   "failedTime": "2016-07-11T12:55:28.180Z"

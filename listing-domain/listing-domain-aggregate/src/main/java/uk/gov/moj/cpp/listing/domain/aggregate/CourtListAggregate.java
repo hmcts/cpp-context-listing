@@ -21,32 +21,39 @@ import java.util.stream.Stream;
 
 public class CourtListAggregate implements Aggregate {
 
-    private UUID documentId;
+    private UUID courtHouseId;
 
 
-    public Stream<Object> recordCourtListRequested(final UUID documentId) {
+    public Stream<Object> recordCourtListRequested(final UUID courtHouseId) {
         return apply(of(publishCourtListRequested()
-                .withDocumentId(documentId).build()));
+                .withCourtHouseId(courtHouseId).build()));
     }
 
-    public Stream<Object> recordCourtListProduced(final String documentName) {
+    public Stream<Object> recordCourtListProduced(final UUID courtHouseId,
+                                                  final UUID documentId,
+                                                  final String documentName) {
         return apply(of(publishCourtListProduced()
+                .withCourtHouseId(courtHouseId)
                 .withDocumentId(documentId)
                 .withDocumentName(documentName).build()));
     }
 
-    public Stream<Object> recordCourtListExportSuccessful(final String documentName,
+    public Stream<Object> recordCourtListExportSuccessful(final UUID courtHouseId, final UUID documentId,
+                                                          final String documentName,
                                                           final ZonedDateTime publishedTime) {
         return apply(of(publishCourtListExportSuccessful()
+                .withCourtHouseId(courtHouseId)
                 .withDocumentId(documentId)
                 .withDocumentName(documentName)
                 .withPublishedTime(publishedTime).build()));
     }
 
-    public Stream<Object> recordCourtListExportFailed(final ZonedDateTime publishFailedTime,
+    public Stream<Object> recordCourtListExportFailed(final UUID courtHouseId, final UUID documentId,
+                                                      final ZonedDateTime publishFailedTime,
                                                       final String documentName,
                                                       final String errorMessage) {
         return apply(of(publishCourtListExportFailed()
+                .withCourtHouseId(courtHouseId)
                 .withDocumentId(documentId)
                 .withDocumentName(documentName)
                 .withErrorMessage(errorMessage)
@@ -66,15 +73,15 @@ public class CourtListAggregate implements Aggregate {
 
 
     private void recordCourtListRequested(final PublishCourtListRequested publishCourtListRequested) {
-        this.documentId = publishCourtListRequested.getDocumentId();
+        this.courtHouseId = publishCourtListRequested.getCourtHouseId();
     }
 
     private void recordCourtListProduced(final PublishCourtListProduced publishCourtListProduced) {
-        this.documentId = publishCourtListProduced.getDocumentId();
+        this.courtHouseId = publishCourtListProduced.getCourtHouseId();
     }
 
-    public UUID getDocumentId() {
-        return documentId;
+    public UUID getCourtHouseId() {
+        return courtHouseId;
     }
 
 }

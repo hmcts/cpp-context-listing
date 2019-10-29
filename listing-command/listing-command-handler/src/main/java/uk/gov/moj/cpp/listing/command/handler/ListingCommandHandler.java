@@ -580,7 +580,10 @@ public class ListingCommandHandler {
         final UUID documentId = recordCourtListExportSuccessful.getDocumentId();
         final EventStream eventStream = eventSource.getStreamById(documentId);
         final CourtListAggregate aggregate = aggregateService.get(eventStream, CourtListAggregate.class);
-        final Stream<Object> events = aggregate.recordCourtListExportSuccessful(recordCourtListExportSuccessful.getDocumentName(),
+        final Stream<Object> events = aggregate.recordCourtListExportSuccessful(
+                recordCourtListExportSuccessful.getCourtHouseId(),
+                recordCourtListExportSuccessful.getDocumentId(),
+                recordCourtListExportSuccessful.getDocumentName(),
                 recordCourtListExportSuccessful.getPublishedTime());
         appendEventsToStream(commandEnvelope, eventStream, events);
     }
@@ -591,7 +594,11 @@ public class ListingCommandHandler {
         final UUID documentId = recordCourtListExportFailed.getDocumentId();
         final EventStream eventStream = eventSource.getStreamById(documentId);
         final CourtListAggregate aggregate = aggregateService.get(eventStream, CourtListAggregate.class);
-        final Stream<Object> events = aggregate.recordCourtListExportFailed(recordCourtListExportFailed.getFailedTime(), recordCourtListExportFailed.getDocumentName(),
+        final Stream<Object> events = aggregate.recordCourtListExportFailed(
+                recordCourtListExportFailed.getCourtHouseId(),
+                recordCourtListExportFailed.getDocumentId(),
+                recordCourtListExportFailed.getFailedTime(),
+                recordCourtListExportFailed.getDocumentName(),
                 recordCourtListExportFailed.getErrorMessage());
         appendEventsToStream(commandEnvelope, eventStream, events);
     }

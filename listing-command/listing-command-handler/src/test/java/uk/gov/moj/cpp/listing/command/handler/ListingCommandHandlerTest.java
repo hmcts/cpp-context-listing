@@ -25,7 +25,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
-
 import static uk.gov.justice.listing.event.PublishCourtListExportFailed.publishCourtListExportFailed;
 import static uk.gov.justice.listing.event.PublishCourtListExportSuccessful.publishCourtListExportSuccessful;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
@@ -102,7 +101,6 @@ import uk.gov.moj.cpp.listing.command.utils.CourtsDeletedOffenceToDomainCaseSimp
 import uk.gov.moj.cpp.listing.command.utils.CourtsOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsUpdatedOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
-
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
@@ -151,9 +149,9 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Before;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -1119,7 +1117,7 @@ public class ListingCommandHandlerTest {
         final String documentName = randomAlphanumeric(30).toString();
         when(eventSource.getStreamById(documentId)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, CourtListAggregate.class)).thenReturn(courtListAggregate);
-        when(courtListAggregate.recordCourtListExportFailed(any(ZonedDateTime.class), eq(documentName), eq(errorMessage))).thenReturn(Stream.of(publishCourtListExportFailed().build()));
+        when(courtListAggregate.recordCourtListExportFailed(any(UUID.class), any(UUID.class), any(ZonedDateTime.class), eq(documentName), eq(errorMessage))).thenReturn(Stream.of(publishCourtListExportFailed().build()));
 
         final String jsonString = givenPayload("/test-data/listing.command.mark-as-export-failed.json").toString()
                 .replace("DOCUMENT_ID", documentId.toString())
@@ -1130,7 +1128,7 @@ public class ListingCommandHandlerTest {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             final JsonEnvelope commandEnvelope = createEnvelope("listing.command.mark-export-as-failed", jsonReader.readObject());
             listingCommandHandler.markAsExportFailed(commandEnvelope);
-            verify(courtListAggregate).recordCourtListExportFailed(any(ZonedDateTime.class), eq(documentName), eq(errorMessage));
+            verify(courtListAggregate).recordCourtListExportFailed(any(UUID.class), any(UUID.class), any(ZonedDateTime.class), eq(documentName), eq(errorMessage));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -1143,7 +1141,7 @@ public class ListingCommandHandlerTest {
         final String documentName = randomAlphanumeric(30).toString();
         when(eventSource.getStreamById(documentId)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, CourtListAggregate.class)).thenReturn(courtListAggregate);
-        when(courtListAggregate.recordCourtListExportSuccessful(any(String.class), any(ZonedDateTime.class)))
+        when(courtListAggregate.recordCourtListExportSuccessful(any(UUID.class), any(UUID.class), any(String.class), any(ZonedDateTime.class)))
                 .thenReturn(Stream.of(publishCourtListExportSuccessful().build()));
 
         final String jsonString = givenPayload("/test-data/listing.command.mark-as-export-successful.json").toString()
@@ -1154,7 +1152,7 @@ public class ListingCommandHandlerTest {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             final JsonEnvelope commandEnvelope = createEnvelope("listing.command.mark-as-export-successful", jsonReader.readObject());
             listingCommandHandler.markAsExportSuccessful(commandEnvelope);
-            verify(courtListAggregate).recordCourtListExportSuccessful(eq(documentName), any(ZonedDateTime.class));
+            verify(courtListAggregate).recordCourtListExportSuccessful(any(UUID.class), any(UUID.class), eq(documentName), any(ZonedDateTime.class));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
