@@ -226,7 +226,11 @@
                       "fax": "3425678"
                     }
                   },
-                  "bailStatus": "IN_CUSTODY",
+                  "bailStatus": {
+                    "id":"34443c87-fa6f-34c0-897f-0cce45773df5",
+                    "code":"P",
+                    "description":"Conditional Bail with Pre-Release conditions"
+                  },
                   "custodyTimeLimit": "2018-01-01",
                   "perceivedBirthYear": 2015,
                   "observedEthnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c",

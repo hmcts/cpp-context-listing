@@ -21,7 +21,11 @@
         "postcode": "W1T 1JY"
       },
       "dateOfBirth": "1995-03-23",
-      "bailStatus": "bailed",
+      "bailStatus": {
+        "id":"eaf18bf8-9569-3656-a4ab-64299f9bd513",
+        "code":"U",
+        "description":"Unconditional Bail"
+      },
       "custodyTimeLimitDate": "2018-01-30",
       "defenceOrganisation": "Solicitor XYZ",
       "interpreter": {

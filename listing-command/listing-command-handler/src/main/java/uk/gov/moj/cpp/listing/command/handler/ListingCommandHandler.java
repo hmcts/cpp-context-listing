@@ -49,6 +49,7 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CommandSimpleOffenceToDomainOffence;
@@ -93,7 +94,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ServiceComponent(COMMAND_HANDLER)
-@SuppressWarnings({"squid:S1188"})
+@SuppressWarnings({"squid:S1188", "squid:CallToDeprecatedMethod"})
 public class ListingCommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandHandler.class);
@@ -137,6 +138,9 @@ public class ListingCommandHandler {
     @Inject
     private CourtApplicationToDomainConverter courtApplicationToDomainConverter;
 
+    @Inject
+    private HearingTypeFactory hearingTypeFactory;
+
 
     @Handles("listing.command.list-court-hearing-enriched")
     public void listCourtHearing(final JsonEnvelope command) throws EventStreamException {
@@ -149,6 +153,7 @@ public class ListingCommandHandler {
         final ListCourtHearing listCourtHearing = listCourtHearingEnriched.getListCourtHearing();
         final Map<UUID, CourtCentreDetails> courtCentres = listCourtHearingEnriched.getCourtCentresDetails().stream()
                 .collect(Collectors.toMap(CourtCentreDetails::getId, cc -> cc));
+        final Map<String, Integer> hearingTypesIdDurationMap = hearingTypeFactory.getHearingTypesIdDurationMap(command);
         LOGGER.info("'listing.command.list-court-hearing' courtCentres: {}", courtCentres);
 
 
@@ -178,7 +183,8 @@ public class ListingCommandHandler {
                         domainHearing.getEndDate().orElse(null),
                         courtCentreDefaults,
                         domainHearing.getCourtApplications(),
-                        domainHearing.getCourtApplicationPartyListingNeeds()
+                        domainHearing.getCourtApplicationPartyListingNeeds(),
+                        hearingTypesIdDurationMap.get(domainHearing.getType().getId().toString())
                 );
 
                 final Stream<Object> allocationEvents = hearing.applyAllocationRules();
@@ -209,12 +215,14 @@ public class ListingCommandHandler {
         final CourtCentreDetails courtCentre = updateHearingForListingEnriched.getCourtCentreDetails();
 
         final LocalTime defaultStartTime = courtCentre.getDefaultStartTime();
-        final Integer defaultDuration = courtCentre.getDefaultDuration();
+        final Map<String, Integer> hearingTypesIdDurationMap = hearingTypeFactory.getHearingTypesIdDurationMap(command);
+
 
         // Mandatory fields that always require a value
         final UUID hearingId = updateHearingForListing.getHearingId();
         final UUID courtCentreId = updateHearingForListing.getCourtCentreId();
         final Type type = convertTypeToDomain(updateHearingForListing.getType());
+        final Integer defaultDuration = hearingTypesIdDurationMap.get(type.getId().toString());
         final JurisdictionType jurisdictionType = JurisdictionType.valueFor(updateHearingForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new);
         final HearingLanguage hearingLanguage = valueFor(updateHearingForListing.getHearingLanguage().toString()).orElseThrow(IllegalArgumentException::new);
         final LocalDate startDate = updateHearingForListing.getStartDate();

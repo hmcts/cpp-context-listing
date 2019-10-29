@@ -210,7 +210,11 @@
                 "ethnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c"
               }
             },
-            "bailStatus": "IN_CUSTODY",
+            "bailStatus": {
+                "id":"12e69486-4d01-3403-a50a-7419ca040635",
+                "code":"C",
+                "description":"Custody or remanded into custody"
+             },
             "custodyTimeLimit": "2018-01-01",
             "perceivedBirthYear": 2015,
             "observedEthnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c",

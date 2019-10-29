@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
+import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -11,7 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
-import uk.gov.justice.listing.events.BailStatus;
+import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.ListedCase;
@@ -23,7 +24,6 @@ import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -39,7 +39,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -52,7 +51,7 @@ public class DefendantEventListenerTest {
     private static final UUID HEARING_ID = randomUUID();
     private static final UUID CASE_ID = randomUUID();
     private static final UUID DEFENDANT_ID = randomUUID();
-    private static final BailStatus EXPECTED_BAIL_STATUS = BailStatus.CONDITIONAL;
+    private static final BailStatus EXPECTED_BAIL_STATUS = new BailStatus.Builder().withCode("B").withId(fromString("dd4073b6-22be-3875-9d63-5da286bb3ece")).withDescription("Conditional Bail").build();
 
     @Spy
     private ObjectMapper mapper =  new ObjectMapperProducer().objectMapper();
@@ -68,9 +67,6 @@ public class DefendantEventListenerTest {
 
     @Mock
     Hearing hearing;
-
-    @Captor
-    private ArgumentCaptor<JsonEnvelope> objectNodeCaptur;
 
 
     @Mock
@@ -103,14 +99,18 @@ public class DefendantEventListenerTest {
         given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
 
 
-        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
-                ArgumentCaptor.forClass(ArrayNode.class);
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
 
         defendantEventListener.defendantDetailsUpdated(defendantDetailsUpdatedEnvelope);
 
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
-        String actualBailStatus = objectNodeCaptor.getValue().get(0).get("defendants").get(0).get("bailStatus").toString();
-        assertThat(actualBailStatus, equalTo("\"" + EXPECTED_BAIL_STATUS.toString() + "\""));
+        JsonNode actualBailStatus = objectNodeCaptor.getValue().get(0).get("defendants").get(0).get("bailStatus");
+        String actualBailStatusId = actualBailStatus.get("id").toString();
+        String actualBailStatusCode = actualBailStatus.get("code").toString();
+        String actualBailStatusDescription = actualBailStatus.get("description").toString();
+        assertThat(actualBailStatusId, equalTo("\"dd4073b6-22be-3875-9d63-5da286bb3ece\""));
+        assertThat(actualBailStatusCode, equalTo("\"B\""));
+        assertThat(actualBailStatusDescription, equalTo("\"Conditional Bail\""));
         verify(hearingRepository).save(hearing);
     }
 
@@ -157,7 +157,7 @@ public class DefendantEventListenerTest {
                 .withDefendants(singletonList(Defendant.defendant()
                         .withSpecificRequirements(Optional.empty())
                         .withId(DEFENDANT_ID)
-                        .withBailStatus(of(BailStatus.IN_CUSTODY))
+                        .withBailStatus(of(new BailStatus.Builder().withCode("C").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).withDescription("Custody or remanded into custody").build()))
                         .withOffences(singletonList(Offence.offence()
                                 .withId(randomUUID())
                                 .withOffenceCode(STRING.next())

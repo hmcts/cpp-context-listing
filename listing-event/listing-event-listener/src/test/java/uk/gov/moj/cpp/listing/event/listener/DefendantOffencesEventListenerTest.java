@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.listener;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.BDDMockito.given;
@@ -10,7 +11,7 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
-import uk.gov.justice.listing.events.BailStatus;
+import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.ListedCase;
@@ -212,7 +213,7 @@ public class DefendantOffencesEventListenerTest {
                         .withFirstName(of("FirstName"))
                         .withDatesToAvoid(of("Dates to avoid"))
                         .withId(DEFENDANT_ID)
-                        .withBailStatus(of(BailStatus.IN_CUSTODY))
+                        .withBailStatus(of(new BailStatus.Builder().withCode("C").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).withDescription("Custody or remanded into custody").build()))
                         .withOffences(singletonList(Offence.offence()
                                 .withId(OFFENCE_ID)
                                 .withOffenceCode(STRING.next())

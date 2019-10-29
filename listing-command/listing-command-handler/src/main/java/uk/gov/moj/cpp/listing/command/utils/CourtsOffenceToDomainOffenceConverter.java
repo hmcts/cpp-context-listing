@@ -3,14 +3,16 @@ package uk.gov.moj.cpp.listing.command.utils;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
+import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
 import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-import javax.inject.Inject;
 
+@SuppressWarnings({"squid:S3655"})
 public abstract class CourtsOffenceToDomainOffenceConverter {
 
     protected CaseOffences createOffences(UUID caseId, UUID defendantId, List<uk.gov.justice.core.courts.Offence> offencesToBeConverted) {
@@ -41,6 +43,14 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
                 .withWelshLegislation(courtOffence.getOffenceLegislationWelsh())
                 .build();
 
+        Optional<CustodyTimeLimit> custodyTimeLimit = Optional.empty();
+        if (courtOffence.getCustodyTimeLimit().isPresent()) {
+            custodyTimeLimit = Optional.ofNullable(CustodyTimeLimit.custodyTimeLimit()
+                    .withTimeLimit(courtOffence.getCustodyTimeLimit().get().getTimeLimit())
+                    .withDaysSpent(courtOffence.getCustodyTimeLimit().get().getDaysSpent().orElse(null))
+                    .build());
+        }
+
         return uk.gov.moj.cpp.listing.domain.Offence.offence()
                 .withId(courtOffence.getId())
                 .withOffenceCode(courtOffence.getOffenceCode())
@@ -48,6 +58,7 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
                 .withEndDate(courtOffence.getEndDate())
                 .withStatementOfOffence(statement)
                 .withOffenceWording(courtOffence.getWording())
+                .withCustodyTimeLimit(custodyTimeLimit)
                 .build();
     }
 

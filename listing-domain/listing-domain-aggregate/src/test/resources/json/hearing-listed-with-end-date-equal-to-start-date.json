@@ -6,11 +6,11 @@
     "allocated": false,
     "hearingDays": [
       {
-        "durationMinutes": 30,
-        "endTime": "2018-06-01T10:00:00.000Z",
+        "durationMinutes": 15,
+        "endTime": "2018-06-01T10:45:00.000Z",
         "sequence": 0,
         "hearingDate":"2018-06-01",
-        "startTime": "2018-06-01T09:30:00.000Z"
+        "startTime": "2018-06-01T10:30:00.000Z"
       }
     ],
     "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
@@ -28,7 +28,11 @@
         },
         "defendants": [
           {
-            "bailStatus": "IN_CUSTODY",
+            "bailStatus": {
+              "id":"12e69486-4d01-3403-a50a-7419ca040635",
+              "code":"C",
+              "description":"Custody or remanded into custody"
+            },
             "custodyTimeLimit": "2018-01-30",
             "dateOfBirth": "1995-03-23",
             "datesToAvoid": "Hospital appointment 2018-11-07",

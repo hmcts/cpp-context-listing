@@ -1,14 +1,5 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.*;
-import org.mockito.runners.MockitoJUnitRunner;
-import uk.gov.justice.listing.events.*;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
@@ -18,13 +9,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 import uk.gov.justice.listing.events.ApplicantRespondent;
-import uk.gov.justice.listing.events.BailStatus;
 import uk.gov.justice.listing.events.CourtApplication;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
+import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -36,16 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
-import static java.util.UUID.randomUUID;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -64,9 +44,6 @@ public class CourtApplicationEventListenerTest {
 
     private static final String COURT_APPLICATIONS = "courtApplications";
     private static final UUID HEARING_ID = randomUUID();
-    private static final UUID COURT_CENTRE_ID = randomUUID();
-    private static final String JSON_PATH = "";
-
     private static final UUID ID = randomUUID();
     private static final UUID LINKED_CASE_ID = randomUUID();
     private static final UUID LINKED_APPLICATION_ID = randomUUID();
@@ -75,7 +52,6 @@ public class CourtApplicationEventListenerTest {
     private static final String LAST_NAME = STRING.next();
     private static final String UPDATED_FIRST_NAME = STRING.next();
     private static final String UPDATED_LAST_NAME = STRING.next();
-    private static final BailStatus EXPECTED_BAIL_STATUS = BailStatus.CONDITIONAL;
 
     @Spy
     private ObjectMapper mapper =  new ObjectMapperProducer().objectMapper();

@@ -14,7 +14,11 @@
       ],
       "id": "DEFENDANT_ID1",
       "personDefendant": {
-        "bailStatus": "IN_CUSTODY",
+        "bailStatus": {
+          "id":"34443c87-fa6f-34c0-897f-0cce45773df5",
+          "code":"P",
+          "description":"Conditional Bail with Pre-Release conditions"
+        },
         "custodyTimeLimit": "2017-10-05",
         "personDetails": {
           "dateOfBirth": "1980-07-15",
@@ -41,7 +45,11 @@
       ],
       "id": "DEFENDANT_ID2",
       "personDefendant": {
-        "bailStatus": "IN_CUSTODY",
+        "bailStatus": {
+          "id":"34443c87-fa6f-34c0-897f-0cce45773df5",
+          "code":"P",
+          "description":"Conditional Bail with Pre-Release conditions"
+        },
         "custodyTimeLimit": "2017-10-05",
         "personDetails": {
           "dateOfBirth": "1980-07-15",

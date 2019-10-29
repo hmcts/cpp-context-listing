@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
 
+import uk.gov.justice.core.courts.BailStatus;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -11,7 +13,7 @@ public class DefendantData {
     private final String firstName;
     private final String lastName;
     private final List<OffenceData> offences;
-    private final String bailStatus;
+    private final BailStatus bailStatus;
     private final LocalDate dateOfBirth;
     private final LocalDate custodyTimeLimit;
     private final String defenceOrganisation;
@@ -20,7 +22,7 @@ public class DefendantData {
 
     public DefendantData(final UUID defendantId, final String firstName,
                          final String lastName, final LocalDate dateOfBirth,
-                         final LocalDate custodyTimeLimit, final String bailStatus,
+                         final LocalDate custodyTimeLimit, final BailStatus bailStatus,
                          final String defenceOrganisation, final List<OffenceData> offences, LegalEntityDefendantData legalEntityDefendant, final Boolean restrictFromCourtList) {
         this.defendantId = defendantId;
         this.firstName = firstName;
@@ -52,7 +54,7 @@ public class DefendantData {
 
     public LocalDate getDateOfBirth() { return dateOfBirth; }
 
-    public String getBailStatus() { return bailStatus; }
+    public BailStatus getBailStatus() { return bailStatus; }
 
     public LocalDate getCustodyTimeLimit() {
         return custodyTimeLimit;

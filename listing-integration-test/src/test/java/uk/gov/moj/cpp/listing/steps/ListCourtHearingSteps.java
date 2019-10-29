@@ -24,11 +24,31 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INT
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 
-import uk.gov.justice.core.courts.*;
+import uk.gov.justice.core.courts.AssociatedPerson;
+import uk.gov.justice.core.courts.BailStatus;
+import uk.gov.justice.core.courts.CourtApplication;
+import uk.gov.justice.core.courts.CourtApplicationParty;
+import uk.gov.justice.core.courts.CourtApplicationRespondent;
+import uk.gov.justice.core.courts.CourtApplicationType;
+import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.justice.core.courts.Defendant;
+import uk.gov.justice.core.courts.DefendantListingNeeds;
+import uk.gov.justice.core.courts.Ethnicity;
+import uk.gov.justice.core.courts.HearingListingNeeds;
+import uk.gov.justice.core.courts.HearingType;
+import uk.gov.justice.core.courts.JudicialRole;
+import uk.gov.justice.core.courts.JudicialRoleType;
+import uk.gov.justice.core.courts.LegalEntityDefendant;
+import uk.gov.justice.core.courts.Offence;
+import uk.gov.justice.core.courts.Organisation;
+import uk.gov.justice.core.courts.Person;
+import uk.gov.justice.core.courts.PersonDefendant;
+import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.listing.courts.ApplicationJurisdictionType;
 import uk.gov.justice.listing.courts.ApplicationStatus;
-import uk.gov.justice.listing.courts.BailStatus;
 import uk.gov.justice.listing.courts.Gender;
 import uk.gov.justice.listing.courts.InitiationCode;
 import uk.gov.justice.listing.courts.JurisdictionType;
@@ -152,16 +172,15 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         hearingsData.getHearingData().stream()
                 .map(hearingData -> hearingData.getCourtCentreId())
                 .forEach(cci -> stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null)));
-
+        hearingsData.getHearingData().stream().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
 
         final String listCaseForHearingUrl = String.format("%s/%s", baseUri, format
                 (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
 
         ListCourtHearing listCourtHearingData = null;
-        if(isStandaloneApp) {
+        if (isStandaloneApp) {
             listCourtHearingData = getListCourtHearingDataStandaloneApplication(hearingsData);
-        }
-        else {
+        } else {
             listCourtHearingData = getListCourtHearingData(hearingsData);
         }
         final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
@@ -178,7 +197,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         hearingsData.getHearingData().stream()
                 .map(HearingData::getCourtCentreId)
                 .forEach(cci -> stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null)));
-
+        hearingsData.getHearingData().stream().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
         final String listCaseForHearingUrl = String.format("%s/%s", baseUri, format
                 (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
 
@@ -436,7 +455,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                         .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
                                                 .withId(d.getDefendantId())
                                                 .withPersonDefendant(of(PersonDefendant.personDefendant()
-                                                        .withBailStatus(BailStatus.valueFor(d.getBailStatus()))
+                                                        .withBailStatus(of(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build()))
                                                         .withPersonDetails(Person.person()
                                                                 .withTitle(of(Title.MISS))
                                                                 .withNationalityId(of(randomUUID()))

@@ -8,6 +8,7 @@ import static uk.gov.moj.cpp.listing.it.CourtListIT.STANDARD;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.DEFAULT_START_TIME;
 import static uk.gov.moj.cpp.listing.utils.DocumentGeneratorStub.stubDocumentCreate;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 
 import uk.gov.justice.services.test.utils.core.http.RequestParams;
@@ -30,6 +31,7 @@ public class CourtListSteps  extends AbstractIT{
         stubDocumentCreate(COURT_LIST_DATA);
         stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId()));
         stubGetReferenceDataJudiciaries(updatedHearingData.getJudiciary().get(0).getJudicialId());
+        stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
     }
     public void verifyCourtListRequestedAndIsCorrect(String listId) {
         Response response = getResponseData(listId);

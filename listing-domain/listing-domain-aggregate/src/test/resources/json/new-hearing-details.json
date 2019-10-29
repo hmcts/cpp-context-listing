@@ -22,7 +22,11 @@
           "firstName": "David",
           "lastName": "Lloyd",
           "dateOfBirth": "1995-03-23",
-          "bailStatus": "IN_CUSTODY",
+          "bailStatus": {
+            "id":"12e69486-4d01-3403-a50a-7419ca040635",
+            "code":"C",
+            "description":"Custody or remanded into custody"
+          },
           "custodyTimeLimit": "2018-01-30",
           "defenceOrganisation": "Flynch and Fleece Solicitors",
           "offences": [
@@ -85,5 +89,6 @@
     "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
     "defaultDuration": "30",
     "defaultStartTime" : "10:30"
-  }
+  },
+  "hearingTypeDuration": 30
 }

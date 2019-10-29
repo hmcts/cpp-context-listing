@@ -10,6 +10,7 @@ import uk.gov.moj.cpp.listing.domain.Defendant;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 
 import java.util.List;
+import java.util.Optional;
 
 public class UpdateDefendantsForHearingCommandCollectionConverter implements Converter<DefendantsToBeUpdated, List<UpdateDefendantsForHearingCommand> > {
 
@@ -35,7 +36,7 @@ public class UpdateDefendantsForHearingCommandCollectionConverter implements Con
                     .withDateOfBirth(defendant.getDateOfBirth())
                     .withCustodyTimeLimit(defendant.getCustodyTimeLimit())
                     .withBailStatus(defendant.getBailStatus().map(bailStatus ->
-                            (BailStatus.valueFor(bailStatus.toString())).get()))
+                            Optional.of(new BailStatus.Builder().withId(bailStatus.getId()).withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).build())).orElse(Optional.empty()))
                     .withOffences(convertOffences())
                     .withId(defendant.getId())
                     .build())

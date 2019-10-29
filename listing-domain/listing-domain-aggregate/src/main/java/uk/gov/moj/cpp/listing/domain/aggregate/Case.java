@@ -19,6 +19,8 @@ import uk.gov.moj.cpp.listing.domain.Defendant;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -113,19 +115,16 @@ public class Case implements Aggregate {
 
     public Stream<Object> ejectCase(List<UUID> hearingIdOfEjectCase, UUID caseId, Optional<String> removalReason){
 
+        final Set<UUID> mergedHearingIds = new HashSet<>(this.hearingIds);
         if(Objects.nonNull(hearingIdOfEjectCase)){
-            return apply(Stream.of(CaseEjected.caseEjected()
-                .withProsecutionCaseId(caseId)
-                .withHearingIds(hearingIdOfEjectCase)
-                .withRemovalReason(String.valueOf(removalReason))
-                .build()
-        ));
+            mergedHearingIds.addAll(hearingIdOfEjectCase);
         }
 
-        return hearingIds.isEmpty() ? Stream.empty() : apply(Stream.of(CaseEjected.caseEjected()
+        final String ejectReason = removalReason.isPresent()? removalReason.get() : null;
+        return mergedHearingIds.isEmpty() ? Stream.empty() : apply(Stream.of(CaseEjected.caseEjected()
                 .withProsecutionCaseId(caseId)
-                .withHearingIds(hearingIds)
-                .withRemovalReason(String.valueOf(removalReason))
+                .withHearingIds(new ArrayList<>(mergedHearingIds))
+                .withRemovalReason(ejectReason)
                 .build())
         );
     }

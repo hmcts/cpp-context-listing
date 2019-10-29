@@ -31,7 +31,11 @@
           }
         }
       },
-      "bailStatus": "IN_CUSTODY",
+      "bailStatus": {
+        "id":"34443c87-fa6f-34c0-897f-0cce45773df5",
+        "code":"P",
+        "description":"Conditional Bail with Pre-Release conditions"
+      },
       "custodyTimeLimitDate": "2018-01-30",
       "defenceOrganisation": "XYZ Solicitors",
       "interpreter": {

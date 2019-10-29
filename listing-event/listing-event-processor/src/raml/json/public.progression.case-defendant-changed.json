@@ -20,7 +20,11 @@
       "postCode":"W1T 1JY"
     }
   },
-  "bailStatus":"conditional",
+  "bailStatus": {
+    "id":"34443c87-fa6f-34c0-897f-0cce45773df5",
+    "code":"P",
+    "description":"Conditional Bail with Pre-Release conditions"
+  },
   "bailDocument": {
     "id": "17a4fbb0-9424-4c6f-ad68-3be8fb761384",
     "materialId": "uploaded-document-uuid"

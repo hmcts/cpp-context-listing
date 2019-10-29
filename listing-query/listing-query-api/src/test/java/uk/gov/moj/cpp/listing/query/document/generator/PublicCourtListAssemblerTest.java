@@ -64,7 +64,6 @@ public class PublicCourtListAssemblerTest {
     private static final String HEARING_TYPE = STRING.next();
     private static final String CASE_REFERENCE = STRING.next();
     private static final String CASE_REFERENCE2 = STRING.next();
-    private static final String ORGANISATION_NAME = "organisationName";
     private static final String FIRST_NAME = STRING.next();
     private static final String LAST_NAME = STRING.next();
     private static final String OFFENCE_TITLE = STRING.next();
@@ -106,28 +105,7 @@ public class PublicCourtListAssemblerTest {
 
         JsonObject publicListData = publicListService.assemble(buildRequestEnvelope(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, TRUE).get();
 
-        assertPublicCourtListPayload(publicListData, CHECK_JUDICIARY,false);
-
-        JsonObject hearingDate2Jo = publicListData.getJsonArray("hearingDates").getJsonObject(1);
-        assertThat(hearingDate2Jo.getString("hearingDate"), is(START_DATE2));
-        JsonObject courtRoomsJo = hearingDate2Jo.getJsonArray("courtRooms").getJsonObject(0);
-        assertThat(courtRoomsJo.getString("courtRoomName"), is(COURT_ROOM_NAME_1));
-        JsonObject timeslot = courtRoomsJo.getJsonArray("timeslots").getJsonObject(0);
-        JsonObject hearing = timeslot.getJsonArray("hearings").getJsonObject(0);
-        assertThat(hearing.getString("startTime"), is(START_TIME2.substring(11, 16)));
-        assertThat(hearing.getString("caseNumber"), is(CASE_REFERENCE2));
-    }
-
-    @Test
-    public void shouldBuildDataForPublicCourtListWithLegalEntityDefendant() throws Exception {
-        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
-                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
-        when(referenceDataService.getJudiciariesByIdList(eq(Arrays.asList(JUDICIARY_ID)), any(JsonEnvelope.class)))
-                .thenReturn(generateJudiciaryEnvelope());
-
-        JsonObject publicListData = publicListService.assemble(buildRequestEnvelope(false,true), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, Boolean.FALSE).get();
-
-        assertPublicCourtListPayload(publicListData, CHECK_JUDICIARY,true);
+        assertPublicCourtListPayload(publicListData, CHECK_JUDICIARY);
 
         JsonObject hearingDate2Jo = publicListData.getJsonArray("hearingDates").getJsonObject(1);
         assertThat(hearingDate2Jo.getString("hearingDate"), is(START_DATE2));
@@ -212,9 +190,9 @@ public class PublicCourtListAssemblerTest {
         when(referenceDataService.getJudiciariesByIdList(eq(Arrays.asList(JUDICIARY_ID)), any(JsonEnvelope.class)))
                 .thenReturn(generateJudiciaryEnvelope());
 
-        JsonObject publicListData = publicListService.assemble(buildRequestEnvelope(true, false), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, TRUE).get();
+        JsonObject publicListData = publicListService.assemble(buildRequestEnvelope(true), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, TRUE).get();
 
-        assertPublicCourtListPayload(publicListData, CHECK_JUDICIARY, false);
+        assertPublicCourtListPayload(publicListData, CHECK_JUDICIARY);
 
         JsonObject hearingDate2Jo = publicListData.getJsonArray("hearingDates").getJsonObject(0);
         assertThat(hearingDate2Jo.getString("hearingDate"), is(START_DATE1));
@@ -233,7 +211,7 @@ public class PublicCourtListAssemblerTest {
                 .thenReturn(generateCourtCentreDetails(NOT_WELSH));
 
         JsonObject publicListData = publicListService.assemble(buildRequestEnvelopeWithNoJudiciary(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, TRUE).get();
-        assertPublicCourtListPayload(publicListData, DONT_CHECK_JUDICIARY, false);
+        assertPublicCourtListPayload(publicListData, DONT_CHECK_JUDICIARY);
     }
 
     @Test
@@ -284,7 +262,7 @@ public class PublicCourtListAssemblerTest {
     }
 
 
-    private void assertPublicCourtListPayload(JsonObject publicListData, boolean checkJudiciary, final boolean checkLegalEntity) {
+    private void assertPublicCourtListPayload(JsonObject publicListData, boolean checkJudiciary) {
         assertThat(publicListData.getString("listType"), is(CourtListType.PUBLIC.toString().toLowerCase()));
         assertThat(publicListData.getString("courtCentreName"), is(COURT_CENTRE_NAME));
         assertThat(publicListData.getString("courtCentreAddress1"), is(ADDRESS_1 + SPACE + ADDRESS_2));
@@ -312,13 +290,8 @@ public class PublicCourtListAssemblerTest {
         assertThat(hearing.getString("caseNumber"), is(CASE_REFERENCE));
 
         JsonObject defendant = hearing.getJsonArray("defendants").getJsonObject(0);
-
-        if (checkLegalEntity) {
-            assertThat(defendant.getString("organisationName"), is(ORGANISATION_NAME));
-        } else {
-            assertThat(defendant.getString("firstName"), is(FIRST_NAME));
-            assertThat(defendant.getString("surname"), is(LAST_NAME));
-        }
+        assertThat(defendant.getString("firstName"), is(FIRST_NAME));
+        assertThat(defendant.getString("surname"), is(LAST_NAME));
 
         JsonObject offence = defendant.getJsonArray("offences").getJsonObject(0);
         assertThat(offence.getString("offenceTitle"), is(OFFENCE_TITLE));
@@ -398,20 +371,18 @@ public class PublicCourtListAssemblerTest {
 
     private JsonEnvelope buildRequestEnvelope() {
         //final JsonObject queryPayload = createRequestPayload();
-        return buildRequestEnvelope(false, false);
+        return buildRequestEnvelope(false);
     }
 
     private JsonEnvelope buildRequestEnvelopeRestrictedPublicList() {
         final JsonObject queryPayload = createRestrictedRequestPayload();
         return buildJsonEnvelope(queryPayload);
     }
-    private JsonEnvelope buildRequestEnvelope(final boolean withStandAloneApplication, final boolean withLegalEntityDefendant){
+    private JsonEnvelope buildRequestEnvelope(final boolean withStandAloneApplication){
         if(withStandAloneApplication) {
             return buildJsonEnvelope(createRequestPayloadWithStandAloneApplication());
-        } else if(withLegalEntityDefendant){
-            return buildJsonEnvelope(createRequestPayloadWithLegalEntityDefendant());
         }
-        else {
+        else{
             return buildJsonEnvelope(createRequestPayload());
         }
     }
@@ -435,12 +406,6 @@ public class PublicCourtListAssemblerTest {
         JsonObject queryPayload = convertToJsonObject(path);
 
         return buildJsonEnvelope(queryPayload);
-    }
-
-    private JsonObject createRequestPayloadWithLegalEntityDefendant() {
-        String payload = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList-LegalEntityDefendant.json")
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString());
-        return convertToJsonObject(payload);
     }
 
     private JsonObject createRequestPayloadWithStandAloneApplication() {

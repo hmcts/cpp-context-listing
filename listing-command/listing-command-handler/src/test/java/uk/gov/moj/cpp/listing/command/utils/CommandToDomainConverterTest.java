@@ -137,7 +137,9 @@ public class CommandToDomainConverterTest {
         uk.gov.justice.core.courts.Defendant commandDefendant2 = commandProsecutionCase.getDefendants().get(1);
 
         assertThat(actualDefendant.getId(), is(commandDefendant.getId()));
-        assertThat(actualDefendant.getBailStatus().get().toString(), is(commandDefendant.getPersonDefendant().get().getBailStatus().get().toString()));
+        assertThat(actualDefendant.getBailStatus().get().getCode(), is(commandDefendant.getPersonDefendant().get().getBailStatus().get().getCode()));
+        assertThat(actualDefendant.getBailStatus().get().getId(), is(commandDefendant.getPersonDefendant().get().getBailStatus().get().getId()));
+        assertThat(actualDefendant.getBailStatus().get().getDescription(), is(commandDefendant.getPersonDefendant().get().getBailStatus().get().getDescription()));
         assertThat(actualDefendant.getFirstName(), is(commandDefendant.getPersonDefendant().get().getPersonDetails().getFirstName()));
         assertThat(actualDefendant.getLastName().get(), is(commandDefendant.getPersonDefendant().get().getPersonDetails().getLastName()));
         assertThat(actualDefendant.getDefenceOrganisation().get(), is(commandDefendant.getDefenceOrganisation().get().getName()));

@@ -19,6 +19,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMa
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
+import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.HearingType;
@@ -29,7 +30,6 @@ import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.core.courts.Organisation;
 import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
-import uk.gov.justice.listing.courts.BailStatus;
 import uk.gov.justice.listing.courts.Gender;
 import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -130,7 +130,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendants.personDefendant.personDetails.dateOfBirth").toString(), is(jsRequest.getString("defendants.personDefendant.personDetails.dateOfBirth")));
         assertThat(jsonResponse.get("defendants.defenceOrganisation.name").toString(), is(jsRequest.getString("defendants.defenceOrganisation.name")));
         assertThat(jsonResponse.get("defendants.defenceOrganisation.id").toString(), is(jsRequest.getString("defendants.defenceOrganisation.id")));
-        assertThat(jsonResponse.get("defendants.personDefendant.bailStatus").toString(), is(jsRequest.getString("defendants.personDefendant.bailStatus")));
+        assertThat(jsonResponse.get("defendants.personDefendant.bailStatus"), equalTo(jsRequest.getJsonObject("defendants.personDefendant.bailStatus")));
         assertThat(jsonResponse.get("defendants.personDefendant.personDetails.firstName").toString(), is(jsRequest.getString("defendants.personDefendant.personDetails.firstName")));
         assertThat(jsonResponse.get("defendants.personDefendant.personDetails.lastName").toString(), is(jsRequest.getString("defendants.personDefendant.personDetails.lastName")));
         assertThat(jsonResponse.get("defendants.personDefendant.personDetails.specificRequirements").toString(), is(jsRequest.getString("defendants.personDefendant.personDetails.specificRequirements")));
@@ -147,7 +147,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendants[0].custodyTimeLimit").toString(), is(jsRequest.getString("defendants[0].personDefendant.custodyTimeLimit")));
         assertThat(jsonResponse.get("defendants[0].dateOfBirth").toString(), is(jsRequest.getString("defendants[0].personDefendant.personDetails.dateOfBirth")));
         assertThat(jsonResponse.get("defendants[0].defenceOrganisation").toString(), is(jsRequest.getString("defendants[0].defenceOrganisation.name")));
-        assertThat(jsonResponse.get("defendants[0].bailStatus").toString(), is(jsRequest.getString("defendants[0].personDefendant.bailStatus")));
+        assertThat(jsonResponse.get("defendants[0].bailStatus"), equalTo(jsRequest.getJsonObject("defendants[0].personDefendant.bailStatus")));
         assertThat(jsonResponse.get("defendants[0].firstName").toString(), is(jsRequest.getString("defendants[0].personDefendant.personDetails.firstName")));
         assertThat(jsonResponse.get("defendants[0].lastName").toString(), is(jsRequest.getString("defendants[0].personDefendant.personDetails.lastName")));
         assertThat(jsonResponse.get("defendants[0].specificRequirements").toString(), is(jsRequest.getString("defendants[0].personDefendant.personDetails.specificRequirements")));
@@ -165,7 +165,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendant.custodyTimeLimit"), is(jsRequest.getString("defendants[0].personDefendant.custodyTimeLimit")));
         assertThat(jsonResponse.get("defendant.dateOfBirth"), is(jsRequest.getString("defendants[0].personDefendant.personDetails.dateOfBirth")));
         assertThat(jsonResponse.get("defendant.defenceOrganisation"), is(jsRequest.getString("defendants[0].defenceOrganisation.name")));
-        assertThat(jsonResponse.get("defendant.bailStatus"), is(jsRequest.getString("defendants[0].personDefendant.bailStatus")));
+        assertThat(jsonResponse.get("defendant.bailStatus"), equalTo(jsRequest.getJsonObject("defendants[0].personDefendant.bailStatus")));
         assertThat(jsonResponse.get("defendant.firstName"), is(jsRequest.getString("defendants[0].personDefendant.personDetails.firstName")));
         assertThat(jsonResponse.get("defendant.specificRequirements"), is(jsRequest.getString("defendants[0].personDefendant.personDetails.specificRequirements")));
         assertThat(jsonResponse.get("defendant.organisationName"), is(jsRequest.getString("defendants[0].legalEntityDefendant.organisation.name")));
@@ -191,6 +191,8 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(hearingData.getId().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[2].lastName",
                                         equalTo(personDetails.getLastName())),
+//                                withJsonPath("$.hearings[0].listedCases[0].defendants[2].restrictFromCourtList",
+//                                        equalTo(defendant)),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[2].offences[0].offenceWording",
                                         equalTo(defendant.getOffences().get(0).getWording())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[2].offences[0].offenceCode",
@@ -220,7 +222,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
                                 .withGender(Gender.FEMALE)
                                 .build()
                         )
-                        .withBailStatus(BailStatus.valueFor("IN_CUSTODY"))
+                        .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
                         .withCustodyTimeLimit(of("2017-10-05"))
                         .build())
                 )

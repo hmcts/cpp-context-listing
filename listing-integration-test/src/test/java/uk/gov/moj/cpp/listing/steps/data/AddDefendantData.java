@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.steps.data;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 
-import uk.gov.justice.listing.courts.BailStatus;
+import uk.gov.justice.core.courts.BailStatus;
 
 import java.util.UUID;
 
@@ -25,7 +25,7 @@ public class AddDefendantData {
 
     public static AddDefendantData addDefendantData(DefendantData defendantData) {
         return AddDefendantData.Builder.AddDefendantData()
-                .withBailStatus(BailStatus.IN_CUSTODY)
+                .withBailStatus(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build())
                 .withCustodyTimeLimit("2018-10-10")
                 .withDateOfBirth("1975-01-01")
                 .withDefendantId(defendantData.getDefendantId())

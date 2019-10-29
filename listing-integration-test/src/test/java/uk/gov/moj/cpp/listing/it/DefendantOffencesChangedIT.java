@@ -5,11 +5,13 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantOffencesSteps;
+import uk.gov.moj.cpp.listing.steps.UpdateDefendantOffencesStepsWithCustodyTimeLimit;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceDataWithCustodyTimeLimit;
 
 import java.util.UUID;
 
@@ -60,6 +62,24 @@ public class DefendantOffencesChangedIT extends AbstractIT {
             steps.verifyEventOffenceUpdatedInActiveMQ();
             steps.verifyEventOffenceDeletedInActiveMQ();
             steps.verifyEventOffenceAddedInActiveMQ();
+        }
+    }
+    @Test
+    public void shouldUpdateDefendantOffencesWithCustodyTimeLimit() throws Exception {
+        HearingsData hearingsData = listCourtHearing();
+
+        DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
+        UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
+        HearingData hearingData = hearingsData.getHearingData().get(0);
+        OffenceData offenceData = defendantData.getOffences().get(0);
+        UUID offenceIdToBeDeleted = defendantData.getOffences().get(1).getOffenceId();
+        UpdatedOffenceDataWithCustodyTimeLimit updatedOffenceData = UpdatedOffenceDataWithCustodyTimeLimit.updateOffenceData(offenceData);
+
+        try (final UpdateDefendantOffencesStepsWithCustodyTimeLimit steps = new UpdateDefendantOffencesStepsWithCustodyTimeLimit(caseId, hearingData, updatedOffenceData, offenceIdToBeDeleted)) {
+            steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublished();
+            Thread.sleep(10000); // TODO Looks like this larger payload with both
+            steps.verifyPublicEventDefendantOffencesUpdatedInActiveMQ();
+
         }
     }
 

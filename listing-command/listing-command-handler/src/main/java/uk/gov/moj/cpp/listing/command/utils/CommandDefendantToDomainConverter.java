@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
-import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.commands.Defendant;
@@ -24,7 +23,7 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
     private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(Defendant d) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
-                .withBailStatus(d.getBailStatus().map(bailStatus -> (BailStatus.valueFor(bailStatus.toString())).get()))
+                .withBailStatus(d.getBailStatus().map(bailStatus -> new BailStatus.Builder().withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).withId(bailStatus.getId()).build()))
                 .withCustodyTimeLimit(d.getCustodyTimeLimit())
                 .withDateOfBirth(d.getDateOfBirth())
                 .withDatesToAvoid(d.getDatesToAvoid())

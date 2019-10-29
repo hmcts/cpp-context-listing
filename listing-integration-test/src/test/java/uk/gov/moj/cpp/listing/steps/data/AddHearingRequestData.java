@@ -1,17 +1,10 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
-import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
-
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingType;
-import uk.gov.justice.listing.courts.BailStatus;
 import uk.gov.justice.listing.courts.JurisdictionType;
 
-import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 
 public class AddHearingRequestData {

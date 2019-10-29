@@ -8,7 +8,7 @@ import java.util.List;
 import static java.util.Optional.of;
 
 import uk.gov.justice.core.courts.DefendantAlias;
-import uk.gov.justice.listing.courts.BailStatus;
+import uk.gov.justice.core.courts.BailStatus;
 
 import java.util.UUID;
 
@@ -32,7 +32,7 @@ public class UpdatedDefendantData {
 
     public static UpdatedDefendantData updatedDefendantData(DefendantData defendantData) {
         return UpdatedDefendantData.Builder.UpdatedDefendantData()
-                .withBailStatus(BailStatus.IN_CUSTODY)
+                .withBailStatus(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build())
                 .withCustodyTimeLimit("2018-10-10")
                 .withDateOfBirth("1975-01-01")
                 .withDefendantId(defendantData.getDefendantId())

@@ -41,7 +41,11 @@
                   "offenceTitle": "jhAhC7USsV",
                   "orderIndex": 428866712,
                   "startDate": "2018-12-06",
-                  "wording": "npu96ULgly"
+                  "wording": "npu96ULgly",
+                  "custodyTimeLimit": {
+                    "timeLimit": "2020-02-06",
+                    "daysSpent": 2
+                  }
                 }
               ],
               "personDefendant": {
