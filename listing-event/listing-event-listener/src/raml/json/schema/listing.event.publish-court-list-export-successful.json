@@ -3,6 +3,9 @@
   "id": "http://justice.gov.uk/listing/event/listing.event.publish-court-list-export-successful.json",
   "type": "object",
   "properties": {
+    "courtHouseId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
     "documentId": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
@@ -15,6 +18,7 @@
     }
   },
   "required": [
+    "courtHouseId",
     "documentId",
     "documentName",
     "publishedTime"

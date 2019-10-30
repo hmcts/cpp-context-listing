@@ -14,7 +14,7 @@ public class CourtList {
 
     @Id
     @Column(name = "courthouse_id", nullable = false)
-    private UUID courthouse_id;
+    private UUID courtHouseId;
 
     @Column(name = "status", nullable = false)
     private Status status;
@@ -37,14 +37,14 @@ public class CourtList {
     public CourtList() {
     }
 
-    public CourtList(final UUID courthouseId,
+    public CourtList(final UUID courtHouseId,
                      final Status status,
                      final UUID documentId,
-                     final DocumentType documentType,
                      final String documentName,
+                     final DocumentType documentType,
                      final ZonedDateTime dateActioned
     ) {
-        this.courthouse_id = courthouseId;
+        this.courtHouseId = courtHouseId;
         this.status = status;
         this.documentId = documentId;
         this.documentName = documentName;
@@ -52,12 +52,12 @@ public class CourtList {
         this.dateActioned = dateActioned;
     }
 
-    public UUID getCourthouse_id() {
-        return courthouse_id;
+    public UUID getCourtHouseId() {
+        return courtHouseId;
     }
 
-    public void setCourthouse_id(UUID courthouse_id) {
-        this.courthouse_id = courthouse_id;
+    public void setCourtHouseId(UUID courtHouseId) {
+        this.courtHouseId = courtHouseId;
     }
 
     public Status getStatus() {
