@@ -19,7 +19,7 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
 import com.jayway.restassured.response.Header;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +44,8 @@ public class AbstractIT {
         setLoggedInUser(validUserId);
     }
 
-    @Before
-    public void setUp() {
+    @BeforeClass
+    public static void setUp() {
         readConfig();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubEnableAllCapabilities();

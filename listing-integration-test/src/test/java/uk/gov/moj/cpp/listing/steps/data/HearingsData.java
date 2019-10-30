@@ -10,6 +10,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData hearingsDataForWeekCommencing(){
+        return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing());
+    }
+
     public static HearingsData hearingsDataWithLegalEntity(){
         return new HearingsData(HearingsDataFactory.hearingsDataWithLegalEntity());
     }

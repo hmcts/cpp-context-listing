@@ -83,38 +83,39 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTOR_HEARING_DAYS_CHANGED = "listing.events.hearing-days-changed-for-hearing";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
-    private static final String FIELD_START_DATE = "startDate";
-    private static final String FIELD_END_DATE = "endDate";
+    private static final String EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED = "listing.events.week-commencing-date-removed-for-hearing";
+    public static final String FIELD_START_DATE = "startDate";
+    public static final String FIELD_END_DATE = "endDate";
     private static final String FIELD_HEARINGS = "hearings";
-    private static final String FIELD_JUDICIARY = "judiciary";
-    private static final String FIELD_JUDICIAL_ID = "judicialId";
-    private static final String FIELD_JUDICIAL_ROLE_TYPE = "judicialRoleType";
-    private static final String FIELD_IS_BENCH_CHAIRMAN = "isBenchChairman";
-    private static final String FIELD_IS_DEPUTY = "isDeputy";
-    private static final String FIELD_COURT_ROOM_ID = "courtRoomId";
-    private static final String FIELD_COURT_CENTRE_ID = "courtCentreId";
-    private static final String FIELD_TYPE = "type";
-    private static final String FIELD_START_TIME = "startTime";
-    private static final String FIELD_NON_SITTING_DAYS = "nonSittingDays";
-    private static final String FIELD_NON_DEFAULT_DAYS = "nonDefaultDays";
-    private static final String FIELD_HEARING_LANGUAGE = "hearingLanguage";
-    private static final String FIELD_JURISDICTION_TYPE = "jurisdictionType";
-    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
+    public static final String FIELD_JUDICIARY = "judiciary";
+    public static final String FIELD_JUDICIAL_ID = "judicialId";
+    public static final String FIELD_JUDICIAL_ROLE_TYPE = "judicialRoleType";
+    public static final String FIELD_IS_BENCH_CHAIRMAN = "isBenchChairman";
+    public static final String FIELD_IS_DEPUTY = "isDeputy";
+    public static final String FIELD_COURT_ROOM_ID = "courtRoomId";
+    public static final String FIELD_COURT_CENTRE_ID = "courtCentreId";
+    public static final String FIELD_TYPE = "type";
+    public static final String FIELD_START_TIME = "startTime";
+    public static final String FIELD_NON_SITTING_DAYS = "nonSittingDays";
+    public static final String FIELD_NON_DEFAULT_DAYS = "nonDefaultDays";
+    public static final String FIELD_HEARING_LANGUAGE = "hearingLanguage";
+    public static final String FIELD_JURISDICTION_TYPE = "jurisdictionType";
+    public static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
-    private static final String FIELD_HEARING_TYPE_ID = "id";
-    private static final String FIELD_HEARING_TYPE_DESCRIPTION = "description";
-    private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
+    public static final String FIELD_HEARING_TYPE_ID = "id";
+    public static final String FIELD_HEARING_TYPE_DESCRIPTION = "description";
+    public static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     private static final int DEFAULT_DURATION_MINS = (6*60)+30;
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final ZoneId BST = ZoneId.of("Europe/London");
-    private static final String FIELD_JUDICIAL_ROLE_TYPE_ID = "judicialRoleTypeId";
-    private static final String FIELD_JUDICIARY_TYPE = "judiciaryType";
-    private static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING = "listing.command.update-hearing-for-listing";
+    public static final String FIELD_JUDICIAL_ROLE_TYPE_ID = "judicialRoleTypeId";
+    public static final String FIELD_JUDICIARY_TYPE = "judiciaryType";
+    public static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING = "listing.command.update-hearing-for-listing";
     private static final String LISTING_COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
-    private static final String MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING = "application/vnd.listing.command.update-hearing-for-listing+json";
+    public static final String MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING = "application/vnd.listing.command.update-hearing-for-listing+json";
     private static final String MEDIA_TYPE_CHANGE_JUDICIARY_FOR_HEARINGS = "application/vnd.listing.command.change-judiciary-for-hearings+json";
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHearingSteps.class);
-    private static final String FIELD_DURATION = "duration";
+    public static final String FIELD_DURATION = "duration";
     private final UpdatedHearingData updatedHearingData;
     private final HearingData hearingData;
     private MessageConsumer privateMessageConsumerAllocatedHearingUpdatedForListing;
@@ -140,6 +141,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private MessageConsumer privateMessageConsumerHearingDaysChanged;
     private MessageConsumer publicMessageConsumerHearingConfirmed;
     private MessageConsumer publicMessageConsumerHearingUpdated;
+    private MessageConsumer privateMessageConsumerWeekCommencingDatesRemoved;
+
     private String request;
 
 
@@ -299,6 +302,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerHearingDaysChanged = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_DAYS_CHANGED);
         publicMessageConsumerHearingConfirmed = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_HEARING_CONFIRMED);
         publicMessageConsumerHearingUpdated = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_HEARING_UPDATED);
+        privateMessageConsumerWeekCommencingDatesRemoved = privateEvents.createConsumer(EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED);
     }
 
     public void whenHearingIsUpdatedForListing() {
@@ -331,7 +335,6 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
-
     @Override
     public void close() {
         try {
@@ -885,6 +888,22 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                         )));
     }
 
+    public void verifyHearingUpdatedWhenWeekCommencingDateRemovedResultsInMQ() {
+        JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        verifyStartDateChangedEvent();
+        verifyEndDateChangedEvent();
+        verifyWeekCommencingDateRemovedEvent();
+    }
+
+    private void verifyWeekCommencingDateRemovedEvent() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerWeekCommencingDatesRemoved);
+        LOGGER.info("jsonResponse from privateMessageConsumerWeekCommencingDateRemoved: {}", jsonResponse.prettify());
+        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
+    }
+
+
 
 
     public void verifyHearingAllocatedWhenQueryingFromAPI() {
@@ -960,6 +979,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerHearingDaysChanged.close();
         publicMessageConsumerHearingConfirmed.close();
         publicMessageConsumerHearingUpdated.close();
+        privateMessageConsumerWeekCommencingDatesRemoved.close();
     }
 
 }

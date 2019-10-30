@@ -204,6 +204,9 @@ public class ListingCommandHandlerTest {
     private static final String SENTENCE_TYPE = "Sentence";
     private static final String INITIAL_START_DATE = "2018-05-30";
     private static final String END_DATE = "2018-06-03";
+    private static final LocalDate WEEK_COMMENCING_START_DATE = LocalDate.now();
+    private static final LocalDate WEEK_COMMENCING_END_DATE = LocalDate.now().plusDays(7l);
+    private static final Integer WEEK_COMMENCING_DURATION = 1;
     private static final String UPDATED_START_DATE = "2018-06-01";
     private static final String UPDATED_END_DATE = "2018-06-03";
     private static final String UPDATED_START_TIME = "2018-06-01T11:30:00Z";
@@ -459,12 +462,12 @@ public class ListingCommandHandlerTest {
     public void listingCommandHandlerShouldUpdateHearingForListing() throws Exception {
         final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope();
 
-        List<NonDefaultDay> nonDefaultDays = singletonList(NonDefaultDay.nonDefaultDay()
+        final List<NonDefaultDay> nonDefaultDays = singletonList(NonDefaultDay.nonDefaultDay()
                 .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneId.of("UTC")))
                 .withDuration(Optional.empty())
                 .build());
 
-        List<JudicialRole> judicialRoles = Arrays.asList(JudicialRole.judicialRole()
+        final List<JudicialRole> judicialRoles = Arrays.asList(JudicialRole.judicialRole()
                 .withIsBenchChairman(of(IS_BENCH_CHAIRMAN))
                 .withIsDeputy(of(IS_DEPUTY))
                 .withJudicialId(JUDICIAL_ID_1)
@@ -492,6 +495,8 @@ public class ListingCommandHandlerTest {
         when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), Integer.valueOf(DEFAULT_DURATION)));
+        when(hearing.removeWeekCommencingDates(HEARING_ID_1)).thenReturn(mock(Stream.class));
+
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
         verify(hearing).changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1);
@@ -507,6 +512,67 @@ public class ListingCommandHandlerTest {
         verify(hearing).assignJudiciary(judicialRoles, HEARING_ID_1);
         verify(hearing).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1);
+        verify(hearing).removeWeekCommencingDates(HEARING_ID_1);
+    }
+
+    @Test
+    public void listingCommandHandlerShouldUpdateHearingForListingForWeekCommencingDate() throws Exception {
+        final JsonEnvelope commandEnvelope = updateHearingForListingwithWeekCommencingCommandEnvelope();
+
+        final List<NonDefaultDay> nonDefaultDays = singletonList(NonDefaultDay.nonDefaultDay()
+                .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneId.of("UTC")))
+                .withDuration(Optional.empty())
+                .build());
+
+        final List<JudicialRole> judicialRoles = Arrays.asList(JudicialRole.judicialRole()
+                .withIsBenchChairman(of(IS_BENCH_CHAIRMAN))
+                .withIsDeputy(of(IS_DEPUTY))
+                .withJudicialId(JUDICIAL_ID_1)
+                .withJudicialRoleType(
+                        JudicialRoleType.judicialRoleType()
+                                .withJudiciaryType(JUDICIAL_ROLE_TYPE)
+                                .build())
+                .build());
+
+
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+
+        when(hearing.changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignNonDefaultDays(nonDefaultDays, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.changeEndDate(LocalDate.parse(END_DATE), HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.removeStartDate(HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.removeEndDate(HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignJudiciary(judicialRoles, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignHearingDays(null, null, NON_SITTING_DAYS, nonDefaultDays,
+                LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.changeWeekCommencingDate(WEEK_COMMENCING_START_DATE, WEEK_COMMENCING_END_DATE, WEEK_COMMENCING_DURATION,HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), Integer.valueOf(DEFAULT_DURATION)));
+
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+        verify(hearing).changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1);
+        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1);
+        verify(hearing).changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1);
+        verify(hearing).assignNonDefaultDays(nonDefaultDays, HEARING_ID_1);
+        verify(hearing).assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1);
+        verify(hearing).removeEndDate(HEARING_ID_1);
+        verify(hearing).removeStartDate(HEARING_ID_1);
+        verify(hearing).removeEndDate(HEARING_ID_1);
+        verify(hearing).changeType(HEARING_TYPE, HEARING_ID_1);
+        verify(hearing).changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1);
+        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1);
+        verify(hearing).assignJudiciary(judicialRoles, HEARING_ID_1);
+        verify(hearing).assignHearingDays(null,null, NON_SITTING_DAYS1, nonDefaultDays,
+                LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1);
+        verify(hearing).changeWeekCommencingDate(WEEK_COMMENCING_START_DATE, WEEK_COMMENCING_END_DATE, WEEK_COMMENCING_DURATION,HEARING_ID_1);
     }
 
 
@@ -1406,6 +1472,32 @@ public class ListingCommandHandlerTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+
+    private JsonEnvelope updateHearingForListingwithWeekCommencingCommandEnvelope() {
+        String jsonString = givenPayload("/test-data/listing.command.update-hearing-for-listing-week-commencing.json").toString()
+                .replace("HEARING_ID", HEARING_ID_1.toString())
+                .replace("HEARING_TYPE_ID", HEARING_TYPE.getId().toString())
+                .replace("HEARING_TYPE_DESCRIPTION", HEARING_TYPE.getDescription())
+                .replace("WEEK_COMMENCING_START_DATE", WEEK_COMMENCING_START_DATE.toString())
+                .replace("WEEK_COMMENCING_END_DATE", WEEK_COMMENCING_END_DATE.toString())
+                .replace("WEEK_COMMENCING_DURATION", WEEK_COMMENCING_DURATION.toString())
+                .replace("HEARING_LANGUAGE", HEARING_LANGUAGE)
+                .replace("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
+                .replace("COURT_ROOM_ID", COURT_ROOM_ID.toString())
+                .replace("NON_SITTING_DAY", NON_SITTING_DAY)
+                .replace("NON_DEFAULT_DAY", NON_DEFAULT_DAY)
+                .replace("DEFAULT_DURATION", DEFAULT_DURATION)
+                .replace("DEFAULT_START_TIME", DEFAULT_START_TIME)
+                .replace("JURISDICTION_TYPE", JURISDICTION_TYPE.toString())
+                .replace("\"IS_DEPUTY\"", IS_DEPUTY.toString())
+                .replace("\"IS_BENCH_CHAIRMAN\"", IS_BENCH_CHAIRMAN.toString())
+                .replace("JUDICIAL_ID", JUDICIAL_ID_1.toString())
+                .replace("JUDICIAL_ROLE_TYPE", JUDICIAL_ROLE_TYPE)
+                .replace("AUTHORITY_ID", AUTHORITY_ID.toString());
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.update-hearing-for-listing", jsonReader.readObject());
     }
 
     private JsonEnvelope addHearingToCaseCommandEnvelope(JsonObject commandJsonObject) {

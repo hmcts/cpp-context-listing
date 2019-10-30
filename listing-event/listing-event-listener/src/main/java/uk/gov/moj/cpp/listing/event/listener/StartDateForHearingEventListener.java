@@ -4,6 +4,7 @@ import static java.time.LocalDate.parse;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
+import uk.gov.justice.listing.events.StartDateRemovedForHearing;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -35,4 +36,15 @@ public class StartDateForHearingEventListener {
                 .save();
     }
 
+
+    @Handles("listing.events.start-date-removed-for-hearing")
+    public void startDateRemovedForHearing(final Envelope<StartDateRemovedForHearing> event) {
+        final StartDateRemovedForHearing startDateRemovedForHearing = event.payload();
+        final UUID hearingId = startDateRemovedForHearing.getHearingId();
+
+        using(hearingRepository)
+                .find(hearingId)
+                .remove(START_DATE)
+                .save();
+    }
 }

@@ -45,6 +45,10 @@ public class HearingsDataFactory {
         return manyRandomHearings(2);
     }
 
+    public static List<HearingData> hearingsDataForWeekCommencing() {
+        return manyRandomHearings(1);
+    }
+
     public static List<HearingData> hearingsDataWithLegalEntity() {
         return manyRandomHearingsWithLegalEntity(1);
     }

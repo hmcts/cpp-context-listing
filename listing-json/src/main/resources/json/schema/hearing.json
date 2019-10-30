@@ -65,7 +65,7 @@
     "weekCommencingEndDate": {
       "$ref": "#/definitions/localDate"
     },
-    "weekCommencingDuration": {
+    "weekCommencingDurationInWeeks": {
       "$ref": "listing-definitions.json#/definitions/positiveInteger"
     },
     "hearingDays": {
