@@ -3,10 +3,16 @@
   "id": "http://justice.gov.uk/listing/event/listing.event.publish-court-list-export-successful.json",
   "type": "object",
   "properties": {
-    "documentId": {
+    "courtCentreId": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
-    "documentName": {
+    "courtListFileId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "courtListFileName": {
+      "type": "string"
+    },
+    "courtListType": {
       "type": "string"
     },
     "publishedTime": {
@@ -15,8 +21,10 @@
     }
   },
   "required": [
-    "documentId",
-    "documentName",
+    "courtCentreId",
+    "courtListFileId",
+    "courtListFileName",
+    "courtListType",
     "publishedTime"
   ],
   "additionalProperties": false

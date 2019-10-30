@@ -2,7 +2,9 @@
   "_metadata": {
     "name": "listing.event.publish-court-list-produced"
   },
-  "courtHouseId": "5c5a1d30-0414-11e7-93ae-92361f002671",
-  "documentId": "1c5a1d30-0414-11e7-93ae-92361f002671",
-  "documentName": "documentName"
+  "courtCentreId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "courtListFileId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "courtListFileName":"documentName",
+  "courtListType":"FINAL",
+  "producedTime": "2016-09-09T08:31:40.000Z"
 }

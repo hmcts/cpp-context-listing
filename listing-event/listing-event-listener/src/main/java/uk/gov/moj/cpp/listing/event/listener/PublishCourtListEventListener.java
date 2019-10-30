@@ -1,16 +1,20 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
+import static uk.gov.moj.cpp.listing.persistence.repository.DocumentType.valueOf;
+import static uk.gov.moj.cpp.listing.persistence.repository.Status.COURT_LIST_PRODUCED;
+import static uk.gov.moj.cpp.listing.persistence.repository.Status.EXPORT_FAILED;
+import static uk.gov.moj.cpp.listing.persistence.repository.Status.EXPORT_SUCCESSFUL;
 
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
+import uk.gov.justice.listing.event.PublishCourtListProduced;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtList;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.Status;
 
 import javax.inject.Inject;
 
@@ -23,22 +27,43 @@ public class PublishCourtListEventListener {
     @Inject
     private CourtListRepository courtListRepository;
 
+    @Handles("listing.event.publish-court-list-produced")
+    public void courtListPublishProduced(final Envelope<PublishCourtListProduced> event) {
+        final PublishCourtListProduced publishCourtListProduced = event.payload();
+        final CourtList courtList = new CourtList(
+                publishCourtListProduced.getCourtCentreId(),
+                COURT_LIST_PRODUCED,
+                publishCourtListProduced.getCourtListFileId(),
+                publishCourtListProduced.getCourtListFileName(),
+                valueOf(publishCourtListProduced.getCourtListType()),
+                publishCourtListProduced.getProducedTime());
+        courtListRepository.save(courtList);
+    }
+
     @Handles("listing.event.publish-court-list-export-failed")
     public void courtListPublishExportFailed(final Envelope<PublishCourtListExportFailed> event) {
         final PublishCourtListExportFailed publishCourtListExportFailed = event.payload();
-        final CourtList courtList = courtListRepository.findBy(publishCourtListExportFailed.getCourtHouseId());
+        final CourtList courtList = new CourtList(
+                publishCourtListExportFailed.getCourtCentreId(),
+                EXPORT_FAILED,
+                publishCourtListExportFailed.getCourtListFileId(),
+                publishCourtListExportFailed.getCourtListFileName(),
+                valueOf(publishCourtListExportFailed.getCourtListType()),
+                publishCourtListExportFailed.getFailedTime());
         courtList.setErrorMessage(publishCourtListExportFailed.getErrorMessage());
-        courtList.setDateActioned(publishCourtListExportFailed.getFailedTime());
-        courtList.setStatus(Status.EXPORT_FAILED);
         courtListRepository.save(courtList);
     }
 
     @Handles("listing.event.publish-court-list-export-successful")
     public void courtListPublishExportSuccessful(final Envelope<PublishCourtListExportSuccessful> event) {
         final PublishCourtListExportSuccessful publishCourtListExportSuccessful = event.payload();
-        final CourtList courtList = courtListRepository.findBy(publishCourtListExportSuccessful.getCourtHouseId());
-        courtList.setDateActioned(publishCourtListExportSuccessful.getPublishedTime());
-        courtList.setStatus(Status.EXPORT_SUCCESSFUL);
+        final CourtList courtList = new CourtList(
+                publishCourtListExportSuccessful.getCourtCentreId(),
+                EXPORT_SUCCESSFUL,
+                publishCourtListExportSuccessful.getCourtListFileId(),
+                publishCourtListExportSuccessful.getCourtListFileName(),
+                valueOf(publishCourtListExportSuccessful.getCourtListType()),
+                publishCourtListExportSuccessful.getPublishedTime());
         courtListRepository.save(courtList);
     }
 }

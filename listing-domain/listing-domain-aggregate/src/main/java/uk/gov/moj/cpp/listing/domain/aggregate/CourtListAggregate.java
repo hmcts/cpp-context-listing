@@ -19,46 +19,65 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+
 public class CourtListAggregate implements Aggregate {
 
-    private UUID courtHouseId;
+    private UUID courtCentreId;
 
 
-    public Stream<Object> recordCourtListRequested(final UUID courtHouseId) {
+    public Stream<Object> recordCourtListRequested(final UUID courtCentreId,
+                                                   final String startDate,
+                                                   final String endDate,
+                                                   final String courtListType,
+                                                   final ZonedDateTime requestedTime) {
         return apply(of(publishCourtListRequested()
-                .withCourtHouseId(courtHouseId).build()));
+                .withCourtCentreId(courtCentreId)
+                .withCourtListType(courtListType)
+                .withStartDate(startDate)
+                .withEndDate(endDate)
+                .withRequestedTime(requestedTime)
+                .build()));
     }
 
-    public Stream<Object> recordCourtListProduced(final UUID courtHouseId,
-                                                  final UUID documentId,
-                                                  final String documentName) {
+    public Stream<Object> recordCourtListProduced(final UUID courtCentreId,
+                                                  final UUID courtListFileId,
+                                                  final String courtListFileName,
+                                                  final String courtListType,
+                                                  final ZonedDateTime producedTime) {
         return apply(of(publishCourtListProduced()
-                .withCourtHouseId(courtHouseId)
-                .withDocumentId(documentId)
-                .withDocumentName(documentName).build()));
+                .withCourtCentreId(courtCentreId)
+                .withCourtListFileId(courtListFileId)
+                .withCourtListFileName(courtListFileName)
+                .withCourtListType(courtListType)
+                .withProducedTime(producedTime).build()));
     }
 
-    public Stream<Object> recordCourtListExportSuccessful(final UUID courtHouseId, final UUID documentId,
-                                                          final String documentName,
+    public Stream<Object> recordCourtListExportSuccessful(final UUID courtCentreId,
+                                                          final UUID courtListFileId,
+                                                          final String courtListFileName,
+                                                          final String courtListType,
                                                           final ZonedDateTime publishedTime) {
         return apply(of(publishCourtListExportSuccessful()
-                .withCourtHouseId(courtHouseId)
-                .withDocumentId(documentId)
-                .withDocumentName(documentName)
+                .withCourtCentreId(courtCentreId)
+                .withCourtListFileId(courtListFileId)
+                .withCourtListFileName(courtListFileName)
+                .withCourtListType(courtListType)
                 .withPublishedTime(publishedTime).build()));
     }
 
-    public Stream<Object> recordCourtListExportFailed(final UUID courtHouseId, final UUID documentId,
-                                                      final ZonedDateTime publishFailedTime,
-                                                      final String documentName,
+    public Stream<Object> recordCourtListExportFailed(final UUID courtCentreId,
+                                                      final UUID courtListFileId,
+                                                      final String courtListFileName,
+                                                      final String courtListType,
+                                                      final ZonedDateTime failedTime,
                                                       final String errorMessage) {
         return apply(of(publishCourtListExportFailed()
-                .withCourtHouseId(courtHouseId)
-                .withDocumentId(documentId)
-                .withDocumentName(documentName)
+                .withCourtCentreId(courtCentreId)
+                .withCourtListFileId(courtListFileId)
+                .withCourtListFileName(courtListFileName)
+                .withCourtListType(courtListType)
                 .withErrorMessage(errorMessage)
-                .withFailedTime(publishFailedTime).build()
-        ));
+                .withFailedTime(failedTime).build()));
     }
 
     @Override
@@ -73,15 +92,15 @@ public class CourtListAggregate implements Aggregate {
 
 
     private void recordCourtListRequested(final PublishCourtListRequested publishCourtListRequested) {
-        this.courtHouseId = publishCourtListRequested.getCourtHouseId();
+        this.courtCentreId = publishCourtListRequested.getCourtCentreId();
     }
 
     private void recordCourtListProduced(final PublishCourtListProduced publishCourtListProduced) {
-        this.courtHouseId = publishCourtListProduced.getCourtHouseId();
+        this.courtCentreId = publishCourtListProduced.getCourtCentreId();
     }
 
-    public UUID getCourtHouseId() {
-        return courtHouseId;
+    public UUID getCourtCentreId() {
+        return courtCentreId;
     }
 
 }

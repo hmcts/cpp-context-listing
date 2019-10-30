@@ -1,0 +1,8 @@
+{
+  "courtCentreId": "COURT_CENTRE_ID",
+  "courtListFileId": "COURT_LIST_FILE_ID",
+  "courtListFileName":"COURT_LIST_FILE_NAME",
+  "courtListType":"FINAL",
+  "failedTime": "FAILED_TIME",
+  "errorMessage": "ERROR_MESSAGE"
+}
