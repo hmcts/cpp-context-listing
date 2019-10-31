@@ -105,3 +105,22 @@ protocols: [ HTTP, HTTPS ]
     responses:
       202:
         description: Request accepted
+
+
+/publishCourtList/{courtCentreId}:
+  post:
+    description: |
+      Publish court list
+      ...
+      (mapping):
+        requestType: application/vnd.listing.command.publish-court-list+json
+        name: listing.command.publish-court-list
+      ...
+    body:
+      application/vnd.listing.command.publish-court-list+json:
+        schema: !include json/schema/listing.command.publish-court-list.json
+        example: !include json/listing.command.publish-court-list.json
+
+    responses:
+      202:
+        description: Request accepted

@@ -15,6 +15,7 @@ import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
 import uk.gov.justice.listing.event.PublishCourtListRequested;
 
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -26,15 +27,15 @@ public class CourtListAggregate implements Aggregate {
 
 
     public Stream<Object> recordCourtListRequested(final UUID courtCentreId,
-                                                   final String startDate,
-                                                   final String endDate,
+                                                   final LocalDate startDate,
+                                                   final LocalDate endDate,
                                                    final String courtListType,
                                                    final ZonedDateTime requestedTime) {
         return apply(of(publishCourtListRequested()
                 .withCourtCentreId(courtCentreId)
                 .withCourtListType(courtListType)
-                .withStartDate(startDate)
-                .withEndDate(endDate)
+                .withStartDate(startDate.toString())
+                .withEndDate(endDate.toString())
                 .withRequestedTime(requestedTime)
                 .build()));
     }
@@ -81,7 +82,7 @@ public class CourtListAggregate implements Aggregate {
     }
 
     @Override
-    public Object apply(Object event) {
+    public Object apply(final Object event) {
         return match(event).with(
                 when(PublishCourtListRequested.class).apply(this::recordCourtListRequested),
                 when(PublishCourtListProduced.class).apply(this::recordCourtListProduced),

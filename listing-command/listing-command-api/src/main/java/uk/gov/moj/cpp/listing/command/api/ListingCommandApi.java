@@ -104,4 +104,9 @@ public class ListingCommandApi {
     public void restrictCourtList(final JsonEnvelope jsonEnvelope){
         sender.send(jsonEnvelope);
     }
+
+    @Handles("listing.command.publish-court-list")
+    public void publishCourtList(final JsonEnvelope jsonEnvelope){
+        sender.send(jsonEnvelope);
+    }
 }

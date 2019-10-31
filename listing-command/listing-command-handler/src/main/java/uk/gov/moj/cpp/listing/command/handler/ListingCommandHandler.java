@@ -13,6 +13,7 @@ import uk.gov.justice.core.courts.ListHearingRequest;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.Defendant;
 import uk.gov.justice.listing.commands.Offence;
+import uk.gov.justice.listing.commands.PublishCourtList;
 import uk.gov.justice.listing.commands.RecordCourtListExportFailed;
 import uk.gov.justice.listing.commands.RecordCourtListExportSuccessful;
 import uk.gov.justice.listing.commands.SimpleOffence;
@@ -550,8 +551,6 @@ public class ListingCommandHandler {
 
         updateHearingEventStream(command, restrictCourtList.getHearingId(), (Hearing hearing) ->
                 hearing.restrictDetailsFromCourt(restrictCourtList.getHearingId(), convertRestrictCourtListToDomain(restrictCourtList)));
-
-
     }
 
     @Handles("listing.command.add-hearing-to-case")
@@ -617,6 +616,21 @@ public class ListingCommandHandler {
                 recordCourtListExportFailed.getCourtListType(),
                 recordCourtListExportFailed.getFailedTime(),
                 recordCourtListExportFailed.getErrorMessage());
+        appendEventsToStream(commandEnvelope, eventStream, events);
+    }
+
+    @Handles("listing.command.publish-court-list")
+    public void publishCourtList(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        final PublishCourtList publishCourtList = jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), PublishCourtList.class);
+        final UUID courtCentreId = publishCourtList.getCourtCentreId();
+        final EventStream eventStream = eventSource.getStreamById(courtCentreId);
+        final CourtListAggregate courtListAggregate = aggregateService.get(eventStream, CourtListAggregate.class);
+        final Stream<Object> events = courtListAggregate.recordCourtListRequested(
+                courtCentreId,
+                publishCourtList.getStartDate(),
+                publishCourtList.getEndDate(),
+                publishCourtList.getCourtListType(),
+                publishCourtList.getRequestedTime());
         appendEventsToStream(commandEnvelope, eventStream, events);
     }
 

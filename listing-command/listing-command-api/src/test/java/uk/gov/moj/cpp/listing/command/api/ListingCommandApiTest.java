@@ -65,7 +65,7 @@ public class ListingCommandApiTest {
     private ListCourtHearing listCourtHearing;
 
     @InjectMocks
-    private ListingCommandApi ListingCommandApi;
+    private ListingCommandApi listingCommandApi;
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -91,7 +91,7 @@ public class ListingCommandApiTest {
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 ArgumentCaptor.forClass(JsonEnvelope.class);
         //when
-        ListingCommandApi.updateHearingForListing(envelope);
+        listingCommandApi.updateHearingForListing(envelope);
 
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
@@ -112,9 +112,20 @@ public class ListingCommandApiTest {
                 ArgumentCaptor.forClass(JsonEnvelope.class);
 
         //when
-        ListingCommandApi.listCourtHearing(envelope);
+        listingCommandApi.listCourtHearing(envelope);
 
         //then
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+    }
+
+    @Test
+    public void listingCommandPublishCourtList() throws Exception {
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
+                ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        listingCommandApi.publishCourtList(envelope);
+
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
     }
 }
