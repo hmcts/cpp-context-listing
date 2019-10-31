@@ -12,100 +12,101 @@ import javax.persistence.Table;
 @Table(name = "courtList")
 public class CourtList {
 
+
     @Id
-    @Column(name = "courthouse_id", nullable = false)
-    private UUID courtHouseId;
+    @Column(name = "court_centre_id", nullable = false)
+    private UUID courtCentreId;
 
-    @Column(name = "status", nullable = false)
-    private Status status;
+    @Column(name = "publish_status", nullable = false)
+    private PublishStatus publishStatus;
 
-    @Column(name = "document_type", nullable = false)
-    private DocumentType documentType;
+    @Column(name = "court_list_type", nullable = false)
+    private CourtListType courtListType;
 
-    @Column(name = "document_id")
-    private UUID documentId;
+    @Column(name = "court_list_file_id")
+    private UUID courtListFileId;
 
-    @Column(name = "document_name")
-    private String documentName;
+    @Column(name = "court_list_file_name")
+    private String courtListFileName;
 
-    @Column(name = "date_actioned", nullable = false)
-    private ZonedDateTime dateActioned;
+    @Column(name = "last_updated", nullable = false)
+    private ZonedDateTime lastUpdated;
 
     @Column(name = "error_message")
     private String errorMessage;
 
-    public CourtList(final UUID courtHouseId,
-                     final Status status,
-                     final DocumentType documentType,
-                     final ZonedDateTime dateActioned
+    public CourtList(final UUID courtCentreId,
+                     final PublishStatus publishStatus,
+                     final CourtListType courtListType,
+                     final ZonedDateTime lastUpdated
     ) {
-        this.courtHouseId = courtHouseId;
-        this.status = status;
-        this.documentType = documentType;
-        this.dateActioned = dateActioned;
+        this.courtCentreId = courtCentreId;
+        this.publishStatus = publishStatus;
+        this.courtListType = courtListType;
+        this.lastUpdated = lastUpdated;
     }
 
-    public CourtList(final UUID courtHouseId,
-                     final Status status,
-                     final UUID documentId,
-                     final String documentName,
-                     final DocumentType documentType,
-                     final ZonedDateTime dateActioned
+    public CourtList(final UUID courtCentreId,
+                     final PublishStatus publishStatus,
+                     final UUID courtListFileId,
+                     final String courtListFileName,
+                     final CourtListType courtListType,
+                     final ZonedDateTime lastUpdated
     ) {
-        this.courtHouseId = courtHouseId;
-        this.status = status;
-        this.documentId = documentId;
-        this.documentName = documentName;
-        this.documentType = documentType;
-        this.dateActioned = dateActioned;
+        this.courtCentreId = courtCentreId;
+        this.publishStatus = publishStatus;
+        this.courtListFileId = courtListFileId;
+        this.courtListFileName = courtListFileName;
+        this.courtListType = courtListType;
+        this.lastUpdated = lastUpdated;
     }
 
-    public UUID getCourtHouseId() {
-        return courtHouseId;
+    public UUID getCourtCentreId() {
+        return courtCentreId;
     }
 
-    public void setCourtHouseId(UUID courtHouseId) {
-        this.courtHouseId = courtHouseId;
+    public void setCourtCentreId(UUID courtCentreId) {
+        this.courtCentreId = courtCentreId;
     }
 
-    public Status getStatus() {
-        return status;
+    public PublishStatus getPublishStatus() {
+        return publishStatus;
     }
 
-    public void setStatus(Status status) {
-        this.status = status;
+    public void setPublishStatus(PublishStatus publishStatus) {
+        this.publishStatus = publishStatus;
     }
 
-    public DocumentType getDocumentType() {
-        return documentType;
+    public CourtListType getCourtListType() {
+        return courtListType;
     }
 
-    public void setDocumentType(DocumentType documentType) {
-        this.documentType = documentType;
+    public void setCourtListType(CourtListType courtListType) {
+        this.courtListType = courtListType;
     }
 
-    public UUID getDocumentId() {
-        return documentId;
+    public UUID getCourtListFileId() {
+        return courtListFileId;
     }
 
-    public void setDocumentId(UUID documentId) {
-        this.documentId = documentId;
+    public void setCourtListFileId(UUID courtListFileId) {
+        this.courtListFileId = courtListFileId;
     }
 
-    public String getDocumentName() {
-        return documentName;
+    public String getCourtListFileName() {
+        return courtListFileName;
     }
 
-    public void setDocumentName(String documentName) {
-        this.documentName = documentName;
+    public void setCourtListFileName(String courtListFileName) {
+        this.courtListFileName = courtListFileName;
     }
 
-    public ZonedDateTime getDateActioned() {
-        return dateActioned;
+    public ZonedDateTime getLastUpdated() {
+        return lastUpdated;
     }
 
-    public void setDateActioned(ZonedDateTime dateActioned) {
-        this.dateActioned = dateActioned;
+    public void setLastUpdated(ZonedDateTime lastUpdated) {
+        this.lastUpdated = lastUpdated;
     }
 
     public String getErrorMessage() {
@@ -115,6 +116,5 @@ public class CourtList {
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
     }
-
 
 }
