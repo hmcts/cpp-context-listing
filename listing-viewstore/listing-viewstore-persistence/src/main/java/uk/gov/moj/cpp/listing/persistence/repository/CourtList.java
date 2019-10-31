@@ -22,10 +22,10 @@ public class CourtList {
     @Column(name = "document_type", nullable = false)
     private DocumentType documentType;
 
-    @Column(name = "document_id", nullable = false)
+    @Column(name = "document_id")
     private UUID documentId;
 
-    @Column(name = "document_name", nullable = false)
+    @Column(name = "document_name")
     private String documentName;
 
     @Column(name = "date_actioned", nullable = false)
@@ -34,7 +34,15 @@ public class CourtList {
     @Column(name = "error_message")
     private String errorMessage;
 
-    public CourtList() {
+    public CourtList(final UUID courtHouseId,
+                     final Status status,
+                     final DocumentType documentType,
+                     final ZonedDateTime dateActioned
+    ) {
+        this.courtHouseId = courtHouseId;
+        this.status = status;
+        this.documentType = documentType;
+        this.dateActioned = dateActioned;
     }
 
     public CourtList(final UUID courtHouseId,

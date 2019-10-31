@@ -3,12 +3,14 @@ package uk.gov.moj.cpp.listing.event.listener;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
 import static uk.gov.moj.cpp.listing.persistence.repository.DocumentType.valueOf;
 import static uk.gov.moj.cpp.listing.persistence.repository.Status.COURT_LIST_PRODUCED;
+import static uk.gov.moj.cpp.listing.persistence.repository.Status.COURT_LIST_REQUESTED;
 import static uk.gov.moj.cpp.listing.persistence.repository.Status.EXPORT_FAILED;
 import static uk.gov.moj.cpp.listing.persistence.repository.Status.EXPORT_SUCCESSFUL;
 
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
+import uk.gov.justice.listing.event.PublishCourtListRequested;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -26,6 +28,17 @@ public class PublishCourtListEventListener {
 
     @Inject
     private CourtListRepository courtListRepository;
+
+    @Handles("listing.event.publish-court-list-requested")
+    public void courtListPublishRequested(final Envelope<PublishCourtListRequested> event) {
+        final PublishCourtListRequested publishCourtListRequested = event.payload();
+        final CourtList courtList = new CourtList(
+                publishCourtListRequested.getCourtCentreId(),
+                COURT_LIST_REQUESTED,
+                valueOf(publishCourtListRequested.getCourtListType()),
+                publishCourtListRequested.getRequestedTime());
+        courtListRepository.save(courtList);
+    }
 
     @Handles("listing.event.publish-court-list-produced")
     public void courtListPublishProduced(final Envelope<PublishCourtListProduced> event) {

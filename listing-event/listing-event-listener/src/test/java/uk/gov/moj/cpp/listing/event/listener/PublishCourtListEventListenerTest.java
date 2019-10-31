@@ -8,16 +8,20 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.event.PublishCourtListExportFailed.publishCourtListExportFailed;
 import static uk.gov.justice.listing.event.PublishCourtListExportSuccessful.publishCourtListExportSuccessful;
 import static uk.gov.justice.listing.event.PublishCourtListProduced.publishCourtListProduced;
+import static uk.gov.justice.listing.event.PublishCourtListRequested.publishCourtListRequested;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithDefaults;
 import static uk.gov.moj.cpp.listing.persistence.repository.DocumentType.FINAL;
 import static uk.gov.moj.cpp.listing.persistence.repository.Status.COURT_LIST_PRODUCED;
+import static uk.gov.moj.cpp.listing.persistence.repository.Status.COURT_LIST_REQUESTED;
 import static uk.gov.moj.cpp.listing.persistence.repository.Status.EXPORT_FAILED;
 import static uk.gov.moj.cpp.listing.persistence.repository.Status.EXPORT_SUCCESSFUL;
 
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
+import uk.gov.justice.listing.event.PublishCourtListRequested;
+import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtList;
@@ -51,6 +55,31 @@ public class PublishCourtListEventListenerTest {
     private final ArgumentCaptor<CourtList> notificationArgumentCaptor = ArgumentCaptor.forClass(CourtList.class);
 
     @Test
+    public void shouldRecordPublishCourtListRequested() {
+        final ZonedDateTime requestedTime = new UtcClock().now();
+        final DocumentType courtListType = FINAL;
+
+        final PublishCourtListRequested publishCourtListRequested = publishCourtListRequested()
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withCourtListType(courtListType.toString())
+                .withRequestedTime(requestedTime)
+                .build();
+
+        final Envelope<PublishCourtListRequested> publishCourtListRequestedEnvelope =
+                envelopeFrom(metadataWithDefaults(), publishCourtListRequested);
+
+        publishCourtListEventListener.courtListPublishRequested(publishCourtListRequestedEnvelope);
+
+        verify(courtListRepository).save(notificationArgumentCaptor.capture());
+
+        final CourtList courtListArg = notificationArgumentCaptor.getValue();
+        assertThat(courtListArg.getCourtHouseId(), is(COURT_CENTRE_ID));
+        assertThat(courtListArg.getStatus(), is(COURT_LIST_REQUESTED));
+        assertThat(courtListArg.getDateActioned(), is(requestedTime));
+        assertThat(courtListArg.getDocumentType(), is(courtListType));
+    }
+
+    @Test
     public void shouldRecordPublishCourtListProduced() {
         final ZonedDateTime producedTime = new UtcClock().now();
         final String courtListFileName = "Document Name";
@@ -66,9 +95,6 @@ public class PublishCourtListEventListenerTest {
                 .build();
 
         final Envelope<PublishCourtListProduced> publishCourtListProducedEvent = envelopeFrom(metadataWithDefaults(), publishCourtListProduced);
-
-        final CourtList courtList = new CourtList(COURT_CENTRE_ID, COURT_LIST_PRODUCED, courtListFileId, courtListFileName, courtListType, producedTime);
-        when(courtListRepository.findBy(COURT_CENTRE_ID)).thenReturn(courtList);
 
         publishCourtListEventListener.courtListPublishProduced(publishCourtListProducedEvent);
 
@@ -102,10 +128,6 @@ public class PublishCourtListEventListenerTest {
 
         final Envelope<PublishCourtListExportFailed> publishCourtListExportFailedEvent = envelopeFrom(metadataWithDefaults(), publishCourtListExportFailed);
 
-        final CourtList courtList = new CourtList(COURT_CENTRE_ID, EXPORT_FAILED, courtListFileId, courtListFileName, courtListType, failedTimeStamp);
-        courtList.setErrorMessage(errorMessage);
-        when(courtListRepository.findBy(COURT_CENTRE_ID)).thenReturn(courtList);
-
         publishCourtListEventListener.courtListPublishExportFailed(publishCourtListExportFailedEvent);
 
         verify(courtListRepository).save(notificationArgumentCaptor.capture());
@@ -135,9 +157,6 @@ public class PublishCourtListEventListenerTest {
                 .build();
 
         final Envelope<PublishCourtListExportSuccessful> publishCourtListExportSuccessfulEvent = envelopeFrom(metadataWithDefaults(), publishCourtListExportSuccessful);
-
-        final CourtList courtList = new CourtList(COURT_CENTRE_ID, EXPORT_SUCCESSFUL, courtListFileId, courtListFileName, courtListType, publishedTime);
-        when(courtListRepository.findBy(COURT_CENTRE_ID)).thenReturn(courtList);
 
         publishCourtListEventListener.courtListPublishExportSuccessful(publishCourtListExportSuccessfulEvent);
 
