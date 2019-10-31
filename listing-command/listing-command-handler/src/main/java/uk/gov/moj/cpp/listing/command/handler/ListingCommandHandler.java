@@ -588,32 +588,34 @@ public class ListingCommandHandler {
     }
 
     @Handles("listing.command.record-court-list-export-successful")
-    public void markAsExportSuccessful(final JsonEnvelope commandEnvelope) throws EventStreamException {
+    public void recordCourtListExportSuccessful(final JsonEnvelope commandEnvelope) throws EventStreamException {
 
         final RecordCourtListExportSuccessful recordCourtListExportSuccessful = jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(),
                 RecordCourtListExportSuccessful.class);
-        final UUID documentId = recordCourtListExportSuccessful.getDocumentId();
-        final EventStream eventStream = eventSource.getStreamById(documentId);
+        final UUID courtCentreId = recordCourtListExportSuccessful.getCourtCentreId();
+        final EventStream eventStream = eventSource.getStreamById(courtCentreId);
         final CourtListAggregate aggregate = aggregateService.get(eventStream, CourtListAggregate.class);
         final Stream<Object> events = aggregate.recordCourtListExportSuccessful(
-                recordCourtListExportSuccessful.getCourtHouseId(),
-                recordCourtListExportSuccessful.getDocumentId(),
-                recordCourtListExportSuccessful.getDocumentName(),
+                recordCourtListExportSuccessful.getCourtCentreId(),
+                recordCourtListExportSuccessful.getCourtListFileId(),
+                recordCourtListExportSuccessful.getCourtListFileName(),
+                recordCourtListExportSuccessful.getCourtListType(),
                 recordCourtListExportSuccessful.getPublishedTime());
         appendEventsToStream(commandEnvelope, eventStream, events);
     }
 
     @Handles("listing.command.record-court-list-export-failed")
-    public void markAsExportFailed(final JsonEnvelope commandEnvelope) throws EventStreamException {
+    public void recordCourtListExportFailed(final JsonEnvelope commandEnvelope) throws EventStreamException {
         final RecordCourtListExportFailed recordCourtListExportFailed = jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), RecordCourtListExportFailed.class);
-        final UUID documentId = recordCourtListExportFailed.getDocumentId();
-        final EventStream eventStream = eventSource.getStreamById(documentId);
+        final UUID courtCentreId = recordCourtListExportFailed.getCourtCentreId();
+        final EventStream eventStream = eventSource.getStreamById(courtCentreId);
         final CourtListAggregate aggregate = aggregateService.get(eventStream, CourtListAggregate.class);
         final Stream<Object> events = aggregate.recordCourtListExportFailed(
-                recordCourtListExportFailed.getCourtHouseId(),
-                recordCourtListExportFailed.getDocumentId(),
+                recordCourtListExportFailed.getCourtCentreId(),
+                recordCourtListExportFailed.getCourtListFileId(),
+                recordCourtListExportFailed.getCourtListFileName(),
+                recordCourtListExportFailed.getCourtListType(),
                 recordCourtListExportFailed.getFailedTime(),
-                recordCourtListExportFailed.getDocumentName(),
                 recordCourtListExportFailed.getErrorMessage());
         appendEventsToStream(commandEnvelope, eventStream, events);
     }
