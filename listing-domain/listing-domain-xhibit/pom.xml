@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>listing-domain</artifactId>
+        <groupId>uk.gov.moj.cpp.listing</groupId>
+        <version>1.0.32-SCSL-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>listing-domain-xhibit</artifactId>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jvnet.jaxb2.maven2</groupId>
+                <artifactId>maven-jaxb2-plugin</artifactId>
+                <configuration>
+                    <schemaDirectory>src/main/resources/xhibit/xsd</schemaDirectory>
+                    <args>
+                        <arg>-XautoNameResolution</arg>
+                    </args>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <bindingDirectory>src/main/resources/xhibit/bindings
+                            </bindingDirectory>
+                            <generatePackage>uk.gov.moj.cpp.listing.domain.xhibit.generated</generatePackage>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

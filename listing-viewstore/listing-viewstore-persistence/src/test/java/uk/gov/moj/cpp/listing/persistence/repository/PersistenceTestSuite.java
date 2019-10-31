@@ -52,6 +52,7 @@ public class PersistenceTestSuite {
     private static void startForPipeline() {
         final IRuntimeConfig config = getPipelineConfig();
         try {
+            System.setProperty("os.name", "Mac OS X");
             postgres.start(config, EmbeddedPostgres.DEFAULT_HOST, DEFAULT_PORT, DEFAULT_DB_NAME, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_ADD_PARAMS);
         } catch (IOException e) {
             throw new IllegalArgumentException("Unable to start Postgres for testing", e);
