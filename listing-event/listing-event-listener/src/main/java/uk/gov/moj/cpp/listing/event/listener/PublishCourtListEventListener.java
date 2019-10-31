@@ -1,11 +1,11 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
-import static uk.gov.moj.cpp.listing.persistence.repository.DocumentType.valueOf;
-import static uk.gov.moj.cpp.listing.persistence.repository.Status.COURT_LIST_PRODUCED;
-import static uk.gov.moj.cpp.listing.persistence.repository.Status.COURT_LIST_REQUESTED;
-import static uk.gov.moj.cpp.listing.persistence.repository.Status.EXPORT_FAILED;
-import static uk.gov.moj.cpp.listing.persistence.repository.Status.EXPORT_SUCCESSFUL;
+import static uk.gov.moj.cpp.listing.persistence.repository.CourtListType.valueOf;
+import static uk.gov.moj.cpp.listing.persistence.repository.PublishStatus.COURT_LIST_PRODUCED;
+import static uk.gov.moj.cpp.listing.persistence.repository.PublishStatus.COURT_LIST_REQUESTED;
+import static uk.gov.moj.cpp.listing.persistence.repository.PublishStatus.EXPORT_FAILED;
+import static uk.gov.moj.cpp.listing.persistence.repository.PublishStatus.EXPORT_SUCCESSFUL;
 
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;

@@ -4,29 +4,27 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.event.PublishCourtListExportFailed.publishCourtListExportFailed;
 import static uk.gov.justice.listing.event.PublishCourtListExportSuccessful.publishCourtListExportSuccessful;
 import static uk.gov.justice.listing.event.PublishCourtListProduced.publishCourtListProduced;
 import static uk.gov.justice.listing.event.PublishCourtListRequested.publishCourtListRequested;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithDefaults;
-import static uk.gov.moj.cpp.listing.persistence.repository.DocumentType.FINAL;
-import static uk.gov.moj.cpp.listing.persistence.repository.Status.COURT_LIST_PRODUCED;
-import static uk.gov.moj.cpp.listing.persistence.repository.Status.COURT_LIST_REQUESTED;
-import static uk.gov.moj.cpp.listing.persistence.repository.Status.EXPORT_FAILED;
-import static uk.gov.moj.cpp.listing.persistence.repository.Status.EXPORT_SUCCESSFUL;
+import static uk.gov.moj.cpp.listing.persistence.repository.CourtListType.FINAL;
+import static uk.gov.moj.cpp.listing.persistence.repository.PublishStatus.COURT_LIST_PRODUCED;
+import static uk.gov.moj.cpp.listing.persistence.repository.PublishStatus.COURT_LIST_REQUESTED;
+import static uk.gov.moj.cpp.listing.persistence.repository.PublishStatus.EXPORT_FAILED;
+import static uk.gov.moj.cpp.listing.persistence.repository.PublishStatus.EXPORT_SUCCESSFUL;
 
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
 import uk.gov.justice.listing.event.PublishCourtListRequested;
-import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtList;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.DocumentType;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListType;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -57,7 +55,7 @@ public class PublishCourtListEventListenerTest {
     @Test
     public void shouldRecordPublishCourtListRequested() {
         final ZonedDateTime requestedTime = new UtcClock().now();
-        final DocumentType courtListType = FINAL;
+        final CourtListType courtListType = FINAL;
 
         final PublishCourtListRequested publishCourtListRequested = publishCourtListRequested()
                 .withCourtCentreId(COURT_CENTRE_ID)
@@ -73,10 +71,10 @@ public class PublishCourtListEventListenerTest {
         verify(courtListRepository).save(notificationArgumentCaptor.capture());
 
         final CourtList courtListArg = notificationArgumentCaptor.getValue();
-        assertThat(courtListArg.getCourtHouseId(), is(COURT_CENTRE_ID));
-        assertThat(courtListArg.getStatus(), is(COURT_LIST_REQUESTED));
-        assertThat(courtListArg.getDateActioned(), is(requestedTime));
-        assertThat(courtListArg.getDocumentType(), is(courtListType));
+        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
+        assertThat(courtListArg.getPublishStatus(), is(COURT_LIST_REQUESTED));
+        assertThat(courtListArg.getLastUpdated(), is(requestedTime));
+        assertThat(courtListArg.getCourtListType(), is(courtListType));
     }
 
     @Test
@@ -84,7 +82,7 @@ public class PublishCourtListEventListenerTest {
         final ZonedDateTime producedTime = new UtcClock().now();
         final String courtListFileName = "Document Name";
         final UUID courtListFileId = randomUUID();
-        final DocumentType courtListType = FINAL;
+        final CourtListType courtListType = FINAL;
 
         final PublishCourtListProduced publishCourtListProduced = publishCourtListProduced()
                 .withCourtCentreId(COURT_CENTRE_ID)
@@ -101,12 +99,12 @@ public class PublishCourtListEventListenerTest {
         verify(courtListRepository).save(notificationArgumentCaptor.capture());
 
         final CourtList courtListArg = notificationArgumentCaptor.getValue();
-        assertThat(courtListArg.getCourtHouseId(), is(COURT_CENTRE_ID));
-        assertThat(courtListArg.getDocumentId(), is(courtListFileId));
-        assertThat(courtListArg.getStatus(), is(COURT_LIST_PRODUCED));
-        assertThat(courtListArg.getDateActioned(), is(producedTime));
-        assertThat(courtListArg.getDocumentType(), is(courtListType));
-        assertThat(courtListArg.getDocumentName(), is(courtListFileName));
+        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
+        assertThat(courtListArg.getCourtListFileId(), is(courtListFileId));
+        assertThat(courtListArg.getPublishStatus(), is(COURT_LIST_PRODUCED));
+        assertThat(courtListArg.getLastUpdated(), is(producedTime));
+        assertThat(courtListArg.getCourtListType(), is(courtListType));
+        assertThat(courtListArg.getCourtListFileName(), is(courtListFileName));
     }
 
     @Test
@@ -115,7 +113,7 @@ public class PublishCourtListEventListenerTest {
         final String errorMessage = "some error";
         final String courtListFileName = "Document Name";
         final UUID courtListFileId = randomUUID();
-        final DocumentType courtListType = FINAL;
+        final CourtListType courtListType = FINAL;
 
         final PublishCourtListExportFailed publishCourtListExportFailed = publishCourtListExportFailed()
                 .withCourtCentreId(COURT_CENTRE_ID)
@@ -134,12 +132,12 @@ public class PublishCourtListEventListenerTest {
 
         final CourtList courtListArg = notificationArgumentCaptor.getValue();
         assertThat(courtListArg.getErrorMessage(), is(errorMessage));
-        assertThat(courtListArg.getCourtHouseId(), is(COURT_CENTRE_ID));
-        assertThat(courtListArg.getDocumentId(), is(courtListFileId));
-        assertThat(courtListArg.getStatus(), is(EXPORT_FAILED));
-        assertThat(courtListArg.getDateActioned(), is(failedTimeStamp));
-        assertThat(courtListArg.getDocumentType(), is(courtListType));
-        assertThat(courtListArg.getDocumentName(), is(courtListFileName));
+        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
+        assertThat(courtListArg.getCourtListFileId(), is(courtListFileId));
+        assertThat(courtListArg.getPublishStatus(), is(EXPORT_FAILED));
+        assertThat(courtListArg.getLastUpdated(), is(failedTimeStamp));
+        assertThat(courtListArg.getCourtListType(), is(courtListType));
+        assertThat(courtListArg.getCourtListFileName(), is(courtListFileName));
     }
 
     @Test
@@ -147,7 +145,7 @@ public class PublishCourtListEventListenerTest {
         final ZonedDateTime publishedTime = new UtcClock().now();
         final String courtListFileName = "Document Name";
         final UUID courtListFileId = randomUUID();
-        final DocumentType courtListType = FINAL;
+        final CourtListType courtListType = FINAL;
         final PublishCourtListExportSuccessful publishCourtListExportSuccessful = publishCourtListExportSuccessful()
                 .withCourtCentreId(COURT_CENTRE_ID)
                 .withCourtListFileId(courtListFileId)
@@ -163,11 +161,11 @@ public class PublishCourtListEventListenerTest {
         verify(courtListRepository).save(notificationArgumentCaptor.capture());
 
         final CourtList courtListArg = notificationArgumentCaptor.getValue();
-        assertThat(courtListArg.getCourtHouseId(), is(COURT_CENTRE_ID));
-        assertThat(courtListArg.getDocumentId(), is(courtListFileId));
-        assertThat(courtListArg.getStatus(), is(EXPORT_SUCCESSFUL));
-        assertThat(courtListArg.getDateActioned(), is(publishedTime));
-        assertThat(courtListArg.getDocumentType(), is(courtListType));
-        assertThat(courtListArg.getDocumentName(), is(courtListFileName));
+        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
+        assertThat(courtListArg.getCourtListFileId(), is(courtListFileId));
+        assertThat(courtListArg.getPublishStatus(), is(EXPORT_SUCCESSFUL));
+        assertThat(courtListArg.getLastUpdated(), is(publishedTime));
+        assertThat(courtListArg.getCourtListType(), is(courtListType));
+        assertThat(courtListArg.getCourtListFileName(), is(courtListFileName));
     }
 }
