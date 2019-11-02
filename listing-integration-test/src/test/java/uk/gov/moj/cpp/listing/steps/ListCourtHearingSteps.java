@@ -41,6 +41,7 @@ import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
 import uk.gov.justice.core.courts.LegalEntityDefendant;
+import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.core.courts.Organisation;
 import uk.gov.justice.core.courts.Person;
@@ -294,7 +295,9 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
                                         equalTo(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())),
                                 withJsonPath("$.hearings[0].courtApplications[0].respondents[0].lastName",
-                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getLastName()))
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getLastName())),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
+                                        equalTo(true))
                         )));
     }
 
@@ -452,8 +455,14 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                 .withProsecutionAuthorityId(lc.getAuthorityId())
                                                 .withProsecutionAuthorityReference(lc.getCaseReference())
                                                 .build())
+                                        .withCaseMarkers(asList(Marker.marker()
+                                                .withId(randomUUID())
+                                                .withMarkerTypeCode("C")
+                                                .withMarkerTypeDescription("Description")
+                                                .withMarkerTypeid(randomUUID()).build()))
                                         .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
                                                 .withId(d.getDefendantId())
+                                                .withIsYouth(ofNullable(d.getIsYouth()))
                                                 .withPersonDefendant(of(PersonDefendant.personDefendant()
                                                         .withBailStatus(of(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build()))
                                                         .withPersonDetails(Person.person()

@@ -12,6 +12,7 @@ import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
 import uk.gov.justice.core.courts.CustodyTimeLimit;
 import uk.gov.justice.listing.courts.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
+import uk.gov.moj.cpp.listing.steps.data.CaseMarkerData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyType;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
@@ -113,6 +114,12 @@ public class HearingsDataFactory {
                 .collect(toList());
     }
 
+    private static List<CaseMarkerData> manyRandomCaseMarkers(final Integer numberOfCaseMarkers) {
+        return IntStream.range(0, numberOfCaseMarkers)
+                .mapToObj((int i) -> randomCaseMarker())
+                .collect(toList());
+    }
+
     private static List<DefendantData> manyRandomDefendantsWithLegalEntity(final Integer numberOfDefendants) {
         return IntStream.range(0, numberOfDefendants)
                 .mapToObj((int i) -> randomDefendantWithLegalEntityDefendant())
@@ -120,11 +127,11 @@ public class HearingsDataFactory {
     }
 
     private static ListedCaseData randomListedCase() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendants(2), false, false);
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendants(2), false, false, manyRandomCaseMarkers(1));
     }
 
     private static ListedCaseData randomListedCaseWithLegalEntity() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendantsWithLegalEntity(1), false, false);
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendantsWithLegalEntity(1), false, false, manyRandomCaseMarkers(1));
     }
 
     private static OffenceData randomOffence() {
@@ -140,13 +147,17 @@ public class HearingsDataFactory {
     private static DefendantData randomDefendant() {
         return new DefendantData(randomUUID(), STRING.next(), STRING.next(),
                 LocalDate.now(), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
-                manyRandomOffences(3), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()), Boolean.FALSE);
+                manyRandomOffences(3), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()),Boolean.FALSE, Boolean.TRUE);
     }
 
     private static DefendantData randomDefendantWithLegalEntityDefendant() {
         return new DefendantData(randomUUID(), STRING.next(), STRING.next(),
                 LocalDate.now(), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
-                manyRandomOffences(1), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()), false);
+                manyRandomOffences(1), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()), false, Boolean.FALSE);
+    }
+
+    private static CaseMarkerData randomCaseMarker() {
+        return new CaseMarkerData(randomUUID(), randomUUID(),STRING.next(), STRING.next());
     }
 
     private static HearingData randomHearing() {

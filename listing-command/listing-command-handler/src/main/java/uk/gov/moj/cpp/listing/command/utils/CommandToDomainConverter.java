@@ -6,6 +6,7 @@ import static java.util.Objects.isNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static uk.gov.moj.cpp.listing.domain.Defendant.defendant;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds.valueFor;
 
@@ -15,12 +16,14 @@ import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.ListDefendantRequest;
 import uk.gov.justice.core.courts.ListHearingRequest;
+import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
+import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.Hearing;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
@@ -125,7 +128,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
     }
 
     private ListedCase buildListedCases(final HearingListingNeeds commandHearing, ProsecutionCase prosecutionCase) {
-        return ListedCase.listedCase()
+        final ListedCase.Builder builder = ListedCase.listedCase()
                 .withId(prosecutionCase.getId())
                 .withCaseIdentifier(CaseIdentifier.caseIdentifier()
                         .withAuthorityCode(prosecutionCase.getProsecutionCaseIdentifier().getProsecutionAuthorityCode())
@@ -136,8 +139,23 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                         .build())
                 .withDefendants(prosecutionCase.getDefendants().stream()
                         .map(d -> buildDefendants(commandHearing, d))
-                        .collect(toList()))
+                        .collect(toList()));
 
+              if (isNotEmpty(prosecutionCase.getCaseMarkers())) {
+                    builder.withCaseMarkers(prosecutionCase.getCaseMarkers().stream()
+                            .map(marker -> buildCaseMarker(marker))
+                            .collect(toList()));
+                }
+
+        return builder.build();
+    }
+
+    private CaseMarker buildCaseMarker(final Marker marker) {
+        return CaseMarker.caseMarker()
+                .withId(marker.getId())
+                .withMarkerTypeCode(marker.getMarkerTypeCode())
+                .withMarkerTypeDescription(marker.getMarkerTypeDescription())
+                .withMarkerTypeid(marker.getMarkerTypeid())
                 .build();
     }
 
@@ -157,6 +175,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .withOffences(d.getOffences().stream()
                         .map(this::buildOffence)
                         .collect(toList()))
+                .withIsYouth(d.getIsYouth().isPresent() ? d.getIsYouth() : empty())
                 .build();
     }
 

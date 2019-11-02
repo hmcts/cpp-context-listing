@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
@@ -10,11 +11,13 @@ import uk.gov.justice.listing.events.CourtApplicationPartyType;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.HearingLanguageNeeds;
 import uk.gov.justice.listing.events.JudicialRoleType;
+import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NewBaseDefendant;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.SimpleOffence;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
+import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
@@ -33,12 +36,27 @@ public class NewDomainToEventConverter {
         return uk.gov.justice.listing.events.ListedCase.listedCase()
                 .withId(lc.getId())
                 .withCaseIdentifier(buildCaseIdentifier(lc))
+                .withMarkers(isNull(lc.getCaseMarkers()) ? emptyList(): lc.getCaseMarkers().stream()
+                        .map(NewDomainToEventConverter::convertCaseMarkersToMarkers)
+                        .collect(toList()))
                 .withDefendants(lc.getDefendants().stream()
                         .map(NewDomainToEventConverter::buildDefendant)
                         .collect(toList()))
                 .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
                 .build();
     }
+
+    public static List<Marker> convertCaseMarkersListToMarkers(final List<CaseMarker> caseMarkers) {
+        return caseMarkers.stream().map(cm -> convertCaseMarkersToMarkers(cm)).collect(toList());
+    }
+
+    public static Marker convertCaseMarkersToMarkers(final CaseMarker caseMarker) {
+        return Marker.marker().withId(caseMarker.getId())
+                .withMarkerTypeCode(caseMarker.getMarkerTypeCode())
+                .withMarkerTypeDescription(caseMarker.getMarkerTypeDescription())
+                .withMarkerTypeid(caseMarker.getMarkerTypeid()).build();
+    }
+
 
     public static Defendant buildDefendant(uk.gov.moj.cpp.listing.domain.Defendant d) {
         return Defendant.defendant()
@@ -59,6 +77,7 @@ public class NewDomainToEventConverter {
                 .withDefenceOrganisation(d.getDefenceOrganisation())
                 .withBailStatus(buildBailStatusEvent(d.getBailStatus()))
                 .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+                .withIsYouth(d.getIsYouth())
                 .build();
     }
 
@@ -73,6 +92,7 @@ public class NewDomainToEventConverter {
                 .withSpecificRequirements(d.getSpecificRequirements())
                 .withDefenceOrganisation(d.getDefenceOrganisation())
                 .withBailStatus(buildBailStatusEvent(d.getBailStatus()))
+                .withIsYouth(d.getIsYouth())
                 .build();
     }
 

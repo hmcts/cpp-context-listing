@@ -133,6 +133,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendant.legalEntityDefendant.organisation.name"), is(jsRequest.getString("defendant.legalEntityDefendant.organisation.name")));
         assertThat(jsonResponse.get("defendant.legalEntityDefendant.organisation.id"), is(jsRequest.getString("defendant.legalEntityDefendant.organisation.id")));
         assertThat(jsonResponse.get("defendant.pncId"), is(jsRequest.getString("defendant.pncId")));
+        assertThat(jsonResponse.get("defendant.isYouth"), is(jsRequest.getBoolean("defendant.isYouth")));
         assertThat(jsonResponse.get("defendant.aliases[0].firstName"), is(jsRequest.getString("defendant.aliases[0].firstName")));
         assertThat(jsonResponse.get("defendant.aliases[0].lastName"), is(jsRequest.getString("defendant.aliases[0].lastName")));
     }
@@ -153,6 +154,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendants[0].lastName"), is(jsRequest.getString("defendant.personDefendant.personDetails.lastName")));
         assertThat(jsonResponse.get("defendants[0].specificRequirements"), is(jsRequest.getString("defendant.personDefendant.personDetails.specificRequirements")));
         assertThat(jsonResponse.get("defendants[0].organisationName"), is(jsRequest.getString("defendant.legalEntityDefendant.organisation.name")));
+        assertThat(jsonResponse.get("defendants[0].isYouth"), is(jsRequest.getBoolean("defendant.isYouth")));
     }
 
     public void verifyEventDefendantDetailsUpdatedInActiveMQ() {
@@ -170,6 +172,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendant.firstName"), is(jsRequest.getString("defendant.personDefendant.personDetails.firstName")));
         assertThat(jsonResponse.get("defendant.specificRequirements"), is(jsRequest.getString("defendant.personDefendant.personDetails.specificRequirements")));
         assertThat(jsonResponse.get("defendant.organisationName"), is(jsRequest.getString("defendant.legalEntityDefendant.organisation.name")));
+        assertThat(jsonResponse.get("defendant.isYouth"), is(jsRequest.getBoolean("defendant.isYouth")));
     }
 
     public void verifyHearingListedFromAPI(boolean isAllocated) {
@@ -274,6 +277,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
                         .withName(defendantData.getOrganisationName())
                         .build()))
                 .withPncId(of(defendantData.getPncId()))
+                .withIsYouth(defendantData.getYouth())
                 .withAliases(defendantData.getAliases())
                 .build()
             ).build();

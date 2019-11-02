@@ -54,6 +54,14 @@
           "authorityId": "31fd0edf-9692-46fa-a6be-4b78bf88fec6",
           "caseReference": "87GD9945217"
         },
+        "markers": [
+          {
+            "id": "31fd0edf-9692-46fa-a6be-4b78bf88fec6",
+            "markerTypeCode": "01",
+            "markerTypeDescription": "Marker Description",
+            "markerTypeid": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6"
+          }
+        ],
         "defendants": [
           {
             "bailStatus": {

@@ -39,6 +39,7 @@ public class UpdateDefendantsForHearingCommandCollectionConverter implements Con
                             Optional.of(new BailStatus.Builder().withId(bailStatus.getId()).withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).build())).orElse(Optional.empty()))
                     .withOffences(convertOffences())
                     .withId(defendant.getId())
+                    .withIsYouth(defendant.getIsYouth())
                     .build())
                 .collect(toList());
     }

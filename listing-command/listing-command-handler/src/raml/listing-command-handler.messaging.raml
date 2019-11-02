@@ -65,6 +65,10 @@ baseUri: message://command/handler/message/listing
         schema: !include json/schema/listing.command.add-court-application-to-hearing.json
         example: !include json/listing.command.add-court-application-to-hearing.json
 
+      application/vnd.listing.command.update-case-markers-to-hearing+json:
+        schema: !include json/schema/listing.command.update-case-markers-to-hearing.json
+        example: !include json/listing.command.update-case-markers-to-hearing.json
+
       application/vnd.listing.command.update-court-application+json:
         schema: !include json/schema/listing.command.update-court-application.json
         example: !include json/listing.command.update-court-application.json
@@ -80,3 +84,7 @@ baseUri: message://command/handler/message/listing
       application/vnd.listing.command.eject-case-or-application+json:
         schema: !include json/schema/listing.command.eject-case-or-application.json
         example: !include json/listing.command.eject-case-or-application.json
+
+      application/vnd.listing.command.update-case-markers+json:
+         schema: !include json/schema/listing.command.update-case-markers.json
+         example: !include json/listing.command.update-case-markers.json

@@ -7,6 +7,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -83,6 +85,7 @@ import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
+import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
@@ -99,6 +102,7 @@ import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
+import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
@@ -164,30 +168,30 @@ public class ListingCommandHandlerTest {
     private static final String HEARING_ADDED_TO_CASE_EVENT = "listing.events.hearing-added-to-case";
     private static final String COURT_APPLICATION_ADDED_TO_HEARING_EVENT = "listing.events.court-application-added-to-hearing";
 
-    private static final UUID PERSON_ID = UUID.randomUUID();
-    private static final UUID DEFENDANT_ID1 = UUID.randomUUID();
-    private static final UUID DEFENDANT_ID2 = UUID.randomUUID();
-    private static final UUID DEFENDANT_ID3 = UUID.randomUUID();
-    private static final UUID OFFENCE_ID1 = UUID.randomUUID();
-    private static final UUID UPDATED_OFFENCE_ID1 = UUID.randomUUID();
-    private static final UUID UPDATED_OFFENCE_ID2 = UUID.randomUUID();
-    private static final UUID UPDATED_OFFENCE_ID3 = UUID.randomUUID();
-    private static final UUID ADDED_OFFENCE_ID1 = UUID.randomUUID();
-    private static final UUID ADDED_OFFENCE_ID2 = UUID.randomUUID();
-    private static final UUID ADDED_OFFENCE_ID3 = UUID.randomUUID();
-    private static final UUID DELETED_OFFENCE_ID1 = UUID.randomUUID();
-    private static final UUID DELETED_OFFENCE_ID2 = UUID.randomUUID();
-    private static final UUID DELETED_OFFENCE_ID3 = UUID.randomUUID();
-    private static final UUID DELETED_OFFENCE_ID4 = UUID.randomUUID();
+    private static final UUID PERSON_ID = randomUUID();
+    private static final UUID DEFENDANT_ID1 = randomUUID();
+    private static final UUID DEFENDANT_ID2 = randomUUID();
+    private static final UUID DEFENDANT_ID3 = randomUUID();
+    private static final UUID OFFENCE_ID1 = randomUUID();
+    private static final UUID UPDATED_OFFENCE_ID1 = randomUUID();
+    private static final UUID UPDATED_OFFENCE_ID2 = randomUUID();
+    private static final UUID UPDATED_OFFENCE_ID3 = randomUUID();
+    private static final UUID ADDED_OFFENCE_ID1 = randomUUID();
+    private static final UUID ADDED_OFFENCE_ID2 = randomUUID();
+    private static final UUID ADDED_OFFENCE_ID3 = randomUUID();
+    private static final UUID DELETED_OFFENCE_ID1 = randomUUID();
+    private static final UUID DELETED_OFFENCE_ID2 = randomUUID();
+    private static final UUID DELETED_OFFENCE_ID3 = randomUUID();
+    private static final UUID DELETED_OFFENCE_ID4 = randomUUID();
 
-    private static final UUID HEARING_ID_1 = UUID.randomUUID();
-    private static final UUID HEARING_ID_2 = UUID.randomUUID();
-    private static final UUID CASE_ID = UUID.randomUUID();
-    private static final UUID APPLICATION_ID = UUID.randomUUID();
-    private static final UUID ADDED_OFFENCE_CASE_ID = UUID.randomUUID();
-    private static final UUID UPDATED_OFFENCE_CASE_ID = UUID.randomUUID();
-    private static final UUID DELETED_OFEENCE_CASE_ID = UUID.randomUUID();
-    private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
+    private static final UUID HEARING_ID_1 = randomUUID();
+    private static final UUID HEARING_ID_2 = randomUUID();
+    private static final UUID CASE_ID = randomUUID();
+    private static final UUID APPLICATION_ID = randomUUID();
+    private static final UUID ADDED_OFFENCE_CASE_ID = randomUUID();
+    private static final UUID UPDATED_OFFENCE_CASE_ID = randomUUID();
+    private static final UUID DELETED_OFEENCE_CASE_ID = randomUUID();
+    private static final UUID COURT_CENTRE_ID = randomUUID();
     private static final String FIRST_NAME = "Test Recipe";
     private static final String LAST_NAME = "Last Name";
     private static final String DATE_OF_BIRTH = "1980-07-15";
@@ -206,10 +210,10 @@ public class ListingCommandHandlerTest {
     private static final int INITIAL_ESTIMATE_MINUTES = 640;
     private static final int UPDATED_ESTIMATE_MINUTES = 720;
     private static final String DEFENCE_ORGANISATION_NAME = "XYZ Organisation";
-    private static final UUID DEFENCE_ORGANISATION_ID = UUID.randomUUID();
+    private static final UUID DEFENCE_ORGANISATION_ID = randomUUID();
     private static final String URN = "urn";
-    private static final UUID JUDGE_ID = UUID.randomUUID();
-    private static final UUID COURT_ROOM_ID = UUID.randomUUID();
+    private static final UUID JUDGE_ID = randomUUID();
+    private static final UUID COURT_ROOM_ID = randomUUID();
     private static final String STATEMENT_OF_OFFENCE_TITLE = "title";
     private static final String STATEMENT_OF_OFFENCE_LEGISLATION = "Legislation";
     private static final String START_TIME = "10:30";
@@ -233,19 +237,19 @@ public class ListingCommandHandlerTest {
     private static final String PROSECUTOR_DATES_TO_AVOID = "Can't do Mondays & Tuesdays";
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
     private static final Type HEARING_TYPE = Type.type()
-            .withId(UUID.fromString("6e1bef55-7e13-4615-b3ba-8663f4438e16"))
+            .withId(fromString("6e1bef55-7e13-4615-b3ba-8663f4438e16"))
             .withDescription("Trial")
             .build();
     private static final List NON_SITTING_DAYS = Collections.EMPTY_LIST;
     private static final String EARLIEST_START_TIME = "2012-12-12T01:02:33Z";
 
 
-    private static final UUID JUDICIAL_ID_1 = UUID.randomUUID();
-    private static final UUID JUDICIAL_ID_2 = UUID.randomUUID();
+    private static final UUID JUDICIAL_ID_1 = randomUUID();
+    private static final UUID JUDICIAL_ID_2 = randomUUID();
     private static final String JUDICIAL_ROLE_TYPE = "MAGISTRATE";
     private static final Boolean IS_DEPUTY = false;
     private static final Boolean IS_BENCH_CHAIRMAN = true;
-    private static final UUID AUTHORITY_ID = UUID.randomUUID();
+    private static final UUID AUTHORITY_ID = randomUUID();
     private static final String HEARING_LANGUAGE = "ENGLISH";
     private static final String DEFAULT_DURATION = "6";
     private static final String DEFAULT_START_TIME = "10:30";
@@ -256,7 +260,7 @@ public class ListingCommandHandlerTest {
     private static final String HEARING_DATE_3 = "2012-13-13";
     private static final String HEARING_DATE_4 = "2012-13-15";
 
-    private static final UUID COURT_APPLICATION_ID = UUID.randomUUID();
+    private static final UUID COURT_APPLICATION_ID = randomUUID();
     private static final String COURT_APPLICATION_TYPE = STRING.next();
     @Mock
     CaseOffences caseOffences;
@@ -316,6 +320,8 @@ public class ListingCommandHandlerTest {
     private CourtApplicationToDomainConverter courtApplicationToDomainConverter;
     @Spy
     private CommandOffenceToDomainOffence commandOffenceToDomainOffence;
+    @Spy
+    private CaseMarkersToDomainConverter caseMarkersToDomainConverter;
     private boolean hasCustodyTimeLimit = true;
     @Mock
     private Hearing hearing;
@@ -365,8 +371,8 @@ public class ListingCommandHandlerTest {
 
         List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds = Collections.singletonList(
                 CourtApplicationPartyListingNeeds.courtApplicationPartyListingNeeds()
-                        .withCourtApplicationId(UUID.fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
-                        .withCourtApplicationPartyId(UUID.fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
+                        .withCourtApplicationId(fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
+                        .withCourtApplicationPartyId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
                         .withHearingLanguageNeeds(HearingLanguageNeeds.ENGLISH)
                         .build());
 
@@ -387,20 +393,20 @@ public class ListingCommandHandlerTest {
 
     private CourtApplication getCourtApplication() {
         return CourtApplication.courtApplication()
-                .withLinkedCaseId(UUID.fromString("19e9d562-6abb-4871-bfb3-2d777aa90371"))
-                .withParentApplicationId(UUID.fromString("9d9a431a-0f12-4386-878a-2bf6c4a0877e"))
+                .withLinkedCaseId(fromString("19e9d562-6abb-4871-bfb3-2d777aa90371"))
+                .withParentApplicationId(fromString("9d9a431a-0f12-4386-878a-2bf6c4a0877e"))
                 .withApplicationType("App Type")
-                .withId(UUID.fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
+                .withId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
                 .withApplicant(ApplicantRespondent.applicantRespondent()
                         .withIsRespondent(false)
-                        .withId(UUID.fromString("22b1078b-9430-4cef-ba46-eea40a129ca8"))
+                        .withId(fromString("22b1078b-9430-4cef-ba46-eea40a129ca8"))
                         .withFirstName("Fred")
                         .withLastName("Perry")
                         .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
                         .build())
                 .withRespondents(Collections.singletonList(ApplicantRespondent.applicantRespondent()
                         .withIsRespondent(true)
-                        .withId(UUID.fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
+                        .withId(fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
                         .withFirstName("Dan")
                         .withLastName("Brown")
                         .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
@@ -972,8 +978,9 @@ public class ListingCommandHandlerTest {
         assertThat(hearingIdArguments.get(0), equalTo(HEARING_ID_1));
         assertThat(hearingIdArguments.get(1), equalTo(HEARING_ID_2));
     }
+
     @Test
-    public void shouldAddApplicationToHearing() throws Exception{
+    public void shouldAddApplicationToHearing() throws Exception {
         givenEventStream(APPLICATION_ID, eventStream, new Application(), Application.class);
 
         final AddCourtApplicationToHearingCommand addCourtApplicationToHearingCommand = AddCourtApplicationToHearingCommand
@@ -1002,8 +1009,9 @@ public class ListingCommandHandlerTest {
         );
 
     }
+
     @Test
-    public void shouldUpdateCourtApplication() throws Exception{
+    public void shouldUpdateCourtApplication() throws Exception {
         givenEventStream(APPLICATION_ID, eventStream, anApplication, Application.class);
         final uk.gov.justice.core.courts.CourtApplication courtApplication = uk.gov.justice.core.courts
                 .CourtApplication.courtApplication().withId(APPLICATION_ID).build();
@@ -1018,7 +1026,31 @@ public class ListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldRestrictCaseFromCourtListing() throws Exception{
+    public void shouldUpdateCaseMarkersForCase() throws Exception {
+
+        givenEventStream(CASE_ID, eventStream, aCase, Case.class);
+
+        when(eventSource.getStreamById(CASE_ID)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Case.class)).thenReturn(aCase);
+        when(aCase.addedCaseMarkers(eq(CASE_ID), anyListOf(CaseMarker.class))).thenReturn(mock(Stream.class));
+        final JsonEnvelope commandEnvelope = addCaseMarkersForListedCaseCommandEnvelope();
+
+        listingCommandHandler.updateCaseMarker(commandEnvelope);
+
+        verify(aCase).addedCaseMarkers((CASE_ID), buildCaseMarkers());
+    }
+
+    private List<CaseMarker> buildCaseMarkers() {
+        return singletonList(CaseMarker.caseMarker()
+                .withId(fromString("3789ab16-0bb7-4ef1-87ef-c936bf0364f1"))
+                .withMarkerTypeid(fromString("3789ab16-0bb7-4ef1-87ef-c936bf0364f1"))
+                .withMarkerTypeDescription("Prohibited Weapons")
+                .withMarkerTypeCode("WP")
+                .build());
+    }
+
+    @Test
+    public void shouldRestrictCaseFromCourtListing() throws Exception {
 
         final JsonEnvelope commandEnvelope = restrictCourtListCommandEnvelope();
 
@@ -1036,7 +1068,7 @@ public class ListingCommandHandlerTest {
                 .build();
         listingCommandHandler.restrictFromCourtList(commandEnvelope);
 
-        verify(hearing).restrictDetailsFromCourt((HEARING_ID_1),restrictCourtList);
+        verify(hearing).restrictDetailsFromCourt((HEARING_ID_1), restrictCourtList);
 
     }
 
@@ -1238,13 +1270,14 @@ public class ListingCommandHandlerTest {
             throw new RuntimeException(e);
         }
     }
+
     private JsonEnvelope updateCourtApplicationCommandEnvelope() {
-            return createEnvelope("listing.command.update-court-application", createObjectBuilder().add("courtApplication",
-                    createObjectBuilder().add("id",APPLICATION_ID.toString())
-                            .add("type", createObjectBuilder().add("ApplicationType", "type"))
-                            .add("applicant", createObjectBuilder()
-                                    .add("id", UUID.randomUUID().toString()))
-                            .build()).build());
+        return createEnvelope("listing.command.update-court-application", createObjectBuilder().add("courtApplication",
+                createObjectBuilder().add("id", APPLICATION_ID.toString())
+                        .add("type", createObjectBuilder().add("ApplicationType", "type"))
+                        .add("applicant", createObjectBuilder()
+                                .add("id", randomUUID().toString()))
+                        .build()).build());
     }
 
 
@@ -1306,10 +1339,21 @@ public class ListingCommandHandlerTest {
                 .replace("OFFENCE_ID1", OFFENCE_ID1.toString());
 
 
-
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.add-defendants-to-court-proceedings", jsonReader.readObject());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private JsonEnvelope addCaseMarkersForListedCaseCommandEnvelope() {
+        String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-case-markers.json").toString()
+                .replace("CASE_ID", CASE_ID.toString())
+                .replace("HEARING_ID_1", HEARING_ID_1.toString());
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.update-case-markers", jsonReader.readObject());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -1333,7 +1377,7 @@ public class ListingCommandHandlerTest {
                 .replace("\"IS_DEPUTY\"", IS_DEPUTY.toString())
                 .replace("\"IS_BENCH_CHAIRMAN\"", IS_BENCH_CHAIRMAN.toString())
                 .replace("JUDICIAL_ID", JUDICIAL_ID_1.toString())
-                .replace("JUDICIAL_ROLE_TYPE", JUDICIAL_ROLE_TYPE.toString())
+                .replace("JUDICIAL_ROLE_TYPE", JUDICIAL_ROLE_TYPE)
                 .replace("AUTHORITY_ID", AUTHORITY_ID.toString());
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
@@ -1346,12 +1390,15 @@ public class ListingCommandHandlerTest {
     private JsonEnvelope addHearingToCaseCommandEnvelope(JsonObject commandJsonObject) {
         return createEnvelope("listing.command.add-hearing-to-case", commandJsonObject);
     }
+
     private JsonEnvelope addCourtApplicationToHearingCommandEnvelope(JsonObject commandJsonObject) {
         return createEnvelope("listing.command.add-court-application-to-hearing", commandJsonObject);
     }
+
     private JsonEnvelope updateCourtApplicationCommandEnvelope(JsonObject commandJsonObject) {
         return createEnvelope("listing.command.update-court-application", commandJsonObject);
     }
+
     private JsonEnvelope updateOffencesForHearingCommandEnvelope() {
         String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-offences-for-hearing.json").toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString())
@@ -1844,7 +1891,7 @@ public class ListingCommandHandlerTest {
                 .build();
     }
 
-    private Defendant createDomainDefendantForAddDefendantToCourtProceedings(){
+    private Defendant createDomainDefendantForAddDefendantToCourtProceedings() {
         return Defendant.defendant()
                 .withId(DEFENDANT_ID1)
                 .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
@@ -1875,6 +1922,7 @@ public class ListingCommandHandlerTest {
                 .build();
 
     }
+
     private Defendant createDomainDefendantForUpdateDefendantsForHearing() {
         return Defendant.defendant()
                 .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
@@ -1895,12 +1943,12 @@ public class ListingCommandHandlerTest {
 
     private CourtApplication getNewCourtApplication() {
         return CourtApplication.courtApplication()
-                .withLinkedCaseId(UUID.fromString("19e9d562-6abb-4871-bfb3-2d777aa90371"))
-                .withParentApplicationId(UUID.fromString("9d9a431a-0f12-4386-878a-2bf6c4a0877e"))
+                .withLinkedCaseId(fromString("19e9d562-6abb-4871-bfb3-2d777aa90371"))
+                .withParentApplicationId(fromString("9d9a431a-0f12-4386-878a-2bf6c4a0877e"))
                 .withApplicationType("9vBchM49Go")
-                .withId(UUID.fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
+                .withId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
                 .withApplicant(ApplicantRespondent.applicantRespondent()
-                        .withId(UUID.fromString("22b1078b-9430-4cef-ba46-eea40a129ca8"))
+                        .withId(fromString("22b1078b-9430-4cef-ba46-eea40a129ca8"))
                         .withIsRespondent(false)
                         .withFirstName("David")
                         .withLastName("Dell")
@@ -1910,7 +1958,7 @@ public class ListingCommandHandlerTest {
                         .withIsRespondent(true)
                         .withFirstName("Luise")
                         .withLastName("Miller")
-                        .withId(UUID.fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
+                        .withId(fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
                         .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
                         .build()))
                 .withApplicationReference(Optional.of("REF-1"))

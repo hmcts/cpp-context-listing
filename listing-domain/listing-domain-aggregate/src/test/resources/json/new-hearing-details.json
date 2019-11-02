@@ -13,6 +13,14 @@
         "authorityCode": "POLICE",
         "caseReference": "87GD9945217"
       },
+      "caseMarkers": [
+        {
+          "id": "31fd0edf-9692-46fa-a6be-4b78bf88fec6",
+          "markerTypeCode": "01",
+          "markerTypeDescription": "Marker Description",
+          "markerTypeid": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6"
+        }
+      ],
       "defendants": [
         {
           "id": "0baecac5-222b-402d-9047-84803679edac",

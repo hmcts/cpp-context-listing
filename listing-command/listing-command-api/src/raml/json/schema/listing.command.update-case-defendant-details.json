@@ -61,12 +61,14 @@
         "legalEntityDefendant": {
           "description": "When the defendant is a legal entity the additional legal entity specific details for the defendant",
           "$ref": "http://justice.gov.uk/core/courts/legalEntityDefendant.json"
+        },
+        "isYouth":{
+          "type" : "boolean"
         }
       },
       "required": [
         "id",
         "prosecutionCaseId"
-
       ],
       "additionalProperties": false
     }

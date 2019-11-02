@@ -32,6 +32,7 @@ public class CourtsDefendantToDomainConverter implements Converter<uk.gov.justic
                 .withDateOfBirth(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getDateOfBirth() : empty())
                 .withCustodyTimeLimit(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getCustodyTimeLimit() : empty())
                 .withOffences(emptyList())
+                .withIsYouth(d.getIsYouth().isPresent() ? d.getIsYouth():empty())
                 .build();
     }
 

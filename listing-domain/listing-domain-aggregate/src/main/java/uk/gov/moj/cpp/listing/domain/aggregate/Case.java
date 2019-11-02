@@ -6,6 +6,7 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoN
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
+import uk.gov.justice.listing.events.CaseMarkersToBeUpdated;
 import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
@@ -13,6 +14,7 @@ import uk.gov.justice.listing.events.HearingAddedToCase;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
+import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
 import uk.gov.moj.cpp.listing.domain.Defendant;
@@ -29,7 +31,7 @@ import java.util.stream.Stream;
 @SuppressWarnings("squid:S1068")
 public class Case implements Aggregate {
 
-    private static final long serialVersionUID = 200L;
+    private static final long serialVersionUID = 201L;
 
     private final List<UUID> hearingIds = new ArrayList<>();
 
@@ -83,6 +85,18 @@ public class Case implements Aggregate {
         return apply(Stream.of(DefendantsToBeAddedForCourtProceedings.defendantsToBeAddedForCourtProceedings()
                 .withCaseId(caseId)
                 .withDefendants(singletonList(NewDomainToEventConverter.buildDefendant(defendant)))
+                .withHearings(hearingIds)
+                .build()));
+    }
+
+    public Stream<Object> addedCaseMarkers(UUID caseId, List<CaseMarker> caseMarkers) {
+        if (hearingIds.isEmpty()) {
+            return Stream.empty();
+        }
+
+        return apply(Stream.of(CaseMarkersToBeUpdated.caseMarkersToBeUpdated()
+                .withProsecutionCaseId(caseId)
+                .withMarkers(NewDomainToEventConverter.convertCaseMarkersListToMarkers(caseMarkers))
                 .withHearings(hearingIds)
                 .build()));
     }

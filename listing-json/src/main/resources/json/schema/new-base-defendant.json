@@ -38,6 +38,9 @@
     },
     "defenceOrganisation": {
       "type": "string"
+    },
+    "isYouth":{
+      "type" : "boolean"
     }
   },
   "required": [

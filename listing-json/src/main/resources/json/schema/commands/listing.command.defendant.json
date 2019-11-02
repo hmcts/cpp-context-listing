@@ -50,6 +50,9 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/offence.json"
       }
+    },
+    "isYouth": {
+      "type": "boolean"
     }
   },
   "required": [

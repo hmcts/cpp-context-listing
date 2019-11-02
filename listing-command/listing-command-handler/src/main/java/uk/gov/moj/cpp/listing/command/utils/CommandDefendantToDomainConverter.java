@@ -36,6 +36,7 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
                 .withOffences(d.getOffences().stream()
                         .map(this::buildOffence)
                         .collect(toList()))
+                .withIsYouth(d.getIsYouth())
                 .build();
     }
 

@@ -52,6 +52,9 @@
     },
     "restrictFromCourtList": {
       "type":"boolean"
+    },
+    "isYouth":{
+      "type" : "boolean"
     }
   },
   "required": [

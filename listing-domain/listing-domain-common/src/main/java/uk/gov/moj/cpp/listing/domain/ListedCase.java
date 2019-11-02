@@ -9,12 +9,14 @@ public class ListedCase {
 
   private final List<Defendant> defendants;
 
+  private final List<CaseMarker> caseMarkers;
+
   private final UUID id;
 
-
-  public ListedCase(final CaseIdentifier caseIdentifier, final List<Defendant> defendants, final UUID id) {
+  public ListedCase(final CaseIdentifier caseIdentifier, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id) {
     this.caseIdentifier = caseIdentifier;
     this.defendants = defendants;
+    this.caseMarkers = caseMarkers;
     this.id = id;
   }
 
@@ -24,6 +26,10 @@ public class ListedCase {
 
   public List<Defendant> getDefendants() {
     return defendants;
+  }
+
+  public List<CaseMarker> getCaseMarkers() {
+    return caseMarkers;
   }
 
   public UUID getId() {
@@ -65,6 +71,7 @@ public class ListedCase {
     private List<Defendant> defendants;
 
     private UUID id;
+    private List<CaseMarker> caseMarkers;
 
 
 
@@ -78,6 +85,12 @@ public class ListedCase {
       return this;
     }
 
+    public Builder withCaseMarkers(final List<CaseMarker> caseMarkers) {
+      this.caseMarkers = caseMarkers;
+      return this;
+    }
+
+
     public Builder withId(final UUID id) {
       this.id = id;
       return this;
@@ -86,7 +99,7 @@ public class ListedCase {
 
 
     public ListedCase build() {
-      return new ListedCase(caseIdentifier, defendants, id);
+      return new ListedCase(caseIdentifier, defendants, caseMarkers, id);
     }
   }
 }

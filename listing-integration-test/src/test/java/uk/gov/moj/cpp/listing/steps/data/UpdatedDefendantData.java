@@ -10,6 +10,7 @@ import static java.util.Optional.of;
 import uk.gov.justice.core.courts.DefendantAlias;
 import uk.gov.justice.core.courts.BailStatus;
 
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -29,6 +30,7 @@ public class UpdatedDefendantData {
     private final String pncId;
     private final List<DefendantAlias> aliases;
     private final Boolean restrictFromCourtList ;
+    private final Boolean isYouth;
 
     public static UpdatedDefendantData updatedDefendantData(DefendantData defendantData) {
         return UpdatedDefendantData.Builder.UpdatedDefendantData()
@@ -44,6 +46,7 @@ public class UpdatedDefendantData {
                 .withSpecificRequirements("withSpecificRequirements")
                 .withCourtCentreId(randomUUID())
                 .withPncId("pncId")
+                .withIsYouth(Boolean.TRUE)
                 .withAliases(Arrays.asList(DefendantAlias.defendantAlias()
                 										.withFirstName(of("Alias First Name"))
                 										.withLastName(of("Alias Last Name"))
@@ -64,7 +67,8 @@ public class UpdatedDefendantData {
                                 final UUID courtCentreId,
                                 final String pncId,
                                 final List<DefendantAlias> aliases,
-                                final Boolean restrictFromCourtList) {
+                                final Boolean restrictFromCourtList,
+                                final Boolean isYouth) {
         this.bailStatus = bailStatus;
         this.custodyTimeLimit = custodyTimeLimit;
         this.dateOfBirth = dateOfBirth;
@@ -79,6 +83,7 @@ public class UpdatedDefendantData {
         this.pncId = pncId;
         this.aliases = aliases;
         this.restrictFromCourtList = restrictFromCourtList;
+        this.isYouth = isYouth;
     }
 
     public BailStatus getBailStatus() {
@@ -125,6 +130,9 @@ public class UpdatedDefendantData {
 		return pncId;
 	}
 
+    public Optional<Boolean> getYouth() {
+        return Optional.ofNullable(isYouth);
+    }
 
     public List<DefendantAlias> getAliases() {
 		return aliases;
@@ -145,6 +153,7 @@ public class UpdatedDefendantData {
         private String pncId;
         private List<DefendantAlias> aliases;
         private Boolean restrictFromCourtList ;
+        private Boolean isYouth;
 
         public static Builder UpdatedDefendantData() {
             return new Builder();
@@ -210,6 +219,12 @@ public class UpdatedDefendantData {
             return this;
         }
 
+        public Builder withIsYouth(final Boolean isYouth) {
+            this.isYouth = isYouth;
+            return this;
+        }
+
+
         public Builder withAliases(final List<DefendantAlias> aliases) {
             this.aliases = aliases;
             return this;
@@ -221,7 +236,7 @@ public class UpdatedDefendantData {
         }
         public UpdatedDefendantData build() {
             return new UpdatedDefendantData(bailStatus, custodyTimeLimit, dateOfBirth, firstName, defendantId, lastName, organisationName,
-            								legalEntityName, legalEntityId, specificRequirements, courtCentreId, pncId, aliases, restrictFromCourtList);
+            								legalEntityName, legalEntityId, specificRequirements, courtCentreId, pncId, aliases, restrictFromCourtList, isYouth);
         }
     }
 }

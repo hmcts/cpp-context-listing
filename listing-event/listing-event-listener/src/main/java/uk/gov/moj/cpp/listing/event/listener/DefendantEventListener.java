@@ -83,6 +83,7 @@ public class DefendantEventListener {
                 .withDatesToAvoid(originalDefendant.getDatesToAvoid())
                 .withHearingLanguageNeeds(originalDefendant.getHearingLanguageNeeds())
                 .withRestrictFromCourtList(originalDefendant.getRestrictFromCourtList())
+                .withIsYouth(updatedDefendant.getIsYouth())
                 .build();
 
         defendants.replaceAll(defendant -> defendant.getId().equals(newDefendant.getId()) ? newDefendant : defendant);

@@ -34,21 +34,23 @@ public class Defendant {
 
     private final Optional<String> specificRequirements;
 
+  private final Optional<Boolean> isYouth;
 
-    public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final UUID prosecutionCaseId) {
-        this.bailStatus = bailStatus;
-        this.custodyTimeLimit = custodyTimeLimit;
-        this.dateOfBirth = dateOfBirth;
-        this.datesToAvoid = datesToAvoid;
-        this.defenceOrganisation = defenceOrganisation;
-        this.firstName = firstName;
-        this.hearingLanguageNeeds = hearingLanguageNeeds;
-        this.id = id;
-        this.lastName = lastName;
-        this.prosecutionCaseId = prosecutionCaseId;
-        this.offences = offences == null ? emptyList() : offences;
-        this.organisationName = organisationName;
-        this.specificRequirements = specificRequirements;
+  public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final UUID prosecutionCaseId, final Optional<Boolean> isYouth) {
+    this.bailStatus = bailStatus;
+    this.custodyTimeLimit = custodyTimeLimit;
+    this.dateOfBirth = dateOfBirth;
+    this.datesToAvoid = datesToAvoid;
+    this.defenceOrganisation = defenceOrganisation;
+    this.firstName = firstName;
+    this.hearingLanguageNeeds = hearingLanguageNeeds;
+    this.id = id;
+    this.lastName = lastName;
+    this.prosecutionCaseId = prosecutionCaseId;
+    this.offences = offences == null ? emptyList() : offences;
+    this.organisationName = organisationName;
+    this.specificRequirements = specificRequirements;
+    this.isYouth = isYouth;
 
     }
 
@@ -104,9 +106,11 @@ public class Defendant {
         return prosecutionCaseId;
     }
 
-    public static Builder defendant() {
-        return new Defendant.Builder();
-    }
+  public Optional<Boolean> getIsYouth() { return isYouth;  }
+
+  public static Builder defendant() {
+    return new Defendant.Builder();
+  }
 
     @Override
     public boolean equals(final Object obj) {
@@ -184,10 +188,12 @@ public class Defendant {
 
         private UUID prosecutionCaseId;
 
-        public Builder withBailStatus(final Optional<BailStatus> bailStatus) {
-            this.bailStatus = bailStatus;
-            return this;
-        }
+    private Optional<Boolean> isYouth;
+
+    public Builder withBailStatus(final Optional<BailStatus> bailStatus) {
+      this.bailStatus = bailStatus;
+      return this;
+    }
 
         public Builder withCustodyTimeLimit(final Optional<String> custodyTimeLimit) {
             this.custodyTimeLimit = custodyTimeLimit;
@@ -249,8 +255,13 @@ public class Defendant {
             return this;
         }
 
-        public Defendant build() {
-            return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements, prosecutionCaseId);
-        }
+    public Builder withIsYouth(final Optional<Boolean> isYouth) {
+      this.isYouth = isYouth;
+      return this;
     }
+
+    public Defendant build() {
+      return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements, prosecutionCaseId, isYouth);
+    }
+  }
 }
