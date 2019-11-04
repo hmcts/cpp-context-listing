@@ -82,6 +82,11 @@
             <artifactId>jsonassert</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-domain-xhibit</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

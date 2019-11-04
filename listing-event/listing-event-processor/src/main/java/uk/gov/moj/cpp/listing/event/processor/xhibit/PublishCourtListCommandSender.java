@@ -21,8 +21,11 @@ import javax.json.JsonObjectBuilder;
 public class PublishCourtListCommandSender {
     private static final String ERROR_MESSAGE = "errorMessage";
 
+    private static final String RECORD_COURT_LIST_PUBLISHED = "listing.command.record-court-list-published";
     private static final String RECORD_COURT_LIST_EXPORT_SUCCESSFUL = "listing.command.record-court-list-export-successful";
     private static final String RECORD_COURT_LIST_EXPORT_FAILED = "listing.command.record-court-list-publish-export-failed";
+    private static final String DOCUMENT_NAME = "documentName";
+    private static final String DOCUMENT_ID = "documentId";
 
     @Inject
     @FrameworkComponent("EVENT_PROCESSOR")
@@ -31,13 +34,25 @@ public class PublishCourtListCommandSender {
     @Inject
     private UtcClock utcClock;
 
+    public void recordCourtListPublished(final UUID documentId,
+                                         final String documentName) {
+
+        final JsonObject payload = createObjectBuilder()
+                .add(DOCUMENT_ID, documentId.toString())
+                .add(DOCUMENT_NAME, documentName)
+                .add("publishedTime", ZonedDateTimes.toString(utcClock.now()))
+                .build();
+
+        sendCommandWith(RECORD_COURT_LIST_PUBLISHED, documentId, payload);
+    }
+
     @SuppressWarnings("squid:S1192")
     public void recordCourtListExportSuccessful(final UUID documentId,
                                                 final String documentName) {
 
         final JsonObject payload = createObjectBuilder()
-                .add("documentId", documentId.toString())
-                .add("documentName", documentName)
+                .add(DOCUMENT_ID, documentId.toString())
+                .add(DOCUMENT_NAME, documentName)
                 .add("sentTime", ZonedDateTimes.toString(utcClock.now()))
                 .build();
 
@@ -49,8 +64,8 @@ public class PublishCourtListCommandSender {
                                             final String errorMessage) {
 
         final JsonObjectBuilder objectBuilder = createObjectBuilder()
-                .add("documentId", documentId.toString())
-                .add("documentName", documentName)
+                .add(DOCUMENT_ID, documentId.toString())
+                .add(DOCUMENT_NAME, documentName)
                 .add("failedTime", ZonedDateTimes.toString(utcClock.now()))
                 .add(ERROR_MESSAGE, errorMessage);
 

@@ -4,14 +4,21 @@ import static java.lang.String.format;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListFilenameGenerator;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListXmlGenerator;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.ExportFailedException;
 
+import java.io.InputStream;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -27,19 +34,46 @@ import org.slf4j.Logger;
 @RunWith(MockitoJUnitRunner.class)
 public class CourtListEventProcessorTest {
     private static final String PRIVATE_EVENT_PUBLISH_COURT_LIST_PRODUCED = "listing.event.publish-court-list-produced";
-
-    @Mock
-    private Logger LOGGER;
-
-    @Mock
-    private XhibitService xhibitService;
-
-    @Mock
-    private PublishCourtListCommandSender publishCourtListCommandSender;
-
     @Spy
     @InjectMocks
     CourtListEventProcessor courtListEventProcessor;
+    @Mock
+    private Logger LOGGER;
+    @Mock
+    private XhibitService xhibitService;
+    @Mock
+    private PublishCourtListCommandSender publishCourtListCommandSender;
+    @Mock
+    private PublishCourtListRequestParametersParser publishCourtListRequestParametersParser;
+    @Mock
+    private CourtListFilenameGenerator courtListFilenameGenerator;
+    @Mock
+    private CourtListXmlGenerator courtListXmlGenerator;
+    @Mock
+    private FileServiceClient fileServiceClient;
+
+    @Test
+    public void shouldHandlePublishCourtListRequested() throws Exception {
+
+        // Mocked values
+        final JsonEnvelope tEnvelope = mock(JsonEnvelope.class);
+        final UUID generatedDocumentId = randomUUID();
+        final InputStream mockFileContentStream = mock(InputStream.class);
+        final PublishCourtListRequestParameters parameters = mock(PublishCourtListRequestParameters.class);
+        final String generatedFilename = "GENERATED_FILENAME";
+
+        when(publishCourtListRequestParametersParser.parse(tEnvelope)).thenReturn(parameters);
+        when(courtListFilenameGenerator.generateFilename(parameters)).thenReturn(generatedFilename);
+        when(courtListXmlGenerator.generateCourtListXml(parameters)).thenReturn(mockFileContentStream);
+        when(fileServiceClient.store(generatedFilename, mockFileContentStream)).thenReturn(generatedDocumentId);
+
+        // Tested method
+        courtListEventProcessor.handlePublishCourtListRequested(tEnvelope);
+
+        // Assertions
+        verify(fileServiceClient).store(generatedFilename, mockFileContentStream);
+        verify(publishCourtListCommandSender).recordCourtListPublished(generatedDocumentId, generatedFilename);
+    }
 
     @Test
     public void handleProducedCourtListWhenExportSuccessful() throws ExportFailedException {
@@ -74,7 +108,7 @@ public class CourtListEventProcessorTest {
         courtListEventProcessor.handleProducedCourtList(tEnvelope);
         verify(xhibitService).sendToXhibit(documentId, documentName);
         verify(publishCourtListCommandSender).recordCourtListExportFailed(documentId, documentName, "Not reachable");
-        verify(LOGGER).error(format("Export failed for %s %s %s",documentId, documentName, "Not reachable"));
+        verify(LOGGER).error(format("Export failed for %s %s %s", documentId, documentName, "Not reachable"));
 
     }
 
