@@ -173,11 +173,9 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         //given hearing with commencing date
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
-        final UUID courtRoomId = UUID.randomUUID();
         final Type hearingType = type().withId(UUID.randomUUID()).withDescription("TRIAL").build();
-        final JurisdictionType jurisdictionType = CROWN;
         final String judicialId = UUID.randomUUID().toString();
-        givenHearingsWithWeekCommencing(hearingId, courtCentreId, courtRoomId, AUTHORITY_ID, hearingType, jurisdictionType, judicialId);
+        givenHearingsWithWeekCommencing(hearingId, courtCentreId, AUTHORITY_ID, hearingType, CROWN, judicialId);
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearingsByWeekCommencingRange(
@@ -185,9 +183,46 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 null,
                 AUTHORITY_CODE_SEARCH,
                 null,
-                null,
+                CROWN.toString(),
                 to(WEEK_COMMENCING_START_DATE),
                 to(WEEK_COMMENCING_END_DATE));
+
+        //then
+        assertThat(actualHearings.size(), is(2));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+
+    }
+
+    @Test
+    public void shouldSaveAndFindUnallocatedHearingWhereQueryFindsResultsByWeekCommencingDateRange() {
+
+        //given hearing with fixed date
+        givenHearings();
+
+        //given hearing with commencing date
+        final UUID hearingId = UUID.randomUUID();
+        final UUID courtCentreId = UUID.randomUUID();
+        final Type hearingType = type().withId(UUID.randomUUID()).withDescription("TRIAL").build();
+        final String judicialId = UUID.randomUUID().toString();
+        givenHearingsWithWeekCommencing(hearingId, courtCentreId, AUTHORITY_ID, hearingType, CROWN, judicialId);
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
+                null,
+                null,
+                AUTHORITY_CODE_SEARCH,
+                null,
+                CROWN.toString(),
+                EARLIEST_SEARCH_DATE,
+                LATEST_SEARCH_DATE,
+                false);
 
         //then
         assertThat(actualHearings.size(), is(2));
@@ -211,11 +246,9 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         //given hearing with commencing date
         final UUID hearingId = UUID.randomUUID();
         final UUID courtCentreId = UUID.randomUUID();
-        final UUID courtRoomId = UUID.randomUUID();
         final Type hearingType = type().withId(UUID.randomUUID()).withDescription("TRIAL").build();
-        final JurisdictionType jurisdictionType = CROWN;
         final String judicialId = UUID.randomUUID().toString();
-        givenHearingsWithWeekCommencing(hearingId, courtCentreId, courtRoomId, AUTHORITY_ID, hearingType, jurisdictionType, judicialId);
+        givenHearingsWithWeekCommencing(hearingId, courtCentreId, AUTHORITY_ID, hearingType, CROWN, judicialId);
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearingsByWeekCommencingRange(
@@ -734,7 +767,6 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
     public void givenHearingsWithWeekCommencing(final UUID hearingId,
                                                 final UUID courtCentreId,
-                                                final UUID courtRoomId,
                                                 final UUID authorityId,
                                                 final Type hearingType,
                                                 final JurisdictionType jurisdictionType,
@@ -742,7 +774,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         saveHearingJson(
                 hearingId,
                 courtCentreId,
-                courtRoomId,
+                null,
                 UNALLOCATED,
                 authorityId,
                 hearingType,
@@ -877,7 +909,6 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 updatedHearingString
                         .replaceAll(ALLOCATED_FIELD, Boolean.toString(allocated))
                         .replaceAll(COURT_CENTRE_ID_FIELD, courtCentreId.toString())
-                        .replaceAll(COURT_ROOM_ID_FIELD, courtRoomId.toString())
                         .replaceAll(AUTHORITY_ID_FIELD, authorityId.toString())
                         .replaceAll(HEARING_TYPE_ID_FIELD, hearingType.getId().toString())
                         .replaceAll(HEARING_TYPE_DESCRIPTION_FIELD, hearingType.getDescription())

@@ -44,8 +44,8 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
         final UpdatedHearingData updatedHearingData1 = updatedHearingListedData(hearingsData.get(3));
 
         //update fixed hearing to week commencing hearings
-        final UpdatedHearingData updatedHearingData2 = updateLoadedFixedHearingToWeekCommencingHearing(hearingsData.get(4), WEEK_COMMENCING_END_DATE_FOR_ONE_WEEK, 1);
-        final UpdatedHearingData updatedHearingData3 = updateLoadedFixedHearingToWeekCommencingHearing(hearingsData.get(5), WEEK_COMMENCING_END_DATE_FOR_TWO_WEEKS, 2);
+        final UpdatedHearingData updatedHearingData2 = updateLoadedFixedHearingToWeekCommencingHearing(hearingsData.get(5), WEEK_COMMENCING_END_DATE_FOR_ONE_WEEK, 1);
+        final UpdatedHearingData updatedHearingData3 = updateLoadedFixedHearingToWeekCommencingHearing(hearingsData.get(6), WEEK_COMMENCING_END_DATE_FOR_TWO_WEEKS, 2);
 
         updatedHearingDataList = asList(updatedHearingData1, updatedHearingData2, updatedHearingData3);
     }
@@ -63,45 +63,51 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
         final HearingsData hearingsData1 = hearingsData.get(0);
         final HearingsData hearingsData2 = hearingsData.get(1);
         final HearingsData hearingsData3 = hearingsData.get(2);
+        final HearingsData hearingsData5 = hearingsData.get(4);
 
         final UpdatedHearingData updatedHearingData = updatedHearingDataList.get(0);
         final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
         final UpdatedHearingData secondUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(2);
 
-        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(6)),
-                withJsonPath("$.hearings[0].id", is(hearingsData2.getHearingData().get(0).getId().toString())),
-                withJsonPath("$.hearings[0].jurisdictionType", is(hearingsData2.getHearingData().get(0).getJurisdictionType())),
-                withJsonPath("$.hearings[0].courtCentreId", is(hearingsData2.getHearingData().get(0).getCourtCentreId().toString())),
-                withJsonPath("$.hearings[0].startDate", is(hearingsData2.getHearingData().get(0).getHearingStartDate().toString())),
-                withJsonPath("$.hearings[0].endDate", is(hearingsData2.getHearingData().get(0).getHearingEndDate().toString())),
-                withJsonPath("$.hearings[1].id", is(hearingsData1.getHearingData().get(0).getId().toString())),
-                withJsonPath("$.hearings[1].jurisdictionType", is(hearingsData1.getHearingData().get(0).getJurisdictionType())),
-                withJsonPath("$.hearings[1].courtCentreId", is(hearingsData1.getHearingData().get(0).getCourtCentreId().toString())),
-                withJsonPath("$.hearings[1].startDate", is(hearingsData1.getHearingData().get(0).getHearingStartDate().toString())),
-                withJsonPath("$.hearings[1].endDate", is(hearingsData1.getHearingData().get(0).getHearingEndDate().toString())),
-                withJsonPath("$.hearings[2].id", is(hearingsData3.getHearingData().get(0).getId().toString())),
-                withJsonPath("$.hearings[2].jurisdictionType", is(hearingsData3.getHearingData().get(0).getJurisdictionType())),
-                withJsonPath("$.hearings[2].courtCentreId", is(hearingsData3.getHearingData().get(0).getCourtCentreId().toString())),
-                withJsonPath("$.hearings[2].startDate", is(hearingsData3.getHearingData().get(0).getHearingStartDate().toString())),
-                withJsonPath("$.hearings[2].endDate", is(hearingsData3.getHearingData().get(0).getHearingEndDate().toString())),
-                withJsonPath("$.hearings[3].id", is(updatedHearingData.getHearingId().toString())),
-                withJsonPath("$.hearings[3].jurisdictionType", is(updatedHearingData.getJurisdictionType())),
-                withJsonPath("$.hearings[3].courtCentreId", is(updatedHearingData.getCourtCentreId().toString())),
-                withJsonPath("$.hearings[3].startDate", is(updatedHearingData.getStartDate())),
-                withJsonPath("$.hearings[3].endDate", is(updatedHearingData.getEndDate())),
-                withJsonPath("$.hearings[4].id", is(firstUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
-                withJsonPath("$.hearings[4].jurisdictionType", is(firstUpdatedHearingDataWithWeekCommencingDate.getJurisdictionType())),
-                withJsonPath("$.hearings[4].courtCentreId", is(firstUpdatedHearingDataWithWeekCommencingDate.getCourtCentreId().toString())),
-                withJsonPath("$.hearings[4].weekCommencingStartDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
-                withJsonPath("$.hearings[4].weekCommencingEndDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
-                withJsonPath("$.hearings[5].id", is(secondUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
-                withJsonPath("$.hearings[5].jurisdictionType", is(secondUpdatedHearingDataWithWeekCommencingDate.getJurisdictionType())),
-                withJsonPath("$.hearings[5].courtCentreId", is(secondUpdatedHearingDataWithWeekCommencingDate.getCourtCentreId().toString())),
-                withJsonPath("$.hearings[5].weekCommencingStartDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
-                withJsonPath("$.hearings[5].weekCommencingEndDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
+        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(7)),
+                withJsonPath("$.hearings[0].id", is(hearingsData5.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[0].jurisdictionType", is(hearingsData5.getHearingData().get(0).getJurisdictionType())),
+                withJsonPath("$.hearings[0].courtCentreId", is(hearingsData5.getHearingData().get(0).getCourtCentreId().toString())),
+                withJsonPath("$.hearings[0].startDate", is(hearingsData5.getHearingData().get(0).getHearingStartDate().toString())),
+                withJsonPath("$.hearings[0].endDate", is(hearingsData5.getHearingData().get(0).getHearingEndDate().toString())),
+                withJsonPath("$.hearings[1].id", is(hearingsData2.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[1].jurisdictionType", is(hearingsData2.getHearingData().get(0).getJurisdictionType())),
+                withJsonPath("$.hearings[1].courtCentreId", is(hearingsData2.getHearingData().get(0).getCourtCentreId().toString())),
+                withJsonPath("$.hearings[1].startDate", is(hearingsData2.getHearingData().get(0).getHearingStartDate().toString())),
+                withJsonPath("$.hearings[1].endDate", is(hearingsData2.getHearingData().get(0).getHearingEndDate().toString())),
+                withJsonPath("$.hearings[2].id", is(hearingsData1.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[2].jurisdictionType", is(hearingsData1.getHearingData().get(0).getJurisdictionType())),
+                withJsonPath("$.hearings[2].courtCentreId", is(hearingsData1.getHearingData().get(0).getCourtCentreId().toString())),
+                withJsonPath("$.hearings[2].startDate", is(hearingsData1.getHearingData().get(0).getHearingStartDate().toString())),
+                withJsonPath("$.hearings[2].endDate", is(hearingsData1.getHearingData().get(0).getHearingEndDate().toString())),
+                withJsonPath("$.hearings[3].id", is(hearingsData3.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[3].jurisdictionType", is(hearingsData3.getHearingData().get(0).getJurisdictionType())),
+                withJsonPath("$.hearings[3].courtCentreId", is(hearingsData3.getHearingData().get(0).getCourtCentreId().toString())),
+                withJsonPath("$.hearings[3].startDate", is(hearingsData3.getHearingData().get(0).getHearingStartDate().toString())),
+                withJsonPath("$.hearings[3].endDate", is(hearingsData3.getHearingData().get(0).getHearingEndDate().toString())),
+                withJsonPath("$.hearings[4].id", is(updatedHearingData.getHearingId().toString())),
+                withJsonPath("$.hearings[4].jurisdictionType", is(updatedHearingData.getJurisdictionType())),
+                withJsonPath("$.hearings[4].courtCentreId", is(updatedHearingData.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[4].startDate", is(updatedHearingData.getStartDate())),
+                withJsonPath("$.hearings[4].endDate", is(updatedHearingData.getEndDate())),
+                withJsonPath("$.hearings[5].id", is(firstUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
+                withJsonPath("$.hearings[5].jurisdictionType", is(firstUpdatedHearingDataWithWeekCommencingDate.getJurisdictionType())),
+                withJsonPath("$.hearings[5].courtCentreId", is(firstUpdatedHearingDataWithWeekCommencingDate.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[5].weekCommencingStartDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
+                withJsonPath("$.hearings[5].weekCommencingEndDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
+                withJsonPath("$.hearings[6].id", is(secondUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
+                withJsonPath("$.hearings[6].jurisdictionType", is(secondUpdatedHearingDataWithWeekCommencingDate.getJurisdictionType())),
+                withJsonPath("$.hearings[6].courtCentreId", is(secondUpdatedHearingDataWithWeekCommencingDate.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[6].weekCommencingStartDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
+                withJsonPath("$.hearings[6].weekCommencingEndDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
         };
 
-        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, matchers);
+        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
     }
 
     @Test
@@ -126,7 +132,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
                 withJsonPath("$.hearings[1].weekCommencingEndDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
         };
 
-        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, matchers);
+        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate,true,  matchers);
     }
 
     @Test
@@ -151,7 +157,35 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
                 withJsonPath("$.hearings[1].weekCommencingEndDate", is(UpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
         };
 
-        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, matchers);
+        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true,  matchers);
+    }
+
+    @Test
+    public void shouldListUnallocatedHearingsWithinWeekCommencingDateRange() {
+        final String weekCommencingSearchStartDate = now().toString();
+        final HearingsData hearingsData5 = hearingsData.get(4);
+
+        final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
+        final UpdatedHearingData secondUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(2);
+
+        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(3)),
+                withJsonPath("$.hearings[0].id", is(hearingsData5.getHearingData().get(0).getId().toString())),
+                withJsonPath("$.hearings[0].jurisdictionType", is(hearingsData5.getHearingData().get(0).getJurisdictionType())),
+                withJsonPath("$.hearings[0].courtCentreId", is(hearingsData5.getHearingData().get(0).getCourtCentreId().toString())),
+                withJsonPath("$.hearings[0].startDate", is(hearingsData5.getHearingData().get(0).getHearingStartDate().toString())),
+                withJsonPath("$.hearings[0].endDate", is(hearingsData5.getHearingData().get(0).getHearingEndDate().toString())),
+                withJsonPath("$.hearings[1].id", is(firstUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
+                withJsonPath("$.hearings[1].jurisdictionType", is(firstUpdatedHearingDataWithWeekCommencingDate.getJurisdictionType())),
+                withJsonPath("$.hearings[1].courtCentreId", is(firstUpdatedHearingDataWithWeekCommencingDate.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[1].weekCommencingStartDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
+                withJsonPath("$.hearings[1].weekCommencingEndDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
+                withJsonPath("$.hearings[2].id", is(secondUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
+                withJsonPath("$.hearings[2].jurisdictionType", is(secondUpdatedHearingDataWithWeekCommencingDate.getJurisdictionType())),
+                withJsonPath("$.hearings[2].courtCentreId", is(secondUpdatedHearingDataWithWeekCommencingDate.getCourtCentreId().toString())),
+                withJsonPath("$.hearings[2].weekCommencingStartDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
+                withJsonPath("$.hearings[2].weekCommencingEndDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
+        };
+        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, null, false,  matchers);
     }
 
     @Test
@@ -163,7 +197,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
                 withJsonPath("$.hearings", empty()),
         };
 
-        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, matchers);
+        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true,  matchers);
     }
 
     private static void cleanListingTables() {

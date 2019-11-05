@@ -25,7 +25,6 @@
   ],
   "weekCommencingStartDate": "WEEK_COMMENCING_START_FIELD",
   "weekCommencingEndDate": "WEEK_COMMENCING_END_FIELD",
-  "courtRoomId": "COURT_ROOM_ID_FIELD",
   "listedCases": [
     {
       "id": "e2b13dc0-de95-11e8-9df5-e56feb0784f6",

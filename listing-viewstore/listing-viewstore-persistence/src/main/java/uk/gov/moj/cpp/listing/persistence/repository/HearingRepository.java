@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
-
 import org.apache.deltaspike.data.api.EntityManagerDelegate;
 import org.apache.deltaspike.data.api.EntityRepository;
 import org.apache.deltaspike.data.api.Query;
@@ -40,6 +39,22 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
         EntityManagerDelegate<Hearing> {
 
     String ALL_AUTHORITY_CODES_SEARCH = "[ ]";
+
+    String WEEK_COMMENCING_CORE_QUERY = "(?1 is null or properties ->> 'courtCentreId' = cast(?1 as text))  " +
+            "and (?2 is null or properties ->> 'courtRoomId' = cast(?2 as text))  " +
+            "and (?3 = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?3 as jsonb))  " +
+            "and (?4 is null or properties -> 'type' ->> 'id' = cast(?4 as text))  " +
+            "and (?5 is null or properties ->> 'jurisdictionType' = cast(?5 as text))  " +
+            "and ( " +
+            "   ( cast(properties ->> 'weekCommencingStartDate' as date) >= cast(?6 as date) and cast(properties ->> 'weekCommencingStartDate' as date) <= cast(?7 as date) ) or " +
+            "   ( cast(properties ->> 'weekCommencingEndDate' as date) >= cast(?6 as date) and cast(properties ->> 'weekCommencingEndDate' as date) <= cast(?7 as date) ) or " +
+            "   ( cast(properties ->> 'startDate' as date) >= cast(?6 as date) and cast(properties ->> 'startDate' as date) <= cast(?7 as date) )  or " +
+            "   ( cast(properties ->> 'endDate' as date) >= cast(?6 as date) and cast(properties ->> 'endDate' as date) <= cast(?7 as date) ) ) " +
+            "order by cast(properties ->> 'startDate' as date)," +
+            "cast(properties ->> 'endDate' as date)," +
+            "cast(properties ->> 'weekCommencingStartDate' as date)," +
+            "cast(properties ->> 'weekCommencingEndDate' as date )";
+
     String AUTHORITY_ID_SEARCH = "[ { \"caseIdentifier\": { \"authorityId\": \"%s\" } } ]";
     String EARLIEST_SEARCH_DATE = "1900-01-01";
     String LATEST_SEARCH_DATE = "9999-01-01";
@@ -137,20 +152,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
     @Query(value = "select id, properties  " +
             "from hearing  " +
             "where  " +
-            "(?1 is null or properties ->> 'courtCentreId' = cast(?1 as text))  " +
-            "and (?2 is null or properties ->> 'courtRoomId' = cast(?2 as text))  " +
-            "and (?3 = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?3 as jsonb))  " +
-            "and (?4 is null or properties -> 'type' ->> 'id' = cast(?4 as text))  " +
-            "and (?5 is null or properties ->> 'jurisdictionType' = cast(?5 as text))  " +
-            "and ( " +
-            "   ( cast(properties ->> 'weekCommencingStartDate' as date) >= cast(?6 as date) and cast(properties ->> 'weekCommencingStartDate' as date) <= cast(?7 as date) ) or " +
-            "   ( cast(properties ->> 'weekCommencingEndDate' as date) >= cast(?6 as date) and cast(properties ->> 'weekCommencingEndDate' as date) <= cast(?7 as date) ) or " +
-            "   ( cast(properties ->> 'startDate' as date) >= cast(?6 as date) and cast(properties ->> 'startDate' as date) <= cast(?7 as date) )  or " +
-            "   ( cast(properties ->> 'endDate' as date) >= cast(?6 as date) and cast(properties ->> 'endDate' as date) <= cast(?7 as date) ) ) " +
-            "order by cast(properties ->> 'startDate' as date)," +
-            "cast(properties ->> 'endDate' as date)," +
-            "cast(properties ->> 'weekCommencingStartDate' as date)," +
-            "cast(properties ->> 'weekCommencingEndDate' as date )"
+            WEEK_COMMENCING_CORE_QUERY
             , isNative = true)
     List<Hearing> findHearingsByWeekCommencingRange(
                                final String courtCentreId,
@@ -160,6 +162,37 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                                final String jurisdictionType,
                                final String weekCommencingStartDate,
                                final String weekCommencingEndDate);
+
+    /**
+     * Find {@link Hearing}s based on the query parameters
+     *
+     * @param allocated        property to search for -mandatory.
+     * @param courtCentreId    to search for or <code>null</code> for any courtCentreId - optional.
+     * @param courtRoomId      to search for or <code>null</code> for any courtRoomId - optional.
+     * @param authorityCode    to search for or <code>null</code> for any authorityCode - optional.
+     * @param hearingTypeId    to search for or <code>null</code> for any hearingType - optional.
+     * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType -
+     *                         optional.
+     * @param weekCommencingStartDate        to search for - mandatory.
+     * @param weekCommencingEndDate          to search for - mandatory.
+     * @return Hearings.
+     */
+    @Query(value = "select id, properties  " +
+            "from hearing  " +
+            "where  " +
+            "cast(properties ->> 'allocated' as boolean) = ?8  " +
+            "and " +
+            WEEK_COMMENCING_CORE_QUERY
+            , isNative = true)
+    List<Hearing> findUnallocatedHearingsByWeekCommencingRange(
+            final String courtCentreId,
+            final String courtRoomId,
+            final String authorityCode,
+            final String hearingTypeId,
+            final String jurisdictionType,
+            final String weekCommencingStartDate,
+            final String weekCommencingEndDate,
+            final boolean allocated);
 
     /**
      * Find {@link Hearing}s based on the query parameters.  This query will be used by the 'Public

@@ -1,29 +1,5 @@
 package uk.gov.moj.cpp.listing.query.view;
 
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
-import uk.gov.justice.services.common.converter.LocalDates;
-import uk.gov.justice.services.core.enveloper.Enveloper;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.domain.CourtListType;
-import uk.gov.moj.cpp.listing.domain.JurisdictionType;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListCoverterFilterEjectCases;
-
-import javax.json.Json;
-import javax.json.JsonArray;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-import java.util.UUID;
-
 import static com.google.common.collect.Lists.newArrayList;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.time.LocalDate.now;
@@ -39,8 +15,32 @@ import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
+
+import uk.gov.justice.services.common.converter.LocalDates;
+import uk.gov.justice.services.core.enveloper.Enveloper;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.CourtListType;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListCoverterFilterEjectCases;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.UUID;
+
+import javax.json.Json;
+import javax.json.JsonArray;
+
+import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HearingQueryViewTest {
@@ -53,8 +53,8 @@ public class HearingQueryViewTest {
     public static final String SEARCH_DATE_QUERY_PARAMETER = "searchDate";
     public static final String START_DATE_QUERY_PARAMETER = "startDate";
     public static final String END_DATE_QUERY_PARAMETER = "endDate";
-    public static final String WEEK_COMMENCING_START_DATE_QUERY_PARAMETER = "weekCommencingStartDate";
-    public static final String WEEK_COMMENCING_END_DATE_QUERY_PARAMETER = "weekCommencingEndDate";
+    private static final String WEEK_COMMENCING_START_DATE_QUERY_PARAMETER = "weekCommencingStartDate";
+    private static final String WEEK_COMMENCING_END_DATE_QUERY_PARAMETER = "weekCommencingEndDate";
     public static final String START_TIME_QUERY_PARAMETER = "startTime";
     public static final String END_TIME_QUERY_PARAMETER = "endTime";
     private static final String COURT_CENTRE_QUERY_PARAMETER = "courtCentreId";
@@ -76,6 +76,8 @@ public class HearingQueryViewTest {
     private static final LocalDate WEEK_COMMENCING_START_DATE = now();
     private static final LocalDate WEEK_COMMENCING_END_DATE = now().plusDays(7);
 
+    private static final String EARLIEST_SEARCH_DATE = "1900-01-01";
+    private static final String LATEST_SEARCH_DATE = "9999-01-01";
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -195,6 +197,7 @@ public class HearingQueryViewTest {
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
                 createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
                         .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
                         .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
                         .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, WEEK_COMMENCING_END_DATE.toString())
@@ -207,7 +210,43 @@ public class HearingQueryViewTest {
                         withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo("2019-10-13"))
                 ))
         ));
+    }
 
+    @Test
+    public void searchUnallocatedHearingsWithWeekCommencingDateRange() throws Exception {
+
+        final List<Hearing> hearingsJson = hearingJsonForWeekCommencing();
+        final JsonArray hearingsJsonArray = hearingsForWeekCommencingJsonArray();
+
+        when(hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
+                null,
+                null,
+                AUTHORITY_ID_SEARCH,
+                null,
+                null,
+                EARLIEST_SEARCH_DATE,
+                LATEST_SEARCH_DATE,
+                false))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListCoverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(hearingsJsonArray);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, false)
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
+                        .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, "")
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
+
+        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
+                payloadIsJson(
+                        withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo("2019-10-13"))
+                ))
+        ));
     }
 
     @Test

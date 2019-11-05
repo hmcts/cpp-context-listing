@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.query.view;
 import static java.time.LocalTime.MAX;
 import static java.time.LocalTime.MIN;
 import static javax.json.Json.createArrayBuilder;
+import static org.apache.commons.lang3.BooleanUtils.isFalse;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
@@ -31,7 +32,7 @@ import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings({"squid:S1192","squid:S00107"})
+@SuppressWarnings({"squid:S1192", "squid:S00107"})
 @ServiceComponent(Component.QUERY_VIEW)
 public class HearingQueryView {
 
@@ -133,9 +134,9 @@ public class HearingQueryView {
                 ,
                 allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate);
 
-        final List<Hearing> hearings = weekCommencingStartDate.isEmpty()?
-                findHearings(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, startDate, endDate):
-                findHearingsByWeekCommencingRange(courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate);
+        final List<Hearing> hearings = !weekCommencingStartDate.isEmpty() ?
+                findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate) :
+                findHearings(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, startDate, endDate);
 
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
                 Json.createObjectBuilder()
@@ -144,29 +145,38 @@ public class HearingQueryView {
         );
     }
 
-    private List<Hearing> findHearingsByWeekCommencingRange(final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate) {
-        return repository.findHearingsByWeekCommencingRange(
+    private List<Hearing> findHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate) {
+        return isFalse(allocated)?
+                repository.findUnallocatedHearingsByWeekCommencingRange(
+                        courtCentreId,
+                        courtRoomId,
+                        authorityIdSearchString,
+                        hearingTypeId,
+                        jurisdictionType,
+                        EARLIEST_SEARCH_DATE,
+                        LATEST_SEARCH_DATE,
+                        allocated) :
+                repository.findHearingsByWeekCommencingRange(
+                        courtCentreId,
+                        courtRoomId,
+                        authorityIdSearchString,
+                        hearingTypeId,
+                        jurisdictionType,
+                        weekCommencingDate,
+                        weekCommencingEndDate);
+    }
+
+    private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate) {
+        return repository.findHearings(
+                allocated,
                 courtCentreId,
                 courtRoomId,
                 authorityIdSearchString,
                 hearingTypeId,
                 jurisdictionType,
-                weekCommencingDate,
-                weekCommencingEndDate
+                startDate,
+                endDate
         );
-    }
-
-    private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate) {
-        return repository.findHearings(
-                    allocated,
-                    courtCentreId,
-                    courtRoomId,
-                    authorityIdSearchString,
-                    hearingTypeId,
-                    jurisdictionType,
-                    startDate,
-                    endDate
-            );
     }
 
     @Handles("listing.search.court.list")

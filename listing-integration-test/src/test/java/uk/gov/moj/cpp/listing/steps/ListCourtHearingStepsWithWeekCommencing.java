@@ -11,7 +11,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +30,7 @@ public class ListCourtHearingStepsWithWeekCommencing {
         final UUID fourthFixedHearingId = randomUUID();
         final UUID fifthFixedHearingId = randomUUID();
         final UUID sixthFixedHearingId = randomUUID();
+        final UUID seventhFixedHearingId = randomUUID();
 
         final UUID firstCourtRoomId = randomUUID();
         final UUID secondCourtRoomId = randomUUID();
@@ -50,10 +50,11 @@ public class ListCourtHearingStepsWithWeekCommencing {
         final HearingsData hearingsData2 = hearingsDataForWeekCommencing(secondFixedHearingId, secondFixedHearingEndDate, secondCourtRoomId, null, null, secondFixedHearingStartDate);
         final HearingsData hearingsData3 = hearingsDataForWeekCommencing(thirdFixedHearingId, thirdFixedHearingEndDate, thirdCourtRoomId, null, null, thirdFixedHearingStartDate);
         final HearingsData hearingsData4 = hearingsDataForWeekCommencing(fourthFixedHearingId, fourthFixedHearingEndDate, firstCourtRoomId, null, null, fourthFixedHearingStartDate);
-        final HearingsData hearingsData5 = hearingsDataForWeekCommencing(fifthFixedHearingId, DEFAULT_END_DATE, secondCourtRoomId, null, null, DEFAULT_START_DATE);
-        final HearingsData hearingsData6 = hearingsDataForWeekCommencing(sixthFixedHearingId, DEFAULT_END_DATE, thirdCourtRoomId, null, null, DEFAULT_START_DATE);
+        final HearingsData hearingsData5 = hearingsDataForWeekCommencing(seventhFixedHearingId, now(), null, null, null, now());
+        final HearingsData hearingsData6 = hearingsDataForWeekCommencing(fifthFixedHearingId, DEFAULT_END_DATE, secondCourtRoomId, null, null, DEFAULT_START_DATE);
+        final HearingsData hearingsData7 = hearingsDataForWeekCommencing(sixthFixedHearingId, DEFAULT_END_DATE, thirdCourtRoomId, null, null, DEFAULT_START_DATE);
 
-        final List<HearingsData> hearingsDataList = asList(hearingsData1, hearingsData2, hearingsData3, hearingsData4, hearingsData5, hearingsData6);
+        final List<HearingsData> hearingsDataList = asList(hearingsData1, hearingsData2, hearingsData3, hearingsData4, hearingsData5, hearingsData6, hearingsData7);
 
         hearingsDataList.forEach(ListCourtHearingStepsWithWeekCommencing::createHearingListed);
 
@@ -68,9 +69,9 @@ public class ListCourtHearingStepsWithWeekCommencing {
         return updatedHearingDataWithWeekCommencingDate;
     }
 
-    public static void verifyHearingListedForWeekCommencing(final String jurisdictionType, final String weekCommencingStartDate, final String weekCommencingEndDate, final Matcher... matchers) {
+    public static void verifyHearingListedForWeekCommencing(final String jurisdictionType, final String weekCommencingStartDate, final String weekCommencingEndDate, final boolean allocated, final Matcher... matchers) {
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps()) {
-            listCourtHearingSteps.verifyHearingForWeekCommencingRange(jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, matchers);
+            listCourtHearingSteps.verifyHearingForWeekCommencingRange(jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, allocated, matchers);
         }
     }
 
