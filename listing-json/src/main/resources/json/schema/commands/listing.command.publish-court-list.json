@@ -12,8 +12,14 @@
     "endDate": {
       "$ref": "#/definitions/localDate"
     },
-    "courtListType": {
-      "type": "string"
+    "publishCourtListType": {
+      "type": "string",
+      "enum": [
+        "WARN",
+        "DRAFT",
+        "FIRM",
+        "FINAL"
+      ]
     },
     "requestedTime": {
       "type": "string",
@@ -25,7 +31,7 @@
     "courtCentreId",
     "startDate",
     "endDate",
-    "courtListType",
+    "publishCourtListType",
     "requestedTime"
   ],
   "definitions": {

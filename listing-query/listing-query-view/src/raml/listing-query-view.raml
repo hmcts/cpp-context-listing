@@ -151,3 +151,25 @@ protocols: [ HTTP, HTTPS ]
               application/vnd.listing.search.court.list+json:
                 example:  !include json/listing.search.court.list.json
                 schema:  !include  json/schema/listing.search.court.list.json
+
+/courtListPublishStatus/{courtCentreId}:
+  description: get status of latest publish court list document
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.court.list.publish.status+json
+          name: listing.court.list.publish.status
+      ...
+    queryParameters:
+
+        publishCourtListTypes:
+          description: publish court list types delimited by comma(,) (example FIRM,WARN)
+          type: string
+          required: true
+    responses:
+      200:
+        body:
+          application/vnd.listing.court.list.publish.status+json:
+            example:  !include json/listing.court.list.publish.status.json
+            schema:  !include  json/schema/listing.court.list.publish.status.json

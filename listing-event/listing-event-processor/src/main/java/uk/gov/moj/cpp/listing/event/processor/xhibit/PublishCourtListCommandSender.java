@@ -24,8 +24,8 @@ public class PublishCourtListCommandSender {
     private static final String RECORD_COURT_LIST_PUBLISHED = "listing.command.record-court-list-published";
     private static final String RECORD_COURT_LIST_EXPORT_SUCCESSFUL = "listing.command.record-court-list-export-successful";
     private static final String RECORD_COURT_LIST_EXPORT_FAILED = "listing.command.record-court-list-publish-export-failed";
-    private static final String DOCUMENT_NAME = "documentName";
-    private static final String DOCUMENT_ID = "documentId";
+    private static final String COURT_LIST_FILE_NAME = "courtListFileName";
+    private static final String COURT_LIST_FILE_ID = "courtListFileId";
 
     @Inject
     @FrameworkComponent("EVENT_PROCESSOR")
@@ -34,42 +34,42 @@ public class PublishCourtListCommandSender {
     @Inject
     private UtcClock utcClock;
 
-    public void recordCourtListPublished(final UUID documentId,
-                                         final String documentName) {
+    public void recordCourtListProduced(final UUID courtListFileId,
+                                        final String courtListFileName) {
 
         final JsonObject payload = createObjectBuilder()
-                .add(DOCUMENT_ID, documentId.toString())
-                .add(DOCUMENT_NAME, documentName)
-                .add("publishedTime", ZonedDateTimes.toString(utcClock.now()))
+                .add(COURT_LIST_FILE_ID, courtListFileId.toString())
+                .add(COURT_LIST_FILE_NAME, courtListFileName)
+                .add("producedTime", ZonedDateTimes.toString(utcClock.now()))
                 .build();
 
-        sendCommandWith(RECORD_COURT_LIST_PUBLISHED, documentId, payload);
+        sendCommandWith(RECORD_COURT_LIST_PUBLISHED, courtListFileId, payload);
     }
 
     @SuppressWarnings("squid:S1192")
-    public void recordCourtListExportSuccessful(final UUID documentId,
-                                                final String documentName) {
+    public void recordCourtListExportSuccessful(final UUID courtListFileId,
+                                                final String courtListFileName) {
 
         final JsonObject payload = createObjectBuilder()
-                .add(DOCUMENT_ID, documentId.toString())
-                .add(DOCUMENT_NAME, documentName)
-                .add("sentTime", ZonedDateTimes.toString(utcClock.now()))
+                .add(COURT_LIST_FILE_ID, courtListFileId.toString())
+                .add(COURT_LIST_FILE_NAME, courtListFileName)
+                .add("publishedTime", ZonedDateTimes.toString(utcClock.now()))
                 .build();
 
-        sendCommandWith(RECORD_COURT_LIST_EXPORT_SUCCESSFUL, documentId, payload);
+        sendCommandWith(RECORD_COURT_LIST_EXPORT_SUCCESSFUL, courtListFileId, payload);
     }
 
-    public void recordCourtListExportFailed(final UUID documentId,
-                                            final String documentName,
+    public void recordCourtListExportFailed(final UUID courtListFileId,
+                                            final String courtListFileName,
                                             final String errorMessage) {
 
         final JsonObjectBuilder objectBuilder = createObjectBuilder()
-                .add(DOCUMENT_ID, documentId.toString())
-                .add(DOCUMENT_NAME, documentName)
+                .add(COURT_LIST_FILE_ID, courtListFileName.toString())
+                .add(COURT_LIST_FILE_NAME, courtListFileName)
                 .add("failedTime", ZonedDateTimes.toString(utcClock.now()))
                 .add(ERROR_MESSAGE, errorMessage);
 
-        sendCommandWith(RECORD_COURT_LIST_EXPORT_FAILED, documentId, objectBuilder.build());
+        sendCommandWith(RECORD_COURT_LIST_EXPORT_FAILED, courtListFileId, objectBuilder.build());
     }
 
     private void sendCommandWith(final String commandName, final UUID notificationId, final JsonObject payload) {

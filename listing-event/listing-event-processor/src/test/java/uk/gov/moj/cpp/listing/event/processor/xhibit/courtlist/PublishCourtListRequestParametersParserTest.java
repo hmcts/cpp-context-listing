@@ -1,3 +1,4 @@
+
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.util.UUID.randomUUID;
@@ -7,9 +8,9 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
+import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
-import uk.gov.moj.cpp.listing.domain.xhibit.XhibitCourtListType;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -35,14 +36,14 @@ public class PublishCourtListRequestParametersParserTest {
         final UUID courtCentreId = randomUUID();
         final LocalDate startDate = LocalDate.of(2019, 11, 4);
         final LocalDate endDate = LocalDate.of(2019, 11, 5);
-        final XhibitCourtListType xhibitCourtListType = XhibitCourtListType.WARN;
+        final PublishCourtListType publishCourtListType = PublishCourtListType.WARN;
         final ZonedDateTime requestedTime = ZonedDateTime.now(ZoneId.of("UTC").normalized());
 
         final JsonObject payload = createObjectBuilder()
                 .add("courtCentreId", courtCentreId.toString())
                 .add("startDate", startDate.toString())
                 .add("endDate", endDate.toString())
-                .add("courtListType", xhibitCourtListType.name())
+                .add("publishCourtListType", publishCourtListType.name())
                 .add("requestedTime", requestedTime.toString())
                 .build();
 
@@ -54,7 +55,7 @@ public class PublishCourtListRequestParametersParserTest {
         assertThat(parameters.getCourtCentreId(), is(courtCentreId));
         assertThat(parameters.getStartDate(), is(startDate));
         assertThat(parameters.getEndDate(), is(endDate));
-        assertThat(parameters.getXhibitCourtListType(), is(xhibitCourtListType));
+        assertThat(parameters.getPublishCourtListType(), is(publishCourtListType));
         assertThat(parameters.getRequestedTime(), is(requestedTime));
     }
 }

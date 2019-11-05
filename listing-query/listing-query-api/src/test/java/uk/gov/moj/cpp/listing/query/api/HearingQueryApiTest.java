@@ -27,6 +27,7 @@ public class HearingQueryApiTest {
     private static final String NAME = "name:";
     private static final String LISTING_SEARCH = "listing.search";
     private static final String LISTING_RANGE_SEARCH = "listing.range";
+    private static final String LISTING_COURT_LIST_PUBLISH_STATUS = "listing.court.list.publish.status";
 
     private Map<String, String> apiMethodsToHandlerNames;
 
@@ -42,7 +43,7 @@ public class HearingQueryApiTest {
         final List<String> ramlActionNames = readLines(new File(PATH_TO_RAML)).stream()
                 .filter(action -> !action.isEmpty())
                 .filter(line -> line.contains(NAME))
-                .filter(line -> line.contains(LISTING_SEARCH) || line.contains(LISTING_RANGE_SEARCH))
+                .filter(line -> line.contains(LISTING_SEARCH) || line.contains(LISTING_RANGE_SEARCH) || line.contains(LISTING_COURT_LIST_PUBLISH_STATUS))
                 .map(line -> line.replaceAll(NAME, "").trim())
                 .collect(toList());
 

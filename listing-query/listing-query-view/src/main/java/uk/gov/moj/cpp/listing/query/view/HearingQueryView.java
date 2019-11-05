@@ -2,14 +2,20 @@ package uk.gov.moj.cpp.listing.query.view;
 
 import static java.time.LocalTime.MAX;
 import static java.time.LocalTime.MIN;
+import static java.util.UUID.fromString;
+import static java.util.stream.Collectors.toSet;
 import static javax.json.Json.createArrayBuilder;
+import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
+import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
 
+import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -17,6 +23,7 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListCoverterFilterEjectCases;
 
@@ -24,9 +31,12 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
-import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObjectBuilder;
 
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
@@ -35,6 +45,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings({"squid:S1192", "squid:S00107"})
 @ServiceComponent(Component.QUERY_VIEW)
 public class HearingQueryView {
+    private static final String PUBLISH_COURT_LIST_TYPES = "publishCourtListTypes";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingQueryView.class);
     private static final String ALLOCATED_QUERY_PARAMETER = "allocated";
@@ -55,6 +66,9 @@ public class HearingQueryView {
 
     @Inject
     private HearingRepository repository;
+
+    @Inject
+    private CourtListRepository courtListRepository;
 
     @Inject
     private HearingJsonListCoverterFilterEjectCases hearingJsonListCoverterFilterEjectCases;
@@ -100,7 +114,7 @@ public class HearingQueryView {
         );
 
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
-                Json.createObjectBuilder()
+                createObjectBuilder()
                         .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convert(hearings))
                         .build()
         );
@@ -139,7 +153,7 @@ public class HearingQueryView {
                 findHearings(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, startDate, endDate);
 
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
-                Json.createObjectBuilder()
+                createObjectBuilder()
                         .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convert(hearings))
                         .build()
         );
@@ -208,13 +222,37 @@ public class HearingQueryView {
             LOGGER.error("Supplied CourtList type is not valid {} ", listId);
             return createEmptyResponse(query);
         }
+    }
 
+    @Handles("listing.court.list.publish.status")
+    public JsonEnvelope getCourtListPublishStatus(final JsonEnvelope query) {
+        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID);
+        final String publishCourtListTypes = query.payloadAsJsonObject().getString(PUBLISH_COURT_LIST_TYPES);
 
+        LOGGER.info("Parameters -  " + COURT_CENTRE_ID + " : {}, " + PUBLISH_COURT_LIST_TYPES + " : {}, ", courtCentreId, publishCourtListTypes);
+
+        final Set<PublishCourtListType> publishCourtListTypes1 = Stream.of(publishCourtListTypes.split(","))
+                .map(PublishCourtListType::valueOf)
+                .collect(toSet());
+
+        final JsonArray courtListPublishStatuses = toJsonArray(courtListRepository
+                        .courtListPublishStatuses(fromString(courtCentreId), publishCourtListTypes1),
+                publishCourtListStatus -> {
+                    final JsonObjectBuilder builder = createObjectBuilder();
+                    builder.add("courtCentreId", publishCourtListStatus.getCourtCentreId().toString())
+                            .add("publishCourtListType", publishCourtListStatus.getPublishCourtListType().name())
+                            .add("lastUpdated", publishCourtListStatus.getLastUpdated().toString())
+                            .add("publishStatus", publishCourtListStatus.getPublishStatus().toString())
+                            .add("failureMessage", defaultIfEmpty(publishCourtListStatus.getFailureMessage(), ""));
+                    return builder.build();
+                });
+
+        return enveloper.withMetadataFrom(query, "listing.court.list.publish.status").apply(createObjectBuilder().add("publishCourtListStatuses", courtListPublishStatuses).build());
     }
 
     private JsonEnvelope createAlphabeticalListJsonEnvelope(final JsonEnvelope query, final List<Hearing> matchedHearings) {
         return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
-                Json.createObjectBuilder()
+                createObjectBuilder()
                         .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convertHearingResultForAlphbeticalList(matchedHearings))
                         .build()
         );
@@ -222,7 +260,7 @@ public class HearingQueryView {
 
     private JsonEnvelope createPublicStandardCourtListJsonEnvelope(final JsonEnvelope query, final Hearing matchedHearingsJsonObject) {
         return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
-                Json.createObjectBuilder()
+                createObjectBuilder()
                         .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convertHearingResultForPublicList(matchedHearingsJsonObject))
                         .build()
         );
@@ -230,7 +268,7 @@ public class HearingQueryView {
 
     private JsonEnvelope createEmptyResponse(JsonEnvelope query) {
         return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
-                Json.createObjectBuilder()
+                createObjectBuilder()
                         .add(HEARINGS, createArrayBuilder().build())
                         .build());
     }

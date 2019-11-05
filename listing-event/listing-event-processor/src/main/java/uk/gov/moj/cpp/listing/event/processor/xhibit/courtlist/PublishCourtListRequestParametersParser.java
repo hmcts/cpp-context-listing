@@ -1,9 +1,8 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
+import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
 import static uk.gov.justice.services.common.converter.LocalDates.from;
 import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString;
-import static uk.gov.moj.cpp.listing.domain.xhibit.XhibitCourtListType.valueOf;
-
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.UUID;
@@ -20,7 +19,7 @@ public class PublishCourtListRequestParametersParser {
                 UUID.fromString(payload.getString("courtCentreId")),
                 from(payload.getString("startDate")),
                 from(payload.getString("endDate")),
-                valueOf(payload.getString("courtListType")),
+                valueOf(payload.getString("publishCourtListType")),
                 fromString(payload.getString("requestedTime")));
     }
 }

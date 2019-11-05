@@ -1,14 +1,11 @@
 package uk.gov.moj.cpp.listing.query.api;
 
-import static javax.json.Json.createObjectBuilder;
-
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-
 
 import javax.inject.Inject;
 
@@ -36,4 +33,8 @@ public class HearingQueryApi {
         return requester.request(query);
     }
 
+    @Handles("listing.court.list.publish.status")
+    public JsonEnvelope publishCourtListStatus(final JsonEnvelope query) {
+        return requester.request(query);
+    }
 }

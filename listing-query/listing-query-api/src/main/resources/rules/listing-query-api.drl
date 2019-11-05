@@ -42,3 +42,12 @@ rule "Query - API - listing.search.court.list"
   then
     $outcome.setSuccess(true);
 end
+
+rule "Query - API - listing.court.list.publish.status"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.court.list.publish.status");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CROWN_COURT_ADMIN));
+  then
+    $outcome.setSuccess(true);
+end

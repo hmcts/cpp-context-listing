@@ -67,7 +67,7 @@ public class CourtListEventProcessor {
 
             final UUID fileId = fileServiceClient.store(courtListMetadata, courtListXml);
 
-            publishCourtListCommandSender.recordCourtListPublished(fileId, courtListMetadata.getFilename());
+            publishCourtListCommandSender.recordCourtListProduced(fileId, courtListMetadata.getFilename());
         } catch (final Exception e) {
             logger.error("Court List generation failed", e);
             publishCourtListCommandSender.recordCourtListExportFailed(randomUUID(), "NONE", e.getMessage());

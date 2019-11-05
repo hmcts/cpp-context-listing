@@ -2,6 +2,6 @@
   "courtCentreId": "COURT_CENTRE_ID",
   "courtListFileId": "COURT_LIST_FILE_ID",
   "courtListFileName":"COURT_LIST_FILE_NAME",
-  "courtListType":"FINAL",
+  "publishCourtListType":"FINAL",
   "publishedTime": "PUBLISHED_TIME"
 }

@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
-import uk.gov.moj.cpp.listing.domain.xhibit.XhibitCourtListType;
+import uk.gov.justice.listing.event.PublishCourtListType;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -11,19 +11,19 @@ public class PublishCourtListRequestParameters {
     private UUID courtCentreId;
     private LocalDate startDate;
     private LocalDate endDate;
-    private XhibitCourtListType xhibitCourtListType;
+    private PublishCourtListType publishCourtListType;
     private ZonedDateTime requestedTime;
 
     public PublishCourtListRequestParameters(final UUID courtCentreId,
                                              final LocalDate startDate,
                                              final LocalDate endDate,
-                                             final XhibitCourtListType xhibitCourtListType,
+                                             final PublishCourtListType publishCourtListType,
                                              final ZonedDateTime requestedTime) {
 
         this.courtCentreId = courtCentreId;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.xhibitCourtListType = xhibitCourtListType;
+        this.publishCourtListType = publishCourtListType;
         this.requestedTime = requestedTime;
     }
 
@@ -39,8 +39,8 @@ public class PublishCourtListRequestParameters {
         return endDate;
     }
 
-    public XhibitCourtListType getXhibitCourtListType() {
-        return xhibitCourtListType;
+    public PublishCourtListType getPublishCourtListType() {
+        return publishCourtListType;
     }
 
     public ZonedDateTime getRequestedTime() {

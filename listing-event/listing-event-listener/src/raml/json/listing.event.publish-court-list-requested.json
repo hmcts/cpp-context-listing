@@ -5,6 +5,6 @@
   "courtCentreId": "5c5a1d30-0414-11e7-93ae-92361f002671",
   "startDate": "2016-09-09",
   "endDate": "2016-09-09",
-  "courtListType":"FINAL"
-
+  "publishStatus":"COURT_LIST_REQUESTED",
+  "publishCourtListType":"FINAL"
 }

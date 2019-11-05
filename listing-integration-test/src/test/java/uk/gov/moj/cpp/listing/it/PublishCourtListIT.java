@@ -9,8 +9,6 @@ import static org.junit.Assert.assertThat;
 
 import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
 
-import java.util.UUID;
-
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
@@ -33,23 +31,19 @@ public class PublishCourtListIT extends AbstractIT {
         try (final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(publishCourtListJsonObject)) {
             sendPublishCourtListCommand(publishCourtListJsonObject);
             publishCourtListSteps.verifyPublishCourtListEventsInActiveMQ();
-            publishCourtListSteps.verifyPublishCourtListEventsInViewStore();
+            publishCourtListSteps.verifyCourtListPublishStatusReturnedWhenQueryingFromAPI();
         }
-
     }
 
+    private void sendPublishCourtListCommand(final JsonObject publishCourtListJsonObject) {
 
-    public void sendPublishCourtListCommand(final JsonObject publishCourtListJsonObject) {
-
-        final String updateHearingUrl = String.format("%s/%s", baseUri, format
-                (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_PUBLISH_COURT_LIST), publishCourtListJsonObject.getString("courtCentreId")));
-
+        final String updateHearingUrl = String.format("%s/%s", baseUri, format(ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_PUBLISH_COURT_LIST),
+                publishCourtListJsonObject.getString("courtCentreId")));
         final String request = publishCourtListJsonObject.toString();
 
         LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST, request, getLoggedInHeader());
 
-        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST,
-                request, getLoggedInHeader());
+        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST, request, getLoggedInHeader());
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
@@ -60,7 +54,7 @@ public class PublishCourtListIT extends AbstractIT {
                 .add("courtCentreId", randomUUID().toString())
                 .add("startDate", "2018-12-06")
                 .add("endDate", "2018-12-20")
-                .add("courtListType", "FIRM")
+                .add("publishCourtListType", "FIRM")
                 .add("requestedTime", "2019-10-30T16:34:45.132Z")
                 .build();
     }

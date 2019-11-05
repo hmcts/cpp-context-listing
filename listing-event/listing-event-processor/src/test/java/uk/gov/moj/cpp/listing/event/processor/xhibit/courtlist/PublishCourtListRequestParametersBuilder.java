@@ -1,9 +1,9 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
-import static java.time.ZonedDateTime.*;
-import static uk.gov.moj.cpp.listing.domain.xhibit.XhibitCourtListType.FIRM;
+import static java.time.ZonedDateTime.now;
+import static uk.gov.justice.listing.event.PublishCourtListType.FIRM;
 
-import uk.gov.moj.cpp.listing.domain.xhibit.XhibitCourtListType;
+import uk.gov.justice.listing.event.PublishCourtListType;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -14,14 +14,14 @@ public class PublishCourtListRequestParametersBuilder {
     private UUID courtCentreId;
     private LocalDate startDate;
     private LocalDate endDate;
-    private XhibitCourtListType xhibitCourtListType;
+    private PublishCourtListType publishCourtListType;
     private ZonedDateTime requestedTime;
 
     private PublishCourtListRequestParametersBuilder() {
         courtCentreId = UUID.randomUUID();
         startDate = LocalDate.of(2019, 11, 4);
         endDate = LocalDate.of(2019, 11, 5);
-        xhibitCourtListType = FIRM;
+        publishCourtListType = FIRM;
         requestedTime = now();
     }
 
@@ -44,8 +44,8 @@ public class PublishCourtListRequestParametersBuilder {
         return this;
     }
 
-    public PublishCourtListRequestParametersBuilder withXhibitCourtListType(final XhibitCourtListType xhibitCourtListType) {
-        this.xhibitCourtListType = xhibitCourtListType;
+    public PublishCourtListRequestParametersBuilder withPublishCourtListType(final PublishCourtListType publishCourtListType) {
+        this.publishCourtListType = publishCourtListType;
         return this;
     }
 
@@ -56,6 +56,6 @@ public class PublishCourtListRequestParametersBuilder {
 
 
     public PublishCourtListRequestParameters build() {
-        return new PublishCourtListRequestParameters(courtCentreId, startDate, endDate, xhibitCourtListType, requestedTime);
+        return new PublishCourtListRequestParameters(courtCentreId, startDate, endDate, publishCourtListType, requestedTime);
     }
 }

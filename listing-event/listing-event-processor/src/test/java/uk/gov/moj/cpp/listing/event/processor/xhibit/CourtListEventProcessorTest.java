@@ -75,7 +75,7 @@ public class CourtListEventProcessorTest {
 
         // Assertions
         verify(fileServiceClient).store(courtListMetadata, mockFileContentStream);
-        verify(publishCourtListCommandSender).recordCourtListPublished(generatedDocumentId, courtListMetadata.getFilename());
+        verify(publishCourtListCommandSender).recordCourtListProduced(generatedDocumentId, courtListMetadata.getFilename());
     }
 
     @Test

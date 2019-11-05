@@ -12,8 +12,14 @@
     "courtListFileName": {
       "type": "string"
     },
-    "courtListType": {
-      "type": "string"
+    "publishCourtListType": {
+      "type": "string",
+      "enum": [
+        "WARN",
+        "DRAFT",
+        "FIRM",
+        "FINAL"
+      ]
     },
     "failedTime": {
       "type": "string",
@@ -27,7 +33,7 @@
     "courtCentreId",
     "courtListFileId",
     "courtListFileName",
-    "courtListType",
+    "publishCourtListType",
     "failedTime",
     "errorMessage"
   ],

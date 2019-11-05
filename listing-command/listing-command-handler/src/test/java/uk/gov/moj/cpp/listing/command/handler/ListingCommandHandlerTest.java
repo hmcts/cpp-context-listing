@@ -48,6 +48,7 @@ import uk.gov.justice.listing.courts.Title;
 import uk.gov.justice.listing.courts.UpdateCourtApplicationForHearings;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
+import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CaseEjected;
@@ -1188,7 +1189,7 @@ public class ListingCommandHandlerTest {
         when(eventSource.getStreamById(courtCenterId)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, CourtListAggregate.class)).thenReturn(courtListAggregate);
         when(courtListAggregate.recordCourtListExportFailed(any(UUID.class), any(UUID.class), any(String.class),
-                any(String.class), any(ZonedDateTime.class), eq(errorMessage)))
+                any(PublishCourtListType.class), any(ZonedDateTime.class), eq(errorMessage)))
                 .thenReturn(Stream.of(publishCourtListExportFailed().build()));
 
         final String jsonString = givenPayload("/test-data/listing.command.record-court-list-export-failed.json").toString()
@@ -1201,7 +1202,7 @@ public class ListingCommandHandlerTest {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             final JsonEnvelope commandEnvelope = createEnvelope("listing.command.record-court-list-export-failed", jsonReader.readObject());
             listingCommandHandler.recordCourtListExportFailed(commandEnvelope);
-            verify(courtListAggregate).recordCourtListExportFailed(any(UUID.class), any(UUID.class), any(String.class), any(String.class), any(ZonedDateTime.class), eq(errorMessage));
+            verify(courtListAggregate).recordCourtListExportFailed(any(UUID.class), any(UUID.class), any(String.class), any(PublishCourtListType.class), any(ZonedDateTime.class), eq(errorMessage));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -1216,7 +1217,7 @@ public class ListingCommandHandlerTest {
         when(eventSource.getStreamById(courtCenterId)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, CourtListAggregate.class)).thenReturn(courtListAggregate);
         when(courtListAggregate.recordCourtListExportSuccessful(any(UUID.class), any(UUID.class), any(String.class),
-                any(String.class), any(ZonedDateTime.class)))
+                any(PublishCourtListType.class), any(ZonedDateTime.class)))
                 .thenReturn(Stream.of(publishCourtListExportSuccessful().build()));
         final String jsonString = givenPayload("/test-data/listing.command.record-court-list-export-successful.json").toString()
                 .replace("COURT_CENTRE_ID", courtCenterId.toString())
@@ -1228,7 +1229,7 @@ public class ListingCommandHandlerTest {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             final JsonEnvelope commandEnvelope = createEnvelope("listing.command.record-court-list-export-successful", jsonReader.readObject());
             listingCommandHandler.recordCourtListExportSuccessful(commandEnvelope);
-            verify(courtListAggregate).recordCourtListExportSuccessful(any(UUID.class), any(UUID.class), any(String.class), any(String.class), any(ZonedDateTime.class));
+            verify(courtListAggregate).recordCourtListExportSuccessful(any(UUID.class), any(UUID.class), any(String.class), any(PublishCourtListType.class), any(ZonedDateTime.class));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -1239,7 +1240,7 @@ public class ListingCommandHandlerTest {
         final UUID courtCentreId = randomUUID();
         when(eventSource.getStreamById(courtCentreId)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, CourtListAggregate.class)).thenReturn(courtListAggregate);
-        when(courtListAggregate.recordCourtListRequested(any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(String.class), any(ZonedDateTime.class)))
+        when(courtListAggregate.recordCourtListRequested(any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class)))
                 .thenReturn(Stream.of(publishCourtListRequested().build()));
 
         final String jsonString = givenPayload("/test-data/listing.command.publish-court-list.json").toString()
@@ -1248,7 +1249,7 @@ public class ListingCommandHandlerTest {
         final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.publish-court-list", jsonReader.readObject());
         listingCommandHandler.publishCourtList(commandEnvelope);
-        verify(courtListAggregate).recordCourtListRequested(any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(String.class), any(ZonedDateTime.class));
+        verify(courtListAggregate).recordCourtListRequested(any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class));
     }
 
 

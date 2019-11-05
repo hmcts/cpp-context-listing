@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersBuilder.withDefaults;
 
-import uk.gov.moj.cpp.listing.domain.xhibit.XhibitCourtListType;
+import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.transform.CourtServicesTransformer;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.transform.FirmListTransformer;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.GenerationFailedException;
@@ -59,7 +59,7 @@ public class CourtListXmlGeneratorTest {
     public void shouldGenerateFirmListXml() throws Exception {
 
         final PublishCourtListRequestParameters requestParameters = withDefaults()
-                .withXhibitCourtListType(XhibitCourtListType.FIRM)
+                .withPublishCourtListType(PublishCourtListType.FIRM)
                 .build();
 
         final CourtListMetadata metadata = new CourtListMetadata("FILENAME", "UNIQUEID");

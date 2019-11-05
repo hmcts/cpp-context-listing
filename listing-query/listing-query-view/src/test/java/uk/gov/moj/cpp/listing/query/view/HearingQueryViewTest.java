@@ -2,13 +2,17 @@ package uk.gov.moj.cpp.listing.query.view;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.time.LocalDate.now;
+import static java.time.ZonedDateTime.now;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
+import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
+import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
@@ -16,19 +20,24 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatch
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
 
+import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatus;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListCoverterFilterEjectCases;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -46,8 +55,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class HearingQueryViewTest {
 
 
-    public static final UUID COURT_CENTRE_ID = UUID.randomUUID();
-    public static final UUID COURT_ROOM_ID = UUID.randomUUID();
+    public static final UUID COURT_CENTRE_ID = randomUUID();
+    public static final String PUBLISH_COURT_LIST_TYPES = "FIRM,FINAL";
+
+    public static final UUID COURT_ROOM_ID = randomUUID();
+
     public static final boolean ALLOCATED = true;
     public static final String ALLOCATED_QUERY_PARAMETER = "allocated";
     public static final String SEARCH_DATE_QUERY_PARAMETER = "searchDate";
@@ -58,6 +70,7 @@ public class HearingQueryViewTest {
     public static final String START_TIME_QUERY_PARAMETER = "startTime";
     public static final String END_TIME_QUERY_PARAMETER = "endTime";
     private static final String COURT_CENTRE_QUERY_PARAMETER = "courtCentreId";
+    private static final String PUBLISH_COURT_LIST_TYPES_QUERY_PARAMETER = "publishCourtListTypes";
     private static final String COURT_ROOM_QUERY_PARAMETER = "courtRoomId";
     private static final String AUTHORITY_ID_QUERY_PARAMETER = "authorityId";
     private static final String HEARING_TYPE_QUERY_PARAMETER = "hearingTypeId";
@@ -65,7 +78,7 @@ public class HearingQueryViewTest {
     private static final String LIST_ID_QUERY_PARAMETER = "listId";
     private static final String AUTHORITY_ID = "efa4e01b-1dc5-48c5-80b5-c3858a7622d6";
     private static final String AUTHORITY_ID_SEARCH = String.format(HearingRepository.AUTHORITY_ID_SEARCH, AUTHORITY_ID);
-    private static final UUID HEARING_TYPE_ID = UUID.randomUUID();
+    private static final UUID HEARING_TYPE_ID = randomUUID();
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
     private static final LocalDate SEARCH_DATE = LocalDate.now();
     private static final LocalTime START_TIME = LocalTime.now();
@@ -73,8 +86,8 @@ public class HearingQueryViewTest {
     private static final LocalDateTime EARLIEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MIN);
     private static final LocalDateTime LATEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MAX);
 
-    private static final LocalDate WEEK_COMMENCING_START_DATE = now();
-    private static final LocalDate WEEK_COMMENCING_END_DATE = now().plusDays(7);
+    private static final LocalDate WEEK_COMMENCING_START_DATE = LocalDate.now();
+    private static final LocalDate WEEK_COMMENCING_END_DATE = LocalDate.now().plusDays(7);
 
     private static final String EARLIEST_SEARCH_DATE = "1900-01-01";
     private static final String LATEST_SEARCH_DATE = "9999-01-01";
@@ -86,11 +99,46 @@ public class HearingQueryViewTest {
     private HearingRepository hearingRepository;
 
     @Mock
+    private CourtListRepository courtListRepository;
+
+    @Mock
     private HearingJsonListCoverterFilterEjectCases hearingJsonListCoverterFilterEjectCases;
 
     @InjectMocks
     private HearingQueryView hearingsQueryView;
 
+    @Test
+    public void shouldReturnCorrectPublishCourtListStatus() {
+
+        final Set<PublishCourtListType> publishCourtListTypeSet = new HashSet();
+        publishCourtListTypeSet.add(FINAL);
+        publishCourtListTypeSet.add(PublishCourtListType.FIRM);
+
+        when(courtListRepository.courtListPublishStatuses(COURT_CENTRE_ID, publishCourtListTypeSet))
+                .thenReturn(publishCourtListStatuses());
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.court.list.publish.status"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(PUBLISH_COURT_LIST_TYPES_QUERY_PARAMETER, PUBLISH_COURT_LIST_TYPES.toString())
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.getCourtListPublishStatus(query);
+        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.court.list.publish.status"), payloadIsJson(
+                allOf(
+                withJsonPath("$.publishCourtListStatuses", hasSize(1)),
+                withJsonPath("$.publishCourtListStatuses[0].publishStatus", equalTo(EXPORT_SUCCESSFUL.name()))
+        )))));
+
+    }
+
+
+    private List<CourtListPublishStatus> publishCourtListStatuses() {
+        final UUID courtCentreId1 = randomUUID();
+        final CourtListPublishStatus publishCourtListStatus3 = new CourtListPublishStatus(courtCentreId1, FINAL, now(), EXPORT_SUCCESSFUL);
+        return newArrayList(publishCourtListStatus3);
+    }
     @Test
     public void searchHearingsWithSearchDateWithAllParametersProvided() throws Exception {
 
@@ -390,10 +438,12 @@ public class HearingQueryViewTest {
 
 
     }
+
+
     private List<Hearing> hearingsJson() {
         final String testJsonString = "{ \"hello\": \"world\" }";
-        final Hearing hearing1 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
-        final Hearing hearing2 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
     }
 
@@ -406,8 +456,8 @@ public class HearingQueryViewTest {
 
     private List<Hearing> hearingJsonForEjected(){
         final String testJsonString = "{\"hearings\":[{\"id\":\"54482cb7-31aa-4c64-8656-3be6e3a4d158\",\"listedCases\":[{\"isEjected\":\"true\"}],\"courtApplications\":[{\"isEjected\":\"true\"}]}]}";
-        final Hearing hearing1 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
-        final Hearing hearing2 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
 
     }
@@ -424,8 +474,8 @@ public class HearingQueryViewTest {
                 "\t\t}]\n" +
                 "\t}]\n" +
                 "}";
-        final Hearing hearing1 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
-        final Hearing hearing2 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
 
     }

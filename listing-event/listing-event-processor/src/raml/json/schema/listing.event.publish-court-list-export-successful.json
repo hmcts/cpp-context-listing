@@ -12,8 +12,23 @@
     "courtListFileName": {
       "type": "string"
     },
-    "courtListType": {
-      "type": "string"
+    "publishCourtListType": {
+      "type": "string",
+      "enum": [
+        "WARN",
+        "DRAFT",
+        "FIRM",
+        "FINAL"
+      ]
+    },
+    "publishStatus": {
+      "type": "string",
+      "enum": [
+        "EXPORT_FAILED",
+        "EXPORT_SUCCESSFUL",
+        "COURT_LIST_REQUESTED",
+        "COURT_LIST_PRODUCED"
+      ]
     },
     "publishedTime": {
       "type": "string",
@@ -24,7 +39,8 @@
     "courtCentreId",
     "courtListFileId",
     "courtListFileName",
-    "courtListType",
+    "publishCourtListType",
+    "publishStatus",
     "publishedTime"
   ],
   "additionalProperties": false
