@@ -101,6 +101,7 @@ function integrationTests {
 function runEventLogLiquibase() {
     echo "Executing event log Liquibase"
     mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:copy -DoutputDirectory=target -Dartifact=uk.gov.justice.event-store:event-repository-liquibase:${EVENT_LOG_VERSION}:jar
+    java -jar target/event-repository-liquibase-${EVENT_LOG_VERSION}.jar --url=jdbc:postgresql://localhost:5432/${CONTEXT_NAME}eventstore --username=${CONTEXT_NAME} --password=${CONTEXT_NAME} --logLevel=info dropAll
     java -jar target/event-repository-liquibase-${EVENT_LOG_VERSION}.jar --url=jdbc:postgresql://localhost:5432/${CONTEXT_NAME}eventstore --username=${CONTEXT_NAME} --password=${CONTEXT_NAME} --logLevel=info update
     echo "Finished executing event log liquibase"
 }
@@ -121,6 +122,7 @@ function runEventBufferLiquibase() {
 
 function runViewStoreLiquibase {
   echo "Started executing View Store Liquibase"
+  mvn -f ${CONTEXT_NAME}-viewstore/${CONTEXT_NAME}-viewstore-liquibase/pom.xml -Dliquibase.url=jdbc:postgresql://localhost:5432/${CONTEXT_NAME}viewstore -Dliquibase.username=${CONTEXT_NAME} -Dliquibase.password=${CONTEXT_NAME} -Dliquibase.logLevel=info resources:resources liquibase:dropAll
   mvn -f ${CONTEXT_NAME}-viewstore/${CONTEXT_NAME}-viewstore-liquibase/pom.xml -Dliquibase.url=jdbc:postgresql://localhost:5432/${CONTEXT_NAME}viewstore -Dliquibase.username=${CONTEXT_NAME} -Dliquibase.password=${CONTEXT_NAME} -Dliquibase.logLevel=info resources:resources liquibase:update
   echo "Finished executing View Store Liquibase"
 }
@@ -136,8 +138,8 @@ function deployAndTest {
   startVagrant
   runEventLogLiquibase
   runEventLogAggregateSnapshotLiquibase
-  runEventBufferLiquibase
   runViewStoreLiquibase
+  runEventBufferLiquibase
   deployWiremock
   deployWars
   healthCheck

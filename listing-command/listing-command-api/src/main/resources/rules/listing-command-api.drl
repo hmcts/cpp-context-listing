@@ -53,3 +53,12 @@ rule "Command - API - Action - listing.command.restrict-court-list"
     $outcome.setSuccess(true);
 end
 
+rule "Command - API - Action - listing.command.publish-court-list"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.publish-court-list");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS));
+  then
+    $outcome.setSuccess(true);
+end
+

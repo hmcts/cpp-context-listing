@@ -11,7 +11,6 @@ import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
 import uk.gov.justice.listing.event.PublishCourtListRequested;
-import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
@@ -23,8 +22,6 @@ import javax.inject.Inject;
 @ServiceComponent(EVENT_LISTENER)
 public class PublishCourtListEventListener {
 
-    @Inject
-    private UtcClock clock;
 
     @Inject
     private CourtListRepository courtListRepository;

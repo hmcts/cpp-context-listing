@@ -1,10 +1,13 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
+import static javax.persistence.EnumType.STRING;
+
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
@@ -17,9 +20,11 @@ public class CourtList {
     @Column(name = "court_centre_id", nullable = false)
     private UUID courtCentreId;
 
+    @Enumerated(STRING)
     @Column(name = "publish_status", nullable = false)
     private PublishStatus publishStatus;
 
+    @Enumerated(STRING)
     @Column(name = "court_list_type", nullable = false)
     private CourtListType courtListType;
 

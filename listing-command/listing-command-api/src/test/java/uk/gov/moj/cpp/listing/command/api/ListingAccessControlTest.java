@@ -21,6 +21,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_CHANGE_JUDICIARY_FOR_HEARING = "listing.command.change-judiciary-for-hearings";
     private static final String ACTION_SEQUENCE_HEARINGS = "listing.command.sequence-hearings";
     private static final String ACTION_RESTRICT_COURT_LIST="listing.command.restrict-court-list" ;
+    private static final String ACTION_PUBLISH_COURT_LIST= "listing.command.publish-court-list";
     private static final String RANDOM_GROUP = "Random group";
 
 
@@ -88,6 +89,19 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
         final ExecutionResults results = executeRulesWith(action);
         assertSuccessfulOutcome(results);
     }
+
+
+    @Test
+    public void shouldAllowAuthorisedUserToPublishCourtList() {
+        final Action action = createActionFor(ACTION_PUBLISH_COURT_LIST);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS))
+                .willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
 
     @Override
     protected Map<Class, Object> getProviderMocks() {
