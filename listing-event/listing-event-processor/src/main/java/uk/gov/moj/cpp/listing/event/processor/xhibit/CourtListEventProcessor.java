@@ -9,13 +9,14 @@ import uk.gov.justice.services.core.annotation.FrameworkComponent;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListFilenameGenerator;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadataGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListXmlGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.ExportFailedException;
 
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -44,7 +45,7 @@ public class CourtListEventProcessor {
     private PublishCourtListRequestParametersParser publishCourtListRequestParametersParser;
 
     @Inject
-    private CourtListFilenameGenerator courtListFilenameGenerator;
+    private CourtListMetadataGenerator courtListMetadataGenerator;
 
     @Inject
     private CourtListXmlGenerator courtListXmlGenerator;
@@ -60,13 +61,13 @@ public class CourtListEventProcessor {
         try {
             final PublishCourtListRequestParameters parameters = publishCourtListRequestParametersParser.parse(envelope);
 
-            final String courtListFilename = courtListFilenameGenerator.generateFilename(parameters);
+            final CourtListMetadata courtListMetadata = courtListMetadataGenerator.generate(parameters);
 
-            final InputStream courtListXml = courtListXmlGenerator.generateCourtListXml(parameters);
+            final ByteArrayInputStream courtListXml = courtListXmlGenerator.generateCourtListInputStream(envelope, parameters, courtListMetadata);
 
-            final UUID fileId = fileServiceClient.store(courtListFilename, courtListXml);
+            final UUID fileId = fileServiceClient.store(courtListMetadata, courtListXml);
 
-            publishCourtListCommandSender.recordCourtListPublished(fileId, courtListFilename);
+            publishCourtListCommandSender.recordCourtListPublished(fileId, courtListMetadata.getFilename());
         } catch (final Exception e) {
             logger.error("Court List generation failed", e);
             publishCourtListCommandSender.recordCourtListExportFailed(randomUUID(), "NONE", e.getMessage());

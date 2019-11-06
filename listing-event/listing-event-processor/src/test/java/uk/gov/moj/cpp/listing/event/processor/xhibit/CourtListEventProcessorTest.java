@@ -12,12 +12,14 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListFilenameGenerator;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadataGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListXmlGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.ExportFailedException;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.UUID;
 
@@ -46,11 +48,12 @@ public class CourtListEventProcessorTest {
     @Mock
     private PublishCourtListRequestParametersParser publishCourtListRequestParametersParser;
     @Mock
-    private CourtListFilenameGenerator courtListFilenameGenerator;
+    private CourtListMetadataGenerator courtListMetadataGenerator;
     @Mock
     private CourtListXmlGenerator courtListXmlGenerator;
     @Mock
     private FileServiceClient fileServiceClient;
+
 
     @Test
     public void shouldHandlePublishCourtListRequested() throws Exception {
@@ -58,21 +61,21 @@ public class CourtListEventProcessorTest {
         // Mocked values
         final JsonEnvelope tEnvelope = mock(JsonEnvelope.class);
         final UUID generatedDocumentId = randomUUID();
-        final InputStream mockFileContentStream = mock(InputStream.class);
+        final ByteArrayInputStream mockFileContentStream = mock(ByteArrayInputStream.class);
         final PublishCourtListRequestParameters parameters = mock(PublishCourtListRequestParameters.class);
-        final String generatedFilename = "GENERATED_FILENAME";
+        final CourtListMetadata courtListMetadata = new CourtListMetadata("TESTFILENAME", "UNIQUE_ID");
 
         when(publishCourtListRequestParametersParser.parse(tEnvelope)).thenReturn(parameters);
-        when(courtListFilenameGenerator.generateFilename(parameters)).thenReturn(generatedFilename);
-        when(courtListXmlGenerator.generateCourtListXml(parameters)).thenReturn(mockFileContentStream);
-        when(fileServiceClient.store(generatedFilename, mockFileContentStream)).thenReturn(generatedDocumentId);
+        when(courtListMetadataGenerator.generate(parameters)).thenReturn(courtListMetadata);
+        when(courtListXmlGenerator.generateCourtListInputStream(tEnvelope, parameters, courtListMetadata)).thenReturn(mockFileContentStream);
+        when(fileServiceClient.store(courtListMetadata, mockFileContentStream)).thenReturn(generatedDocumentId);
 
         // Tested method
         courtListEventProcessor.handlePublishCourtListRequested(tEnvelope);
 
         // Assertions
-        verify(fileServiceClient).store(generatedFilename, mockFileContentStream);
-        verify(publishCourtListCommandSender).recordCourtListPublished(generatedDocumentId, generatedFilename);
+        verify(fileServiceClient).store(courtListMetadata, mockFileContentStream);
+        verify(publishCourtListCommandSender).recordCourtListPublished(generatedDocumentId, courtListMetadata.getFilename());
     }
 
     @Test

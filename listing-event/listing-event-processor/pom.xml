@@ -27,6 +27,17 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.sun.xml.bind</groupId>
+            <artifactId>jaxb-impl</artifactId>
+            <version>${com.sun.xml.bind.jaxb.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.xml.bind</groupId>
+            <artifactId>jaxb-core</artifactId>
+            <version>${com.sun.xml.bind.jaxb.version}</version>
+        </dependency>
+
         <!-- Listing Dependencies -->
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
@@ -43,6 +54,11 @@
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
             <artifactId>listing-viewstore-persistence</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-domain-xhibit</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -83,9 +99,16 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>uk.gov.moj.cpp.listing</groupId>
-            <artifactId>listing-domain-xhibit</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.xmlunit</groupId>
+            <artifactId>xmlunit-core</artifactId>
+            <version>${org.xmlunit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.xmlunit</groupId>
+            <artifactId>xmlunit-matchers</artifactId>
+            <version>${org.xmlunit.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
