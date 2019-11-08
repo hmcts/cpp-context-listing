@@ -18,6 +18,7 @@
                 <artifactId>maven-jaxb2-plugin</artifactId>
                 <configuration>
                     <schemaDirectory>src/main/resources/xhibit/xsd</schemaDirectory>
+                    <strict>false</strict>
                     <args>
                         <arg>-XautoNameResolution</arg>
                     </args>
