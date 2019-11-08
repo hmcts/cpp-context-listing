@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit;
+package uk.gov.moj.cpp.listing.common.xhibit;
 
 import static com.github.sardine.SardineFactory.begin;
 

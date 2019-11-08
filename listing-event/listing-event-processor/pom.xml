@@ -68,11 +68,6 @@
             <version>${file-service-api.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.lookfirst</groupId>
-            <artifactId>sardine</artifactId>
-            <version>${sardine.version}</version>
-        </dependency>
-        <dependency>
             <groupId>uk.gov.justice.framework-generators</groupId>
             <artifactId>rest-adapter-file-service</artifactId>
             <version>${framework-generators.version}</version>
@@ -109,6 +104,11 @@
             <artifactId>xmlunit-matchers</artifactId>
             <version>${org.xmlunit.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-common</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

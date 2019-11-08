@@ -1,8 +1,7 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit;
+package uk.gov.moj.cpp.listing.common.xhibit;
 
+import static java.lang.String.*;
 import static java.lang.String.format;
-
-import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.ExportFailedException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +33,7 @@ public class XhibitSession implements AutoCloseable {
         client.shutdown();
     }
 
-    @SuppressWarnings({"squid:S1166","squid:S1162","squid:S2139"})
+    @SuppressWarnings({"squid:S1166", "squid:S1162", "squid:S2139"})
     public void exportFile(final String filename, final InputStream content) throws ExportFailedException {
 
         final String outboundUrl = new UrlFactory().toUrl(outbound, filename);

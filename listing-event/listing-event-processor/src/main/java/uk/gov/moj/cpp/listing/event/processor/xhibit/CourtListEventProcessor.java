@@ -5,16 +5,16 @@ import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.EVENT_PAYLOAD_DEBUG_STRING;
 
-import uk.gov.justice.services.core.annotation.FrameworkComponent;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.xhibit.ExportFailedException;
+import uk.gov.moj.cpp.listing.common.xhibit.XhibitService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadataGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListXmlGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.ExportFailedException;
 
 import java.io.ByteArrayInputStream;
 import java.util.UUID;
@@ -30,7 +30,6 @@ public class CourtListEventProcessor {
 
     private static final String PRIVATE_EVENT_PUBLISH_COURT_LIST_PRODUCED = "listing.event.publish-court-list-produced";
 
-    @FrameworkComponent("EVENT_PROCESSOR")
     @Inject
     private XhibitService xhibitService;
 
