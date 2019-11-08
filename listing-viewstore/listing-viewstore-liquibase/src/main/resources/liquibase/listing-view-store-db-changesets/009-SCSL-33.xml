@@ -6,11 +6,12 @@
     <changeSet author="listing" id="9" logicalFilePath="009-SCSL-33.xml">
 
         <sql>DROP INDEX idx</sql>
-        <sql>CREATE INDEX idx
+        <sql>CREATE INDEX range_search_idx
             ON hearing USING GIN
             (
             (properties -> 'courtCentreId'),
             (properties -> 'allocated'),
+            (properties -> 'jurisdictionType'),
             (properties -> 'weekCommencingStartDate'),
             (properties -> 'weekCommencingEndDate'),
             (properties -> 'startDate'),
