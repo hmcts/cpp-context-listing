@@ -10,9 +10,9 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.ExportFailedException;
 import uk.gov.moj.cpp.listing.common.xhibit.XhibitService;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListFileGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadataGenerator;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListXmlGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
 
@@ -47,7 +47,7 @@ public class CourtListEventProcessor {
     private CourtListMetadataGenerator courtListMetadataGenerator;
 
     @Inject
-    private CourtListXmlGenerator courtListXmlGenerator;
+    private CourtListFileGenerator courtListFileGenerator;
 
     @Inject
     private FileServiceClient fileServiceClient;
@@ -60,9 +60,11 @@ public class CourtListEventProcessor {
         try {
             final PublishCourtListRequestParameters parameters = publishCourtListRequestParametersParser.parse(envelope);
 
-            final CourtListMetadata courtListMetadata = courtListMetadataGenerator.generate(parameters);
+            logger.info("handlePublishCourtListRequested: parameters={}", parameters);
 
-            final ByteArrayInputStream courtListXml = courtListXmlGenerator.generateCourtListInputStream(envelope, parameters, courtListMetadata);
+            final CourtListMetadata courtListMetadata = courtListMetadataGenerator.generate(envelope, parameters);
+
+            final ByteArrayInputStream courtListXml = courtListFileGenerator.generateCourtListInputStream(envelope, parameters, courtListMetadata);
 
             final UUID fileId = fileServiceClient.store(courtListMetadata, courtListXml);
 

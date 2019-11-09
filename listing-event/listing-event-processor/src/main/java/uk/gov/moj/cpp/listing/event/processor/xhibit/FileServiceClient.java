@@ -12,12 +12,20 @@ import java.util.UUID;
 import javax.inject.Inject;
 import javax.json.JsonObject;
 
+import org.slf4j.Logger;
+
 public class FileServiceClient {
+
+    @SuppressWarnings("squid:S1312")
+    @Inject
+    private Logger logger;
 
     @Inject
     private FileStorer fileStorer;
 
     public UUID store(final CourtListMetadata metadata, final InputStream fileContentStream) throws FileServiceException {
+
+        logger.info("store: metadata={}", metadata);
 
         final JsonObject fileServiceMetadata = createObjectBuilder()
                 .add("filename", metadata.getFilename())
@@ -26,4 +34,5 @@ public class FileServiceClient {
 
         return fileStorer.store(fileServiceMetadata, fileContentStream);
     }
+
 }

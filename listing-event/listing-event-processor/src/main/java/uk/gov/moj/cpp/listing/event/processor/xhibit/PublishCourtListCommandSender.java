@@ -23,7 +23,7 @@ public class PublishCourtListCommandSender {
 
     private static final String RECORD_COURT_LIST_PUBLISHED = "listing.command.record-court-list-published";
     private static final String RECORD_COURT_LIST_EXPORT_SUCCESSFUL = "listing.command.record-court-list-export-successful";
-    private static final String RECORD_COURT_LIST_EXPORT_FAILED = "listing.command.record-court-list-publish-export-failed";
+    private static final String RECORD_COURT_LIST_EXPORT_FAILED = "listing.command.record-court-list-export-failed";
     private static final String COURT_LIST_FILE_NAME = "courtListFileName";
     private static final String COURT_LIST_FILE_ID = "courtListFileId";
 

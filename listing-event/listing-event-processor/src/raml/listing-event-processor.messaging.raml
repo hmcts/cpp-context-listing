@@ -47,6 +47,9 @@ baseUri: message://event/processor/message/listing
         application/vnd.listing.event.publish-court-list-export-successful+json:
             schema: !include json/schema/listing.event.publish-court-list-export-successful.json
             example: !include json/listing.event.publish-court-list-export-successful.json
+        application/vnd.listing.event.publish-court-list-requested+json:
+            schema: !include json/schema/listing.event.publish-court-list-requested.json
+            example: !include json/listing.event.publish-court-list-requested.json
 /public.event:
     post:
       body:

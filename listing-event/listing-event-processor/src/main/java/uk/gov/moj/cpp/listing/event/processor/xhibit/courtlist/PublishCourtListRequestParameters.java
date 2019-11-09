@@ -1,10 +1,14 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
-import uk.gov.justice.listing.event.PublishCourtListType;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
+import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.UUID;
+
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
 public class PublishCourtListRequestParameters {
 
@@ -45,5 +49,10 @@ public class PublishCourtListRequestParameters {
 
     public ZonedDateTime getRequestedTime() {
         return requestedTime;
+    }
+
+    @Override
+    public String toString() {
+        return ReflectionToStringBuilder.toString(this, SHORT_PREFIX_STYLE);
     }
 }

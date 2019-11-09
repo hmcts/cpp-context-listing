@@ -8,9 +8,9 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
-import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
+import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 
 import java.time.LocalDate;
 import java.time.ZoneId;

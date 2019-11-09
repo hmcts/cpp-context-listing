@@ -1,8 +1,9 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
-import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
 import static uk.gov.justice.services.common.converter.LocalDates.from;
 import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString;
+import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.valueOf;
+
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.UUID;
