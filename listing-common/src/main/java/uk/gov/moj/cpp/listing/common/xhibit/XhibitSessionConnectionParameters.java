@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit;
+package uk.gov.moj.cpp.listing.common.xhibit;
 
 import uk.gov.justice.services.common.configuration.Value;
 

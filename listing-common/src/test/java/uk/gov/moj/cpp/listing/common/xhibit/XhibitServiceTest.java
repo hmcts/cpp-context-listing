@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit;
+package uk.gov.moj.cpp.listing.common.xhibit;
 
 import static java.lang.String.format;
 import static java.util.Optional.of;
@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 import uk.gov.justice.services.fileservice.api.FileRetriever;
 import uk.gov.justice.services.fileservice.api.FileServiceException;
 import uk.gov.justice.services.fileservice.domain.FileReference;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.ExportFailedException;
 
 import java.io.InputStream;
 import java.util.UUID;

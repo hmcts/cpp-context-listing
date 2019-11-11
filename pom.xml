@@ -48,6 +48,7 @@
         <module>listing-query</module>
         <module>listing-service</module>
         <module>listing-json</module>
+        <module>listing-common</module>
     </modules>
 
     <build>

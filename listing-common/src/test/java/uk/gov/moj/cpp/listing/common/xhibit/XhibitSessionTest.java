@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit;
+package uk.gov.moj.cpp.listing.common.xhibit;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -7,8 +7,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
-
-import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.ExportFailedException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -78,7 +76,7 @@ public class XhibitSessionTest {
                 "Response status: 404";
 
         doThrow(httpResponseException).when(client).put("http://outbound.com/filename", fileContents);
-        setField(xhibitSessionSpy,"logger",logger);
+        setField(xhibitSessionSpy, "logger", logger);
         try {
             xhibitSessionSpy.exportFile(filename, fileContents);
             fail();
@@ -97,7 +95,7 @@ public class XhibitSessionTest {
         final String filename = "filename";
 
         final String expectedMessage = "CPF01: Failed to put file 'filename' to 'http://outbound.com/filename'";
-        setField(this.xhibitSessionSpy,"logger",logger);
+        setField(this.xhibitSessionSpy, "logger", logger);
 
         doThrow(ioException).when(client).put("http://outbound.com/filename", fileContents);
 

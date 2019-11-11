@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit.exception;
+package uk.gov.moj.cpp.listing.common.xhibit;
 
 public class ExportFailedException extends Exception {
 

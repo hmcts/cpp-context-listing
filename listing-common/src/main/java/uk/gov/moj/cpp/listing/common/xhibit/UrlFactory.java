@@ -1,8 +1,6 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit;
+package uk.gov.moj.cpp.listing.common.xhibit;
 
 import static java.lang.String.format;
-
-import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.UrlCreationFailedException;
 
 import java.net.MalformedURLException;
 import java.net.URL;

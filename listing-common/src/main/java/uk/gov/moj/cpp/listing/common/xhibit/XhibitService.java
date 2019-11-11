@@ -1,20 +1,22 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit;
+package uk.gov.moj.cpp.listing.common.xhibit;
 
+import static java.lang.String.*;
 import static java.lang.String.format;
 
 import uk.gov.justice.services.fileservice.api.FileRetriever;
 import uk.gov.justice.services.fileservice.api.FileServiceException;
 import uk.gov.justice.services.fileservice.domain.FileReference;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.ExportFailedException;
 
 import java.io.IOException;
 import java.util.UUID;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.NotFoundException;
 
 import org.slf4j.Logger;
 
+@ApplicationScoped
 public class XhibitService {
 
     @SuppressWarnings("squid:S1312")
