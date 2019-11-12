@@ -12,7 +12,7 @@ rule "Query - API - listing.search.hearings"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.search.hearings");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.COURT_CLERKS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.LISTING_OFFICERS, RuleConstants.LEGAL_ADVISERS));
   then
     $outcome.setSuccess(true);
 end
@@ -21,7 +21,7 @@ rule "Query - API - listing.range.search.hearings"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.range.search.hearings");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.COURT_CLERKS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.LISTING_OFFICERS, RuleConstants.LEGAL_ADVISERS));
   then
     $outcome.setSuccess(true);
 end
@@ -30,15 +30,25 @@ rule "Query - API - listing.public.list"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.public.list");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_CLERKS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.COURT_CLERKS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.LISTING_OFFICERS, RuleConstants.LEGAL_ADVISERS));
   then
     $outcome.setSuccess(true);
 end
+
 rule "Query - API - listing.search.court.list"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.search.court.list");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CROWN_COURT_ADMIN));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.COURT_CLERKS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.LISTING_OFFICERS, RuleConstants.LEGAL_ADVISERS));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.search.hearing"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.hearing");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.COURT_CLERKS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.LISTING_OFFICERS, RuleConstants.LEGAL_ADVISERS));
   then
     $outcome.setSuccess(true);
 end

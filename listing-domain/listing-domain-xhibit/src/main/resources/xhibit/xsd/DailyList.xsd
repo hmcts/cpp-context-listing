@@ -6,7 +6,7 @@
 			targetNamespace="http://www.courtservice.gov.uk/schemas/courtservice"
 			elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.3"
 			id="DailyList">
-    <xsd:include schemaLocation="CourtService.xsd"/>
+    <xsd:include schemaLocation="1_CourtService.xsd"/>
     <xsd:annotation>
         <xsd:appinfo>
             <Metadata xmlns="http://www.govtalk.gov.uk/metadata/egms">

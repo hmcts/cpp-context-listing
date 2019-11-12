@@ -25,18 +25,21 @@ import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListCoverterFilterEjectCases;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObjectBuilder;
+import javax.ws.rs.NotFoundException;
 
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
@@ -63,6 +66,8 @@ public class HearingQueryView {
     private static final String HEARINGS = "hearings";
     private static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     private static final String WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
+    private static final String ID = "id";
+    private static final String NAME_LISTING_SEARCH_HEARING = "listing.search.hearing";
 
     @Inject
     private HearingRepository repository;
@@ -71,7 +76,7 @@ public class HearingQueryView {
     private CourtListRepository courtListRepository;
 
     @Inject
-    private HearingJsonListCoverterFilterEjectCases hearingJsonListCoverterFilterEjectCases;
+    private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
 
     @Inject
     private Enveloper enveloper;
@@ -115,7 +120,7 @@ public class HearingQueryView {
 
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convert(hearings))
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
                         .build()
         );
     }
@@ -154,13 +159,13 @@ public class HearingQueryView {
 
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convert(hearings))
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
                         .build()
         );
     }
 
     private List<Hearing> findHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate) {
-        return isFalse(allocated)?
+        return isFalse(allocated) ?
                 repository.findUnallocatedHearingsByWeekCommencingRange(
                         courtCentreId,
                         courtRoomId,
@@ -250,10 +255,36 @@ public class HearingQueryView {
         return enveloper.withMetadataFrom(query, "listing.court.list.publish.status").apply(createObjectBuilder().add("publishCourtListStatuses", courtListPublishStatuses).build());
     }
 
+    @Handles(NAME_LISTING_SEARCH_HEARING)
+    /**
+     * Note that all validation is done in HearingQueryApi; while
+     * we could do it here, as well, it would be ineffective: for
+     * example, if we did throw a BadRequestException from, it wouldn't
+     * result in a 404.
+     *
+     * Note, as well, that this method must be public; if not you'll get the error:
+     * "No handler registered to handle action listing.search.hearing
+     */
+    @SuppressWarnings("WeakerAccess")
+    public JsonEnvelope getHearingById(final JsonEnvelope query) {
+        final Hearing hearing = repository.findBy(extractUUID(query));
+        if (hearing == null) {
+            throw new NotFoundException("There is no Hearing for that ID.");
+        }
+        // TODO: Use the new approach, as in ListingCommandHandler.
+        // I had tried but know the framework well enough, yet.
+        return enveloper.withMetadataFrom(query, NAME_LISTING_SEARCH_HEARING)
+                .apply(HearingToJsonConverter.convert(hearing));
+    }
+
+    private UUID extractUUID(final JsonEnvelope query) {
+        return UUID.fromString(query.payloadAsJsonObject().getString(ID, null));
+    }
+
     private JsonEnvelope createAlphabeticalListJsonEnvelope(final JsonEnvelope query, final List<Hearing> matchedHearings) {
         return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convertHearingResultForAlphbeticalList(matchedHearings))
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertHearingResultForAlphbeticalList(matchedHearings))
                         .build()
         );
     }
@@ -261,7 +292,7 @@ public class HearingQueryView {
     private JsonEnvelope createPublicStandardCourtListJsonEnvelope(final JsonEnvelope query, final Hearing matchedHearingsJsonObject) {
         return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListCoverterFilterEjectCases.convertHearingResultForPublicList(matchedHearingsJsonObject))
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertHearingResultForPublicList(matchedHearingsJsonObject))
                         .build()
         );
     }

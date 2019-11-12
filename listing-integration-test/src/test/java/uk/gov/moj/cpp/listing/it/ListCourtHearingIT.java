@@ -46,5 +46,30 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedWithLegalEntity(UNALLOCATED);
         }
     }
+
+    @Test
+    public void listHearingByIdWhenItExists() {
+        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyExistingHearingById();
+        }
+    }
+
+    @Test
+    public void listHearingByIdWhenItDoesntExist() {
+        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyNonExistentHearingById();
+        }
+    }
+
+
+    @Test
+    public void listHearingByIdWhenIdIsInvalid() {
+        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingByIdWithInvalidId();
+        }
+    }
 }
                                                                                                                                                                                                                                      

@@ -99,6 +99,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
 
+    private static final String MEDIA_TYPE_SEARCH_HEARING_JSON = "application/vnd.listing" +
+            ".search.hearing+json";
 
     private static final String EVENT_SELECTOR_HEARING_LISTED = "listing.events.hearing-listed";
     private static final String EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING = "listing.events.hearing-allocated-for-listing";
@@ -405,6 +407,79 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(hearingData.getCourtApplications().get(0).getRespondent().getLastName()))
                         )));
     }
+
+    public void verifyExistingHearingById() {
+
+        final HearingData dataForFirstHearing = hearingsData.getHearingData().get(0);
+
+        final String url = generateUrlForFindingAHearingById(dataForFirstHearing.getId().toString());
+
+        poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(OK),
+                        payload().isJson(
+                                allOf(
+                                        withJsonPath("$.id",
+                                                equalTo(dataForFirstHearing.getId().toString())),
+                                        withJsonPath("$.jurisdictionType",
+                                                equalTo(dataForFirstHearing.getJurisdictionType())),
+                                        withJsonPath("$.courtCentreId",
+                                                equalTo(dataForFirstHearing.getCourtCentreId().toString())),
+                                        withJsonPath("$.type.id",
+                                                equalTo(dataForFirstHearing.getHearingTypeData().getTypeId().toString())),
+                                        withJsonPath("$.type.description",
+                                                equalTo(dataForFirstHearing.getHearingTypeData().getTypeDescription())),
+                                        withJsonPath("$.startDate",
+                                                equalTo(dataForFirstHearing.getHearingStartDate().toString())),
+                                        withJsonPath("$.courtApplications[0].applicationType",
+                                                equalTo(dataForFirstHearing.getCourtApplications().get(0).getType())),
+                                        withJsonPath("$.courtApplications[0].id",
+                                                equalTo(dataForFirstHearing.getCourtApplications().get(0).getId().toString())),
+                                        withJsonPath("$.courtApplications[0].parentApplicationId",
+                                                equalTo(dataForFirstHearing.getCourtApplications().get(0).getParentApplicationId().toString())),
+                                        withJsonPath("$.courtApplications[0].applicant.lastName",
+                                                equalTo(dataForFirstHearing.getCourtApplications().get(0).getApplicant().getLastName())),
+                                        withJsonPath("$.courtApplications[0].applicant.firstName",
+                                                equalTo(dataForFirstHearing.getCourtApplications().get(0).getApplicant().getFirstName())),
+                                        withJsonPath("$.courtApplications[0].respondents[0].firstName",
+                                                equalTo(dataForFirstHearing.getCourtApplications().get(0).getRespondent().getFirstName())),
+                                        withJsonPath("$.courtApplications[0].respondents[0].lastName",
+                                                equalTo(dataForFirstHearing.getCourtApplications().get(0).getRespondent().getLastName()))
+                                )));
+
+    }
+
+
+    public void verifyNonExistentHearingById() {
+
+        final String url = generateUrlForFindingAHearingById("4e6d8d78-fa61-4102-8d14-2042df85faab");
+
+        poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(Response.Status.NOT_FOUND),
+                        payload());
+
+    }
+
+
+    public void verifyHearingByIdWithInvalidId() {
+
+        final String invalidId = "4e6d8d78-fa61";
+
+        final String url = generateUrlForFindingAHearingById(invalidId);
+
+        poll(requestParams(url, MEDIA_TYPE_SEARCH_HEARING_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(Response.Status.BAD_REQUEST),
+                        payload().isJson(allOf(withJsonPath("$.error",
+                                equalTo("Please ensure that the id is a valid UUID.")))));
+
+    }
+
+    private String generateUrlForFindingAHearingById(String rawId) {
+        return String.format("%s/%s", baseUri,
+                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearing"),
+                        rawId
+                ));
+    }
+
 
         private ListCourtHearing getListCourtHearingData(HearingsData hearingsData) {
 
