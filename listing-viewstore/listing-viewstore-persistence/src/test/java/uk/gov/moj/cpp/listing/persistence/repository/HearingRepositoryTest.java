@@ -36,6 +36,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 
+// It seems that this must only be run with PersistenceTestSuite.
 @RunWith(CdiTestRunner.class)
 public class HearingRepositoryTest extends BaseTransactionalTest {
 
@@ -692,7 +693,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 startTime,
                 endTime,
                 hearingDate);
-         return new HearingBuilder()
+        return new HearingBuilder()
                 .setId(hearingId)
                 .setProperties(JacksonUtil.toJsonNode(hearingString))
                 .build();

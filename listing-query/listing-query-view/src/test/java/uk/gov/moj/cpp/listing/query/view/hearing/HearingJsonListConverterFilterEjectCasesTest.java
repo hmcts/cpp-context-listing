@@ -26,10 +26,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
 @RunWith(MockitoJUnitRunner.class)
-public class HearingJsonListCoverterFilterEjectCasesTest {
+public class HearingJsonListConverterFilterEjectCasesTest {
 
     @InjectMocks
-    private HearingJsonListCoverterFilterEjectCases converter;
+    private HearingJsonListConverterFilterEjectCases converter;
 
     @Test
     public void shouldConvertToJsonArrayWithEjectedCaseFilterd() throws IOException {
@@ -73,7 +73,7 @@ public class HearingJsonListCoverterFilterEjectCasesTest {
     private Hearing createHearingForPublicList() throws IOException {
         final StringWriter writer = new StringWriter();
 
-        InputStream inputStream =HearingJsonListCoverterFilterEjectCasesTest.class.getResourceAsStream("/json/hearingDataForPublicListWithEjectFlag.json");
+        InputStream inputStream = HearingJsonListConverterFilterEjectCasesTest.class.getResourceAsStream("/json/hearingDataForPublicListWithEjectFlag.json");
         IOUtils.copy(inputStream, writer, UTF_8);
         return  new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(writer.toString()));
 
@@ -84,13 +84,13 @@ public class HearingJsonListCoverterFilterEjectCasesTest {
         final StringWriter writer = new StringWriter();
         //create first hearing with 2 listed case one with isEjected flag as true and other as false
 
-        InputStream inputStream1 =HearingJsonListCoverterFilterEjectCasesTest.class.getResourceAsStream("/json/hearingSampleDataWithEjectCaseFlag.json");
+        InputStream inputStream1 = HearingJsonListConverterFilterEjectCasesTest.class.getResourceAsStream("/json/hearingSampleDataWithEjectCaseFlag.json");
         IOUtils.copy(inputStream1, writer, UTF_8);
         final Hearing hearing1 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(writer.toString()));
         writer.getBuffer().setLength(0);
 
         //create second hearing with 2 listed case without isEjected flag
-        InputStream inputStream2 =HearingJsonListCoverterFilterEjectCasesTest.class.getResourceAsStream("/json/hearingSampleDataWithoutEjectCaseFlag.json");
+        InputStream inputStream2 = HearingJsonListConverterFilterEjectCasesTest.class.getResourceAsStream("/json/hearingSampleDataWithoutEjectCaseFlag.json");
         IOUtils.copy(inputStream2, writer, UTF_8);
         final Hearing hearing2 = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(writer.toString()));
         return newArrayList(hearing1, hearing2);

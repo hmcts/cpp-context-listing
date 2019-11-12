@@ -107,7 +107,28 @@ protocols: [ HTTP, HTTPS ]
                     example:  !include json/listing.search.hearings.json
                     schema:  !include  json/schema/listing.search.hearings.json
 
+/hearings/{id}:
+  uriParameters:
+    id:
+      description: The ID of the Hearing; must be a valid UUID
+      type: string
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.hearing+json
+          name: listing.search.hearing
+      ...
+    responses:
+          200:
+              description: OK
+              body:
+                application/vnd.listing.search.hearing+json:
+                  example: !include json/listing.search.hearing.json
+                  schema:  !include json/schema/listing.search.hearing.json
+
 /courtlist:
+  description: get court list document
   get:
     description: |
       ...

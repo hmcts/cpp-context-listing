@@ -2,11 +2,7 @@ package uk.gov.moj.cpp.listing.it;
 
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
-import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-import uk.gov.moj.cpp.listing.steps.data.RestrictCourtListData;
-
-import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -62,6 +58,31 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingWithLegalEntity();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedWithLegalEntity(UNALLOCATED);
+        }
+    }
+
+    @Test
+    public void listHearingByIdWhenItExists() {
+        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyExistingHearingById();
+        }
+    }
+
+    @Test
+    public void listHearingByIdWhenItDoesntExist() {
+        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyNonExistentHearingById();
+        }
+    }
+
+
+    @Test
+    public void listHearingByIdWhenIdIsInvalid() {
+        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingByIdWithInvalidId();
         }
     }
 }

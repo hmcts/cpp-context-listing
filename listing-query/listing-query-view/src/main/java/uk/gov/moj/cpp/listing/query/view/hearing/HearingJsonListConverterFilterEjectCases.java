@@ -15,7 +15,7 @@ import java.io.StringReader;
 import java.util.List;
 import java.util.Objects;
 
-public class HearingJsonListCoverterFilterEjectCases implements ListOfJsontoJsonArrayConverter {
+public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJsonArrayConverter {
 
 
     public static final String LISTED_CASES = "listedCases";
@@ -27,7 +27,7 @@ public class HearingJsonListCoverterFilterEjectCases implements ListOfJsontoJson
     public static final String HEARINGS_BY_HEARING_DATE = "hearingsByHearingDate";
     public static final String HEARING = "hearing";
     public static final String COURT_APPLICATIONS = "courtApplications";
-    private static final Logger LOGGER = LoggerFactory.getLogger(HearingJsonListCoverterFilterEjectCases.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HearingJsonListConverterFilterEjectCases.class);
 
 
     @Override
