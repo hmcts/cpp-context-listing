@@ -23,7 +23,8 @@
         "$.hearing.courtApplications[*].respondents[*].courtApplicationPartyType",
         "$.hearing.hearingLanguage",
         "$.hearing.jurisdictionType",
-        "$.hearing.listedCases[*].defendants[*].bailStatus",
+        "$.hearing.listedCases[*].defendants[*].bailStatus.code",
+        "$.hearing.listedCases[*].defendants[*].bailStatus.description",
         "$.hearing.listedCases[*].defendants[*].hearingLanguageNeeds"
       ]
     },
@@ -31,7 +32,8 @@
     {
       "eventName": "listing.events.new-defendant-details-updated",
       "fieldsToBeIgnored": [
-        "$.defendant.bailStatus"
+        "$.defendant.bailStatus.code",
+        "$.defendant.bailStatus.description"
       ]
     },
     {
