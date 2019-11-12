@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 
 public class Application implements Aggregate {
 
-    private static final long serialVersionUID = 200L;
+    private static final long serialVersionUID = 201L;
     private final List<UUID> hearingIds = new ArrayList<>();
     @Override
     public Object apply(Object event) {
