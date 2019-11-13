@@ -27,7 +27,9 @@ import static org.mockito.Mockito.when;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.listing.event.PublishCourtListExportFailed.publishCourtListExportFailed;
 import static uk.gov.justice.listing.event.PublishCourtListExportSuccessful.publishCourtListExportSuccessful;
+import static uk.gov.justice.listing.event.PublishCourtListProduced.publishCourtListProduced;
 import static uk.gov.justice.listing.event.PublishCourtListRequested.publishCourtListRequested;
+import static uk.gov.justice.listing.event.PublishCourtListType.FIRM;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
@@ -39,6 +41,7 @@ import static uk.gov.moj.cpp.listing.command.utils.FileUtil.givenPayload;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
+import uk.gov.justice.listing.commands.RecordCourtListProduced;
 import uk.gov.justice.listing.courts.AddCourtApplicationForHearing;
 import uk.gov.justice.listing.courts.AddCourtApplicationToHearingCommand;
 import uk.gov.justice.listing.courts.AddHearingToCaseCommand;
@@ -268,6 +271,7 @@ public class ListingCommandHandlerTest {
 
     private static final UUID COURT_APPLICATION_ID = randomUUID();
     private static final String COURT_APPLICATION_TYPE = STRING.next();
+    public static final String FILENAME = "FILENAME";
     @Mock
     CaseOffences caseOffences;
     @Mock
@@ -305,7 +309,7 @@ public class ListingCommandHandlerTest {
                 ArrayList.class, OffenceUpdated.class, HearingDaysChangedForHearing.class, OffenceAdded.class,
                 OffenceDeleted.class, SequenceHearings.class, UpdateCourtApplicationForHearings.class, AddCourtApplicationForHearing.class,
                 CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class,
-                PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class);
+                PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class, RecordCourtListProduced.class);
     }
 
 
@@ -1252,6 +1256,30 @@ public class ListingCommandHandlerTest {
         verify(courtListAggregate).recordCourtListRequested(any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class));
     }
 
+    @Test
+    public void shouldCreateRecordCourtListPublishedEvent() throws Exception {
+        final UUID courtCentreId = UUID.fromString("9689207b-a9d2-4c2e-bd38-269b78a132a8");
+        final UUID courtListFileId = UUID.fromString("1deeec47-056b-431a-b131-0ea6f5d554ed");
+        final String fileName = "FILENAME";
+        final PublishCourtListType publishCourtListType = FIRM;
+        final ZonedDateTime producedTime = ZonedDateTime.parse("2019-11-15T11:13:19.314Z[UTC]");
+        when(eventSource.getStreamById(courtCentreId)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, CourtListAggregate.class)).thenReturn(courtListAggregate);
+        when(courtListAggregate.recordCourtListProduced(courtCentreId, courtListFileId, fileName, publishCourtListType, producedTime))
+                .thenReturn(Stream.of(publishCourtListProduced().build()));
+
+        final JsonObject payload = Json.createObjectBuilder()
+                .add("courtCentreId", courtCentreId.toString())
+                .add("publishCourtListType", publishCourtListType.name())
+                .add("courtListFileId", courtListFileId.toString())
+                .add("courtListFileName", fileName)
+                .add("producedTime", producedTime.toString())
+                .build();
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.record-court-list-produced", payload);
+        listingCommandHandler.recordCourtListProduced(commandEnvelope);
+        verify(courtListAggregate).recordCourtListProduced(courtCentreId, courtListFileId, fileName, publishCourtListType, producedTime);
+    }
 
     private JsonEnvelope updateSequenceForHearingDayCommandEnvelope() {
         String jsonString = givenPayload("/test-data/listing.command.update-sequence-for-hearing-day.json").toString()

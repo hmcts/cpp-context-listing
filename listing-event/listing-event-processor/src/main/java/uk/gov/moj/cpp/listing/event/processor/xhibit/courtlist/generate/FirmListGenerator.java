@@ -4,32 +4,45 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.FirmCourtListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.FirmListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ObjectFactory;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.ListingService;
 
-import javax.inject.Inject;
+import java.util.List;
+
+import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
 
 import com.google.common.annotations.VisibleForTesting;
 
 public class FirmListGenerator {
 
-    @Inject
-    private CourtServicesGenerator courtServicesGenerator;
-
     private static final ObjectFactory objectFactory = new ObjectFactory();
 
-    public JAXBElement<FirmListStructure> generate(final CourtListGenerationContext context) {
+    private ListingService listingService;
 
-        return objectFactory.createFirmList(transform(context));
+    private CourtServicesGenerator courtServicesGenerator;
+
+    private CourtListGenerationContext context;
+
+    public FirmListGenerator(final CourtListGenerationContext context, final ListingService listingService,
+                             final CourtServicesGenerator courtServicesGenerator) {
+        this.context = context;
+        this.listingService = listingService;
+        this.courtServicesGenerator = courtServicesGenerator;
     }
 
-    public FirmListStructure transform(final CourtListGenerationContext context) {
+    public JAXBElement<FirmListStructure> generate() {
+
+        return objectFactory.createFirmList(transform());
+    }
+
+    public FirmListStructure transform() {
 
         final FirmListStructure firmListStructure = objectFactory.createFirmListStructure();
 
-        firmListStructure.setDocumentID(courtServicesGenerator.generateDocumentID(context));
-        firmListStructure.setListHeader(courtServicesGenerator.generateListHeader(context));
-        firmListStructure.setCrownCourt(courtServicesGenerator.generateCourtHouseStructure(context, context.getParameters().getCourtCentreId()));
-        firmListStructure.setCourtLists(generateCourtLists(context));
+        firmListStructure.setDocumentID(courtServicesGenerator.generateDocumentID());
+        firmListStructure.setListHeader(courtServicesGenerator.generateListHeader());
+        firmListStructure.setCrownCourt(courtServicesGenerator.generateCourtHouseStructure(context.getParameters().getCourtCentreId()));
+        firmListStructure.setCourtLists(generateCourtLists());
 
         objectFactory.createFirmList(firmListStructure);
 
@@ -41,37 +54,46 @@ public class FirmListGenerator {
         this.courtServicesGenerator = courtServicesGenerator;
     }
 
-    private FirmListStructure.CourtLists generateCourtLists(final CourtListGenerationContext context) {
+    @VisibleForTesting
+    public void setListingService(final ListingService listingService) {
+        this.listingService = listingService;
+    }
+
+    private FirmListStructure.CourtLists generateCourtLists() {
 
         final FirmListStructure.CourtLists courtLists = objectFactory.createFirmListStructureCourtLists();
 
-        courtLists.getCourtList().add(generateFirmCourtListStructure(context));
+        courtLists.getCourtList().add(generateFirmCourtListStructure());
 
         return courtLists;
     }
 
-    private FirmCourtListStructure generateFirmCourtListStructure(final CourtListGenerationContext context) {
+    private FirmCourtListStructure generateFirmCourtListStructure() {
 
         final FirmCourtListStructure firmCourtListStructure = objectFactory.createFirmCourtListStructure();
 
-        firmCourtListStructure.setCourtHouse(courtServicesGenerator.generateCourtHouseStructure(context,
+        firmCourtListStructure.setCourtHouse(courtServicesGenerator.generateCourtHouseStructure(
                 context.getParameters().getCourtCentreId()));
 
-        firmCourtListStructure.setSittings(generateSittings(context));
+        firmCourtListStructure.setSittings(generateSittings());
         firmCourtListStructure.setSittingDate(context.getParameters().getStartDate());
 
         return firmCourtListStructure;
 
     }
 
-    @SuppressWarnings({"squid:S1172"})  // TODO use context to generate sittings
-    private FirmCourtListStructure.Sittings generateSittings(final CourtListGenerationContext context) {
+    private FirmCourtListStructure.Sittings generateSittings() {
 
         final FirmCourtListStructure.Sittings sittings = objectFactory.createFirmCourtListStructureSittings();
 
-        // TODO Generate sittings
+        final List<JsonObject> hearings = listingService.getHearingsForPublishing(context.getEnvelope(), context.getParameters());
 
+        int sittingSequenceNumber = 1;
+        for (final JsonObject hearing : hearings) {
+            sittings.getSitting().add(courtServicesGenerator.generateSittingStructure(hearing, sittingSequenceNumber++));
+        }
 
         return sittings;
     }
+
 }

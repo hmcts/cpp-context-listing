@@ -62,22 +62,22 @@ public class CourtListEventProcessorTest {
         // Mocked values
         final JsonEnvelope tEnvelope = mock(JsonEnvelope.class);
         final UUID generatedDocumentId = randomUUID();
-        final ByteArrayInputStream mockFileContentStream = mock(ByteArrayInputStream.class);
+        final String mockFileContent = "FILE_CONTENT";
         final PublishCourtListRequestParameters parameters = mock(PublishCourtListRequestParameters.class);
         final CourtListMetadata courtListMetadata = new CourtListMetadata("TESTFILENAME",
                 "UNIQUE_ID", parse("2018-01-02T13:04:05+00:00[Europe/London]"));
 
         when(publishCourtListRequestParametersParser.parse(tEnvelope)).thenReturn(parameters);
         when(courtListMetadataGenerator.generate(tEnvelope, parameters)).thenReturn(courtListMetadata);
-        when(courtListFileGenerator.generateCourtListInputStream(tEnvelope, parameters, courtListMetadata)).thenReturn(mockFileContentStream);
-        when(fileServiceClient.store(courtListMetadata, mockFileContentStream)).thenReturn(generatedDocumentId);
+        when(courtListFileGenerator.generateXml(tEnvelope, parameters, courtListMetadata)).thenReturn(mockFileContent);
+        when(fileServiceClient.store(courtListMetadata, mockFileContent)).thenReturn(generatedDocumentId);
 
         // Tested method
         courtListEventProcessor.handlePublishCourtListRequested(tEnvelope);
 
         // Assertions
-        verify(fileServiceClient).store(courtListMetadata, mockFileContentStream);
-        verify(publishCourtListCommandSender).recordCourtListProduced(generatedDocumentId, courtListMetadata.getFilename());
+        verify(fileServiceClient).store(courtListMetadata, mockFileContent);
+        verify(publishCourtListCommandSender).recordCourtListProduced(parameters, generatedDocumentId, courtListMetadata.getFilename());
     }
 
     @Test

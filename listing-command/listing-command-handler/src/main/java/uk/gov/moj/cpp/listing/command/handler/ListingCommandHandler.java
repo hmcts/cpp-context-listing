@@ -17,6 +17,7 @@ import uk.gov.justice.listing.commands.Offence;
 import uk.gov.justice.listing.commands.PublishCourtList;
 import uk.gov.justice.listing.commands.RecordCourtListExportFailed;
 import uk.gov.justice.listing.commands.RecordCourtListExportSuccessful;
+import uk.gov.justice.listing.commands.RecordCourtListProduced;
 import uk.gov.justice.listing.commands.SimpleOffence;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.AddCourtApplicationForHearing;
@@ -635,6 +636,23 @@ public class ListingCommandHandler {
                 publishCourtList.getEndDate(),
                 valueOf(publishCourtList.getPublishCourtListType().toString()),
                 publishCourtList.getRequestedTime());
+        appendEventsToStream(commandEnvelope, eventStream, events);
+    }
+
+    @Handles("listing.command.record-court-list-produced")
+    public void recordCourtListProduced(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        final RecordCourtListProduced recordCourtListProduced =
+                jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), RecordCourtListProduced.class);
+
+        final UUID courtCentreId = recordCourtListProduced.getCourtCentreId();
+        final EventStream eventStream = eventSource.getStreamById(courtCentreId);
+        final CourtListAggregate courtListAggregate = aggregateService.get(eventStream, CourtListAggregate.class);
+        final Stream<Object> events = courtListAggregate.recordCourtListProduced(
+                courtCentreId,
+                recordCourtListProduced.getCourtListFileId(),
+                recordCourtListProduced.getCourtListFileName(),
+                valueOf(recordCourtListProduced.getPublishCourtListType().toString()),
+                recordCourtListProduced.getProducedTime());
         appendEventsToStream(commandEnvelope, eventStream, events);
     }
 

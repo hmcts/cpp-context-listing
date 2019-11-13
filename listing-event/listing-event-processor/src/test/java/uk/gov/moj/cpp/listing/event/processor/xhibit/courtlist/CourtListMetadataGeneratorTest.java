@@ -40,7 +40,7 @@ public class CourtListMetadataGeneratorTest {
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
         final UUID courtCentreId = UUID.randomUUID();
         final String courtSiteCode = "COURTSITECODE";
-        final CourtLocation courtLocation = new CourtLocation(null, null, null, courtSiteCode);
+        final CourtLocation courtLocation = new CourtLocation(null, null, null, courtSiteCode, "CROWN_COURT");
         when(xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId)).thenReturn(courtLocation);
 
         final PublishCourtListRequestParameters requestParameters = PublishCourtListRequestParametersBuilder

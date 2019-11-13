@@ -1,46 +1,46 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.generate.CourtServicesGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.generate.FirmListGenerator;
-
-import java.io.ByteArrayInputStream;
 
 import javax.inject.Inject;
 import javax.xml.bind.JAXBElement;
 
-import com.google.common.annotations.VisibleForTesting;
-
 public class CourtListFileGenerator {
 
-    public static final String XHIBIT_XSD_PATH = "xhibit/xsd/";
-    @Inject
-    private FirmListGenerator firmListGenerator;
+    private static final String XHIBIT_XSD_PATH = "xhibit/xsd/";
 
     @Inject
     private XmlUtils xmlUtils;
 
-    @SuppressWarnings({"squid:S1172"})
-    public ByteArrayInputStream generateCourtListInputStream(final JsonEnvelope envelope,
-                                                             final PublishCourtListRequestParameters requestParameters,
-                                                             final CourtListMetadata courtListMetadata) {
+    @Inject
+    private ListingService listingService;
 
-        final CourtListGenerationContext courtListGenerationContext =
+    @Inject
+    private XhibitReferenceDataService xhibitReferenceDataService;
+
+    public String generateXml(final JsonEnvelope envelope,
+                              final PublishCourtListRequestParameters requestParameters,
+                              final CourtListMetadata courtListMetadata) {
+
+        final CourtListGenerationContext context =
                 new CourtListGenerationContext(envelope, requestParameters, courtListMetadata);
 
-        final String courtListXml = getXmlString(courtListGenerationContext);
+        final CourtServicesGenerator courtServicesGenerator = new CourtServicesGenerator(context, xhibitReferenceDataService);
 
-        return new ByteArrayInputStream(courtListXml.getBytes());
-    }
+        final FirmListGenerator generator = new FirmListGenerator(context, listingService, courtServicesGenerator);
 
-    @VisibleForTesting
-    public String getXmlString(final CourtListGenerationContext context) {
-
-        final JAXBElement<?> documentRoot = firmListGenerator.generate(context);
-
-        final String schemaFile = XHIBIT_XSD_PATH + context.getParameters().getPublishCourtListType().getSchemaName();
-
-        xmlUtils.validate(documentRoot, schemaFile);
+        final JAXBElement<?> documentRoot = generator.generate();
 
         return xmlUtils.convertToXml(documentRoot);
+    }
+
+    public void validateXml(final PublishCourtListRequestParameters requestParameters, final String courtListXml) {
+
+        final String schemaFile = XHIBIT_XSD_PATH + requestParameters.getPublishCourtListType().getSchemaName();
+
+        xmlUtils.validate(courtListXml, schemaFile);
     }
 }

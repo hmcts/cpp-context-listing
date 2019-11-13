@@ -6,12 +6,14 @@ public class CourtLocation {
     private String courtFullName;   // e.g. LIVERPOOL
     private String courtShortName;  // e.g. LIVER
     private String courtSiteCode;   // e.g. A
+    private String courtType;       // e.g CROWN_COURT
 
-    public CourtLocation(final String crestCourtSiteId, final String courtFullName, final String courtShortName, final String courtSiteCode) {
+    public CourtLocation(final String crestCourtSiteId, final String courtFullName, final String courtShortName, final String courtSiteCode, final String courtType) {
         this.crestCourtSiteId = crestCourtSiteId;
         this.courtFullName = courtFullName;
         this.courtShortName = courtShortName;
         this.courtSiteCode = courtSiteCode;
+        this.courtType = courtType;
     }
 
     public String getCrestCourtSiteId() {
@@ -28,5 +30,9 @@ public class CourtLocation {
 
     public String getCourtSiteCode() {
         return courtSiteCode;
+    }
+
+    public String getCourtType() {
+        return courtType;
     }
 }

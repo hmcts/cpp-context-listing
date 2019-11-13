@@ -6,7 +6,6 @@ import uk.gov.justice.services.fileservice.api.FileServiceException;
 import uk.gov.justice.services.fileservice.api.FileStorer;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
 
-import java.io.InputStream;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -23,7 +22,10 @@ public class FileServiceClient {
     @Inject
     private FileStorer fileStorer;
 
-    public UUID store(final CourtListMetadata metadata, final InputStream fileContentStream) throws FileServiceException {
+    @Inject
+    private FileServiceStreamFactory fileServiceStreamFactory;
+
+    public UUID store(final CourtListMetadata metadata, final String fileContent) throws FileServiceException {
 
         logger.info("store: metadata={}", metadata);
 
@@ -32,7 +34,6 @@ public class FileServiceClient {
                 .add("documentUniqueId", metadata.getDocumentUniqueId())
                 .build();
 
-        return fileStorer.store(fileServiceMetadata, fileContentStream);
+        return fileStorer.store(fileServiceMetadata, fileServiceStreamFactory.buildStream(fileContent));
     }
-
 }

@@ -16,7 +16,6 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
 
-import java.io.ByteArrayInputStream;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -64,11 +63,13 @@ public class CourtListEventProcessor {
 
             final CourtListMetadata courtListMetadata = courtListMetadataGenerator.generate(envelope, parameters);
 
-            final ByteArrayInputStream courtListXml = courtListFileGenerator.generateCourtListInputStream(envelope, parameters, courtListMetadata);
+            final String courtListXml = courtListFileGenerator.generateXml(envelope, parameters, courtListMetadata);
+
+            courtListFileGenerator.validateXml(parameters, courtListXml);
 
             final UUID fileId = fileServiceClient.store(courtListMetadata, courtListXml);
 
-            publishCourtListCommandSender.recordCourtListProduced(fileId, courtListMetadata.getFilename());
+            publishCourtListCommandSender.recordCourtListProduced(parameters, fileId, courtListMetadata.getFilename());
         } catch (final Exception e) {
             logger.error("Court List generation failed", e);
             publishCourtListCommandSender.recordCourtListExportFailed(randomUUID(), "NONE", e.getMessage());
