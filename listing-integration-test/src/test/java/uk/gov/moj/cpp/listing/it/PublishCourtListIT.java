@@ -31,7 +31,7 @@ public class PublishCourtListIT extends AbstractIT {
         try (final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(publishCourtListJsonObject)) {
             sendPublishCourtListCommand(publishCourtListJsonObject);
             publishCourtListSteps.verifyPublishCourtListEventsInActiveMQ();
-            publishCourtListSteps.verifyCourtListPublishStatusReturnedWhenQueryingFromAPI("COURT_LIST_PRODUCED");
+            publishCourtListSteps.verifyCourtListPublishStatusReturnedWhenQueryingFromAPI("COURT_LIST_REQUESTED");
         }
     }
 

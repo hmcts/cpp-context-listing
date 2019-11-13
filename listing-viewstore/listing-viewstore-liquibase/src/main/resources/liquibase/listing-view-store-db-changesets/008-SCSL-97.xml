@@ -1,29 +1,27 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.3.xsd">
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
 
-    <changeSet id="8" author="TechPod">
-        <createTable tableName="courtlist">
-            <column name="courthouse_id" type="UUID">
+    <changeSet id="8" author="TechPod" logicalFilePath="008-SCSL-97.xml">
+        <createTable tableName="court_list_publish_status">
+            <column name="court_list_publish_status_id" type="UUID">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="document_id" type="UUID">
+            <column name="court_centre_id" type="UUID">
                 <constraints nullable="false"/>
             </column>
-            <column name="document_type" type="TEXT">
+            <column name="publish_status" type="TEXT">
                 <constraints nullable="false"/>
             </column>
-            <column name="document_name" type="TEXT">
+            <column name="publish_court_list_type" type="TEXT">
                 <constraints nullable="false"/>
             </column>
-            <column name="status" type="TEXT">
+            <column name="last_updated" type="DATETIME">
                 <constraints nullable="false"/>
             </column>
-            <column name="date_actioned" type="DATETIME">
-                <constraints nullable="false"/>
-            </column>
+            <column name="court_list_file_id" type="UUID"/>
+            <column name="court_list_file_name" type="TEXT"/>
             <column name="error_message" type="TEXT"/>
         </createTable>
     </changeSet>

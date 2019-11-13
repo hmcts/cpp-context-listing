@@ -27,7 +27,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatus;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusResult;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListCoverterFilterEjectCases;
@@ -134,11 +134,12 @@ public class HearingQueryViewTest {
     }
 
 
-    private List<CourtListPublishStatus> publishCourtListStatuses() {
+    private List<CourtListPublishStatusResult> publishCourtListStatuses() {
         final UUID courtCentreId1 = randomUUID();
-        final CourtListPublishStatus publishCourtListStatus3 = new CourtListPublishStatus(courtCentreId1, FINAL, now(), EXPORT_SUCCESSFUL);
+        final CourtListPublishStatusResult publishCourtListStatus3 = new CourtListPublishStatusResult(courtCentreId1, FINAL, now(), EXPORT_SUCCESSFUL);
         return newArrayList(publishCourtListStatus3);
     }
+
     @Test
     public void searchHearingsWithSearchDateWithAllParametersProvided() throws Exception {
 

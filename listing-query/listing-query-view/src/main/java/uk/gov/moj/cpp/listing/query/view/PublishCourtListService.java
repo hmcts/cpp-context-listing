@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatus;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusResult;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
 
 import java.util.List;
@@ -15,8 +15,8 @@ public class PublishCourtListService {
     @Inject
     private CourtListRepository courtListRepository;
 
-    public List<CourtListPublishStatus> getCourtListPublishStatuses(final UUID courtCentreId,
-                                                                    final Set<PublishCourtListType> courtListTypes) {
+    public List<CourtListPublishStatusResult> getCourtListPublishStatuses(final UUID courtCentreId,
+                                                                          final Set<PublishCourtListType> courtListTypes) {
         return courtListRepository.courtListPublishStatuses(courtCentreId, courtListTypes);
     }
 }

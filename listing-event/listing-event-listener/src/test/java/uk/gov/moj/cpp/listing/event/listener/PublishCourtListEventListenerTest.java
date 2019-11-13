@@ -23,7 +23,7 @@ import uk.gov.justice.listing.event.PublishCourtListRequested;
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatus;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
 
 import java.time.ZonedDateTime;
@@ -50,7 +50,7 @@ public class PublishCourtListEventListenerTest {
     @InjectMocks
     private PublishCourtListEventListener publishCourtListEventListener;
 
-    private final ArgumentCaptor<CourtList> notificationArgumentCaptor = ArgumentCaptor.forClass(CourtList.class);
+    private final ArgumentCaptor<CourtListPublishStatus> notificationArgumentCaptor = ArgumentCaptor.forClass(CourtListPublishStatus.class);
 
     @Test
     public void shouldRecordPublishCourtListRequested() {
@@ -70,9 +70,9 @@ public class PublishCourtListEventListenerTest {
 
         verify(courtListRepository).save(notificationArgumentCaptor.capture());
 
-        final CourtList courtListArg = notificationArgumentCaptor.getValue();
-        assertThat(courtListArg.getCourtListPK().getCourtCentreId(), is(COURT_CENTRE_ID));
-        assertThat(courtListArg.getCourtListPK().getPublishCourtListType(), is(courtListType));
+        final CourtListPublishStatus courtListArg = notificationArgumentCaptor.getValue();
+        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
+        assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
         assertThat(courtListArg.getPublishStatus(), is(COURT_LIST_REQUESTED));
         assertThat(courtListArg.getLastUpdated(), is(requestedTime));
     }
@@ -98,9 +98,9 @@ public class PublishCourtListEventListenerTest {
 
         verify(courtListRepository).save(notificationArgumentCaptor.capture());
 
-        final CourtList courtListArg = notificationArgumentCaptor.getValue();
-        assertThat(courtListArg.getCourtListPK().getCourtCentreId(), is(COURT_CENTRE_ID));
-        assertThat(courtListArg.getCourtListPK().getPublishCourtListType(), is(courtListType));
+        final CourtListPublishStatus courtListArg = notificationArgumentCaptor.getValue();
+        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
+        assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
         assertThat(courtListArg.getCourtListFileId(), is(courtListFileId));
         assertThat(courtListArg.getPublishStatus(), is(COURT_LIST_PRODUCED));
         assertThat(courtListArg.getLastUpdated(), is(producedTime));
@@ -130,10 +130,10 @@ public class PublishCourtListEventListenerTest {
 
         verify(courtListRepository).save(notificationArgumentCaptor.capture());
 
-        final CourtList courtListArg = notificationArgumentCaptor.getValue();
+        final CourtListPublishStatus courtListArg = notificationArgumentCaptor.getValue();
         assertThat(courtListArg.getErrorMessage(), is(errorMessage));
-        assertThat(courtListArg.getCourtListPK().getCourtCentreId(), is(COURT_CENTRE_ID));
-        assertThat(courtListArg.getCourtListPK().getPublishCourtListType(), is(courtListType));
+        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
+        assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
         assertThat(courtListArg.getCourtListFileId(), is(courtListFileId));
         assertThat(courtListArg.getPublishStatus(), is(EXPORT_FAILED));
         assertThat(courtListArg.getLastUpdated(), is(failedTimeStamp));
@@ -160,9 +160,9 @@ public class PublishCourtListEventListenerTest {
 
         verify(courtListRepository).save(notificationArgumentCaptor.capture());
 
-        final CourtList courtListArg = notificationArgumentCaptor.getValue();
-        assertThat(courtListArg.getCourtListPK().getCourtCentreId(), is(COURT_CENTRE_ID));
-        assertThat(courtListArg.getCourtListPK().getPublishCourtListType(), is(courtListType));
+        final CourtListPublishStatus courtListArg = notificationArgumentCaptor.getValue();
+        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
+        assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
         assertThat(courtListArg.getCourtListFileId(), is(courtListFileId));
         assertThat(courtListArg.getPublishStatus(), is(EXPORT_SUCCESSFUL));
         assertThat(courtListArg.getLastUpdated(), is(publishedTime));

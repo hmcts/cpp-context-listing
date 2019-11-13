@@ -36,15 +36,13 @@ public class CourtListRepositoryTest extends BaseTransactionalTest {
         final String courtListFileName = "c1";
         final PublishCourtListType publishCourtListType = FIRM;
         final ZonedDateTime lastUpdated = ZonedDateTime.now();
-        final CourtListPK courtListPK = new CourtListPK(courtCentreId,publishCourtListType);
-
-        final CourtList courtList = new CourtList(courtListPK, publishStatus, courtListFileId, courtListFileName,  lastUpdated);
+        final CourtListPublishStatus courtList = new CourtListPublishStatus(randomUUID(), courtCentreId, publishCourtListType, publishStatus, lastUpdated, courtListFileId, courtListFileName, "");
 
         courtListRepository.save(courtList);
 
         final Set<PublishCourtListType> courtListTypes = new HashSet<>();
         courtListTypes.add(publishCourtListType);
-        final List<CourtListPublishStatus> courtListPublishStatuses =
+        final List<CourtListPublishStatusResult> courtListPublishStatuses =
                 courtListRepository.courtListPublishStatuses(courtCentreId, courtListTypes);
 
         assertThat(courtListPublishStatuses.size(), is(1));

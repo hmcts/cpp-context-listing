@@ -25,30 +25,30 @@ import org.apache.deltaspike.data.api.criteria.CriteriaSupport;
 
 @Repository
 @ApplicationScoped
-public abstract class CourtListRepository implements EntityRepository<CourtList, UUID>, CriteriaSupport<CourtList> {
+public abstract class CourtListRepository implements EntityRepository<CourtListPublishStatus, UUID>, CriteriaSupport<CourtListPublishStatus> {
 
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String PUBLISH_COURT_LIST_TYPE = "publishCourtListType";
     private static final String LAST_UPDATED = "lastUpdated";
-    private static final String COURTLIST_PK = "courtListPK";
     @Inject
     private EntityManager entityManager;
 
-    public List<CourtListPublishStatus> courtListPublishStatuses(final UUID courtCentreId, final Set<PublishCourtListType> courtListTypes) {
+    public List<CourtListPublishStatusResult> courtListPublishStatuses(final UUID courtCentreId,
+                                                                       final Set<PublishCourtListType> courtListTypes) {
 
         final CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
-        final CriteriaQuery criteriaQuery = criteriaBuilder.createQuery(CourtList.class);
-        final Root<CourtList> mainQueryRoot = criteriaQuery.from(CourtList.class);
+        final CriteriaQuery criteriaQuery = criteriaBuilder.createQuery(CourtListPublishStatus.class);
+        final Root<CourtListPublishStatus> mainQueryRoot = criteriaQuery.from(CourtListPublishStatus.class);
 
         final Subquery<Timestamp> maxSubQuery = criteriaQuery.subquery(Timestamp.class);
-        final Root<CourtList> subQueryRoot = maxSubQuery.from(CourtList.class);
+        final Root<CourtListPublishStatus> subQueryRoot = maxSubQuery.from(CourtListPublishStatus.class);
         maxSubQuery.select(criteriaBuilder.greatest(subQueryRoot.<Timestamp>get(LAST_UPDATED)));
         criteriaQuery.where(criteriaBuilder.equal(mainQueryRoot.get(LAST_UPDATED), maxSubQuery));
 
-        final Predicate conditionCourtCentreIdPredicate = criteriaBuilder.equal(mainQueryRoot.get(COURTLIST_PK).get(COURT_CENTRE_ID),
+        final Predicate conditionCourtCentreIdPredicate = criteriaBuilder.equal(mainQueryRoot.get(COURT_CENTRE_ID),
                 courtCentreId);
 
-        final Expression<String> exp = mainQueryRoot.get(COURTLIST_PK).get(PUBLISH_COURT_LIST_TYPE);
+        final Expression<String> exp = mainQueryRoot.get(PUBLISH_COURT_LIST_TYPE);
         final Predicate courtListTypePredicate = exp.in(courtListTypes);
         final Predicate combinedPredicate = criteriaBuilder.and(conditionCourtCentreIdPredicate, courtListTypePredicate);
         criteriaQuery.where(combinedPredicate);
@@ -56,10 +56,10 @@ public abstract class CourtListRepository implements EntityRepository<CourtList,
         return courtListPublishStatuses(resultList);
     }
 
-    private List<CourtListPublishStatus> courtListPublishStatuses(final List<CourtList> courtLists) {
+    private List<CourtListPublishStatusResult> courtListPublishStatuses(final List<CourtListPublishStatus> courtLists) {
         return courtLists.stream().map(x -> {
-            final CourtListPublishStatus courtListPublishStatus = new CourtListPublishStatus(x.getCourtListPK().getCourtCentreId(),
-                    x.getCourtListPK().getPublishCourtListType(), x.getLastUpdated(), x.getPublishStatus());
+            final CourtListPublishStatusResult courtListPublishStatus = new CourtListPublishStatusResult(x.getCourtCentreId(),
+                    x.getPublishCourtListType(), x.getLastUpdated(), x.getPublishStatus());
             courtListPublishStatus.setFailureMessage(x.getErrorMessage());
             return courtListPublishStatus;
         }).collect(toList());

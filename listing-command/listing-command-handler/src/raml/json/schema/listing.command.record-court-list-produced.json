@@ -6,6 +6,12 @@
     "courtCentreId": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
+    "courtListFileId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "courtListFileName": {
+      "type": "string"
+    },
     "publishCourtListType": {
       "type": "string",
       "enum": [
@@ -14,11 +20,15 @@
         "FIRM",
         "FINAL"
       ]
-    },    "courtListFileId": {
-      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
-    "courtListFileName": {
-      "type": "string"
+    "publishStatus": {
+      "type": "string",
+      "enum": [
+        "EXPORT_FAILED",
+        "EXPORT_SUCCESSFUL",
+        "COURT_LIST_REQUESTED",
+        "COURT_LIST_PRODUCED"
+      ]
     },
     "producedTime": {
       "type": "string",
@@ -29,8 +39,9 @@
   "required": [
     "courtCentreId",
     "courtListFileId",
-    "publishCourtListType",
     "courtListFileName",
+    "publishCourtListType",
+    "publishStatus",
     "producedTime"
   ]
 }

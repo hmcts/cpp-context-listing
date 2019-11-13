@@ -1,26 +1,97 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
 
+import static javax.persistence.EnumType.STRING;
+
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.listing.event.PublishStatus;
 
+import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-public class CourtListPublishStatus {
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Enumerated;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
+@Entity
+@Table(name = "court_list_publish_status")
+public class CourtListPublishStatus implements Serializable {
+
+    private static final long serialVersionUID = 8137443412665L;
+
+    @Id
+    @Column(name = "court_list_publish_status_id", nullable = false)
+    private UUID publishCourtListStatusId;
+
+    @Column(name = "court_centre_id", nullable = false)
     private UUID courtCentreId;
-    private PublishCourtListType publishCourtListType;
-    private ZonedDateTime lastUpdated;
-    private PublishStatus publishStatus;
-    private String failureMessage;
 
-    public CourtListPublishStatus(final UUID courtCentreId, final PublishCourtListType publishCourtListType,
-                                  final ZonedDateTime lastUpdated, final PublishStatus publishStatus) {
+    @Enumerated(STRING)
+    @Column(name = "publish_court_list_type", nullable = false)
+    private PublishCourtListType publishCourtListType;
+
+    @Enumerated(STRING)
+    @Column(name = "publish_status", nullable = false)
+    private PublishStatus publishStatus;
+
+    @Column(name = "last_updated", nullable = false)
+    private ZonedDateTime lastUpdated;
+
+    @Column(name = "court_list_file_id")
+    private UUID courtListFileId;
+
+    @Column(name = "court_list_file_name")
+    private String courtListFileName;
+
+    @Column(name = "error_message")
+    private String errorMessage;
+
+    public CourtListPublishStatus() {
+
+    }
+
+    public CourtListPublishStatus(final UUID publishCourtListStatusId,
+                                  final UUID courtCentreId,
+                                  final PublishCourtListType publishCourtListType,
+                                  final PublishStatus publishStatus,
+                                  final ZonedDateTime lastUpdated
+    ) {
+        this.publishCourtListStatusId = publishCourtListStatusId;
         this.courtCentreId = courtCentreId;
         this.publishCourtListType = publishCourtListType;
-        this.lastUpdated = lastUpdated;
         this.publishStatus = publishStatus;
+        this.lastUpdated = lastUpdated;
+    }
+
+    public CourtListPublishStatus(final UUID publishCourtListStatusId,
+                                  final UUID courtCentreId,
+                                  final PublishCourtListType publishCourtListType,
+                                  final PublishStatus publishStatus,
+                                  final ZonedDateTime lastUpdated,
+                                  final UUID courtListFileId,
+                                  final String courtListFileName,
+                                  final String errorMessage
+    ) {
+        this.publishCourtListStatusId = publishCourtListStatusId;
+        this.courtCentreId = courtCentreId;
+        this.courtListFileId = courtListFileId;
+        this.courtListFileName = courtListFileName;
+        this.publishCourtListType = publishCourtListType;
+        this.publishStatus = publishStatus;
+        this.lastUpdated = lastUpdated;
+        this.errorMessage = errorMessage;
+
+    }
+
+    public UUID getPublishCourtListStatusId() {
+        return publishCourtListStatusId;
+    }
+
+    public void setPublishCourtListStatusId(UUID publishCourtListStatusId) {
+        this.publishCourtListStatusId = publishCourtListStatusId;
     }
 
     public UUID getCourtCentreId() {
@@ -35,16 +106,8 @@ public class CourtListPublishStatus {
         return publishCourtListType;
     }
 
-    public void setCourtListType(PublishCourtListType publishCourtListType) {
+    public void setPublishCourtListType(PublishCourtListType publishCourtListType) {
         this.publishCourtListType = publishCourtListType;
-    }
-
-    public ZonedDateTime getLastUpdated() {
-        return lastUpdated;
-    }
-
-    public void setLastUpdated(ZonedDateTime lastUpdated) {
-        this.lastUpdated = lastUpdated;
     }
 
     public PublishStatus getPublishStatus() {
@@ -55,13 +118,35 @@ public class CourtListPublishStatus {
         this.publishStatus = publishStatus;
     }
 
-    public String getFailureMessage() {
-        return failureMessage;
+    public ZonedDateTime getLastUpdated() {
+        return lastUpdated;
     }
 
-    public void setFailureMessage(String failureMessage) {
-        this.failureMessage = failureMessage;
+    public void setLastUpdated(ZonedDateTime lastUpdated) {
+        this.lastUpdated = lastUpdated;
     }
 
+    public UUID getCourtListFileId() {
+        return courtListFileId;
+    }
 
+    public void setCourtListFileId(UUID courtListFileId) {
+        this.courtListFileId = courtListFileId;
+    }
+
+    public String getCourtListFileName() {
+        return courtListFileName;
+    }
+
+    public void setCourtListFileName(String courtListFileName) {
+        this.courtListFileName = courtListFileName;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
 }
