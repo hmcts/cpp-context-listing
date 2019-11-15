@@ -80,8 +80,8 @@
           "id": "d7dae112-1d57-48dd-99e3-67764b444069",
           "applicant": {
             "id": "6c09928d-b32b-4e71-8478-c64ec1348e90",
-            "lastName": "Mhpj4bKnIg",
-            "firstName": "dXN6N4q7DA",
+            "lastName": "APPLICANT_LAST_NAME",
+            "firstName": "APPLICANT_FIRST_NAME",
             "isRespondent": false,
             "restrictFromCourtList": false,
             "courtApplicationPartyType": "PERSON"

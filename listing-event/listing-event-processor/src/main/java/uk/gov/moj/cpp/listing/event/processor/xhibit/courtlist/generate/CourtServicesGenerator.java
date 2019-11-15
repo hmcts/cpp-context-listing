@@ -37,8 +37,8 @@ import javax.json.JsonObject;
 
 public class CourtServicesGenerator {
 
-    public static final String JUDICIAL_ID = "judicialId";
-    public static final String NONE = "NONE";
+    private static final String JUDICIAL_ID = "judicialId";
+    private static final String NONE = "NONE";
     private static final ObjectFactory objectFactory = new ObjectFactory();
     private static final String CPS_PROSECUTOR_CODE = "CPS";
     private static final List JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
@@ -186,11 +186,11 @@ public class CourtServicesGenerator {
             sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearing,
                     listedCase, hearingSequenceNumber++));
         }
-        // TODO SCSL-88 List Standalone Court Applications
-//        for (final JsonObject courtApplication : hearing.getJsonArray("courtApplications").getValuesAs(JsonObject.class)) {
-//            sittingStructureHearings.getHearing().add(hearingStructureGenerator.generateHearingStructureForCourtApplication(context,
-//                    courtApplication, hearingSequenceNumber++));
-//        }
+
+        for (final JsonObject courtApplication : hearing.getJsonArray("courtApplications").getValuesAs(JsonObject.class)) {
+            sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearing,
+                    courtApplication, hearingSequenceNumber++));
+        }
 
         return sittingStructureHearings;
     }
@@ -206,7 +206,22 @@ public class CourtServicesGenerator {
         hearingStructure.setHearingDetails(generateHearingTypeStructure(hearing));
         hearingStructure.setProsecution(generateProsecutionStructure(listedCase));
         hearingStructure.setCommittingCourt(generateCourtHouseStructure(fromString(hearing.getString("courtCentreId"))));
-        hearingStructure.setDefendants(generateHearingStructureDefendants(listedCase));
+        hearingStructure.setDefendants(generateHearingStructureDefendantsForCase(listedCase));
+
+        return hearingStructure;
+    }
+
+    private HearingStructure generateHearingStructureForCourtApplication(final JsonObject hearing,
+                                                                         final JsonObject courtApplication,
+                                                                         final int hearingSequenceNumber) {
+        final HearingStructure hearingStructure = objectFactory.createHearingStructure();
+
+        hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
+        hearingStructure.setCaseNumber("A12345678");    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
+        hearingStructure.setHearingDetails(generateHearingTypeStructure(hearing));
+
+        // Map applicant to defendant
+        hearingStructure.setDefendants(generateHearingStructureDefendantsForCourtApplication(courtApplication));
 
         return hearingStructure;
     }
@@ -238,23 +253,41 @@ public class CourtServicesGenerator {
         return prosecutionStructure;
     }
 
-    private HearingStructure.Defendants generateHearingStructureDefendants(final JsonObject listedCase) {
+    private HearingStructure.Defendants generateHearingStructureDefendantsForCase(final JsonObject listedCase) {
 
         final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
 
         for (final JsonObject defendant : listedCase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
-            defendants.getDefendant().add(generateDefendantStructure(defendant));
+            defendants.getDefendant().add(generateDefendantStructureForDefendant(defendant));
         }
 
         return defendants;
     }
 
-    private DefendantStructure generateDefendantStructure(final JsonObject defendant) {
+    private HearingStructure.Defendants generateHearingStructureDefendantsForCourtApplication(final JsonObject courtApplication) {
+
+        final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
+
+        defendants.getDefendant().add(generateDefendantStructureForApplicant(courtApplication.getJsonObject("applicant")));
+
+        return defendants;
+    }
+
+    private DefendantStructure generateDefendantStructureForDefendant(final JsonObject defendant) {
 
         final DefendantStructure defendantStructure = objectFactory.createDefendantStructure();
 
         defendantStructure.setPersonalDetails(generatePersonalDetailsStructure(defendant));
         defendantStructure.setCharges(generateDefendantStructureCharges(defendant.getJsonArray("offences")));
+
+        return defendantStructure;
+    }
+
+    private DefendantStructure generateDefendantStructureForApplicant(final JsonObject applicant) {
+
+        final DefendantStructure defendantStructure = objectFactory.createDefendantStructure();
+
+        defendantStructure.setPersonalDetails(generatePersonalDetailsStructure(applicant));
 
         return defendantStructure;
     }
