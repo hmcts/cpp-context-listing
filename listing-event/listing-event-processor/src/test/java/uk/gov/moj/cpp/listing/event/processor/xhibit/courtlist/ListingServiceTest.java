@@ -23,7 +23,6 @@ import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -59,7 +58,7 @@ public class ListingServiceTest {
 
     @Parameterized.Parameters(name = "{index}: Test with PublishCourtListType={0}, shouldUseWeekCommencingQueryParameters is:{1} ")
     public static Collection<Object[]> data() {
-        Object[][] data = new Object[][]{{WARN, false}, {DRAFT, false}, {FINAL, true}, {FIRM, true}};
+        Object[][] data = new Object[][]{{WARN, true}, {FIRM, true}, {DRAFT, false}, {FINAL, false}};
         return Arrays.asList(data);
     }
 
@@ -90,16 +89,17 @@ public class ListingServiceTest {
                 .publishCourtListType(publishCourtListType)
                 .build();
 
-        final List<JsonObject> response = listingService.getHearingsForPublishing(inputEnvelope, parameters);
+        final JsonObject response = listingService.getCourtListForPublishing(inputEnvelope, parameters);
 
         verifyResponse(response);
 
         verifyQueryParameters(startDate, endDate, courtCentreId);
     }
 
-    private void verifyResponse(final List<JsonObject> response) {
+    private void verifyResponse(final JsonObject response) {
 
-        assertThat(response.get(0).getString("id"), is("HEARINGID"));
+        assertThat(response.getJsonArray("hearings").getValuesAs(JsonObject.class)
+                .get(0).getString("id"), is("HEARINGID"));
     }
 
     private void verifyQueryParameters(final LocalDate startDate, final LocalDate endDate, final UUID courtCentreId) {
@@ -112,6 +112,7 @@ public class ListingServiceTest {
         assertThat(actualRequestParameters.getString("courtCentreId"), is(courtCentreId.toString()));
 
         if (shouldUseWeekCommencingQueryParameters) {
+            assertThat(actualRequestParameters.getString("jurisdictionType"), is("CROWN"));
             assertThat(actualRequestParameters.getString("weekCommencingStartDate"), is(startDate.toString()));
             assertThat(actualRequestParameters.getString("weekCommencingEndDate"), is(endDate.toString()));
             assertThat(actualRequestParameters.containsKey("startDate"), is(false));
@@ -120,6 +121,7 @@ public class ListingServiceTest {
         } else {
             assertThat(actualRequestParameters.getString("startDate"), is(startDate.toString()));
             assertThat(actualRequestParameters.getString("endDate"), is(endDate.toString()));
+            assertThat(actualRequestParameters.containsKey("jurisdictionType"), is(false));
             assertThat(actualRequestParameters.containsKey("weekCommencingStartDate"), is(false));
             assertThat(actualRequestParameters.containsKey("weekCommencingEndDate"), is(false));
         }

@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.generate;
+package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
 import static java.lang.String.valueOf;
 import static java.util.UUID.fromString;
@@ -7,12 +7,14 @@ import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorit
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.convertDate;
 
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.CasesStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ChargeStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CitizenNameStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtHouseStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtType;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.DefendantStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.DocumentIDstructure;
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.FixtureStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.HearingStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.HearingTypeStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.JudiciaryStructure;
@@ -35,18 +37,23 @@ import java.util.UUID;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
-public class CourtServicesGenerator {
+/**
+ * Map to elements defined in CourtServices.xsd
+ */
+public class CourtServicesMapper {
 
     private static final String JUDICIAL_ID = "judicialId";
     private static final String NONE = "NONE";
     private static final ObjectFactory objectFactory = new ObjectFactory();
     private static final String CPS_PROSECUTOR_CODE = "CPS";
     private static final List JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
+    public static final String DUMMY_CASE_URN = "A12345678";
     private CourtListGenerationContext context;
 
     private XhibitReferenceDataService xhibitReferenceDataService;
 
-    public CourtServicesGenerator(final CourtListGenerationContext context, final XhibitReferenceDataService xhibitReferenceDataService) {
+    public CourtServicesMapper(final CourtListGenerationContext context,
+                               final XhibitReferenceDataService xhibitReferenceDataService) {
         this.context = context;
         this.xhibitReferenceDataService = xhibitReferenceDataService;
     }
@@ -102,9 +109,12 @@ public class CourtServicesGenerator {
 
         final SittingStructure sittingStructure = objectFactory.createSittingStructure();
 
-        final UUID courtRoomId = fromString(hearing.getString("courtRoomId"));
+        if (hearing.containsKey("courtRoomId")) {
 
-        sittingStructure.setCourtRoomNumber(xhibitReferenceDataService.getCourtRoomNumber(context.getEnvelope(), courtRoomId));
+            final UUID courtRoomId = fromString(hearing.getString("courtRoomId"));
+
+            sittingStructure.setCourtRoomNumber(xhibitReferenceDataService.getCourtRoomNumber(context.getEnvelope(), courtRoomId));
+        }
         sittingStructure.setSittingSequenceNo(valueOf(sittingSequenceNumber));
         sittingStructure.setSittingPriority("T");
         sittingStructure.setJudiciary(generateJudiciaryStructure(hearing.getJsonArray("judiciary").getValuesAs(JsonObject.class)));
@@ -175,7 +185,6 @@ public class CourtServicesGenerator {
         return justice;
     }
 
-    @SuppressWarnings({"squid:CommentedOutCodeLine"})
     private SittingStructure.Hearings generateSittingStructureHearings(final JsonObject hearing) {
 
         final SittingStructure.Hearings sittingStructureHearings = objectFactory.createSittingStructureHearings();
@@ -202,7 +211,7 @@ public class CourtServicesGenerator {
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
         hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
-        hearingStructure.setCaseNumber("A12345678");    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
+        hearingStructure.setCaseNumber(DUMMY_CASE_URN);    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
         hearingStructure.setHearingDetails(generateHearingTypeStructure(hearing));
         hearingStructure.setProsecution(generateProsecutionStructure(listedCase));
         hearingStructure.setCommittingCourt(generateCourtHouseStructure(fromString(hearing.getString("courtCentreId"))));
@@ -217,7 +226,7 @@ public class CourtServicesGenerator {
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
         hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
-        hearingStructure.setCaseNumber("A12345678");    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
+        hearingStructure.setCaseNumber(DUMMY_CASE_URN);    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
         hearingStructure.setHearingDetails(generateHearingTypeStructure(hearing));
 
         // Map applicant to defendant
@@ -230,8 +239,15 @@ public class CourtServicesGenerator {
 
         final HearingTypeStructure hearingTypeStructure = objectFactory.createHearingTypeStructure();
 
-        hearingTypeStructure.setHearingDescription(hearing.getJsonObject("type").getString("description")); // TODO SCSL-85 Use XHIBIT hearing type
-        hearingTypeStructure.setHearingDate(LocalDate.parse(hearing.getString("startDate")));
+        final JsonObject xhibitHearingType = xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(),
+                fromString(hearing.getJsonObject("type").getString("id")));
+
+        hearingTypeStructure.setHearingDescription(xhibitHearingType.getString("hearingDescription"));
+        if (hearing.containsKey("startDate")) {
+            hearingTypeStructure.setHearingDate(LocalDate.parse(hearing.getString("startDate")));
+        }
+        hearingTypeStructure.setHearingType(getHearingTypeForHearing(hearing));
+
 
         return hearingTypeStructure;
     }
@@ -342,5 +358,69 @@ public class CourtServicesGenerator {
 //        }
 
         return chargeStructure;
+    }
+
+
+    public String getHearingTypeForHearing(final JsonObject hearing) {
+
+        final UUID cppHearingId = fromString(hearing.getJsonObject("type").getString("id"));
+
+        return xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(), cppHearingId).getString("hearingCode");
+    }
+
+    public FixtureStructure generateFixtureStructure(final JsonObject hearing) {
+
+        final FixtureStructure fixtureStructure = objectFactory.createFixtureStructure();
+
+        fixtureStructure.setCases(generateCasesStructure(hearing));
+
+        return fixtureStructure;
+    }
+
+    private CasesStructure generateCasesStructure(final JsonObject hearing) {
+
+        final CasesStructure casesStructure = objectFactory.createCasesStructure();
+
+        for (final JsonObject kase : hearing.getJsonArray("listedCases").getValuesAs(JsonObject.class)) {
+            casesStructure.getCase().add(generateCaseStructureForCase(kase));
+        }
+
+        for (final JsonObject courtApplication : hearing.getJsonArray("courtApplications").getValuesAs(JsonObject.class)) {
+            casesStructure.getCase().add(generateCaseStructureForCourtApplication(courtApplication));
+        }
+
+        return casesStructure;
+    }
+
+    private CasesStructure.Case generateCaseStructureForCase(final JsonObject kase) {
+
+        final CasesStructure.Case casesStructureCase = objectFactory.createCasesStructureCase();
+
+        casesStructureCase.setCaseNumber(DUMMY_CASE_URN);    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
+
+        for (final JsonObject defendant : kase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
+            casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(defendant));
+        }
+
+        return casesStructureCase;
+    }
+
+    private CasesStructure.Case generateCaseStructureForCourtApplication(final JsonObject courtApplication) {
+        final CasesStructure.Case casesStructureCase = objectFactory.createCasesStructureCase();
+
+        casesStructureCase.setCaseNumber(DUMMY_CASE_URN);    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
+
+        casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(courtApplication.getJsonObject("applicant")));
+
+        return casesStructureCase;
+    }
+
+    private CasesStructure.Case.Defendants generateCaseStructureCaseDefendants(final JsonObject defendant) {
+
+        final CasesStructure.Case.Defendants caseStructureCaseDefendants = objectFactory.createCasesStructureCaseDefendants();
+
+        caseStructureCaseDefendants.setDefendant(generateDefendantStructureForApplicant(defendant));
+
+        return caseStructureCaseDefendants;
     }
 }

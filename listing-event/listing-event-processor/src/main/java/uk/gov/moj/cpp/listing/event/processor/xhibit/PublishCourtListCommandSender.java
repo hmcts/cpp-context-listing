@@ -45,6 +45,7 @@ public class PublishCourtListCommandSender {
                 .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
                 .add(COURT_LIST_FILE_ID, courtListFileId.toString())
                 .add(COURT_LIST_FILE_NAME, courtListFileName)
+                .add("publishStatus", "COURT_LIST_PRODUCED")
                 .add("producedTime", ZonedDateTimes.toString(utcClock.now()))
                 .build();
 
@@ -69,7 +70,7 @@ public class PublishCourtListCommandSender {
                                             final String errorMessage) {
 
         final JsonObjectBuilder objectBuilder = createObjectBuilder()
-                .add(COURT_LIST_FILE_ID, courtListFileName.toString())
+                .add(COURT_LIST_FILE_ID, courtListFileName)
                 .add(COURT_LIST_FILE_NAME, courtListFileName)
                 .add("failedTime", ZonedDateTimes.toString(utcClock.now()))
                 .add(ERROR_MESSAGE, errorMessage);

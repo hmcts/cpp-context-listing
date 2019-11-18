@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cs:WarnedList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:p2="http://www.govtalk.gov.uk/people/bs7666" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
+    <cs:DocumentID>
+        <cs:DocumentName>WARN-FILENAME</cs:DocumentName>
+        <cs:UniqueID>UNIQUEID</cs:UniqueID>
+        <cs:DocumentType>WL</cs:DocumentType>
+    </cs:DocumentID>
+    <cs:ListHeader>
+        <cs:ListCategory>Criminal</cs:ListCategory>
+        <cs:StartDate>2019-11-04</cs:StartDate>
+        <cs:EndDate>2019-11-05</cs:EndDate>
+        <cs:Version>NOT VERSIONED</cs:Version>
+        <cs:PublishedTime>2018-01-02T13:04:05Z</cs:PublishedTime>
+    </cs:ListHeader>
+    <cs:CrownCourt>
+        <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+        <cs:CourtHouseCode CourtHouseShortName="MOCK">000</cs:CourtHouseCode>
+        <cs:CourtHouseName>MOCKCOURTNAME</cs:CourtHouseName>
+    </cs:CrownCourt>
+    <cs:CourtLists>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode CourtHouseShortName="MOCK">000</cs:CourtHouseCode>
+                <cs:CourtHouseName>MOCKCOURTNAME</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:WithFixedDate HearingType="XXX">
+                <cs:Fixture>
+                    <cs:Cases>
+                        <cs:Case>
+                            <cs:CaseNumber>A12345678</cs:CaseNumber>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>MARTY</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Dollie</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Case>
+                    </cs:Cases>
+                </cs:Fixture>
+            </cs:WithFixedDate>
+            <cs:WithoutFixedDate HearingType="XXX">
+                <cs:Fixture>
+                    <cs:Cases>
+                        <cs:Case>
+                            <cs:CaseNumber>A12345678</cs:CaseNumber>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>BARTOLINI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Luke</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Case>
+                        <cs:Case>
+                            <cs:CaseNumber>A12345678</cs:CaseNumber>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>APPLICANT_LAST_NAME</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>APPLICANT_FIRST_NAME</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Case>
+                    </cs:Cases>
+                </cs:Fixture>
+            </cs:WithoutFixedDate>
+        </cs:CourtList>
+    </cs:CourtLists>
+</cs:WarnedList>

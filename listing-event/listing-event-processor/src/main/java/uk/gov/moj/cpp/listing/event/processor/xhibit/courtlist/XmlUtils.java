@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
+import static java.lang.String.format;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 import static javax.xml.bind.JAXBContext.newInstance;
 import static javax.xml.bind.Marshaller.JAXB_FORMATTED_OUTPUT;
@@ -81,7 +82,7 @@ public class XmlUtils {
             validator.validate(source);
         } catch (SAXException | IOException e) {
             logger.info(inputXml);
-            throw new GenerationFailedException("Could not validate XML: " + e.getMessage(), e);
+            throw new GenerationFailedException(format("Could not validate XML against schema %s : %s", schemaFile, e.getMessage()), e);
         }
     }
 

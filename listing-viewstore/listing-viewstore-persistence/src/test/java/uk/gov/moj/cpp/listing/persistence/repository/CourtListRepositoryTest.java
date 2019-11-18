@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.listing.event.PublishCourtListType.FIRM;
+import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_PRODUCED;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_REQUESTED;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
@@ -22,6 +23,7 @@ import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+// Run in Intellij using PersistenceTestSuite
 @RunWith(CdiTestRunner.class)
 public class CourtListRepositoryTest extends BaseTransactionalTest {
 
@@ -48,4 +50,29 @@ public class CourtListRepositoryTest extends BaseTransactionalTest {
         assertThat(courtListPublishStatuses.size(), is(1));
     }
 
+    @Test
+    public void shouldReturnLatestPublishStatusFirst() {
+        final UUID courtCentreId = randomUUID();
+        final UUID courtListFileId = randomUUID();
+        final String courtListFileName = "c1";
+        final PublishCourtListType publishCourtListType = FIRM;
+        final ZonedDateTime lastUpdated = ZonedDateTime.now();
+        final CourtListPublishStatus requestedPublishStatus = new CourtListPublishStatus(randomUUID(), courtCentreId, publishCourtListType,
+                COURT_LIST_REQUESTED, lastUpdated, courtListFileId, courtListFileName, "");
+
+        courtListRepository.save(requestedPublishStatus);
+
+        final CourtListPublishStatus producedPublishStatus = new CourtListPublishStatus(randomUUID(), courtCentreId, publishCourtListType,
+                COURT_LIST_PRODUCED, lastUpdated.plusSeconds(1), courtListFileId, courtListFileName, "");
+
+        courtListRepository.save(producedPublishStatus);
+
+        final Set<PublishCourtListType> courtListTypes = new HashSet<>();
+        courtListTypes.add(publishCourtListType);
+        final List<CourtListPublishStatusResult> courtListPublishStatuses =
+                courtListRepository.courtListPublishStatuses(courtCentreId, courtListTypes);
+
+        assertThat(courtListPublishStatuses.size(), is(2));
+        assertThat(courtListPublishStatuses.get(0).getPublishStatus(), is(COURT_LIST_PRODUCED));
+    }
 }

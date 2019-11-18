@@ -43,11 +43,25 @@ public class XhibitReferenceDataService {
 //
 //        final JsonEnvelope response = requester.request(envelop(queryParameters).withName("referencedata.query.courtroom").withMetadataFrom(envelope));
 
-        return Json.createObjectBuilder().build();  // TODO Implement
+        return Json.createObjectBuilder()
+                .add("forenames", "FORENAMES")
+                .add("surname", "SURNAME")
+                .build();  // TODO Implement
     }
 
     @SuppressWarnings({"squid:CommentedOutCodeLine", "squid:S1172"})    // Remove when implemented
     public JsonObject getJudge(final JsonEnvelope envelope, final UUID judgeId) {
-        return Json.createObjectBuilder().build();  // TODO Implement
+        return Json.createObjectBuilder()
+                .add("firstName", "FIRSTNAME")
+                .add("lastName", "LASTNAME")
+                .build();  // TODO Implement
+    }
+
+    @SuppressWarnings({"squid:CommentedOutCodeLine", "squid:S1172"})    // Remove when implemented
+    public JsonObject getXhibitHearingType(final Envelope envelope, final UUID cppHearingTypeId) {
+        return Json.createObjectBuilder()
+                .add("hearingCode", "XXX")   // TODO SCSL-85
+                .add("hearingDescription", "XHIBIT_HEARING_DESCRIPTION")
+                .build();
     }
 }

@@ -1,8 +1,8 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.generate;
+package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
 import org.junit.Test;
 
-public class CourtServicesGeneratorTest {
+public class CourtServicesMapperTest {
 
     @Test
     public void generateDocumentID() {

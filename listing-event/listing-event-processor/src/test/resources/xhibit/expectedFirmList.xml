@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:p2="http://www.govtalk.gov.uk/people/bs7666" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
+<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice"
+             xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
     <cs:DocumentID>
-        <cs:DocumentName>FILENAME</cs:DocumentName>
+        <cs:DocumentName>FIRM-FILENAME</cs:DocumentName>
         <cs:UniqueID>UNIQUEID</cs:UniqueID>
         <cs:DocumentType>FL</cs:DocumentType>
     </cs:DocumentID>
@@ -34,21 +35,17 @@
                             <apd:CitizenNameSurname>SMITH-JUDGE</apd:CitizenNameSurname>
                             <apd:CitizenNameRequestedName>John</apd:CitizenNameRequestedName>
                         </cs:Judge>
-                        <cs:Justice>
-                            <apd:CitizenNameSurname>Ainsworth-MAGISTRATE</apd:CitizenNameSurname>
-                            <apd:CitizenNameRequestedName>Mark J</apd:CitizenNameRequestedName>
-                        </cs:Justice>
                     </cs:Judiciary>
                     <cs:Hearings>
                         <cs:Hearing>
                             <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
-                            <cs:HearingDetails>
-                                <cs:HearingDescription>Trial</cs:HearingDescription>
-                                <cs:HearingDate>2019-11-15</cs:HearingDate>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-02</cs:HearingDate>
                             </cs:HearingDetails>
                             <cs:CaseNumber>A12345678</cs:CaseNumber>
-                            <cs:Prosecution ProsecutingAuthority="Other Prosecutor">
-                                <cs:ProsecutingReference>TFL98647W3PWK</cs:ProsecutingReference>
+                            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
+                                <cs:ProsecutingReference>63AB435748</cs:ProsecutingReference>
                             </cs:Prosecution>
                             <cs:CommittingCourt>
                                 <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
@@ -59,14 +56,58 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameSurname>Beben</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Nnamdi</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameSurname>MARTY</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Dollie</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="PS90010">
-                                            <cs:OffenceStatement>Public service vehicle - passenger use altered / defaced   ticket</cs:OffenceStatement>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                    </cs:Hearings>
+                </cs:Sitting>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingSequenceNo>2</cs:SittingSequenceNo>
+                    <cs:SittingPriority>T</cs:SittingPriority>
+                    <cs:Judiciary>
+                        <cs:Judge>
+                            <apd:CitizenNameSurname>NONE</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>NONE</apd:CitizenNameRequestedName>
+                        </cs:Judge>
+                    </cs:Judiciary>
+                    <cs:Hearings>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                            </cs:HearingDetails>
+                            <cs:CaseNumber>A12345678</cs:CaseNumber>
+                            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
+                                <cs:ProsecutingReference>12AN388453</cs:ProsecutingReference>
+                            </cs:Prosecution>
+                            <cs:CommittingCourt>
+                                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                                <cs:CourtHouseCode CourtHouseShortName="MOCK">000</cs:CourtHouseCode>
+                                <cs:CourtHouseName>MOCKCOURTNAME</cs:CourtHouseName>
+                            </cs:CommittingCourt>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>BARTOLINI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Luke</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -74,9 +115,8 @@
                         </cs:Hearing>
                         <cs:Hearing>
                             <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
-                            <cs:HearingDetails>
-                                <cs:HearingDescription>Trial</cs:HearingDescription>
-                                <cs:HearingDate>2019-11-15</cs:HearingDate>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                             </cs:HearingDetails>
                             <cs:CaseNumber>A12345678</cs:CaseNumber>
                             <cs:Defendants>

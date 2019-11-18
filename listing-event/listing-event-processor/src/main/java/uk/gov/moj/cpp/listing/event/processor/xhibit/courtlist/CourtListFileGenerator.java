@@ -1,12 +1,10 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.generate.CourtServicesGenerator;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.generate.FirmListGenerator;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.AbstractCourtListMapper;
 
 import javax.inject.Inject;
-import javax.xml.bind.JAXBElement;
+import javax.json.JsonObject;
 
 public class CourtListFileGenerator {
 
@@ -19,7 +17,7 @@ public class CourtListFileGenerator {
     private ListingService listingService;
 
     @Inject
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private MapperFactory mapperFactory;
 
     public String generateXml(final JsonEnvelope envelope,
                               final PublishCourtListRequestParameters requestParameters,
@@ -28,13 +26,11 @@ public class CourtListFileGenerator {
         final CourtListGenerationContext context =
                 new CourtListGenerationContext(envelope, requestParameters, courtListMetadata);
 
-        final CourtServicesGenerator courtServicesGenerator = new CourtServicesGenerator(context, xhibitReferenceDataService);
+        final JsonObject courtListForPublishing = listingService.getCourtListForPublishing(envelope, requestParameters);
 
-        final FirmListGenerator generator = new FirmListGenerator(context, listingService, courtServicesGenerator);
+        final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, courtListForPublishing);
 
-        final JAXBElement<?> documentRoot = generator.generate();
-
-        return xmlUtils.convertToXml(documentRoot);
+        return xmlUtils.convertToXml(mapper.generate());
     }
 
     public void validateXml(final PublishCourtListRequestParameters requestParameters, final String courtListXml) {

@@ -9,8 +9,6 @@ import uk.gov.justice.services.core.annotation.FrameworkComponent;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
-import java.util.List;
-
 import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -21,25 +19,25 @@ public class ListingService {
     @FrameworkComponent(EVENT_PROCESSOR)
     private Requester requester;
 
-    public List<JsonObject> getHearingsForPublishing(final JsonEnvelope envelope,
-                                                     final PublishCourtListRequestParameters publishCourtListRequestParameters) {
-
+    public JsonObject getCourtListForPublishing(final JsonEnvelope envelope,
+                                                final PublishCourtListRequestParameters publishCourtListRequestParameters) {
 
         final JsonObjectBuilder restRequestParametersBuilder = createObjectBuilder()
                 .add("allocated", true)
                 .add("courtCentreId", publishCourtListRequestParameters.getCourtCentreId().toString())
-                .add("jurisdictionType", "CROWN");
+                .add("isCrownCourt", true);
 
         switch (publishCourtListRequestParameters.getPublishCourtListType()) {
             case DRAFT:
-            case WARN:
+            case FINAL:
                 restRequestParametersBuilder
                         .add("startDate", publishCourtListRequestParameters.getStartDate().format(ISO_LOCAL_DATE))
                         .add("endDate", publishCourtListRequestParameters.getEndDate().format(ISO_LOCAL_DATE));
                 break;
             case FIRM:
-            case FINAL:
+            case WARN:
                 restRequestParametersBuilder
+                        .add("jurisdictionType", "CROWN")
                         .add("weekCommencingStartDate", publishCourtListRequestParameters.getStartDate().format(ISO_LOCAL_DATE))
                         .add("weekCommencingEndDate", publishCourtListRequestParameters.getEndDate().format(ISO_LOCAL_DATE));
                 break;
@@ -49,6 +47,6 @@ public class ListingService {
 
         final JsonEnvelope response = requester.request(envelop(restRequestParametersBuilder.build()).withName("listing.range.search.hearings").withMetadataFrom(envelope));
 
-        return response.payloadAsJsonObject().getJsonArray("hearings").getValuesAs(JsonObject.class);
+        return response.payloadAsJsonObject();
     }
 }

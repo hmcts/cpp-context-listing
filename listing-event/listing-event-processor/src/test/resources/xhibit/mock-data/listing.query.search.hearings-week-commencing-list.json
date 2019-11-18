@@ -1,0 +1,161 @@
+{
+  "hearings": [
+    {
+      "id": "a5541421-c6dd-4ed9-bca2-d3a9498c2eda",
+      "type": {
+        "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+        "description": "Sentence"
+      },
+      "endDate": "2019-12-02",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
+          "judicialRoleType": {
+            "judiciaryType": "DISTRICT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2019-12-02",
+      "courtRoomId": "6508af42-e4d4-396d-a752-d676ebd38f6d",
+      "hearingDays": [
+        {
+          "endTime": "2019-12-02T19:13:00.000Z",
+          "sequence": 2,
+          "startTime": "2019-12-02T13:13:00.000Z",
+          "hearingDate": "2019-12-02",
+          "durationMinutes": 360
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "d35b9d8d-18d2-474d-8ea1-d79087b45dcc",
+          "defendants": [
+            {
+              "id": "709e290d-fab0-4304-8fb6-29a083e8af12",
+              "lastName": "MARTY",
+              "offences": [
+                {
+                  "id": "e0699db3-ed1f-4c61-8132-5d0802bdd410",
+                  "endDate": "2019-11-06",
+                  "startDate": "2019-11-05",
+                  "offenceCode": "OF61131",
+                  "offenceWording": "Dizub kales gari te udocapap jemome bubacorib aragadmut opo hokidef lezsajton opcu dijcewnem gu tibmampov obne uvu gop.",
+                  "statementOfOffence": {
+                    "title": "Wounding with intent",
+                    "welshTitle": "Wounding with intent",
+                    "legislation": "legislation"
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Dollie",
+              "dateOfBirth": "1989-11-04",
+              "custodyTimeLimit": "2019-12-04",
+              "specificRequirements": "Esude cotjege ra pasfo hofov palfiw lefi sa cigji topon nif rifet mo.",
+              "restrictFromCourtList": false
+            }
+          ],
+          "caseIdentifier": {
+            "authorityId": "97bba07c-25c8-4a4d-8a7b-96501f54c40a",
+            "authorityCode": "CPS",
+            "caseReference": "63AB435748"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "9b583616-049b-30f9-a14f-028a53b7cfe8",
+      "nonDefaultDays": [
+        {
+          "duration": 360,
+          "startTime": "2019-12-02T13:13:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 30,
+      "jurisdictionType": "CROWN",
+      "courtApplications": []
+    },
+    {
+      "allocated": false,
+      "courtApplications": [],
+      "courtCentreId": "9b583616-049b-30f9-a14f-028a53b7cfe8",
+      "estimatedMinutes": 15,
+      "hearingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "id": "4affa36f-b7a0-4760-a0cf-84321b4bc4da",
+      "judiciary": [],
+      "jurisdictionType": "CROWN",
+      "listedCases": [
+        {
+          "caseIdentifier": {
+            "authorityCode": "CPS",
+            "authorityId": "27014cde-1d46-433b-80e8-bd7cd4d18cb3",
+            "caseReference": "12AN388453"
+          },
+          "defendants": [
+            {
+              "custodyTimeLimit": "2019-12-04",
+              "dateOfBirth": "1989-11-04",
+              "firstName": "Luke",
+              "id": "73b82f84-72a6-45ec-93c1-8d93de1e6dd5",
+              "lastName": "BARTOLINI",
+              "offences": [
+                {
+                  "endDate": "2019-11-06",
+                  "id": "dc92f46c-1d71-4806-b8a4-342fdb5b6002",
+                  "offenceCode": "OF61131",
+                  "offenceWording": "So kalek bucvi avojigovo ucjabte osi fudat dilun buef fagza pil tivwalmu naka ha iziasi lazejrig muabeni banzora.",
+                  "restrictFromCourtList": false,
+                  "startDate": "2019-11-05",
+                  "statementOfOffence": {
+                    "legislation": "legislation",
+                    "title": "Wounding with intent",
+                    "welshTitle": "Wounding with intent"
+                  }
+                }
+              ],
+              "restrictFromCourtList": false,
+              "specificRequirements": "Duj fegpiuke fon murzus ahupojeko hungihof fepduzhe zuf pophezu tongumpi soutpud odesijfos isa pig futrucij faj."
+            }
+          ],
+          "id": "06da8b21-62b4-4b69-b705-41a11477ea2f",
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtApplications": [
+        {
+          "id": "a5cb1103-ddb8-4035-89bd-1894b7a99f99",
+          "applicant": {
+            "id": "60e4c999-f452-416c-bebf-2338d69881db",
+            "lastName": "APPLICANT_LAST_NAME",
+            "firstName": "APPLICANT_FIRST_NAME",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON_DEFENDANT"
+          },
+          "respondents": [],
+          "applicationType": "Application type",
+          "applicationReference": "13GN270542",
+          "restrictFromCourtList": false,
+          "restrictCourtApplicationType": false
+        }
+      ],
+      "nonDefaultDays": [
+        {
+          "duration": 100,
+          "startTime": "2019-11-06T13:20:48.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "type": {
+        "description": "Trial",
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4"
+      },
+      "weekCommencingDurationInWeeks": "1",
+      "weekCommencingEndDate": "2019-12-10",
+      "weekCommencingStartDate": "2019-12-03"
+    }
+  ]
+}
