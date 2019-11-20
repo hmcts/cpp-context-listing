@@ -6,6 +6,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 import static org.slf4j.LoggerFactory.getLogger;
+import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.DRAFT;
+import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FINAL;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.WARN;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersBuilder.withDefaults;
@@ -55,37 +57,30 @@ public class CourtListFileGeneratorTest {
 
     @Parameterized.Parameter(2)
     public String expectedXmlFile;
+    @InjectMocks
+    private CourtListFileGenerator courtListFileGenerator;
+    @Spy
+    private XmlUtils xmlUtils;
+    @Mock
+    private XhibitReferenceDataService xhibitReferenceDataService;
+    @Mock
+    private ListingService listingService;
+    @Mock
+    private JsonEnvelope envelope;
+    @Mock
+    private Logger logger;
+    @Spy
+    private MapperFactory mapperFactory;
 
     @Parameterized.Parameters(name = "{index}: Test with PublishCourtListType={0}, expectedXmlFile is:{2} ")
     public static Collection<Object[]> data() {
         Object[][] data = new Object[][]{
                 {WARN, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedWarnedList.xml"},
-//                {DRAFT, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedDraftList.xml"},   // TODO SCSL-86
-//                {FINAL, DAILY_COURT_LIST_JSON_FILE, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedFinalList.xml"},   // TODO SCSL-86
+                {DRAFT, DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedDraftList.xml"},
+                {FINAL, DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedFinalList.xml"},
                 {FIRM, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedFirmList.xml"}};
         return Arrays.asList(data);
     }
-
-    @InjectMocks
-    private CourtListFileGenerator courtListFileGenerator;
-
-    @Spy
-    private XmlUtils xmlUtils;
-
-    @Mock
-    private XhibitReferenceDataService xhibitReferenceDataService;
-
-    @Mock
-    private ListingService listingService;
-
-    @Mock
-    private JsonEnvelope envelope;
-
-    @Mock
-    private Logger logger;
-
-    @Spy
-    private MapperFactory mapperFactory;
 
     @Before
     public void initialiseLogger() {
@@ -118,7 +113,7 @@ public class CourtListFileGeneratorTest {
                 .add("hearingCode", "XXX")   // TODO SCSL-85
                 .add("hearingDescription", "XHIBIT_HEARING_DESCRIPTION")
                 .build();
-        when(xhibitReferenceDataService.getXhibitHearingType(any(),any())).thenReturn(hearingType);
+        when(xhibitReferenceDataService.getXhibitHearingType(any(), any())).thenReturn(hearingType);
 
         final JsonObject courtListData = givenPayload(courtListJsonFile);
         when(listingService.getCourtListForPublishing(any(), any())).thenReturn(courtListData);
@@ -131,7 +126,7 @@ public class CourtListFileGeneratorTest {
                 .publishCourtListType(publishCourtListType)
                 .build();
 
-        final CourtListMetadata metadata = new CourtListMetadata( publishCourtListType.name() + "-FILENAME",
+        final CourtListMetadata metadata = new CourtListMetadata(publishCourtListType.name() + "-FILENAME",
                 "UNIQUEID", parse("2018-01-02T13:04:05+00:00[Europe/London]"));
 
         final String generatedXml = courtListFileGenerator.generateXml(envelope, requestParameters, metadata);

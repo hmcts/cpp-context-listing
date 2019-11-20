@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.AbstractCourtListMapper;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.CourtServicesMapper;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.DailyListMapper;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.FirmListMapper;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.WarnedListMapper;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.GenerationFailedException;
@@ -23,6 +24,9 @@ public class MapperFactory {
                 return new FirmListMapper(context, courtListForPublishing, createCourtServicesMapper(context));
             case WARN:
                 return new WarnedListMapper(context, courtListForPublishing, createCourtServicesMapper(context));
+            case DRAFT:
+            case FINAL:
+                return new DailyListMapper(context, courtListForPublishing, createCourtServicesMapper(context));
             default:
                 throw new GenerationFailedException("No mapper for " + context.getParameters().getPublishCourtListType());
         }

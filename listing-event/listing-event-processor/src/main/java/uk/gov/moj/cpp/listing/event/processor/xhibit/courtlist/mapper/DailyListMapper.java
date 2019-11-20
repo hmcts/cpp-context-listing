@@ -1,6 +1,10 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.DailyCourtListStructure;
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.DailyListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
+
+import java.util.List;
 
 import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
@@ -13,6 +17,49 @@ public class DailyListMapper extends AbstractCourtListMapper {
 
     @Override
     public JAXBElement<?> generate() {
-        return null;
+
+        final DailyListStructure dailyListStructure = objectFactory.createDailyListStructure();
+
+        dailyListStructure.setDocumentID(courtServicesMapper.generateDocumentID());
+        dailyListStructure.setListHeader(courtServicesMapper.generateListHeader());
+        dailyListStructure.setCrownCourt(courtServicesMapper.generateCourtHouseStructure(context.getParameters().getCourtCentreId()));
+        dailyListStructure.setCourtLists(generateCourtLists());
+
+        return objectFactory.createDailyList(dailyListStructure);
+    }
+
+    private DailyListStructure.CourtLists generateCourtLists() {
+
+        final DailyListStructure.CourtLists courtLists = objectFactory.createDailyListStructureCourtLists();
+
+        courtLists.getCourtList().add(generateDailyCourtListStructure());
+
+        return courtLists;
+    }
+
+    private DailyCourtListStructure generateDailyCourtListStructure() {
+
+        final DailyCourtListStructure dailyCourtListStructure = objectFactory.createDailyCourtListStructure();
+
+        dailyCourtListStructure.setCourtHouse(courtServicesMapper.generateCourtHouseStructure(
+                context.getParameters().getCourtCentreId()));
+
+        dailyCourtListStructure.setSittings(generateSittings());
+
+        return dailyCourtListStructure;
+    }
+
+    private DailyCourtListStructure.Sittings generateSittings() {
+
+        final DailyCourtListStructure.Sittings sittings = objectFactory.createDailyCourtListStructureSittings();
+
+        final List<JsonObject> hearings = courtListForPublishing.getJsonArray("hearings").getValuesAs(JsonObject.class);
+
+        int sittingSequenceNumber = 1;
+        for (final JsonObject hearing : hearings) {
+            sittings.getSitting().add(courtServicesMapper.generateSittingStructure(hearing, sittingSequenceNumber++));
+        }
+
+        return sittings;
     }
 }
