@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
+import static java.util.Arrays.asList;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -13,11 +14,16 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 
 import uk.gov.justice.services.test.utils.core.messaging.MessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+
+import java.util.List;
+import java.util.UUID;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -100,4 +106,22 @@ public class PublishCourtListSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(""))
                         )));
     }
+
+
+    public static List<HearingsData> loadHearingDataWithJudiciary(final UUID courtCentreId) {
+
+        final List<HearingsData> hearingsDataList = asList(hearingsDataWithAllocationDataAndJudiciary(courtCentreId));
+
+        hearingsDataList.forEach(PublishCourtListSteps::createHearingListed);
+
+        return hearingsDataList;
+    }
+
+    private static void createHearingListed(final HearingsData hearingsData) {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        }
+    }
+
+
 }

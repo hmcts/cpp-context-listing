@@ -30,8 +30,12 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing(hearingId, hearingEndDate, courtRoomId, weekCommencingStartDate, weekCommencingEndDate, startDate));
     }
 
-    public static HearingsData hearingsDataWithAllocationDataAndJudiciary(){
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciary() {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary());
+    }
+
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final UUID courtCentreId) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(courtCentreId));
     }
 
     public static HearingsData hearingsDataStandaloneApplication(){

@@ -1,5 +1,8 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
+import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.requester.Requester;
@@ -13,7 +16,16 @@ import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class XhibitReferenceDataService {
+
+    private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
+
+    @SuppressWarnings("squid:S1312")
+    @Inject
+    private Logger logger;
 
     @Inject
     @ServiceComponent(Component.EVENT_PROCESSOR)
@@ -26,7 +38,7 @@ public class XhibitReferenceDataService {
     }
 
     @SuppressWarnings({"squid:CommentedOutCodeLine", "squid:S1172"})    // Remove when implemented
-    public int getCourtRoomNumber(final Envelope envelope, final UUID courtRoomId) {
+    public int getCourtRoomNumber(final JsonEnvelope envelope, final UUID courtRoomId) {
 
 //        final JsonObject queryParameters = createObjectBuilder().add("id", courtRoomId.toString()).build();
 //
@@ -36,17 +48,15 @@ public class XhibitReferenceDataService {
         return 0;
     }
 
-    @SuppressWarnings({"squid:CommentedOutCodeLine", "squid:S1172"})    // Remove when implemented
-    public JsonObject getJudiciary(final Envelope envelope, final UUID judiciaryId) {
+    public JsonObject getJudiciary(final JsonEnvelope envelope, final UUID judiciaryId) {
 
-        //        final JsonObject queryParameters = createObjectBuilder().add("id", courtRoomId.toString()).build();
-//
-//        final JsonEnvelope response = requester.request(envelop(queryParameters).withName("referencedata.query.courtroom").withMetadataFrom(envelope));
+        final JsonObject queryParameters = createObjectBuilder().add("id", judiciaryId.toString()).build();
+        logger.info("'{}' request with payload {}", REFERENCEDATA_QUERY_COURTROOM, queryParameters);
 
-        return Json.createObjectBuilder()
-                .add("forenames", "FORENAMES")
-                .add("surname", "SURNAME")
-                .build();  // TODO Implement
+        return requester.request(envelop(queryParameters)
+                                         .withName(REFERENCEDATA_QUERY_COURTROOM)
+                                         .withMetadataFrom(envelope))
+                                 .payloadAsJsonObject();
     }
 
     @SuppressWarnings({"squid:CommentedOutCodeLine", "squid:S1172"})    // Remove when implemented

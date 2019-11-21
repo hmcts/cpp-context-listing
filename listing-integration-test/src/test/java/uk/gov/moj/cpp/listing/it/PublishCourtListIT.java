@@ -1,13 +1,17 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static java.text.MessageFormat.format;
+import static java.time.LocalDate.now;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
+import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 
 import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
+
+import java.util.UUID;
 
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
@@ -23,16 +27,20 @@ public class PublishCourtListIT extends AbstractIT {
     private static final String LISTING_COMMAND_PUBLISH_COURT_LIST = "listing.command.publish-court-list";
     private static final String MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST = "application/vnd.listing.command.publish-court-list+json";
 
-
     @Test
     public void shouldRequestToPublishCourtList() {
-        final JsonObject publishCourtListJsonObject = buildPublishCourtListJsonString();
+
+        UUID courtCentreId = randomUUID();
+        final JsonObject publishCourtListJsonObject = buildPublishCourtListJsonString(courtCentreId.toString());
+
+        loadHearingDataWithJudiciary(courtCentreId);
 
         try (final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(publishCourtListJsonObject)) {
             sendPublishCourtListCommand(publishCourtListJsonObject);
             publishCourtListSteps.verifyPublishCourtListEventsInActiveMQ();
             publishCourtListSteps.verifyCourtListPublishStatusReturnedWhenQueryingFromAPI("COURT_LIST_PRODUCED");
         }
+
     }
 
     private void sendPublishCourtListCommand(final JsonObject publishCourtListJsonObject) {
@@ -48,14 +56,14 @@ public class PublishCourtListIT extends AbstractIT {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
-
-    private JsonObject buildPublishCourtListJsonString() {
+    private JsonObject buildPublishCourtListJsonString(final String courtCentreId) {
         return createObjectBuilder()
-                .add("courtCentreId", randomUUID().toString())
-                .add("startDate", "2018-12-06")
-                .add("endDate", "2018-12-20")
+                .add("courtCentreId", courtCentreId)
+                .add("startDate", now().toString())
+                .add("endDate", now().plusDays(2).toString())
                 .add("publishCourtListType", "FIRM")
                 .add("requestedTime", "2019-10-30T16:34:45.132Z")
                 .build();
     }
+
 }
