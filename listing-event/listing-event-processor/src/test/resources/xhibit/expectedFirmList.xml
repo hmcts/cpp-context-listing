@@ -43,7 +43,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-02</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>A12345678</cs:CaseNumber>
+                            <cs:CaseNumber>63AB435748</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>63AB435748</cs:ProsecutingReference>
                             </cs:Prosecution>
@@ -87,7 +87,7 @@
                             <cs:HearingDetails HearingType="XXX">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>A12345678</cs:CaseNumber>
+                            <cs:CaseNumber>12AN388453</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>12AN388453</cs:ProsecutingReference>
                             </cs:Prosecution>
@@ -118,7 +118,7 @@
                             <cs:HearingDetails HearingType="XXX">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>A12345678</cs:CaseNumber>
+                            <cs:CaseNumber>13GN270542</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>

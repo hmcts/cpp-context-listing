@@ -107,7 +107,6 @@
     </xsd:simpleType>
     <xsd:simpleType name="CaseNumberType">
         <xsd:restriction base="xsd:string">
-            <xsd:pattern value="[A-Z][0-9]{8}"/>
         </xsd:restriction>
     </xsd:simpleType>
     <xsd:simpleType name="CaseType">

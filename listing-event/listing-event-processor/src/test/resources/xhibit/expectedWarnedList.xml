@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cs:WarnedList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:p2="http://www.govtalk.gov.uk/people/bs7666" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
+<cs:WarnedList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice"
+               xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
     <cs:DocumentID>
         <cs:DocumentName>WARN-FILENAME</cs:DocumentName>
         <cs:UniqueID>UNIQUEID</cs:UniqueID>
@@ -28,7 +29,7 @@
                 <cs:Fixture>
                     <cs:Cases>
                         <cs:Case>
-                            <cs:CaseNumber>A12345678</cs:CaseNumber>
+                            <cs:CaseNumber>63AB435748</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -48,7 +49,7 @@
                 <cs:Fixture>
                     <cs:Cases>
                         <cs:Case>
-                            <cs:CaseNumber>A12345678</cs:CaseNumber>
+                            <cs:CaseNumber>12AN388453</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -62,7 +63,7 @@
                             </cs:Defendants>
                         </cs:Case>
                         <cs:Case>
-                            <cs:CaseNumber>A12345678</cs:CaseNumber>
+                            <cs:CaseNumber>13GN270542</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>

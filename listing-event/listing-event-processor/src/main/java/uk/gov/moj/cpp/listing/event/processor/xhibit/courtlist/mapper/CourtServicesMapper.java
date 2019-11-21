@@ -47,7 +47,9 @@ public class CourtServicesMapper {
     private static final ObjectFactory objectFactory = new ObjectFactory();
     private static final String CPS_PROSECUTOR_CODE = "CPS";
     private static final List JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
-    public static final String DUMMY_CASE_URN = "A12345678";
+    public static final String CASE_IDENTIFIER = "caseIdentifier";
+    public static final String CASE_REFERENCE = "caseReference";
+    public static final String APPLICATION_REFERENCE = "applicationReference";
     private CourtListGenerationContext context;
 
     private XhibitReferenceDataService xhibitReferenceDataService;
@@ -211,7 +213,7 @@ public class CourtServicesMapper {
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
         hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
-        hearingStructure.setCaseNumber(DUMMY_CASE_URN);    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
+        hearingStructure.setCaseNumber(listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE));
         hearingStructure.setHearingDetails(generateHearingTypeStructure(hearing));
         hearingStructure.setProsecution(generateProsecutionStructure(listedCase));
         hearingStructure.setCommittingCourt(generateCourtHouseStructure(fromString(hearing.getString("courtCentreId"))));
@@ -226,7 +228,7 @@ public class CourtServicesMapper {
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
         hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
-        hearingStructure.setCaseNumber(DUMMY_CASE_URN);    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
+        hearingStructure.setCaseNumber(courtApplication.getString(APPLICATION_REFERENCE));
         hearingStructure.setHearingDetails(generateHearingTypeStructure(hearing));
 
         // Map applicant to defendant
@@ -256,9 +258,9 @@ public class CourtServicesMapper {
 
         final ProsecutionStructure prosecutionStructure = objectFactory.createProsecutionStructure();
 
-        prosecutionStructure.setProsecutingReference(listedCase.getJsonObject("caseIdentifier").getString("caseReference"));
+        prosecutionStructure.setProsecutingReference(listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE));
 
-        final String authorityType = listedCase.getJsonObject("caseIdentifier").getString("authorityCode");
+        final String authorityType = listedCase.getJsonObject(CASE_IDENTIFIER).getString("authorityCode");
 
         final ProsecutingAuthorityType prosecutingAuthorityType = CPS_PROSECUTOR_CODE.equals(authorityType)
                 ? CROWN_PROSECUTION_SERVICE
@@ -381,8 +383,8 @@ public class CourtServicesMapper {
 
         final CasesStructure casesStructure = objectFactory.createCasesStructure();
 
-        for (final JsonObject kase : hearing.getJsonArray("listedCases").getValuesAs(JsonObject.class)) {
-            casesStructure.getCase().add(generateCaseStructureForCase(kase));
+        for (final JsonObject listedCase : hearing.getJsonArray("listedCases").getValuesAs(JsonObject.class)) {
+            casesStructure.getCase().add(generateCaseStructureForCase(listedCase));
         }
 
         for (final JsonObject courtApplication : hearing.getJsonArray("courtApplications").getValuesAs(JsonObject.class)) {
@@ -392,13 +394,13 @@ public class CourtServicesMapper {
         return casesStructure;
     }
 
-    private CasesStructure.Case generateCaseStructureForCase(final JsonObject kase) {
+    private CasesStructure.Case generateCaseStructureForCase(final JsonObject listedCase) {
 
         final CasesStructure.Case casesStructureCase = objectFactory.createCasesStructureCase();
 
-        casesStructureCase.setCaseNumber(DUMMY_CASE_URN);    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
+        casesStructureCase.setCaseNumber(listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE));
 
-        for (final JsonObject defendant : kase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
+        for (final JsonObject defendant : listedCase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
             casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(defendant));
         }
 
@@ -408,7 +410,7 @@ public class CourtServicesMapper {
     private CasesStructure.Case generateCaseStructureForCourtApplication(final JsonObject courtApplication) {
         final CasesStructure.Case casesStructureCase = objectFactory.createCasesStructureCase();
 
-        casesStructureCase.setCaseNumber(DUMMY_CASE_URN);    // TODO SCSL-187 Use dummy value until new schema from CGI supports CPP URNs in CaseNumber
+        casesStructureCase.setCaseNumber(courtApplication.getString(APPLICATION_REFERENCE));
 
         casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(courtApplication.getJsonObject("applicant")));
 
