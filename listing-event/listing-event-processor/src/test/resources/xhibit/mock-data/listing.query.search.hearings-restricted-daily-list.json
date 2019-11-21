@@ -1,0 +1,374 @@
+{
+  "hearings": [
+    {
+      "id": "205135c5-54d4-463a-9b80-f50418be9300",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2019-11-27",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "7fd29ee0-cb4b-310d-96d0-ef86f16c8854",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2019-11-25",
+      "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
+      "hearingDays": [
+        {
+          "endTime": "2019-11-25T10:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-11-25T10:00:00.000Z",
+          "hearingDate": "2019-11-25",
+          "durationMinutes": 0
+        },
+        {
+          "endTime": "2019-11-26T10:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-11-26T10:00:00.000Z",
+          "hearingDate": "2019-11-26",
+          "durationMinutes": 0
+        },
+        {
+          "endTime": "2019-11-27T10:00:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-11-27T10:00:00.000Z",
+          "hearingDate": "2019-11-27",
+          "durationMinutes": 0
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "1ccf2763-2692-4571-b0f7-f03f03e2c9e6",
+          "defendants": [
+            {
+              "id": "12ee2e86-af01-46a3-bda8-eadaf3c3f670",
+              "lastName": "Protractor-1831877535",
+              "offences": [
+                {
+                  "id": "a78f771b-c220-42c3-a58b-920dcb7d193d",
+                  "startDate": "2019-10-14",
+                  "offenceCode": "PS90010",
+                  "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
+                  "statementOfOffence": {
+                    "title": "Public service vehicle - passenger use altered / defaced   ticket",
+                    "welshTitle": "",
+                    "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
+                    "welshLegislation": ""
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "John",
+              "dateOfBirth": "1977-10-17",
+              "hearingLanguageNeeds": "ENGLISH",
+              "restrictFromCourtList": false
+            }
+          ],
+          "caseIdentifier": {
+            "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+            "authorityCode": "TFL",
+            "caseReference": "TFL1831877535"
+          },
+          "restrictFromCourtList": true
+        }
+      ],
+      "courtCentreId": "f4f9d37b-7ffd-3cb7-b089-2d342037f884",
+      "nonDefaultDays": [
+        {
+          "duration": 30,
+          "startTime": "2019-12-02T00:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 30,
+      "jurisdictionType": "CROWN",
+      "courtApplications": []
+    },
+    {
+      "id": "e2261055-67d7-4aa7-b3fc-45c036ef262d",
+      "type": {
+        "id": "c6d76309-c912-436b-a21b-a4c4450bc052",
+        "description": "Pre-Trial Review"
+      },
+      "endDate": "2019-11-25",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "94f6d7e0-4a4d-3520-b530-0f18b984988c",
+          "judicialRoleType": {
+            "judiciaryType": "RECORDER"
+          }
+        }
+      ],
+      "startDate": "2019-11-25",
+      "courtRoomId": "4557aec2-d63e-364a-aa0b-d9a32c2e0884",
+      "hearingDays": [
+        {
+          "endTime": "2019-11-25T00:30:00.000Z",
+          "sequence": 3,
+          "startTime": "2019-11-25T00:00:00.000Z",
+          "hearingDate": "2019-11-25",
+          "durationMinutes": 30
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "9de81ced-d21d-4aae-b7d0-dd614d5b1ded",
+          "defendants": [
+            {
+              "id": "76243eda-7cf6-4056-bfef-e2f9e59cb265",
+              "lastName": "Protractor-8953256994",
+              "offences": [
+                {
+                  "id": "dbe063f2-a847-44e8-a34e-c1182b228465",
+                  "startDate": "2019-10-14",
+                  "offenceCode": "PS90010",
+                  "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
+                  "statementOfOffence": {
+                    "title": "Public service vehicle - passenger use altered / defaced   ticket",
+                    "welshTitle": "",
+                    "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
+                    "welshLegislation": ""
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "John",
+              "dateOfBirth": "1977-10-17",
+              "hearingLanguageNeeds": "ENGLISH",
+              "restrictFromCourtList": true
+            }
+          ],
+          "caseIdentifier": {
+            "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+            "authorityCode": "TFL",
+            "caseReference": "TFL8953256994"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f4f9d37b-7ffd-3cb7-b089-2d342037f884",
+      "nonDefaultDays": [
+        {
+          "duration": 30,
+          "startTime": "2019-11-25T00:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 30,
+      "jurisdictionType": "CROWN",
+      "courtApplications": []
+    },
+    {
+      "id": "05e99c1d-2dc8-41ba-ae4d-af02ac9edb32",
+      "type": {
+        "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+        "description": "Sentence"
+      },
+      "endDate": "2019-11-29",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "6f3ef77a-c0e3-319e-9815-9e9b6febf557",
+          "judicialRoleType": {
+            "judiciaryType": "DISTRICT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2019-11-25",
+      "courtRoomId": "2949b292-621a-3d2d-9ca1-cbf37a3e0316",
+      "hearingDays": [
+        {
+          "endTime": "2019-11-25T10:30:00.000Z",
+          "sequence": 2,
+          "startTime": "2019-11-25T10:00:00.000Z",
+          "hearingDate": "2019-11-25",
+          "durationMinutes": 30
+        },
+        {
+          "endTime": "2019-11-26T10:30:00.000Z",
+          "sequence": 2,
+          "startTime": "2019-11-26T10:00:00.000Z",
+          "hearingDate": "2019-11-26",
+          "durationMinutes": 30
+        },
+        {
+          "endTime": "2019-11-27T10:30:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-11-27T10:00:00.000Z",
+          "hearingDate": "2019-11-27",
+          "durationMinutes": 30
+        },
+        {
+          "endTime": "2019-11-28T10:30:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-11-28T10:00:00.000Z",
+          "hearingDate": "2019-11-28",
+          "durationMinutes": 30
+        },
+        {
+          "endTime": "2019-11-29T10:30:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-11-29T10:00:00.000Z",
+          "hearingDate": "2019-11-29",
+          "durationMinutes": 30
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "05f201c7-c4a9-4248-882f-091ec2fecdae",
+          "defendants": [
+            {
+              "id": "38c34093-d4f6-474d-b303-035080ef4df9",
+              "lastName": "Bosco",
+              "offences": [
+                {
+                  "id": "8c8ae233-0050-47a7-be3c-969cdad96827",
+                  "startDate": "2019-10-14",
+                  "offenceCode": "PS90010",
+                  "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
+                  "statementOfOffence": {
+                    "title": "Public service vehicle - passenger use altered / defaced   ticket",
+                    "welshTitle": "",
+                    "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
+                    "welshLegislation": ""
+                  },
+                  "restrictFromCourtList": true
+                }
+              ],
+              "firstName": "Mauricio",
+              "dateOfBirth": "1977-10-17",
+              "hearingLanguageNeeds": "ENGLISH",
+              "restrictFromCourtList": false
+            }
+          ],
+          "caseIdentifier": {
+            "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+            "authorityCode": "TFL",
+            "caseReference": "TFL6600332660"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f4f9d37b-7ffd-3cb7-b089-2d342037f884",
+      "nonDefaultDays": [
+        {
+          "duration": 30,
+          "startTime": "2019-12-02T00:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 30,
+      "jurisdictionType": "CROWN",
+      "courtApplications": []
+    },
+    {
+      "id": "3caa55f4-2f8e-4ee9-b605-eee8acd8c41b",
+      "type": {
+        "id": "3449743b-95d6-4836-8941-57f588b52068",
+        "description": "Application"
+      },
+      "endDate": "2019-11-25",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2019-11-25",
+      "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
+      "hearingDays": [
+        {
+          "endTime": "2019-11-25T00:20:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-11-25T00:00:00.000Z",
+          "hearingDate": "2019-11-25",
+          "durationMinutes": 20
+        }
+      ],
+      "courtCentreId": "f4f9d37b-7ffd-3cb7-b089-2d342037f884",
+      "nonDefaultDays": [
+        {
+          "duration": 20,
+          "startTime": "2019-11-25T00:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "CROWN",
+      "courtApplications": [
+        {
+          "id": "e8d4a3d6-f700-4aca-aa8f-1b51d146ecbb",
+          "applicant": {
+            "id": "22dae461-7c07-47bf-992a-3e62f7b13df2",
+            "lastName": "MOHAMED",
+            "firstName": "SHIHARA",
+            "isRespondent": false,
+            "restrictFromCourtList": false,
+            "courtApplicationPartyType": "PERSON"
+          },
+          "respondents": [],
+          "applicationType": "Complaint for a football banning order",
+          "applicationReference": "QFUKYPUGKJ",
+          "restrictFromCourtList": true,
+          "restrictCourtApplicationType": false
+        }
+      ]
+    },
+    {
+      "id": "4caa55f4-2f8e-4ee9-b605-eee8acd8c41b",
+      "type": {
+        "id": "3449743b-95d6-4836-8941-57f588b52068",
+        "description": "Application"
+      },
+      "endDate": "2019-11-25",
+      "allocated": true,
+      "judiciary": [],
+      "startDate": "2019-11-25",
+      "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
+      "hearingDays": [
+        {
+          "endTime": "2019-11-25T00:20:00.000Z",
+          "sequence": 1,
+          "startTime": "2019-11-25T00:00:00.000Z",
+          "hearingDate": "2019-11-25",
+          "durationMinutes": 20
+        }
+      ],
+      "courtCentreId": "f4f9d37b-7ffd-3cb7-b089-2d342037f884",
+      "nonDefaultDays": [
+        {
+          "duration": 20,
+          "startTime": "2019-11-25T00:00:00.000Z"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "CROWN",
+      "courtApplications": [
+        {
+          "id": "e8d4a3d6-f700-4aca-aa8f-1b51d146ecbb",
+          "applicant": {
+            "id": "22dae461-7c07-47bf-992a-3e62f7b13df2",
+            "lastName": "BLOGGS",
+            "firstName": "BOB",
+            "isRespondent": false,
+            "restrictFromCourtList": true,
+            "courtApplicationPartyType": "PERSON"
+          },
+          "respondents": [],
+          "applicationType": "Complaint for a football banning order",
+          "applicationReference": "ZFUKYPUGKJ",
+          "restrictFromCourtList": false,
+          "restrictCourtApplicationType": false
+        }
+      ]
+    }
+  ]
+}

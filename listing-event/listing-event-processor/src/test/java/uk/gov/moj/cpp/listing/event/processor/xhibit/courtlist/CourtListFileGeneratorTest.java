@@ -48,6 +48,7 @@ public class CourtListFileGeneratorTest {
     private static final Logger LOGGER = getLogger(CourtListFileGeneratorTest.class);
     private static final String DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.search.hearings-daily-list.json";
     private static final String WEEK_COMMENCING_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.search.hearings-week-commencing-list.json";
+    private static final String RESTRICTED_DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.search.hearings-restricted-daily-list.json";
 
     @Parameterized.Parameter(0)
     public PublishCourtListType publishCourtListType;
@@ -78,7 +79,8 @@ public class CourtListFileGeneratorTest {
                 {WARN, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedWarnedList.xml"},
                 {DRAFT, DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedDraftList.xml"},
                 {FINAL, DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedFinalList.xml"},
-                {FIRM, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedFirmList.xml"}};
+                {FIRM, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedFirmList.xml"},
+                {FINAL, RESTRICTED_DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedRestrictedFinalList.xml"}};
         return Arrays.asList(data);
     }
 

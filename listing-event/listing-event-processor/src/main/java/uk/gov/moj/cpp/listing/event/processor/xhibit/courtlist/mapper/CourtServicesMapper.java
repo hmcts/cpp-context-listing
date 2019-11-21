@@ -42,14 +42,17 @@ import javax.json.JsonObject;
  */
 public class CourtServicesMapper {
 
+    public static final String MASKED_VALUE = "******";
+    private static final String CASE_IDENTIFIER = "caseIdentifier";
+    private static final String CASE_REFERENCE = "caseReference";
+    private static final String APPLICATION_REFERENCE = "applicationReference";
     private static final String JUDICIAL_ID = "judicialId";
     private static final String NONE = "NONE";
-    private static final ObjectFactory objectFactory = new ObjectFactory();
     private static final String CPS_PROSECUTOR_CODE = "CPS";
     private static final List JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
-    public static final String CASE_IDENTIFIER = "caseIdentifier";
-    public static final String CASE_REFERENCE = "caseReference";
-    public static final String APPLICATION_REFERENCE = "applicationReference";
+    private static final String LISTED_CASES = "listedCases";
+    private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
+    private static final ObjectFactory objectFactory = new ObjectFactory();
     private CourtListGenerationContext context;
 
     private XhibitReferenceDataService xhibitReferenceDataService;
@@ -193,14 +196,20 @@ public class CourtServicesMapper {
 
         int hearingSequenceNumber = 1;
 
-        for (final JsonObject listedCase : hearing.getJsonArray("listedCases").getValuesAs(JsonObject.class)) {
-            sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearing,
-                    listedCase, hearingSequenceNumber++));
+        if (hearing.containsKey(LISTED_CASES)) {
+            for (final JsonObject listedCase : hearing.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class)) {
+                if (!listedCase.getBoolean(RESTRICT_FROM_COURT_LIST)) {
+                    sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearing,
+                            listedCase, hearingSequenceNumber++));
+                }
+            }
         }
 
         for (final JsonObject courtApplication : hearing.getJsonArray("courtApplications").getValuesAs(JsonObject.class)) {
-            sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearing,
-                    courtApplication, hearingSequenceNumber++));
+            if (!courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST)) {
+                sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearing,
+                        courtApplication, hearingSequenceNumber++));
+            }
         }
 
         return sittingStructureHearings;
@@ -315,7 +324,10 @@ public class CourtServicesMapper {
         final PersonalDetailsStructure personalDetailsStructure = objectFactory.createPersonalDetailsStructure();
 
         personalDetailsStructure.setName(generateCitizenNameStructure(defendant));
-        personalDetailsStructure.setIsMasked(generateYesNoType(defendant.getBoolean("restrictFromCourtList")));
+        personalDetailsStructure.setIsMasked(generateYesNoType(defendant.getBoolean(RESTRICT_FROM_COURT_LIST)));
+        if (defendant.getBoolean(RESTRICT_FROM_COURT_LIST)) {
+            personalDetailsStructure.setMaskedName(MASKED_VALUE);
+        }
 
         return personalDetailsStructure;
     }
@@ -340,11 +352,23 @@ public class CourtServicesMapper {
         final DefendantStructure.Charges charges = objectFactory.createDefendantStructureCharges();
 
         for (final JsonObject offence : offences.getValuesAs(JsonObject.class)) {
-
-            charges.getCharge().add(generateChargeStructure(offence));
+            if (offence.getBoolean(RESTRICT_FROM_COURT_LIST)) {
+                charges.getCharge().add(generateRestrictedChargeStructure());
+            } else {
+                charges.getCharge().add(generateChargeStructure(offence));
+            }
         }
 
         return charges;
+    }
+
+    private ChargeStructure generateRestrictedChargeStructure() {
+
+        final ChargeStructure chargeStructure = objectFactory.createChargeStructure();
+
+        chargeStructure.setOffenceStatement(MASKED_VALUE);
+
+        return chargeStructure;
     }
 
     @SuppressWarnings({"squid:CommentedOutCodeLine"})   // TODO Fix date conversion
@@ -383,12 +407,18 @@ public class CourtServicesMapper {
 
         final CasesStructure casesStructure = objectFactory.createCasesStructure();
 
-        for (final JsonObject listedCase : hearing.getJsonArray("listedCases").getValuesAs(JsonObject.class)) {
-            casesStructure.getCase().add(generateCaseStructureForCase(listedCase));
+        if (hearing.containsKey(LISTED_CASES)) {
+            for (final JsonObject listedCase : hearing.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class)) {
+                if (!listedCase.getBoolean(RESTRICT_FROM_COURT_LIST)) {
+                    casesStructure.getCase().add(generateCaseStructureForCase(listedCase));
+                }
+            }
         }
 
         for (final JsonObject courtApplication : hearing.getJsonArray("courtApplications").getValuesAs(JsonObject.class)) {
-            casesStructure.getCase().add(generateCaseStructureForCourtApplication(courtApplication));
+            if (!courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST)) {
+                casesStructure.getCase().add(generateCaseStructureForCourtApplication(courtApplication));
+            }
         }
 
         return casesStructure;
@@ -412,7 +442,9 @@ public class CourtServicesMapper {
 
         casesStructureCase.setCaseNumber(courtApplication.getString(APPLICATION_REFERENCE));
 
-        casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(courtApplication.getJsonObject("applicant")));
+        if (!courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST)) {
+            casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(courtApplication.getJsonObject("applicant")));
+        }
 
         return casesStructureCase;
     }
