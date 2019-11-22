@@ -58,12 +58,12 @@ public class CourtListRepositoryTest extends BaseTransactionalTest {
         final PublishCourtListType publishCourtListType = FIRM;
         final ZonedDateTime lastUpdated = ZonedDateTime.now();
         final CourtListPublishStatus requestedPublishStatus = new CourtListPublishStatus(randomUUID(), courtCentreId, publishCourtListType,
-                COURT_LIST_REQUESTED, lastUpdated, courtListFileId, courtListFileName, "");
+                COURT_LIST_REQUESTED, lastUpdated, courtListFileId, courtListFileName, "error1");
 
         courtListRepository.save(requestedPublishStatus);
 
         final CourtListPublishStatus producedPublishStatus = new CourtListPublishStatus(randomUUID(), courtCentreId, publishCourtListType,
-                COURT_LIST_PRODUCED, lastUpdated.plusSeconds(1), courtListFileId, courtListFileName, "");
+                COURT_LIST_PRODUCED, lastUpdated.plusSeconds(1), courtListFileId, courtListFileName, "error2");
 
         courtListRepository.save(producedPublishStatus);
 
@@ -72,7 +72,7 @@ public class CourtListRepositoryTest extends BaseTransactionalTest {
         final List<CourtListPublishStatusResult> courtListPublishStatuses =
                 courtListRepository.courtListPublishStatuses(courtCentreId, courtListTypes);
 
-        assertThat(courtListPublishStatuses.size(), is(2));
+        assertThat(courtListPublishStatuses.size(), is(1));
         assertThat(courtListPublishStatuses.get(0).getPublishStatus(), is(COURT_LIST_PRODUCED));
     }
 }

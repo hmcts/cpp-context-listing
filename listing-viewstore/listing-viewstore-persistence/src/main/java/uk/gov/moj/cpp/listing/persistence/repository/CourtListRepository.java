@@ -11,52 +11,46 @@ import java.util.UUID;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 
+import org.apache.deltaspike.data.api.AbstractEntityRepository;
 import org.apache.deltaspike.data.api.EntityRepository;
 import org.apache.deltaspike.data.api.Repository;
 import org.apache.deltaspike.data.api.criteria.CriteriaSupport;
 
+
 @Repository
 @ApplicationScoped
-public abstract class CourtListRepository implements EntityRepository<CourtListPublishStatus, UUID>, CriteriaSupport<CourtListPublishStatus> {
+public abstract class CourtListRepository extends AbstractEntityRepository<CourtListPublishStatus, UUID>
+        implements EntityRepository<CourtListPublishStatus, UUID>, CriteriaSupport<CourtListPublishStatus> {
 
-    private static final String COURT_CENTRE_ID = "courtCentreId";
-    private static final String PUBLISH_COURT_LIST_TYPE = "publishCourtListType";
-    private static final String LAST_UPDATED = "lastUpdated";
     @Inject
     private EntityManager entityManager;
 
+    private static final String COURT_LIST_PUBLISH_STATUS_QUERY =
+            "SELECT * FROM court_list_publish_status WHERE court_centre_id = :courtCenterId " +
+                    " AND publish_court_list_type IN (:publishCourtListTypes)  " +
+                    " ORDER  BY last_updated DESC limit 1";
+
     public List<CourtListPublishStatusResult> courtListPublishStatuses(final UUID courtCentreId,
-                                                                       final Set<PublishCourtListType> courtListTypes) {
-
-        final CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
-        final CriteriaQuery criteriaQuery = criteriaBuilder.createQuery(CourtListPublishStatus.class);
-        final Root<CourtListPublishStatus> mainQueryRoot = criteriaQuery.from(CourtListPublishStatus.class);
-
-        criteriaQuery.orderBy(criteriaBuilder.desc(mainQueryRoot.get(LAST_UPDATED)));
-
-        final Predicate conditionCourtCentreIdPredicate = criteriaBuilder.equal(mainQueryRoot.get(COURT_CENTRE_ID),
-                courtCentreId);
-
-        final Expression<String> exp = mainQueryRoot.get(PUBLISH_COURT_LIST_TYPE);
-        final Predicate courtListTypePredicate = exp.in(courtListTypes);
-        final Predicate combinedPredicate = criteriaBuilder.and(conditionCourtCentreIdPredicate, courtListTypePredicate);
-        criteriaQuery.where(combinedPredicate);
-        final List resultList = entityManager.createQuery(criteriaQuery).getResultList();
+                                                                        final Set<PublishCourtListType> publishCourtListTypes) {
+        final List<String> types = publishCourtListTypes.stream().map(PublishCourtListType::toString).collect(toList());
+        final List resultList = entityManager.createNativeQuery(COURT_LIST_PUBLISH_STATUS_QUERY, CourtListPublishStatus.class)
+                .setParameter("courtCenterId", courtCentreId)
+                .setParameter("publishCourtListTypes", types)
+                .getResultList();
         return courtListPublishStatuses(resultList);
     }
 
     private List<CourtListPublishStatusResult> courtListPublishStatuses(final List<CourtListPublishStatus> courtLists) {
-        return courtLists.stream().map(x -> {
-            final CourtListPublishStatusResult courtListPublishStatus = new CourtListPublishStatusResult(x.getCourtCentreId(),
-                    x.getPublishCourtListType(), x.getLastUpdated(), x.getPublishStatus());
-            courtListPublishStatus.setFailureMessage(x.getErrorMessage());
-            return courtListPublishStatus;
-        }).collect(toList());
+        return courtLists.stream().map(cps -> mapTo(cps)).collect(toList());
+    }
+
+    private CourtListPublishStatusResult mapTo(final CourtListPublishStatus courtListPublishStatus) {
+        final CourtListPublishStatusResult courtListPublishStatusResult
+                = new CourtListPublishStatusResult(courtListPublishStatus.getCourtCentreId(),
+                courtListPublishStatus.getPublishCourtListType(), courtListPublishStatus.getLastUpdated(),
+                courtListPublishStatus.getPublishStatus());
+        courtListPublishStatusResult.setFailureMessage(courtListPublishStatus.getErrorMessage());
+        return courtListPublishStatusResult;
     }
 }
