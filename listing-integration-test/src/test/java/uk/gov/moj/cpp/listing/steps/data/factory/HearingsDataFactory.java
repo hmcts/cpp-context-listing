@@ -71,13 +71,13 @@ public class HearingsDataFactory {
     }
 
     public static List<HearingData> hearingsDataForWeekCommencing(final UUID hearingId, final LocalDate hearingEndDate,
-                                                                       final UUID courtRoomId, final LocalDate weekCommencingStartDate,
-                                                                       final LocalDate weekCommencingEndDate, final LocalDate startDate) {
+                                                                  final UUID courtRoomId, final LocalDate weekCommencingStartDate,
+                                                                  final LocalDate weekCommencingEndDate, final LocalDate startDate) {
         return singletonList(randomHearingForWeekCommencingDate(hearingId, hearingEndDate, courtRoomId, null, weekCommencingStartDate, weekCommencingEndDate, startDate));
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationData(final Integer numberOfHearings) {
-        return manyRandomHearingsWithAllocationData(numberOfHearings, null);
+        return manyRandomHearingsWithAllocationData(numberOfHearings, UUID.randomUUID());
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationData(final Integer numberOfHearings, final UUID courtCentreId) {

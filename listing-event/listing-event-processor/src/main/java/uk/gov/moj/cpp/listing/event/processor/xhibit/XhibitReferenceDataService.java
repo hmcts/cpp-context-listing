@@ -17,11 +17,10 @@ import javax.json.Json;
 import javax.json.JsonObject;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class XhibitReferenceDataService {
 
-    private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
+    private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
 
     @SuppressWarnings("squid:S1312")
     @Inject
@@ -50,13 +49,15 @@ public class XhibitReferenceDataService {
 
     public JsonObject getJudiciary(final JsonEnvelope envelope, final UUID judiciaryId) {
 
-        final JsonObject queryParameters = createObjectBuilder().add("id", judiciaryId.toString()).build();
-        logger.info("'{}' request with payload {}", REFERENCEDATA_QUERY_COURTROOM, queryParameters);
+        final JsonObject queryParameters = createObjectBuilder().add("ids", judiciaryId.toString()).build();
+        logger.info("'{}' request with payload {}", REFERENCEDATA_QUERY_JUDICIARIES, queryParameters);
 
         return requester.request(envelop(queryParameters)
-                                         .withName(REFERENCEDATA_QUERY_COURTROOM)
+                                         .withName(REFERENCEDATA_QUERY_JUDICIARIES)
                                          .withMetadataFrom(envelope))
-                                 .payloadAsJsonObject();
+                                 .payloadAsJsonObject().getJsonArray("judiciaries")
+                .getValuesAs(JsonObject.class).get(0);
+
     }
 
     @SuppressWarnings({"squid:CommentedOutCodeLine", "squid:S1172"})    // Remove when implemented

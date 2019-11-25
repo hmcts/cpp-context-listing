@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
+import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,7 +31,7 @@ import org.slf4j.Logger;
 public class XhibitReferenceDataServiceTest {
 
     private static final String PUBLISH_COURT_LIST_REQUESTED = "listing.event.publish-court-list-requested";
-    private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
+    private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
 
     @Mock
     private Requester requester;
@@ -50,7 +51,8 @@ public class XhibitReferenceDataServiceTest {
     @Test
     public void shouldGetJudiciary() throws Exception {
 
-        final String oucode = "C55BN00";
+        final String titlePrefix = "Mr";
+        final String titleJudiciaryPrefix = "Recorder";
         final JsonEnvelope inputEnvelope =
                 envelopeFrom(
                         metadataWithDefaults()
@@ -61,9 +63,13 @@ public class XhibitReferenceDataServiceTest {
         final JsonEnvelope responseEnvelope =
                 envelopeFrom(
                         metadataWithDefaults()
-                                .withName(REFERENCEDATA_QUERY_COURTROOM),
+                                .withName(REFERENCEDATA_QUERY_JUDICIARIES),
                         createObjectBuilder()
-                                .add("oucode", oucode).build());
+                                .add("judiciaries", createArrayBuilder()
+                                        .add(createObjectBuilder()
+                                                .add("titlePrefix", titlePrefix)
+                                                .add("titleJudiciaryPrefix", titleJudiciaryPrefix).build()))
+                                .build());
 
         when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
 
@@ -71,7 +77,8 @@ public class XhibitReferenceDataServiceTest {
         JsonObject judiciary = xhibitReferenceDataService.getJudiciary(inputEnvelope, judiciaryId);
 
         verify(requester).request(requestCaptor.capture());
-        assertThat(judiciary.getString("oucode"), equalTo(oucode));
+        assertThat(judiciary.getString("titlePrefix"), equalTo(titlePrefix));
+        assertThat(judiciary.getString("titleJudiciaryPrefix"), equalTo(titleJudiciaryPrefix));
 
     }
 
