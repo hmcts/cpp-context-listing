@@ -33,6 +33,7 @@ public class PublishCourtListRequestParametersParserTest {
     @Test
     public void shouldParse() {
 
+        final UUID publishCourtListRequestId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final LocalDate startDate = LocalDate.of(2019, 11, 4);
         final LocalDate endDate = LocalDate.of(2019, 11, 5);
@@ -40,6 +41,7 @@ public class PublishCourtListRequestParametersParserTest {
         final ZonedDateTime requestedTime = ZonedDateTime.now(ZoneId.of("UTC").normalized());
 
         final JsonObject payload = createObjectBuilder()
+                .add("publishCourtListRequestId", publishCourtListRequestId.toString())
                 .add("courtCentreId", courtCentreId.toString())
                 .add("startDate", startDate.toString())
                 .add("endDate", endDate.toString())
@@ -52,6 +54,7 @@ public class PublishCourtListRequestParametersParserTest {
 
         PublishCourtListRequestParameters parameters = publishCourtListRequestParametersParser.parse(tEnvelope);
 
+        assertThat(parameters.getPublishCourtListRequestId(), is(publishCourtListRequestId));
         assertThat(parameters.getCourtCentreId(), is(courtCentreId));
         assertThat(parameters.getStartDate(), is(startDate));
         assertThat(parameters.getEndDate(), is(endDate));

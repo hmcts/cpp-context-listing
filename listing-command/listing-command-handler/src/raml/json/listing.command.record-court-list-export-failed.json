@@ -1,11 +1,5 @@
 {
-  "courtCentreId" : "9689207b-a9d2-4c2e-bd38-269b78a132a8",
-  "courtListFileId": "684416a9-ef20-4500-a9c1-f64b87b424a0",
-  "courtListFileName": "documentName",
-  "publishCourtListType":"FINAL",
+  "publishCourtListRequestId" : "9689207b-a9d2-4c2e-bd38-269b78a132a8",
   "failedTime": "2016-09-09T08:31:40Z",
-  "errorMessage": "Unable to download file",
-  "publishDate":"2016-07-11",
-  "weekCommencing":false
-
+  "errorMessage": "Unable to download file"
 }

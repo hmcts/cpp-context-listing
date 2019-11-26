@@ -4,6 +4,9 @@
   "type": "object",
 
   "properties": {
+    "publishCourtListRequestId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
     "courtCentreId": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
@@ -49,6 +52,7 @@
     }
   },
   "required": [
+    "publishCourtListRequestId",
     "courtCentreId",
     "courtListFileId",
     "courtListFileName",

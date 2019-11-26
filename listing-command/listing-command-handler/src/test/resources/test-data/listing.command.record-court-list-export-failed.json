@@ -1,8 +1,5 @@
 {
-  "courtCentreId": "COURT_CENTRE_ID",
-  "courtListFileId": "COURT_LIST_FILE_ID",
-  "courtListFileName":"COURT_LIST_FILE_NAME",
-  "publishCourtListType":"FINAL",
+  "publishCourtListRequestId": "PUBLISH_COURT_LIST_REQUEST_ID",
   "failedTime": "FAILED_TIME",
   "errorMessage": "ERROR_MESSAGE",
   "publishStatus": "EXPORT_FAILED",

@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.common.xhibit;
 
-import static java.lang.String.*;
 import static java.lang.String.format;
 
 import uk.gov.justice.services.fileservice.api.FileRetriever;
@@ -29,16 +28,16 @@ public class XhibitService {
     private XhibitSessionFactory xhibitSessionFactory;
 
     @SuppressWarnings({"squid:S1166", "squid:S1162", "squid:S2139", "squid:S2629"})
-    public void sendToXhibit(final UUID documentId, final String documentName) throws ExportFailedException {
-        logger.info(format("Listing: Sending file '%s' to Xhibit", documentName));
+    public void sendToXhibit(final UUID fileId, final String fileName) throws ExportFailedException {
+        logger.info(format("Listing: Sending file '%s' to Xhibit", fileName));
         XhibitSession xhibitSession = null;
         try {
             xhibitSession = xhibitSessionFactory.createSession();
-            final FileReference fileReference = retrieveFile(documentId);
-            xhibitSession.exportFile(documentName, fileReference.getContentStream());
-            logger.info(format("Listing: File '%s' successfully exported to Xhibit", documentName));
+            final FileReference fileReference = retrieveFile(fileId);
+            xhibitSession.exportFile(fileName, fileReference.getContentStream());
+            logger.info(format("Listing: File '%s' successfully exported to Xhibit", fileName));
         } catch (final ExportFailedException e) {
-            final String message = format("Failed to send to Xhibit,%s, for document with id: %s and name: %s", e.getMessage(), documentId, documentName);
+            final String message = format("Failed to send to Xhibit,%s, for document with id: %s and name: %s", e.getMessage(), fileId, fileName);
             logger.error(message);
             throw new ExportFailedException(message, e.getCause());
         } finally {
@@ -53,11 +52,11 @@ public class XhibitService {
     }
 
     @SuppressWarnings({"squid:S1166", "squid:S1162"})
-    private FileReference retrieveFile(final UUID documentId) throws ExportFailedException {
+    private FileReference retrieveFile(final UUID fileId) throws ExportFailedException {
         try {
-            return fileRetriever.retrieve(documentId).orElseThrow(NotFoundException::new);
+            return fileRetriever.retrieve(fileId).orElseThrow(NotFoundException::new);
         } catch (final FileServiceException e) {
-            final String message = format("Failed to retrieve file from File Service, %s, %s", e.getMessage(), documentId);
+            final String message = format("Failed to retrieve file from File Service, %s, %s", e.getMessage(), fileId);
             logger.error(message);
             throw new ExportFailedException(message, e.getCause());
         }

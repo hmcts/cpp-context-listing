@@ -1,10 +1,11 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
 import static java.lang.String.format;
-import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.EVENT_PAYLOAD_DEBUG_STRING;
 
+import uk.gov.justice.listing.event.PublishCourtListProduced;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -19,7 +20,6 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListR
 import java.util.UUID;
 
 import javax.inject.Inject;
-import javax.json.JsonObject;
 
 import org.slf4j.Logger;
 
@@ -31,6 +31,9 @@ public class CourtListEventProcessor {
 
     @Inject
     private XhibitService xhibitService;
+
+    @Inject
+    private JsonObjectToObjectConverter jsonObjectConverter;
 
     @SuppressWarnings("squid:S1312")
     @Inject
@@ -55,10 +58,10 @@ public class CourtListEventProcessor {
     @SuppressWarnings("squid:S2221")
     // Allow any exception to be handled by recording it as a failed export
     public void handlePublishCourtListRequested(final JsonEnvelope envelope) {
-        boolean weekCommencing = false;
+
+        final PublishCourtListRequestParameters parameters = publishCourtListRequestParametersParser.parse(envelope);
 
         try {
-            final PublishCourtListRequestParameters parameters = publishCourtListRequestParametersParser.parse(envelope);
 
             logger.info("handlePublishCourtListRequested: parameters={}", parameters);
 
@@ -69,14 +72,12 @@ public class CourtListEventProcessor {
             courtListFileGenerator.validateXml(parameters, courtListXml);
 
             final UUID fileId = fileServiceClient.store(courtListMetadata, courtListXml);
-            if (!(parameters.getStartDate().equals(parameters.getEndDate()))) {
-                weekCommencing = true;
-                parameters.setWeekCommencing(weekCommencing);
-            }
+
             publishCourtListCommandSender.recordCourtListProduced(parameters, fileId, courtListMetadata.getFilename());
         } catch (final Exception e) {
             logger.error("Court List generation failed", e);
-            publishCourtListCommandSender.recordCourtListExportFailed(randomUUID(), "NONE", e.getMessage(), weekCommencing);
+            publishCourtListCommandSender.recordCourtListExportFailed(parameters.getPublishCourtListRequestId(),
+                    e.getMessage());
         }
     }
 
@@ -86,16 +87,18 @@ public class CourtListEventProcessor {
         if (logger.isInfoEnabled()) {
             logger.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENT_PUBLISH_COURT_LIST_PRODUCED, envelope.toObfuscatedDebugString());
         }
-        final JsonObject payload = envelope.payloadAsJsonObject();
-        final UUID documentId = UUID.fromString(payload.getString("documentId"));
-        final boolean weekCommencing = payload.getBoolean("weekCommencing");
-        final String documentName = payload.getString("documentName");
+
+        final PublishCourtListProduced event = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), PublishCourtListProduced.class);
+
+        final UUID fileId = event.getCourtListFileId();
+        final String fileName = event.getCourtListFileName();
         try {
-            xhibitService.sendToXhibit(documentId, documentName);
-            publishCourtListCommandSender.recordCourtListExportSuccessful(documentId, documentName, weekCommencing);
+            xhibitService.sendToXhibit(event.getCourtListFileId(), event.getCourtListFileName());
+            publishCourtListCommandSender.recordCourtListExportSuccessful(event.getPublishCourtListRequestId());
         } catch (final ExportFailedException e) {
-            logger.error(format("Export failed for %s %s %s", documentId, documentName, e.getMessage()));
-            publishCourtListCommandSender.recordCourtListExportFailed(documentId, documentName, e.getMessage(), weekCommencing);
+            logger.error(format("Export failed for %s %s %s", fileId, fileName, e.getMessage()), e);
+            publishCourtListCommandSender.recordCourtListExportFailed(event.getPublishCourtListRequestId(),
+                    e.getMessage());
         }
 
     }

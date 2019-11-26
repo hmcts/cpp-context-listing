@@ -1,4 +1,3 @@
-
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import static java.util.stream.Stream.of;
@@ -28,71 +27,89 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 
-public class CourtListAggregate implements Aggregate {
+public class PublishCourtListRequestAggregate implements Aggregate {
 
+    private static final long serialVersionUID = -7550132883773956916L;
+
+    private UUID publishCourtListRequestId;
     private UUID courtCentreId;
+    private PublishCourtListType publishCourtListType;
+    private UUID courtListFileId;
+    private String courtListFileName;
+    private LocalDate publishDate;
+    private boolean weekCommencing;
 
-
-    public Stream<Object> recordCourtListRequested(final UUID courtCentreId,
+    public Stream<Object> recordCourtListRequested(final UUID publishCourtListRequestId,
+                                                   final UUID courtCentreId,
                                                    final LocalDate startDate,
                                                    final LocalDate endDate,
                                                    final PublishCourtListType publishCourtListType,
                                                    final ZonedDateTime requestedTime) {
+
+        this.publishCourtListRequestId = publishCourtListRequestId;
+        this.courtCentreId = courtCentreId;
+        this.publishCourtListType = publishCourtListType;
+
+        if (!(startDate.equals(endDate))) {
+            this.weekCommencing = true;
+        }
+
         return apply(of(publishCourtListRequested()
+                .withPublishCourtListRequestId(publishCourtListRequestId)
                 .withCourtCentreId(courtCentreId)
                 .withPublishCourtListType(publishCourtListType)
                 .withStartDate(startDate.toString())
                 .withEndDate(endDate.toString())
                 .withPublishStatus(COURT_LIST_REQUESTED)
+                .withWeekCommencing(Optional.of(weekCommencing))
                 .withRequestedTime(requestedTime)
                 .build()));
     }
 
-    public Stream<Object> recordCourtListProduced(final UUID courtCentreId,
+    public Stream<Object> recordCourtListProduced(final UUID publishCourtListRequestId,
+                                                  final UUID courtCentreId,
                                                   final UUID courtListFileId,
                                                   final String courtListFileName,
                                                   final PublishCourtListType publishCourtListType,
                                                   final ZonedDateTime producedTime,
-                                                  final LocalDate publishDate,
-                                                  final boolean weekCommencing) {
+                                                  final LocalDate publishDate) {
+
+        this.courtListFileId = courtListFileId;
+        this.courtListFileName = courtListFileName;
+        this.publishDate = publishDate;
+
         return apply(of(publishCourtListProduced()
+                .withPublishCourtListRequestId(publishCourtListRequestId)
                 .withCourtCentreId(courtCentreId)
                 .withCourtListFileId(courtListFileId)
                 .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(publishCourtListType)
                 .withPublishStatus(COURT_LIST_PRODUCED)
-                .withPublishDate(publishDate.toString())
                 .withWeekCommencing(Optional.of(weekCommencing))
-                .withProducedTime(producedTime).build()));
+                .withPublishDate(publishDate.toString())
+                .withProducedTime(producedTime)
+                .build()));
     }
 
-    public Stream<Object> recordCourtListExportSuccessful(final UUID courtCentreId,
-                                                          final UUID courtListFileId,
-                                                          final String courtListFileName,
-                                                          final PublishCourtListType publishCourtListType,
-                                                          final ZonedDateTime publishedTime,
-                                                          final LocalDate publishDate,
-                                                          final boolean weekCommencing) {
+    public Stream<Object> recordCourtListExportSuccessful(final ZonedDateTime publishedTime) {
+
         return apply(of(publishCourtListExportSuccessful()
+                .withPublishCourtListRequestId(publishCourtListRequestId)
                 .withCourtCentreId(courtCentreId)
                 .withCourtListFileId(courtListFileId)
                 .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(publishCourtListType)
                 .withPublishStatus(EXPORT_SUCCESSFUL)
-                .withPublishDate(publishDate.toString())
                 .withWeekCommencing(Optional.of(weekCommencing))
-                .withPublishedTime(publishedTime).build()));
+                .withPublishDate(publishDate.toString())
+                .withPublishedTime(publishedTime)
+                .build()));
     }
 
-    public Stream<Object> recordCourtListExportFailed(final UUID courtCentreId,
-                                                      final UUID courtListFileId,
-                                                      final String courtListFileName,
-                                                      final PublishCourtListType publishCourtListType,
-                                                      final ZonedDateTime failedTime,
-                                                      final String errorMessage,
-                                                      final LocalDate publishDate,
-                                                      final boolean weekCommencing) {
+    public Stream<Object> recordCourtListExportFailed(final ZonedDateTime failedTime,
+                                                      final String errorMessage) {
         return apply(of(publishCourtListExportFailed()
+                .withPublishCourtListRequestId(publishCourtListRequestId)
                 .withCourtCentreId(courtCentreId)
                 .withCourtListFileId(courtListFileId)
                 .withCourtListFileName(courtListFileName)
@@ -101,7 +118,8 @@ public class CourtListAggregate implements Aggregate {
                 .withErrorMessage(errorMessage)
                 .withWeekCommencing(Optional.of(weekCommencing))
                 .withPublishDate(publishDate.toString())
-                .withFailedTime(failedTime).build()));
+                .withFailedTime(failedTime)
+                .build()));
     }
 
     @Override
@@ -115,15 +133,15 @@ public class CourtListAggregate implements Aggregate {
     }
 
     private void recordCourtListRequested(final PublishCourtListRequested publishCourtListRequested) {
+        this.publishCourtListRequestId = publishCourtListRequested.getPublishCourtListRequestId();
         this.courtCentreId = publishCourtListRequested.getCourtCentreId();
+        this.publishCourtListType = publishCourtListRequested.getPublishCourtListType();
+        this.weekCommencing = publishCourtListRequested.getWeekCommencing().orElse(false);
     }
 
     private void recordCourtListProduced(final PublishCourtListProduced publishCourtListProduced) {
-        this.courtCentreId = publishCourtListProduced.getCourtCentreId();
+        this.courtListFileId = publishCourtListProduced.getCourtListFileId();
+        this.courtListFileName = publishCourtListProduced.getCourtListFileName();
+        this.publishDate = LocalDate.parse(publishCourtListProduced.getPublishDate());
     }
-
-    public UUID getCourtCentreId() {
-        return courtCentreId;
-    }
-
 }

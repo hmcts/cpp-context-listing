@@ -6,9 +6,14 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import com.github.sardine.Sardine;
+import org.slf4j.Logger;
 
 @Named
 public class XhibitSessionFactory {
+
+    @SuppressWarnings("squid:S1312")
+    @Inject
+    private Logger logger;
 
     @Inject
     private XhibitSessionConnectionParameters xhibitSessionConnectionParameters;
@@ -30,6 +35,6 @@ public class XhibitSessionFactory {
 
         client.enablePreemptiveAuthentication(outboundUrl);
 
-        return new XhibitSession(outboundUrl, client);
+        return new XhibitSession(outboundUrl, client, logger);
     }
 }

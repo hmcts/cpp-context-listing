@@ -3,6 +3,9 @@
   "id": "http://justice.gov.uk/listing/event/listing.event.publish-court-list-requested.json",
   "type": "object",
   "properties": {
+    "publishCourtListRequestId": {
+      "type": "string"
+    },
     "courtCentreId": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
@@ -36,9 +39,14 @@
     "requestedTime": {
       "type": "string",
       "format": "date-time"
+    },
+    "weekCommencing": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [
+    "publishCourtListRequestId",
     "courtCentreId",
     "startDate",
     "endDate",

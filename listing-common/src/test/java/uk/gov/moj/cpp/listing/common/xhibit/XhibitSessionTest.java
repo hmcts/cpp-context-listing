@@ -6,7 +6,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,9 +40,9 @@ public class XhibitSessionTest {
 
     @Before
     public void createClassAndMocks() throws Exception {
-        xhibitSession = new XhibitSession(new URL("http://outbound.com"), client);
+        xhibitSession = new XhibitSession(new URL("http://outbound.com"), client, logger);
         xhibitSessionSpy = spy(xhibitSession);
-        xhibitSessionWithTrailingSlash = new XhibitSession(new URL("http://outbound.com"), client);
+        xhibitSessionWithTrailingSlash = new XhibitSession(new URL("http://outbound.com"), client, logger);
     }
 
 
@@ -76,7 +75,7 @@ public class XhibitSessionTest {
                 "Response status: 404";
 
         doThrow(httpResponseException).when(client).put("http://outbound.com/filename", fileContents);
-        setField(xhibitSessionSpy, "logger", logger);
+
         try {
             xhibitSessionSpy.exportFile(filename, fileContents);
             fail();
@@ -95,7 +94,6 @@ public class XhibitSessionTest {
         final String filename = "filename";
 
         final String expectedMessage = "CPF01: Failed to put file 'filename' to 'http://outbound.com/filename'";
-        setField(this.xhibitSessionSpy, "logger", logger);
 
         doThrow(ioException).when(client).put("http://outbound.com/filename", fileContents);
 

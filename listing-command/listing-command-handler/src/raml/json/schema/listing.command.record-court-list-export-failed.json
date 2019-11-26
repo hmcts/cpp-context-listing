@@ -3,23 +3,8 @@
   "id": "http://justice.gov.uk/listing/commands/listing.command.record-court-list-export-failed.json",
   "type": "object",
   "properties": {
-    "courtCentreId": {
+    "publishCourtListRequestId": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
-    },
-    "courtListFileId": {
-      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
-    },
-    "courtListFileName": {
-      "type": "string"
-    },
-    "publishCourtListType": {
-      "type": "string",
-      "enum": [
-        "WARN",
-        "DRAFT",
-        "FIRM",
-        "FINAL"
-      ]
     },
     "failedTime": {
       "type": "string",
@@ -28,23 +13,15 @@
     "errorMessage": {
       "type": "string"
     },
-    "publishDate": {
-      "type": "string",
-      "format": "date"
-    },
     "weekCommencing": {
       "type": "boolean",
       "default": false
     }
   },
   "required": [
-    "courtCentreId",
-    "courtListFileId",
-    "courtListFileName",
-    "publishCourtListType",
+    "publishCourtListRequestId",
     "failedTime",
-    "errorMessage",
-    "publishDate"
+    "errorMessage"
   ],
   "additionalProperties": false
 }

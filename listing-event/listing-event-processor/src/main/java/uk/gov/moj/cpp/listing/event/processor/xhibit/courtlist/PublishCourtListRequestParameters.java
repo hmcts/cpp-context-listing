@@ -12,23 +12,30 @@ import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
 public class PublishCourtListRequestParameters {
 
+    private UUID publishCourtListRequestId;
     private UUID courtCentreId;
     private LocalDate startDate;
     private LocalDate endDate;
     private PublishCourtListType publishCourtListType;
     private ZonedDateTime requestedTime;
-    private boolean weekCommencing;
-    public PublishCourtListRequestParameters(final UUID courtCentreId,
+
+    public PublishCourtListRequestParameters(final UUID publishCourtListRequestId,
+                                             final UUID courtCentreId,
                                              final LocalDate startDate,
                                              final LocalDate endDate,
                                              final PublishCourtListType publishCourtListType,
                                              final ZonedDateTime requestedTime) {
 
+        this.publishCourtListRequestId = publishCourtListRequestId;
         this.courtCentreId = courtCentreId;
         this.startDate = startDate;
         this.endDate = endDate;
         this.publishCourtListType = publishCourtListType;
         this.requestedTime = requestedTime;
+    }
+
+    public UUID getPublishCourtListRequestId() {
+        return publishCourtListRequestId;
     }
 
     public UUID getCourtCentreId() {
@@ -49,14 +56,6 @@ public class PublishCourtListRequestParameters {
 
     public ZonedDateTime getRequestedTime() {
         return requestedTime;
-    }
-
-    public boolean isWeekCommencing() {
-        return weekCommencing;
-    }
-
-    public void setWeekCommencing(boolean weekCommencing) {
-        this.weekCommencing = weekCommencing;
     }
 
     @Override

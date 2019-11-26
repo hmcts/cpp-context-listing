@@ -1,13 +1,10 @@
 package uk.gov.moj.cpp.listing.common.xhibit;
 
-import static java.lang.String.*;
 import static java.lang.String.format;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-
-import javax.inject.Inject;
 
 import com.github.sardine.Sardine;
 import org.apache.http.client.HttpResponseException;
@@ -17,15 +14,15 @@ public class XhibitSession implements AutoCloseable {
     public static final String SENDING_EXPORT_FILE_ERROR = "CPF01";
 
     @SuppressWarnings("squid:S1312")
-    @Inject
     private Logger logger;
 
     private final Sardine client;
     private final URL outbound;
 
-    public XhibitSession(final URL outbound, final Sardine client) {
+    public XhibitSession(final URL outbound, final Sardine client, final Logger logger) {
         this.outbound = outbound;
         this.client = client;
+        this.logger = logger;
     }
 
     @Override

@@ -17,6 +17,7 @@ public class PublishCourtListRequestParametersParser {
         final JsonObject payload = envelope.payloadAsJsonObject();
 
         return new PublishCourtListRequestParameters(
+                UUID.fromString(payload.getString("publishCourtListRequestId")),
                 UUID.fromString(payload.getString("courtCentreId")),
                 from(payload.getString("startDate")),
                 from(payload.getString("endDate")),

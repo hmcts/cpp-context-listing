@@ -7,15 +7,15 @@ import javax.inject.Inject;
 public class XhibitSessionConnectionParameters {
 
     @Inject
-    @Value(key = "xhibit.outbound.url", defaultValue = "http://localhost")
+    @Value(key = "webdav.outbound.url", defaultValue = "http://localhost:8080/xhibit-gateway/send-to-xhibit/")
     private String outboundUrl;
 
     @Inject
-    @Value(key = "xhibit.user", defaultValue = "user")
+    @Value(key = "webdav.user", defaultValue = "listing")
     private String user;
 
     @Inject
-    @Value(key = "xhibit.password", defaultValue = "password")
+    @Value(key = "webdav.password", defaultValue = "listing")
     private String password;
 
     public String getOutboundUrl() {

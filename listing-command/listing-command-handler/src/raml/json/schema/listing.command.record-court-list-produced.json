@@ -3,6 +3,9 @@
   "id": "http://justice.gov.uk/listing/commands/listing.command.record-court-list-produced.json",
   "type": "object",
   "properties": {
+    "publishCourtListRequestId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
     "courtCentreId": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
@@ -37,14 +40,11 @@
     "publishDate": {
       "type": "string",
       "format": "date"
-    },
-    "weekCommencing": {
-      "type": "boolean",
-      "default": false
     }
   },
   "additionalProperties": false,
   "required": [
+    "publishCourtListRequestId",
     "courtCentreId",
     "courtListFileId",
     "courtListFileName",

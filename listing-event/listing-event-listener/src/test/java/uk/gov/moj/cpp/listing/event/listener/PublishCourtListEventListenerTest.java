@@ -123,7 +123,6 @@ public class PublishCourtListEventListenerTest {
                 .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(courtListType)
                 .withProducedTime(producedTime)
-                .withPublishDate("2019-11-29")
                 .withWeekCommencing(of(false))
                 .build();
 
@@ -157,7 +156,6 @@ public class PublishCourtListEventListenerTest {
                 .withPublishCourtListType(courtListType)
                 .withFailedTime(failedTimeStamp)
                 .withErrorMessage(errorMessage)
-                .withPublishDate("2019-11-29")
                 .withWeekCommencing(of(false))
                 .build();
 
@@ -189,7 +187,6 @@ public class PublishCourtListEventListenerTest {
                 .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(courtListType)
                 .withPublishedTime(publishedTime)
-                .withPublishDate("2019-11-29")
                 .withWeekCommencing(of(false))
                 .build();
 

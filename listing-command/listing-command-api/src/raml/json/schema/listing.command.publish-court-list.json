@@ -31,8 +31,7 @@
     "courtCentreId",
     "startDate",
     "endDate",
-    "publishCourtListType",
-    "requestedTime"
+    "publishCourtListType"
   ],
   "definitions": {
     "localDate": {

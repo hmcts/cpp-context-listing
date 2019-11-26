@@ -10,7 +10,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.common.xhibit.ExportFailedException;
@@ -26,6 +29,7 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -54,14 +58,20 @@ public class CourtListEventProcessorTest {
     private CourtListFileGenerator courtListFileGenerator;
     @Mock
     private FileServiceClient fileServiceClient;
+    @Spy
+    private JsonObjectToObjectConverter jsonObjectConverter;
 
+    @Before
+    public void before() {
+        setField(this.jsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
+    }
 
     @Test
     public void shouldHandlePublishCourtListRequested() throws Exception {
 
         // Mocked values
         final JsonEnvelope tEnvelope = mock(JsonEnvelope.class);
-        final UUID generatedDocumentId = randomUUID();
+        final UUID generatedfileId = randomUUID();
         final String mockFileContent = "FILE_CONTENT";
         final PublishCourtListRequestParameters parameters = mock(PublishCourtListRequestParameters.class);
         final CourtListMetadata courtListMetadata = new CourtListMetadata("TESTFILENAME",
@@ -70,32 +80,35 @@ public class CourtListEventProcessorTest {
         when(publishCourtListRequestParametersParser.parse(tEnvelope)).thenReturn(parameters);
         when(courtListMetadataGenerator.generate(tEnvelope, parameters)).thenReturn(courtListMetadata);
         when(courtListFileGenerator.generateXml(tEnvelope, parameters, courtListMetadata)).thenReturn(mockFileContent);
-        when(fileServiceClient.store(courtListMetadata, mockFileContent)).thenReturn(generatedDocumentId);
-        when(parameters.getStartDate()).thenReturn(LocalDate.now());
-        when(parameters.getEndDate()).thenReturn(LocalDate.now());
+        when(fileServiceClient.store(courtListMetadata, mockFileContent)).thenReturn(generatedfileId);
 
         // Tested method
         courtListEventProcessor.handlePublishCourtListRequested(tEnvelope);
 
         // Assertions
         verify(fileServiceClient).store(courtListMetadata, mockFileContent);
-        verify(publishCourtListCommandSender).recordCourtListProduced(parameters, generatedDocumentId, courtListMetadata.getFilename());
+        verify(publishCourtListCommandSender).recordCourtListProduced(parameters, generatedfileId, courtListMetadata.getFilename());
     }
 
     @Test
     public void handleProducedCourtListWhenExportSuccessful() throws ExportFailedException {
-        final UUID documentId = randomUUID();
-        final String documentName = "documentName";
-        final JsonObject payload = createObjectBuilder().add("documentId", documentId.toString())
-                .add("documentName", documentName).add("weekCommencing", true).build();
+        final UUID publishCourtListRequestId = randomUUID();
+        final UUID fileId = randomUUID();
+        final String fileName = "fileName";
+        final JsonObject courtListProducedEvent = createObjectBuilder()
+                .add("publishCourtListRequestId", publishCourtListRequestId.toString())
+                .add("courtListFileId", fileId.toString())
+                .add("courtListFileName", fileName).build();
         final Metadata metadata = metadataBuilder()
                 .withId(randomUUID())
                 .withName(PRIVATE_EVENT_PUBLISH_COURT_LIST_PRODUCED)
                 .withUserId(randomUUID().toString()).build();
-        final JsonEnvelope tEnvelope = envelopeFrom(metadata, payload);
+        final JsonEnvelope tEnvelope = envelopeFrom(metadata, courtListProducedEvent);
+
         courtListEventProcessor.handleProducedCourtList(tEnvelope);
-        verify(xhibitService).sendToXhibit(documentId, documentName);
-        verify(publishCourtListCommandSender).recordCourtListExportSuccessful(documentId, documentName,true);
+
+        verify(xhibitService).sendToXhibit(fileId, fileName);
+        verify(publishCourtListCommandSender).recordCourtListExportSuccessful(publishCourtListRequestId);
     }
 
     @Test
@@ -103,20 +116,24 @@ public class CourtListEventProcessorTest {
         final Metadata metadata = metadataBuilder()
                 .withId(randomUUID())
                 .withName(PRIVATE_EVENT_PUBLISH_COURT_LIST_PRODUCED)
-
                 .withUserId(randomUUID().toString()).build();
-        final UUID documentId = randomUUID();
-        final String documentName = "documentName";
-        doThrow(new ExportFailedException2()).when(xhibitService).sendToXhibit(documentId, documentName);
-        final JsonObject payload = createObjectBuilder().add("documentId", documentId.toString())
-                .add("documentName", documentName).add("weekCommencing", false)
-                .build();
-        final JsonEnvelope tEnvelope = envelopeFrom(metadata, payload);
-        courtListEventProcessor.handleProducedCourtList(tEnvelope);
-        verify(xhibitService).sendToXhibit(documentId, documentName);
-        verify(publishCourtListCommandSender).recordCourtListExportFailed(documentId, documentName, "Not reachable", false);
-        verify(LOGGER).error(format("Export failed for %s %s %s", documentId, documentName, "Not reachable"));
+        final UUID publishCourtListRequestId = randomUUID();
+        final UUID fileId = randomUUID();
+        final String fileName = "fileName";
 
+        ExportFailedException2 expectedException = new ExportFailedException2();
+        doThrow(expectedException).when(xhibitService).sendToXhibit(fileId, fileName);
+        final JsonObject courtListProducedEvent = createObjectBuilder()
+                .add("publishCourtListRequestId", publishCourtListRequestId.toString())
+                .add("courtListFileId", fileId.toString())
+                .add("courtListFileName", fileName)
+                .build();
+        final JsonEnvelope tEnvelope = envelopeFrom(metadata, courtListProducedEvent);
+        courtListEventProcessor.handleProducedCourtList(tEnvelope);
+        verify(xhibitService).sendToXhibit(fileId, fileName);
+        verify(publishCourtListCommandSender).recordCourtListExportFailed(publishCourtListRequestId,
+                "Not reachable");
+        verify(LOGGER).error(format("Export failed for %s %s %s", fileId, fileName, "Not reachable"), expectedException);
     }
 
     private class ExportFailedException2 extends ExportFailedException {
