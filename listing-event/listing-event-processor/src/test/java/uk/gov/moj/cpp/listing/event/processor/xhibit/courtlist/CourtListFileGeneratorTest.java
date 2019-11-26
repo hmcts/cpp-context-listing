@@ -1,8 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.time.ZonedDateTime.parse;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -11,6 +9,7 @@ import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FINAL;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.WARN;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersBuilder.withDefaults;
+import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlTestUtils.assertXmlEquals;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -18,16 +17,12 @@ import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,9 +33,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.slf4j.Logger;
-import org.xmlunit.builder.DiffBuilder;
-import org.xmlunit.diff.Diff;
-import org.xmlunit.diff.Difference;
 
 @RunWith(Parameterized.class)
 public class CourtListFileGeneratorTest {
@@ -140,24 +132,4 @@ public class CourtListFileGeneratorTest {
         assertXmlEquals(generatedXml, expectedXmlFile);
     }
 
-    private void assertXmlEquals(final String actualXml, final String expectedXmlResourceName) throws IOException {
-
-        final String expectedXml = loadResourceFile(expectedXmlResourceName);
-
-        final Diff xmlDiff = DiffBuilder.compare(expectedXml).withTest(actualXml).build();
-
-        final Iterator<Difference> iter = xmlDiff.getDifferences().iterator();
-        int size = 0;
-        while (iter.hasNext()) {
-            LOGGER.info(iter.next().toString());
-            size++;
-        }
-        assertThat("XML differences", size, is(0));
-    }
-
-    private String loadResourceFile(final String resourceName) throws IOException {
-        try (final InputStream configurationStream = getClass().getClassLoader().getResourceAsStream(resourceName)) {
-            return IOUtils.toString(configurationStream);
-        }
-    }
 }
