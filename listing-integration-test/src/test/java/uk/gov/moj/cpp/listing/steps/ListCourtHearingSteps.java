@@ -325,7 +325,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                         )));
     }
 
-    public void verifyHearingForWeekCommencingRange(final String jurisdictionType, final String weekCommencingStartDate, final String weekCommencingEndDate, final boolean allocated, final Matcher... matchers){
+    public void verifyHearingForWeekCommencingRange(final String jurisdictionType, final String weekCommencingStartDate, final String weekCommencingEndDate, final boolean allocated, final Matcher... matchers) {
         final String searchHearingUrl = String.format("%s/%s", baseUri,
                 format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings.for.week.commencing.range"), jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, allocated));
 
@@ -491,7 +491,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
 
-        private ListCourtHearing getListCourtHearingData(HearingsData hearingsData) {
+    private ListCourtHearing getListCourtHearingData(HearingsData hearingsData) {
 
         HearingData hearingData = hearingsData.getHearingData().get(0);
         ListedCaseData listedCaseData = hearingData.getListedCases().get(0);

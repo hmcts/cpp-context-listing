@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
+import static java.time.LocalDate.now;
+import static javax.json.Json.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
@@ -21,6 +23,7 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.util.XmlEditor;
+import uk.gov.justice.services.test.utils.core.messaging.MessageProducerClient;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.utils.WebDavStub;
 
@@ -167,5 +170,42 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
         return object;
     }
+
+
+    /**
+     * Note that we cannot be sure as to the exact status, but if there is a record for this Court
+     * Centre (which is presumed to have a unique id), then it's enough to confirm that we've
+     * requested the publication, at least.
+     */
+    public void verifyThatWeSuccessfullyRequestedAFinalListPublication(final UUID courtCentreId, final LocalDate expectedPublishDate) {
+        final String expectedCourtListType = "FINAL";
+        final String weekCommencing = "false";
+        final String queryPart = format(ENDPOINT_PROPERTIES.getProperty("listing.court.list.publish.status"),
+                courtCentreId,
+                expectedCourtListType,
+                expectedPublishDate,
+                weekCommencing);
+
+        final String searchCourtListUrl = String.format("%s/%s", baseUri, queryPart);
+
+        poll(requestParams(searchCourtListUrl, MEDIA_TYPE_QUERY_COURT_LIST_STATUS)
+                .withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.publishCourtListStatuses[0].courtCentreId",
+                                        equalTo(courtCentreId.toString()))
+                        )));
+    }
+
+    public static JsonObject buildPublishCourtListCommandPayload(final UUID courtCentreId) {
+        return createObjectBuilder()
+                .add("courtCentreId", courtCentreId.toString())
+                .add("startDate", now().toString())
+                .add("endDate", now().plusDays(2).toString())
+                .add("publishCourtListType", "FIRM")
+                .build();
+    }
+
 
 }

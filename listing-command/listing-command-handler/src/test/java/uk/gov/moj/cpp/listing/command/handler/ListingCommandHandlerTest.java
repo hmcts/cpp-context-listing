@@ -22,6 +22,8 @@ import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.listing.event.PublishCourtListExportFailed.publishCourtListExportFailed;
@@ -92,10 +94,12 @@ import uk.gov.justice.services.common.util.Clock;
 import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
+import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CommandSimpleOffenceToDomainOffence;
@@ -106,6 +110,7 @@ import uk.gov.moj.cpp.listing.command.utils.CourtsDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CourtsDeletedOffenceToDomainCaseSimpleOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsUpdatedOffenceToDomainOffence;
+import uk.gov.moj.cpp.listing.command.utils.FileUtil;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
@@ -133,11 +138,15 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Application;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
+import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 
 import java.io.StringReader;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Month;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -230,7 +239,6 @@ public class ListingCommandHandlerTest {
     private static final String STATEMENT_OF_OFFENCE_LEGISLATION = "Legislation";
     private static final String START_TIME = "10:30";
     private static final String CUSTODY_TIME_LIMIT = "2017-10-05";
-    private static final ZoneId BST = ZoneId.of("Europe/London");
     private static final String ADDRESS_LINE_2 = "Address line 1";
     private static final String ADDRESS_LINE_3 = "Address line 1";
     private static final String ADDRESS_LINE_4 = "Address line 1";
@@ -272,7 +280,9 @@ public class ListingCommandHandlerTest {
 
     private static final UUID COURT_APPLICATION_ID = randomUUID();
     private static final String COURT_APPLICATION_TYPE = STRING.next();
-    public static final String FILENAME = "FILENAME";
+    private static final UUID COURT_CENTRE_ID_ONE = UUID.fromString("89592405-c29b-3706-b1d3-b1dd3a08b227");
+    private static final UUID COURT_CENTRE_ID_TWO = UUID.fromString("44497da7-ec8d-3137-94ad-ff7c0c57827a");
+
     @Mock
     CaseOffences caseOffences;
     @Mock
@@ -289,6 +299,10 @@ public class ListingCommandHandlerTest {
     private EventStream addedEventStream;
     @Mock
     private AggregateService aggregateService;
+    @Mock
+    private ReferenceDataService referenceDataService;
+    @Mock
+    private Stream<Object> events;
     @Spy
     private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     @Spy
@@ -297,24 +311,6 @@ public class ListingCommandHandlerTest {
     @InjectMocks
     private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectToObjectConverter();
     private ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
-
-    @Before
-    public void setup() {
-        EnveloperFactory.createEnveloperWithEvents(HearingAddedToCase.class,
-                HearingListed.class, TypeChangedForHearing.class, StartDateChangedForHearing.class,
-                JudiciaryAssignedToHearing.class, JudiciaryChangedForHearing.class,
-                JudiciaryRemovedFromHearing.class, CourtRoomAssignedToHearing.class, CourtRoomChangedForHearing.class,
-                CourtRoomRemovedFromHearing.class, NonDefaultDaysAssignedToHearing.class, NonDefaultDaysChangedForHearing.class,
-                HearingAllocatedForListing.class, EndDateChangedForHearing.class,
-                NonSittingDaysAssignedToHearing.class, NonSittingDaysChangedForHearing.class,
-                AllocatedHearingUpdatedForListing.class, HearingUnallocatedForListing.class, DefendantsToBeUpdated.class,
-                NewDefendantDetailsUpdated.class, OffencesToBeUpdated.class, OffencesToBeAdded.class, OffencesToBeDeleted.class,
-                ArrayList.class, OffenceUpdated.class, HearingDaysChangedForHearing.class, OffenceAdded.class,
-                OffenceDeleted.class, SequenceHearings.class, UpdateCourtApplicationForHearings.class, AddCourtApplicationForHearing.class,
-                CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class,
-                PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class, RecordCourtListProduced.class);
-    }
-
 
     @InjectMocks
     @Spy
@@ -349,11 +345,8 @@ public class ListingCommandHandlerTest {
 
     @Mock
     private HearingTypeFactory hearingTypeFactory;
-
     @Mock
     private PublishCourtListRequestAggregate publishCourtListRequestAggregate;
-    @Mock
-    private Stream<Object> events;
     @Captor
     private ArgumentCaptor<List<JudicialRole>> judicialRoleCaptor;
     @Captor
@@ -370,6 +363,35 @@ public class ListingCommandHandlerTest {
     private ArgumentCaptor<CaseSimpleOffences> deletedCaseOffencesCaptor;
     @Captor
     private ArgumentCaptor<CourtApplication> courtApplicationCaptor;
+
+
+    private final static LocalDate SUNDAY_25TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 25);
+    private final static LocalDate MONDAY_26TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 26);
+    private final static LocalDate TUESDAY_27TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 27);
+    private final static LocalDate WEDNESDAY_28TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 28);
+    private final static LocalDate THURSDAY_29TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 29);
+    private final static LocalDate FRIDAY_30TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 30);
+    private final static LocalDate SATURDAY_1ST_DECEMBER_2018 = LocalDate.of(2018, Month.DECEMBER, 1);
+    private final static LocalDate MONDAY_3rd_DECEMBER_2018 = LocalDate.of(2018, Month.DECEMBER, 3);
+
+    @Before
+    public void setup() {
+
+        fixClock(Instant.now());
+        EnveloperFactory.createEnveloperWithEvents(HearingAddedToCase.class,
+                HearingListed.class, TypeChangedForHearing.class, StartDateChangedForHearing.class,
+                JudiciaryAssignedToHearing.class, JudiciaryChangedForHearing.class,
+                JudiciaryRemovedFromHearing.class, CourtRoomAssignedToHearing.class, CourtRoomChangedForHearing.class,
+                CourtRoomRemovedFromHearing.class, NonDefaultDaysAssignedToHearing.class, NonDefaultDaysChangedForHearing.class,
+                HearingAllocatedForListing.class, EndDateChangedForHearing.class,
+                NonSittingDaysAssignedToHearing.class, NonSittingDaysChangedForHearing.class,
+                AllocatedHearingUpdatedForListing.class, HearingUnallocatedForListing.class, DefendantsToBeUpdated.class,
+                NewDefendantDetailsUpdated.class, OffencesToBeUpdated.class, OffencesToBeAdded.class, OffencesToBeDeleted.class,
+                ArrayList.class, OffenceUpdated.class, HearingDaysChangedForHearing.class, OffenceAdded.class,
+                OffenceDeleted.class, SequenceHearings.class, UpdateCourtApplicationForHearings.class, AddCourtApplicationForHearing.class,
+                CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class,
+                PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class, RecordCourtListProduced.class);
+    }
 
     @Test
     public void listingCommandHandlerShouldListHearing() throws Exception {
@@ -2178,6 +2200,181 @@ public class ListingCommandHandlerTest {
         assertEquals(expectedDomainOffences, objectMapper.writeValueAsString(capturedDomainOffences), true);
     }
 
+    @Test
+    public void shouldNotMakeAnyRequestsToPublishACourtListForACrownCourtWhenThereAreNone() {
+
+        final JsonEnvelope commandEnvelope = generateEmptyCommandEnvelope();
+        final JsonObject payload = getPayloadOfZeroCrownCourtCentres();
+        givenThatWeSuccessfullyGetAllOfTheCrownCourtCentres(commandEnvelope, payload);
+
+        listingCommandHandler.publishFinalCourtListsForAllCrownCourts(commandEnvelope);
+
+        verifyZeroInteractions(publishCourtListRequestAggregate);
+
+    }
+
+
+    @Test
+    public void shouldRequestPublicationOfACourtListEvenAfterOneFails() {
+
+        fixClock(WEDNESDAY_28TH_NOVEMBER_2018.atStartOfDay().toInstant(ZoneOffset.UTC));
+        final JsonEnvelope commandEnvelope = generateEmptyCommandEnvelope();
+        final JsonObject payload = getPayloadOfMultipleCrownCourtCentres();
+        givenThatWeSuccessfullyGetAllOfTheCrownCourtCentres(commandEnvelope, payload);
+        givenThatWeSuccessfullyGetTheStreamForAnyPublishCourtRequest();
+        givenThatThePublishCourtListRequestAggregateExists();
+        givenThatPublicationOfTheFinalCourtListFailsToBeRequested(COURT_CENTRE_ID_ONE, THURSDAY_29TH_NOVEMBER_2018);
+        givenThatPublicationOfTheFinalCourtListIsSuccessfullyRequested(COURT_CENTRE_ID_TWO, THURSDAY_29TH_NOVEMBER_2018);
+
+        listingCommandHandler.publishFinalCourtListsForAllCrownCourts(commandEnvelope);
+
+        verifyThatPublicationOfTheFinalCourtListWasRequested(COURT_CENTRE_ID_TWO, THURSDAY_29TH_NOVEMBER_2018);
+    }
+
+
+    @Test
+    public void shouldRequestPublicationOfACourtListForAllCrownCourtsWhenItsSunday() {
+
+        shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(
+                SUNDAY_25TH_NOVEMBER_2018,
+                MONDAY_26TH_NOVEMBER_2018);
+
+    }
+
+    @Test
+    public void shouldRequestPublicationOfACourtListForAllCrownCourtsWhenItsMonday() {
+
+        shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(
+                MONDAY_26TH_NOVEMBER_2018,
+                TUESDAY_27TH_NOVEMBER_2018);
+    }
+
+    @Test
+    public void shouldRequestPublicationOfACourtListForAllCrownCourtsWhenItsTuesday() {
+
+        shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(
+                TUESDAY_27TH_NOVEMBER_2018,
+                WEDNESDAY_28TH_NOVEMBER_2018);
+
+    }
+
+    @Test
+    public void shouldRequestPublicationOfACourtListForAllCrownCourtsWhenItsWednesday() {
+
+        shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(
+                WEDNESDAY_28TH_NOVEMBER_2018,
+                THURSDAY_29TH_NOVEMBER_2018);
+
+    }
+
+
+    @Test
+    public void shouldRequestPublicationOfACourtListForAllCrownCourtsWhenItsThursday() {
+
+        shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(
+                THURSDAY_29TH_NOVEMBER_2018,
+                FRIDAY_30TH_NOVEMBER_2018);
+    }
+
+
+    @Test
+    public void shouldRequestPublicationOfACourtListForAllCrownCourtsWhenItsFriday() {
+
+        shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(
+                FRIDAY_30TH_NOVEMBER_2018,
+                MONDAY_3rd_DECEMBER_2018);
+    }
+
+    @Test
+    public void shouldRequestPublicationOfACourtListForAllCrownCourtsWhenItsSaturday() {
+
+        shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(
+                SATURDAY_1ST_DECEMBER_2018,
+                MONDAY_3rd_DECEMBER_2018);
+    }
+
+    private void shouldRequestPublicationOfACourtListForAllCrownCourtsAsExpected(final LocalDate dayOfRequest, final LocalDate expectedListingDate) {
+
+        fixClock(dayOfRequest.atStartOfDay().toInstant(ZoneOffset.UTC));
+        final JsonEnvelope commandEnvelope = generateEmptyCommandEnvelope();
+        final JsonObject payload = getPayloadOfMultipleCrownCourtCentres();
+        givenThatWeSuccessfullyGetAllOfTheCrownCourtCentres(commandEnvelope, payload);
+        givenThatWeSuccessfullyGetTheStreamForAnyPublishCourtRequest();
+        givenThatThePublishCourtListRequestAggregateExists();
+        givenThatPublicationOfTheFinalCourtListIsSuccessfullyRequested(COURT_CENTRE_ID_ONE, expectedListingDate);
+        givenThatPublicationOfTheFinalCourtListIsSuccessfullyRequested(COURT_CENTRE_ID_TWO, expectedListingDate);
+
+        listingCommandHandler.publishFinalCourtListsForAllCrownCourts(commandEnvelope);
+
+        verifyThatPublicationOfTheFinalCourtListWasRequested(COURT_CENTRE_ID_ONE, expectedListingDate);
+        verifyThatPublicationOfTheFinalCourtListWasRequested(COURT_CENTRE_ID_TWO, expectedListingDate);
+        verifyNoMoreInteractions(publishCourtListRequestAggregate);
+    }
+
+    private JsonEnvelope generateEmptyCommandEnvelope() {
+        return createEnvelope(".", createObjectBuilder().build());
+    }
+
+    private JsonObject getPayloadOfMultipleCrownCourtCentres() {
+        return FileUtil.givenPayload("/test-data/listing.command.publish-court-lists-for-crown-courts_several.json");
+    }
+
+    private JsonObject getPayloadOfZeroCrownCourtCentres() {
+        return FileUtil.givenPayload("/test-data/listing.command.publish-court-lists-for-crown-courts_none.json");
+    }
+
+    private void givenThatWeSuccessfullyGetAllOfTheCrownCourtCentres(JsonEnvelope expectedCommandEnvelope, JsonObject returnedPayload) {
+        final JsonEnvelope responseEnvelope = createEnvelope(".", returnedPayload);
+        when(referenceDataService.getAllCrownCourtCentres(expectedCommandEnvelope)).thenReturn(responseEnvelope);
+    }
+
+    private void givenThatThePublishCourtListRequestAggregateExists() {
+        when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
+    }
+
+    private void givenThatWeSuccessfullyGetTheStreamForAnyPublishCourtRequest() {
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+    }
+
+
+    private void givenThatPublicationOfTheFinalCourtListIsSuccessfullyRequested(UUID expectedCourtCentreId, LocalDate expectedListingDate) {
+        when(publishCourtListRequestAggregate
+                .recordCourtListRequested(
+                        any(UUID.class),
+                        eq(expectedCourtCentreId),
+                        eq(expectedListingDate),
+                        eq(expectedListingDate),
+                        eq(PublishCourtListType.FINAL),
+                        eq(clock.now())))
+                .thenReturn(events);
+
+    }
+
+    private void givenThatPublicationOfTheFinalCourtListFailsToBeRequested(UUID expectedCourtCentreId, LocalDate expectedListingDate) {
+        when(publishCourtListRequestAggregate
+                .recordCourtListRequested(
+                        any(UUID.class),
+                        eq(expectedCourtCentreId),
+                        eq(expectedListingDate),
+                        eq(expectedListingDate),
+                        eq(PublishCourtListType.FINAL),
+                        eq(clock.now())))
+                .thenThrow(new RuntimeException("!"));
+
+    }
+
+
+    private void verifyThatPublicationOfTheFinalCourtListWasRequested(UUID expectedCourtCentreId, LocalDate expectedListingDate) {
+        verify(publishCourtListRequestAggregate).recordCourtListRequested(
+                any(UUID.class),
+                eq(expectedCourtCentreId),
+                eq(expectedListingDate),
+                eq(expectedListingDate),
+                eq(PublishCourtListType.FINAL),
+                eq(clock.now()));
+    }
+
+
     private JsonEnvelope addOffencesForHearingCommandEnvelopeWithCustodyTimeLimit() {
         String jsonString = givenPayload("/test-data/listing.command.add-offences-for-hearing-including-ctl.json").toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString())
@@ -2194,4 +2391,11 @@ public class ListingCommandHandlerTest {
             throw new RuntimeException(e);
         }
     }
+
+
+    private void fixClock(final Instant instant) {
+        this.clock = new StoppedClock(ZonedDateTime.ofInstant(instant, DateAndTimeUtils.BST));
+        listingCommandHandler.setClock(this.clock);
+    }
+
 }

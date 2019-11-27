@@ -5,6 +5,8 @@ import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
+import uk.gov.justice.listing.courts.ListCourtHearing;
+import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -14,8 +16,6 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
-import uk.gov.justice.listing.courts.ListCourtHearing;
-import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -53,7 +53,7 @@ public class ListingCommandApi {
     @Handles("listing.command.list-court-hearing")
     public void listCourtHearing(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
-        if(LOGGER.isInfoEnabled()) {
+        if (LOGGER.isInfoEnabled()) {
             LOGGER.info("'listing.command.list-court-hearing' received with payload {}", envelope.toObfuscatedDebugString());
         }
 
@@ -76,7 +76,7 @@ public class ListingCommandApi {
     @Handles("listing.command.update-hearing-for-listing")
     public void updateHearingForListing(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
-        if(LOGGER.isInfoEnabled()) {
+        if (LOGGER.isInfoEnabled()) {
             LOGGER.info("'listing.command.update-hearing-for-listing' received with payload {}", envelope.toObfuscatedDebugString());
         }
         final UpdateHearingForListing updateHearingForListing = jsonObjectConverter.convert(payload, UpdateHearingForListing.class);
@@ -98,15 +98,23 @@ public class ListingCommandApi {
     }
 
     @Handles("listing.command.sequence-hearings")
-    public void sequenceHearings(final JsonEnvelope envelope) {sender.send(envelope);}
+    public void sequenceHearings(final JsonEnvelope envelope) {
+        sender.send(envelope);
+    }
 
     @Handles("listing.command.restrict-court-list")
-    public void restrictCourtList(final JsonEnvelope jsonEnvelope){
+    public void restrictCourtList(final JsonEnvelope jsonEnvelope) {
         sender.send(jsonEnvelope);
     }
 
     @Handles("listing.command.publish-court-list")
-    public void publishCourtList(final JsonEnvelope jsonEnvelope){
+    public void publishCourtList(final JsonEnvelope jsonEnvelope) {
+        sender.send(jsonEnvelope);
+    }
+
+    @Handles("listing.command.publish-court-lists-for-crown-courts")
+    @SuppressWarnings("WeakerAccess") // Must be public for the framework
+    public void publishCourtListForCrownCourts(final JsonEnvelope jsonEnvelope) {
         sender.send(jsonEnvelope);
     }
 }

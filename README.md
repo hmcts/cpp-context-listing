@@ -97,3 +97,28 @@ curl -v -H "CJSCPPUID:441a514e-2437-4338-b72a-baa3d2f9d0be" -H "Accept:applicati
   "error": "Please ensure that the id is a valid UUID."
 }
 ```
+
+### Requesting the publication of the next day's Hearing list for all of the Crown Courts
+
+Please note it is the 'final' list for the next weekday.
+
+As well, this can only be called by a 'system' user (presuming that access control is active).
+
+This endpoint is defined in [listing-command-api.raml](listing-command/listing-command-api/src/raml/listing-command-api.raml)
+
+``` 
+curl -X POST \
+-i \
+-H "CJSCPPUID: ebc12dd6-9497-47bc-b3a0-864511612ae8" \
+-H "Content-Type: application/vnd.listing.command.publish-court-lists-for-crown-courts+json" \
+-d '{}' \
+'http://localhost:8080/listing-service/command/api/rest/listing/publishCourtListsForCrownCourts'
+```
+
+``` 
+HTTP/1.1 202 Accepted
+X-Powered-By: Undertow/1
+Server: WildFly/10
+Content-Length: 0
+Date: Tue, 03 Dec 2019 16:14:28 GMT
+```

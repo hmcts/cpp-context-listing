@@ -206,8 +206,6 @@ public class HearingQueryView {
         if (hearing == null) {
             throw new NotFoundException("There is no Hearing for that ID.");
         }
-        // TODO: Use the new approach, as in ListingCommandHandler.
-        // I had tried but know the framework well enough, yet.
         return enveloper.withMetadataFrom(query, NAME_LISTING_SEARCH_HEARING)
                 .apply(HearingToJsonConverter.convert(hearing));
     }

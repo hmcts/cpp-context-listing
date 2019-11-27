@@ -1,0 +1,198 @@
+{
+  "organisationunits": [
+    {
+      "id": "$COURT_CENTRE_ID_ONE",
+      "oucode": "C01BL00",
+      "lja": "2570",
+      "oucodeL1Code": "C",
+      "oucodeL1Name": "Crown Courts",
+      "oucodeL3Name": "Blackfriars Crown Court",
+      "oucodeL3WelshName": "Llys Y Goron Blackfriars",
+      "address1": "1-15 Pocock Street",
+      "address2": "London",
+      "postcode": "SE1 0BJ",
+      "defaultStartTime": "10:00",
+      "defaultDurationHrs": "07:00",
+      "courtrooms": [
+        {
+          "id": "d0624ee3-9198-3c8b-94d6-42fb197ebe5e",
+          "venueName": "BLACKFRIARS CROWN COURT",
+          "courtroomId": 235,
+          "courtroomName": "Courtroom 01"
+        },
+        {
+          "id": "60853c27-8a9d-349a-aeb5-7f5049a774dd",
+          "venueName": "BLACKFRIARS CROWN COURT",
+          "courtroomId": 236,
+          "courtroomName": "Courtroom 02"
+        },
+        {
+          "id": "67348d5d-4742-3ba6-9e9b-29a7595b5c3e",
+          "venueName": "BLACKFRIARS CROWN COURT",
+          "courtroomId": 237,
+          "courtroomName": "Courtroom 03"
+        },
+        {
+          "id": "9c52e029-c289-3409-8254-96d3d0c5b505",
+          "venueName": "BLACKFRIARS CROWN COURT",
+          "courtroomId": 238,
+          "courtroomName": "Courtroom 04"
+        },
+        {
+          "id": "7e611d8a-d60c-3152-8e6c-3bad3d9ef449",
+          "venueName": "BLACKFRIARS CROWN COURT",
+          "courtroomId": 239,
+          "courtroomName": "Courtroom 05"
+        },
+        {
+          "id": "4bc6a3a5-e17e-3871-8386-3d773abd4f38",
+          "venueName": "BLACKFRIARS CROWN COURT",
+          "courtroomId": 240,
+          "courtroomName": "Courtroom 06"
+        },
+        {
+          "id": "aee93b5c-bbda-30b9-9da4-fd87cb26be8d",
+          "venueName": "BLACKFRIARS CROWN COURT",
+          "courtroomId": 241,
+          "courtroomName": "Courtroom 07"
+        },
+        {
+          "id": "eed82bc1-ad5a-385d-a138-dc112b3c7712",
+          "venueName": "BLACKFRIARS CROWN COURT",
+          "courtroomId": 242,
+          "courtroomName": "Courtroom 08"
+        },
+        {
+          "id": "68644f24-2ec4-3b69-b2e4-885f09464108",
+          "venueName": "BLACKFRIARS CROWN COURT",
+          "courtroomId": 243,
+          "courtroomName": "Courtroom 09"
+        }
+      ]
+    },
+    {
+      "id": "$COURT_CENTRE_ID_TWO",
+      "oucode": "C01CE00",
+      "lja": "2570",
+      "oucodeL1Code": "C",
+      "oucodeL1Name": "Crown Courts",
+      "oucodeL3Name": "Central Criminal Court",
+      "oucodeL3WelshName": "Y Llys Troseddol Canolog",
+      "address1": "Old Bailey",
+      "address2": "London",
+      "postcode": "EC4M 7EH",
+      "defaultStartTime": "10:00",
+      "defaultDurationHrs": "07:00",
+      "courtrooms": [
+        {
+          "id": "613be9ff-6156-3b49-a907-1d25b5e940c5",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 585,
+          "courtroomName": "Courtroom 01"
+        },
+        {
+          "id": "d91cffda-1559-3d73-a44d-586f95956953",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 586,
+          "courtroomName": "Courtroom 02"
+        },
+        {
+          "id": "b9caa69f-a795-393f-93b5-d3226cc9b3d3",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 587,
+          "courtroomName": "Courtroom 03"
+        },
+        {
+          "id": "28848b23-6fcf-31ee-b662-21624abbd2c2",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 588,
+          "courtroomName": "Courtroom 04"
+        },
+        {
+          "id": "7a855ffe-4712-3dd7-82c6-18c60978d1dc",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 589,
+          "courtroomName": "Courtroom 05"
+        },
+        {
+          "id": "054d7b7a-5624-3bca-bf5d-cbecf79813b6",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 590,
+          "courtroomName": "Courtroom 06"
+        },
+        {
+          "id": "3e606472-6a1b-36ed-8d82-efdf12ab4923",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 591,
+          "courtroomName": "Courtroom 07"
+        },
+        {
+          "id": "6b446996-2f21-3193-90e1-ea97378a29a2",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 592,
+          "courtroomName": "Courtroom 08"
+        },
+        {
+          "id": "42aad56a-5fe6-3853-b8d9-658418bfc7ac",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 593,
+          "courtroomName": "Courtroom 09"
+        },
+        {
+          "id": "31164415-a3cf-34a3-ac47-83019590b402",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 594,
+          "courtroomName": "Courtroom 10"
+        },
+        {
+          "id": "60bb3757-9789-3b95-ab6e-d7889a4cb372",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 595,
+          "courtroomName": "Courtroom 11"
+        },
+        {
+          "id": "a5ebdea0-0425-36e2-8ef9-ef266eb4c275",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 596,
+          "courtroomName": "Courtroom 12"
+        },
+        {
+          "id": "db9318a0-75dd-3ed6-9482-9877fb1be5c0",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 597,
+          "courtroomName": "Courtroom 13"
+        },
+        {
+          "id": "3ba3f983-e6ad-3a1c-82d4-d092ef63dff5",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 598,
+          "courtroomName": "Courtroom 14"
+        },
+        {
+          "id": "cebef9a3-25e8-3b29-ac64-aa04842d136b",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 599,
+          "courtroomName": "Courtroom 15"
+        },
+        {
+          "id": "c0496786-e18e-35ba-8f81-2b4f5f022dd8",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 600,
+          "courtroomName": "Courtroom 16"
+        },
+        {
+          "id": "2beb32c1-3bd7-3ea5-9feb-c584c71810cd",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 601,
+          "courtroomName": "Courtroom 17"
+        },
+        {
+          "id": "e40564e0-d68b-32df-ba5c-8b1a0d5710fb",
+          "venueName": "CENTRAL CRIMINAL COURT",
+          "courtroomId": 602,
+          "courtroomName": "Courtroom 18"
+        }
+      ]
+    }
+  ]
+}

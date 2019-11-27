@@ -62,3 +62,12 @@ rule "Command - API - Action - listing.command.publish-court-list"
     $outcome.setSuccess(true);
 end
 
+rule "Command - API - Action - listing.command.publish-court-lists-for-crown-courts"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.publish-court-lists-for-crown-courts");
+    eval(userAndGroupProvider.isSystemUser($action))
+  then
+    $outcome.setSuccess(true);
+end
+

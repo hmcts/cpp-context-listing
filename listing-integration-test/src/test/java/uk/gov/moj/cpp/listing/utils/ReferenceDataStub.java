@@ -23,11 +23,11 @@ public class ReferenceDataStub {
     private static final String REFERENCE_DATA_COURTROOM_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.query.cp-xhibit-courtroom-mappings+json";
     private static final String REFERENCE_DATA_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms/.*";
     private static final String REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE = "application/vnd.referencedata.ou-courtroom+json";
+    private static final String REFERENCE_DATA_ALL_CROWN_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms";
     private static final String REFERENCE_DATA_JUDICIARIES_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/judiciaries";
     private static final String REFERENCE_DATA_JUDICIARIES_MEDIA_TYPE = "application/vnd.referencedata.judiciaries+json";
     private static final String REFERENCE_DATA_JUDGE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/court/judges/.";
     private static final String REFERENCE_DATA_JUDGE_MEDIA_TYPE = "application/vnd.referencedata.get.judge+json";
-
     private static final String REFERENCE_DATA_HEARING_TYPES_URL = "/referencedata-service/query/api/rest/referencedata/hearing-types";
     private static final String REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE = "application/vnd.referencedata.query.hearing-types+json";
 
@@ -47,8 +47,7 @@ public class ReferenceDataStub {
     }
 
     public static void stubGetReferenceDataCourtCentre(final CourtCentreData courtReferenceData) {
-        InternalEndpointMockUtils.stubPingFor("referencedata-service");
-
+        stubPingForReferenceDataService();
         String payload = getPayload("stub-data/referencedata.query.courtroom.json")
                 .replace("COURT_CENTRE_ID", courtReferenceData.getCourtCentreId().toString())
                 .replace("DEFAULT_START_TIME", courtReferenceData.getDefaultStartTime().toString())
@@ -64,8 +63,26 @@ public class ReferenceDataStub {
         waitForStubToBeReady(REFERENCE_DATA_COURT_CENTRE_QUERY_URL, REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
     }
 
+    public static void stubGetAllCrownCourtCentres(final UUID courtCentreIdOne, final UUID courtCentreIdTwo) {
+        stubPingForReferenceDataService();
+        String payload = getPayload("stub-data/reference.query.courtroom_crown_courts_only.json")
+                .replace("$COURT_CENTRE_ID_ONE", courtCentreIdOne.toString())
+                .replace("$COURT_CENTRE_ID_TWO", courtCentreIdTwo.toString());
+
+        stubFor(get(urlPathMatching(REFERENCE_DATA_ALL_CROWN_COURT_CENTRE_QUERY_URL))
+                .withQueryParam("oucodeL1Code", equalTo("C"))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
+                        .withBody(payload)));
+
+        final String confirmationUrl = REFERENCE_DATA_ALL_CROWN_COURT_CENTRE_QUERY_URL + "?oucodeL1Code=C";
+
+        waitForStubToBeReady(confirmationUrl, REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
+    }
+
     public static void stubGetReferenceDataJudiciaries(final UUID judiciaryId) {
-        InternalEndpointMockUtils.stubPingFor("referencedata-service");
+        stubPingForReferenceDataService();
         String payload = getPayload("stub-data/referencedata.query.judiciaries.json")
                 .replace("JUDICIARY_ID", judiciaryId.toString());
 
@@ -79,7 +96,7 @@ public class ReferenceDataStub {
     }
 
     public static void stubGetReferenceDataJudge(final UUID judgeId) {
-        InternalEndpointMockUtils.stubPingFor("referencedata-service");
+        stubPingForReferenceDataService();
         String payload = getPayload("stub-data/referencedata.query.judge.json")
                 .replace("JUDGE_ID", judgeId.toString());
 
@@ -92,7 +109,7 @@ public class ReferenceDataStub {
     }
 
     public static void stubGetReferenceDataHearingTypes(final UUID hearingTypeId) {
-        InternalEndpointMockUtils.stubPingFor("referencedata-service");
+        stubPingForReferenceDataService();
         String payload = getPayload("stub-data/referencedata.query.hearing-types.json")
                 .replace("HEARING_TYPE_ID", hearingTypeId.toString());
 
@@ -101,7 +118,11 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", UUID.randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE)
                         .withBody(payload)));
-        waitForStubToBeReady(REFERENCE_DATA_HEARING_TYPES_URL , REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE);
+        waitForStubToBeReady(REFERENCE_DATA_HEARING_TYPES_URL, REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE);
+    }
+
+    private static void stubPingForReferenceDataService() {
+        InternalEndpointMockUtils.stubPingFor("referencedata-service");
     }
 
 }

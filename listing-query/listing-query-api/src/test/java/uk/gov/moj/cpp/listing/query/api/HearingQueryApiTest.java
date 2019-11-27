@@ -7,9 +7,7 @@ import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.io.FileUtils.readLines;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
@@ -33,7 +31,9 @@ import javax.json.JsonValue;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -53,6 +53,9 @@ public class HearingQueryApiTest {
     private static final List<String> METHODS_WHICH_ARE_NOT_MERELY_PASS_THROUGH = ImmutableList.of("searchForHearingById", "searchHearingSlots");
 
     private Map<String, String> apiMethodsToHandlerNames;
+
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Mock
     private Requester requester;
@@ -98,31 +101,29 @@ public class HearingQueryApiTest {
     @Test
     public void searchForHearingByIdWhenIdIsNotPresent() {
 
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("Attempted to search for a Hearing without an ID.");
+
         final JsonEnvelope proposedQuery = generateQuery(createObjectBuilder().build());
 
-        try {
-            hearingQueryApi.searchForHearingById(proposedQuery);
-            fail("Expected an IllegalArgumentException");
-        } catch (IllegalArgumentException ex) {
-            assertEquals("Attempted to search for a Hearing without an ID.", ex.getMessage());
-        }
+        hearingQueryApi.searchForHearingById(proposedQuery);
 
     }
 
     @Test
     public void searchForHearingByIdWhenIdIsNotValid() {
 
+        expectedException.expect(BadRequestException.class);
+        expectedException.expectMessage("Please ensure that the id is a valid UUID");
+
         final JsonEnvelope proposedQuery = generateQuery(
                 createObjectBuilder()
                         .add("id", "849afced-85b")
                         .build());
 
-        try {
-            hearingQueryApi.searchForHearingById(proposedQuery);
-            fail("Expected an BadRequestException");
-        } catch (BadRequestException ex) {
-            assertEquals("Please ensure that the id is a valid UUID.", ex.getMessage());
-        }
+
+        hearingQueryApi.searchForHearingById(proposedQuery);
+
     }
 
     @Test

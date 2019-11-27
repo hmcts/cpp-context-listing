@@ -10,8 +10,8 @@ import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.LISTING_COMMA
 import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED;
 
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
-import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.ListCourtHearing;
+import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.enveloper.Enveloper;
@@ -127,6 +127,13 @@ public class ListingCommandApiTest {
         listingCommandApi.publishCourtList(envelope);
 
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+    }
+
+    public void publishCourtListForCrownCourtsForwardsAsExpected() {
+
+        listingCommandApi.publishCourtListForCrownCourts(envelope);
+
+        verify(sender).send(envelope);
     }
 }
 

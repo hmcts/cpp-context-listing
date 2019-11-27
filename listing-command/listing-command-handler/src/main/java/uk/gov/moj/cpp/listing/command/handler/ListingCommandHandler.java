@@ -8,7 +8,9 @@ import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
 import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.*;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
 
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.HearingListingNeeds;
@@ -17,6 +19,7 @@ import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.Defendant;
 import uk.gov.justice.listing.commands.Offence;
 import uk.gov.justice.listing.commands.PublishCourtList;
+import uk.gov.justice.listing.commands.PublishCourtListType;
 import uk.gov.justice.listing.commands.RecordCourtListExportFailed;
 import uk.gov.justice.listing.commands.RecordCourtListExportSuccessful;
 import uk.gov.justice.listing.commands.RecordCourtListProduced;
@@ -55,7 +58,9 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CommandSimpleOffenceToDomainOffence;
@@ -65,6 +70,7 @@ import uk.gov.moj.cpp.listing.command.utils.CourtsAddedOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CourtsDeletedOffenceToDomainCaseSimpleOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsUpdatedOffenceToDomainOffence;
+import uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
@@ -79,9 +85,11 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Application;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
+import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +103,7 @@ import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,6 +151,9 @@ public class ListingCommandHandler {
 
     @Inject
     private HearingTypeFactory hearingTypeFactory;
+
+    @Inject
+    private ReferenceDataService referenceDataService;
 
     @Inject
     private Clock clock;
@@ -653,6 +665,59 @@ public class ListingCommandHandler {
         appendEventsToStream(commandEnvelope, eventStream, events);
     }
 
+    @Handles("listing.command.publish-court-lists-for-crown-courts")
+    @SuppressWarnings("WeakerAccess") // Required for framework
+    public void publishFinalCourtListsForAllCrownCourts(final JsonEnvelope commandEnvelope) {
+        final List<CourtCentreDetails> crownCourtCentres = getAllCrownCourtCentres(commandEnvelope);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Attempting to request publication of the final court lists for [{}] crown court centres ...", crownCourtCentres.size());
+        }
+        crownCourtCentres
+                .forEach(courtCentreDetails -> publishFinalCourtList(commandEnvelope.metadata(), courtCentreDetails));
+    }
+
+    @VisibleForTesting
+    void setClock(final Clock clock) {
+        this.clock = clock;
+    }
+
+
+    private void publishFinalCourtList(final Metadata commandMetaData, CourtCentreDetails courtCentreDetails) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Attempting to request publication of the final court list for crown court centre [{}] ...", courtCentreDetails.getId());
+        }
+        try {
+            publishCourtList(envelopeFrom(commandMetaData, asJson(generatePublishCourtListCommand(courtCentreDetails))));
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Successfully requested publication of the final court list for crown court centre [{}].", courtCentreDetails.getId());
+            }
+        } catch (EventStreamException | RuntimeException e) {
+            // This should be robust, so to allow subsequent attempts.
+            if (LOGGER.isErrorEnabled()) {
+                final String message
+                        = String.format(
+                        "Exception thrown While trying to publish the final court list for Court Centre [%s]",
+                        courtCentreDetails.getId());
+                LOGGER.error(message, e);
+            }
+        }
+    }
+
+    private PublishCourtList generatePublishCourtListCommand(CourtCentreDetails courtCentreDetails) {
+
+        final ZonedDateTime zonedNow = clock.now();
+        final LocalDate today = zonedNow.toLocalDate();
+        final LocalDate nextWorkingDay = DateAndTimeUtils.getNextWorkingDay(today);
+        return PublishCourtList.publishCourtList()
+                .withCourtCentreId(courtCentreDetails.getId())
+                .withStartDate(nextWorkingDay)
+                .withEndDate(nextWorkingDay)
+                .withPublishCourtListType(PublishCourtListType.FINAL)
+                .withRequestedTime(Optional.of(zonedNow))
+                .build();
+
+    }
+
     private void appendEventsToStream(final Envelope<?> envelope, final EventStream eventStream, final Stream<Object> events) throws EventStreamException {
         final JsonEnvelope jsonEnvelope = envelopeFrom(envelope.metadata(), NULL);
         eventStream.append(events.map(toEnvelopeWithMetadataFrom(jsonEnvelope)));
@@ -758,5 +823,39 @@ public class ListingCommandHandler {
         final Stream<Object> events = aggregatorFunction.apply(application);
         eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
     }
+
+    private List<CourtCentreDetails> getAllCrownCourtCentres(final JsonEnvelope eventEnvelope) {
+        final JsonEnvelope responseEnvelope = referenceDataService.getAllCrownCourtCentres(eventEnvelope);
+        final JsonObject jsonObject = responseEnvelope.payloadAsJsonObject();
+
+        return jsonObject.getJsonArray("organisationunits")
+                .stream()
+                .filter(x -> x.getValueType() == JsonValue.ValueType.OBJECT)
+                .map(x -> (JsonObject) x)
+                .map(this::toCourtCentreDetails)
+                .collect(Collectors.toList());
+    }
+
+
+    // Justin: "These private methods are only used by the export command. Move to a dedicated 'helper' class."
+    // TODO [SCSL-176] I'd like to find a common place for this, accessible to both this class
+    // as well as uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory.
+    // I thought that 'listing-domain-common' module would be a good choice, but
+    // we don't have CourtCentreDetails in there.
+    private CourtCentreDetails toCourtCentreDetails(JsonObject courtCentreDetailsAsJson) {
+        final UUID courtCentreId = UUID.fromString(courtCentreDetailsAsJson.getString("id"));
+        final Integer defaultDurationMinutes =
+                convertHoursAndMinutesToMinutes(courtCentreDetailsAsJson.getString("defaultDurationHrs"))
+                        .orElse(0);
+        final LocalTime defaultStartTime = LocalTime.parse(courtCentreDetailsAsJson.getString("defaultStartTime"));
+
+        return CourtCentreDetails.courtCentreDetails()
+                .withDefaultStartTime(defaultStartTime)
+                .withDefaultDuration(defaultDurationMinutes)
+                .withId(courtCentreId)
+                .build();
+
+    }
+
 
 }
