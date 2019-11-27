@@ -38,6 +38,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(courtCentreId));
     }
 
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final UUID courtCentreId, final String judiciaryType) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(courtCentreId, judiciaryType));
+    }
+
     public static HearingsData hearingsDataStandaloneApplication(){
         return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplication());
     }

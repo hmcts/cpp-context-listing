@@ -66,6 +66,10 @@ public class HearingsDataFactory {
         return manyRandomHearingsWithAllocationData(2, courtCentreId);
     }
 
+    public static List<HearingData> hearingsDataWithAllocationDataAndJudiciary(final UUID courtCentreId, final String judiciaryType) {
+        return manyRandomHearingsWithAllocationData(2, courtCentreId, judiciaryType);
+    }
+
     public static List<HearingData> hearingsDataStandaloneApplication() {
         return manyRandomHearingsStandaloneApplication(2);
     }
@@ -81,10 +85,14 @@ public class HearingsDataFactory {
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationData(final Integer numberOfHearings, final UUID courtCentreId) {
+        return manyRandomHearingsWithAllocationData(numberOfHearings, courtCentreId, "MAGISTRATE");
+    }
+
+    private static List<HearingData> manyRandomHearingsWithAllocationData(final Integer numberOfHearings, final UUID courtCentreId, final String judiciaryType) {
         LocalDate hearingEndDate = LocalDate.now().plusDays(1);
         UUID courtRoomId = randomUUID();
         return IntStream.range(0, numberOfHearings)
-                .mapToObj((int i) -> randomHearing(courtCentreId, hearingEndDate, courtRoomId, Arrays.asList(randomJudicalRole())))
+                .mapToObj((int i) -> randomHearing(courtCentreId, hearingEndDate, courtRoomId, Arrays.asList(randomJudicalRole(judiciaryType))))
                 .collect(toList());
     }
 
@@ -242,9 +250,12 @@ public class HearingsDataFactory {
     }
 
     private static JudicialRoleData randomJudicalRole() {
-        return new JudicialRoleData(Optional.ofNullable(null), Optional.ofNullable(BOOLEAN.next()), randomUUID(),
-                new JudicialRoleTypeData(Optional.empty(), "MAGISTRATE"));
+        return randomJudicalRole("MAGISTRATE");
+    }
 
+    private static JudicialRoleData randomJudicalRole(final String judiciaryType) {
+        return new JudicialRoleData(Optional.ofNullable(null), Optional.ofNullable(BOOLEAN.next()), randomUUID(),
+                new JudicialRoleTypeData(Optional.empty(), judiciaryType));
     }
 
     private static CourtApplicationPartyListingNeeds randomCourtApplicationPartyNeed() {

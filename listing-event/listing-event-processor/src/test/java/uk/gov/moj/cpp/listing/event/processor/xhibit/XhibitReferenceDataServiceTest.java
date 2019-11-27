@@ -32,6 +32,7 @@ public class XhibitReferenceDataServiceTest {
 
     private static final String PUBLISH_COURT_LIST_REQUESTED = "listing.event.publish-court-list-requested";
     private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
+    private static final String REFERENCEDATA_QUERY_JUDGE = "referencedata.get.judge";
 
     @Mock
     private Requester requester;
@@ -79,6 +80,41 @@ public class XhibitReferenceDataServiceTest {
         verify(requester).request(requestCaptor.capture());
         assertThat(judiciary.getString("titlePrefix"), equalTo(titlePrefix));
         assertThat(judiciary.getString("titleJudiciaryPrefix"), equalTo(titleJudiciaryPrefix));
+
+    }
+
+    @Test
+    public void shouldGetJudge() throws Exception {
+
+        String title = "Mr";
+        String firstName = "James";
+        String lastName = "May";
+        final JsonEnvelope inputEnvelope =
+                envelopeFrom(
+                        metadataWithDefaults()
+                                .withName(PUBLISH_COURT_LIST_REQUESTED),
+                        createObjectBuilder()
+                                .add("courtCentreId", UUID.randomUUID().toString()).build());
+
+        final JsonEnvelope responseEnvelope =
+                envelopeFrom(
+                        metadataWithDefaults()
+                                .withName(REFERENCEDATA_QUERY_JUDGE),
+                        createObjectBuilder()
+                                .add("title", title)
+                                .add("firstName", firstName)
+                                .add("lastName", lastName)
+                                .build());
+
+        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+
+        final UUID judgeId = UUID.randomUUID();
+        JsonObject judge = xhibitReferenceDataService.getJudge(inputEnvelope, judgeId);
+
+        verify(requester).request(requestCaptor.capture());
+        assertThat(judge.getString("title"), equalTo(title));
+        assertThat(judge.getString("firstName"), equalTo(firstName));
+        assertThat(judge.getString("lastName"), equalTo(lastName));
 
     }
 

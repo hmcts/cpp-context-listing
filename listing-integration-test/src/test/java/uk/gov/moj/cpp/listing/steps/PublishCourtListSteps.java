@@ -110,7 +110,10 @@ public class PublishCourtListSteps extends AbstractIT implements AutoCloseable {
 
     public static List<HearingsData> loadHearingDataWithJudiciary(final UUID courtCentreId) {
 
-        final List<HearingsData> hearingsDataList = asList(hearingsDataWithAllocationDataAndJudiciary(courtCentreId));
+        final HearingsData magistrateHearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, "MAGISTRATE");
+        final HearingsData districtJudgeHearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, "DISTRICT_JUDGE");
+
+        final List<HearingsData> hearingsDataList = asList(magistrateHearingsData, districtJudgeHearingsData);
 
         hearingsDataList.forEach(PublishCourtListSteps::createHearingListed);
 

@@ -16,15 +16,10 @@ import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import org.slf4j.Logger;
-
 public class XhibitReferenceDataService {
 
     private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
-
-    @SuppressWarnings("squid:S1312")
-    @Inject
-    private Logger logger;
+    private static final String REFERENCEDATA_QUERY_JUDGE = "referencedata.get.judge";
 
     @Inject
     @ServiceComponent(Component.EVENT_PROCESSOR)
@@ -50,7 +45,6 @@ public class XhibitReferenceDataService {
     public JsonObject getJudiciary(final JsonEnvelope envelope, final UUID judiciaryId) {
 
         final JsonObject queryParameters = createObjectBuilder().add("ids", judiciaryId.toString()).build();
-        logger.info("'{}' request with payload {}", REFERENCEDATA_QUERY_JUDICIARIES, queryParameters);
 
         return requester.request(envelop(queryParameters)
                                          .withName(REFERENCEDATA_QUERY_JUDICIARIES)
@@ -60,12 +54,15 @@ public class XhibitReferenceDataService {
 
     }
 
-    @SuppressWarnings({"squid:CommentedOutCodeLine", "squid:S1172"})    // Remove when implemented
     public JsonObject getJudge(final JsonEnvelope envelope, final UUID judgeId) {
-        return Json.createObjectBuilder()
-                .add("firstName", "FIRSTNAME")
-                .add("lastName", "LASTNAME")
-                .build();  // TODO Implement
+
+        final JsonObject queryParameters = createObjectBuilder().add("id", judgeId.toString()).build();
+
+        return requester.request(envelop(queryParameters)
+                                        .withName(REFERENCEDATA_QUERY_JUDGE)
+                                        .withMetadataFrom(envelope))
+                                .payloadAsJsonObject();
+
     }
 
     @SuppressWarnings({"squid:CommentedOutCodeLine", "squid:S1172"})    // Remove when implemented
