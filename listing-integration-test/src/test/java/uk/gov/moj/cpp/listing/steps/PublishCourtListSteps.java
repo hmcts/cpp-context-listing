@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.steps;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -22,6 +23,7 @@ import uk.gov.justice.services.test.utils.core.messaging.MessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -110,10 +112,9 @@ public class PublishCourtListSteps extends AbstractIT implements AutoCloseable {
 
     public static List<HearingsData> loadHearingDataWithJudiciary(final UUID courtCentreId) {
 
-        final HearingsData magistrateHearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, "MAGISTRATE");
         final HearingsData districtJudgeHearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, "DISTRICT_JUDGE");
 
-        final List<HearingsData> hearingsDataList = asList(magistrateHearingsData, districtJudgeHearingsData);
+        final List<HearingsData> hearingsDataList = singletonList(districtJudgeHearingsData);
 
         hearingsDataList.forEach(PublishCourtListSteps::createHearingListed);
 

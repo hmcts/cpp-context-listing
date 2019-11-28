@@ -182,14 +182,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     private Response getResponseCaseSubmittedForListing(boolean isStandaloneApp) {
-        hearingsData.getHearingData().stream()
-                .map(hearingData -> hearingData.getCourtCentreId())
-                .forEach(cci -> stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null)));
-        hearingsData.getHearingData().stream().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
-        hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
-                .forEach(hearingData -> stubGetReferenceDataJudiciaries(hearingData.getJudiciary().get(0).getJudicialId()));
-        hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
-                .forEach(hearingData -> stubGetReferenceDataJudge(hearingData.getJudiciary().get(0).getJudicialId()));
+
+        stubReferenceDataForFirstHearing();
 
         final String listCaseForHearingUrl = String.format("%s/%s", baseUri, format
                 (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
@@ -208,6 +202,18 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
         return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING,
                 request, getLoggedInHeader());
+    }
+
+    private void stubReferenceDataForFirstHearing() {
+
+        hearingsData.getHearingData().stream()
+                .map(HearingData::getCourtCentreId)
+                .forEach(cci -> stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, hearingsData.getHearingData().get(0).getCourtRoomId())));
+        hearingsData.getHearingData().stream().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
+        hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
+                .forEach(hearingData -> stubGetReferenceDataJudiciaries(hearingData.getJudiciary().get(0).getJudicialId()));
+        hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
+                .forEach(hearingData -> stubGetReferenceDataJudge(hearingData.getJudiciary().get(0).getJudicialId()));
     }
 
     private Response getResponseCaseSubmittedForListingWithLegalEntity() {

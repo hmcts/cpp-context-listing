@@ -117,8 +117,9 @@ public class CourtServicesMapper {
         if (hearing.containsKey("courtRoomId")) {
 
             final UUID courtRoomId = fromString(hearing.getString("courtRoomId"));
+            final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-            sittingStructure.setCourtRoomNumber(xhibitReferenceDataService.getCourtRoomNumber(context.getEnvelope(), courtRoomId));
+            sittingStructure.setCourtRoomNumber(xhibitReferenceDataService.getCourtRoomNumber(context.getEnvelope(), courtCentreId, courtRoomId));
         }
         sittingStructure.setSittingSequenceNo(valueOf(sittingSequenceNumber));
         sittingStructure.setSittingPriority("T");
