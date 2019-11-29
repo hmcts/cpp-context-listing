@@ -37,12 +37,15 @@ public class XhibitReferenceDataService {
     public int getCourtRoomNumber(final JsonEnvelope envelope, final UUID courtCentreId, final UUID courtRoomId) {
 
         final JsonObject queryParameters = createObjectBuilder().add("id", courtCentreId.toString()).build();
-        return requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_COURTROOM)
+
+        final JsonObject courtRoom = requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_COURTROOM)
                 .withMetadataFrom(envelope))
                 .payloadAsJsonObject().getJsonArray("courtrooms").getValuesAs(JsonObject.class)
                 .stream().filter(c -> UUID.fromString(c.getString("id")).equals(courtRoomId))
-                .mapToInt(c -> parseInt(c.getString("courtroomId"))).findFirst()
+                .findFirst()
                 .orElseThrow(() -> new RuntimeException(format("Cannot find court room with id %s in courtCentre %s", courtRoomId, courtCentreId)));
+
+        return courtRoom.getInt("courtroomId");
     }
 
     public JsonObject getJudiciary(final JsonEnvelope envelope, final UUID judiciaryId) {

@@ -134,7 +134,7 @@ public class XhibitReferenceDataServiceTest {
                         createObjectBuilder()
                                 .add("courtrooms", createArrayBuilder()
                                         .add(createObjectBuilder()
-                                                .add("courtroomId", Integer.toString(expectedCourtRoomNumber))
+                                                .add("courtroomId", expectedCourtRoomNumber)
                                                 .add("id", courtRoomId.toString()).build()))
                                 .build());
 
