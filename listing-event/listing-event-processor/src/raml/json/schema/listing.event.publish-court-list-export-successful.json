@@ -27,12 +27,21 @@
         "EXPORT_FAILED",
         "EXPORT_SUCCESSFUL",
         "COURT_LIST_REQUESTED",
-        "COURT_LIST_PRODUCED"
+        "COURT_LIST_PRODUCED",
+        "INVALID_STATUS"
       ]
     },
     "publishedTime": {
       "type": "string",
       "format": "date-time"
+    },
+    "publishDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "weekCommencing": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [
@@ -41,7 +50,8 @@
     "courtListFileName",
     "publishCourtListType",
     "publishStatus",
-    "publishedTime"
+    "publishedTime",
+    "publishDate"
   ],
   "additionalProperties": false
 }

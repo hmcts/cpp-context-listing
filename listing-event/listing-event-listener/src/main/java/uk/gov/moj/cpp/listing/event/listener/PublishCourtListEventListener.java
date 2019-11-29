@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.time.LocalDate.parse;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_PRODUCED;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_REQUESTED;
@@ -14,8 +15,8 @@ import uk.gov.justice.listing.event.PublishCourtListRequested;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatus;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
 
 import javax.inject.Inject;
 
@@ -23,13 +24,23 @@ import javax.inject.Inject;
 public class PublishCourtListEventListener {
 
     @Inject
-    private CourtListRepository courtListRepository;
+    private CourtListPublishStatusJdbcRepository courtListRepository;
 
     @Handles("listing.event.publish-court-list-requested")
     public void courtListPublishRequested(final Envelope<PublishCourtListRequested> event) {
         final PublishCourtListRequested publishCourtListRequested = event.payload();
-        final CourtListPublishStatus publishRequested = new CourtListPublishStatus(randomUUID(), publishCourtListRequested.getCourtCentreId(),
-                publishCourtListRequested.getPublishCourtListType(), COURT_LIST_REQUESTED, publishCourtListRequested.getRequestedTime());
+
+        final String startDate = publishCourtListRequested.getStartDate();
+        final String endDate = publishCourtListRequested.getEndDate();
+        boolean weekCommencing = false;
+        if (!startDate.equalsIgnoreCase(endDate)) {
+            weekCommencing = true;
+        }
+
+        final CourtListPublishStatus publishRequested = new CourtListPublishStatus(randomUUID(),
+                publishCourtListRequested.getCourtCentreId(),
+                publishCourtListRequested.getPublishCourtListType(), COURT_LIST_REQUESTED,
+                publishCourtListRequested.getRequestedTime(), parse(startDate), weekCommencing);
         courtListRepository.save(publishRequested);
     }
 
@@ -39,7 +50,9 @@ public class PublishCourtListEventListener {
         final CourtListPublishStatus publishProduced = new CourtListPublishStatus(
                 randomUUID(), publishCourtListProduced.getCourtCentreId(),
                 publishCourtListProduced.getPublishCourtListType(), COURT_LIST_PRODUCED, publishCourtListProduced.getProducedTime(),
-                publishCourtListProduced.getCourtListFileId(), publishCourtListProduced.getCourtListFileName(), ""
+                publishCourtListProduced.getCourtListFileId(), publishCourtListProduced.getCourtListFileName(), "",
+                parse(publishCourtListProduced.getPublishDate()),
+                publishCourtListProduced.getWeekCommencing().orElse(false)
         );
         courtListRepository.save(publishProduced);
     }
@@ -51,7 +64,10 @@ public class PublishCourtListEventListener {
         final CourtListPublishStatus exportFailed = new CourtListPublishStatus(
                 randomUUID(), publishCourtListExportFailed.getCourtCentreId(),
                 publishCourtListExportFailed.getPublishCourtListType(), EXPORT_FAILED, publishCourtListExportFailed.getFailedTime(),
-                publishCourtListExportFailed.getCourtListFileId(), publishCourtListExportFailed.getCourtListFileName(), publishCourtListExportFailed.getErrorMessage()
+                publishCourtListExportFailed.getCourtListFileId(), publishCourtListExportFailed.getCourtListFileName(),
+                publishCourtListExportFailed.getErrorMessage(),
+                parse(publishCourtListExportFailed.getPublishDate()),
+                publishCourtListExportFailed.getWeekCommencing().orElse(false)
         );
         exportFailed.setErrorMessage(publishCourtListExportFailed.getErrorMessage());
         courtListRepository.save(exportFailed);
@@ -63,7 +79,9 @@ public class PublishCourtListEventListener {
         final CourtListPublishStatus exportSuccessful = new CourtListPublishStatus(
                 randomUUID(), publishCourtListExportSuccessful.getCourtCentreId(),
                 publishCourtListExportSuccessful.getPublishCourtListType(), EXPORT_SUCCESSFUL, publishCourtListExportSuccessful.getPublishedTime(),
-                publishCourtListExportSuccessful.getCourtListFileId(), publishCourtListExportSuccessful.getCourtListFileName(), ""
+                publishCourtListExportSuccessful.getCourtListFileId(), publishCourtListExportSuccessful.getCourtListFileName(), "",
+                parse(publishCourtListExportSuccessful.getPublishDate()),
+                publishCourtListExportSuccessful.getWeekCommencing().orElse(false)
         );
         courtListRepository.save(exportSuccessful);
     }

@@ -43,7 +43,6 @@ import org.junit.runner.RunWith;
 @RunWith(CdiTestRunner.class)
 public class HearingRepositoryTest extends BaseTransactionalTest {
 
-
     private static final Boolean UNALLOCATED = false;
     private static final UUID HEARING_ID = UUID.randomUUID();
     private static final UUID OTHER_HEARING_ID = UUID.randomUUID();

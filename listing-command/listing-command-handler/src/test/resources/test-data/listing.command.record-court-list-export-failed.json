@@ -4,5 +4,8 @@
   "courtListFileName":"COURT_LIST_FILE_NAME",
   "publishCourtListType":"FINAL",
   "failedTime": "FAILED_TIME",
-  "errorMessage": "ERROR_MESSAGE"
+  "errorMessage": "ERROR_MESSAGE",
+  "publishStatus": "EXPORT_FAILED",
+  "publishDate":"2016-07-11",
+  "weekCommencing":false
 }

@@ -3,5 +3,8 @@
   "courtListFileId": "COURT_LIST_FILE_ID",
   "courtListFileName":"COURT_LIST_FILE_NAME",
   "publishCourtListType":"FINAL",
-  "publishedTime": "PUBLISHED_TIME"
+  "publishedTime": "PUBLISHED_TIME",
+  "publishStatus": "EXPORT_SUCCESSFUL",
+  "publishDate":"2016-07-11",
+  "weekCommencing":false
 }

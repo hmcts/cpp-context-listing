@@ -6,13 +6,22 @@
     "courtCentreId": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
-    "courtListTypes": {
+    "publishCourtListTypes": {
       "type": "string"
+    },
+    "publishDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "weekCommencing": {
+      "type": "boolean",
+      "default": false
     }
   },
   "additionalProperties": false,
   "required": [
     "courtCentreId",
-    "courtListType"
+    "publishCourtListTypes",
+    "publishDate"
   ]
 }

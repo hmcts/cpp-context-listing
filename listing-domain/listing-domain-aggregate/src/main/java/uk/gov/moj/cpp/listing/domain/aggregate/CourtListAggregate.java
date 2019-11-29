@@ -23,6 +23,7 @@ import uk.gov.justice.listing.event.PublishCourtListType;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -51,13 +52,17 @@ public class CourtListAggregate implements Aggregate {
                                                   final UUID courtListFileId,
                                                   final String courtListFileName,
                                                   final PublishCourtListType publishCourtListType,
-                                                  final ZonedDateTime producedTime) {
+                                                  final ZonedDateTime producedTime,
+                                                  final LocalDate publishDate,
+                                                  final boolean weekCommencing) {
         return apply(of(publishCourtListProduced()
                 .withCourtCentreId(courtCentreId)
                 .withCourtListFileId(courtListFileId)
                 .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(publishCourtListType)
                 .withPublishStatus(COURT_LIST_PRODUCED)
+                .withPublishDate(publishDate.toString())
+                .withWeekCommencing(Optional.of(weekCommencing))
                 .withProducedTime(producedTime).build()));
     }
 
@@ -65,13 +70,17 @@ public class CourtListAggregate implements Aggregate {
                                                           final UUID courtListFileId,
                                                           final String courtListFileName,
                                                           final PublishCourtListType publishCourtListType,
-                                                          final ZonedDateTime publishedTime) {
+                                                          final ZonedDateTime publishedTime,
+                                                          final LocalDate publishDate,
+                                                          final boolean weekCommencing) {
         return apply(of(publishCourtListExportSuccessful()
                 .withCourtCentreId(courtCentreId)
                 .withCourtListFileId(courtListFileId)
                 .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(publishCourtListType)
                 .withPublishStatus(EXPORT_SUCCESSFUL)
+                .withPublishDate(publishDate.toString())
+                .withWeekCommencing(Optional.of(weekCommencing))
                 .withPublishedTime(publishedTime).build()));
     }
 
@@ -80,7 +89,9 @@ public class CourtListAggregate implements Aggregate {
                                                       final String courtListFileName,
                                                       final PublishCourtListType publishCourtListType,
                                                       final ZonedDateTime failedTime,
-                                                      final String errorMessage) {
+                                                      final String errorMessage,
+                                                      final LocalDate publishDate,
+                                                      final boolean weekCommencing) {
         return apply(of(publishCourtListExportFailed()
                 .withCourtCentreId(courtCentreId)
                 .withCourtListFileId(courtListFileId)
@@ -88,6 +99,8 @@ public class CourtListAggregate implements Aggregate {
                 .withPublishCourtListType(publishCourtListType)
                 .withPublishStatus(EXPORT_FAILED)
                 .withErrorMessage(errorMessage)
+                .withWeekCommencing(Optional.of(weekCommencing))
+                .withPublishDate(publishDate.toString())
                 .withFailedTime(failedTime).build()));
     }
 

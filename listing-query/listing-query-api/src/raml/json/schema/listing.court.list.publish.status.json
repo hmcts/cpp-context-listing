@@ -8,11 +8,20 @@
     },
     "publishCourtListTypes": {
       "type": "string"
+    },
+    "publishDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "weekCommencing": {
+      "type": "boolean",
+      "default": false
     }
   },
   "additionalProperties": false,
   "required": [
     "courtCentreId",
-    "publishCourtListTypes"
+    "publishCourtListTypes",
+    "publishDate"
   ]
 }

@@ -30,6 +30,12 @@ public class PublishCourtListCommandSender {
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String PUBLISH_COURT_LIST_TYPE = "publishCourtListType";
 
+    private static final String PUBLISH_STATUS = "publishStatus";
+    private static final String PRODUCED_TIME = "producedTime";
+    private static final String PUBLISHED_TIME = "publishedTime";
+
+    private static final String WEEK_COMMENCING = "weekCommencing";
+
     @Inject
     @FrameworkComponent("EVENT_PROCESSOR")
     private Sender sender;
@@ -45,8 +51,9 @@ public class PublishCourtListCommandSender {
                 .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
                 .add(COURT_LIST_FILE_ID, courtListFileId.toString())
                 .add(COURT_LIST_FILE_NAME, courtListFileName)
-                .add("publishStatus", "COURT_LIST_PRODUCED")
-                .add("producedTime", ZonedDateTimes.toString(utcClock.now()))
+                .add(PUBLISH_STATUS, "COURT_LIST_PRODUCED")
+                .add(PRODUCED_TIME, ZonedDateTimes.toString(utcClock.now()))
+                .add(WEEK_COMMENCING, requestParameters.isWeekCommencing())
                 .build();
 
         sendCommandWith(RECORD_COURT_LIST_PRODUCED, courtListFileId, payload);
@@ -54,12 +61,14 @@ public class PublishCourtListCommandSender {
 
     @SuppressWarnings("squid:S1192")
     public void recordCourtListExportSuccessful(final UUID courtListFileId,
-                                                final String courtListFileName) {
+                                                final String courtListFileName,
+                                                final boolean weekCommencing) {
 
         final JsonObject payload = createObjectBuilder()
                 .add(COURT_LIST_FILE_ID, courtListFileId.toString())
                 .add(COURT_LIST_FILE_NAME, courtListFileName)
-                .add("publishedTime", ZonedDateTimes.toString(utcClock.now()))
+                .add(PUBLISHED_TIME, ZonedDateTimes.toString(utcClock.now()))
+                .add(WEEK_COMMENCING, weekCommencing)
                 .build();
 
         sendCommandWith(RECORD_COURT_LIST_EXPORT_SUCCESSFUL, courtListFileId, payload);
@@ -67,13 +76,16 @@ public class PublishCourtListCommandSender {
 
     public void recordCourtListExportFailed(final UUID courtListFileId,
                                             final String courtListFileName,
-                                            final String errorMessage) {
+                                            final String errorMessage,
+                                            final boolean weekCommencing) {
 
         final JsonObjectBuilder objectBuilder = createObjectBuilder()
                 .add(COURT_LIST_FILE_ID, courtListFileName)
                 .add(COURT_LIST_FILE_NAME, courtListFileName)
                 .add("failedTime", ZonedDateTimes.toString(utcClock.now()))
-                .add(ERROR_MESSAGE, errorMessage);
+                .add(ERROR_MESSAGE, errorMessage)
+                .add(WEEK_COMMENCING, weekCommencing)
+                ;
 
         sendCommandWith(RECORD_COURT_LIST_EXPORT_FAILED, courtListFileId, objectBuilder.build());
     }

@@ -17,7 +17,7 @@ public class PublishCourtListRequestParameters {
     private LocalDate endDate;
     private PublishCourtListType publishCourtListType;
     private ZonedDateTime requestedTime;
-
+    private boolean weekCommencing;
     public PublishCourtListRequestParameters(final UUID courtCentreId,
                                              final LocalDate startDate,
                                              final LocalDate endDate,
@@ -49,6 +49,14 @@ public class PublishCourtListRequestParameters {
 
     public ZonedDateTime getRequestedTime() {
         return requestedTime;
+    }
+
+    public boolean isWeekCommencing() {
+        return weekCommencing;
+    }
+
+    public void setWeekCommencing(boolean weekCommencing) {
+        this.weekCommencing = weekCommencing;
     }
 
     @Override

@@ -55,6 +55,7 @@ public class CourtListEventProcessor {
     @SuppressWarnings("squid:S2221")
     // Allow any exception to be handled by recording it as a failed export
     public void handlePublishCourtListRequested(final JsonEnvelope envelope) {
+        boolean weekCommencing = false;
 
         try {
             final PublishCourtListRequestParameters parameters = publishCourtListRequestParametersParser.parse(envelope);
@@ -68,11 +69,14 @@ public class CourtListEventProcessor {
             courtListFileGenerator.validateXml(parameters, courtListXml);
 
             final UUID fileId = fileServiceClient.store(courtListMetadata, courtListXml);
-
+            if (!(parameters.getStartDate().equals(parameters.getEndDate()))) {
+                weekCommencing = true;
+                parameters.setWeekCommencing(weekCommencing);
+            }
             publishCourtListCommandSender.recordCourtListProduced(parameters, fileId, courtListMetadata.getFilename());
         } catch (final Exception e) {
             logger.error("Court List generation failed", e);
-            publishCourtListCommandSender.recordCourtListExportFailed(randomUUID(), "NONE", e.getMessage());
+            publishCourtListCommandSender.recordCourtListExportFailed(randomUUID(), "NONE", e.getMessage(), weekCommencing);
         }
     }
 
@@ -84,13 +88,14 @@ public class CourtListEventProcessor {
         }
         final JsonObject payload = envelope.payloadAsJsonObject();
         final UUID documentId = UUID.fromString(payload.getString("documentId"));
+        final boolean weekCommencing = payload.getBoolean("weekCommencing");
         final String documentName = payload.getString("documentName");
         try {
             xhibitService.sendToXhibit(documentId, documentName);
-            publishCourtListCommandSender.recordCourtListExportSuccessful(documentId, documentName);
+            publishCourtListCommandSender.recordCourtListExportSuccessful(documentId, documentName, weekCommencing);
         } catch (final ExportFailedException e) {
             logger.error(format("Export failed for %s %s %s", documentId, documentName, e.getMessage()));
-            publishCourtListCommandSender.recordCourtListExportFailed(documentId, documentName, e.getMessage());
+            publishCourtListCommandSender.recordCourtListExportFailed(documentId, documentName, e.getMessage(), weekCommencing);
         }
 
     }

@@ -25,7 +25,7 @@ import ru.yandex.qatools.embed.postgresql.config.RuntimeConfigBuilder;
 import ru.yandex.qatools.embed.postgresql.ext.SubdirTempDir;
 
 @RunWith(Suite.class)
-@SuiteClasses({HearingRepositoryTest.class, CourtListRepositoryTest.class})
+@SuiteClasses({HearingRepositoryTest.class, CourtListPublishStatusJdbcRepositoryTest.class})
 public class PersistenceTestSuite {
 
 

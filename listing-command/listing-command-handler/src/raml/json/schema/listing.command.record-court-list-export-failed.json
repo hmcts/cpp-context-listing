@@ -27,6 +27,14 @@
     },
     "errorMessage": {
       "type": "string"
+    },
+    "publishDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "weekCommencing": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [
@@ -35,7 +43,8 @@
     "courtListFileName",
     "publishCourtListType",
     "failedTime",
-    "errorMessage"
+    "errorMessage",
+    "publishDate"
   ],
   "additionalProperties": false
 }

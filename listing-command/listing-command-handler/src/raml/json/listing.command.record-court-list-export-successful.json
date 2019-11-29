@@ -3,5 +3,7 @@
   "courtListFileId": "684416a9-ef20-4500-a9c1-f64b87b424a0",
   "courtListFileName": "documentName",
   "publishCourtListType":"FINAL",
-  "publishedTime": "2016-09-09T08:31:40Z"
+  "publishedTime": "2016-09-09T08:31:40Z",
+  "publishDate":"2016-07-11",
+  "weekCommencing":false
 }

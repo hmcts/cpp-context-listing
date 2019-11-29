@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -23,8 +24,8 @@ import uk.gov.justice.listing.event.PublishCourtListRequested;
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatus;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -45,7 +46,7 @@ public class PublishCourtListEventListenerTest {
     private UtcClock clock;
 
     @Mock
-    private CourtListRepository courtListRepository;
+    private CourtListPublishStatusJdbcRepository courtListRepository;
 
     @InjectMocks
     private PublishCourtListEventListener publishCourtListEventListener;
@@ -53,7 +54,7 @@ public class PublishCourtListEventListenerTest {
     private final ArgumentCaptor<CourtListPublishStatus> notificationArgumentCaptor = ArgumentCaptor.forClass(CourtListPublishStatus.class);
 
     @Test
-    public void shouldRecordPublishCourtListRequested() {
+    public void shouldRecordPublishCourtListRequestedForFixedDate() {
         final ZonedDateTime requestedTime = new UtcClock().now();
         final PublishCourtListType courtListType = FINAL;
 
@@ -61,6 +62,8 @@ public class PublishCourtListEventListenerTest {
                 .withCourtCentreId(COURT_CENTRE_ID)
                 .withPublishCourtListType(courtListType)
                 .withRequestedTime(requestedTime)
+                .withStartDate("2018-11-20")
+                .withEndDate("2018-11-20")
                 .build();
 
         final Envelope<PublishCourtListRequested> publishCourtListRequestedEnvelope =
@@ -75,6 +78,36 @@ public class PublishCourtListEventListenerTest {
         assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
         assertThat(courtListArg.getPublishStatus(), is(COURT_LIST_REQUESTED));
         assertThat(courtListArg.getLastUpdated(), is(requestedTime));
+        assertThat(courtListArg.isWeekCommencing(), is(false));
+
+    }
+
+    @Test
+    public void shouldRecordPublishCourtListRequestedForWeekCommencingDate() {
+        final ZonedDateTime requestedTime = new UtcClock().now();
+        final PublishCourtListType courtListType = FINAL;
+
+        final PublishCourtListRequested publishCourtListRequested = publishCourtListRequested()
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withPublishCourtListType(courtListType)
+                .withRequestedTime(requestedTime)
+                .withStartDate("2018-11-20")
+                .withEndDate("2018-11-22")
+                .build();
+
+        final Envelope<PublishCourtListRequested> publishCourtListRequestedEnvelope =
+                envelopeFrom(metadataWithDefaults(), publishCourtListRequested);
+
+        publishCourtListEventListener.courtListPublishRequested(publishCourtListRequestedEnvelope);
+
+        verify(courtListRepository).save(notificationArgumentCaptor.capture());
+
+        final CourtListPublishStatus courtListArg = notificationArgumentCaptor.getValue();
+        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
+        assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
+        assertThat(courtListArg.getPublishStatus(), is(COURT_LIST_REQUESTED));
+        assertThat(courtListArg.getLastUpdated(), is(requestedTime));
+        assertThat(courtListArg.isWeekCommencing(), is(true));
     }
 
     @Test
@@ -90,6 +123,8 @@ public class PublishCourtListEventListenerTest {
                 .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(courtListType)
                 .withProducedTime(producedTime)
+                .withPublishDate("2019-11-29")
+                .withWeekCommencing(of(false))
                 .build();
 
         final Envelope<PublishCourtListProduced> publishCourtListProducedEvent = envelopeFrom(metadataWithDefaults(), publishCourtListProduced);
@@ -122,6 +157,8 @@ public class PublishCourtListEventListenerTest {
                 .withPublishCourtListType(courtListType)
                 .withFailedTime(failedTimeStamp)
                 .withErrorMessage(errorMessage)
+                .withPublishDate("2019-11-29")
+                .withWeekCommencing(of(false))
                 .build();
 
         final Envelope<PublishCourtListExportFailed> publishCourtListExportFailedEvent = envelopeFrom(metadataWithDefaults(), publishCourtListExportFailed);
@@ -152,6 +189,8 @@ public class PublishCourtListEventListenerTest {
                 .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(courtListType)
                 .withPublishedTime(publishedTime)
+                .withPublishDate("2019-11-29")
+                .withWeekCommencing(of(false))
                 .build();
 
         final Envelope<PublishCourtListExportSuccessful> publishCourtListExportSuccessfulEvent = envelopeFrom(metadataWithDefaults(), publishCourtListExportSuccessful);

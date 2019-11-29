@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.query.view;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.time.LocalDate.parse;
 import static java.time.ZonedDateTime.now;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
@@ -29,8 +30,8 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusResult;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
@@ -74,6 +75,9 @@ public class HearingQueryViewTest {
     private static final String END_TIME_QUERY_PARAMETER = "endTime";
     private static final String COURT_CENTRE_QUERY_PARAMETER = "courtCentreId";
     private static final String PUBLISH_COURT_LIST_TYPES_QUERY_PARAMETER = "publishCourtListTypes";
+    private static final String PUBLISH_DATE_QUERY_PARAMETER = "publishDate";
+    private static final String WEEK_COMMENCING_QUERY_PARAMETER = "weekCommencing";
+
     private static final String COURT_ROOM_QUERY_PARAMETER = "courtRoomId";
     private static final String AUTHORITY_ID_QUERY_PARAMETER = "authorityId";
     private static final String HEARING_TYPE_QUERY_PARAMETER = "hearingTypeId";
@@ -103,7 +107,7 @@ public class HearingQueryViewTest {
     private HearingRepository hearingRepository;
 
     @Mock
-    private CourtListRepository courtListRepository;
+    private CourtListPublishStatusJdbcRepository courtListRepository;
 
     @Mock
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
@@ -111,14 +115,18 @@ public class HearingQueryViewTest {
     @InjectMocks
     private HearingQueryView hearingsQueryView;
 
+    private static final String PUBLISH_DATE = "2012-12-11";
+
+    private static final String PUBLISH_DATE_WEEK_COMMENCING = "2012-12-13";
+
     @Test
-    public void shouldReturnCorrectPublishCourtListStatus() {
+    public void shouldReturnCorrectPublishCourtListStatusForWeekCommencing() {
 
         final Set<PublishCourtListType> publishCourtListTypeSet = new HashSet();
-        publishCourtListTypeSet.add(FINAL);
         publishCourtListTypeSet.add(PublishCourtListType.FIRM);
+        publishCourtListTypeSet.add(PublishCourtListType.FINAL);
 
-        when(courtListRepository.courtListPublishStatuses(COURT_CENTRE_ID, publishCourtListTypeSet))
+        when(courtListRepository.courtListPublishStatuses(COURT_CENTRE_ID, publishCourtListTypeSet, parse(PUBLISH_DATE_WEEK_COMMENCING), true))
                 .thenReturn(publishCourtListStatuses());
 
         final JsonEnvelope query = envelopeFrom(
@@ -126,21 +134,52 @@ public class HearingQueryViewTest {
                 createObjectBuilder()
                         .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
                         .add(PUBLISH_COURT_LIST_TYPES_QUERY_PARAMETER, PUBLISH_COURT_LIST_TYPES.toString())
+                        .add(PUBLISH_DATE_QUERY_PARAMETER, PUBLISH_DATE_WEEK_COMMENCING)
+                        .add(WEEK_COMMENCING_QUERY_PARAMETER, true)
                         .build());
 
         final JsonEnvelope results = hearingsQueryView.getCourtListPublishStatus(query);
         assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.court.list.publish.status"), payloadIsJson(
                 allOf(
                         withJsonPath("$.publishCourtListStatuses", hasSize(1)),
-                        withJsonPath("$.publishCourtListStatuses[0].publishStatus", equalTo(EXPORT_SUCCESSFUL.name()))
+                        withJsonPath("$.publishCourtListStatuses[0].publishStatus", equalTo(EXPORT_SUCCESSFUL.name())),
+                        withJsonPath("$.publishCourtListStatuses[0].publishCourtListType", equalTo(FINAL.toString()))
                 )))));
 
+    }
+
+    @Test
+    public void shouldReturnCorrectPublishCourtListStatusForFixedDate() {
+
+        final Set<PublishCourtListType> publishCourtListTypeSet = new HashSet();
+        publishCourtListTypeSet.add(PublishCourtListType.FIRM);
+        publishCourtListTypeSet.add(PublishCourtListType.FINAL);
+
+        when(courtListRepository.courtListPublishStatuses(COURT_CENTRE_ID, publishCourtListTypeSet, parse(PUBLISH_DATE), false))
+                .thenReturn(publishCourtListStatuses());
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("listing.court.list.publish.status"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(PUBLISH_COURT_LIST_TYPES_QUERY_PARAMETER, PUBLISH_COURT_LIST_TYPES.toString())
+                        .add(PUBLISH_DATE_QUERY_PARAMETER, PUBLISH_DATE)
+                        .add(WEEK_COMMENCING_QUERY_PARAMETER, false)
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.getCourtListPublishStatus(query);
+        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.court.list.publish.status"), payloadIsJson(
+                allOf(
+                        withJsonPath("$.publishCourtListStatuses", hasSize(1)),
+                        withJsonPath("$.publishCourtListStatuses[0].publishStatus", equalTo(EXPORT_SUCCESSFUL.name())),
+                        withJsonPath("$.publishCourtListStatuses[0].publishCourtListType", equalTo(FINAL.toString()))
+                )))));
     }
 
 
     private List<CourtListPublishStatusResult> publishCourtListStatuses() {
         final UUID courtCentreId1 = randomUUID();
-        final CourtListPublishStatusResult publishCourtListStatus3 = new CourtListPublishStatusResult(courtCentreId1, FINAL, now(), EXPORT_SUCCESSFUL);
+        final CourtListPublishStatusResult publishCourtListStatus3 = new CourtListPublishStatusResult(courtCentreId1, FINAL, now(), EXPORT_SUCCESSFUL, "");
         return newArrayList(publishCourtListStatus3);
     }
 

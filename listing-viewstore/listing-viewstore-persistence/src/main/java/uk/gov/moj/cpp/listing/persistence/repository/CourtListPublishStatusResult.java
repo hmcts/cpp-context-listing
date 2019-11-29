@@ -15,12 +15,17 @@ public class CourtListPublishStatusResult {
     private PublishStatus publishStatus;
     private String failureMessage;
 
-    public CourtListPublishStatusResult(final UUID courtCentreId, final PublishCourtListType publishCourtListType,
-                                        final ZonedDateTime lastUpdated, final PublishStatus publishStatus) {
+
+    public CourtListPublishStatusResult(final UUID courtCentreId,
+                                        final PublishCourtListType publishCourtListType,
+                                        final ZonedDateTime lastUpdated,
+                                        final PublishStatus publishStatus,
+                                        final String failureMessage) {
         this.courtCentreId = courtCentreId;
         this.publishCourtListType = publishCourtListType;
         this.lastUpdated = lastUpdated;
         this.publishStatus = publishStatus;
+        this.failureMessage = failureMessage;
     }
 
     public UUID getCourtCentreId() {

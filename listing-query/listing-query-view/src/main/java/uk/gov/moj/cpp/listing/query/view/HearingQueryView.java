@@ -16,6 +16,7 @@ import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EA
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -23,7 +24,7 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtListRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
@@ -49,6 +50,8 @@ import org.slf4j.LoggerFactory;
 @ServiceComponent(Component.QUERY_VIEW)
 public class HearingQueryView {
     private static final String PUBLISH_COURT_LIST_TYPES = "publishCourtListTypes";
+    private static final String PUBLISH_DATE = "publishDate";
+    private static final String WEEK_COMMENCING = "weekCommencing";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingQueryView.class);
     private static final String ALLOCATED_QUERY_PARAMETER = "allocated";
@@ -73,7 +76,7 @@ public class HearingQueryView {
     private HearingRepository repository;
 
     @Inject
-    private CourtListRepository courtListRepository;
+    private CourtListPublishStatusJdbcRepository courtListRepository;
 
     @Inject
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
@@ -233,6 +236,8 @@ public class HearingQueryView {
     public JsonEnvelope getCourtListPublishStatus(final JsonEnvelope query) {
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID);
         final String publishCourtListTypes = query.payloadAsJsonObject().getString(PUBLISH_COURT_LIST_TYPES);
+        final LocalDate publishDate = LocalDates.from(query.payloadAsJsonObject().getString(PUBLISH_DATE));
+        final boolean weekCommencing = query.payloadAsJsonObject().getBoolean(WEEK_COMMENCING);
 
         LOGGER.info("Parameters -  " + COURT_CENTRE_ID + " : {}, " + PUBLISH_COURT_LIST_TYPES + " : {}, ", courtCentreId, publishCourtListTypes);
 
@@ -241,14 +246,15 @@ public class HearingQueryView {
                 .collect(toSet());
 
         final JsonArray courtListPublishStatuses = toJsonArray(courtListRepository
-                        .courtListPublishStatuses(fromString(courtCentreId), publishCourtListTypes1),
+                        .courtListPublishStatuses(fromString(courtCentreId), publishCourtListTypes1, publishDate, weekCommencing),
                 publishCourtListStatus -> {
                     final JsonObjectBuilder builder = createObjectBuilder();
                     builder.add("courtCentreId", publishCourtListStatus.getCourtCentreId().toString())
                             .add("publishCourtListType", publishCourtListStatus.getPublishCourtListType().name())
                             .add("lastUpdated", publishCourtListStatus.getLastUpdated().toString())
                             .add("publishStatus", publishCourtListStatus.getPublishStatus().toString())
-                            .add("failureMessage", defaultIfEmpty(publishCourtListStatus.getFailureMessage(), ""));
+                            .add("failureMessage", defaultIfEmpty(publishCourtListStatus.getFailureMessage(), ""))
+                    ;
                     return builder.build();
                 });
 

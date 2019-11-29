@@ -7,6 +7,7 @@ import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.listing.event.PublishStatus;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -49,6 +50,12 @@ public class CourtListPublishStatus implements Serializable {
     @Column(name = "error_message")
     private String errorMessage;
 
+    @Column(name = "publish_date")
+    private LocalDate publishDate;
+
+    @Column(name = "week_commencing")
+    private boolean weekCommencing;
+
     public CourtListPublishStatus() {
 
     }
@@ -57,13 +64,17 @@ public class CourtListPublishStatus implements Serializable {
                                   final UUID courtCentreId,
                                   final PublishCourtListType publishCourtListType,
                                   final PublishStatus publishStatus,
-                                  final ZonedDateTime lastUpdated
+                                  final ZonedDateTime lastUpdated,
+                                  final LocalDate publishDate,
+                                  final boolean weekCommencing
     ) {
         this.publishCourtListStatusId = publishCourtListStatusId;
         this.courtCentreId = courtCentreId;
         this.publishCourtListType = publishCourtListType;
         this.publishStatus = publishStatus;
         this.lastUpdated = lastUpdated;
+        this.publishDate = publishDate;
+        this.weekCommencing = weekCommencing;
     }
 
     public CourtListPublishStatus(final UUID publishCourtListStatusId,
@@ -73,7 +84,9 @@ public class CourtListPublishStatus implements Serializable {
                                   final ZonedDateTime lastUpdated,
                                   final UUID courtListFileId,
                                   final String courtListFileName,
-                                  final String errorMessage
+                                  final String errorMessage,
+                                  final LocalDate publishDate,
+                                  final boolean weekCommencing
     ) {
         this.publishCourtListStatusId = publishCourtListStatusId;
         this.courtCentreId = courtCentreId;
@@ -83,6 +96,8 @@ public class CourtListPublishStatus implements Serializable {
         this.publishStatus = publishStatus;
         this.lastUpdated = lastUpdated;
         this.errorMessage = errorMessage;
+        this.publishDate = publishDate;
+        this.weekCommencing = weekCommencing;
 
     }
 
@@ -149,4 +164,37 @@ public class CourtListPublishStatus implements Serializable {
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
     }
+
+    @Override
+    public String toString() {
+        return new StringBuilder().append("CourtListPublishStatus{")
+                .append(" publishCourtListStatusId=").append(publishCourtListStatusId)
+                .append(", courtCentreId=").append(courtCentreId)
+                .append(", publishCourtListType=").append(publishCourtListType)
+                .append(", publishStatus=").append(publishStatus)
+                .append(", lastUpdated=").append(lastUpdated)
+                .append(", courtListFileId=").append(courtListFileId)
+                .append(", courtListFileName=").append(courtListFileName)
+                .append(", courtListFileId=").append(courtListFileId)
+                .append(", errorMessage=").append(errorMessage)
+                .append(", publishDate=").append(publishDate)
+                .append(", weekCommencing=").append(weekCommencing).append("}").toString();
+    }
+
+    public LocalDate getPublishDate() {
+        return publishDate;
+    }
+
+    public void setPublishDate(LocalDate publishDate) {
+        this.publishDate = publishDate;
+    }
+
+    public boolean isWeekCommencing() {
+        return weekCommencing;
+    }
+
+    public void setWeekCommencing(boolean weekCommencing) {
+        this.weekCommencing = weekCommencing;
+    }
+
 }

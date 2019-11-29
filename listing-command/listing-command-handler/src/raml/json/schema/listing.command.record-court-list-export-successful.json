@@ -24,6 +24,14 @@
     "publishedTime": {
       "type": "string",
       "format": "date-time"
+    },
+    "publishDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "weekCommencing": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [
@@ -31,7 +39,8 @@
     "courtListFileId",
     "courtListFileName",
     "publishCourtListType",
-    "publishedTime"
+    "publishedTime",
+    "publishDate"
   ],
   "additionalProperties": false
 }

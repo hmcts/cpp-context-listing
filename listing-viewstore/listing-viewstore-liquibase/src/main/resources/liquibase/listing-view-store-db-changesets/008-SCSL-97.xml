@@ -23,6 +23,9 @@
             <column name="court_list_file_id" type="UUID"/>
             <column name="court_list_file_name" type="TEXT"/>
             <column name="error_message" type="TEXT"/>
+            <column name="publish_date" type="DATE"/>
+            <column name="week_commencing" type="BOOLEAN"/>
+
         </createTable>
     </changeSet>
 </databaseChangeLog>

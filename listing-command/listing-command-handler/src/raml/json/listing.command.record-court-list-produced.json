@@ -4,5 +4,7 @@
   "courtListFileName": "documentName",
   "publishCourtListType": "FINAL",
   "publishStatus": "COURT_LIST_PRODUCED",
-  "producedTime": "2016-09-09T08:31:40Z"
+  "producedTime": "2016-09-09T08:31:40Z",
+  "publishDate": "2016-07-11",
+  "weekCommencing": false
 }

@@ -33,6 +33,14 @@
     "producedTime": {
       "type": "string",
       "format": "date-time"
+    },
+    "publishDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "weekCommencing": {
+      "type": "boolean",
+      "default": false
     }
   },
   "additionalProperties": false,
@@ -42,6 +50,7 @@
     "courtListFileName",
     "publishCourtListType",
     "publishStatus",
-    "producedTime"
+    "producedTime",
+    "publishDate"
   ]
 }

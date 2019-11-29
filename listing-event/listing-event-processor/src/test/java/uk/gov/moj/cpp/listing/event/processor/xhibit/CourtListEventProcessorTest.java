@@ -21,7 +21,7 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
 
-import java.io.ByteArrayInputStream;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -71,6 +71,8 @@ public class CourtListEventProcessorTest {
         when(courtListMetadataGenerator.generate(tEnvelope, parameters)).thenReturn(courtListMetadata);
         when(courtListFileGenerator.generateXml(tEnvelope, parameters, courtListMetadata)).thenReturn(mockFileContent);
         when(fileServiceClient.store(courtListMetadata, mockFileContent)).thenReturn(generatedDocumentId);
+        when(parameters.getStartDate()).thenReturn(LocalDate.now());
+        when(parameters.getEndDate()).thenReturn(LocalDate.now());
 
         // Tested method
         courtListEventProcessor.handlePublishCourtListRequested(tEnvelope);
@@ -85,7 +87,7 @@ public class CourtListEventProcessorTest {
         final UUID documentId = randomUUID();
         final String documentName = "documentName";
         final JsonObject payload = createObjectBuilder().add("documentId", documentId.toString())
-                .add("documentName", documentName).build();
+                .add("documentName", documentName).add("weekCommencing", true).build();
         final Metadata metadata = metadataBuilder()
                 .withId(randomUUID())
                 .withName(PRIVATE_EVENT_PUBLISH_COURT_LIST_PRODUCED)
@@ -93,7 +95,7 @@ public class CourtListEventProcessorTest {
         final JsonEnvelope tEnvelope = envelopeFrom(metadata, payload);
         courtListEventProcessor.handleProducedCourtList(tEnvelope);
         verify(xhibitService).sendToXhibit(documentId, documentName);
-        verify(publishCourtListCommandSender).recordCourtListExportSuccessful(documentId, documentName);
+        verify(publishCourtListCommandSender).recordCourtListExportSuccessful(documentId, documentName,true);
     }
 
     @Test
@@ -107,12 +109,12 @@ public class CourtListEventProcessorTest {
         final String documentName = "documentName";
         doThrow(new ExportFailedException2()).when(xhibitService).sendToXhibit(documentId, documentName);
         final JsonObject payload = createObjectBuilder().add("documentId", documentId.toString())
-                .add("documentName", documentName)
+                .add("documentName", documentName).add("weekCommencing", false)
                 .build();
         final JsonEnvelope tEnvelope = envelopeFrom(metadata, payload);
         courtListEventProcessor.handleProducedCourtList(tEnvelope);
         verify(xhibitService).sendToXhibit(documentId, documentName);
-        verify(publishCourtListCommandSender).recordCourtListExportFailed(documentId, documentName, "Not reachable");
+        verify(publishCourtListCommandSender).recordCourtListExportFailed(documentId, documentName, "Not reachable", false);
         verify(LOGGER).error(format("Export failed for %s %s %s", documentId, documentName, "Not reachable"));
 
     }
