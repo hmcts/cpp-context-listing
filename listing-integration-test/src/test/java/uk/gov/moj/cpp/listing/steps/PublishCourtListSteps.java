@@ -35,7 +35,7 @@ import com.jayway.restassured.path.json.JsonPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PublishCourtListSteps extends AbstractIT implements AutoCloseable {
+public class PublishCourtListSteps extends CommonHearingSteps implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PublishCourtListSteps.class);
 
@@ -52,7 +52,8 @@ public class PublishCourtListSteps extends AbstractIT implements AutoCloseable {
 
     private final MessageProducerClient privateEventsProducer = new MessageProducerClient();
 
-    public PublishCourtListSteps(final JsonObject commandJsonObject) {
+    public PublishCourtListSteps(final HearingsData hearingsData, final JsonObject commandJsonObject) {
+        super(hearingsData);
         createMessageConsumers();
         givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
         this.commandJsonObject = commandJsonObject;
@@ -110,15 +111,13 @@ public class PublishCourtListSteps extends AbstractIT implements AutoCloseable {
     }
 
 
-    public static List<HearingsData> loadHearingDataWithJudiciary(final UUID courtCentreId) {
+    public static HearingsData loadHearingDataWithJudiciary(final UUID courtCentreId) {
 
-        final HearingsData districtJudgeHearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, "DISTRICT_JUDGE");
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, "DISTRICT_JUDGE");
 
-        final List<HearingsData> hearingsDataList = singletonList(districtJudgeHearingsData);
+        createHearingListed(hearingsData);
 
-        hearingsDataList.forEach(PublishCourtListSteps::createHearingListed);
-
-        return hearingsDataList;
+        return hearingsData;
     }
 
     private static void createHearingListed(final HearingsData hearingsData) {

@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 public class AbstractIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractIT.class);
-    protected static final UUID USER_ID_VALUE = randomUUID();
+    protected static final UUID USER_ID_VALUE = UUID.fromString("a9448185-672e-4aea-94d6-5988355ed459");    // Helen
     protected static final Header CPP_UID_HEADER = new Header(USER_ID, USER_ID_VALUE.toString());
 
     private static final String ENDPOINT_PROPERTIES_FILE = "endpoint.properties";

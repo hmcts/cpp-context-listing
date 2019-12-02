@@ -10,6 +10,7 @@ import static org.junit.Assert.assertThat;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 
 import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.util.UUID;
 
@@ -33,9 +34,10 @@ public class PublishCourtListIT extends AbstractIT {
         UUID courtCentreId = randomUUID();
         final JsonObject publishCourtListJsonObject = buildPublishCourtListJsonString(courtCentreId.toString());
 
-        loadHearingDataWithJudiciary(courtCentreId);
+        final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId);
 
-        try (final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(publishCourtListJsonObject)) {
+        try (final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListJsonObject)) {
+            publishCourtListSteps.verifyHearingListedFromAPI(true);
             sendPublishCourtListCommand(publishCourtListJsonObject);
             publishCourtListSteps.verifyPublishCourtListEventsInActiveMQ();
             publishCourtListSteps.verifyCourtListPublishStatusReturnedWhenQueryingFromAPI("COURT_LIST_PRODUCED");
