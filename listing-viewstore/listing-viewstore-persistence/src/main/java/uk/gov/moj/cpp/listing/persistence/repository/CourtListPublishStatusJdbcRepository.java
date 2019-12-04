@@ -97,8 +97,8 @@ public class CourtListPublishStatusJdbcRepository {
     }
 
     public void save(final CourtListPublishStatus courtListPublishStatus) {
-        try {
-            save(courtListPublishStatus, dataSource.getConnection());
+        try(final Connection connection = dataSource.getConnection()) {
+            save(courtListPublishStatus, connection);
         } catch (final SQLException e) {
             throw new CourtListPublishStatusJdbcException(format("Exception while inserting: %s", COURT_LIST_PUBLISH_STATUS_INSERT_QUERY), e);
         }
