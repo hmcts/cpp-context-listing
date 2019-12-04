@@ -54,7 +54,9 @@ public class CourtListPublishStatusJdbcRepository {
                                                                        final boolean weekCommencing) {
         final List<CourtListPublishStatusResult> courtListPublishStatusResults = new ArrayList();
         final String query = buildQuery(publishCourtListTypes);
-        try (final PreparedStatementWrapper ps = PreparedStatementWrapper.valueOf(dataSource.getConnection(), query)) {
+
+        try (final Connection viewstoreConnection = dataSource.getConnection();
+             final PreparedStatementWrapper ps = PreparedStatementWrapper.valueOf(viewstoreConnection, query)) {
             ps.setObject(1, courtCentreId);
             int index = 2;
             for (final PublishCourtListType publishCourtListType : publishCourtListTypes) {
@@ -70,6 +72,7 @@ public class CourtListPublishStatusJdbcRepository {
         } catch (SQLException e) {
             throw new CourtListPublishStatusJdbcException(format("Exception while executing query: %s", query), e);
         }
+
         return courtListPublishStatusResults;
     }
 

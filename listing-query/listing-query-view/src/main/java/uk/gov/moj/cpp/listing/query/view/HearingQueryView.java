@@ -237,7 +237,7 @@ public class HearingQueryView {
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID);
         final String publishCourtListTypes = query.payloadAsJsonObject().getString(PUBLISH_COURT_LIST_TYPES);
         final LocalDate publishDate = LocalDates.from(query.payloadAsJsonObject().getString(PUBLISH_DATE));
-        final boolean weekCommencing = query.payloadAsJsonObject().getBoolean(WEEK_COMMENCING);
+        final boolean weekCommencing = query.payloadAsJsonObject().getBoolean(WEEK_COMMENCING, false);
 
         LOGGER.info("Parameters -  " + COURT_CENTRE_ID + " : {}, " + PUBLISH_COURT_LIST_TYPES + " : {}, ", courtCentreId, publishCourtListTypes);
 

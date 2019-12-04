@@ -23,6 +23,7 @@ import uk.gov.justice.services.test.utils.core.messaging.MessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -90,7 +91,13 @@ public class PublishCourtListSteps extends CommonHearingSteps implements AutoClo
     public void verifyCourtListPublishStatusReturnedWhenQueryingFromAPI(final String expectedPublishStatus) {
         final String courtCentreId = commandJsonObject.getString("courtCentreId");
         final String courtListType = commandJsonObject.getString("publishCourtListType");
-        final String queryPart = format(ENDPOINT_PROPERTIES.getProperty("listing.court.list.publish.status"), courtCentreId.toString(), courtListType);
+        final String publishDate = LocalDate.now().toString();
+        final String weekCommencing = "true";
+        final String queryPart = format(ENDPOINT_PROPERTIES.getProperty("listing.court.list.publish.status"),
+                courtCentreId,
+                courtListType,
+                publishDate,
+                weekCommencing);
         final String searchCourtListUrl = String.format("%s/%s", baseUri, queryPart);
 
         poll(requestParams(searchCourtListUrl, MEDIA_TYPE_QUERY_COURT_LIST_STATUS).withHeader(USER_ID, getLoggedInUser()))

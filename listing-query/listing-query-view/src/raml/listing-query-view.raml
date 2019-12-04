@@ -188,6 +188,15 @@ protocols: [ HTTP, HTTPS ]
           description: publish court list types delimited by comma(,) (example FIRM,WARN)
           type: string
           required: true
+        publishDate:
+          description: publish date in format 'YYYY-MM-DD'
+          type: date
+          required: true
+        weekCommencing:
+          description: set true when the request is for getting the details
+          type: boolean
+          required: false
+          default: false
     responses:
       200:
         body:
