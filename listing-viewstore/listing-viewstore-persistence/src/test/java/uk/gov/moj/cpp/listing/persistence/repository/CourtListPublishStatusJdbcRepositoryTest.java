@@ -65,7 +65,7 @@ public class CourtListPublishStatusJdbcRepositoryTest extends BaseTransactionalT
     }
 
     private void initDatabase(final DataSource dataSource) throws Exception {
-        courtListRepository = new CourtListPublishStatusJdbcRepository(dataSource);
+        courtListRepository = new CourtListPublishStatusJdbcRepository();
         setField(courtListRepository, "dataSource", dataSource);
         Liquibase liquibase = new Liquibase(LIQUIBASE_MAPPING_CHANGELOG_XML,
                 new ClassLoaderResourceAccessor(), new JdbcConnection(dataSource.getConnection()));

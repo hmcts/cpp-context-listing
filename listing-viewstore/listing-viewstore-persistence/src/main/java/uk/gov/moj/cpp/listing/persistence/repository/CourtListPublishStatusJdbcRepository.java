@@ -7,6 +7,8 @@ import static uk.gov.justice.services.common.converter.ZonedDateTimes.toSqlTimes
 
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.listing.event.PublishStatus;
+import uk.gov.justice.services.jdbc.persistence.PreparedStatementWrapper;
+import uk.gov.justice.services.jdbc.persistence.ViewStoreJdbcDataSourceProvider;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,7 +21,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.sql.DataSource;
 
 @ApplicationScoped
@@ -33,11 +37,16 @@ public class CourtListPublishStatusJdbcRepository {
 
     private static final String COURT_LIST_PUBLISH_STATUS_QUERY_SUFFIX = " AND publish_date = ? AND week_commencing = ? GROUP BY publish_court_list_type)";
 
+    @Inject
+    private ViewStoreJdbcDataSourceProvider viewStoreJdbcDataSourceProvider;
+
     private DataSource dataSource;
 
-    public CourtListPublishStatusJdbcRepository(final DataSource dataSource) {
-        this.dataSource = dataSource;
+    @PostConstruct
+    protected void initialiseDataSource() {
+        dataSource = viewStoreJdbcDataSourceProvider.getDataSource();
     }
+
 
     public List<CourtListPublishStatusResult> courtListPublishStatuses(final UUID courtCentreId,
                                                                        final Set<PublishCourtListType> publishCourtListTypes,
@@ -45,7 +54,7 @@ public class CourtListPublishStatusJdbcRepository {
                                                                        final boolean weekCommencing) {
         final List<CourtListPublishStatusResult> courtListPublishStatusResults = new ArrayList();
         final String query = buildQuery(publishCourtListTypes);
-        try (final PreparedStatement ps = dataSource.getConnection().prepareStatement(query)) {
+        try (final PreparedStatementWrapper ps = PreparedStatementWrapper.valueOf(dataSource.getConnection(), query)) {
             ps.setObject(1, courtCentreId);
             int index = 2;
             for (final PublishCourtListType publishCourtListType : publishCourtListTypes) {

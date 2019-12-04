@@ -11,6 +11,7 @@ import uk.gov.justice.services.core.annotation.FrameworkComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import javax.ejb.Stateless;
@@ -33,6 +34,8 @@ public class PublishCourtListCommandSender {
     private static final String PUBLISH_STATUS = "publishStatus";
     private static final String PRODUCED_TIME = "producedTime";
     private static final String PUBLISHED_TIME = "publishedTime";
+    private static final String PUBLISH_DATE = "publishDate";
+
 
     private static final String WEEK_COMMENCING = "weekCommencing";
 
@@ -45,6 +48,7 @@ public class PublishCourtListCommandSender {
 
     public void recordCourtListProduced(final PublishCourtListRequestParameters requestParameters, final UUID courtListFileId,
                                         final String courtListFileName) {
+        final ZonedDateTime now = utcClock.now();
 
         final JsonObject payload = createObjectBuilder()
                 .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
@@ -52,8 +56,9 @@ public class PublishCourtListCommandSender {
                 .add(COURT_LIST_FILE_ID, courtListFileId.toString())
                 .add(COURT_LIST_FILE_NAME, courtListFileName)
                 .add(PUBLISH_STATUS, "COURT_LIST_PRODUCED")
-                .add(PRODUCED_TIME, ZonedDateTimes.toString(utcClock.now()))
+                .add(PRODUCED_TIME, ZonedDateTimes.toString(now))
                 .add(WEEK_COMMENCING, requestParameters.isWeekCommencing())
+                .add(PUBLISH_DATE, now.toLocalDate().toString())
                 .build();
 
         sendCommandWith(RECORD_COURT_LIST_PRODUCED, courtListFileId, payload);

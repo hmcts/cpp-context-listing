@@ -12,6 +12,10 @@
     "endDate": {
       "$ref": "#/definitions/localDate"
     },
+    "requestedTime": {
+      "type": "string",
+      "format": "date-time"
+    },
     "publishCourtListType": {
       "type": "string",
       "enum": [
