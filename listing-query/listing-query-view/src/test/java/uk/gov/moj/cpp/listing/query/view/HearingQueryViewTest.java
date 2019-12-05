@@ -34,6 +34,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusResult;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
 import java.time.LocalDate;
@@ -46,6 +47,7 @@ import java.util.UUID;
 
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonObject;
 import javax.json.JsonValue;
 import javax.ws.rs.NotFoundException;
 
@@ -115,6 +117,9 @@ public class HearingQueryViewTest {
 
     @Mock
     private RangeSearchQuery rangeSearchQuery;
+
+    @Mock
+    private CourtListService courtListService;
 
     @InjectMocks
     private HearingQueryView hearingsQueryView;
@@ -232,6 +237,19 @@ public class HearingQueryViewTest {
 
     @Test
     public void testRangeSearch() {
+
+        final JsonEnvelope query = mock(JsonEnvelope.class);
+        final JsonEnvelope rangeSearchQueryResponse = mock(JsonEnvelope.class);
+
+        when(rangeSearchQuery.rangeSearchHearings(query)).thenReturn(rangeSearchQueryResponse);
+
+        final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
+
+        assertThat(results, is(rangeSearchQueryResponse));
+    }
+
+    @Test
+    public void searchHearingsWithDateRangeWithAllOptionalParametersNotProvided() {
 
         final JsonEnvelope query = mock(JsonEnvelope.class);
         final JsonEnvelope rangeSearchQueryResponse = mock(JsonEnvelope.class);
@@ -377,6 +395,39 @@ public class HearingQueryViewTest {
                                 .withName("listing.search.hearing"),
                         payloadIsJson(
                                 withJsonPath("$.id", equalTo(ID.toString()))
+                        ))
+                ));
+    }
+
+    @Test
+    public void retrieveCourtList() {
+
+        final UUID courtCentreId = UUID.randomUUID();
+        final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType = uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
+        final LocalDate startDate = LocalDate.now();
+
+        final JsonEnvelope queryEnvelope = generateQuery(
+                createObjectBuilder()
+                        .add("courtCentreId", courtCentreId.toString())
+                        .add("publishCourtListType", publishCourtListType.name())
+                        .add("startDate", startDate.toString())
+                        .build());
+
+        final JsonObject courtListResponsePayload = Json.createObjectBuilder()
+                .add("courtCentreId", courtCentreId.toString())
+                .build();
+
+        when(courtListService.retrieveCourtList(courtCentreId,publishCourtListType,
+                startDate,
+                queryEnvelope)).thenReturn(courtListResponsePayload);
+
+        final JsonEnvelope results = hearingsQueryView.retrieveCourtList(queryEnvelope);
+
+        assertThat(results,
+                is(jsonEnvelope(withMetadataEnvelopedFrom(queryEnvelope)
+                                .withName("listing.courtlist"),
+                        payloadIsJson(
+                                withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString()))
                         ))
                 ));
     }

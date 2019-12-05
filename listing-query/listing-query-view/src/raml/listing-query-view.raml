@@ -173,6 +173,32 @@ protocols: [ HTTP, HTTPS ]
                 example:  !include json/listing.search.court.list.json
                 schema:  !include  json/schema/listing.search.court.list.json
 
+/courtlist/{courtCentreId}/{startDate}/{publishCourtListType}:
+  uriParameters:
+    courtCentreId:
+      description: The ID of the court site
+      type: string
+    startDate:
+      description: Start date for court list (fixed or week-commencing) YYYY-MM-DD
+      type: date
+    publishCourtListType:
+      description: WARN, DRAFT, FIRM, FINAL
+      type: string
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.courtlist+json
+          name: listing.courtlist
+      ...
+    responses:
+          200:
+              description: OK
+              body:
+                application/vnd.listing.courtlist+json:
+                  example: !include json/listing.courtlist.json
+                  schema:  !include json/schema/listing.courtlist.json
+
 /courtListPublishStatus/{courtCentreId}:
   description: get status of latest publish court list document
   get:

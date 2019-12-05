@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view;
 
+import static java.time.LocalDate.parse;
 import static java.time.LocalTime.MAX;
 import static java.time.LocalTime.MIN;
 import static java.util.UUID.fromString;
@@ -22,6 +23,7 @@ import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
 
@@ -35,6 +37,7 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 import javax.json.JsonArray;
+import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.NotFoundException;
 
@@ -77,6 +80,9 @@ public class HearingQueryView {
 
     @Inject
     private RangeSearchQuery rangeSearchQuery;
+
+    @Inject
+    private CourtListService courtListService;
 
     @Inject
     private Enveloper enveloper;
@@ -161,6 +167,20 @@ public class HearingQueryView {
         }
     }
 
+    @Handles("listing.courtlist")
+    public JsonEnvelope retrieveCourtList(final JsonEnvelope query) {
+
+        final JsonObject queryPayload = query.payloadAsJsonObject();
+
+        final JsonObject courtListResponsePayload = courtListService.retrieveCourtList(
+                fromString(queryPayload.getString("courtCentreId")),
+                uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.valueOf(queryPayload.getString("publishCourtListType")),
+                parse(queryPayload.getString("startDate")),
+                query
+        );
+        return enveloper.withMetadataFrom(query, "listing.courtlist").apply(courtListResponsePayload);
+    }
+
     @Handles("listing.court.list.publish.status")
     public JsonEnvelope getCourtListPublishStatus(final JsonEnvelope query) {
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID);
@@ -211,7 +231,7 @@ public class HearingQueryView {
     }
 
     private UUID extractUUID(final JsonEnvelope query) {
-        return UUID.fromString(query.payloadAsJsonObject().getString(ID, null));
+        return fromString(query.payloadAsJsonObject().getString(ID, null));
     }
 
     private JsonEnvelope createAlphabeticalListJsonEnvelope(final JsonEnvelope query, final List<Hearing> matchedHearings) {
@@ -239,7 +259,7 @@ public class HearingQueryView {
 
     private String getDateTimeAsString(final String date, final String time, final String defaultTime) {
         final String copyTime = Strings.isNullOrEmpty(time) ? defaultTime : time;
-        final LocalDate localDate = LocalDate.parse(date);
+        final LocalDate localDate = parse(date);
         final LocalTime localTime = LocalTime.parse(copyTime);
         return localDate.atTime(localTime).toString();
     }
