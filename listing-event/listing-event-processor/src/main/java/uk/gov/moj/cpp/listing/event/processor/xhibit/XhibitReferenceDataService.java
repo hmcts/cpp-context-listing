@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
-import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
@@ -19,6 +18,7 @@ import javax.json.JsonObject;
 
 public class XhibitReferenceDataService {
 
+    private static final String REFERENCEDATA_QUERY_XHIBIT_COURTROOM_MAPPINGS = "referencedata.query.cp-xhibit-courtroom-mappings";
     private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
     private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
     private static final String REFERENCEDATA_QUERY_JUDGE = "referencedata.get.judge";
@@ -28,10 +28,22 @@ public class XhibitReferenceDataService {
     @ServiceComponent(Component.EVENT_PROCESSOR)
     private Requester requester;
 
-    @SuppressWarnings("squid:S1172") // Use envelope when fully implemented
+    // TODO: https://tools.hmcts.net/jira/browse/SCSL-251
     public CourtLocation getCourtDetails(final Envelope envelope, final UUID courtCentreId) {
-        // TODO Implemented when SCRD-512 is ready
-        return new CourtLocation("000", "DUMMYCOURTNAME", "DUMMY", "DUMMYSITECODE", "CROWN_COURT");
+
+        final JsonObject queryParameters = createObjectBuilder().add("oucode_uuid", courtCentreId.toString()).build();
+
+        final JsonObject courtRoom = requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_XHIBIT_COURTROOM_MAPPINGS)
+                .withMetadataFrom(envelope))
+                .payloadAsJsonObject().getJsonArray("cpXhibitCourtRoomMappings").getValuesAs(JsonObject.class)
+                .stream().findFirst().orElseThrow(() -> new RuntimeException(format("Cannot find court details with courtCentre %s", courtCentreId)));
+
+        return new CourtLocation(courtRoom.getString("crestCourtSiteId"),
+                                 courtRoom.getString("crestCourtSiteName"),
+                                 courtRoom.getString("crestCourtShortName"),
+                                 courtRoom.getString("crestCourtSiteCode"),
+                                 courtRoom.getString("courtType"));
+
     }
 
     public int getCourtRoomNumber(final JsonEnvelope envelope, final UUID courtCentreId, final UUID courtRoomId) {
