@@ -23,6 +23,7 @@ import java.util.UUID;
 import javax.json.JsonObject;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -66,6 +67,8 @@ public class XhibitReferenceDataServiceTest {
                                 .add("courtCentreId", randomUUID().toString()).build());
     }
 
+    // TODO: Remove @Ignore when SCRD-512 is ready
+    @Ignore
     @Test
     public void shouldGetCourtDetails() throws Exception {
 
