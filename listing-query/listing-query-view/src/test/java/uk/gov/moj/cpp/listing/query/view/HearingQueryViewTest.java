@@ -13,6 +13,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
 import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
@@ -111,6 +112,9 @@ public class HearingQueryViewTest {
 
     @Mock
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
+
+    @Mock
+    private RangeSearchQuery rangeSearchQuery;
 
     @InjectMocks
     private HearingQueryView hearingsQueryView;
@@ -227,193 +231,18 @@ public class HearingQueryViewTest {
     }
 
     @Test
-    public void searchHearingsWithDateRangeWithAllParametersProvided() {
+    public void testRangeSearch() {
 
-        final List<Hearing> hearingsJson = hearingsJson();
-        final JsonArray hearingsJsonArray = hearingsJsonArray();
+        final JsonEnvelope query = mock(JsonEnvelope.class);
+        final JsonEnvelope rangeSearchQueryResponse = mock(JsonEnvelope.class);
 
-        when(hearingRepository.findHearings(
-                ALLOCATED,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID_SEARCH,
-                HEARING_TYPE_ID.toString(),
-                JURISDICTION_TYPE.toString(),
-                SEARCH_DATE.toString(),
-                SEARCH_DATE.toString()))
-                .thenReturn(hearingsJson);
-        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
-
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("event.name"),
-                createObjectBuilder()
-                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
-                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
-                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
-                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
-                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
-                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
-                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
-                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
-                        .build());
+        when(rangeSearchQuery.rangeSearchHearings(query)).thenReturn(rangeSearchQueryResponse);
 
         final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
 
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
-                payloadIsJson(
-                        withJsonPath("$.hearings[0].hello", equalTo("world"))
-                ))
-        ));
-
+        assertThat(results, is(rangeSearchQueryResponse));
     }
 
-    @Test
-    public void searchHearingsWithWeekCommencingDateRange() {
-
-        final List<Hearing> hearingsJson = hearingJsonForWeekCommencing();
-        final JsonArray hearingsJsonArray = hearingsForWeekCommencingJsonArray();
-
-        when(hearingRepository.findHearingsByWeekCommencingRange(
-                null,
-                null,
-                AUTHORITY_ID_SEARCH,
-                null,
-                null,
-                WEEK_COMMENCING_START_DATE.toString(),
-                WEEK_COMMENCING_END_DATE.toString()))
-                .thenReturn(hearingsJson);
-        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
-
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("event.name"),
-                createObjectBuilder()
-                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
-                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
-                        .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
-                        .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, WEEK_COMMENCING_END_DATE.toString())
-                        .build());
-
-        final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
-
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
-                payloadIsJson(
-                        withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo("2019-10-13"))
-                ))
-        ));
-    }
-
-    @Test
-    public void searchUnallocatedHearingsWithWeekCommencingDateRange() {
-
-        final List<Hearing> hearingsJson = hearingJsonForWeekCommencing();
-        final JsonArray hearingsJsonArray = hearingsForWeekCommencingJsonArray();
-
-        when(hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
-                null,
-                null,
-                AUTHORITY_ID_SEARCH,
-                null,
-                null,
-                EARLIEST_SEARCH_DATE,
-                LATEST_SEARCH_DATE,
-                false))
-                .thenReturn(hearingsJson);
-        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
-
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("event.name"),
-                createObjectBuilder()
-                        .add(ALLOCATED_QUERY_PARAMETER, false)
-                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
-                        .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
-                        .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, "")
-                        .build());
-
-        final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
-
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
-                payloadIsJson(
-                        withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo("2019-10-13"))
-                ))
-        ));
-    }
-
-    @Test
-    public void searchHearingsWithSearchDateWithAllOptionalParametersNotProvided() {
-
-        final List<Hearing> hearingsJson = hearingsJson();
-        final JsonArray hearingsJsonArray = hearingsJsonArray();
-
-        when(hearingRepository.findHearings(
-                ALLOCATED,
-                null,
-                null,
-                HearingRepository.ALL_AUTHORITY_CODES_SEARCH,
-                null,
-                null,
-                SEARCH_DATE.toString(),
-                EARLIEST_SEARCH_DATE_TIME.toString(),
-                LATEST_SEARCH_DATE_TIME.toString()
-        ))
-                .thenReturn(hearingsJson);
-        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
-
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("event.name"),
-                createObjectBuilder()
-                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
-                        .add(SEARCH_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
-                        .build());
-
-        final JsonEnvelope results = hearingsQueryView.searchHearings(query);
-
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
-                payloadIsJson(
-                        withJsonPath("$.hearings[0].hello", equalTo("world"))
-                ))
-        ));
-
-    }
-
-    @Test
-    public void searchHearingsWithDateRangeWithAllOptionalParametersNotProvided() {
-
-        final List<Hearing> hearingsJson = hearingsJson();
-        final JsonArray hearingsJsonArray = hearingsJsonArray();
-
-        when(hearingRepository.findHearings(
-                ALLOCATED,
-                null,
-                null,
-                HearingRepository.ALL_AUTHORITY_CODES_SEARCH,
-                null,
-                null,
-                EARLIEST_SEARCH_DATE,
-                LATEST_SEARCH_DATE
-        ))
-                .thenReturn(hearingsJson);
-        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
-
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("event.name"),
-                createObjectBuilder()
-                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
-                        .build());
-
-        final JsonEnvelope results = hearingsQueryView.rangeSearchHearings(query);
-
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
-                payloadIsJson(
-                        withJsonPath("$.hearings[0].hello", equalTo("world"))
-                ))
-        ));
-
-    }
 
     @Test
     public void getAlphabeticalCourtListContentWithAllParamsProvided() throws Exception {
@@ -445,6 +274,7 @@ public class HearingQueryViewTest {
         ));
 
     }
+
 
     @Test
     public void searchHearingsAllCaseApplicationsEjected() throws Exception {
@@ -588,28 +418,4 @@ public class HearingQueryViewTest {
 
     }
 
-    private List<Hearing> hearingJsonForWeekCommencing() {
-        final String testJsonString = "{\n" +
-                "\t\"hearings\": [{\n" +
-                "\t\t\"id\": \"54482cb7-31aa-4c64-8656-3be6e3a4d158\",\n" +
-                "\t\t\"weekCommencingStartDate\": \"2019-10-13\",\n" +
-                "\t\t\"weekCommencingEndDate\": \"2019-10-25\",\n" +
-                "\t\t\"listedCases\": [{\n" +
-                "\t\t}],\n" +
-                "\t\t\"courtApplications\": [{\n" +
-                "\t\t}]\n" +
-                "\t}]\n" +
-                "}";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
-        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
-        return newArrayList(hearing1, hearing2);
-
-    }
-
-    private JsonArray hearingsForWeekCommencingJsonArray() {
-        return Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
-                        .add("weekCommencingStartDate", "2019-10-13"))
-                .build();
-    }
 }

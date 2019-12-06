@@ -6,14 +6,10 @@ import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toSet;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
-import static org.apache.commons.lang3.BooleanUtils.isFalse;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
-import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.LocalDates;
@@ -67,8 +63,6 @@ public class HearingQueryView {
     private static final String END_TIME = "endTime";
     private static final String LIST_ID = "listId";
     private static final String HEARINGS = "hearings";
-    private static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
-    private static final String WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
     private static final String ID = "id";
     private static final String NAME_LISTING_SEARCH_HEARING = "listing.search.hearing";
 
@@ -80,6 +74,9 @@ public class HearingQueryView {
 
     @Inject
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
+
+    @Inject
+    private RangeSearchQuery rangeSearchQuery;
 
     @Inject
     private Enveloper enveloper;
@@ -130,75 +127,7 @@ public class HearingQueryView {
 
     @Handles("listing.range.search.hearings")
     public JsonEnvelope rangeSearchHearings(final JsonEnvelope query) {
-        final boolean allocated = query.payloadAsJsonObject().getBoolean(ALLOCATED_QUERY_PARAMETER, false);
-        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
-        final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
-        final String authorityId = query.payloadAsJsonObject().getString(AUTHORITY_ID, null);
-        final String authorityIdSearchString = getAuthorityIdSearchString(authorityId);
-        final String hearingTypeId = query.payloadAsJsonObject().getString(HEARING_TYPE, null);
-        final String jurisdictionType = query.payloadAsJsonObject().getString(JURISDICTION_TYPE, null);
-        final String startDate = query.payloadAsJsonObject().getString(START_DATE, EARLIEST_SEARCH_DATE);
-        final String endDate = query.payloadAsJsonObject().getString(END_DATE, LATEST_SEARCH_DATE);
-        final String weekCommencingStartDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_START_DATE, null));
-        final String weekCommencingEndDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_END_DATE, null));
-
-        LOGGER.info("Query params -  " +
-                        "allocated: {}, " +
-                        "courtCentreId: {}, " +
-                        "courtRoomId: {}, " +
-                        "authorityId: {}, " +
-                        "hearingTypeId: {}, " +
-                        "jurisdictionType: {}, " +
-                        "startDate: {}, " +
-                        "endDate: {}, " +
-                        "weekCommencingStartDate: {}, " +
-                        "weekCommencingEndDate: {}, "
-                ,
-                allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate);
-
-        final List<Hearing> hearings = !weekCommencingStartDate.isEmpty() ?
-                findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate) :
-                findHearings(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, startDate, endDate);
-
-        return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
-                createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
-                        .build()
-        );
-    }
-
-    private List<Hearing> findHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate) {
-        return isFalse(allocated) ?
-                repository.findUnallocatedHearingsByWeekCommencingRange(
-                        courtCentreId,
-                        courtRoomId,
-                        authorityIdSearchString,
-                        hearingTypeId,
-                        jurisdictionType,
-                        EARLIEST_SEARCH_DATE,
-                        LATEST_SEARCH_DATE,
-                        allocated) :
-                repository.findHearingsByWeekCommencingRange(
-                        courtCentreId,
-                        courtRoomId,
-                        authorityIdSearchString,
-                        hearingTypeId,
-                        jurisdictionType,
-                        weekCommencingDate,
-                        weekCommencingEndDate);
-    }
-
-    private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate) {
-        return repository.findHearings(
-                allocated,
-                courtCentreId,
-                courtRoomId,
-                authorityIdSearchString,
-                hearingTypeId,
-                jurisdictionType,
-                startDate,
-                endDate
-        );
+        return rangeSearchQuery.rangeSearchHearings(query);
     }
 
     @Handles("listing.search.court.list")
@@ -324,4 +253,5 @@ public class HearingQueryView {
             return ALL_AUTHORITY_CODES_SEARCH;
         }
     }
+
 }
