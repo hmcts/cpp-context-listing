@@ -36,6 +36,7 @@ public class RangeSearchQuery {
 
 
     @SuppressWarnings("squid:S1312")
+    @Inject
     private Logger logger;
 
     @Inject
