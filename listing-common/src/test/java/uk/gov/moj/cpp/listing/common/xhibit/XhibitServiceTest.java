@@ -51,7 +51,7 @@ public class XhibitServiceTest {
 
     @InjectMocks
     @Spy
-    private XhibitService xhibitService;
+    private DefaultXhibitService xhibitService;
 
     @Test
     public void shouldSendExportFileToXhibit() throws Exception {
@@ -107,6 +107,45 @@ public class XhibitServiceTest {
             final String errorMessage = format("Failed to send to Xhibit,%s, for document with id: %s and name: %s", "Not reachable", documentId, documentName);
             assertThat(e.getMessage(), is(errorMessage));
             inOrder.verify(logger).info("Listing: Sending file 'Xhibit_000001_20161212121212.xml' to Xhibit");
+            inOrder.verify(logger).error(errorMessage);
+        }
+    }
+
+    @Test
+    public void shouldSendExportFileToXhibitWithInputStream() throws Exception {
+
+        final String documentName = "Xhibit_000001_20181212121211.xml";
+
+        when(fileReference.getContentStream()).thenReturn(content);
+        when(xhibitSessionFactory.createSession()).thenReturn(ftpsSession);
+
+        xhibitService.sendToXhibit(content, documentName);
+
+        final InOrder inOrder = inOrder(ftpsSession, logger, fileRetriever, xhibitSessionFactory);
+
+        inOrder.verify(xhibitSessionFactory).createSession();
+        inOrder.verify(ftpsSession).exportFile(documentName, content);
+        inOrder.verify(logger).info("Listing: File '" + documentName + "' successfully exported to Xhibit");
+
+    }
+
+    @Test
+    public void shouldFailExportFileToXhibitWithInputStreamWhenExhibitNotReachable() throws Exception {
+
+        final String documentName = "Xhibit_000001_20161212121212.xml";
+
+        when(fileReference.getContentStream()).thenReturn(content);
+        when(xhibitSessionFactory.createSession()).thenReturn(ftpsSession);
+        doThrow(Exception2.class).when(ftpsSession).exportFile(documentName, content);
+        final InOrder inOrder = inOrder(logger);
+
+        try {
+            xhibitService.sendToXhibit(content, documentName);
+            fail();
+        } catch (final ExportFailedException e) {
+            final String errorMessage = format("Failed to send to Xhibit,%s, for document with name: %s", "Not reachable", documentName);
+            assertThat(e.getMessage(), is(errorMessage));
+            inOrder.verify(logger).info("Listing: Sending file '" + documentName + "' to Xhibit");
             inOrder.verify(logger).error(errorMessage);
         }
     }
