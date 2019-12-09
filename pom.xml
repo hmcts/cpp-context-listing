@@ -41,6 +41,8 @@
         <slf4j-log4j12.version>1.7.10</slf4j-log4j12.version>
         <postgresql.version>42.1.4</postgresql.version>
         <cpp-platform-data-utils.version>6.4.2</cpp-platform-data-utils.version>
+        <mssql.jdbc.version>7.0.0.jre8</mssql.jdbc.version>
+        <commons-csv.version>1.4</commons-csv.version>
     </properties>
 
     <modules>

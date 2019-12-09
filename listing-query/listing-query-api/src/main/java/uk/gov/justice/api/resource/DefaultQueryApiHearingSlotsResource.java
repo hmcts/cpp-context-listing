@@ -22,11 +22,11 @@ import com.google.common.collect.ImmutableMap;
 public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlotsResource {
 
     @Inject
-    @Value(key = "search-hearing-slots.url", defaultValue = "https://restapilatency-spike-function.azure-api.net/sandlblobeventprocessor/getApiForSchedulingAndListingTesting")
+    @Value(key = "rotasl.search-hearing-slots.url", defaultValue = "https://restapilatency-spike-function.azure-api.net/sandlblobeventprocessor/getApiForSchedulingAndListingTesting")
     private String searchHearingSlotsUrl;
 
     @Inject
-    @Value(key = "search-hearing-slots.subscription.key", defaultValue = "93411ae22b514c12ade724e880c135dc")
+    @Value(key = "rotasl.search-hearing-slots.subscription.key", defaultValue = "93411ae22b514c12ade724e880c135dc")
     private String searchHearingSlotsSubscriptionKey;
 
     @Inject

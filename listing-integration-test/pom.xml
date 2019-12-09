@@ -35,16 +35,25 @@
             <version>2.5.0</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
             <artifactId>listing-domain-common</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <version>${mssql.jdbc.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${commons-csv.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-
     <profiles>
         <profile>
             <id>build</id>
