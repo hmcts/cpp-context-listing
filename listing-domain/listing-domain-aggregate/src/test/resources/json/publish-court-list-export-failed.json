@@ -2,14 +2,13 @@
   "_metadata": {
     "name": "listing.event.publish-court-list-export-failed"
   },
-  "publishCourtListRequestId" : "8472d2de-faf8-4ad6-861d-30637daf37c6",
   "courtCentreId": "5c5a1d30-0414-11e7-93ae-92361f002671",
   "courtListFileId": "5c5a1d30-0414-11e7-93ae-92361f002671",
-  "courtListFileName":"documentName",
-  "publishCourtListType":"FINAL",
-  "publishStatus":"EXPORT_FAILED",
-  "failedTime": "2016-07-11T12:55:28.180Z",
+  "courtListFileName": "documentName",
   "errorMessage": "Can't send to this recipient using a team-only API key",
-  "publishDate":"2016-07-11",
+  "failedTime": "2016-07-11T12:55:28.180Z",
+  "publishCourtListRequestId": "8472d2de-faf8-4ad6-861d-30637daf37c6",
+  "publishCourtListType": "FINAL",
+  "publishStatus": "EXPORT_FAILED",
   "weekCommencing": false
 }

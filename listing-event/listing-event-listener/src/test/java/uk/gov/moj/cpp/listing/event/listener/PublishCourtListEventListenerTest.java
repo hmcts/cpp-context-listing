@@ -28,6 +28,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusJdbcR
 import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatus;
 
 import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.Test;
@@ -151,8 +152,8 @@ public class PublishCourtListEventListenerTest {
 
         final PublishCourtListExportFailed publishCourtListExportFailed = publishCourtListExportFailed()
                 .withCourtCentreId(COURT_CENTRE_ID)
-                .withCourtListFileId(courtListFileId)
-                .withCourtListFileName(courtListFileName)
+                .withCourtListFileId(Optional.of(courtListFileId))
+                .withCourtListFileName(Optional.of(courtListFileName))
                 .withPublishCourtListType(courtListType)
                 .withFailedTime(failedTimeStamp)
                 .withErrorMessage(errorMessage)

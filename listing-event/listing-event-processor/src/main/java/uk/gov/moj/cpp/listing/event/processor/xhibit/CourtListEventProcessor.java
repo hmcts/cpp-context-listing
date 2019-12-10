@@ -9,7 +9,6 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.common.xhibit.ExportFailedException;
 import uk.gov.moj.cpp.listing.common.xhibit.XhibitService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListFileGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
@@ -81,7 +80,8 @@ public class CourtListEventProcessor {
         }
     }
 
-    @SuppressWarnings("squid:S1166")
+    @SuppressWarnings({"squid:S1166","squid:S2221"})
+    // Allow any exception to be handled by recording it as a failed export
     @Handles(PRIVATE_EVENT_PUBLISH_COURT_LIST_PRODUCED)
     public void handleProducedCourtList(final JsonEnvelope envelope) {
         if (logger.isInfoEnabled()) {
@@ -95,11 +95,10 @@ public class CourtListEventProcessor {
         try {
             xhibitService.sendToXhibit(event.getCourtListFileId(), event.getCourtListFileName());
             publishCourtListCommandSender.recordCourtListExportSuccessful(event.getPublishCourtListRequestId());
-        } catch (final ExportFailedException e) {
+        } catch (final Exception e) {
             logger.error(format("Export failed for %s %s %s", fileId, fileName, e.getMessage()), e);
             publishCourtListCommandSender.recordCourtListExportFailed(event.getPublishCourtListRequestId(),
                     e.getMessage());
         }
-
     }
 }

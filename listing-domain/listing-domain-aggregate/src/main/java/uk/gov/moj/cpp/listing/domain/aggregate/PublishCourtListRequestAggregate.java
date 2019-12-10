@@ -112,14 +112,13 @@ public class PublishCourtListRequestAggregate implements Aggregate {
         return apply(of(publishCourtListExportFailed()
                 .withPublishCourtListRequestId(publishCourtListRequestId)
                 .withCourtCentreId(courtCentreId)
-                .withCourtListFileId(courtListFileId)
-                .withCourtListFileName(courtListFileName)
+                .withCourtListFileId(Optional.ofNullable(courtListFileId))
+                .withCourtListFileName(Optional.ofNullable(courtListFileName))
                 .withPublishCourtListType(publishCourtListType)
                 .withPublishStatus(EXPORT_FAILED)
-                .withErrorMessage(errorMessage)
-                .withWeekCommencing(Optional.of(weekCommencing))
-                .withPublishDate(Optional.ofNullable(publishDate).orElse(now()).toString())
                 .withFailedTime(failedTime)
+                .withErrorMessage(errorMessage)
+                .withWeekCommencing(Optional.ofNullable(weekCommencing))
                 .build()));
     }
 

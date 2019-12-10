@@ -54,13 +54,10 @@
   "required": [
     "publishCourtListRequestId",
     "courtCentreId",
-    "courtListFileId",
-    "courtListFileName",
     "publishCourtListType",
     "publishStatus",
     "failedTime",
-    "errorMessage",
-    "publishDate"
+    "errorMessage"
   ],
   "additionalProperties": false
 }

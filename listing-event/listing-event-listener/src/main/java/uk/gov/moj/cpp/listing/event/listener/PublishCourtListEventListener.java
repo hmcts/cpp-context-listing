@@ -64,7 +64,8 @@ public class PublishCourtListEventListener {
         final CourtListPublishStatus exportFailed = new CourtListPublishStatus(
                 randomUUID(), publishCourtListExportFailed.getCourtCentreId(),
                 publishCourtListExportFailed.getPublishCourtListType(), EXPORT_FAILED, publishCourtListExportFailed.getFailedTime(),
-                publishCourtListExportFailed.getCourtListFileId(), publishCourtListExportFailed.getCourtListFileName(),
+                publishCourtListExportFailed.getCourtListFileId().orElse(null),
+                publishCourtListExportFailed.getCourtListFileName().orElse(null),
                 publishCourtListExportFailed.getErrorMessage(),
                 publishCourtListExportFailed.getFailedTime().toLocalDate(),
                 publishCourtListExportFailed.getWeekCommencing().orElse(false)
