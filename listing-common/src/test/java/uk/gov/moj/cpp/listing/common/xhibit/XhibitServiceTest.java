@@ -51,7 +51,7 @@ public class XhibitServiceTest {
 
     @InjectMocks
     @Spy
-    private DefaultXhibitService xhibitService;
+    private XhibitService xhibitService;
 
     @Test
     public void shouldSendExportFileToXhibit() throws Exception {
@@ -66,9 +66,9 @@ public class XhibitServiceTest {
 
         final InOrder inOrder = inOrder(ftpsSession, logger, fileRetriever, xhibitSessionFactory);
 
+        inOrder.verify(fileRetriever).retrieve(documentId);
         inOrder.verify(logger).info("Listing: Sending file 'Xhibit_000001_20161212121212.xml' to Xhibit");
         inOrder.verify(xhibitSessionFactory).createSession();
-        inOrder.verify(fileRetriever).retrieve(documentId);
         inOrder.verify(ftpsSession).exportFile(documentName, content);
         inOrder.verify(logger).info("Listing: File 'Xhibit_000001_20161212121212.xml' successfully exported to Xhibit");
     }
@@ -85,7 +85,6 @@ public class XhibitServiceTest {
             xhibitService.sendToXhibit(documentId, documentName);
             fail();
         } catch (final ExportFailedException e) {
-            inOrder.verify(logger).info("Listing: Sending file 'Xhibit_000001_20161212121212.xml' to Xhibit");
             inOrder.verify(logger).error(format("Failed to retrieve file from File Service, %s, %s", "File not found", documentId));
         }
     }

@@ -46,9 +46,14 @@ public class XhibitSession implements AutoCloseable {
                     SENDING_EXPORT_FILE_ERROR, filename, outboundUrl);
             logger.error(errorMessage, e.getMessage());
             throw new ExportFailedException(errorMessage, e);
+        } finally {
+            try {
+                content.close();
+            } catch (IOException e) {
+                logger.error(e.getMessage());
+            }
         }
     }
-
 
     public Sardine getClient() {
         return client;
