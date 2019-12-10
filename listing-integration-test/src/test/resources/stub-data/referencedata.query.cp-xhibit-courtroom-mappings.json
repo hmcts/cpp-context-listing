@@ -5,12 +5,12 @@
       "oucode": "C01BL00",
       "courtRoomId": 1234,
       "crestCourtId": "428",
-      "crestCourtSiteId": "428",
+      "crestCourtSiteId": "000",
       "crestCourtSiteName": "DUMMYCOURTNAME",
-      "crestCourtShortName": "BLF",
+      "crestCourtShortName": "DUMMY",
       "crestCourtSiteCode": "A",
       "crestCourtRoomName": "CourtRoom 1",
-      "courtType": "MAGISTRATES_COURT",
+      "courtType": "CROWN_COURT",
       "validFrom": "2016-04-08"
     },
     {
@@ -18,11 +18,11 @@
       "oucode": "C43AY00",
       "courtRoomId": 38,
       "crestCourtId": "428",
-      "crestCourtSiteId": "428",
+      "crestCourtSiteId": "000",
       "crestCourtSiteName": "DUMMYCOURTNAME",
-      "crestCourtShortName": "BLF",
+      "crestCourtShortName": "DUMMY",
       "crestCourtSiteCode": "A",
-      "courtType": "MAGISTRATES_COURT",
+      "courtType": "CROWN_COURT",
       "crestCourtRoomName": "CourtRoom 2"
     }
   ]

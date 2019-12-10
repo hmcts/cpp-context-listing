@@ -66,8 +66,6 @@ public class XhibitReferenceDataServiceTest {
                                 .add("courtCentreId", randomUUID().toString()).build());
     }
 
-    // TODO: Remove @Ignore when SCRD-512 is ready
-    @Ignore
     @Test
     public void shouldGetCourtDetails() throws Exception {
 
@@ -106,7 +104,7 @@ public class XhibitReferenceDataServiceTest {
         assertEquals(courtDetails.getCourtSiteCode(), courtSiteCode);
         assertEquals(courtDetails.getCourtType(), courtType);
 
-        assertEquals(courtCentreId.toString(), actualRequestParameters.getString("oucode_uuid"));
+        assertEquals(courtCentreId.toString(), actualRequestParameters.getString("ouId"));
 
     }
 

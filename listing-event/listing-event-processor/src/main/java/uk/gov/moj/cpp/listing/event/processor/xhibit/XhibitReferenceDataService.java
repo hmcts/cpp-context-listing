@@ -28,10 +28,24 @@ public class XhibitReferenceDataService {
     @ServiceComponent(Component.EVENT_PROCESSOR)
     private Requester requester;
 
-    @SuppressWarnings("squid:S1172") // Use envelope when fully implemented
+    // TODO: https://tools.hmcts.net/jira/browse/SCSL-251
     public CourtLocation getCourtDetails(final Envelope envelope, final UUID courtCentreId) {
-        // TODO Implemented when SCRD-512 is ready
-        return new CourtLocation("000", "DUMMYCOURTNAME", "DUMMY", "DUMMYSITECODE", "CROWN_COURT");
+
+        final JsonObject queryParameters = createObjectBuilder().add("ouId", courtCentreId.toString()).build();
+
+        // Temporarily using cp-xhibit-courtroom-mappings until cp-xhibit-court-mappings is complete
+        // cp-xhibit-courtroom-mappings shares court details in every entry, hence taking the 1st element
+        final JsonObject courtRoom = requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_XHIBIT_COURTROOM_MAPPINGS)
+                .withMetadataFrom(envelope))
+                .payloadAsJsonObject().getJsonArray("cpXhibitCourtRoomMappings").getValuesAs(JsonObject.class)
+                .stream().findFirst().orElseThrow(() -> new RuntimeException(format("Cannot find court details with courtCentre %s", courtCentreId)));
+
+        return new CourtLocation(courtRoom.getString("crestCourtSiteId"),
+                courtRoom.getString("crestCourtSiteName"),
+                courtRoom.getString("crestCourtShortName"),
+                courtRoom.getString("crestCourtSiteCode"),
+                courtRoom.getString("courtType"));
+
     }
 
     public int getCourtRoomNumber(final JsonEnvelope envelope, final UUID courtCentreId, final UUID courtRoomId) {
