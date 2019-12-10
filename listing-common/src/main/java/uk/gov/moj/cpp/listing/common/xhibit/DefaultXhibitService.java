@@ -28,6 +28,7 @@ public class DefaultXhibitService implements XhibitService {
     @Inject
     private XhibitSessionFactory xhibitSessionFactory;
 
+    @Inject
     private XhibitSession xhibitSession;
 
     @SuppressWarnings({"squid:S1166", "squid:S1162", "squid:S2139", "squid:S2629"})
