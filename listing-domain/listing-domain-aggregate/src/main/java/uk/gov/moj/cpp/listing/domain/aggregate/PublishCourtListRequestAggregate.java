@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
+import static java.time.LocalDate.now;
 import static java.util.stream.Stream.of;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.doNothing;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
@@ -117,7 +118,7 @@ public class PublishCourtListRequestAggregate implements Aggregate {
                 .withPublishStatus(EXPORT_FAILED)
                 .withErrorMessage(errorMessage)
                 .withWeekCommencing(Optional.of(weekCommencing))
-                .withPublishDate(publishDate.toString())
+                .withPublishDate(Optional.ofNullable(publishDate).orElse(now()).toString())
                 .withFailedTime(failedTime)
                 .build()));
     }
