@@ -51,7 +51,7 @@ public class XhibitServiceTest {
 
     @InjectMocks
     @Spy
-    private XhibitService xhibitService;
+    private DefaultXhibitService xhibitService;
 
     @Test
     public void shouldSendExportFileToXhibit() throws Exception {
