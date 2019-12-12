@@ -1,0 +1,36 @@
+@startuml
+title Publish Court List v2.1 (multiple court sites per XML file)
+
+' Change Log
+
+' v2
+' * Publishing Court Lists now saves the list to the 'published_court_list' table
+' * XML files contain Court Lists for all Court Sites for the Parent Court
+' * XML files are generated from Published Court Lists
+' * The COURT_LIST_PRODUCED state is removed
+' * The fileservice is removed
+
+' Diagram changes
+' * Status updates have been removed for clarity
+
+' v2.1
+' * Export is triggered by a scheduler to remove the race condition
+
+ui.listing -> ListingCommandApi: listing.command.publish-court-list
+ListingCommandApi -> ListingCommandHandler: listing.command.publish-court-list
+
+
+ListingCommandHandler -> CourtListEventProcessor: listing.event.publish-court-list-requested (courtSite)
+CourtListEventProcessor -> ListingQueryView: listing.query.unpublished-courtlist (courtSite)
+
+note left
+Query provided by SCSL-206
+end note
+
+' Store published court list
+CourtListEventProcessor -> ListingCommandHandler: listing.command.store-published-court-list
+ListingCommandHandler -> CourtListEventListener: listing.command.published-court-list-stored
+participant "published_court_list" as published_court_list <<table>>
+CourtListEventListener -> published_court_list: savePublishedCourtList
+
+@enduml
