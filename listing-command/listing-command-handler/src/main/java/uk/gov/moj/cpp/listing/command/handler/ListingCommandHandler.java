@@ -8,7 +8,7 @@ import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
 import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.*;
+import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.asJson;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
 
@@ -24,6 +24,7 @@ import uk.gov.justice.listing.commands.RecordCourtListExportFailed;
 import uk.gov.justice.listing.commands.RecordCourtListExportSuccessful;
 import uk.gov.justice.listing.commands.RecordCourtListProduced;
 import uk.gov.justice.listing.commands.SimpleOffence;
+import uk.gov.justice.listing.commands.StorePublishedCourtList;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.AddCourtApplicationForHearing;
 import uk.gov.justice.listing.courts.AddCourtApplicationToHearingCommand;
@@ -70,7 +71,6 @@ import uk.gov.moj.cpp.listing.command.utils.CourtsAddedOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CourtsDeletedOffenceToDomainCaseSimpleOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsUpdatedOffenceToDomainOffence;
-import uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
@@ -674,6 +674,22 @@ public class ListingCommandHandler {
         }
         crownCourtCentres
                 .forEach(courtCentreDetails -> publishFinalCourtList(commandEnvelope.metadata(), courtCentreDetails));
+    }
+
+    @Handles("listing.command.store-published-court-list")
+    public void storePublishedCourtList(final JsonEnvelope commandEnvelope) throws EventStreamException {
+
+        final StorePublishedCourtList storePublishedCourtList =
+                jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), StorePublishedCourtList.class);
+
+        final EventStream eventStream = eventSource.getStreamById(storePublishedCourtList.getPublishCourtListRequestId());
+        final PublishCourtListRequestAggregate publishCourtListRequestAggregate = aggregateService.get(eventStream, PublishCourtListRequestAggregate.class);
+        final Stream<Object> events = publishCourtListRequestAggregate.storePublishedCourtList(
+                storePublishedCourtList.getCourtCentreId(),
+                valueOf(storePublishedCourtList.getPublishCourtListType().toString()),
+                storePublishedCourtList.getStartDate(),
+                storePublishedCourtList.getCourtListJson());
+        appendEventsToStream(commandEnvelope, eventStream, events);
     }
 
     @VisibleForTesting

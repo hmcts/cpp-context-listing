@@ -1297,6 +1297,32 @@ public class ListingCommandHandlerTest {
         verify(publishCourtListRequestAggregate).recordCourtListProduced(publishCourtListRequestId, courtCentreId, courtListFileId, fileName, publishCourtListType, producedTime, publishDate);
     }
 
+    @Test
+    public void shouldStorePublishedCourtList() throws EventStreamException {
+        final UUID publishCourtListRequestId = randomUUID();
+        final UUID courtCentreId = UUID.fromString("9689207b-a9d2-4c2e-bd38-269b78a132a8");
+        final PublishCourtListType publishCourtListType = FIRM;
+        final LocalDate startDate = LocalDate.now();
+        final String courtListJson = "{}";
+
+        when(eventSource.getStreamById(publishCourtListRequestId)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
+        when(publishCourtListRequestAggregate.storePublishedCourtList(courtCentreId, publishCourtListType, startDate, courtListJson))
+                .thenReturn(Stream.of(publishCourtListProduced().build()));
+
+        final JsonObject payload = Json.createObjectBuilder()
+                .add("publishCourtListRequestId", publishCourtListRequestId.toString())
+                .add("courtCentreId", courtCentreId.toString())
+                .add("publishCourtListType", publishCourtListType.name())
+                .add("startDate", startDate.toString())
+                .add("courtListJson", courtListJson)
+                .build();
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.store-published-court-list", payload);
+        listingCommandHandler.storePublishedCourtList(commandEnvelope);
+        verify(publishCourtListRequestAggregate).storePublishedCourtList(courtCentreId, publishCourtListType, startDate, courtListJson);
+    }
+
     private JsonEnvelope updateSequenceForHearingDayCommandEnvelope() {
         String jsonString = givenPayload("/test-data/listing.command.update-sequence-for-hearing-day.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())

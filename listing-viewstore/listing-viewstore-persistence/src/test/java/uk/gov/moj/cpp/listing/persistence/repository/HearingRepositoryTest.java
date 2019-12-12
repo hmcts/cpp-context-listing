@@ -39,7 +39,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 
-// It seems that this must only be run with PersistenceTestSuite.
+// This must be run only via the PersistenceTestSuite.
 @RunWith(CdiTestRunner.class)
 public class HearingRepositoryTest extends BaseTransactionalTest {
 

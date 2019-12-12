@@ -5,6 +5,11 @@ Feature: Publish Court list
     When you recordCourtListRequested to a PublishCourtListRequestAggregate using a record court list requested
     Then publish court list requested
 
+  Scenario: Store published court list
+    Given publish court list requested
+    When you storePublishedCourtList to a PublishCourtListRequestAggregate using a store published court list
+    Then published court list stored
+
   Scenario: Publish court list produced
     Given publish court list requested
     When you recordCourtListProduced to a PublishCourtListRequestAggregate with a record court list produced

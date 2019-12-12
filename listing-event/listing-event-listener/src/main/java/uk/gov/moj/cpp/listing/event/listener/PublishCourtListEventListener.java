@@ -12,19 +12,34 @@ import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
 import uk.gov.justice.listing.event.PublishCourtListRequested;
+import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.listing.event.PublishedCourtListStored;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatus;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusJdbcRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatus;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.util.UUID;
 
 import javax.inject.Inject;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ServiceComponent(EVENT_LISTENER)
 public class PublishCourtListEventListener {
 
     @Inject
     private CourtListPublishStatusJdbcRepository courtListRepository;
+
+    @Inject
+    private PublishedCourtListRepository publishedCourtListRepository;
 
     @Handles("listing.event.publish-court-list-requested")
     public void courtListPublishRequested(final Envelope<PublishCourtListRequested> event) {
@@ -85,5 +100,29 @@ public class PublishCourtListEventListener {
                 publishCourtListExportSuccessful.getWeekCommencing().orElse(false)
         );
         courtListRepository.save(exportSuccessful);
+    }
+
+    @Handles("listing.command.published-court-list-stored")
+    public void storePublishedCourtCentreList(final Envelope<PublishedCourtListStored> event) throws IOException {
+
+        final PublishedCourtListStored publishedCourtListStored = event.payload();
+
+        final UUID courtCentreId = publishedCourtListStored.getCourtCentreId();
+        final PublishCourtListType publishCourtListType = publishedCourtListStored.getPublishCourtListType();
+        final LocalDate startDate = publishedCourtListStored.getStartDate();
+        final JsonNode content = new ObjectMapper().readTree(publishedCourtListStored.getCourtListJson());
+        final ZonedDateTime lastUpdated = ZonedDateTime.parse(publishedCourtListStored.getLastUpdated());
+
+        final PublishedCourtList proposedPublishedCourtList =
+                new PublishedCourtList(
+                        courtCentreId,
+                        publishCourtListType,
+                        startDate,
+                        content,
+                        lastUpdated,
+                        null
+                );
+
+        publishedCourtListRepository.save(proposedPublishedCourtList);
     }
 }

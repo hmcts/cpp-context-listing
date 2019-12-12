@@ -21,7 +21,7 @@ ListingCommandApi -> ListingCommandHandler: listing.command.publish-court-list
 
 
 ListingCommandHandler -> CourtListEventProcessor: listing.event.publish-court-list-requested (courtSite)
-CourtListEventProcessor -> ListingQueryView: listing.query.unpublished-courtlist (courtSite)
+CourtListEventProcessor -> ListingQueryView: listing.query.unpublished-court-list (courtSite)
 
 note left
 Query provided by SCSL-206
@@ -29,7 +29,7 @@ end note
 
 ' Store published court list
 CourtListEventProcessor -> ListingCommandHandler: listing.command.store-published-court-list
-ListingCommandHandler -> CourtListEventListener: listing.command.published-court-list-stored
+ListingCommandHandler -> CourtListEventListener: listing.event.published-court-list-stored
 participant "published_court_list" as published_court_list <<table>>
 CourtListEventListener -> published_court_list: savePublishedCourtList
 

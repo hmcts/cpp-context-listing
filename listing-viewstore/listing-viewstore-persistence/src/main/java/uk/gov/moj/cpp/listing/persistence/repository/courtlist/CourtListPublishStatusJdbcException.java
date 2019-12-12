@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.persistence.repository;
+package uk.gov.moj.cpp.listing.persistence.repository.courtlist;
 
 public class CourtListPublishStatusJdbcException extends RuntimeException {
 

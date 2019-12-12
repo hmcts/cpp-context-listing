@@ -1,10 +1,12 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.time.ZonedDateTime.now;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.event.PublishCourtListExportFailed.publishCourtListExportFailed;
 import static uk.gov.justice.listing.event.PublishCourtListExportSuccessful.publishCourtListExportSuccessful;
 import static uk.gov.justice.listing.event.PublishCourtListProduced.publishCourtListProduced;
@@ -22,15 +24,22 @@ import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
 import uk.gov.justice.listing.event.PublishCourtListRequested;
 import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.listing.event.PublishedCourtListStored;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatusJdbcRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.CourtListPublishStatus;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatus;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.Month;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -48,6 +57,9 @@ public class PublishCourtListEventListenerTest {
 
     @Mock
     private CourtListPublishStatusJdbcRepository courtListRepository;
+
+    @Mock
+    private PublishedCourtListRepository publishedCourtListRepository;
 
     @InjectMocks
     private PublishCourtListEventListener publishCourtListEventListener;
@@ -204,5 +216,37 @@ public class PublishCourtListEventListenerTest {
         assertThat(courtListArg.getPublishStatus(), is(EXPORT_SUCCESSFUL));
         assertThat(courtListArg.getLastUpdated(), is(publishedTime));
         assertThat(courtListArg.getCourtListFileName(), is(courtListFileName));
+    }
+
+    @Test
+    public void shouldStorePublishedCourtList() throws IOException {
+
+        final UUID courtCentreId = COURT_CENTRE_ID;
+        final PublishCourtListType publishCourtListType = FINAL;
+        final LocalDate startDate = LocalDate.of(2019, Month.DECEMBER, 13);
+        final String courtListJson = "{}";
+        final ZonedDateTime lastUpdated = now();
+
+        final PublishedCourtListStored publishedCourtListStored = new PublishedCourtListStored.Builder()
+                .withCourtCentreId(courtCentreId)
+                .withPublishCourtListType(publishCourtListType)
+                .withStartDate(startDate)
+                .withCourtListJson(courtListJson)
+                .withLastUpdated(lastUpdated.toString())
+                .build();
+
+        final PublishedCourtList expectedPublishedCourtList = new PublishedCourtList(
+                courtCentreId,
+                publishCourtListType,
+                startDate,
+                new ObjectMapper().readTree(courtListJson),
+                lastUpdated,
+                null
+        );
+
+        when(publishedCourtListRepository.
+                save(expectedPublishedCourtList)).thenReturn(expectedPublishedCourtList);
+
+        publishCourtListEventListener.storePublishedCourtCentreList(envelopeFrom(metadataWithDefaults(), publishedCourtListStored));
     }
 }

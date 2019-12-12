@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.persistence.repository;
+package uk.gov.moj.cpp.listing.persistence.repository.courtlist;
 
 import static java.time.LocalDate.now;
 import static java.util.UUID.randomUUID;

@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
-import static java.time.LocalDate.now;
 import static java.util.stream.Stream.of;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.doNothing;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
@@ -13,6 +12,7 @@ import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_PRODUCED;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_REQUESTED;
 import static uk.gov.justice.listing.event.PublishStatus.EXPORT_FAILED;
 import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
+import static uk.gov.justice.listing.event.PublishedCourtListStored.publishedCourtListStored;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
@@ -20,6 +20,7 @@ import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
 import uk.gov.justice.listing.event.PublishCourtListRequested;
 import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.listing.event.PublishedCourtListStored;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -122,13 +123,27 @@ public class PublishCourtListRequestAggregate implements Aggregate {
                 .build()));
     }
 
+    public Stream<Object> storePublishedCourtList(final UUID courtCentreId,
+                                                  final PublishCourtListType publishCourtListType,
+                                                  final LocalDate startDate,
+                                                  final String courtListJson) {
+
+        return apply(of(publishedCourtListStored()
+                .withCourtCentreId(courtCentreId)
+                .withPublishCourtListType(publishCourtListType)
+                .withStartDate(startDate)
+                .withCourtListJson(courtListJson)
+                .build()));
+    }
+
     @Override
     public Object apply(final Object event) {
         return match(event).with(
                 when(PublishCourtListRequested.class).apply(this::recordCourtListRequested),
                 when(PublishCourtListProduced.class).apply(this::recordCourtListProduced),
                 when(PublishCourtListExportSuccessful.class).apply(c -> doNothing()),
-                when(PublishCourtListExportFailed.class).apply(c -> doNothing())
+                when(PublishCourtListExportFailed.class).apply(c -> doNothing()),
+                when(PublishedCourtListStored.class).apply(c -> doNothing())
         );
     }
 
