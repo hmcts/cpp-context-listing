@@ -39,8 +39,8 @@ public class CourtListMetadataGeneratorTest {
 
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
         final UUID courtCentreId = UUID.randomUUID();
-        final String courtSiteCode = "COURTSITECODE";
-        final CourtLocation courtLocation = new CourtLocation(null, null, null, courtSiteCode, "CROWN_COURT");
+        final String crestCourtId = "421";
+        final CourtLocation courtLocation = new CourtLocation(crestCourtId, null, null, null, null, "CROWN_COURT");
         when(xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId)).thenReturn(courtLocation);
 
         final PublishCourtListRequestParameters requestParameters = PublishCourtListRequestParametersBuilder
@@ -55,7 +55,7 @@ public class CourtListMetadataGeneratorTest {
         final String[] filenamePart = metadata.getFilename().split("_");
 
         assertThat(filenamePart[0], is("DailyList"));
-        assertThat(filenamePart[1], is(courtSiteCode));
+        assertThat(filenamePart[1], is(crestCourtId));
         assertThat(filenamePart[2], is("180102130405.xml"));
     }
 }

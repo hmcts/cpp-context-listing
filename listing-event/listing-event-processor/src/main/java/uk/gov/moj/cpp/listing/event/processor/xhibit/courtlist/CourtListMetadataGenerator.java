@@ -27,7 +27,7 @@ public class CourtListMetadataGenerator {
 
         final String filename = format("%s_%s_%s.xml",
                 parameters.getPublishCourtListType().getFilenamePrefix(),
-                getCourtCode(envelope, parameters.getCourtCentreId()),
+                getCrownCourtCode(envelope, parameters.getCourtCentreId()),
                 getSendDate(createdDate));
 
         return new CourtListMetadata(filename, getDocumentUniqueId(), createdDate);
@@ -44,7 +44,7 @@ public class CourtListMetadataGenerator {
         return createdDate.format(formatter);
     }
 
-    private String getCourtCode(final JsonEnvelope envelope, final UUID courtCentreId) {
-        return xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId).getCourtSiteCode();
+    private String getCrownCourtCode(final JsonEnvelope envelope, final UUID courtCentreId) {
+        return xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId).getCrestCourtId();
     }
 }

@@ -40,12 +40,13 @@ public class XhibitReferenceDataService {
                 .payloadAsJsonObject().getJsonArray("cpXhibitCourtRoomMappings").getValuesAs(JsonObject.class)
                 .stream().findFirst().orElseThrow(() -> new RuntimeException(format("Cannot find court details with courtCentre %s", courtCentreId)));
 
-        return new CourtLocation(courtRoom.getString("crestCourtSiteId"),
+        return new CourtLocation(
+                courtRoom.getString("crestCourtId"),
+                courtRoom.getString("crestCourtSiteId"),
                 courtRoom.getString("crestCourtSiteName"),
                 courtRoom.getString("crestCourtShortName"),
                 courtRoom.getString("crestCourtSiteCode"),
                 courtRoom.getString("courtType"));
-
     }
 
     public int getCourtRoomNumber(final JsonEnvelope envelope, final UUID courtCentreId, final UUID courtRoomId) {

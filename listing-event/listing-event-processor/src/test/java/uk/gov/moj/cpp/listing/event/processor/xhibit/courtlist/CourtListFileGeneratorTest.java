@@ -93,7 +93,7 @@ public class CourtListFileGeneratorTest {
 
         MockitoAnnotations.initMocks(this);
 
-        final CourtLocation courtLocation = new CourtLocation("000", "MOCKCOURTNAME",
+        final CourtLocation courtLocation = new CourtLocation("001", "000", "MOCKCOURTNAME",
                 "MOCK", "MOCKSITECODE", "CROWN_COURT");
         when(xhibitReferenceDataService.getCourtDetails(any(), any())).thenReturn(courtLocation);
 

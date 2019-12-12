@@ -70,6 +70,7 @@ public class XhibitReferenceDataServiceTest {
     public void shouldGetCourtDetails() throws Exception {
 
         final UUID courtCentreId = randomUUID();
+        final String courtId = "432";
         final String courtSiteId = "433";
         final String courtSiteName = "BLACKFRIARS";
         final String courtShortName = "BLF";
@@ -83,6 +84,7 @@ public class XhibitReferenceDataServiceTest {
                         createObjectBuilder()
                                 .add("cpXhibitCourtRoomMappings", createArrayBuilder()
                                         .add(createObjectBuilder()
+                                                .add("crestCourtId", courtId)
                                                 .add("crestCourtSiteId", courtSiteId)
                                                 .add("crestCourtSiteName", courtSiteName)
                                                 .add("crestCourtShortName", courtShortName)
@@ -98,6 +100,7 @@ public class XhibitReferenceDataServiceTest {
 
         final JsonObject actualRequestParameters = (JsonObject) requestCaptor.getValue().payload();
 
+        assertEquals(courtDetails.getCrestCourtId(), courtId);
         assertEquals(courtDetails.getCrestCourtSiteId(), courtSiteId);
         assertEquals(courtDetails.getCourtFullName(), courtSiteName);
         assertEquals(courtDetails.getCourtShortName(), courtShortName);
