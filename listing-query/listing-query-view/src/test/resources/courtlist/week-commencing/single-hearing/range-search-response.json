@@ -1,73 +1,74 @@
 {
   "hearings": [
     {
-      "id": "71c13971-5e34-4308-83c4-ce0074cbcffa",
+      "id": "9469b8a3-0551-4600-9311-009cd3841d13",
       "type": {
-        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
-        "description": "First hearing"
+        "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+        "description": "Plea and Trial Preparation"
       },
       "allocated": false,
       "judiciary": [
         {
-          "judicialId": "48653af2-e798-3c96-b6ef-0b76d8a02139",
+          "isDeputy": false,
+          "judicialId": "add2bc84-3bd9-3679-8af4-4b78d9e1d39f",
+          "isBenchChairman": true,
           "judicialRoleType": {
-            "judiciaryType": "CIRCUIT_JUDGE"
+            "judiciaryType": "MAGISTRATE"
           }
         }
       ],
-      "courtRoomId": "7cb09222-49e1-3622-a5a6-ad253d2b3c39",
+      "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
       "hearingDays": [],
       "listedCases": [
         {
-          "id": "64c20ca6-049a-4669-9038-c4e3c08b70c4",
+          "id": "f746625a-c512-4ffc-a05a-c055cfa81bd9",
           "defendants": [
             {
-              "id": "282f2b9a-7533-4920-aefd-6ce14f7752cc",
-              "lastName": "BENI",
+              "id": "61195a9e-273a-452f-9fad-680130178bfb",
+              "lastName": "Protractor-9592853682",
               "offences": [
                 {
-                  "id": "46d69991-246d-44b1-8ef4-9c1fe9d1036a",
-                  "endDate": "2019-12-06",
-                  "startDate": "2019-12-05",
-                  "offenceCode": "OF61131",
-                  "offenceWording": "Pi liwnuhod fijuh gi lohuc tabu eb edodaz bojra hi ta ajpi karjuc.",
+                  "id": "52819d59-e9a1-456e-aaa9-5be57c9f864b",
+                  "startDate": "2019-11-06",
+                  "offenceCode": "PS90010",
+                  "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
                   "statementOfOffence": {
-                    "title": "Wounding with intent",
-                    "welshTitle": "Wounding with intent",
-                    "legislation": "legislation"
+                    "title": "Public service vehicle - passenger use altered / defaced   ticket",
+                    "welshTitle": "",
+                    "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
+                    "welshLegislation": ""
                   },
                   "restrictFromCourtList": false
                 }
               ],
-              "firstName": "Daisy",
-              "dateOfBirth": "1989-12-04",
-              "custodyTimeLimit": "2020-01-04",
-              "specificRequirements": "Cib rofras ebedeini hekici jod re ahmo teva ziwmu kegu hol holkedro mas sogsaso cidabeme da.",
+              "firstName": "John",
+              "dateOfBirth": "1977-10-17",
+              "hearingLanguageNeeds": "ENGLISH",
               "restrictFromCourtList": false
             }
           ],
           "caseIdentifier": {
-            "authorityId": "7a375817-e801-42ba-ac70-6014a284dc09",
-            "authorityCode": "CPS",
-            "caseReference": "22XV912229"
+            "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+            "authorityCode": "TFL",
+            "caseReference": "TFL9592853682"
           },
           "restrictFromCourtList": false
         }
       ],
-      "courtCentreId": "9b583616-049b-30f9-a14f-028a53b7cfe8",
+      "courtCentreId": "f4f9d37b-7ffd-3cb7-b089-2d342037f884",
       "nonDefaultDays": [
         {
-          "duration": 45,
-          "startTime": "2019-12-06T16:13:51.000Z"
+          "duration": 20,
+          "startTime": "2019-12-25T00:00:00.000Z"
         }
       ],
       "nonSittingDays": [],
       "hearingLanguage": "ENGLISH",
-      "estimatedMinutes": 45,
+      "estimatedMinutes": 20,
       "jurisdictionType": "CROWN",
       "courtApplications": [],
-      "weekCommencingEndDate": "2019-12-16",
-      "weekCommencingStartDate": "2019-12-09",
+      "weekCommencingEndDate": "2019-12-23",
+      "weekCommencingStartDate": "2019-12-16",
       "weekCommencingDurationInWeeks": "1"
     }
   ]

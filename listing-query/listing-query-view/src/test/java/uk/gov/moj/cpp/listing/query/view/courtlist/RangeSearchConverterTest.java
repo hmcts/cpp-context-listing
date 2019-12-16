@@ -36,6 +36,7 @@ public class RangeSearchConverterTest {
     public static Collection<Object[]> data() {
         Object[][] data = new Object[][]{
                 {"courtlist/fixed-date/multiple-cases-single-day/range-search-response.json", "courtlist/fixed-date/multiple-cases-single-day/expected-court-list.json"},
+                {"courtlist/fixed-date/multiple-sittings/range-search-response.json", "courtlist/fixed-date/multiple-sittings/expected-court-list.json"},
                 {"courtlist/week-commencing/single-hearing/range-search-response.json", "courtlist/week-commencing/single-hearing/expected-court-list.json"}
         };
         return Arrays.asList(data);
@@ -56,7 +57,7 @@ public class RangeSearchConverterTest {
 
         final JsonObject rangeSearchResponse = getJsonFile(rangeSearchResponseFilename);
 
-        final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListResponse(rangeSearchResponse);
+        final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListQueryPayload(rangeSearchResponse);
 
         final JsonObject expectedCourtList = getJsonFile(expectedCourtListFilename);
 

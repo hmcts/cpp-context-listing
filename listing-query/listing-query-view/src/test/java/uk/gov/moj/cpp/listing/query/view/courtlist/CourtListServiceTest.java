@@ -62,7 +62,7 @@ public class CourtListServiceTest {
         when(rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(courtCentreId, publishCourtListType, startDate, queryEnvelope)).thenReturn(rangeSearchQueryEnvelope);
         when(rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope)).thenReturn(rangeSearchResponse);
         when(rangeSearchResponse.payloadAsJsonObject()).thenReturn(rangeSearchResponsePayload);
-        when(rangeSearchConverter.generateCourtListResponse(rangeSearchResponsePayload)).thenReturn(courtListResponse);
+        when(rangeSearchConverter.generateCourtListQueryPayload(rangeSearchResponsePayload)).thenReturn(courtListResponse);
 
         final JsonObject response = courtListService.retrieveCourtList(courtCentreId, publishCourtListType, startDate, queryEnvelope);
 

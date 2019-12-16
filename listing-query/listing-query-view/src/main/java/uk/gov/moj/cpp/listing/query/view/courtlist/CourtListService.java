@@ -37,6 +37,6 @@ public class CourtListService {
 
         final JsonEnvelope rangeSearchResponse = rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope);
 
-        return rangeSearchConverter.generateCourtListResponse(rangeSearchResponse.payloadAsJsonObject());
+        return rangeSearchConverter.generateCourtListQueryPayload(rangeSearchResponse.payloadAsJsonObject());
     }
 }
