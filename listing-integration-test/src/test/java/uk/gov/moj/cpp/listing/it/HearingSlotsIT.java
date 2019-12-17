@@ -34,8 +34,10 @@ import javax.ws.rs.core.Response;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.http.HttpStatus;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("Ignoring this test for now, until this test should have self contained access")
 public class HearingSlotsIT extends AbstractIT {
 
     private static final String SLOTS_TABLE = "COURT_SCHEDULE";
