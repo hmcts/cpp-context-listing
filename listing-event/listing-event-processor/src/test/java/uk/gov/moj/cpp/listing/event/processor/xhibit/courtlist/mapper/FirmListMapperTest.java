@@ -33,7 +33,7 @@ public class FirmListMapperTest extends BaseMapperTest {
 
         when(courtServicesMapper.generateSittingStructure(any(JsonObject.class), eq(1))).thenReturn(sittingStructure);
 
-        final JsonObject courtListForPublishing = givenPayload("/xhibit/mock-data/listing.query.search.hearings-daily-list.json");
+        final JsonObject courtListForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json");
 
         FirmListMapper firmListMapper = new FirmListMapper(context, courtListForPublishing, courtServicesMapper);
 

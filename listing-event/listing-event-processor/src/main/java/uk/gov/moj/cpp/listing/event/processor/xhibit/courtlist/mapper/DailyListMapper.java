@@ -53,11 +53,11 @@ public class DailyListMapper extends AbstractCourtListMapper {
 
         final DailyCourtListStructure.Sittings sittings = objectFactory.createDailyCourtListStructureSittings();
 
-        final List<JsonObject> hearings = courtListForPublishing.getJsonArray("hearings").getValuesAs(JsonObject.class);
+        final List<JsonObject> sittingsJson = courtListForPublishing.getJsonObject("courtList").getJsonArray("sittings").getValuesAs(JsonObject.class);
 
         int sittingSequenceNumber = 1;
-        for (final JsonObject hearing : hearings) {
-            sittings.getSitting().add(courtServicesMapper.generateSittingStructure(hearing, sittingSequenceNumber++));
+        for (final JsonObject sittingJson : sittingsJson) {
+            sittings.getSitting().add(courtServicesMapper.generateSittingStructure(sittingJson, sittingSequenceNumber++));
         }
 
         return sittings;

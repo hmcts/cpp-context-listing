@@ -43,42 +43,25 @@ public class WarnedListMapper extends AbstractCourtListMapper {
         courtList.setCourtHouse(courtServicesMapper.generateCourtHouseStructure(
                 context.getParameters().getCourtCentreId()));
 
-        final List<JsonObject> hearings = courtListForPublishing.getJsonArray("hearings").getValuesAs(JsonObject.class);
+        final List<JsonObject> sittingsJson = courtListForPublishing.getJsonObject("courtList")
+                .getJsonArray("sittings").getValuesAs(JsonObject.class);
 
-        for (final JsonObject hearing : hearings) {
+        for (final JsonObject sittingJson : sittingsJson) {
 
-            if (hasFixedDate(hearing)) {
-                courtList.getWithFixedDate().add(generateWithFixedDate(hearing));
-            } else {
-                courtList.getWithoutFixedDate().add(generateWithoutFixedDate(hearing));
-            }
+            courtList.getWithoutFixedDate().add(generateWithoutFixedDate(sittingJson));
         }
 
         return courtList;
     }
 
-    private boolean hasFixedDate(final JsonObject hearing) {
+    private WarnedListStructure.CourtLists.CourtList.WithoutFixedDate generateWithoutFixedDate(final JsonObject sittingJson) {
 
-        return (hearing.containsKey("startDate"));
-    }
+        final WarnedListStructure.CourtLists.CourtList.WithoutFixedDate withoutFixedDate = objectFactory
+                .createWarnedListStructureCourtListsCourtListWithoutFixedDate();
 
-    private WarnedListStructure.CourtLists.CourtList.WithoutFixedDate generateWithoutFixedDate(final JsonObject hearing) {
-
-        final WarnedListStructure.CourtLists.CourtList.WithoutFixedDate withoutFixedDate = objectFactory.createWarnedListStructureCourtListsCourtListWithoutFixedDate();
-
-        withoutFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(hearing));
-        withoutFixedDate.setHearingType(courtServicesMapper.getHearingTypeForHearing(hearing));
+        withoutFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(sittingJson));
+        withoutFixedDate.setHearingType("HRG"); // For Hearing
 
         return withoutFixedDate;
-    }
-
-    private WarnedListStructure.CourtLists.CourtList.WithFixedDate generateWithFixedDate(final JsonObject hearing) {
-
-        final WarnedListStructure.CourtLists.CourtList.WithFixedDate withFixedDate = objectFactory.createWarnedListStructureCourtListsCourtListWithFixedDate();
-
-        withFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(hearing));
-        withFixedDate.setHearingType(courtServicesMapper.getHearingTypeForHearing(hearing));
-
-        return withFixedDate;
     }
 }

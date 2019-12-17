@@ -19,33 +19,15 @@ public class ListingService {
     @FrameworkComponent(EVENT_PROCESSOR)
     private Requester requester;
 
-    public JsonObject getCourtListForPublishing(final JsonEnvelope envelope,
+    public JsonObject getCourtListForCourtCentre(final JsonEnvelope envelope,
                                                 final PublishCourtListRequestParameters publishCourtListRequestParameters) {
 
         final JsonObjectBuilder restRequestParametersBuilder = createObjectBuilder()
-                .add("allocated", true)
                 .add("courtCentreId", publishCourtListRequestParameters.getCourtCentreId().toString())
-                .add("isCrownCourt", true);
+                .add("startDate", publishCourtListRequestParameters.getStartDate().format(ISO_LOCAL_DATE))
+                .add("publishCourtListType", publishCourtListRequestParameters.getPublishCourtListType().name());
 
-        switch (publishCourtListRequestParameters.getPublishCourtListType()) {
-            case DRAFT:
-            case FINAL:
-                restRequestParametersBuilder
-                        .add("startDate", publishCourtListRequestParameters.getStartDate().format(ISO_LOCAL_DATE))
-                        .add("endDate", publishCourtListRequestParameters.getEndDate().format(ISO_LOCAL_DATE));
-                break;
-            case FIRM:
-            case WARN:
-                restRequestParametersBuilder
-                        .add("jurisdictionType", "CROWN")
-                        .add("weekCommencingStartDate", publishCourtListRequestParameters.getStartDate().format(ISO_LOCAL_DATE))
-                        .add("weekCommencingEndDate", publishCourtListRequestParameters.getEndDate().format(ISO_LOCAL_DATE));
-                break;
-            default:
-                throw new UnsupportedOperationException("Request not supported:" + publishCourtListRequestParameters.getPublishCourtListType());
-        }
-
-        final JsonEnvelope response = requester.request(envelop(restRequestParametersBuilder.build()).withName("listing.range.search.hearings").withMetadataFrom(envelope));
+        final JsonEnvelope response = requester.request(envelop(restRequestParametersBuilder.build()).withName("listing.courtlist").withMetadataFrom(envelope));
 
         return response.payloadAsJsonObject();
     }

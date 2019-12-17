@@ -41,23 +41,18 @@
                             <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
                             <cs:HearingDetails HearingType="XXX">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
-                                <cs:HearingDate>2019-12-02</cs:HearingDate>
+                                <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>63AB435748</cs:CaseNumber>
+                            <cs:CaseNumber>71JC777146</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
-                                <cs:ProsecutingReference>63AB435748</cs:ProsecutingReference>
+                                <cs:ProsecutingReference>71JC777146</cs:ProsecutingReference>
                             </cs:Prosecution>
-                            <cs:CommittingCourt>
-                                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
-                                <cs:CourtHouseCode CourtHouseShortName="MOCK">000</cs:CourtHouseCode>
-                                <cs:CourtHouseName>MOCKCOURTNAME</cs:CourtHouseName>
-                            </cs:CommittingCourt>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameSurname>MARTY</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Dollie</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameSurname>BERTINI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Corey</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
@@ -67,41 +62,11 @@
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
-                            </cs:Defendants>
-                        </cs:Hearing>
-                    </cs:Hearings>
-                </cs:Sitting>
-                <cs:Sitting>
-                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
-                    <cs:SittingSequenceNo>2</cs:SittingSequenceNo>
-                    <cs:SittingPriority>T</cs:SittingPriority>
-                    <cs:Judiciary>
-                        <cs:Judge>
-                            <apd:CitizenNameSurname>NONE</apd:CitizenNameSurname>
-                            <apd:CitizenNameRequestedName>NONE</apd:CitizenNameRequestedName>
-                        </cs:Judge>
-                    </cs:Judiciary>
-                    <cs:Hearings>
-                        <cs:Hearing>
-                            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
-                            <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
-                            </cs:HearingDetails>
-                            <cs:CaseNumber>12AN388453</cs:CaseNumber>
-                            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
-                                <cs:ProsecutingReference>12AN388453</cs:ProsecutingReference>
-                            </cs:Prosecution>
-                            <cs:CommittingCourt>
-                                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
-                                <cs:CourtHouseCode CourtHouseShortName="MOCK">000</cs:CourtHouseCode>
-                                <cs:CourtHouseName>MOCKCOURTNAME</cs:CourtHouseName>
-                            </cs:CommittingCourt>
-                            <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameSurname>BARTOLINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Luke</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameSurname>NEWMAN</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Mable</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
@@ -117,14 +82,74 @@
                             <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
                             <cs:HearingDetails HearingType="XXX">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>13GN270542</cs:CaseNumber>
+                            <cs:CaseNumber>19RV576068</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameSurname>APPLICANT_LAST_NAME</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>APPLICANT_FIRST_NAME</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameSurname>LUCAS</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Vernon</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                    </cs:Hearings>
+                </cs:Sitting>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingSequenceNo>2</cs:SittingSequenceNo>
+                    <cs:SittingPriority>T</cs:SittingPriority>
+                    <cs:Judiciary>
+                        <cs:Judge>
+                            <apd:CitizenNameSurname>SMITH-JUDGE</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>John</apd:CitizenNameRequestedName>
+                        </cs:Judge>
+                    </cs:Judiciary>
+                    <cs:Hearings>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-15</cs:HearingDate>
+                            </cs:HearingDetails>
+                            <cs:CaseNumber>44FE772625</cs:CaseNumber>
+                            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
+                                <cs:ProsecutingReference>44FE772625</cs:ProsecutingReference>
+                            </cs:Prosecution>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>LAZZERI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Harriett</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-15</cs:HearingDate>
+                            </cs:HearingDetails>
+                            <cs:CaseNumber>41TL769069</cs:CaseNumber>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>BENINI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Olga</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>

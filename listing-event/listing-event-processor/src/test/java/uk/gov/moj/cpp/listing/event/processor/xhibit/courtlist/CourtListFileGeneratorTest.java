@@ -38,9 +38,9 @@ import org.slf4j.Logger;
 public class CourtListFileGeneratorTest {
 
     private static final Logger LOGGER = getLogger(CourtListFileGeneratorTest.class);
-    private static final String DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.search.hearings-daily-list.json";
-    private static final String WEEK_COMMENCING_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.search.hearings-week-commencing-list.json";
-    private static final String RESTRICTED_DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.search.hearings-restricted-daily-list.json";
+    private static final String DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list.json";
+    private static final String WEEK_COMMENCING_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-week-commencing-list.json";
+    private static final String RESTRICTED_DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-restricted-daily-list.json";
 
     @Parameterized.Parameter(0)
     public PublishCourtListType publishCourtListType;
@@ -110,7 +110,7 @@ public class CourtListFileGeneratorTest {
         when(xhibitReferenceDataService.getXhibitHearingType(any(), any())).thenReturn(hearingType);
 
         final JsonObject courtListData = givenPayload(courtListJsonFile);
-        when(listingService.getCourtListForPublishing(any(), any())).thenReturn(courtListData);
+        when(listingService.getCourtListForCourtCentre(any(), any())).thenReturn(courtListData);
     }
 
     @Test

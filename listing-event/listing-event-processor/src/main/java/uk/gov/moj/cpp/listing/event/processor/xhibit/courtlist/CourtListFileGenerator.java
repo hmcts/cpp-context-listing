@@ -26,7 +26,7 @@ public class CourtListFileGenerator {
         final CourtListGenerationContext context =
                 new CourtListGenerationContext(envelope, requestParameters, courtListMetadata);
 
-        final JsonObject courtListForPublishing = listingService.getCourtListForPublishing(envelope, requestParameters);
+        final JsonObject courtListForPublishing = listingService.getCourtListForCourtCentre(envelope, requestParameters);
 
         final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, courtListForPublishing);
 

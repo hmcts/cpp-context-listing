@@ -28,7 +28,7 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.YesNoType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -50,7 +50,6 @@ public class CourtServicesMapper {
     private static final String NONE = "NONE";
     private static final String CPS_PROSECUTOR_CODE = "CPS";
     private static final List JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
-    private static final String LISTED_CASES = "listedCases";
     private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
     private static final ObjectFactory objectFactory = new ObjectFactory();
     private CourtListGenerationContext context;
@@ -110,21 +109,21 @@ public class CourtServicesMapper {
         return courtHouseCode;
     }
 
-    public SittingStructure generateSittingStructure(final JsonObject hearing, final int sittingSequenceNumber) {
+    public SittingStructure generateSittingStructure(final JsonObject sittingJson, final int sittingSequenceNumber) {
 
         final SittingStructure sittingStructure = objectFactory.createSittingStructure();
 
-        if (hearing.containsKey("courtRoomId")) {
+        if (sittingJson.containsKey("courtRoomId")) {
 
-            final UUID courtRoomId = fromString(hearing.getString("courtRoomId"));
+            final UUID courtRoomId = fromString(sittingJson.getString("courtRoomId"));
             final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
             sittingStructure.setCourtRoomNumber(xhibitReferenceDataService.getCourtRoomNumber(context.getEnvelope(), courtCentreId, courtRoomId));
         }
         sittingStructure.setSittingSequenceNo(valueOf(sittingSequenceNumber));
         sittingStructure.setSittingPriority("T");
-        sittingStructure.setJudiciary(generateJudiciaryStructure(hearing.getJsonArray("judiciary").getValuesAs(JsonObject.class)));
-        sittingStructure.setHearings(generateSittingStructureHearings(hearing));
+        sittingStructure.setJudiciary(generateJudiciaryStructure(sittingJson.getJsonArray("judiciary").getValuesAs(JsonObject.class)));
+        sittingStructure.setHearings(generateSittingStructureHearings(sittingJson));
 
         return sittingStructure;
     }
@@ -191,58 +190,56 @@ public class CourtServicesMapper {
         return justice;
     }
 
-    private SittingStructure.Hearings generateSittingStructureHearings(final JsonObject hearing) {
+    private SittingStructure.Hearings generateSittingStructureHearings(final JsonObject sittingJson) {
 
         final SittingStructure.Hearings sittingStructureHearings = objectFactory.createSittingStructureHearings();
 
         int hearingSequenceNumber = 1;
 
-        if (hearing.containsKey(LISTED_CASES)) {
-            for (final JsonObject listedCase : hearing.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class)) {
-                if (!listedCase.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-                    sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearing,
-                            listedCase, hearingSequenceNumber++));
-                }
-            }
-        }
+        for (final JsonObject hearingJson : sittingJson.getJsonArray("hearings").getValuesAs(JsonObject.class)) {
 
-        for (final JsonObject courtApplication : hearing.getJsonArray("courtApplications").getValuesAs(JsonObject.class)) {
-            if (!courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-                sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearing,
-                        courtApplication, hearingSequenceNumber++));
+            if (!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)) {
+                if (hearingJson.containsKey(CASE_IDENTIFIER)) {
+                    sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearingJson, hearingSequenceNumber++));
+                }
+
+                if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
+                    sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearingJson, hearingSequenceNumber++));
+                }
             }
         }
 
         return sittingStructureHearings;
     }
 
-    private HearingStructure generateHearingStructureForListedCase(final JsonObject hearing,
-                                                                   final JsonObject listedCase,
+    private HearingStructure generateHearingStructureForListedCase(final JsonObject hearingJson,
                                                                    final int hearingSequenceNumber) {
 
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
         hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
-        hearingStructure.setCaseNumber(listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE));
-        hearingStructure.setHearingDetails(generateHearingTypeStructure(hearing));
-        hearingStructure.setProsecution(generateProsecutionStructure(listedCase));
-        hearingStructure.setCommittingCourt(generateCourtHouseStructure(fromString(hearing.getString("courtCentreId"))));
-        hearingStructure.setDefendants(generateHearingStructureDefendantsForCase(listedCase));
+        hearingStructure.setCaseNumber(hearingJson.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE));
+        hearingStructure.setHearingDetails(generateHearingTypeStructure(hearingJson));
+        hearingStructure.setProsecution(generateProsecutionStructure(hearingJson));
+        hearingStructure.setDefendants(generateHearingStructureDefendantsForCase(hearingJson));
+
+        if (hearingJson.containsKey("courtCentreId")) {
+            hearingStructure.setCommittingCourt(generateCourtHouseStructure(fromString(hearingJson.getString("courtCentreId"))));
+        }
 
         return hearingStructure;
     }
 
-    private HearingStructure generateHearingStructureForCourtApplication(final JsonObject hearing,
-                                                                         final JsonObject courtApplication,
+    private HearingStructure generateHearingStructureForCourtApplication(final JsonObject hearingJson,
                                                                          final int hearingSequenceNumber) {
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
         hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
-        hearingStructure.setCaseNumber(courtApplication.getString(APPLICATION_REFERENCE));
-        hearingStructure.setHearingDetails(generateHearingTypeStructure(hearing));
+        hearingStructure.setCaseNumber(hearingJson.getString(APPLICATION_REFERENCE));
+        hearingStructure.setHearingDetails(generateHearingTypeStructure(hearingJson));
 
         // Map applicant to defendant
-        hearingStructure.setDefendants(generateHearingStructureDefendantsForCourtApplication(courtApplication));
+        hearingStructure.setDefendants(generateHearingStructureDefendantsForCourtApplication(hearingJson));
 
         return hearingStructure;
     }
@@ -252,11 +249,11 @@ public class CourtServicesMapper {
         final HearingTypeStructure hearingTypeStructure = objectFactory.createHearingTypeStructure();
 
         final JsonObject xhibitHearingType = xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(),
-                fromString(hearing.getJsonObject("type").getString("id")));
+                fromString(hearing.getJsonObject("hearingType").getString("id")));
 
         hearingTypeStructure.setHearingDescription(xhibitHearingType.getString("hearingDescription"));
-        if (hearing.containsKey("startDate")) {
-            hearingTypeStructure.setHearingDate(LocalDate.parse(hearing.getString("startDate")));
+        if (hearing.containsKey("startTime")) {
+            hearingTypeStructure.setHearingDate(LocalDateTime.parse(hearing.getString("startTime")).toLocalDate());
         }
         hearingTypeStructure.setHearingType(getHearingTypeForHearing(hearing));
 
@@ -390,38 +387,36 @@ public class CourtServicesMapper {
 
     public String getHearingTypeForHearing(final JsonObject hearing) {
 
-        final UUID cppHearingId = fromString(hearing.getJsonObject("type").getString("id"));
+        final UUID cppHearingId = fromString(hearing.getJsonObject("hearingType").getString("id"));
 
         return xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(), cppHearingId).getString("hearingCode");
     }
 
-    public FixtureStructure generateFixtureStructure(final JsonObject hearing) {
+    public FixtureStructure generateFixtureStructure(final JsonObject sittingJson) {
 
         final FixtureStructure fixtureStructure = objectFactory.createFixtureStructure();
 
-        fixtureStructure.setCases(generateCasesStructure(hearing));
+        fixtureStructure.setCases(generateCasesStructure(sittingJson));
 
         return fixtureStructure;
     }
 
-    private CasesStructure generateCasesStructure(final JsonObject hearing) {
+    private CasesStructure generateCasesStructure(final JsonObject sittingJson) {
 
         final CasesStructure casesStructure = objectFactory.createCasesStructure();
 
-        if (hearing.containsKey(LISTED_CASES)) {
-            for (final JsonObject listedCase : hearing.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class)) {
-                if (!listedCase.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-                    casesStructure.getCase().add(generateCaseStructureForCase(listedCase));
+        for (final JsonObject hearingJson : sittingJson.getJsonArray("hearings").getValuesAs(JsonObject.class)) {
+
+            if (!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)) {
+                if (hearingJson.containsKey(CASE_IDENTIFIER)) {
+                    casesStructure.getCase().add(generateCaseStructureForCase(hearingJson));
+                }
+
+                if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
+                    casesStructure.getCase().add(generateCaseStructureForCourtApplication(hearingJson));
                 }
             }
         }
-
-        for (final JsonObject courtApplication : hearing.getJsonArray("courtApplications").getValuesAs(JsonObject.class)) {
-            if (!courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-                casesStructure.getCase().add(generateCaseStructureForCourtApplication(courtApplication));
-            }
-        }
-
         return casesStructure;
     }
 

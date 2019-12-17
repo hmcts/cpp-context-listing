@@ -4,11 +4,17 @@
       {
         "sittingDate":"2019-12-10",
         "courtRoomId":"7cb09222-49e1-3622-a5a6-ad253d2b3c39",
-        "judiciary":[
+        "judiciary": [
           {
-            "judicialId":"fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
-            "judicialRoleType":{
-              "judiciaryType":"DISTRICT_JUDGE"
+            "judicialId": "e698959e-9b93-34de-8235-26327ffed84a",
+            "judicialRoleType": {
+              "judiciaryType": "DISTRICT_JUDGE"
+            }
+          },
+          {
+            "judicialId": "f698959e-9b93-34de-8235-26327ffed84a",
+            "judicialRoleType": {
+              "judiciaryType": "MAGISTRATE"
             }
           }
         ],
@@ -74,6 +80,34 @@
                 "custodyTimeLimit":"2020-01-09",
                 "specificRequirements":"Vod be zabarej mibot seh gej vucpev cuvil zowje gan ofa as lu zoma upacamut ku.",
                 "restrictFromCourtList":false
+              }
+            ]
+          },
+          {
+            "startTime":"2019-12-10T14:59",
+            "endTime":"2019-12-10T15:44",
+            "hearingType":{
+              "id":"5ae4c090-0f70-4694-b4fc-707633d2b430",
+              "description":"Sentence"
+            },
+            "restrictFromCourtList":false,
+            "applicationReference":"65OF146907",
+            "applicant":{
+              "id":"9aee20ca-b0b2-4133-b512-7bec3d835134",
+              "lastName":"PINZAUTI",
+              "firstName":"Adrian",
+              "isRespondent":false,
+              "restrictFromCourtList":false,
+              "courtApplicationPartyType":"PERSON_DEFENDANT"
+            },
+            "respondents":[
+              {
+                "id":"5f12406b-3609-4659-a1ba-0200e7bb4ed9",
+                "lastName":"WALTER",
+                "firstName":"Addie",
+                "isRespondent":true,
+                "restrictFromCourtList":false,
+                "courtApplicationPartyType":"PERSON"
               }
             ]
           }
