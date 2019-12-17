@@ -49,9 +49,12 @@ public class SittingsJsonGenerator {
 
         final JsonObjectBuilder hearingJsonBuilder = Json.createObjectBuilder()
                 .add("startTime", hearing.getStartTime().toString())
-                .add("endTime", hearing.getEndTime().toString())
                 .add("hearingType", hearing.getHearingType())
                 .add("restrictFromCourtList", hearing.isRestrictFromCourtList());
+
+        if (hearing.getEndTime().isPresent()) {
+            hearingJsonBuilder.add("endTime", hearing.getEndTime().orElseThrow(IllegalStateException::new).toString());
+        }
 
         if (hearing.getCommittingCourtCentreId().isPresent()) {
             hearingJsonBuilder.add("committingCourtCentreId", hearing.getCommittingCourtCentreId().toString());

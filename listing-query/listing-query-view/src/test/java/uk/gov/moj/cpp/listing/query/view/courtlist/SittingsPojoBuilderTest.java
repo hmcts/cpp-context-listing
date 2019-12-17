@@ -75,8 +75,9 @@ public class SittingsPojoBuilderTest {
                         Json.createObjectBuilder().add("judicialId", judicialId.toString()))
                 )
                 .add("listedCases",Json.createArrayBuilder()
-                        .add(buildCaseDetailsJson())
-                        .build())
+                        .add(buildCaseDetailsJson()))
+                .add("nonDefaultDays", Json.createArrayBuilder()
+                        .add(buildNonDefaultDaysJson()))
                 .build();
     }
 
@@ -87,4 +88,13 @@ public class SittingsPojoBuilderTest {
 
         return caseDetailsJson;
     }
+
+    private JsonObjectBuilder buildNonDefaultDaysJson() {
+        final JsonObjectBuilder caseDetailsJson = Json.createObjectBuilder();
+
+        caseDetailsJson.add("startTime","2019-12-17T09:57:18.807Z[Europe/London]");
+
+        return caseDetailsJson;
+    }
+
 }

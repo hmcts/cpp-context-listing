@@ -7,6 +7,8 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Sitting;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.SittingKey;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -81,7 +83,7 @@ public class SittingsPojoBuilder {
 
     private static LocalDate getSittingStartDate(final JsonObject caseHearingsJson) {
 
-        if (caseHearingsJson.containsKey("weekCommencingStartDate")) {
+        if (isHearingWeekCommencing(caseHearingsJson)) {
             return LocalDate.parse(caseHearingsJson.getString("weekCommencingStartDate"));
 
         } else {
@@ -89,13 +91,29 @@ public class SittingsPojoBuilder {
         }
     }
 
-    private static LocalDate getSittingEndDate(final JsonObject caseHearingsJson) {
+    private static LocalDateTime getHearingStartTime(final JsonObject caseHearingsJson) {
 
-        if (caseHearingsJson.containsKey("weekCommencingEndDate")) {
-            return LocalDate.parse(caseHearingsJson.getString("weekCommencingEndDate"));
-
+        // TODO SCSL-89 Support multi-day hearings
+        if (isHearingWeekCommencing(caseHearingsJson)) {
+            return ZonedDateTime.parse(caseHearingsJson.getJsonArray("nonDefaultDays")
+                    .getJsonObject(0).getString("startTime")).toLocalDateTime();
         } else {
-            return LocalDate.parse(caseHearingsJson.getString("endDate"));
+            return ZonedDateTime.parse(caseHearingsJson.getJsonArray("hearingDays")
+                    .getJsonObject(0).getString("startTime")).toLocalDateTime();
+        }
+    }
+
+    private static Optional<LocalDateTime> getHearingEndTime(final JsonObject caseHearingsJson) {
+
+        // TODO SCSL-89 Support multi-day hearings
+        if (isHearingWeekCommencing(caseHearingsJson)) {
+            final Optional<String> endTimeString = Optional.ofNullable(caseHearingsJson.getJsonArray("nonDefaultDays")
+                    .getJsonObject(0).getString("endTime", null));
+
+            return endTimeString.map(s -> ZonedDateTime.parse(s).toLocalDateTime());
+        } else {
+            return Optional.of(ZonedDateTime.parse(caseHearingsJson.getJsonArray("hearingDays")
+                    .getJsonObject(0).getString("endTime")).toLocalDateTime());
         }
     }
 
@@ -103,12 +121,12 @@ public class SittingsPojoBuilder {
 
         final Hearing hearing = new Hearing();
 
-        hearing.setStartTime(getSittingStartDate(caseHearingsJson));
-        hearing.setEndTime(getSittingEndDate(caseHearingsJson));
+        hearing.setStartTime(getHearingStartTime(caseHearingsJson));
+        hearing.setEndTime(getHearingEndTime(caseHearingsJson));
 
         hearing.setHearingType(caseHearingsJson.getJsonObject("type"));
 
-        hearing.setRestrictFromCourtList(getIsHearingRestricted(caseHearingsJson));
+        hearing.setRestrictFromCourtList(isHearingRestricted(caseHearingsJson));
 
         if (caseHearingsJson.containsKey("committingCourtCentreId")) {
             hearing.setCommittingCourtCentreId(
@@ -136,7 +154,11 @@ public class SittingsPojoBuilder {
         return caseHearingsJson.containsKey(LISTED_CASES);
     }
 
-    private static boolean getIsHearingRestricted(final JsonObject caseHearingsJson) {
+    private static boolean isHearingWeekCommencing(final JsonObject caseHearingsJson) {
+        return caseHearingsJson.containsKey("weekCommencingStartDate");
+    }
+
+    private static boolean isHearingRestricted(final JsonObject caseHearingsJson) {
 
         if (isCaseHearing(caseHearingsJson)) {
             // TODO SCSL-89 Add support for hearings with multiple cases

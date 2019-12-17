@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist.pojo;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -8,9 +8,9 @@ import javax.json.JsonObject;
 
 public class Hearing {
 
-    private LocalDate startTime;
+    private LocalDateTime startTime;
 
-    private LocalDate endTime;
+    private Optional<LocalDateTime> endTime;
 
     private JsonObject hearingType;
 
@@ -22,19 +22,19 @@ public class Hearing {
 
     private Optional<CourtApplicationDetails> courtApplicationDetails;
 
-    public LocalDate getStartTime() {
+    public LocalDateTime getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(final LocalDate startTime) {
+    public void setStartTime(final LocalDateTime startTime) {
         this.startTime = startTime;
     }
 
-    public LocalDate getEndTime() {
+    public Optional<LocalDateTime> getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(final LocalDate endTime) {
+    public void setEndTime(final Optional<LocalDateTime> endTime) {
         this.endTime = endTime;
     }
 
