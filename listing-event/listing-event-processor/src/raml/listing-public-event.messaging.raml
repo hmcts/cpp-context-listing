@@ -16,3 +16,13 @@ version: v1
                 application/vnd.public.listing.court-list-restricted+json:
                     schema: !include json/schema/public.listing.court-list-restricted.json
                     example: !include json/public.listing.court-list-restricted.json
+
+/updateAvailableHearingSlots:
+    post:
+      body:
+
+        application/vnd.listing.update.hearing.slots+json:
+            schema: !include json/schema/listing.update.hearing.available.slots.json
+            example: !include json/listing.update.hearing.available.slots.json
+
+

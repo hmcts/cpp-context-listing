@@ -46,7 +46,9 @@ import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLI
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_HEARING_UPDATED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_RESTRICT_COURT_LIST;
 
+import uk.gov.justice.api.resource.DefaultQueryApiUpdateHearingSlotsResource;
 import uk.gov.justice.core.courts.Address;
+import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtApplicationParty;
 import uk.gov.justice.core.courts.CourtApplicationRespondent;
@@ -63,7 +65,6 @@ import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.courts.AddedOffences;
-import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.listing.courts.CaseOrApplicationEjected;
 import uk.gov.justice.listing.courts.Defendant;
 import uk.gov.justice.listing.courts.DefendantUpdated;
@@ -100,6 +101,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher;
 import uk.gov.justice.services.test.utils.core.random.Generator;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
+import uk.gov.moj.cpp.listing.event.processor.azure.util.SlotCriteriaConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommandCollectionConverter;
@@ -267,8 +269,17 @@ public class ListingEventProcessorTest {
     @Mock
     private AllocatedHearingUpdatedFactory allocatedHearingUpdatedFactory;
 
+    @Mock
+    private SlotCriteriaConverter slotCriteriaConverter;
+
+    @Mock
+    private DefaultQueryApiUpdateHearingSlotsResource defaultQueryApiUpdateHearingSlotsResource;
+
     @Captor
     private ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor;
+
+    @Captor
+    private ArgumentCaptor<String> stringArgumentCaptor;
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -435,7 +446,6 @@ public class ListingEventProcessorTest {
         HearingConfirmed hearingConfirmed = hearingConfirmed();
         given(hearingConfirmedFactory.create(hearingAllocatedForListing)).willReturn(hearingConfirmed);
 
-
         //when
         listingEventProcessor.handleHearingAllocatedForListingMessage(event);
 
@@ -449,7 +459,6 @@ public class ListingEventProcessorTest {
                 )))
         ));
     }
-
 
     @Test
     public void shouldHandleAllocatedHearingUpdatedForListingMessage() throws Exception {

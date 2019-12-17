@@ -107,6 +107,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTOR_HEARING_DAYS_CHANGED = "listing.events.hearing-days-changed-for-hearing";
 
 
+
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private static final String ORGANISATION_NAME = "ABC LTD";

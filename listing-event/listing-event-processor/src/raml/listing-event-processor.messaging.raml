@@ -66,3 +66,8 @@ baseUri: message://event/processor/message/listing
         application/vnd.public.progression.events.case-or-application-ejected+json:
             schema: !include json/schema/public.progression.events.case-or-application-ejected.json
             example: !include json/public.progression.events.case-or-application-ejected.json
+
+# Update available slots in azure with resource from public hearing confirmed event
+        application/vnd.public.listing.hearing-confirmed+json:
+            schema: !include json/schema/public.listing.hearing-confirmed.json
+            example: !include json/public.listing.hearing-confirmed.json

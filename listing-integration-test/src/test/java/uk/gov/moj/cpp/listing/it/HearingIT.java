@@ -1,5 +1,8 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAvailableHearingSlots;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
+
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.SequenceHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
@@ -7,9 +10,14 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.SequenceHearingData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
+import java.io.IOException;
+import java.time.LocalTime;
+
 import org.junit.Test;
 
 public class HearingIT extends AbstractIT {
+    private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
+    private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
 
     @Test
     public void updateHearingResultsInAllocatedListingAndRaisesPublicHearingConfirmedPublicEvent() {
@@ -28,6 +36,28 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
         }
+    }
+
+    @Test
+    public void shouldRaisePublicHearingConfirmedPublicEventAndReturnSlotDetailsRequiredForScheduleUpdates() throws IOException {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+
+        UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListing();
+            updateHearingSteps.verifyHearingUpdatedResultsInAllocationInMQ();
+            updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+            updateHearingSteps.verifyHearingConfirmedInPublicMQ();
+        }
+        stubGetReferenceDataCourtRoom(updatedHearingDataForAllocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingDataForAllocation.getCourtRoomId());
+
+        stubUpdateAvailableHearingSlots();
     }
 
     @Test
