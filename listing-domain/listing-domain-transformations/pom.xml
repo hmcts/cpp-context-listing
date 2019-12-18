@@ -12,10 +12,7 @@
     <modules>
         <module>listing-domain-transformations-cleanup-and-archive</module>
         <module>listing-domain-transformations-delete-all-events</module>
-        <module>listing-domain-anonymization-events</module>
         <module>listing-domain-transformation-anonymise</module>
         <module>listing-domain-tranformation-for-ctl</module>
     </modules>
-
-
 </project>
