@@ -82,7 +82,6 @@
             },
             "required": [
               "sittingDate",
-              "courtRoomId",
               "judiciary",
               "hearings"
             ],

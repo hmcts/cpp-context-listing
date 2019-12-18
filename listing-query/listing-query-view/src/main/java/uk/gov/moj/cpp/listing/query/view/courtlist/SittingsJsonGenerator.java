@@ -6,6 +6,8 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Hearing;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Sitting;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -28,12 +30,17 @@ public class SittingsJsonGenerator {
     }
 
     private static JsonObject buildSittingJson(final Sitting sitting) {
-        return Json.createObjectBuilder()
+
+        final JsonObjectBuilder sittingJson = Json.createObjectBuilder()
                 .add("sittingDate", sitting.getSittingKey().getSittingDate().toString())
-                .add("courtRoomId", sitting.getSittingKey().getCourtRoomId().toString())
                 .add("judiciary", sitting.getJudiciaryJson())
-                .add("hearings", buildHearingsJsonArray(sitting.getHearings()))
-                .build();
+                .add("hearings", buildHearingsJsonArray(sitting.getHearings()));
+
+        final Optional<UUID> courtRoomId = sitting.getSittingKey().getCourtRoomId();
+
+        courtRoomId.ifPresent(uuid -> sittingJson.add("courtRoomId", uuid.toString()));
+
+        return sittingJson.build();
     }
 
     private static JsonArrayBuilder buildHearingsJsonArray(final List<Hearing> hearings) {
@@ -79,5 +86,4 @@ public class SittingsJsonGenerator {
 
         return hearingJsonBuilder.build();
     }
-
 }

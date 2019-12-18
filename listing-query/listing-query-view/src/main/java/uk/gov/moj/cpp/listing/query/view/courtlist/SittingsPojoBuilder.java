@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
+import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonPropertyUtils.getOptionalUUID;
+
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.CaseDetails;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.CourtApplicationDetails;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Hearing;
@@ -72,12 +74,16 @@ public class SittingsPojoBuilder {
     }
 
     private static SittingKey buildSittingKey(final JsonObject caseHearingsJson) {
+
+        final JsonArray judiciaryArray = caseHearingsJson.getJsonArray("judiciary");
+
+        final Optional<UUID> judicialId = judiciaryArray.isEmpty() ? Optional.empty() :
+                Optional.of(UUID.fromString(judiciaryArray.getJsonObject(0).getString("judicialId")));
+
         return new SittingKey(
                 getSittingStartDate(caseHearingsJson),
-                UUID.fromString(caseHearingsJson.getString("courtRoomId")),
-                // TODO SCSL-89 may not always correctly identify a unique judiciary
-                // TODO SCSL-89 may not work if not Judiciary allocated
-                UUID.fromString(caseHearingsJson.getJsonArray("judiciary").getJsonObject(0).getString("judicialId"))
+                getOptionalUUID(caseHearingsJson, "courtRoomId"),
+                judicialId
         );
     }
 
@@ -130,9 +136,7 @@ public class SittingsPojoBuilder {
 
         if (caseHearingsJson.containsKey("committingCourtCentreId")) {
             hearing.setCommittingCourtCentreId(
-                    Optional.of(
-                            UUID.fromString(
-                                    caseHearingsJson.getString("committingCourtCentreId"))));
+                    getOptionalUUID(caseHearingsJson, "committingCourtCentreId"));
         } else {
             hearing.setCommittingCourtCentreId(Optional.empty());
         }

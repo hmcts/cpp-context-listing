@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist.pojo;
 
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -9,10 +10,10 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 public class SittingKey implements Comparable<SittingKey> {
 
     private LocalDate sittingDate;
-    private UUID courtRoomId;
-    private UUID judicialId;
+    private Optional<UUID> courtRoomId;
+    private Optional<UUID> judicialId;
 
-    public SittingKey(final LocalDate sittingDate, final UUID courtRoomId, final UUID judicialId) {
+    public SittingKey(final LocalDate sittingDate, final Optional<UUID> courtRoomId, final Optional<UUID> judicialId) {
         this.sittingDate = sittingDate;
         this.courtRoomId = courtRoomId;
         this.judicialId = judicialId;
@@ -22,11 +23,11 @@ public class SittingKey implements Comparable<SittingKey> {
         return sittingDate;
     }
 
-    public UUID getCourtRoomId() {
+    public Optional<UUID> getCourtRoomId() {
         return courtRoomId;
     }
 
-    public UUID getJudicialId() {
+    public Optional<UUID> getJudicialId() {
         return judicialId;
     }
 
@@ -57,7 +58,6 @@ public class SittingKey implements Comparable<SittingKey> {
                 .append(judicialId)
                 .toHashCode();
     }
-
 
     @Override
     public int compareTo(final SittingKey otherSitting) {
