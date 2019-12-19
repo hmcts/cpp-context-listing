@@ -3,7 +3,7 @@
     <parent>
         <artifactId>listing-domain</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>1.0.67-SCSL-SNAPSHOT</version>
+        <version>1.0.68-SCSL-SNAPSHOT</version>
     </parent>
     <artifactId>listing-domain-transform-pojo</artifactId>
 
