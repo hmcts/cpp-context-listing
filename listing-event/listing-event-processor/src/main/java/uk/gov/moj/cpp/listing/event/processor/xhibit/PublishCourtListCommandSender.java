@@ -72,7 +72,7 @@ public class PublishCourtListCommandSender {
         final JsonObjectBuilder objectBuilder = createObjectBuilder()
                 .add(PUBLISH_COURT_LIST_REQUEST_ID, publishCourtListRequestId.toString())
                 .add("failedTime", ZonedDateTimes.toString(utcClock.now()))
-                .add(ERROR_MESSAGE, errorMessage);
+                .add(ERROR_MESSAGE, errorMessage != null ? errorMessage : "UNKNOWN");
 
         sendCommandWith(RECORD_COURT_LIST_EXPORT_FAILED, publishCourtListRequestId, objectBuilder.build());
     }

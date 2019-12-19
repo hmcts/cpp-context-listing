@@ -21,7 +21,6 @@ public class XhibitReferenceDataService {
     private static final String REFERENCEDATA_QUERY_XHIBIT_COURTROOM_MAPPINGS = "referencedata.query.cp-xhibit-courtroom-mappings";
     private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
     private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
-    private static final String REFERENCEDATA_QUERY_JUDGE = "referencedata.get.judge";
     private static final String REFERENCE_DATA_HEARING_TYPES = "referencedata.query.hearing-types";
 
     @Inject
@@ -72,17 +71,6 @@ public class XhibitReferenceDataService {
                 .withMetadataFrom(envelope))
                 .payloadAsJsonObject().getJsonArray("judiciaries")
                 .getValuesAs(JsonObject.class).get(0);
-
-    }
-
-    public JsonObject getJudge(final JsonEnvelope envelope, final UUID judgeId) {
-
-        final JsonObject queryParameters = createObjectBuilder().add("id", judgeId.toString()).build();
-
-        return requester.request(envelop(queryParameters)
-                .withName(REFERENCEDATA_QUERY_JUDGE)
-                .withMetadataFrom(envelope))
-                .payloadAsJsonObject();
 
     }
 

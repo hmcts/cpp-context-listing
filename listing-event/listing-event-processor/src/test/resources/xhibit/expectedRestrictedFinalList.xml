@@ -32,8 +32,8 @@
                     <cs:SittingPriority>T</cs:SittingPriority>
                     <cs:Judiciary>
                         <cs:Judge>
-                            <apd:CitizenNameSurname>SMITH-JUDGE</apd:CitizenNameSurname>
-                            <apd:CitizenNameRequestedName>John</apd:CitizenNameRequestedName>
+                            <apd:CitizenNameSurname>Ainsworth-MAGISTRATE</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Mark J</apd:CitizenNameRequestedName>
                         </cs:Judge>
                     </cs:Judiciary>
                     <cs:Hearings>

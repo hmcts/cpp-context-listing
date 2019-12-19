@@ -166,14 +166,14 @@ public class CourtServicesMapper {
         return judgeStructure;
     }
 
-    private JudiciaryStructure.Judge generateJudgeStructure(final UUID judgeId) {
+    private JudiciaryStructure.Judge generateJudgeStructure(final UUID judiciaryId) {
 
-        final JsonObject judge = xhibitReferenceDataService.getJudge(context.getEnvelope(), judgeId);
+        final JsonObject judiciary = xhibitReferenceDataService.getJudiciary(context.getEnvelope(), judiciaryId);
 
         final JudiciaryStructure.Judge judgeStructure = objectFactory.createJudiciaryStructureJudge();
 
-        judgeStructure.setCitizenNameRequestedName(judge.getString("firstName"));
-        judgeStructure.setCitizenNameSurname(judge.getString("lastName"));
+        judgeStructure.setCitizenNameRequestedName(judiciary.getString("forenames"));
+        judgeStructure.setCitizenNameSurname(judiciary.getString("surname"));
 
         return judgeStructure;
     }

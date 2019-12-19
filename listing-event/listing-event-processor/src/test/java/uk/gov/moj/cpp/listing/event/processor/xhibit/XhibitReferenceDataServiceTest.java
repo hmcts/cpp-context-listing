@@ -22,7 +22,6 @@ import java.util.UUID;
 import javax.json.JsonObject;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -136,35 +135,6 @@ public class XhibitReferenceDataServiceTest {
         verify(requester).request(requestCaptor.capture());
         assertThat(judiciary.getString("titlePrefix"), equalTo(titlePrefix));
         assertThat(judiciary.getString("titleJudiciaryPrefix"), equalTo(titleJudiciaryPrefix));
-
-    }
-
-    @Test
-    public void shouldGetJudge() throws Exception {
-
-        String title = "Mr";
-        String firstName = "James";
-        String lastName = "May";
-
-        final JsonEnvelope responseEnvelope =
-                envelopeFrom(
-                        metadataWithDefaults()
-                                .withName(REFERENCEDATA_QUERY_JUDGE),
-                        createObjectBuilder()
-                                .add("title", title)
-                                .add("firstName", firstName)
-                                .add("lastName", lastName)
-                                .build());
-
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
-
-        final UUID judgeId = randomUUID();
-        JsonObject judge = xhibitReferenceDataService.getJudge(inputEnvelope, judgeId);
-
-        verify(requester).request(requestCaptor.capture());
-        assertThat(judge.getString("title"), equalTo(title));
-        assertThat(judge.getString("firstName"), equalTo(firstName));
-        assertThat(judge.getString("lastName"), equalTo(lastName));
 
     }
 
