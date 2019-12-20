@@ -87,6 +87,19 @@ public class CourtServicesMapper {
         return listHeaderStructure;
     }
 
+    public CourtHouseStructure generateCrownCourtStructure(final UUID courtCentreId) {
+
+        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(context.getEnvelope(), courtCentreId);
+
+        final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
+
+        courtHouseStructure.setCourtHouseType(CourtType.valueOf(courtLocation.getCourtType()));
+        courtHouseStructure.setCourtHouseCode(generateCrownCourtCode(courtLocation));
+        courtHouseStructure.setCourtHouseName(courtLocation.getCourtName());
+
+        return courtHouseStructure;
+    }
+
     public CourtHouseStructure generateCourtHouseStructure(final UUID courtCentreId) {
 
         final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(context.getEnvelope(), courtCentreId);
@@ -95,16 +108,23 @@ public class CourtServicesMapper {
 
         courtHouseStructure.setCourtHouseType(CourtType.valueOf(courtLocation.getCourtType()));
         courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(courtLocation));
-        courtHouseStructure.setCourtHouseName(courtLocation.getCourtFullName());
+        courtHouseStructure.setCourtHouseName(courtLocation.getCourtSiteName());
 
         return courtHouseStructure;
+    }
+
+    private CourtHouseStructure.CourtHouseCode generateCrownCourtCode(final CourtLocation courtLocation) {
+        final CourtHouseStructure.CourtHouseCode courtHouseCode = objectFactory.createCourtHouseStructureCourtHouseCode();
+        courtHouseCode.setValue(courtLocation.getCrestCourtId());
+        courtHouseCode.setCourtHouseShortName(courtLocation.getCourtShortName());
+
+        return courtHouseCode;
     }
 
     private CourtHouseStructure.CourtHouseCode generateCourtHouseCode(final CourtLocation courtLocation) {
 
         final CourtHouseStructure.CourtHouseCode courtHouseCode = objectFactory.createCourtHouseStructureCourtHouseCode();
         courtHouseCode.setValue(courtLocation.getCrestCourtSiteId());
-        courtHouseCode.setCourtHouseShortName(courtLocation.getCourtShortName());
 
         return courtHouseCode;
     }

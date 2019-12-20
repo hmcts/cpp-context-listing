@@ -8,13 +8,12 @@ import static org.junit.Assert.assertThat;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCourtListCommandPayload;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetAllCrownCourtCentres;
-import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoomMappings;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-import uk.gov.moj.cpp.listing.utils.ReferenceDataStub;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -40,7 +39,7 @@ public class PublishCourtListIT extends AbstractIT {
         UUID courtCentreId = randomUUID();
         final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(courtCentreId);
 
-        stubGetReferenceDataCourtRoomMappings(new CourtCentreData(UUID.randomUUID(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID));
+        stubGetReferenceDataCourtMappings(new CourtCentreData(UUID.randomUUID(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID));
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(null, publishCourtListCommandPayload);
         publishCourtListSteps.acceptCourtListXmlFiles();

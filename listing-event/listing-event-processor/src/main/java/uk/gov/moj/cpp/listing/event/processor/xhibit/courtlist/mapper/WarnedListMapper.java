@@ -21,7 +21,7 @@ public class WarnedListMapper extends AbstractCourtListMapper {
 
         warnedListStructure.setDocumentID(courtServicesMapper.generateDocumentID());
         warnedListStructure.setListHeader(courtServicesMapper.generateListHeader());
-        warnedListStructure.setCrownCourt(courtServicesMapper.generateCourtHouseStructure(context.getParameters().getCourtCentreId()));
+        warnedListStructure.setCrownCourt(courtServicesMapper.generateCrownCourtStructure(context.getParameters().getCourtCentreId()));
         warnedListStructure.setCourtLists(generateCourtLists());
 
         return objectFactory.createWarnedList(warnedListStructure);

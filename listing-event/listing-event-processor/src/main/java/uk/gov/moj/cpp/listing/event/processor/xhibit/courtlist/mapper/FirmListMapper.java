@@ -22,7 +22,7 @@ public class FirmListMapper extends AbstractCourtListMapper {
 
         firmListStructure.setDocumentID(courtServicesMapper.generateDocumentID());
         firmListStructure.setListHeader(courtServicesMapper.generateListHeader());
-        firmListStructure.setCrownCourt(courtServicesMapper.generateCourtHouseStructure(context.getParameters().getCourtCentreId()));
+        firmListStructure.setCrownCourt(courtServicesMapper.generateCrownCourtStructure(context.getParameters().getCourtCentreId()));
         firmListStructure.setCourtLists(generateCourtLists());
 
         return objectFactory.createFirmList(firmListStructure);

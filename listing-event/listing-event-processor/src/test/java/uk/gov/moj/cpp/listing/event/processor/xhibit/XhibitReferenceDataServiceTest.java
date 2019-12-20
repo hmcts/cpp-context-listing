@@ -71,6 +71,7 @@ public class XhibitReferenceDataServiceTest {
         final UUID courtCentreId = randomUUID();
         final String courtId = "432";
         final String courtSiteId = "433";
+        final String crestCourtName = "BLACKFRIARS";
         final String courtSiteName = "BLACKFRIARS";
         final String courtShortName = "BLF";
         final String courtSiteCode = "B";
@@ -81,12 +82,14 @@ public class XhibitReferenceDataServiceTest {
                         metadataWithDefaults()
                                 .withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS),
                         createObjectBuilder()
-                                .add("cpXhibitCourtRoomMappings", createArrayBuilder()
+                                .add("cpXhibitCourtMappings", createArrayBuilder()
                                         .add(createObjectBuilder()
                                                 .add("crestCourtId", courtId)
                                                 .add("crestCourtSiteId", courtSiteId)
+                                                .add("crestCourtName", crestCourtName)
                                                 .add("crestCourtSiteName", courtSiteName)
                                                 .add("crestCourtShortName", courtShortName)
+                                                .add("crestCourtSiteShortName", courtShortName)
                                                 .add("crestCourtSiteCode", courtSiteCode)
                                                 .add("courtType", courtType).build()))
                                 .build());
@@ -101,7 +104,7 @@ public class XhibitReferenceDataServiceTest {
 
         assertEquals(courtDetails.getCrestCourtId(), courtId);
         assertEquals(courtDetails.getCrestCourtSiteId(), courtSiteId);
-        assertEquals(courtDetails.getCourtFullName(), courtSiteName);
+        assertEquals(courtDetails.getCourtSiteName(), courtSiteName);
         assertEquals(courtDetails.getCourtShortName(), courtShortName);
         assertEquals(courtDetails.getCourtSiteCode(), courtSiteCode);
         assertEquals(courtDetails.getCourtType(), courtType);

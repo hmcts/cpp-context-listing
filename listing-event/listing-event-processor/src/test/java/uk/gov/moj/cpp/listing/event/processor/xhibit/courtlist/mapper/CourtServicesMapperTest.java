@@ -54,6 +54,6 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         assertThat(courtHouseStructure.getCourtHouseType().value(), is("Crown Court"));
         assertThat(courtHouseStructure.getCourtHouseName(), is("MOCKCOURTNAME"));
-        assertThat(courtHouseStructure.getCourtHouseCode().getValue(), is("000"));
+        assertThat(courtHouseStructure.getCourtHouseCode().getValue(), is("001"));
     }
 }

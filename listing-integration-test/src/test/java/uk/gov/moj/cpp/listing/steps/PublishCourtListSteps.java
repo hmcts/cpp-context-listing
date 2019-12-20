@@ -46,10 +46,10 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     private static final String LISTING_COMMAND_PUBLISH_COURT_LIST = "listing.command.publish-court-list";
     private static final String MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST = "application/vnd.listing.command.publish-court-list+json";
 
-    private static final String PRESTON_COURT_NAME = "DUMMYCOURTNAME";
-    private static final String PRESTON_COURT_SITE_NAME = "DUMMYCOURTNAME";
-    private static final String PRESTON_COURT_ID = "000";
-    private static final String PRESTON_COURT_SITE_ID = "000";
+    private static final String PRESTON_COURT_NAME = "PRESTON";
+    private static final String PRESTON_COURT_SITE_NAME = "LANCASTER";
+    private static final String PRESTON_COURT_ID = "448";
+    private static final String PRESTON_COURT_SITE_ID = "768";
 
     private JsonObject commandJsonObject;
 
@@ -119,21 +119,20 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
     public void verifySentPublishedCourtListHearingData() throws Exception {
 
-        final String sentXml = getSentXml();
-
-        assertXpathEvaluatesTo(PRESTON_COURT_NAME, "//*[local-name()='CourtHouseName']/text()", sentXml);
         verifyCourtHeader();
         verifyCourtCourtList();
+
     }
 
     private void verifyCourtHeader() throws Exception {
 
         final String sentXml = getSentXml();
+
         assertXpathEvaluatesTo(PRESTON_COURT_NAME, "//*[local-name()='CourtHouseName']/text()", sentXml);
         assertXpathEvaluatesTo(PRESTON_COURT_ID, "/*[local-name()='FirmList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseCode']/text()", sentXml);
         assertXpathEvaluatesTo(PRESTON_COURT_NAME, "/*[local-name()='FirmList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseName']/text()", sentXml);
-    }
 
+    }
 
     private void verifyCourtCourtList() throws Exception {
 
@@ -141,19 +140,17 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
         assertXpathEvaluatesTo(PRESTON_COURT_SITE_NAME, "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='CourtHouse']/*[local-name()='CourtHouseName']/text()", sentXml);
-
         assertXpathEvaluatesTo(PRESTON_COURT_SITE_ID, "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='CourtHouse']/*[local-name()='CourtHouseCode']/text()", sentXml);
-
         assertXpathEvaluatesTo("231", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='CourtRoomNumber']/text()", sentXml);
-
         assertXpathEvaluatesTo("Ainsworth", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameSurname']/text()", sentXml);
-
         assertXpathEvaluatesTo("PTP", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='HearingDetails']/@HearingType", sentXml);
+
     }
+
 
     public void verifySentPublishedCourtListHasNoHearings() throws Exception {
         verifySentPublishedCourtListFileIsExpected("expectations/FirmList-with-no-hearings.xml");

@@ -22,7 +22,7 @@ public class DailyListMapper extends AbstractCourtListMapper {
 
         dailyListStructure.setDocumentID(courtServicesMapper.generateDocumentID());
         dailyListStructure.setListHeader(courtServicesMapper.generateListHeader());
-        dailyListStructure.setCrownCourt(courtServicesMapper.generateCourtHouseStructure(context.getParameters().getCourtCentreId()));
+        dailyListStructure.setCrownCourt(courtServicesMapper.generateCrownCourtStructure(context.getParameters().getCourtCentreId()));
         dailyListStructure.setCourtLists(generateCourtLists());
 
         return objectFactory.createDailyList(dailyListStructure);

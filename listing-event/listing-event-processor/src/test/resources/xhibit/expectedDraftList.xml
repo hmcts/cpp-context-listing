@@ -16,13 +16,13 @@
     <cs:CrownCourt>
         <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
         <cs:CourtHouseCode CourtHouseShortName="MOCK">000</cs:CourtHouseCode>
-        <cs:CourtHouseName>MOCKCOURTNAME</cs:CourtHouseName>
+        <cs:CourtHouseName>MOCK_CROWN_COURTNAME</cs:CourtHouseName>
     </cs:CrownCourt>
     <cs:CourtLists>
         <cs:CourtList>
             <cs:CourtHouse>
                 <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
-                <cs:CourtHouseCode CourtHouseShortName="MOCK">000</cs:CourtHouseCode>
+                <cs:CourtHouseCode>001</cs:CourtHouseCode>
                 <cs:CourtHouseName>MOCKCOURTNAME</cs:CourtHouseName>
             </cs:CourtHouse>
             <cs:Sittings>

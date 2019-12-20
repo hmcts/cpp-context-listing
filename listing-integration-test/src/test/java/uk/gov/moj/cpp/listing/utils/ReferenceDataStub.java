@@ -19,8 +19,8 @@ import java.util.UUID;
 
 public class ReferenceDataStub {
 
-    private static final String REFERENCE_DATA_COURTROOM_MAPPINGS_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/cp-xhibit-courtroom-mappings";
-    private static final String REFERENCE_DATA_COURTROOM_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.query.cp-xhibit-courtroom-mappings+json";
+    private static final String REFERENCE_DATA_COURT_MAPPINGS_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/cp-xhibit-court-mappings";
+    private static final String REFERENCE_DATA_COURT_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.query.cp-xhibit-court-mappings+json";
     private static final String REFERENCE_DATA_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms/.*";
     private static final String REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE = "application/vnd.referencedata.ou-courtroom+json";
     private static final String REFERENCE_DATA_ALL_CROWN_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms";
@@ -29,19 +29,19 @@ public class ReferenceDataStub {
     private static final String REFERENCE_DATA_HEARING_TYPES_URL = "/referencedata-service/query/api/rest/referencedata/hearing-types";
     private static final String REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE = "application/vnd.referencedata.query.hearing-types+json";
 
-    public static void stubGetReferenceDataCourtRoomMappings(final CourtCentreData courtReferenceData) {
+    public static void stubGetReferenceDataCourtMappings(final CourtCentreData courtReferenceData) {
         InternalEndpointMockUtils.stubPingFor("referencedata-service");
 
-        String payload = getPayload("stub-data/referencedata.query.cp-xhibit-courtroom-mappings.json")
+        String payload = getPayload("stub-data/referencedata.query.cp-xhibit-court-mappings.json")
                 .replace("COURT_CENTRE_ID", courtReferenceData.getCourtCentreId().toString());
 
-        stubFor(get(urlPathMatching(REFERENCE_DATA_COURTROOM_MAPPINGS_QUERY_URL))
+        stubFor(get(urlPathMatching(REFERENCE_DATA_COURT_MAPPINGS_QUERY_URL))
                 .willReturn(aResponse().withStatus(SC_OK)
                         .withHeader("CPPID", randomUUID().toString())
-                        .withHeader("Content-Type", REFERENCE_DATA_COURTROOM_MAPPINGS_MEDIA_TYPE)
+                        .withHeader("Content-Type", REFERENCE_DATA_COURT_MAPPINGS_MEDIA_TYPE)
                         .withBody(payload)));
 
-        waitForStubToBeReady(REFERENCE_DATA_COURTROOM_MAPPINGS_QUERY_URL, REFERENCE_DATA_COURTROOM_MAPPINGS_MEDIA_TYPE);
+        waitForStubToBeReady(REFERENCE_DATA_COURT_MAPPINGS_QUERY_URL, REFERENCE_DATA_COURT_MAPPINGS_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataCourtCentre(final CourtCentreData courtReferenceData) {

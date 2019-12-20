@@ -1,0 +1,17 @@
+{
+  "cpXhibitCourtMappings": [
+    {
+      "id": "0c5eead7-e337-44a8-9d0e-fa3378b12fc5",
+      "crestCourtId": "448",
+      "crestCourtName": "PRESTON",
+      "crestCourtShortName": "PREST",
+      "crestCourtFullName": "PRESTON CROWN COURT",
+      "crestCourtSiteId": "768",
+      "crestCourtSiteCode": "A",
+      "crestCourtSiteName": "LANCASTER",
+      "oucode": "B47EC00",
+      "courtType": "CROWN_COURT",
+      "validFrom": "2016-04-08"
+    }
+  ]
+}
