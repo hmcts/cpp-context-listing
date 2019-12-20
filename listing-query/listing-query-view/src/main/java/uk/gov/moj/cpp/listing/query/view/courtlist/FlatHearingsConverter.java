@@ -49,14 +49,11 @@ public class FlatHearingsConverter {
 
         for (final JsonObject hearingDay : caseHearings.getJsonArray("hearingDays").getValuesAs(JsonObject.class)) {
 
-            if (hearingDay.getInt("sequence") != 0) {
-
-                flatHearings.add(new FlatHearing(LocalDate.parse(hearingDay.getString("hearingDate")),
-                        caseHearings.getJsonArray("judiciary"),
-                        getOptionalUUID(caseHearings, "courtRoomId"),
-                        caseHearings
-                ));
-            }
+            flatHearings.add(new FlatHearing(LocalDate.parse(hearingDay.getString("hearingDate")),
+                    caseHearings.getJsonArray("judiciary"),
+                    getOptionalUUID(caseHearings, "courtRoomId"),
+                    caseHearings
+            ));
         }
 
         return flatHearings;
