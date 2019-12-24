@@ -3,6 +3,8 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ObjectFactory;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
+import java.util.List;
+
 import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
 
@@ -10,14 +12,14 @@ public abstract class AbstractCourtListMapper {
 
     protected static final ObjectFactory objectFactory = new ObjectFactory();
 
-    protected JsonObject courtListForPublishing;
+    protected List<JsonObject> courtListForPublishing;
 
     protected CourtServicesMapper courtServicesMapper;
 
     protected CourtListGenerationContext context;
 
-    public AbstractCourtListMapper(final CourtListGenerationContext context, final JsonObject courtListForPublishing,
-                          final CourtServicesMapper courtServicesMapper) {
+    public AbstractCourtListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListForPublishing,
+                                   final CourtServicesMapper courtServicesMapper) {
         this.context = context;
         this.courtListForPublishing = courtListForPublishing;
         this.courtServicesMapper = courtServicesMapper;

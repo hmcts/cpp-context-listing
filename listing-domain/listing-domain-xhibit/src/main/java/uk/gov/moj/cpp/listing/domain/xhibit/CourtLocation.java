@@ -53,4 +53,17 @@ public class CourtLocation {
     public String getCourtType() {
         return courtType;
     }
+
+    @Override
+    public String toString() {
+        return "CourtLocation{" +
+                "crestCourtId='" + crestCourtId + '\'' +
+                ", crestCourtSiteId='" + crestCourtSiteId + '\'' +
+                ", courtName='" + courtName + '\'' +
+                ", courtShortName='" + courtShortName + '\'' +
+                ", courtSiteName='" + courtSiteName + '\'' +
+                ", courtSiteCode='" + courtSiteCode + '\'' +
+                ", courtType='" + courtType + '\'' +
+                '}';
+    }
 }

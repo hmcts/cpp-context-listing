@@ -4,6 +4,7 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.FirmCourtListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.FirmListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.JsonObject;
@@ -11,7 +12,7 @@ import javax.xml.bind.JAXBElement;
 
 public class FirmListMapper extends AbstractCourtListMapper {
 
-    public FirmListMapper(final CourtListGenerationContext context, final JsonObject courtListForPublishing, final CourtServicesMapper courtServicesMapper) {
+    public FirmListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListForPublishing, final CourtServicesMapper courtServicesMapper) {
         super(context, courtListForPublishing, courtServicesMapper);
     }
 
@@ -54,7 +55,10 @@ public class FirmListMapper extends AbstractCourtListMapper {
 
         final FirmCourtListStructure.Sittings sittings = objectFactory.createFirmCourtListStructureSittings();
 
-        final List<JsonObject> sittingsJson = courtListForPublishing.getJsonObject("courtList").getJsonArray("sittings").getValuesAs(JsonObject.class);
+        final List<JsonObject> sittingsJson = new ArrayList<>();
+        courtListForPublishing.forEach(courtForPublishing ->
+            sittingsJson.addAll(courtForPublishing.getJsonObject("courtList").getJsonArray("sittings").getValuesAs(JsonObject.class))
+        );
 
         int sittingSequenceNumber = 1;
         for (final JsonObject sittingJson : sittingsJson) {

@@ -47,9 +47,9 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     private static final String MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST = "application/vnd.listing.command.publish-court-list+json";
 
     private static final String PRESTON_COURT_NAME = "PRESTON";
-    private static final String PRESTON_COURT_SITE_NAME = "LANCASTER";
+    private static final String PRESTON_COURT_SITE_NAME = "BARROW-IN-FURNESS";
     private static final String PRESTON_COURT_ID = "448";
-    private static final String PRESTON_COURT_SITE_ID = "768";
+    private static final String PRESTON_COURT_SITE_ID = "751";
 
     private JsonObject commandJsonObject;
 

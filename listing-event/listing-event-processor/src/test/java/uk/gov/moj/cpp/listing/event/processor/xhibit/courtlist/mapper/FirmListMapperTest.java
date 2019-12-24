@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
+import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
@@ -8,6 +9,8 @@ import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlTestUtils;
+
+import java.util.Arrays;
 
 import javax.json.JsonObject;
 
@@ -35,7 +38,7 @@ public class FirmListMapperTest extends BaseMapperTest {
 
         final JsonObject courtListForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json");
 
-        FirmListMapper firmListMapper = new FirmListMapper(context, courtListForPublishing, courtServicesMapper);
+        final FirmListMapper firmListMapper = new FirmListMapper(context, asList(courtListForPublishing), courtServicesMapper);
 
         String generatedXml = xmlUtils.convertToXml(firmListMapper.generate());
 

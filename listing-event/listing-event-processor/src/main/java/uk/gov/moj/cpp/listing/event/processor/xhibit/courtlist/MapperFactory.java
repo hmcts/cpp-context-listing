@@ -8,6 +8,8 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.FirmListMa
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.WarnedListMapper;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.GenerationFailedException;
 
+import java.util.List;
+
 import javax.inject.Inject;
 import javax.json.JsonObject;
 
@@ -18,7 +20,7 @@ public class MapperFactory {
     @Inject
     private XhibitReferenceDataService xhibitReferenceDataService;
 
-    public AbstractCourtListMapper createCourtListMapper(final CourtListGenerationContext context, final JsonObject courtListForPublishing) {
+    public AbstractCourtListMapper createCourtListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListForPublishing) {
         switch (context.getParameters().getPublishCourtListType()) {
             case FIRM:
                 return new FirmListMapper(context, courtListForPublishing, createCourtServicesMapper(context));

@@ -11,12 +11,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithDefaults;
+import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 
+import java.util.List;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -41,8 +43,11 @@ public class XhibitReferenceDataServiceTest {
     private static final String REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS = "referencedata.query.cp-xhibit-court-mappings";
     private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
     private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
-    private static final String REFERENCEDATA_QUERY_JUDGE = "referencedata.get.judge";
     private static final String REFERENCE_DATA_HEARING_TYPES = "referencedata.query.hearing-types";
+
+    private static final String PRESTON_COURT_NAME = "PRESTON";
+    private static final String PRESTON_COURT_SITE_NAME = "BARROW-IN-FURNESS";
+    private static final String PRESTON_COURT_SITE_NAME2 = "LANCASTER";
 
     @Mock
     private Requester requester;
@@ -64,6 +69,35 @@ public class XhibitReferenceDataServiceTest {
                         createObjectBuilder()
                                 .add("courtCentreId", randomUUID().toString()).build());
     }
+
+    @Test
+    public void shouldGetCourtLocationsForSite() throws Exception {
+        final String crestCourtId = "448";
+
+        final JsonObject courtMappings = givenPayload("/xhibit/mock-data/referencedata.query.cp-xhibit-court-mappings.json");
+        final JsonEnvelope responseEnvelope =
+                envelopeFrom(
+                        metadataWithDefaults()
+                                .withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS),
+                        courtMappings);
+
+        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+
+        List<CourtLocation> courtLocations = xhibitReferenceDataService.getCourtLocationsForCourt(inputEnvelope, crestCourtId);
+
+        verify(requester).request(requestCaptor.capture());
+
+        assertEquals(4, courtLocations.size());
+        assertEquals(PRESTON_COURT_NAME, courtLocations.get(0).getCourtName());
+        assertEquals(PRESTON_COURT_NAME, courtLocations.get(1).getCourtName());
+        assertEquals(PRESTON_COURT_NAME, courtLocations.get(2).getCourtName());
+        assertEquals(PRESTON_COURT_NAME, courtLocations.get(3).getCourtName());
+
+        assertEquals(PRESTON_COURT_SITE_NAME, courtLocations.get(0).getCourtSiteName());
+        assertEquals(PRESTON_COURT_SITE_NAME2, courtLocations.get(3).getCourtSiteName());
+
+    }
+
 
     @Test
     public void shouldGetCourtDetails() throws Exception {

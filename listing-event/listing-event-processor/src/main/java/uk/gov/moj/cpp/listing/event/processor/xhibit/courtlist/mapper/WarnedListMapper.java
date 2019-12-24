@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.WarnedListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.JsonObject;
@@ -10,7 +11,7 @@ import javax.xml.bind.JAXBElement;
 
 public class WarnedListMapper extends AbstractCourtListMapper {
 
-    public WarnedListMapper(final CourtListGenerationContext context, final JsonObject courtListForPublishing, final CourtServicesMapper courtServicesMapper) {
+    public WarnedListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListForPublishing, final CourtServicesMapper courtServicesMapper) {
         super(context, courtListForPublishing, courtServicesMapper);
     }
 
@@ -43,8 +44,11 @@ public class WarnedListMapper extends AbstractCourtListMapper {
         courtList.setCourtHouse(courtServicesMapper.generateCourtHouseStructure(
                 context.getParameters().getCourtCentreId()));
 
-        final List<JsonObject> sittingsJson = courtListForPublishing.getJsonObject("courtList")
-                .getJsonArray("sittings").getValuesAs(JsonObject.class);
+        final List<JsonObject> sittingsJson = new ArrayList<>();
+        courtListForPublishing.forEach(courtForPublishing ->
+            sittingsJson.addAll(courtForPublishing.getJsonObject("courtList").getJsonArray("sittings").getValuesAs(JsonObject.class))
+        );
+
 
         for (final JsonObject sittingJson : sittingsJson) {
 

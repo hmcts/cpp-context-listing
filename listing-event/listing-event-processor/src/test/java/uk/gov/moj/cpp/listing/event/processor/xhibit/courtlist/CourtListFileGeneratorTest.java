@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.time.ZonedDateTime.parse;
+import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -73,7 +74,7 @@ public class CourtListFileGeneratorTest {
                 {FINAL, DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedFinalList.xml"},
                 {FIRM, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedFirmList.xml"},
                 {FINAL, RESTRICTED_DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedRestrictedFinalList.xml"}};
-        return Arrays.asList(data);
+        return asList(data);
     }
 
     @Before
@@ -102,6 +103,7 @@ public class CourtListFileGeneratorTest {
                                                               "CROWN_COURT");
 
         when(xhibitReferenceDataService.getCourtDetails(any(), any())).thenReturn(courtLocation);
+        when(xhibitReferenceDataService.getCourtLocationsForCourt(any(), any())).thenReturn(asList(courtLocation));
 
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.json");
         when(xhibitReferenceDataService.getJudiciary(any(), any())).thenReturn(judiciary);

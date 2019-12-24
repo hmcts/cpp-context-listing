@@ -21,8 +21,8 @@
         <cs:CourtList SittingDate="2019-11-04">
             <cs:CourtHouse>
                 <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
-                <cs:CourtHouseCode>768</cs:CourtHouseCode>
-                <cs:CourtHouseName>LANCASTER</cs:CourtHouseName>
+                <cs:CourtHouseCode>751</cs:CourtHouseCode>
+                <cs:CourtHouseName>BARROW-IN-FURNESS</cs:CourtHouseName>
             </cs:CourtHouse>
             <cs:Sittings/>
         </cs:CourtList>
