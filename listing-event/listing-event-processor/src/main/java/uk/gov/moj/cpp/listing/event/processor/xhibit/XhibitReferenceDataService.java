@@ -46,7 +46,7 @@ public class XhibitReferenceDataService {
                 .payloadAsJsonObject().getJsonArray("cpXhibitCourtMappings").getValuesAs(JsonObject.class)
                 .stream().findFirst().orElseThrow(() -> new RuntimeException(format("Cannot find court details with courtCentre %s", courtCentreId)));
 
-        return of(court);
+        return createCourtLocation(court);
 
     }
 
@@ -88,7 +88,18 @@ public class XhibitReferenceDataService {
 
     }
 
-    private CourtLocation of(final JsonObject jsonObject) {
+    private List<CourtLocation> doGetCourtLocationsForCourt(final Envelope envelope, final String crestCourtId) {
+
+        return requester.request(envelop(createObjectBuilder().build()).withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS)
+                .withMetadataFrom(envelope))
+                .payloadAsJsonObject().getJsonArray("cpXhibitCourtMappings").getValuesAs(JsonObject.class)
+                .stream()
+                .filter(c -> c.getString("crestCourtId").equals(crestCourtId))
+                .map(this::createCourtLocation).collect(Collectors.toList());
+
+    }
+
+    private CourtLocation createCourtLocation(final JsonObject jsonObject) {
         return new CourtLocation(
                 jsonObject.getString("crestCourtId"),
                 jsonObject.getString("crestCourtSiteId", jsonObject.getString("crestCourtId")),
@@ -97,17 +108,6 @@ public class XhibitReferenceDataService {
                 jsonObject.getString("crestCourtSiteName"),
                 jsonObject.getString("crestCourtSiteCode"),
                 jsonObject.getString("courtType"));
-    }
-
-    private List<CourtLocation> doGetCourtLocationsForCourt(final Envelope envelope, final String crestCourtId) {
-
-        return requester.request(envelop(createObjectBuilder().build()).withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS)
-                .withMetadataFrom(envelope))
-                .payloadAsJsonObject().getJsonArray("cpXhibitCourtMappings").getValuesAs(JsonObject.class)
-                .stream()
-                .filter(c -> c.getString("crestCourtId").equals(crestCourtId))
-                .map(this::of).collect(Collectors.toList());
-
     }
 
 }
