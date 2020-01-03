@@ -688,7 +688,8 @@ public class ListingCommandHandler {
                 storePublishedCourtList.getCourtCentreId(),
                 valueOf(storePublishedCourtList.getPublishCourtListType().toString()),
                 storePublishedCourtList.getStartDate(),
-                storePublishedCourtList.getCourtListJson());
+                storePublishedCourtList.getCourtListJson(),
+                clock.now());
         appendEventsToStream(commandEnvelope, eventStream, events);
     }
 

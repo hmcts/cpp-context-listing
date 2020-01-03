@@ -18,7 +18,6 @@ import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 import javax.json.Json;
@@ -115,7 +114,7 @@ public class CourtListFileGeneratorTest {
         when(xhibitReferenceDataService.getXhibitHearingType(any(), any())).thenReturn(hearingType);
 
         final JsonObject courtListData = givenPayload(courtListJsonFile);
-        when(listingService.getCourtListForCourtCentre(any(), any())).thenReturn(courtListData);
+        when(listingService.getUnpublishedCourtListForCourtCentre(any(), any())).thenReturn(courtListData);
     }
 
     @Test

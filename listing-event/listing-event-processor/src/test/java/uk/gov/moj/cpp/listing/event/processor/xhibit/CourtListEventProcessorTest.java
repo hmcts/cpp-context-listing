@@ -11,9 +11,11 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
+import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.fileservice.api.FileServiceException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.common.xhibit.ExportFailedException;
@@ -21,10 +23,10 @@ import uk.gov.moj.cpp.listing.common.xhibit.XhibitService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListFileGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadataGenerator;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.ListingService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -58,6 +60,8 @@ public class CourtListEventProcessorTest {
     private CourtListFileGenerator courtListFileGenerator;
     @Mock
     private FileServiceClient fileServiceClient;
+    @Mock
+    private ListingService listingService;
     @Spy
     private JsonObjectToObjectConverter jsonObjectConverter;
 
@@ -76,16 +80,35 @@ public class CourtListEventProcessorTest {
         final PublishCourtListRequestParameters parameters = mock(PublishCourtListRequestParameters.class);
         final CourtListMetadata courtListMetadata = new CourtListMetadata("TESTFILENAME",
                 "UNIQUE_ID", parse("2018-01-02T13:04:05+00:00[Europe/London]"));
+        final JsonObject courtListData = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json");
 
         when(publishCourtListRequestParametersParser.parse(tEnvelope)).thenReturn(parameters);
         when(courtListMetadataGenerator.generate(tEnvelope, parameters)).thenReturn(courtListMetadata);
         when(courtListFileGenerator.generateXml(tEnvelope, parameters, courtListMetadata)).thenReturn(mockFileContent);
         when(fileServiceClient.store(courtListMetadata, mockFileContent)).thenReturn(generatedfileId);
+        when(listingService.getUnpublishedCourtListForCourtCentre(tEnvelope, parameters)).thenReturn(courtListData);
 
         // Tested method
         courtListEventProcessor.handlePublishCourtListRequested(tEnvelope);
 
         // Assertions
+        assertCourtListPublished(parameters, tEnvelope, courtListData);
+        assertCourtListExported(generatedfileId, mockFileContent, parameters, courtListMetadata); // TODO SCSL-280 Remove since export will be triggered by a scheduled task.
+    }
+
+    private void assertCourtListPublished(final PublishCourtListRequestParameters parameters,
+                                          final JsonEnvelope tEnvelope,
+                                          final JsonObject courtListData) {
+
+        verify(listingService).getUnpublishedCourtListForCourtCentre(tEnvelope, parameters);
+        verify(publishCourtListCommandSender).storePublishedCourtList(parameters, courtListData);
+    }
+
+    private void assertCourtListExported(final UUID generatedfileId,
+                                         final String mockFileContent,
+                                         final PublishCourtListRequestParameters parameters,
+                                         final CourtListMetadata courtListMetadata) throws FileServiceException {
+        verify(fileServiceClient).store(courtListMetadata, mockFileContent);
         verify(fileServiceClient).store(courtListMetadata, mockFileContent);
         verify(publishCourtListCommandSender).recordCourtListProduced(parameters, generatedfileId, courtListMetadata.getFilename());
     }

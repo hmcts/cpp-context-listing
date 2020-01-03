@@ -19,8 +19,8 @@ public class ListingService {
     @FrameworkComponent(EVENT_PROCESSOR)
     private Requester requester;
 
-    public JsonObject getCourtListForCourtCentre(final JsonEnvelope envelope,
-                                                final PublishCourtListRequestParameters publishCourtListRequestParameters) {
+    public JsonObject getUnpublishedCourtListForCourtCentre(final JsonEnvelope envelope,
+                                                            final PublishCourtListRequestParameters publishCourtListRequestParameters) {
 
         final JsonObjectBuilder restRequestParametersBuilder = createObjectBuilder()
                 .add("courtCentreId", publishCourtListRequestParameters.getCourtCentreId().toString())

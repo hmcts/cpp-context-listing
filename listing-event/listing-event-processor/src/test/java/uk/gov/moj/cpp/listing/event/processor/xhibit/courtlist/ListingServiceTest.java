@@ -66,7 +66,7 @@ public class ListingServiceTest {
                 .publishCourtListType(publishCourtListType)
                 .build();
 
-        final JsonObject response = listingService.getCourtListForCourtCentre(inputEnvelope, parameters);
+        final JsonObject response = listingService.getUnpublishedCourtListForCourtCentre(inputEnvelope, parameters);
 
         verifyResponse(response);
 

@@ -126,13 +126,15 @@ public class PublishCourtListRequestAggregate implements Aggregate {
     public Stream<Object> storePublishedCourtList(final UUID courtCentreId,
                                                   final PublishCourtListType publishCourtListType,
                                                   final LocalDate startDate,
-                                                  final String courtListJson) {
+                                                  final String courtListJson,
+                                                  final ZonedDateTime lastUpdated) {
 
         return apply(of(publishedCourtListStored()
                 .withCourtCentreId(courtCentreId)
                 .withPublishCourtListType(publishCourtListType)
                 .withStartDate(startDate)
                 .withCourtListJson(courtListJson)
+                .withLastUpdated(lastUpdated)
                 .build()));
     }
 

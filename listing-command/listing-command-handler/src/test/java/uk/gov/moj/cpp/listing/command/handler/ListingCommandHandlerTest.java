@@ -31,6 +31,7 @@ import static uk.gov.justice.listing.event.PublishCourtListExportSuccessful.publ
 import static uk.gov.justice.listing.event.PublishCourtListProduced.publishCourtListProduced;
 import static uk.gov.justice.listing.event.PublishCourtListRequested.publishCourtListRequested;
 import static uk.gov.justice.listing.event.PublishCourtListType.FIRM;
+import static uk.gov.justice.listing.event.PublishedCourtListStored.publishedCourtListStored;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
@@ -1304,11 +1305,12 @@ public class ListingCommandHandlerTest {
         final PublishCourtListType publishCourtListType = FIRM;
         final LocalDate startDate = LocalDate.now();
         final String courtListJson = "{}";
+        final ZonedDateTime lastUpdated = ZonedDateTime.parse("2019-11-15T11:13:19.314Z[UTC]");
 
         when(eventSource.getStreamById(publishCourtListRequestId)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
-        when(publishCourtListRequestAggregate.storePublishedCourtList(courtCentreId, publishCourtListType, startDate, courtListJson))
-                .thenReturn(Stream.of(publishCourtListProduced().build()));
+        when(publishCourtListRequestAggregate.storePublishedCourtList(eq(courtCentreId), eq(publishCourtListType), eq(startDate), eq(courtListJson), any(ZonedDateTime.class)))
+                .thenReturn(Stream.of(publishedCourtListStored().build()));
 
         final JsonObject payload = Json.createObjectBuilder()
                 .add("publishCourtListRequestId", publishCourtListRequestId.toString())
@@ -1320,7 +1322,7 @@ public class ListingCommandHandlerTest {
 
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.store-published-court-list", payload);
         listingCommandHandler.storePublishedCourtList(commandEnvelope);
-        verify(publishCourtListRequestAggregate).storePublishedCourtList(courtCentreId, publishCourtListType, startDate, courtListJson);
+        verify(publishCourtListRequestAggregate).storePublishedCourtList(eq(courtCentreId), eq(publishCourtListType), eq(startDate), eq(courtListJson),any(ZonedDateTime.class));
     }
 
     private JsonEnvelope updateSequenceForHearingDayCommandEnvelope() {

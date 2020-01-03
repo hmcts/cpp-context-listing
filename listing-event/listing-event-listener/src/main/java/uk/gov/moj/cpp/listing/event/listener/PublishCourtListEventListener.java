@@ -102,7 +102,7 @@ public class PublishCourtListEventListener {
         courtListRepository.save(exportSuccessful);
     }
 
-    @Handles("listing.command.published-court-list-stored")
+    @Handles("listing.event.published-court-list-stored")
     public void storePublishedCourtCentreList(final Envelope<PublishedCourtListStored> event) throws IOException {
 
         final PublishedCourtListStored publishedCourtListStored = event.payload();
@@ -111,7 +111,7 @@ public class PublishCourtListEventListener {
         final PublishCourtListType publishCourtListType = publishedCourtListStored.getPublishCourtListType();
         final LocalDate startDate = publishedCourtListStored.getStartDate();
         final JsonNode content = new ObjectMapper().readTree(publishedCourtListStored.getCourtListJson());
-        final ZonedDateTime lastUpdated = ZonedDateTime.parse(publishedCourtListStored.getLastUpdated());
+        final ZonedDateTime lastUpdated = publishedCourtListStored.getLastUpdated();
 
         final PublishedCourtList proposedPublishedCourtList =
                 new PublishedCourtList(

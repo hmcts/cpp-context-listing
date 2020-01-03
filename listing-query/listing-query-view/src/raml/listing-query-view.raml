@@ -191,6 +191,12 @@ protocols: [ HTTP, HTTPS ]
           responseType: application/vnd.listing.courtlist+json
           name: listing.courtlist
       ...
+    queryParameters:
+      isPublished:
+        description: True if published court lists are returned
+        type: boolean
+        required: false
+        default: false
     responses:
           200:
               description: OK

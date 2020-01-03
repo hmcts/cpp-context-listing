@@ -23,7 +23,7 @@
     },
     "lastUpdated": {
       "type": "string",
-      "format": "date"
+      "format": "date-time"
     }
   },
   "required": [

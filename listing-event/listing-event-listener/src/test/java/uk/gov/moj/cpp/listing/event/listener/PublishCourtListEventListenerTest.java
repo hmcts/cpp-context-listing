@@ -232,7 +232,7 @@ public class PublishCourtListEventListenerTest {
                 .withPublishCourtListType(publishCourtListType)
                 .withStartDate(startDate)
                 .withCourtListJson(courtListJson)
-                .withLastUpdated(lastUpdated.toString())
+                .withLastUpdated(lastUpdated)
                 .build();
 
         final PublishedCourtList expectedPublishedCourtList = new PublishedCourtList(
