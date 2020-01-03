@@ -58,7 +58,7 @@
                                         <cs:IsMasked>yes</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                        <cs:Charge IndictmentCountNumber="1" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
@@ -72,7 +72,7 @@
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                        <cs:Charge IndictmentCountNumber="1" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
@@ -99,7 +99,7 @@
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0">
+                                        <cs:Charge IndictmentCountNumber="1">
                                             <cs:OffenceStatement>******</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>

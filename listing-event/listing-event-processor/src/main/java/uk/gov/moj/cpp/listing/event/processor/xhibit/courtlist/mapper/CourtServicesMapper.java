@@ -369,31 +369,35 @@ public class CourtServicesMapper {
 
         final DefendantStructure.Charges charges = objectFactory.createDefendantStructureCharges();
 
+        int indictmentCountNumber = 1;
+
         for (final JsonObject offence : offences.getValuesAs(JsonObject.class)) {
             if (offence.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-                charges.getCharge().add(generateRestrictedChargeStructure());
+                charges.getCharge().add(generateRestrictedChargeStructure(indictmentCountNumber++));
             } else {
-                charges.getCharge().add(generateChargeStructure(offence));
+                charges.getCharge().add(generateChargeStructure(offence, indictmentCountNumber++));
             }
         }
 
         return charges;
     }
 
-    private ChargeStructure generateRestrictedChargeStructure() {
+    private ChargeStructure generateRestrictedChargeStructure(final int indictmentCountNumber) {
 
         final ChargeStructure chargeStructure = objectFactory.createChargeStructure();
 
+        chargeStructure.setIndictmentCountNumber(indictmentCountNumber);
         chargeStructure.setOffenceStatement(MASKED_VALUE);
 
         return chargeStructure;
     }
 
     @SuppressWarnings({"squid:CommentedOutCodeLine"})   // TODO Fix date conversion
-    private ChargeStructure generateChargeStructure(final JsonObject offence) {
+    private ChargeStructure generateChargeStructure(final JsonObject offence, final int indictmentCountNumber) {
 
         final ChargeStructure chargeStructure = objectFactory.createChargeStructure();
 
+        chargeStructure.setIndictmentCountNumber(indictmentCountNumber);
         chargeStructure.setCJSoffenceCode(offence.getString("offenceCode"));
         chargeStructure.setOffenceStatement(offence.getJsonObject("statementOfOffence").getString("title"));
 //        chargeStructure.setOffenceStartDateTime(convertDate(offence.getString("startDate")));
