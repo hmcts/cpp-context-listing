@@ -33,6 +33,7 @@ public class SittingsJsonGenerator {
 
         final JsonObjectBuilder sittingJson = Json.createObjectBuilder()
                 .add("sittingDate", sitting.getSittingKey().getSittingDate().toString())
+                .add ("weekCommencing", sitting.isWeekCommencing())
                 .add("judiciary", sitting.getJudiciaryJson())
                 .add("hearings", buildHearingsJsonArray(sitting.getHearings()));
 
@@ -57,7 +58,8 @@ public class SittingsJsonGenerator {
         final JsonObjectBuilder hearingJsonBuilder = Json.createObjectBuilder()
                 .add("startTime", hearing.getStartTime().toString())
                 .add("hearingType", hearing.getHearingType())
-                .add("restrictFromCourtList", hearing.isRestrictFromCourtList());
+                .add("restrictFromCourtList", hearing.isRestrictFromCourtList())
+                .add("weekCommencing", hearing.isWeekCommencing());
 
         if (hearing.getEndTime().isPresent()) {
             hearingJsonBuilder.add("endTime", hearing.getEndTime().orElseThrow(IllegalStateException::new).toString());

@@ -32,7 +32,7 @@ public class JsonUtils {
 
         final JSONObject expected = new JSONObject(expectedJsonObject.toString());
 
-        assertEquals(actual, expected, false);
+        assertEquals(expected, actual, true);
     }
 
     public static String prettifyJson(final JsonObject jsonObject) {

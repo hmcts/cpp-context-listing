@@ -3,6 +3,7 @@
     "sittings":[
       {
         "sittingDate":"2019-12-15",
+        "weekCommencing": true,
         "courtRoomId":"7cb09222-49e1-3622-a5a6-ad253d2b3c39",
         "judiciary":[
           {
@@ -109,6 +110,7 @@
       },
       {
         "sittingDate":"2019-12-15",
+        "weekCommencing": false,
         "courtRoomId":"6508af42-e4d4-396d-a752-d676ebd38f6d",
         "judiciary":[
           {

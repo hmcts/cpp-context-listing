@@ -22,6 +22,8 @@ public class Hearing {
 
     private Optional<CourtApplicationDetails> courtApplicationDetails;
 
+    private boolean weekCommencing;
+
     public LocalDateTime getStartTime() {
         return startTime;
     }
@@ -76,5 +78,13 @@ public class Hearing {
 
     public void setCourtApplicationDetails(final Optional<CourtApplicationDetails> courtApplicationDetails) {
         this.courtApplicationDetails = courtApplicationDetails;
+    }
+
+    public boolean isWeekCommencing() {
+        return weekCommencing;
+    }
+
+    public void setWeekCommencing(final boolean weekCommencing) {
+        this.weekCommencing = weekCommencing;
     }
 }

@@ -2,6 +2,7 @@
   "courtList":{
     "sittings":[
       {
+        "weekCommencing":true,
         "sittingDate":"2019-12-16",
         "courtRoomId":"5e1c7b54-3bca-3a37-a85a-84510f115b76",
         "judiciary":[
@@ -22,6 +23,7 @@
               "description":"Plea and Trial Preparation"
             },
             "restrictFromCourtList":false,
+            "weekCommencing": true,
             "caseIdentifier":{
               "authorityId":"31af405e-7b60-4dd8-a244-c24c2d3fa595",
               "authorityCode":"TFL",

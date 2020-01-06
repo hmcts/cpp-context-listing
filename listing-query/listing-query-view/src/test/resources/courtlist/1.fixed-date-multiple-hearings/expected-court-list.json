@@ -2,8 +2,8 @@
   "courtList":{
     "sittings":[
       {
+        "weekCommencing":false,
         "sittingDate":"2019-12-10",
-        "courtRoomId":"7cb09222-49e1-3622-a5a6-ad253d2b3c39",
         "judiciary":[
           {
             "judicialId":"fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
@@ -15,12 +15,13 @@
         "hearings":[
           {
             "startTime":"2019-12-10T14:58",
-            "endTime":"2019-12-10T15:43",
             "hearingType":{
               "id":"5ae4c090-0f70-4694-b4fc-707633d2b430",
               "description":"Sentence"
             },
             "restrictFromCourtList":false,
+            "weekCommencing":false,
+            "endTime":"2019-12-10T15:43",
             "caseIdentifier":{
               "authorityId":"e8ef7f69-89ef-472c-a877-4329175bd6ca",
               "authorityCode":"CPS",
@@ -79,12 +80,13 @@
           },
           {
             "startTime":"2019-12-10T14:59",
-            "endTime":"2019-12-10T15:44",
             "hearingType":{
               "id":"5ae4c090-0f70-4694-b4fc-707633d2b430",
               "description":"Sentence"
             },
             "restrictFromCourtList":false,
+            "weekCommencing":false,
+            "endTime":"2019-12-10T15:44",
             "applicationReference":"65OF146907",
             "applicant":{
               "id":"9aee20ca-b0b2-4133-b512-7bec3d835134",
@@ -105,7 +107,8 @@
               }
             ]
           }
-        ]
+        ],
+        "courtRoomId":"7cb09222-49e1-3622-a5a6-ad253d2b3c39"
       }
     ]
   }

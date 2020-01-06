@@ -52,7 +52,11 @@ public class WarnedListMapper extends AbstractCourtListMapper {
 
         for (final JsonObject sittingJson : sittingsJson) {
 
-            courtList.getWithoutFixedDate().add(generateWithoutFixedDate(sittingJson));
+            if (sittingJson.getBoolean("weekCommencing")) {
+                courtList.getWithoutFixedDate().add(generateWithoutFixedDate(sittingJson));
+            } else {
+                courtList.getWithFixedDate().add(generateWithFixedDate(sittingJson));
+            }
         }
 
         return courtList;
@@ -67,5 +71,16 @@ public class WarnedListMapper extends AbstractCourtListMapper {
         withoutFixedDate.setHearingType("HRG"); // For Hearing
 
         return withoutFixedDate;
+    }
+
+    private WarnedListStructure.CourtLists.CourtList.WithFixedDate generateWithFixedDate(final JsonObject sittingJson) {
+
+        final WarnedListStructure.CourtLists.CourtList.WithFixedDate withFixedDate = objectFactory
+                .createWarnedListStructureCourtListsCourtListWithFixedDate();
+
+        withFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(sittingJson));
+        withFixedDate.setHearingType("HRG"); // For Hearing
+
+        return withFixedDate;
     }
 }

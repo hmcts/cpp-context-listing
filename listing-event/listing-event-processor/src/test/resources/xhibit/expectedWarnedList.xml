@@ -25,6 +25,40 @@
                 <cs:CourtHouseCode>001</cs:CourtHouseCode>
                 <cs:CourtHouseName>MOCKCOURTNAME</cs:CourtHouseName>
             </cs:CourtHouse>
+            <cs:WithFixedDate HearingType="HRG">
+                <cs:Fixture>
+                    <cs:Cases>
+                        <cs:Case>
+                            <cs:CaseNumber>44FE772625</cs:CaseNumber>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>LAZZERI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Harriett</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Case>
+                        <cs:Case>
+                            <cs:CaseNumber>41TL769069</cs:CaseNumber>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>BENINI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Olga</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Case>
+                    </cs:Cases>
+                </cs:Fixture>
+            </cs:WithFixedDate>
             <cs:WithoutFixedDate HearingType="HRG">
                 <cs:Fixture>
                     <cs:Cases>
@@ -61,40 +95,6 @@
                                         <cs:Name>
                                             <apd:CitizenNameSurname>LUCAS</apd:CitizenNameSurname>
                                             <apd:CitizenNameRequestedName>Vernon</apd:CitizenNameRequestedName>
-                                        </cs:Name>
-                                        <cs:IsMasked>no</cs:IsMasked>
-                                    </cs:PersonalDetails>
-                                </cs:Defendant>
-                            </cs:Defendants>
-                        </cs:Case>
-                    </cs:Cases>
-                </cs:Fixture>
-            </cs:WithoutFixedDate>
-            <cs:WithoutFixedDate HearingType="HRG">
-                <cs:Fixture>
-                    <cs:Cases>
-                        <cs:Case>
-                            <cs:CaseNumber>44FE772625</cs:CaseNumber>
-                            <cs:Defendants>
-                                <cs:Defendant>
-                                    <cs:PersonalDetails>
-                                        <cs:Name>
-                                            <apd:CitizenNameSurname>LAZZERI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Harriett</apd:CitizenNameRequestedName>
-                                        </cs:Name>
-                                        <cs:IsMasked>no</cs:IsMasked>
-                                    </cs:PersonalDetails>
-                                </cs:Defendant>
-                            </cs:Defendants>
-                        </cs:Case>
-                        <cs:Case>
-                            <cs:CaseNumber>41TL769069</cs:CaseNumber>
-                            <cs:Defendants>
-                                <cs:Defendant>
-                                    <cs:PersonalDetails>
-                                        <cs:Name>
-                                            <apd:CitizenNameSurname>BENINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Olga</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>

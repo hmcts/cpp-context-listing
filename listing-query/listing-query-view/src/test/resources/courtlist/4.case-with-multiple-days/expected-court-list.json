@@ -2,6 +2,7 @@
   "courtList":{
     "sittings":[
       {
+        "weekCommencing":false,
         "sittingDate":"2019-12-25",
         "judiciary":[
         ],
@@ -13,6 +14,7 @@
               "description":"Plea and Trial Preparation"
             },
             "restrictFromCourtList":false,
+            "weekCommencing":false,
             "endTime":"2019-12-25T00:20",
             "caseIdentifier":{
               "authorityId":"31af405e-7b60-4dd8-a244-c24c2d3fa595",
@@ -49,6 +51,7 @@
         "courtRoomId":"5e1c7b54-3bca-3a37-a85a-84510f115b76"
       },
       {
+        "weekCommencing":false,
         "sittingDate":"2019-12-27",
         "judiciary":[
         ],
@@ -60,6 +63,7 @@
               "description":"Plea and Trial Preparation"
             },
             "restrictFromCourtList":false,
+            "weekCommencing":false,
             "endTime":"2019-12-25T00:20",
             "caseIdentifier":{
               "authorityId":"31af405e-7b60-4dd8-a244-c24c2d3fa595",
@@ -96,6 +100,7 @@
         "courtRoomId":"5e1c7b54-3bca-3a37-a85a-84510f115b76"
       },
       {
+        "weekCommencing":false,
         "sittingDate":"2019-12-28",
         "judiciary":[
         ],
@@ -107,6 +112,7 @@
               "description":"Plea and Trial Preparation"
             },
             "restrictFromCourtList":false,
+            "weekCommencing":false,
             "endTime":"2019-12-25T00:20",
             "caseIdentifier":{
               "authorityId":"31af405e-7b60-4dd8-a244-c24c2d3fa595",

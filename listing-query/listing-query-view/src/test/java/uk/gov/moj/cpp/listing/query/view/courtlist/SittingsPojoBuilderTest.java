@@ -57,7 +57,7 @@ public class SittingsPojoBuilderTest {
         final JsonObject caseHearings = buildWeekCommencingCaseHearings(startDate, courtRoomId, judicialId);
 
         return new FlatHearing(LocalDate.parse(startDate), caseHearings.getJsonArray("judiciary"),
-                Optional.of(courtRoomId), caseHearings);
+                Optional.of(courtRoomId), caseHearings, false);
     }
 
 

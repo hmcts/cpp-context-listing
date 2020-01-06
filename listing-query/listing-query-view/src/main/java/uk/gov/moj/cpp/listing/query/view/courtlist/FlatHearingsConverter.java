@@ -41,7 +41,7 @@ public class FlatHearingsConverter {
         return new FlatHearing(LocalDate.parse(caseHearings.getString("weekCommencingStartDate")),
                 caseHearings.getJsonArray("judiciary"),
                 getOptionalUUID(caseHearings, "courtRoomId"),
-                caseHearings);
+                caseHearings, true);
     }
 
     private static List<FlatHearing> getFlatHearingsForFixedDateCaseHearings(JsonObject caseHearings) {
@@ -52,7 +52,8 @@ public class FlatHearingsConverter {
             flatHearings.add(new FlatHearing(LocalDate.parse(hearingDay.getString("hearingDate")),
                     caseHearings.getJsonArray("judiciary"),
                     getOptionalUUID(caseHearings, "courtRoomId"),
-                    caseHearings
+                    caseHearings,
+                    false
             ));
         }
 

@@ -20,6 +20,7 @@
               "id":"5ae4c090-0f70-4694-b4fc-707633d2b430",
               "description":"Sentence"
             },
+            "weekCommencing": true,
             "restrictFromCourtList":false,
             "caseIdentifier":{
               "authorityId":"e8ef7f69-89ef-472c-a877-4329175bd6ca",

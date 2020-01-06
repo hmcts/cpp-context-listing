@@ -43,6 +43,9 @@
                       "type": "boolean",
                       "default": false
                     },
+                    "weekCommencing": {
+                      "type": "boolean"
+                    },
                     "committingCourtCentreId": {
                       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
                     },
@@ -74,7 +77,8 @@
                     "startTime",
                     "endTime",
                     "hearingType",
-                    "restrictFromCourtList"
+                    "restrictFromCourtList",
+                    "weekCommencing"
                   ],
                   "additionalProperties": false
                 }

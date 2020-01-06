@@ -39,7 +39,7 @@ public class SittingsPojoBuilder {
 
             if (sitting.isPresent()) {
 
-                sitting.get().getHearings().add(convertCaseHearings(flatHearing.getCaseHearings()));
+                sitting.get().getHearings().add(convertFlatHearing(flatHearing));
             } else {
 
                 sittings.add(createNewSitting(flatHearing));
@@ -62,7 +62,7 @@ public class SittingsPojoBuilder {
 
     private static Sitting createNewSitting(final FlatHearing flatHearing) {
 
-        final Hearing hearing = convertCaseHearings(flatHearing.getCaseHearings());
+        final Hearing hearing = convertFlatHearing(flatHearing);
 
         final List<Hearing> hearings = new ArrayList<>();
         hearings.add(hearing);
@@ -70,7 +70,8 @@ public class SittingsPojoBuilder {
         return new Sitting(
                 buildSittingKey(flatHearing),
                 flatHearing.getJudiciary(),
-                hearings);
+                hearings,
+                flatHearing.isWeekCommencing());
     }
 
     private static SittingKey buildSittingKey(final FlatHearing flatHearing) {
@@ -111,12 +112,15 @@ public class SittingsPojoBuilder {
         }
     }
 
-    private static Hearing convertCaseHearings(final JsonObject caseHearingsJson) {
+    private static Hearing convertFlatHearing(final FlatHearing flatHearing) {
+
+        final JsonObject caseHearingsJson = flatHearing.getCaseHearings();
 
         final Hearing hearing = new Hearing();
 
         hearing.setStartTime(getHearingStartTime(caseHearingsJson));
         hearing.setEndTime(getHearingEndTime(caseHearingsJson));
+        hearing.setWeekCommencing(flatHearing.isWeekCommencing());
 
         hearing.setHearingType(caseHearingsJson.getJsonObject("type"));
 
@@ -153,10 +157,8 @@ public class SittingsPojoBuilder {
     private static boolean isHearingRestricted(final JsonObject caseHearingsJson) {
 
         if (isCaseHearing(caseHearingsJson)) {
-            // TODO SCSL-89 Add support for hearings with multiple cases
             return caseHearingsJson.getJsonArray(LISTED_CASES).getJsonObject(0).getBoolean("restrictFromCourtList");
         } else {
-            // TODO SCSL-89 Add support for hearings with multiple cases
             return caseHearingsJson.getJsonArray("courtApplications").getJsonObject(0).getBoolean("restrictFromCourtList");
         }
     }
