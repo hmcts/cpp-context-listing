@@ -27,6 +27,7 @@
             </cs:CourtHouse>
             <cs:WithFixedDate HearingType="HRG">
                 <cs:Fixture>
+                    <cs:FixedDate>2019-12-15</cs:FixedDate>
                     <cs:Cases>
                         <cs:Case>
                             <cs:CaseNumber>44FE772625</cs:CaseNumber>
@@ -39,6 +40,11 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
                                 </cs:Defendant>
                             </cs:Defendants>
                         </cs:Case>
@@ -73,6 +79,11 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
                                 </cs:Defendant>
                             </cs:Defendants>
                             <cs:Defendants>
@@ -84,6 +95,11 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
                                 </cs:Defendant>
                             </cs:Defendants>
                         </cs:Case>

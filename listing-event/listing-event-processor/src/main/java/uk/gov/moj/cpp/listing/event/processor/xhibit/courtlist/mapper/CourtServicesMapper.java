@@ -28,6 +28,7 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.YesNoType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +53,7 @@ public class CourtServicesMapper {
     private static final List JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
     private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
     private static final ObjectFactory objectFactory = new ObjectFactory();
+    public static final String OFFENCES = "offences";
     private CourtListGenerationContext context;
 
     private XhibitReferenceDataService xhibitReferenceDataService;
@@ -323,7 +325,9 @@ public class CourtServicesMapper {
         final DefendantStructure defendantStructure = objectFactory.createDefendantStructure();
 
         defendantStructure.setPersonalDetails(generatePersonalDetailsStructure(defendant));
-        defendantStructure.setCharges(generateDefendantStructureCharges(defendant.getJsonArray("offences")));
+        if (defendant.containsKey(OFFENCES)) {  // Court Applications don't have offences
+            defendantStructure.setCharges(generateDefendantStructureCharges(defendant.getJsonArray(OFFENCES)));
+        }
 
         return defendantStructure;
     }
@@ -416,6 +420,9 @@ public class CourtServicesMapper {
 
         final FixtureStructure fixtureStructure = objectFactory.createFixtureStructure();
 
+        if (!sittingJson.getBoolean("weekCommencing")) {
+            fixtureStructure.setFixedDate(LocalDate.parse(sittingJson.getString("sittingDate")));
+        }
         fixtureStructure.setCases(generateCasesStructure(sittingJson));
 
         return fixtureStructure;
@@ -469,7 +476,7 @@ public class CourtServicesMapper {
 
         final CasesStructure.Case.Defendants caseStructureCaseDefendants = objectFactory.createCasesStructureCaseDefendants();
 
-        caseStructureCaseDefendants.setDefendant(generateDefendantStructureForApplicant(defendant));
+        caseStructureCaseDefendants.setDefendant(generateDefendantStructureForDefendant(defendant));
 
         return caseStructureCaseDefendants;
     }
