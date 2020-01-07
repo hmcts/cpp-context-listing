@@ -24,6 +24,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
@@ -180,13 +181,33 @@ public class HearingQueryView {
 
         final JsonObject queryPayload = query.payloadAsJsonObject();
 
-        final JsonObject courtListResponsePayload = courtListService.retrieveCourtList(
+        final JsonObject courtListResponsePayload = (queryPayload.containsKey("published") &&
+                queryPayload.getBoolean("published"))
+                ? getPublishedCourtListResponsePayload(queryPayload)
+                : getUnpublishedCourtListResponsePayload(query, queryPayload);
+
+        return enveloper.withMetadataFrom(query, "listing.courtlist").apply(courtListResponsePayload);
+    }
+
+    private JsonObject getPublishedCourtListResponsePayload(final JsonObject queryPayload) {
+
+        final PublishedCourtListPrimaryKey primaryKey = new PublishedCourtListPrimaryKey(
+                fromString(queryPayload.getString("courtCentreId")),
+                PublishCourtListType.valueOf(queryPayload.getString("publishCourtListType")),
+                parse(queryPayload.getString("startDate")));
+
+        final PublishedCourtList publishedCourtList = publishedCourtListRepository.findBy(primaryKey);
+
+        return publishedCourtListToJsonConverter.convert(publishedCourtList).getJsonObject("courtListJson");
+    }
+
+    private JsonObject getUnpublishedCourtListResponsePayload(final JsonEnvelope query, final JsonObject queryPayload) {
+        return courtListService.retrieveCourtList(
                 fromString(queryPayload.getString("courtCentreId")),
                 uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.valueOf(queryPayload.getString("publishCourtListType")),
                 parse(queryPayload.getString("startDate")),
                 query
         );
-        return enveloper.withMetadataFrom(query, "listing.courtlist").apply(courtListResponsePayload);
     }
 
     @Handles("listing.publishedcourtlist")

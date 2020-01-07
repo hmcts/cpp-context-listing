@@ -13,10 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -25,31 +27,52 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class PublishedCourtListToJsonConverterTest {
 
+    private final UUID courtCentreId = UUID.randomUUID();
+    private final PublishCourtListType publishCourtListType = WARN;
+    private final LocalDate startDate = LocalDate.now();
+    private final JsonNode courtListJson = JacksonUtil.toJsonNode("{}");
+    private final ZonedDateTime lastUpdated = ZonedDateTime.now();
+    private final ZonedDateTime lastExported = ZonedDateTime.now();
+
+    private PublishedCourtList publishedCourtList;
+
     @InjectMocks
     private PublishedCourtListToJsonConverter publishedCourtListToJsonConverter;
 
-    @Test
-    public void shouldConvertToJson() {
+    @Before
+    public void before() {
+        publishedCourtList = new PublishedCourtList(courtCentreId,publishCourtListType, startDate, courtListJson, lastUpdated, lastExported);
+    }
 
-        final UUID courtCentreId = UUID.randomUUID();
-        final PublishCourtListType publishCourtListType = WARN;
-        final LocalDate startDate = LocalDate.now();
-        final JsonNode courtListJson = JacksonUtil.toJsonNode("{}");
-        final ZonedDateTime lastUpdated = ZonedDateTime.now();
-        final ZonedDateTime lastExported = ZonedDateTime.now();
+    @Test
+    public void shouldConvertListToJson() {
 
         final List<PublishedCourtList> publishedCourtLists = new ArrayList<>();
 
-        publishedCourtLists.add(new PublishedCourtList(courtCentreId,publishCourtListType, startDate, courtListJson, lastUpdated, lastExported));
+        publishedCourtLists.add(publishedCourtList);
 
         final JsonObject jsonObject = publishedCourtListToJsonConverter.convert(publishedCourtLists);
 
-        JsonObject courtList1=jsonObject.getJsonArray("publishedCourtLists").getJsonObject(0);
+        final JsonObject courtList1=jsonObject.getJsonArray("publishedCourtLists").getJsonObject(0);
 
-        assertThat(courtList1.getString("courtCentreId"), is(courtCentreId.toString()));
-        assertThat(courtList1.getString("publishCourtListType"), is(WARN.name()));
-        assertThat(courtList1.getString("startDate"), is(startDate.toString()));
-        assertThat(courtList1.getString("startDate"), is(startDate.toString()));
-        assertThat(courtList1.getString("lastExported"), is(lastExported.toString()));
+        assertCourtList(courtList1);
     }
+
+    @Test
+    public void shouldConvertObjectToJson() {
+
+        final JsonObject courtListJson = publishedCourtListToJsonConverter.convert(publishedCourtList);
+
+        assertCourtList(courtListJson);
+    }
+
+    private void assertCourtList(final JsonObject courtListJson) {
+        assertThat(courtListJson.getString("courtCentreId"), is(courtCentreId.toString()));
+        assertThat(courtListJson.getString("publishCourtListType"), is(WARN.name()));
+        assertThat(courtListJson.getString("startDate"), is(startDate.toString()));
+        assertThat(courtListJson.getJsonObject("courtListJson"), is(Json.createObjectBuilder().build()));
+        assertThat(courtListJson.getString("lastUpdated"), is(lastUpdated.toString()));
+        assertThat(courtListJson.getString("lastExported"), is(lastExported.toString()));
+    }
+
 }
