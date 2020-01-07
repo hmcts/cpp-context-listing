@@ -34,12 +34,14 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusResult;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -72,8 +74,6 @@ public class HearingQueryViewTest {
     private static final String SEARCH_DATE_QUERY_PARAMETER = "searchDate";
     private static final String START_DATE_QUERY_PARAMETER = "startDate";
     private static final String END_DATE_QUERY_PARAMETER = "endDate";
-    private static final String WEEK_COMMENCING_START_DATE_QUERY_PARAMETER = "weekCommencingStartDate";
-    private static final String WEEK_COMMENCING_END_DATE_QUERY_PARAMETER = "weekCommencingEndDate";
     private static final String START_TIME_QUERY_PARAMETER = "startTime";
     private static final String END_TIME_QUERY_PARAMETER = "endTime";
     private static final String COURT_CENTRE_QUERY_PARAMETER = "courtCentreId";
@@ -94,14 +94,6 @@ public class HearingQueryViewTest {
     private static final LocalDate SEARCH_DATE = LocalDate.now();
     private static final LocalTime START_TIME = LocalTime.now();
     private static final LocalTime END_TIME = LocalTime.now();
-    private static final LocalDateTime EARLIEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MIN);
-    private static final LocalDateTime LATEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MAX);
-
-    private static final LocalDate WEEK_COMMENCING_START_DATE = LocalDate.now();
-    private static final LocalDate WEEK_COMMENCING_END_DATE = LocalDate.now().plusDays(7);
-
-    private static final String EARLIEST_SEARCH_DATE = "1900-01-01";
-    private static final String LATEST_SEARCH_DATE = "9999-01-01";
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -120,6 +112,12 @@ public class HearingQueryViewTest {
 
     @Mock
     private CourtListService courtListService;
+
+    @Mock
+    private PublishedCourtListRepository publishedCourtListRepository;
+
+    @Mock
+    private PublishedCourtListToJsonConverter publishedCourtListToJsonConverter;
 
     @InjectMocks
     private HearingQueryView hearingsQueryView;
@@ -395,6 +393,30 @@ public class HearingQueryViewTest {
                                 .withName("listing.search.hearing"),
                         payloadIsJson(
                                 withJsonPath("$.id", equalTo(ID.toString()))
+                        ))
+                ));
+    }
+
+    @Test
+    public void shouldGetAllPublishedCourtLists() {
+
+        final List<PublishedCourtList> publishedCourtLists = new ArrayList<>();
+        final JsonObject expectedPayload = Json.createObjectBuilder().build();
+
+        when(publishedCourtListRepository.findAll()).thenReturn(publishedCourtLists);
+        when(publishedCourtListToJsonConverter.convert(publishedCourtLists)).thenReturn(expectedPayload);
+
+        final JsonEnvelope queryEnvelope = generateQuery(
+                createObjectBuilder()
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.getPublishedCourtLists(queryEnvelope);
+
+        assertThat(results,
+                is(jsonEnvelope(withMetadataEnvelopedFrom(queryEnvelope)
+                                .withName("listing.publishedcourtlist"),
+                        payloadIsJson(
+                                withJsonPath("$", equalTo(expectedPayload))
                         ))
                 ));
     }

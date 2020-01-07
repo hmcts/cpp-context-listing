@@ -20,11 +20,10 @@ JavaTimer -> JavaTimer: sleep 10 minutes
 
 ' Export
 JavaTimer->CourtListEventProcessor: findPublishedCourtListsWaitingForExport
-CourtListEventProcessor -> ListingQueryView: listing.query.court-lists.requring-export
+CourtListEventProcessor -> ListingQueryView: listing.publishedcourtlist query
 ListingQueryView-> published_court_list: findCourtListsRequiringExport
 
-alt court list export required for court site
-' If a court list requires export
+loop every court list requiring export
 CourtListEventProcessor -> ListingCommandHandler: listing.command.court-lists.request-export (courtSite)
 ListingCommandHandler -> CourtListEventProcessor: listing.command.court-lists.export-requested
 

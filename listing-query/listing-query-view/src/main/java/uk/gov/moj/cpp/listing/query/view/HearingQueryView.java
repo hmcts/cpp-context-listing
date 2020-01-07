@@ -23,6 +23,8 @@ import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
@@ -71,6 +73,12 @@ public class HearingQueryView {
 
     @Inject
     private HearingRepository repository;
+
+    @Inject
+    private PublishedCourtListRepository publishedCourtListRepository;
+
+    @Inject
+    private PublishedCourtListToJsonConverter publishedCourtListToJsonConverter;
 
     @Inject
     private CourtListPublishStatusJdbcRepository courtListRepository;
@@ -179,6 +187,16 @@ public class HearingQueryView {
                 query
         );
         return enveloper.withMetadataFrom(query, "listing.courtlist").apply(courtListResponsePayload);
+    }
+
+    @Handles("listing.publishedcourtlist")
+    @SuppressWarnings("WeakerAccess")
+    public JsonEnvelope getPublishedCourtLists(final JsonEnvelope query) {
+
+        final List<PublishedCourtList> publishedCourtLists = publishedCourtListRepository.findAll();
+
+        return enveloper.withMetadataFrom(query, "listing.publishedcourtlist")
+                .apply(publishedCourtListToJsonConverter.convert(publishedCourtLists));
     }
 
     @Handles("listing.court.list.publish.status")

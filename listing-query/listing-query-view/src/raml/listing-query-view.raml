@@ -205,6 +205,22 @@ protocols: [ HTTP, HTTPS ]
                   example: !include json/listing.courtlist.json
                   schema:  !include json/schema/listing.courtlist.json
 
+/publishedcourtlist:
+  description: get references to published court lists
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.publishedcourtlist+json
+          name: listing.publishedcourtlist
+      ...
+    responses:
+      200:
+        body:
+          application/vnd.listing.publishedcourtlist+json:
+            example:  !include json/listing.publishedcourtlist.json
+            schema:  !include  json/schema/listing.publishedcourtlist.json
+
 /courtListPublishStatus/{courtCentreId}:
   description: get status of latest publish court list document
   get:
