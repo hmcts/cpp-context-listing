@@ -214,6 +214,19 @@ protocols: [ HTTP, HTTPS ]
           responseType: application/vnd.listing.publishedcourtlist+json
           name: listing.publishedcourtlist
       ...
+    queryParameters:
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: false
+        publishCourtListType:
+          description: type of court list
+          type: string
+          required: false
+        startDate:
+          description: court list start date
+          type: string
+          required: false
     responses:
       200:
         body:

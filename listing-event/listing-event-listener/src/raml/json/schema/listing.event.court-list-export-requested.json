@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/event/listing.event.publish-court-list-export-successful.json",
+  "id": "http://justice.gov.uk/listing/event/listing.event.court-list-export-requested.json",
   "type": "object",
   "properties": {
     "courtListId": {
@@ -21,7 +21,7 @@
         "FINAL"
       ]
     },
-    "exportedTime": {
+    "requestedTime": {
       "type": "string",
       "format": "date-time"
     }
@@ -31,13 +31,13 @@
     "courtCentreId",
     "startDate",
     "publishCourtListType",
-    "exportedTime"
+    "requestedTime"
   ],
+  "additionalProperties": false,
   "definitions": {
     "localDate": {
       "type": "string",
       "format": "date"
     }
-  },
-  "additionalProperties": false
+  }
 }

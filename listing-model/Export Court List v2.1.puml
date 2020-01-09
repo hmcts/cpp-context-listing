@@ -24,8 +24,8 @@ CourtListEventProcessor -> ListingQueryView: listing.publishedcourtlist query
 ListingQueryView-> published_court_list: findCourtListsRequiringExport
 
 loop every court list requiring export
-CourtListEventProcessor -> ListingCommandHandler: listing.command.court-lists.request-export (courtSite)
-ListingCommandHandler -> CourtListEventProcessor: listing.command.court-lists.export-requested
+CourtListEventProcessor -> ListingCommandHandler: listing.command.court-list-request-export (courtSite)
+ListingCommandHandler -> CourtListEventProcessor: listing.command.court-list-export-requested
 
 ' XML generation
 CourtListEventProcessor -> ListingQueryView: listing.query.published-courtlists (parentCourt)

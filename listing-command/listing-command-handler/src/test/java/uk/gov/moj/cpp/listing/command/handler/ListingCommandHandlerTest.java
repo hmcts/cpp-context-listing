@@ -26,12 +26,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
-import static uk.gov.justice.listing.event.PublishCourtListExportFailed.publishCourtListExportFailed;
-import static uk.gov.justice.listing.event.PublishCourtListExportSuccessful.publishCourtListExportSuccessful;
 import static uk.gov.justice.listing.event.PublishCourtListProduced.publishCourtListProduced;
 import static uk.gov.justice.listing.event.PublishCourtListRequested.publishCourtListRequested;
 import static uk.gov.justice.listing.event.PublishCourtListType.FIRM;
-import static uk.gov.justice.listing.event.PublishedCourtListStored.publishedCourtListStored;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
@@ -51,9 +48,11 @@ import uk.gov.justice.listing.courts.Gender;
 import uk.gov.justice.listing.courts.SequenceHearings;
 import uk.gov.justice.listing.courts.Title;
 import uk.gov.justice.listing.courts.UpdateCourtApplicationForHearings;
+import uk.gov.justice.listing.event.CourtListExportRequested;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.listing.event.PublishedCourtListStored;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CaseEjected;
@@ -93,6 +92,7 @@ import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.common.util.Clock;
 import uk.gov.justice.services.core.aggregate.AggregateService;
+import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
@@ -101,6 +101,7 @@ import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.command.service.SystemIdMapperService;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CommandSimpleOffenceToDomainOffence;
@@ -165,6 +166,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
@@ -364,7 +366,10 @@ public class ListingCommandHandlerTest {
     private ArgumentCaptor<CaseSimpleOffences> deletedCaseOffencesCaptor;
     @Captor
     private ArgumentCaptor<CourtApplication> courtApplicationCaptor;
-
+    @Mock
+    private SystemIdMapperService systemIdMapperService;
+    @Spy
+    private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CourtListExportRequested.class);
 
     private final static LocalDate SUNDAY_25TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 25);
     private final static LocalDate MONDAY_26TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 26);
@@ -391,7 +396,8 @@ public class ListingCommandHandlerTest {
                 ArrayList.class, OffenceUpdated.class, HearingDaysChangedForHearing.class, OffenceAdded.class,
                 OffenceDeleted.class, SequenceHearings.class, UpdateCourtApplicationForHearings.class, AddCourtApplicationForHearing.class,
                 CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class,
-                PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class, RecordCourtListProduced.class);
+                PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class, RecordCourtListProduced.class,
+                PublishedCourtListStored.class);
     }
 
     @Test
@@ -1210,46 +1216,104 @@ public class ListingCommandHandlerTest {
     }
 
     @Test
-    public void listingCommandHandlerShouldTriggerExportFailedForPublishEvent() throws Exception {
-        final UUID publishCourtListRequestId = UUID.randomUUID();
-        final String failedTime = "2016-09-09T08:31:40Z";
-        final String errorMessage = "Unable to download the file from file service";
-        when(eventSource.getStreamById(publishCourtListRequestId)).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
-        when(publishCourtListRequestAggregate.recordCourtListExportFailed(any(ZonedDateTime.class), eq(errorMessage)))
-                .thenReturn(Stream.of(publishCourtListExportFailed().build()));
+    public void shouldCourtListRequestExport() throws EventStreamException {
 
-        final String jsonString = givenPayload("/test-data/listing.command.record-court-list-export-failed.json").toString()
-                .replace("PUBLISH_COURT_LIST_REQUEST_ID", publishCourtListRequestId.toString())
-                .replace("ERROR_MESSAGE", errorMessage)
-                .replace("FAILED_TIME", failedTime.toString());
-        try {
-            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
-            final JsonEnvelope commandEnvelope = createEnvelope("listing.command.record-court-list-export-failed", jsonReader.readObject());
-            listingCommandHandler.recordCourtListExportFailed(commandEnvelope);
-            verify(publishCourtListRequestAggregate).recordCourtListExportFailed(any(ZonedDateTime.class), eq(errorMessage));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        final UUID courtListId = randomUUID();
+        final UUID courtCentreId = UUID.fromString("9689207b-a9d2-4c2e-bd38-269b78a132a8");
+        final uk.gov.justice.listing.commands.PublishCourtListType publishCourtListType = uk.gov.justice.listing.commands.PublishCourtListType.FIRM;
+        final LocalDate startDate = LocalDate.now();
+
+        final JsonObject payload = Json.createObjectBuilder()
+                .add("courtCentreId", courtCentreId.toString())
+                .add("publishCourtListType", publishCourtListType.name())
+                .add("startDate", startDate.toString())
+                .build();
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.court-list-request-export", payload);
+
+        when(systemIdMapperService.getCourtListId(courtCentreId,publishCourtListType, startDate)).thenReturn(courtListId);
+        when(eventSource.getStreamById(courtListId)).thenReturn(eventStream);
+
+        listingCommandHandler.courtListRequestExport(commandEnvelope);
+
+        MatcherAssert.assertThat(verifyAppendAndGetArgumentFrom(eventStream),
+                streamContaining(jsonEnvelope(withMetadataEnvelopedFrom(commandEnvelope)
+                                .withName("listing.event.court-list-export-requested")
+                                .withCausationIds(commandEnvelope.metadata().id()),
+                        payload().isJson(allOf(
+                                withJsonPath("$.courtListId", equalTo(courtListId.toString())),
+                                withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
+                                withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
+                                withJsonPath("$.startDate", equalTo(startDate.toString())))))));
     }
 
     @Test
-    public void listingCommandHandlerShouldTriggerExportSuccessfulForPublishEvent() throws Exception {
-        final UUID publishCourtListRequestId = UUID.randomUUID();
-        final String publishedTime = "2016-09-09T08:31:40Z";
+    public void shouldRaiseExportFailedEventForRecordExportFailedCommand() throws Exception {
 
-        when(eventSource.getStreamById(publishCourtListRequestId)).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
-        when(publishCourtListRequestAggregate.recordCourtListExportSuccessful(any(ZonedDateTime.class)))
-                .thenReturn(Stream.of(publishCourtListExportSuccessful().build()));
+        final UUID courtListId = randomUUID();
+        final UUID courtCentreId = UUID.fromString("9689207b-a9d2-4c2e-bd38-269b78a132a8");
+        final uk.gov.justice.listing.commands.PublishCourtListType publishCourtListType = uk.gov.justice.listing.commands.PublishCourtListType.FIRM;
+        final LocalDate startDate = LocalDate.now();
+        final String failedTime = "2016-09-09T08:31:40Z";
+        final String errorMessage = "Unable to download the file from file service";
 
-        final JsonObject requestJson = Json.createObjectBuilder()
-                .add("publishCourtListRequestId", publishCourtListRequestId.toString())
-                .add("publishedTime", publishedTime)
+        final JsonObject payload = Json.createObjectBuilder()
+                .add("courtListId", courtListId.toString())
+                .add("courtCentreId", courtCentreId.toString())
+                .add("publishCourtListType", publishCourtListType.name())
+                .add("startDate", startDate.toString())
+                .add("failedTime", failedTime)
+                .add("errorMessage", errorMessage)
                 .build();
-        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.record-court-list-export-successful", requestJson);
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.record-court-list-export-failed", payload);
+
+        when(eventSource.getStreamById(courtListId)).thenReturn(eventStream);
+
+        listingCommandHandler.recordCourtListExportFailed(commandEnvelope);
+
+        MatcherAssert.assertThat(verifyAppendAndGetArgumentFrom(eventStream),
+                streamContaining(jsonEnvelope(withMetadataEnvelopedFrom(commandEnvelope)
+                                .withName("listing.event.publish-court-list-export-failed")
+                                .withCausationIds(commandEnvelope.metadata().id()),
+                        payload().isJson(allOf(
+                                withJsonPath("$.courtListId", equalTo(courtListId.toString())),
+                                withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
+                                withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
+                                withJsonPath("$.startDate", equalTo(startDate.toString())))))));
+    }
+
+    public void shouldRaiseExportSuccessfulEventForExportSuccessfulCommand() throws Exception {
+
+        final UUID courtListId = randomUUID();
+        final UUID courtCentreId = UUID.fromString("9689207b-a9d2-4c2e-bd38-269b78a132a8");
+        final uk.gov.justice.listing.commands.PublishCourtListType publishCourtListType = uk.gov.justice.listing.commands.PublishCourtListType.FIRM;
+        final LocalDate startDate = LocalDate.now();
+        final String exportedTime = "2016-09-09T08:31:40Z";
+
+        final JsonObject payload = Json.createObjectBuilder()
+                .add("courtListId", courtListId.toString())
+                .add("courtCentreId", courtCentreId.toString())
+                .add("publishCourtListType", publishCourtListType.name())
+                .add("startDate", startDate.toString())
+                .add("exportedTime", exportedTime)
+                .build();
+
+        when(eventSource.getStreamById(courtListId)).thenReturn(eventStream);
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.record-court-list-export-successful", payload);
+
         listingCommandHandler.recordCourtListExportSuccessful(commandEnvelope);
-        verify(publishCourtListRequestAggregate).recordCourtListExportSuccessful(any(ZonedDateTime.class));
+
+        MatcherAssert.assertThat(verifyAppendAndGetArgumentFrom(eventStream),
+                streamContaining(jsonEnvelope(withMetadataEnvelopedFrom(commandEnvelope)
+                                .withName("listing.event.publish-court-list-export-successful")
+                                .withCausationIds(commandEnvelope.metadata().id()),
+                        payload().isJson(allOf(
+                                withJsonPath("$.courtListId", equalTo(courtListId.toString())),
+                                withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
+                                withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
+                                withJsonPath("$.startDate", equalTo(startDate.toString())))))));
     }
 
     @Test
@@ -1300,20 +1364,18 @@ public class ListingCommandHandlerTest {
 
     @Test
     public void shouldStorePublishedCourtList() throws EventStreamException {
-        final UUID publishCourtListRequestId = randomUUID();
+        final UUID courtListId = randomUUID();
         final UUID courtCentreId = UUID.fromString("9689207b-a9d2-4c2e-bd38-269b78a132a8");
         final PublishCourtListType publishCourtListType = FIRM;
         final LocalDate startDate = LocalDate.now();
         final String courtListJson = "{}";
-        final ZonedDateTime lastUpdated = ZonedDateTime.parse("2019-11-15T11:13:19.314Z[UTC]");
 
-        when(eventSource.getStreamById(publishCourtListRequestId)).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
-        when(publishCourtListRequestAggregate.storePublishedCourtList(eq(courtCentreId), eq(publishCourtListType), eq(startDate), eq(courtListJson), any(ZonedDateTime.class)))
-                .thenReturn(Stream.of(publishedCourtListStored().build()));
+        when(eventSource.getStreamById(courtListId)).thenReturn(eventStream);
+        when(systemIdMapperService.getCourtListId(courtCentreId,
+                uk.gov.justice.listing.commands.PublishCourtListType.valueOf(publishCourtListType.name()), startDate)).thenReturn(courtListId);
 
         final JsonObject payload = Json.createObjectBuilder()
-                .add("publishCourtListRequestId", publishCourtListRequestId.toString())
+                .add("courtListId", courtListId.toString())
                 .add("courtCentreId", courtCentreId.toString())
                 .add("publishCourtListType", publishCourtListType.name())
                 .add("startDate", startDate.toString())
@@ -1322,7 +1384,18 @@ public class ListingCommandHandlerTest {
 
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.store-published-court-list", payload);
         listingCommandHandler.storePublishedCourtList(commandEnvelope);
-        verify(publishCourtListRequestAggregate).storePublishedCourtList(eq(courtCentreId), eq(publishCourtListType), eq(startDate), eq(courtListJson),any(ZonedDateTime.class));
+
+        MatcherAssert.assertThat(verifyAppendAndGetArgumentFrom(eventStream),
+                streamContaining(jsonEnvelope(withMetadataEnvelopedFrom(commandEnvelope)
+                                .withName("listing.event.published-court-list-stored")
+                                .withCausationIds(commandEnvelope.metadata().id()),
+                        payload().isJson(allOf(
+                                withJsonPath("$.courtListId", equalTo(courtListId.toString())),
+                                withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
+                                withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
+                                withJsonPath("$.startDate", equalTo(startDate.toString())),
+                                withJsonPath("$.courtListJson", equalTo(courtListJson))
+                        )))));
     }
 
     private JsonEnvelope updateSequenceForHearingDayCommandEnvelope() {

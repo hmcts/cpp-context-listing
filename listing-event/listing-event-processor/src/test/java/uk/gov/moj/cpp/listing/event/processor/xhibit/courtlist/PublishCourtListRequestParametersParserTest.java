@@ -54,7 +54,7 @@ public class PublishCourtListRequestParametersParserTest {
 
         PublishCourtListRequestParameters parameters = publishCourtListRequestParametersParser.parse(tEnvelope);
 
-        assertThat(parameters.getPublishCourtListRequestId(), is(publishCourtListRequestId));
+        assertThat(parameters.getCourtListId(), is(publishCourtListRequestId));
         assertThat(parameters.getCourtCentreId(), is(courtCentreId));
         assertThat(parameters.getStartDate(), is(startDate));
         assertThat(parameters.getEndDate(), is(endDate));

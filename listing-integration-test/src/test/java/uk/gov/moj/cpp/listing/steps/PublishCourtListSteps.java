@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
-import static java.time.LocalDate.now;
 import static javax.json.Json.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
@@ -22,6 +21,7 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAll
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
+import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.it.util.XmlEditor;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.utils.WebDavStub;
@@ -44,7 +44,10 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
     private static final String MEDIA_TYPE_QUERY_COURT_LIST_STATUS = "application/vnd.listing.court.list.publish.status+json";
     private static final String LISTING_COMMAND_PUBLISH_COURT_LIST = "listing.command.publish-court-list";
+    private static final String LISTING_COMMAND_EXPORT_COURT_LIST = "listing.command.export-court-list";
     private static final String MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST = "application/vnd.listing.command.publish-court-list+json";
+    private static final String MEDIA_TYPE_QUERY_PUBLISHEDCOURTLIST = "application/vnd.listing.publishedcourtlist+json";
+    private static final String MEDIA_TYPE_LISTING_COMMAND_EXPORT_COURT_LIST = "application/vnd.listing.command.court-list-request-export+json";
 
     private static final String PRESTON_COURT_NAME = "PRESTON";
     private static final String PRESTON_COURT_SITE_NAME = "BARROW-IN-FURNESS";
@@ -228,14 +231,62 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                         )));
     }
 
-    public static JsonObject buildPublishCourtListCommandPayload(final UUID courtCentreId) {
+    public static JsonObject buildPublishCourtListCommandPayload(final UUID courtCentreId,
+                                                                 final PublishCourtListType publishCourtListType,
+                                                                 final LocalDate startDate) {
         return createObjectBuilder()
                 .add("courtCentreId", courtCentreId.toString())
-                .add("startDate", now().toString())
-                .add("endDate", now().plusDays(2).toString())
-                .add("publishCourtListType", "FIRM")
+                .add("startDate", startDate.toString())
+                .add("endDate", startDate.plusDays(5).toString())
+                .add("publishCourtListType", publishCourtListType.name())
                 .build();
     }
 
 
+    public void waitForCompletedExport(final UUID courtCentreId, final PublishCourtListType publishCourtListType, final LocalDate startDate) {
+
+        final String queryPart = format(ENDPOINT_PROPERTIES.getProperty("listing.publishedcourtlist"),
+                courtCentreId,
+                publishCourtListType,
+                startDate);
+        final String url = String.format("%s/%s", baseUri, queryPart);
+
+        final ResponseData response = poll(requestParams(url, MEDIA_TYPE_QUERY_PUBLISHEDCOURTLIST).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.publishedCourtLists[0].lastExported",
+                                        is(notNullValue()))
+                        )));
+    }
+
+    public void waitForPublishedCourtListStored(final UUID courtCentreId, final PublishCourtListType publishCourtListType, final LocalDate startDate) {
+
+        final String queryPart = format(ENDPOINT_PROPERTIES.getProperty("listing.publishedcourtlist"),
+                courtCentreId,
+                publishCourtListType,
+                startDate);
+        final String url = String.format("%s/%s", baseUri, queryPart);
+
+        final ResponseData response = poll(requestParams(url, MEDIA_TYPE_QUERY_PUBLISHEDCOURTLIST).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.publishedCourtLists[0].lastUpdated",
+                                        is(notNullValue()))
+                        )));
+    }
+
+    public void triggerExportTimer(final UUID courtCentreId, final PublishCourtListType publishCourtListType, final LocalDate startDate) {
+
+        final String commandUrl = String.format("%s/%s", baseUri, format(ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_EXPORT_COURT_LIST),
+                courtCentreId.toString(), publishCourtListType.name(), startDate.toString()));
+        final String request = commandJsonObject.toString();
+
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", commandUrl, MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST, request, getLoggedInHeader());
+
+        final Response response = restClient.postCommand(commandUrl, MEDIA_TYPE_LISTING_COMMAND_EXPORT_COURT_LIST, request, getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
 }

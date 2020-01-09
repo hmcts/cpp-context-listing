@@ -1,12 +1,14 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 import static java.time.LocalDate.parse;
+import static java.time.ZonedDateTime.now;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static javax.json.JsonValue.NULL;
 import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
 import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
+import static uk.gov.justice.services.eventsourcing.source.core.Events.streamOf;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.asJson;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
@@ -16,6 +18,7 @@ import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.ListHearingRequest;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.justice.listing.commands.CourtListRequestExport;
 import uk.gov.justice.listing.commands.Defendant;
 import uk.gov.justice.listing.commands.Offence;
 import uk.gov.justice.listing.commands.PublishCourtList;
@@ -49,11 +52,16 @@ import uk.gov.justice.listing.courts.UpdateDefendantsForHearing;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdateOffencesForHearing;
 import uk.gov.justice.listing.courts.UpdatedOffences;
+import uk.gov.justice.listing.event.CourtListExportRequested;
+import uk.gov.justice.listing.event.PublishCourtListExportFailed;
+import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
+import uk.gov.justice.listing.event.PublishedCourtListStored;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.util.Clock;
 import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
+import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
@@ -62,6 +70,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.command.service.SystemIdMapperService;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CommandSimpleOffenceToDomainOffence;
@@ -156,7 +165,13 @@ public class ListingCommandHandler {
     private ReferenceDataService referenceDataService;
 
     @Inject
+    private SystemIdMapperService systemIdMapperService;
+
+    @Inject
     private Clock clock;
+
+    @Inject
+    private Enveloper enveloper;
 
     @Handles("listing.command.list-court-hearing-enriched")
     public void listCourtHearing(final JsonEnvelope command) throws EventStreamException {
@@ -605,29 +620,75 @@ public class ListingCommandHandler {
         }
     }
 
+
+    @Handles("listing.command.court-list-request-export")
+    public void courtListRequestExport(final JsonEnvelope commandEnvelope) throws EventStreamException {
+
+        final CourtListRequestExport courtListRequestExport =
+                jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), CourtListRequestExport.class);
+
+        final UUID courtListId = systemIdMapperService.getCourtListId(
+                courtListRequestExport.getCourtCentreId(),
+                courtListRequestExport.getPublishCourtListType(),
+                courtListRequestExport.getStartDate());
+
+        final CourtListExportRequested event = new CourtListExportRequested(
+                courtListRequestExport.getCourtCentreId(),
+                courtListId,
+                uk.gov.justice.listing.event.PublishCourtListType.valueOf(courtListRequestExport.getPublishCourtListType().name()),
+                now(),
+                courtListRequestExport.getStartDate()
+        );
+
+        final Stream<Object> events = streamOf(event);
+
+        final UUID streamId = event.getCourtListId();
+        final EventStream eventStream = eventSource.getStreamById(streamId);
+
+        eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
+    }
+
     @Handles("listing.command.record-court-list-export-successful")
     public void recordCourtListExportSuccessful(final JsonEnvelope commandEnvelope) throws EventStreamException {
-        final RecordCourtListExportSuccessful recordCourtListExportSuccessful =
+        final RecordCourtListExportSuccessful command =
                 jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), RecordCourtListExportSuccessful.class);
-        final UUID publishCourtListRequestId = recordCourtListExportSuccessful.getPublishCourtListRequestId();
-        final EventStream eventStream = eventSource.getStreamById(publishCourtListRequestId);
-        final PublishCourtListRequestAggregate aggregate = aggregateService.get(eventStream, PublishCourtListRequestAggregate.class);
-        final Stream<Object> events = aggregate.recordCourtListExportSuccessful(
-                recordCourtListExportSuccessful.getPublishedTime());
-        appendEventsToStream(commandEnvelope, eventStream, events);
+
+        final PublishCourtListExportSuccessful event = new PublishCourtListExportSuccessful(
+                command.getCourtCentreId(),
+                command.getCourtListId(),
+                command.getExportedTime(),
+                uk.gov.justice.listing.event.PublishCourtListType.valueOf(command.getPublishCourtListType().name()),
+                command.getStartDate()
+        );
+
+        final Stream<Object> events = streamOf(event);
+
+        final UUID streamId = event.getCourtListId();
+        final EventStream eventStream = eventSource.getStreamById(streamId);
+
+        eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
     }
 
     @Handles("listing.command.record-court-list-export-failed")
     public void recordCourtListExportFailed(final JsonEnvelope commandEnvelope) throws EventStreamException {
-        final RecordCourtListExportFailed recordCourtListExportFailed =
+        final RecordCourtListExportFailed command =
                 jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), RecordCourtListExportFailed.class);
-        final UUID publishCourtListRequestId = recordCourtListExportFailed.getPublishCourtListRequestId();
-        final EventStream eventStream = eventSource.getStreamById(publishCourtListRequestId);
-        final PublishCourtListRequestAggregate aggregate = aggregateService.get(eventStream, PublishCourtListRequestAggregate.class);
-        final Stream<Object> events = aggregate.recordCourtListExportFailed(
-                recordCourtListExportFailed.getFailedTime(),
-                recordCourtListExportFailed.getErrorMessage());
-        appendEventsToStream(commandEnvelope, eventStream, events);
+
+        final PublishCourtListExportFailed event = new PublishCourtListExportFailed(
+                command.getCourtCentreId(),
+                command.getCourtListId(),
+                command.getErrorMessage(),
+                command.getFailedTime(),
+                uk.gov.justice.listing.event.PublishCourtListType.valueOf(command.getPublishCourtListType().name()),
+                command.getStartDate()
+        );
+
+        final Stream<Object> events = streamOf(event);
+
+        final UUID streamId = event.getCourtListId();
+        final EventStream eventStream = eventSource.getStreamById(streamId);
+
+        eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
     }
 
     @Handles("listing.command.publish-court-list")
@@ -679,18 +740,29 @@ public class ListingCommandHandler {
     @Handles("listing.command.store-published-court-list")
     public void storePublishedCourtList(final JsonEnvelope commandEnvelope) throws EventStreamException {
 
-        final StorePublishedCourtList storePublishedCourtList =
+        final StorePublishedCourtList command =
                 jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), StorePublishedCourtList.class);
 
-        final EventStream eventStream = eventSource.getStreamById(storePublishedCourtList.getPublishCourtListRequestId());
-        final PublishCourtListRequestAggregate publishCourtListRequestAggregate = aggregateService.get(eventStream, PublishCourtListRequestAggregate.class);
-        final Stream<Object> events = publishCourtListRequestAggregate.storePublishedCourtList(
-                storePublishedCourtList.getCourtCentreId(),
-                valueOf(storePublishedCourtList.getPublishCourtListType().toString()),
-                storePublishedCourtList.getStartDate(),
-                storePublishedCourtList.getCourtListJson(),
-                clock.now());
-        appendEventsToStream(commandEnvelope, eventStream, events);
+        final UUID courtListId = systemIdMapperService.getCourtListId(
+                command.getCourtCentreId(),
+                command.getPublishCourtListType(),
+                command.getStartDate());
+
+        final PublishedCourtListStored event = new PublishedCourtListStored(
+                command.getCourtCentreId(),
+                courtListId,
+                command.getCourtListJson(),
+                ZonedDateTime.now(),
+                uk.gov.justice.listing.event.PublishCourtListType.valueOf(command.getPublishCourtListType().name()),
+                command.getStartDate()
+        );
+
+        final Stream<Object> events = streamOf(event);
+
+        final UUID streamId = courtListId;
+        final EventStream eventStream = eventSource.getStreamById(streamId);
+
+        eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
     }
 
     @VisibleForTesting

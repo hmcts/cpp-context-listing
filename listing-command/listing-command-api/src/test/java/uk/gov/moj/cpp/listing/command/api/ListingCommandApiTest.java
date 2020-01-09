@@ -135,5 +135,12 @@ public class ListingCommandApiTest {
 
         verify(sender).send(envelope);
     }
+
+    public void courtListRequestExportAsExpected() {
+
+        listingCommandApi.courtListRequestExport(envelope);
+
+        verify(sender).send(envelope);
+    }
 }
 

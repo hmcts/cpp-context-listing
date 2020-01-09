@@ -26,6 +26,11 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>uk.gov.moj.cpp.system.id-mapper</groupId>
+            <artifactId>id-mapper-client</artifactId>
+        </dependency>
+
         <!-- Listing Dependencies -->
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
@@ -76,6 +81,11 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>test-utils-core</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

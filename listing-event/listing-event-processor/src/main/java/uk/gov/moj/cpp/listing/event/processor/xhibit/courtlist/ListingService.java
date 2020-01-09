@@ -20,12 +20,26 @@ public class ListingService {
     private Requester requester;
 
     public JsonObject getUnpublishedCourtListForCourtCentre(final JsonEnvelope envelope,
-                                                            final PublishCourtListRequestParameters publishCourtListRequestParameters) {
+                                                          final PublishCourtListRequestParameters publishCourtListRequestParameters) {
 
         final JsonObjectBuilder restRequestParametersBuilder = createObjectBuilder()
                 .add("courtCentreId", publishCourtListRequestParameters.getCourtCentreId().toString())
                 .add("startDate", publishCourtListRequestParameters.getStartDate().format(ISO_LOCAL_DATE))
                 .add("publishCourtListType", publishCourtListRequestParameters.getPublishCourtListType().name());
+
+        final JsonEnvelope response = requester.request(envelop(restRequestParametersBuilder.build()).withName("listing.courtlist").withMetadataFrom(envelope));
+
+        return response.payloadAsJsonObject();
+    }
+
+    public JsonObject getPublishedCourtListForCourtCentre(final JsonEnvelope envelope,
+                                                          final PublishCourtListRequestParameters publishCourtListRequestParameters) {
+
+        final JsonObjectBuilder restRequestParametersBuilder = createObjectBuilder()
+                .add("courtCentreId", publishCourtListRequestParameters.getCourtCentreId().toString())
+                .add("startDate", publishCourtListRequestParameters.getStartDate().format(ISO_LOCAL_DATE))
+                .add("publishCourtListType", publishCourtListRequestParameters.getPublishCourtListType().name())
+                .add("published", true);
 
         final JsonEnvelope response = requester.request(envelop(restRequestParametersBuilder.build()).withName("listing.courtlist").withMetadataFrom(envelope));
 

@@ -38,7 +38,7 @@ public class CourtListFileGenerator {
         final List<CourtLocation> courtLocations = xhibitReferenceDataService.getCourtLocationsForCourt(envelope, crestCourtId);
 
         final List<JsonObject> courtSiteList = new ArrayList<>();
-        courtLocations.forEach(c -> courtSiteList.add(listingService.getUnpublishedCourtListForCourtCentre(envelope, requestParameters)));
+        courtLocations.forEach(c -> courtSiteList.add(listingService.getPublishedCourtListForCourtCentre(envelope, requestParameters)));
 
         final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, courtSiteList);
 

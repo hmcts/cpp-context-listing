@@ -33,6 +33,7 @@ public class PublishedCourtListRepositoryTest extends BaseTransactionalTest {
     private final static LocalDate BOXING_DAY_2020 = LocalDate.of(2020, Month.DECEMBER, 26);
     private final static ZonedDateTime LAST_UPDATED = ZonedDateTime.now();
     private final static ZonedDateTime LAST_EXPORTED = ZonedDateTime.now();
+    private final static UUID courtListId = UUID.randomUUID();
 
     @Inject
     private PublishedCourtListRepository publishedCourtListRepository;
@@ -49,7 +50,7 @@ public class PublishedCourtListRepositoryTest extends BaseTransactionalTest {
                 APRIL_FOOLS_DAY_2020
         );
         final PublishedCourtList proposedPublishedCourtList
-                = generateProposedPublishedCourtList(publishedCourtListPrimaryKey, getContentTwo(), LAST_UPDATED, LAST_EXPORTED);
+                = generateProposedPublishedCourtList(publishedCourtListPrimaryKey, getContentTwo(), LAST_UPDATED, LAST_EXPORTED, courtListId);
 
 
         assertNull(publishedCourtListRepository.findBy(publishedCourtListPrimaryKey));
@@ -72,9 +73,9 @@ public class PublishedCourtListRepositoryTest extends BaseTransactionalTest {
                 APRIL_FOOLS_DAY_2020
         );
         final PublishedCourtList proposedPublishedCourtListHavingContentOne
-                = generateProposedPublishedCourtList(publishedCourtListPrimaryKey, getContentOne(), LAST_UPDATED, LAST_EXPORTED);
+                = generateProposedPublishedCourtList(publishedCourtListPrimaryKey, getContentOne(), LAST_UPDATED, LAST_EXPORTED, courtListId);
         final PublishedCourtList proposedPublishedCourtListHavingContentTwo
-                = generateProposedPublishedCourtList(publishedCourtListPrimaryKey, getContentTwo(), LAST_UPDATED, LAST_EXPORTED);
+                = generateProposedPublishedCourtList(publishedCourtListPrimaryKey, getContentTwo(), LAST_UPDATED, LAST_EXPORTED, courtListId);
 
         assertNull(publishedCourtListRepository.findBy(publishedCourtListPrimaryKey));
 
@@ -192,7 +193,7 @@ public class PublishedCourtListRepositoryTest extends BaseTransactionalTest {
 
     private PublishedCourtList generateAndSave(final PublishedCourtListPrimaryKey primaryKey, final JsonNode content) {
         final PublishedCourtList proposedPublishedCourtList
-                = generateProposedPublishedCourtList(primaryKey, content, LAST_UPDATED, LAST_EXPORTED);
+                = generateProposedPublishedCourtList(primaryKey, content, LAST_UPDATED, LAST_EXPORTED, courtListId);
         final PublishedCourtList savedPublishedCourtList
                 = publishedCourtListRepository.save(proposedPublishedCourtList);
         assertEquals(proposedPublishedCourtList, savedPublishedCourtList);
@@ -226,14 +227,16 @@ public class PublishedCourtListRepositoryTest extends BaseTransactionalTest {
             final PublishedCourtListPrimaryKey publishedCourtListPrimaryKey,
             final JsonNode getCourtListJson,
             final ZonedDateTime lastUpdated,
-            final ZonedDateTime lastExported) {
+            final ZonedDateTime lastExported,
+            final UUID courtListId) {
         return new PublishedCourtList(
                 publishedCourtListPrimaryKey.getCourtCentreId(),
                 publishedCourtListPrimaryKey.getPublishCourtListType(),
                 publishedCourtListPrimaryKey.getStartDate(),
                 getCourtListJson,
                 lastUpdated,
-                lastExported
+                lastExported,
+                courtListId
         );
     }
 

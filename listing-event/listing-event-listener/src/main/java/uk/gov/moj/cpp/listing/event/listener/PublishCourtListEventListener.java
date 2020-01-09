@@ -4,15 +4,13 @@ import static java.time.LocalDate.parse;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_PRODUCED;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_REQUESTED;
-import static uk.gov.justice.listing.event.PublishStatus.EXPORT_FAILED;
-import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
 
+import uk.gov.justice.listing.event.CourtListExportRequested;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
 import uk.gov.justice.listing.event.PublishCourtListRequested;
-import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.listing.event.PublishedCourtListStored;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -20,20 +18,22 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatus;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.util.UUID;
 
 import javax.inject.Inject;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
 
 @ServiceComponent(EVENT_LISTENER)
 public class PublishCourtListEventListener {
+
+    @SuppressWarnings("squid:S1312")
+    @Inject
+    private Logger logger;
 
     @Inject
     private CourtListPublishStatusJdbcRepository courtListRepository;
@@ -72,57 +72,62 @@ public class PublishCourtListEventListener {
         courtListRepository.save(publishProduced);
     }
 
-    @Handles("listing.event.publish-court-list-export-failed")
-    public void courtListPublishExportFailed(final Envelope<PublishCourtListExportFailed> event) {
-        final PublishCourtListExportFailed publishCourtListExportFailed = event.payload();
-
-        final CourtListPublishStatus exportFailed = new CourtListPublishStatus(
-                randomUUID(), publishCourtListExportFailed.getCourtCentreId(),
-                publishCourtListExportFailed.getPublishCourtListType(), EXPORT_FAILED, publishCourtListExportFailed.getFailedTime(),
-                publishCourtListExportFailed.getCourtListFileId().orElse(null),
-                publishCourtListExportFailed.getCourtListFileName().orElse(null),
-                publishCourtListExportFailed.getErrorMessage(),
-                publishCourtListExportFailed.getFailedTime().toLocalDate(),
-                publishCourtListExportFailed.getWeekCommencing().orElse(false)
-        );
-        exportFailed.setErrorMessage(publishCourtListExportFailed.getErrorMessage());
-        courtListRepository.save(exportFailed);
-    }
-
-    @Handles("listing.event.publish-court-list-export-successful")
-    public void courtListPublishExportSuccessful(final Envelope<PublishCourtListExportSuccessful> event) {
-        final PublishCourtListExportSuccessful publishCourtListExportSuccessful = event.payload();
-        final CourtListPublishStatus exportSuccessful = new CourtListPublishStatus(
-                randomUUID(), publishCourtListExportSuccessful.getCourtCentreId(),
-                publishCourtListExportSuccessful.getPublishCourtListType(), EXPORT_SUCCESSFUL, publishCourtListExportSuccessful.getPublishedTime(),
-                publishCourtListExportSuccessful.getCourtListFileId(), publishCourtListExportSuccessful.getCourtListFileName(), "",
-                publishCourtListExportSuccessful.getPublishedTime().toLocalDate(),
-                publishCourtListExportSuccessful.getWeekCommencing().orElse(false)
-        );
-        courtListRepository.save(exportSuccessful);
-    }
-
     @Handles("listing.event.published-court-list-stored")
     public void storePublishedCourtCentreList(final Envelope<PublishedCourtListStored> event) throws IOException {
 
         final PublishedCourtListStored publishedCourtListStored = event.payload();
 
-        final UUID courtCentreId = publishedCourtListStored.getCourtCentreId();
-        final PublishCourtListType publishCourtListType = publishedCourtListStored.getPublishCourtListType();
-        final LocalDate startDate = publishedCourtListStored.getStartDate();
-        final JsonNode content = new ObjectMapper().readTree(publishedCourtListStored.getCourtListJson());
-        final ZonedDateTime lastUpdated = publishedCourtListStored.getLastUpdated();
-
         final PublishedCourtList proposedPublishedCourtList =
                 new PublishedCourtList(
-                        courtCentreId,
-                        publishCourtListType,
-                        startDate,
-                        content,
-                        lastUpdated,
-                        null
+                        publishedCourtListStored.getCourtCentreId(),
+                        publishedCourtListStored.getPublishCourtListType(),
+                        publishedCourtListStored.getStartDate(),
+                        new ObjectMapper().readTree(publishedCourtListStored.getCourtListJson()),
+                        publishedCourtListStored.getLastUpdated(),
+                        null,
+                        publishedCourtListStored.getCourtListId()
                 );
 
         publishedCourtListRepository.save(proposedPublishedCourtList);
+    }
+
+    @Handles("listing.event.court-list-export-requested")
+    public void courtListPublishExportRequested(final Envelope<CourtListExportRequested> event) {
+        final CourtListExportRequested eventPayload = event.payload();
+
+        logger.info("Export requested for {}", eventPayload.getCourtCentreId());
+    }
+
+    @Handles("listing.event.publish-court-list-export-successful")
+    public void courtListPublishExportSuccessful(final Envelope<PublishCourtListExportSuccessful> event) {
+        final PublishCourtListExportSuccessful publishCourtListExportSuccessful = event.payload();
+
+        final PublishedCourtListPrimaryKey pk = new PublishedCourtListPrimaryKey(
+                publishCourtListExportSuccessful.getCourtCentreId(),
+                publishCourtListExportSuccessful.getPublishCourtListType(),
+                publishCourtListExportSuccessful.getStartDate());
+
+        final PublishedCourtList publishedCourtList = publishedCourtListRepository.findBy(pk);
+
+        publishedCourtList.setLastExported(publishCourtListExportSuccessful.getExportedTime());
+
+        publishedCourtListRepository.save(publishedCourtList);
+    }
+
+    @Handles("listing.event.publish-court-list-export-failed")
+    public void courtListPublishExportFailed(final Envelope<PublishCourtListExportFailed> event) {
+        final PublishCourtListExportFailed publishCourtListExportFailed = event.payload();
+
+        final PublishedCourtListPrimaryKey pk = new PublishedCourtListPrimaryKey(
+                publishCourtListExportFailed.getCourtCentreId(),
+                publishCourtListExportFailed.getPublishCourtListType(),
+                publishCourtListExportFailed.getStartDate());
+
+        final PublishedCourtList publishedCourtList = publishedCourtListRepository.findBy(pk);
+
+        publishedCourtList.setLastFailed(publishCourtListExportFailed.getFailedTime());
+        publishedCourtList.setErrorMessage(publishCourtListExportFailed.getErrorMessage());
+
+        publishedCourtListRepository.save(publishedCourtList);
     }
 }

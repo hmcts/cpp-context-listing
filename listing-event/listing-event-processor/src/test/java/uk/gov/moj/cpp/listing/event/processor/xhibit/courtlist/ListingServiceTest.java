@@ -23,6 +23,7 @@ import java.util.UUID;
 import javax.json.Json;
 import javax.json.JsonObject;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -43,34 +44,47 @@ public class ListingServiceTest {
     @Captor
     private ArgumentCaptor<Envelope> requestCaptor;
 
-    @Test
-    public void shouldUseCorrectParameters() {
+    private JsonEnvelope inputEnvelope;
+    private LocalDate startDate = parse("2019-11-13");
+    private LocalDate endDate = parse("2019-11-30");
+    private UUID courtCentreId = randomUUID();
+    private PublishCourtListType publishCourtListType = WARN;
+    private PublishCourtListRequestParameters parameters = PublishCourtListRequestParametersBuilder
+            .withDefaults()
+            .withCourtCentreId(courtCentreId)
+            .withStartDate(startDate)
+            .withEndDate(endDate)
+            .publishCourtListType(publishCourtListType)
+            .build();
 
+    @Before
+    public void before() {
         final JsonObject hearing = createObjectBuilder().add("id", "HEARINGID").build();
         final JsonObject payload = createObjectBuilder().add("hearings", Json.createArrayBuilder().add(hearing)).build();
-        final JsonEnvelope inputEnvelope = envelopeFrom(metadataBuilder().withName("listing").withId(randomUUID()), createObjectBuilder());
+        inputEnvelope = envelopeFrom(metadataBuilder().withName("listing").withId(randomUUID()), createObjectBuilder());
+
         final JsonEnvelope responseEnvelope = envelopeFrom(metadataBuilder().withName("listing.courtlist").withId(randomUUID()), payload);
-
         when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+    }
 
-        final LocalDate startDate = parse("2019-11-13");
-        final LocalDate endDate = parse("2019-11-30");
-        final UUID courtCentreId = randomUUID();
-        final PublishCourtListType publishCourtListType = WARN;
+    @Test
+    public void shouldGetPublishedCourtList() {
 
-        final PublishCourtListRequestParameters parameters = PublishCourtListRequestParametersBuilder
-                .withDefaults()
-                .withCourtCentreId(courtCentreId)
-                .withStartDate(startDate)
-                .withEndDate(endDate)
-                .publishCourtListType(publishCourtListType)
-                .build();
+        final JsonObject response = listingService.getPublishedCourtListForCourtCentre(inputEnvelope, parameters);
+
+        verifyResponse(response);
+
+        verifyQueryParameters(startDate, courtCentreId, publishCourtListType, true);
+    }
+
+    @Test
+    public void shouldGetUnpublishedCourtList() {
 
         final JsonObject response = listingService.getUnpublishedCourtListForCourtCentre(inputEnvelope, parameters);
 
         verifyResponse(response);
 
-        verifyQueryParameters(startDate, courtCentreId, publishCourtListType);
+        verifyQueryParameters(startDate, courtCentreId, publishCourtListType, false);
     }
 
     private void verifyResponse(final JsonObject response) {
@@ -79,7 +93,9 @@ public class ListingServiceTest {
                 .get(0).getString("id"), is("HEARINGID"));
     }
 
-    private void verifyQueryParameters(final LocalDate startDate, final UUID courtCentreId, final PublishCourtListType publishCourtListType) {
+    private void verifyQueryParameters(final LocalDate startDate, final UUID courtCentreId,
+                                       final PublishCourtListType publishCourtListType,
+                                       final boolean isPublished) {
 
         verify(requester).request(requestCaptor.capture());
 
@@ -89,5 +105,10 @@ public class ListingServiceTest {
         assertThat(actualRequestParameters.getString("courtCentreId"), is(courtCentreId.toString()));
         assertThat(actualRequestParameters.getString("startDate"), is(startDate.toString()));
         assertThat(actualRequestParameters.getString("publishCourtListType"), is(publishCourtListType.name()));
+        if (isPublished) {
+            assertThat(actualRequestParameters.getBoolean("published"), is(true));
+        } else {
+            assertThat(actualRequestParameters.containsKey("published"), is(false));
+        }
     }
 }

@@ -479,7 +479,7 @@ public class HearingQueryViewTest {
 
         final PublishedCourtList publishedCourtList = new PublishedCourtList(courtCentreId,
                 uk.gov.justice.listing.event.PublishCourtListType.valueOf(publishCourtListType.name()), startDate, null,
-                ZonedDateTime.now(), ZonedDateTime.now());
+                ZonedDateTime.now(), ZonedDateTime.now(), null);
 
         final PublishedCourtListPrimaryKey primaryKey = new PublishedCourtListPrimaryKey(
                 courtCentreId,

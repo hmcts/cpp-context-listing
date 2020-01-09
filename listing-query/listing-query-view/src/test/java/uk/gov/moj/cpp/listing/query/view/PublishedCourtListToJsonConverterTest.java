@@ -41,7 +41,7 @@ public class PublishedCourtListToJsonConverterTest {
 
     @Before
     public void before() {
-        publishedCourtList = new PublishedCourtList(courtCentreId,publishCourtListType, startDate, courtListJson, lastUpdated, lastExported);
+        publishedCourtList = new PublishedCourtList(courtCentreId,publishCourtListType, startDate, courtListJson, lastUpdated, lastExported, null);
     }
 
     @Test

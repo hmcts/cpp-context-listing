@@ -27,6 +27,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_RESTRICT_COURT_LIST = "listing.command.restrict-court-list";
     private static final String ACTION_PUBLISH_COURT_LIST = "listing.command.publish-court-list";
     private static final String ACTION_PUBLISH_COURT_LISTS_FOR_CROWN_COURTS = "listing.command.publish-court-lists-for-crown-courts";
+    private static final String ACTION_COURT_LIST_REQUEST_EXPORT = "listing.command.court-list-request-export";
     private static final String RANDOM_GROUP = "Random group";
 
 
@@ -127,7 +128,25 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
         assertFailureOutcome(results);
     }
 
+    @Test
+    public void shouldAllowSystemUserToCourtListRequestExport() {
+        final Action action = createActionFor(ACTION_COURT_LIST_REQUEST_EXPORT);
+        given(userAndGroupProvider.isSystemUser(action)).willReturn(true);
 
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowNonSystemUserToCourtListRequestExport() {
+        final Action action = createActionFor(ACTION_COURT_LIST_REQUEST_EXPORT);
+        given(userAndGroupProvider.isSystemUser(action)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertFailureOutcome(results);
+    }
 
     @Override
     protected Map<Class, Object> getProviderMocks() {

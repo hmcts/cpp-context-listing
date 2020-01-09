@@ -5,6 +5,7 @@ import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.event.PublishCourtListExportFailed.publishCourtListExportFailed;
@@ -14,8 +15,6 @@ import static uk.gov.justice.listing.event.PublishCourtListRequested.publishCour
 import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_PRODUCED;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_REQUESTED;
-import static uk.gov.justice.listing.event.PublishStatus.EXPORT_FAILED;
-import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithDefaults;
 
@@ -30,13 +29,13 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatus;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZonedDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,7 +63,11 @@ public class PublishCourtListEventListenerTest {
     @InjectMocks
     private PublishCourtListEventListener publishCourtListEventListener;
 
-    private final ArgumentCaptor<CourtListPublishStatus> notificationArgumentCaptor = ArgumentCaptor.forClass(CourtListPublishStatus.class);
+    private final ArgumentCaptor<CourtListPublishStatus> courtListPublishStatusArgumentCaptor =
+            ArgumentCaptor.forClass(CourtListPublishStatus.class);
+
+    private final ArgumentCaptor<PublishedCourtList> publishedCourtListArgumentCaptor =
+            ArgumentCaptor.forClass(PublishedCourtList.class);
 
     @Test
     public void shouldRecordPublishCourtListRequestedForFixedDate() {
@@ -84,9 +87,9 @@ public class PublishCourtListEventListenerTest {
 
         publishCourtListEventListener.courtListPublishRequested(publishCourtListRequestedEnvelope);
 
-        verify(courtListRepository).save(notificationArgumentCaptor.capture());
+        verify(courtListRepository).save(courtListPublishStatusArgumentCaptor.capture());
 
-        final CourtListPublishStatus courtListArg = notificationArgumentCaptor.getValue();
+        final CourtListPublishStatus courtListArg = courtListPublishStatusArgumentCaptor.getValue();
         assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
         assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
         assertThat(courtListArg.getPublishStatus(), is(COURT_LIST_REQUESTED));
@@ -113,9 +116,9 @@ public class PublishCourtListEventListenerTest {
 
         publishCourtListEventListener.courtListPublishRequested(publishCourtListRequestedEnvelope);
 
-        verify(courtListRepository).save(notificationArgumentCaptor.capture());
+        verify(courtListRepository).save(courtListPublishStatusArgumentCaptor.capture());
 
-        final CourtListPublishStatus courtListArg = notificationArgumentCaptor.getValue();
+        final CourtListPublishStatus courtListArg = courtListPublishStatusArgumentCaptor.getValue();
         assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
         assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
         assertThat(courtListArg.getPublishStatus(), is(COURT_LIST_REQUESTED));
@@ -143,9 +146,9 @@ public class PublishCourtListEventListenerTest {
 
         publishCourtListEventListener.courtListPublishProduced(publishCourtListProducedEvent);
 
-        verify(courtListRepository).save(notificationArgumentCaptor.capture());
+        verify(courtListRepository).save(courtListPublishStatusArgumentCaptor.capture());
 
-        final CourtListPublishStatus courtListArg = notificationArgumentCaptor.getValue();
+        final CourtListPublishStatus courtListArg = courtListPublishStatusArgumentCaptor.getValue();
         assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
         assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
         assertThat(courtListArg.getCourtListFileId(), is(courtListFileId));
@@ -158,64 +161,67 @@ public class PublishCourtListEventListenerTest {
     public void shouldRecordPublishCourtListExportFailed() {
         final ZonedDateTime failedTimeStamp = new UtcClock().now();
         final String errorMessage = "some error";
-        final String courtListFileName = "Document Name";
-        final UUID courtListFileId = randomUUID();
         final PublishCourtListType courtListType = FINAL;
+        final LocalDate startDate = LocalDate.of(2019, Month.DECEMBER, 13);
+        final UUID courtListId = randomUUID();
 
         final PublishCourtListExportFailed publishCourtListExportFailed = publishCourtListExportFailed()
+                .withCourtListId(courtListId)
                 .withCourtCentreId(COURT_CENTRE_ID)
-                .withCourtListFileId(Optional.of(courtListFileId))
-                .withCourtListFileName(Optional.of(courtListFileName))
                 .withPublishCourtListType(courtListType)
+                .withStartDate(startDate)
                 .withFailedTime(failedTimeStamp)
                 .withErrorMessage(errorMessage)
-                .withWeekCommencing(of(false))
                 .build();
 
         final Envelope<PublishCourtListExportFailed> publishCourtListExportFailedEvent = envelopeFrom(metadataWithDefaults(), publishCourtListExportFailed);
 
+        final PublishedCourtListPrimaryKey pk = new PublishedCourtListPrimaryKey(COURT_CENTRE_ID, courtListType, startDate);
+        final PublishedCourtList publishedCourtList = spy(PublishedCourtList.class);
+
+        when(publishedCourtListRepository.findBy(pk)).thenReturn(publishedCourtList);
+        when(publishedCourtListRepository.
+                save(publishedCourtList)).thenReturn(publishedCourtList);
+
         publishCourtListEventListener.courtListPublishExportFailed(publishCourtListExportFailedEvent);
 
-        verify(courtListRepository).save(notificationArgumentCaptor.capture());
+        verify(publishedCourtListRepository).save(publishedCourtListArgumentCaptor.capture());
 
-        final CourtListPublishStatus courtListArg = notificationArgumentCaptor.getValue();
-        assertThat(courtListArg.getErrorMessage(), is(errorMessage));
-        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
-        assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
-        assertThat(courtListArg.getCourtListFileId(), is(courtListFileId));
-        assertThat(courtListArg.getPublishStatus(), is(EXPORT_FAILED));
-        assertThat(courtListArg.getLastUpdated(), is(failedTimeStamp));
-        assertThat(courtListArg.getCourtListFileName(), is(courtListFileName));
+        final PublishedCourtList publishedCourtListArg = publishedCourtListArgumentCaptor.getValue();
+        assertThat(publishedCourtListArg.getLastFailed(), is(failedTimeStamp));
+        assertThat(publishedCourtListArg.getErrorMessage(), is(errorMessage));
     }
 
     @Test
     public void shouldRecordPublishCourtListExportSuccessful() {
-        final ZonedDateTime publishedTime = new UtcClock().now();
-        final String courtListFileName = "Document Name";
-        final UUID courtListFileId = randomUUID();
+        final ZonedDateTime exportedTime = new UtcClock().now();
         final PublishCourtListType courtListType = FINAL;
+        final LocalDate startDate = LocalDate.of(2019, Month.DECEMBER, 13);
+        final UUID courtListId = randomUUID();
+
         final PublishCourtListExportSuccessful publishCourtListExportSuccessful = publishCourtListExportSuccessful()
                 .withCourtCentreId(COURT_CENTRE_ID)
-                .withCourtListFileId(courtListFileId)
-                .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(courtListType)
-                .withPublishedTime(publishedTime)
-                .withWeekCommencing(of(false))
+                .withStartDate(startDate)
+                .withExportedTime(exportedTime)
+                .withCourtListId(courtListId)
                 .build();
 
         final Envelope<PublishCourtListExportSuccessful> publishCourtListExportSuccessfulEvent = envelopeFrom(metadataWithDefaults(), publishCourtListExportSuccessful);
 
+        final PublishedCourtListPrimaryKey pk = new PublishedCourtListPrimaryKey(COURT_CENTRE_ID, courtListType, startDate);
+        final PublishedCourtList publishedCourtList = spy(PublishedCourtList.class);
+
+        when(publishedCourtListRepository.findBy(pk)).thenReturn(publishedCourtList);
+        when(publishedCourtListRepository.
+                save(publishedCourtList)).thenReturn(publishedCourtList);
+
         publishCourtListEventListener.courtListPublishExportSuccessful(publishCourtListExportSuccessfulEvent);
 
-        verify(courtListRepository).save(notificationArgumentCaptor.capture());
+        verify(publishedCourtListRepository).save(publishedCourtListArgumentCaptor.capture());
 
-        final CourtListPublishStatus courtListArg = notificationArgumentCaptor.getValue();
-        assertThat(courtListArg.getCourtCentreId(), is(COURT_CENTRE_ID));
-        assertThat(courtListArg.getPublishCourtListType(), is(courtListType));
-        assertThat(courtListArg.getCourtListFileId(), is(courtListFileId));
-        assertThat(courtListArg.getPublishStatus(), is(EXPORT_SUCCESSFUL));
-        assertThat(courtListArg.getLastUpdated(), is(publishedTime));
-        assertThat(courtListArg.getCourtListFileName(), is(courtListFileName));
+        final PublishedCourtList publishedCourtListArg = publishedCourtListArgumentCaptor.getValue();
+        assertThat(publishedCourtListArg.getLastExported(), is(exportedTime));
     }
 
     @Test
@@ -241,6 +247,7 @@ public class PublishCourtListEventListenerTest {
                 startDate,
                 new ObjectMapper().readTree(courtListJson),
                 lastUpdated,
+                null,
                 null
         );
 
@@ -248,5 +255,14 @@ public class PublishCourtListEventListenerTest {
                 save(expectedPublishedCourtList)).thenReturn(expectedPublishedCourtList);
 
         publishCourtListEventListener.storePublishedCourtCentreList(envelopeFrom(metadataWithDefaults(), publishedCourtListStored));
+
+        verify(publishedCourtListRepository).save(publishedCourtListArgumentCaptor.capture());
+
+        final PublishedCourtList publishedCourtListArg = publishedCourtListArgumentCaptor.getValue();
+        assertThat(publishedCourtListArg.getCourtCentreId(), is(courtCentreId));
+        assertThat(publishedCourtListArg.getPublishCourtListType(), is(publishCourtListType));
+        assertThat(publishedCourtListArg.getStartDate(), is(startDate));
+        assertThat(publishedCourtListArg.getCourtListJson().toString(), is(courtListJson));
+        assertThat(publishedCourtListArg.getLastUpdated(), is(lastUpdated));
     }
 }

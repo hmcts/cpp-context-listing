@@ -114,7 +114,7 @@ public class CourtListFileGeneratorTest {
         when(xhibitReferenceDataService.getXhibitHearingType(any(), any())).thenReturn(hearingType);
 
         final JsonObject courtListData = givenPayload(courtListJsonFile);
-        when(listingService.getUnpublishedCourtListForCourtCentre(any(), any())).thenReturn(courtListData);
+        when(listingService.getPublishedCourtListForCourtCentre(any(), any())).thenReturn(courtListData);
     }
 
     @Test

@@ -71,3 +71,12 @@ rule "Command - API - Action - listing.command.publish-court-lists-for-crown-cou
     $outcome.setSuccess(true);
 end
 
+rule "Command - API - Action - listing.command.court-list-request-export"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.court-list-request-export");
+    eval(userAndGroupProvider.isSystemUser($action))
+  then
+    $outcome.setSuccess(true);
+end
+

@@ -27,6 +27,7 @@ public class PublishCourtListCommandSender {
     private static final String RECORD_COURT_LIST_EXPORT_SUCCESSFUL = "listing.command.record-court-list-export-successful";
     private static final String RECORD_COURT_LIST_EXPORT_FAILED = "listing.command.record-court-list-export-failed";
     private static final String STORE_PUBLISHED_COURT_LIST = "listing.command.store-published-court-list";
+    private static final String COURT_LIST_REQUEST_EXPORT = "listing.command.court-list-request-export";
     private static final String COURT_LIST_FILE_NAME = "courtListFileName";
     private static final String COURT_LIST_FILE_ID = "courtListFileId";
     private static final String COURT_CENTRE_ID = "courtCentreId";
@@ -46,7 +47,7 @@ public class PublishCourtListCommandSender {
                                         final String courtListFileName) {
 
         final JsonObject payload = createObjectBuilder()
-                .add(PUBLISH_COURT_LIST_REQUEST_ID, requestParameters.getPublishCourtListRequestId().toString())
+                .add(PUBLISH_COURT_LIST_REQUEST_ID, requestParameters.getCourtListId().toString())
                 .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
                 .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
                 .add(COURT_LIST_FILE_ID, courtListFileId.toString())
@@ -56,46 +57,63 @@ public class PublishCourtListCommandSender {
                 .add("publishDate", LocalDate.now().toString())
                 .build();
 
-        sendCommandWith(RECORD_COURT_LIST_PRODUCED, requestParameters.getPublishCourtListRequestId(), payload);
+        sendCommandWith(RECORD_COURT_LIST_PRODUCED, requestParameters.getCourtListId(), payload);
     }
 
-    public void recordCourtListExportSuccessful(final UUID publishCourtListRequestId) {
+    public void recordCourtListExportSuccessful(final PublishCourtListRequestParameters requestParameters) {
 
         final JsonObject payload = createObjectBuilder()
-                .add(PUBLISH_COURT_LIST_REQUEST_ID, publishCourtListRequestId.toString())
-                .add("publishedTime", ZonedDateTimes.toString(utcClock.now()))
+                .add("courtListId", requestParameters.getCourtListId().toString())
+                .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
+                .add(START_DATE, requestParameters.getStartDate().toString())
+                .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
+                .add("exportedTime", ZonedDateTimes.toString(utcClock.now()))
                 .build();
 
-        sendCommandWith(RECORD_COURT_LIST_EXPORT_SUCCESSFUL, publishCourtListRequestId, payload);
+        sendCommandWith(RECORD_COURT_LIST_EXPORT_SUCCESSFUL, requestParameters.getCourtListId(), payload);
     }
 
-    public void recordCourtListExportFailed(final UUID publishCourtListRequestId,
+    public void recordCourtListExportFailed(final PublishCourtListRequestParameters requestParameters,
                                             final String errorMessage) {
 
         final JsonObjectBuilder objectBuilder = createObjectBuilder()
-                .add(PUBLISH_COURT_LIST_REQUEST_ID, publishCourtListRequestId.toString())
+                .add("courtListId", requestParameters.getCourtListId().toString())
+                .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
+                .add(START_DATE, requestParameters.getStartDate().toString())
+                .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
                 .add("failedTime", ZonedDateTimes.toString(utcClock.now()))
                 .add(ERROR_MESSAGE, errorMessage != null ? errorMessage : "UNKNOWN");
 
-        sendCommandWith(RECORD_COURT_LIST_EXPORT_FAILED, publishCourtListRequestId, objectBuilder.build());
+        sendCommandWith(RECORD_COURT_LIST_EXPORT_FAILED, requestParameters.getCourtListId(), objectBuilder.build());
     }
 
     public void storePublishedCourtList(final PublishCourtListRequestParameters requestParameters, final JsonObject courtListJson) {
 
         final JsonObject payload = createObjectBuilder()
-                .add(PUBLISH_COURT_LIST_REQUEST_ID, requestParameters.getPublishCourtListRequestId().toString())
+                .add(PUBLISH_COURT_LIST_REQUEST_ID, requestParameters.getCourtListId().toString())
                 .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
                 .add(START_DATE, requestParameters.getStartDate().toString())
                 .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
                 .add(COURT_LIST_JSON, courtListJson.toString())
                 .build();
 
-        sendCommandWith(STORE_PUBLISHED_COURT_LIST, requestParameters.getPublishCourtListRequestId(), payload);
+        sendCommandWith(STORE_PUBLISHED_COURT_LIST, requestParameters.getCourtListId(), payload);
+    }
+
+    public void requestExportCourtList(final PublishCourtListRequestParameters requestParameters) {
+
+        final JsonObject payload = createObjectBuilder()
+                .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
+                .add(START_DATE, requestParameters.getStartDate().toString())
+                .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
+                .build();
+
+        sendCommandWith(COURT_LIST_REQUEST_EXPORT, requestParameters.getCourtListId(), payload);
     }
 
     private void sendCommandWith(final String commandName, final UUID streamId, final JsonObject payload) {
 
-        sender.send(envelopeFrom(
+        sender.sendAsAdmin(envelopeFrom(
                 metadataBuilder()
                         .withStreamId(streamId)
                         .createdAt(utcClock.now())
@@ -104,4 +122,5 @@ public class PublishCourtListCommandSender {
                         .build(),
                 payload));
     }
+
 }

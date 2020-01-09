@@ -46,6 +46,15 @@ public class PublishedCourtList {
     @Column(name = "last_exported")
     private ZonedDateTime lastExported;
 
+    @Column(name = "last_failed")
+    private ZonedDateTime lastFailed;
+
+    @Column(name = "error_message")
+    private String errorMessage;
+
+    @Column(name = "court_list_id")
+    private UUID courtListId;
+
     public PublishedCourtList() {
     }
 
@@ -54,13 +63,15 @@ public class PublishedCourtList {
                               final LocalDate startDate,
                               final JsonNode courtListJson,
                               final ZonedDateTime lastUpdated,
-                              final ZonedDateTime lastExported) {
+                              final ZonedDateTime lastExported,
+                              final UUID courtListId) {
         this.courtCentreId = courtCentreId;
         this.publishCourtListType = publishCourtListType;
         this.startDate = startDate;
         this.courtListJson = courtListJson;
         this.lastUpdated = lastUpdated;
         this.lastExported = lastExported;
+        this.courtListId = courtListId;
     }
 
     public UUID getCourtCentreId() {
@@ -109,5 +120,29 @@ public class PublishedCourtList {
 
     public void setLastExported(final ZonedDateTime lastExported) {
         this.lastExported = lastExported;
+    }
+
+    public ZonedDateTime getLastFailed() {
+        return lastFailed;
+    }
+
+    public void setLastFailed(ZonedDateTime lastFailed) {
+        this.lastFailed = lastFailed;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
+    public UUID getCourtListId() {
+        return courtListId;
+    }
+
+    public void setCourtListId(UUID courtListId) {
+        this.courtListId = courtListId;
     }
 }

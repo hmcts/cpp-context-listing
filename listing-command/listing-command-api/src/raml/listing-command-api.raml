@@ -142,3 +142,21 @@ protocols: [ HTTP, HTTPS ]
       responses:
         202:
           description: Request accepted
+
+/courtlist/{courtCentreId}/{publishCourtListType}/{startDate}:
+   post:
+      description: |
+        Export court list
+        ...
+        (mapping):
+          requestType: application/vnd.listing.command.court-list-request-export+json
+          name: listing.command.court-list-request-export
+        ...
+      body:
+        application/vnd.listing.command.court-list-request-export+json:
+            schema: !include json/schema/listing.command.court-list-request-export.json
+            example: !include json/listing.command.court-list-request-export.json
+
+      responses:
+        202:
+          description: Request accepted

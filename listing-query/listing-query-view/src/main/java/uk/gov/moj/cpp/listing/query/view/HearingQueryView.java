@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.query.view;
 import static java.time.LocalDate.parse;
 import static java.time.LocalTime.MAX;
 import static java.time.LocalTime.MIN;
+import static java.util.Collections.singletonList;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toSet;
 import static javax.json.Json.createArrayBuilder;
@@ -32,6 +33,7 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -52,6 +54,7 @@ import org.slf4j.LoggerFactory;
 @ServiceComponent(Component.QUERY_VIEW)
 public class HearingQueryView {
     private static final String PUBLISH_COURT_LIST_TYPES = "publishCourtListTypes";
+    private static final String PUBLISH_COURT_LIST_TYPE = "publishCourtListType";
     private static final String PUBLISH_DATE = "publishDate";
     private static final String WEEK_COMMENCING = "weekCommencing";
 
@@ -214,10 +217,29 @@ public class HearingQueryView {
     @SuppressWarnings("WeakerAccess")
     public JsonEnvelope getPublishedCourtLists(final JsonEnvelope query) {
 
-        final List<PublishedCourtList> publishedCourtLists = publishedCourtListRepository.findAll();
+        final JsonObject queryPayload = query.payloadAsJsonObject();
+
+        final List<PublishedCourtList> publishedCourtLists = queryPayload.containsKey(COURT_CENTRE_ID)
+                ? getPublishedCourtList(queryPayload)
+                : publishedCourtListRepository.findAll();
 
         return enveloper.withMetadataFrom(query, "listing.publishedcourtlist")
                 .apply(publishedCourtListToJsonConverter.convert(publishedCourtLists));
+    }
+
+    private List<PublishedCourtList> getPublishedCourtList(final JsonObject queryPayload) {
+
+        final PublishedCourtListPrimaryKey pk = new PublishedCourtListPrimaryKey(
+                UUID.fromString(queryPayload.getString(COURT_CENTRE_ID)),
+                PublishCourtListType.valueOf(queryPayload.getString(PUBLISH_COURT_LIST_TYPE)),
+                LocalDate.parse(queryPayload.getString(START_DATE))
+        );
+
+        final PublishedCourtList result = publishedCourtListRepository.findBy(pk);
+
+        return result != null
+                ? singletonList(publishedCourtListRepository.findBy(pk))
+                : new ArrayList<>();
     }
 
     @Handles("listing.court.list.publish.status")

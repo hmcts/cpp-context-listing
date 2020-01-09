@@ -12,21 +12,21 @@ import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
 public class PublishCourtListRequestParameters {
 
-    private UUID publishCourtListRequestId;
+    private UUID courtListId;
     private UUID courtCentreId;
     private LocalDate startDate;
     private LocalDate endDate;
     private PublishCourtListType publishCourtListType;
     private ZonedDateTime requestedTime;
 
-    public PublishCourtListRequestParameters(final UUID publishCourtListRequestId,
+    public PublishCourtListRequestParameters(final UUID courtListId,
                                              final UUID courtCentreId,
                                              final LocalDate startDate,
                                              final LocalDate endDate,
                                              final PublishCourtListType publishCourtListType,
                                              final ZonedDateTime requestedTime) {
 
-        this.publishCourtListRequestId = publishCourtListRequestId;
+        this.courtListId = courtListId;
         this.courtCentreId = courtCentreId;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -34,8 +34,8 @@ public class PublishCourtListRequestParameters {
         this.requestedTime = requestedTime;
     }
 
-    public UUID getPublishCourtListRequestId() {
-        return publishCourtListRequestId;
+    public UUID getCourtListId() {
+        return courtListId;
     }
 
     public UUID getCourtCentreId() {

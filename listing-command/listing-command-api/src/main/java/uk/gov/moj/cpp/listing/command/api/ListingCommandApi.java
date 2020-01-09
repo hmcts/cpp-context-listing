@@ -117,4 +117,9 @@ public class ListingCommandApi {
     public void publishCourtListForCrownCourts(final JsonEnvelope jsonEnvelope) {
         sender.send(jsonEnvelope);
     }
+
+    @Handles("listing.command.court-list-request-export")
+    public void courtListRequestExport(final JsonEnvelope jsonEnvelope) {
+        sender.send(jsonEnvelope);
+    }
 }

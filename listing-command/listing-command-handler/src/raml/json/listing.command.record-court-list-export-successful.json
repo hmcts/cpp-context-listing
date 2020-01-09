@@ -1,4 +1,7 @@
 {
-  "publishCourtListRequestId" : "9689207b-a9d2-4c2e-bd38-269b78a132a8"
-  "publishedTime": "2016-09-09T08:31:40Z"
+  "courtListId" : "9689207b-a9d2-4c2e-bd38-269b78a132a8",
+  "courtCentreId" : "8689207b-a9d2-4c2e-bd38-269b78a132a8",
+  "startDate":"2018-12-06",
+  "publishCourtListType": "FIRM",
+  "exportedTime": "2016-09-09T08:31:40Z"
 }

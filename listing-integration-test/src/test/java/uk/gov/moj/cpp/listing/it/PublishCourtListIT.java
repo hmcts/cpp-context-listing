@@ -9,8 +9,10 @@ import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCou
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetAllCrownCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
+import static uk.gov.moj.cpp.listing.utils.SystemIdMapperStub.stubIdMapperReturningExistingAssociation;
 
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
+import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -36,45 +38,66 @@ public class PublishCourtListIT extends AbstractIT {
     @Test
     public void shouldPublishCourtListWithNoHearings() throws Exception {
 
-        UUID courtCentreId = randomUUID();
-        final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(courtCentreId);
+        final UUID courtCentreId = randomUUID();
+        final UUID courtListId = randomUUID();
+        final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
+        final LocalDate startDate = LocalDate.now();
+        final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
+                courtCentreId,
+                publishCourtListType,
+                startDate);
 
         stubGetReferenceDataCourtMappings(new CourtCentreData(UUID.randomUUID(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID));
+        stubIdMapperReturningExistingAssociation(courtListId);
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(null, publishCourtListCommandPayload);
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
-        publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL");
+        publishCourtListSteps.verifyCourtListPublishStatus("COURT_LIST_REQUESTED");
+        publishCourtListSteps.waitForPublishedCourtListStored(courtCentreId, publishCourtListType, startDate);
+        publishCourtListSteps.waitForCompletedExport(courtCentreId, publishCourtListType, startDate);
         publishCourtListSteps.verifySentPublishedCourtListHasNoHearings();
     }
 
     @Test
     public void shouldPublishCourtListWithHearings() throws Exception {
 
-        UUID courtCentreId = randomUUID();
-        final JsonObject publishCourtListJsonObject = buildPublishCourtListCommandPayload(courtCentreId);
+        final UUID courtCentreId = randomUUID();
+        final UUID courtListId = randomUUID();
+        final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
+        final LocalDate startDate = LocalDate.now();
+
+        final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
+                courtCentreId,
+                publishCourtListType,
+                startDate);
 
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId);
 
-        final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListJsonObject);
+        stubIdMapperReturningExistingAssociation(courtListId);
+
+        final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
         publishCourtListSteps.verifyHearingListedFromAPI(true);
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
-        publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL");
+        publishCourtListSteps.verifyCourtListPublishStatus("COURT_LIST_REQUESTED");
+        publishCourtListSteps.waitForPublishedCourtListStored(courtCentreId, publishCourtListType, startDate);
+        publishCourtListSteps.waitForCompletedExport(courtCentreId, publishCourtListType, startDate);
         publishCourtListSteps.verifySentPublishedCourtListHearingData();
     }
-
 
     @Test
     public void publishFinalCourtListsForAllCrownCourts() {
 
         final UUID courtCentreIdOne = randomUUID();
         final UUID courtCentreIdTwo = randomUUID();
+        final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
+        final LocalDate startDate = LocalDate.now();
         stubGetAllCrownCourtCentres(courtCentreIdOne, courtCentreIdTwo);
         final JsonObject commandAsJson = createObjectBuilder().build();
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreIdOne)
                 .combine(loadHearingDataWithJudiciary(courtCentreIdTwo));
-        final JsonObject publishCourtListCommandPayloadUsingFirstCourtCentreArbitrarily = buildPublishCourtListCommandPayload(courtCentreIdOne);
+        final JsonObject publishCourtListCommandPayloadUsingFirstCourtCentreArbitrarily = buildPublishCourtListCommandPayload(courtCentreIdOne, publishCourtListType, startDate);
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayloadUsingFirstCourtCentreArbitrarily);
         publishCourtListSteps.verifyHearingListedFromAPI(true);
         publishCourtListSteps.acceptCourtListXmlFiles();
