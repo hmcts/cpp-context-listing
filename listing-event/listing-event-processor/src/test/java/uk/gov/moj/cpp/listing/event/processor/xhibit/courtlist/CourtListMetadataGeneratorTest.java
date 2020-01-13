@@ -61,7 +61,7 @@ public class CourtListMetadataGeneratorTest {
         // Validate filename
         final String[] filenamePart = metadata.getFilename().split("_");
 
-        assertThat(filenamePart[0], is("DailyList"));
+        assertThat(filenamePart[0], is("FirmedList"));
         assertThat(filenamePart[1], is(crestCourtId));
         assertThat(filenamePart[2], is("180102130405.xml"));
     }
