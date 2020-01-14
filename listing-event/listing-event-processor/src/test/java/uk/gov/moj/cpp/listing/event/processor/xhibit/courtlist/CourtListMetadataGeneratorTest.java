@@ -40,7 +40,9 @@ public class CourtListMetadataGeneratorTest {
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
         final UUID courtCentreId = UUID.randomUUID();
         final String crestCourtId = "421";
-        final CourtLocation courtLocation = new CourtLocation(crestCourtId,
+        final CourtLocation courtLocation = new CourtLocation(
+                null,
+                crestCourtId,
                 null,
                 null,
                 null,

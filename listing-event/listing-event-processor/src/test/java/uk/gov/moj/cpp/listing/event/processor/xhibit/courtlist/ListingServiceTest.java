@@ -70,7 +70,11 @@ public class ListingServiceTest {
     @Test
     public void shouldGetPublishedCourtList() {
 
-        final JsonObject response = listingService.getPublishedCourtListForCourtCentre(inputEnvelope, parameters);
+        final JsonObject response = listingService.getPublishedCourtListForCourtCentre(
+                inputEnvelope,
+                courtCentreId,
+                publishCourtListType,
+                startDate);
 
         verifyResponse(response);
 

@@ -33,13 +33,11 @@ public abstract class BaseMapperTest {
 
     @Mock
     protected JsonEnvelope envelope;
-
-    @Mock
-    private Logger logger;
-
     protected PublishCourtListRequestParameters requestParameters;
     protected CourtListMetadata metadata;
     protected CourtListGenerationContext context;
+    @Mock
+    private Logger logger;
 
     @Before
     public void wireBeans() {
@@ -52,13 +50,15 @@ public abstract class BaseMapperTest {
 
         MockitoAnnotations.initMocks(this);
 
-        final CourtLocation courtLocation = new CourtLocation("000",
-                                                              "001",
-                                                              "MOCK_CROWN_COURTNAME",
-                                                              "MOCK",
-                                                              "MOCKCOURTNAME",
-                                                              "MOCKSITECODE",
-                                                              "CROWN_COURT");
+        final CourtLocation courtLocation = new CourtLocation(
+                "OUCODE",
+                "000",
+                "001",
+                "MOCK_CROWN_COURTNAME",
+                "MOCK",
+                "MOCKCOURTNAME",
+                "MOCKSITECODE",
+                "CROWN_COURT");
 
         when(xhibitReferenceDataService.getCourtDetails(any(), any())).thenReturn(courtLocation);
 

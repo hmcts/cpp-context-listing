@@ -4,16 +4,16 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.DailyCourtListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.DailyListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
 
 public class DailyListMapper extends AbstractCourtListMapper {
 
-    public DailyListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListForPublishing, final CourtServicesMapper courtServicesMapper) {
-        super(context, courtListForPublishing, courtServicesMapper);
+    public DailyListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListsJson, final CourtServicesMapper courtServicesMapper) {
+        super(context, courtListsJson, courtServicesMapper);
     }
 
     @Override
@@ -33,32 +33,29 @@ public class DailyListMapper extends AbstractCourtListMapper {
 
         final DailyListStructure.CourtLists courtLists = objectFactory.createDailyListStructureCourtLists();
 
-        courtLists.getCourtList().add(generateDailyCourtListStructure());
+        for (final JsonObject courtListJson : courtListsJson) {
+            courtLists.getCourtList().add(generateDailyCourtListStructure(courtListJson));
+        }
 
         return courtLists;
     }
 
-    private DailyCourtListStructure generateDailyCourtListStructure() {
+    private DailyCourtListStructure generateDailyCourtListStructure(final JsonObject courtListJson) {
 
         final DailyCourtListStructure dailyCourtListStructure = objectFactory.createDailyCourtListStructure();
 
+        final UUID courtCentreId = UUID.fromString(courtListJson.getString("courtCentreId"));
         dailyCourtListStructure.setCourtHouse(courtServicesMapper.generateCourtHouseStructure(
-                context.getParameters().getCourtCentreId()));
+                courtCentreId));
 
-        dailyCourtListStructure.setSittings(generateSittings());
+        dailyCourtListStructure.setSittings(generateSittings(courtListJson.getJsonArray("sittings").getValuesAs(JsonObject.class)));
 
         return dailyCourtListStructure;
     }
 
-    private DailyCourtListStructure.Sittings generateSittings() {
+    private DailyCourtListStructure.Sittings generateSittings(final List<JsonObject> sittingsJson) {
 
         final DailyCourtListStructure.Sittings sittings = objectFactory.createDailyCourtListStructureSittings();
-
-        final List<JsonObject> sittingsJson = new ArrayList<>();
-        courtListForPublishing.forEach(courtForPublishing ->
-            sittingsJson.addAll(courtForPublishing.getJsonObject("courtList").getJsonArray("sittings").getValuesAs(JsonObject.class))
-        );
-
 
         int sittingSequenceNumber = 1;
         for (final JsonObject sittingJson : sittingsJson) {

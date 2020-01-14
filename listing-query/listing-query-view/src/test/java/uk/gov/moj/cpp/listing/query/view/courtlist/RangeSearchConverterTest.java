@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
 
+import static java.util.UUID.fromString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -12,6 +13,7 @@ import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonUtils.prettifyJson
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.UUID;
 
 import javax.json.JsonObject;
 
@@ -59,7 +61,9 @@ public class RangeSearchConverterTest {
 
         final JsonObject rangeSearchResponse = getJsonFile(rangeSearchResponseFilename);
 
-        final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListQueryPayload(rangeSearchResponse);
+        final UUID courtCentreId = fromString("eeb81654-eb5b-443f-ad4b-911606732e53");
+
+        final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, rangeSearchResponse);
 
         final JsonObject expectedCourtList = getJsonFile(expectedCourtListFilename);
 

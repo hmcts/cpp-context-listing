@@ -20,15 +20,15 @@ public class MapperFactory {
     @Inject
     private XhibitReferenceDataService xhibitReferenceDataService;
 
-    public AbstractCourtListMapper createCourtListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListForPublishing) {
+    public AbstractCourtListMapper createCourtListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListsJson) {
         switch (context.getParameters().getPublishCourtListType()) {
             case FIRM:
-                return new FirmListMapper(context, courtListForPublishing, createCourtServicesMapper(context));
+                return new FirmListMapper(context, courtListsJson, createCourtServicesMapper(context));
             case WARN:
-                return new WarnedListMapper(context, courtListForPublishing, createCourtServicesMapper(context));
+                return new WarnedListMapper(context, courtListsJson, createCourtServicesMapper(context));
             case DRAFT:
             case FINAL:
-                return new DailyListMapper(context, courtListForPublishing, createCourtServicesMapper(context));
+                return new DailyListMapper(context, courtListsJson, createCourtServicesMapper(context));
             default:
                 throw new GenerationFailedException("No mapper for " + context.getParameters().getPublishCourtListType());
         }

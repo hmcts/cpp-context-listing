@@ -10,8 +10,6 @@ import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlTestUtils;
 
-import java.util.Arrays;
-
 import javax.json.JsonObject;
 
 import org.junit.Test;
@@ -36,7 +34,7 @@ public class FirmListMapperTest extends BaseMapperTest {
 
         when(courtServicesMapper.generateSittingStructure(any(JsonObject.class), eq(1))).thenReturn(sittingStructure);
 
-        final JsonObject courtListForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json");
+        final JsonObject courtListForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json").getJsonObject("courtList");
 
         final FirmListMapper firmListMapper = new FirmListMapper(context, asList(courtListForPublishing), courtServicesMapper);
 

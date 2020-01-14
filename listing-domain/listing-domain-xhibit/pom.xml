@@ -31,11 +31,18 @@
                         <configuration>
                             <bindingDirectory>src/main/resources/xhibit/bindings
                             </bindingDirectory>
-                            <generatePackage>uk.gov.moj.cpp.listing.domain.xhibit.generated</generatePackage>
+                            <generatePackage>uk.gov.moj.cpp.listing.domain.xhibit.generated
+                            </generatePackage>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+    </dependencies>
 </project>

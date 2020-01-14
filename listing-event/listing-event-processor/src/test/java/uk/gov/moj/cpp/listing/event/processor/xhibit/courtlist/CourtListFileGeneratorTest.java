@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.time.ZonedDateTime.parse;
 import static java.util.Arrays.asList;
+import static java.util.UUID.fromString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -18,7 +19,11 @@ import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 
+import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -41,15 +46,16 @@ public class CourtListFileGeneratorTest {
     private static final String DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list.json";
     private static final String WEEK_COMMENCING_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-week-commencing-list.json";
     private static final String RESTRICTED_DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-restricted-daily-list.json";
-
     @Parameterized.Parameter(0)
     public PublishCourtListType publishCourtListType;
-
     @Parameterized.Parameter(1)
     public String courtListJsonFile;
-
     @Parameterized.Parameter(2)
     public String expectedXmlFile;
+    private UUID courtCentreId1 = fromString("f34a5dba-8c4b-4ec8-8b9a-6af405c00ebf");
+    private UUID courtCentreId2 = fromString("f46ddec0-928e-4236-9d1b-142715e8b570");
+    private LocalDate startDate = LocalDate.parse("2019-11-04");
+
     @InjectMocks
     private CourtListFileGenerator courtListFileGenerator;
     @Spy
@@ -93,35 +99,67 @@ public class CourtListFileGeneratorTest {
 
         MockitoAnnotations.initMocks(this);
 
-        final CourtLocation courtLocation = new CourtLocation("000",
-                                                              "001",
-                                                              "MOCK_CROWN_COURTNAME",
-                                                              "MOCK",
-                                                              "MOCKCOURTNAME",
-                                                              "MOCKSITECODE",
-                                                              "CROWN_COURT");
+        final String crestCourtId = "000";
+        final CourtLocation courtLocation1 = createCourtLocation(crestCourtId, "1");
+        final CourtLocation courtLocation2 = createCourtLocation(crestCourtId, "2");
 
-        when(xhibitReferenceDataService.getCourtDetails(any(), any())).thenReturn(courtLocation);
-        when(xhibitReferenceDataService.getCourtLocationsForCourt(any(), any())).thenReturn(asList(courtLocation));
+        final List<UUID> courtCentreIds = Arrays.asList(courtCentreId1, courtCentreId2);
+
+        when(xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId1)).thenReturn(courtLocation1);
+        when(xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId2)).thenReturn(courtLocation2);
+        when(xhibitReferenceDataService.getCourtCentreIdsForCrestId(envelope, crestCourtId)).thenReturn(courtCentreIds);
 
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.json");
         when(xhibitReferenceDataService.getJudiciary(any(), any())).thenReturn(judiciary);
 
         final JsonObject hearingType = Json.createObjectBuilder()
-                .add("hearingCode", "XXX")   // TODO SCSL-85
+                .add("hearingCode", "XXX")
                 .add("hearingDescription", "XHIBIT_HEARING_DESCRIPTION")
                 .build();
         when(xhibitReferenceDataService.getXhibitHearingType(any(), any())).thenReturn(hearingType);
 
         final JsonObject courtListData = givenPayload(courtListJsonFile);
-        when(listingService.getPublishedCourtListForCourtCentre(any(), any())).thenReturn(courtListData);
+        when(listingService.getPublishedCourtListForCourtCentre(
+                envelope,
+                courtCentreId1,
+                publishCourtListType,
+                startDate)).thenReturn(courtListData);
+        when(listingService.getPublishedCourtListForCourtCentre(
+                envelope,
+                courtCentreId2,
+                publishCourtListType,
+                startDate)).thenReturn(emptyCourtList(courtCentreId2));
+    }
+
+    private CourtLocation createCourtLocation(final String crestCourtId, final String nameSuffix) {
+        return new CourtLocation(
+                "OUCODE",
+                crestCourtId,
+                "00" + nameSuffix,
+                "MOCK_CROWN_COURTNAME",
+                "MOCK",
+                "MOCKCOURTNAME" + nameSuffix,
+                "MOCKSITECODE" + nameSuffix,
+                "CROWN_COURT");
+    }
+
+    private JsonObject emptyCourtList(final UUID courtCentreId) {
+        return Json.createObjectBuilder()
+                .add("courtList",
+                        Json.createObjectBuilder()
+                                .add("courtCentreId", courtCentreId.toString())
+                                .add("sittings", Json.createArrayBuilder().build())
+                                .build()
+                ).build();
     }
 
     @Test
     public void shouldGenerateXml() throws Exception {
 
         final PublishCourtListRequestParameters requestParameters = withDefaults()
+                .withCourtCentreId(courtCentreId1)
                 .publishCourtListType(publishCourtListType)
+                .withStartDate(startDate)
                 .build();
 
         final CourtListMetadata metadata = new CourtListMetadata(publishCourtListType.name() + "-FILENAME",

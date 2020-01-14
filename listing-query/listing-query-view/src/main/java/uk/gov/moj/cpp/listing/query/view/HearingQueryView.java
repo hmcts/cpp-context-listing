@@ -41,6 +41,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -194,14 +195,28 @@ public class HearingQueryView {
 
     private JsonObject getPublishedCourtListResponsePayload(final JsonObject queryPayload) {
 
+        final UUID courtCentreId = fromString(queryPayload.getString("courtCentreId"));
+
         final PublishedCourtListPrimaryKey primaryKey = new PublishedCourtListPrimaryKey(
-                fromString(queryPayload.getString("courtCentreId")),
+                courtCentreId,
                 PublishCourtListType.valueOf(queryPayload.getString("publishCourtListType")),
                 parse(queryPayload.getString("startDate")));
 
         final PublishedCourtList publishedCourtList = publishedCourtListRepository.findBy(primaryKey);
 
-        return publishedCourtListToJsonConverter.convert(publishedCourtList).getJsonObject("courtListJson");
+        return publishedCourtList != null
+                ? publishedCourtListToJsonConverter.convert(publishedCourtList).getJsonObject("courtListJson")
+                : emptyCourtList(courtCentreId);
+    }
+
+    private JsonObject emptyCourtList(final UUID courtCentreId) {
+        return Json.createObjectBuilder()
+                .add("courtList",
+                        Json.createObjectBuilder()
+                                .add("courtCentreId", courtCentreId.toString())
+                                .add("sittings", Json.createArrayBuilder().build())
+                                .build()
+                ).build();
     }
 
     private JsonObject getUnpublishedCourtListResponsePayload(final JsonEnvelope query, final JsonObject queryPayload) {

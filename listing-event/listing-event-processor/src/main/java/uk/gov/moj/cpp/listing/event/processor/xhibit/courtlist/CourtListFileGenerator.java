@@ -1,12 +1,13 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
+import static java.util.stream.Collectors.toList;
+
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.AbstractCourtListMapper;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.json.JsonObject;
@@ -34,13 +35,19 @@ public class CourtListFileGenerator {
         final CourtListGenerationContext context =
                 new CourtListGenerationContext(envelope, requestParameters, courtListMetadata);
 
-        final String crestCourtId = xhibitReferenceDataService.getCourtDetails(envelope, requestParameters.getCourtCentreId()).getCrestCourtId();
-        final List<CourtLocation> courtLocations = xhibitReferenceDataService.getCourtLocationsForCourt(envelope, crestCourtId);
+        final String crownCourtCrestId = xhibitReferenceDataService.getCourtDetails(envelope, requestParameters.getCourtCentreId()).getCrestCourtId();
 
-        final List<JsonObject> courtSiteList = new ArrayList<>();
-        courtLocations.forEach(c -> courtSiteList.add(listingService.getPublishedCourtListForCourtCentre(envelope, requestParameters)));
+        final List<UUID> courtCentreIds = xhibitReferenceDataService.getCourtCentreIdsForCrestId(envelope, crownCourtCrestId);
 
-        final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, courtSiteList);
+        final List<JsonObject> courtListsJson = courtCentreIds.stream()
+                .map(courtCentreId -> listingService.getPublishedCourtListForCourtCentre(
+                        envelope,
+                        courtCentreId,
+                        requestParameters.getPublishCourtListType(),
+                        requestParameters.getStartDate()).getJsonObject("courtList"))
+                .collect(toList());
+
+        final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, courtListsJson);
 
         return xmlUtils.convertToXml(mapper.generate());
     }

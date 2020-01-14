@@ -1,15 +1,16 @@
 {
   "courtList":{
-    "sittings":[
+    "courtCentreId": "eeb81654-eb5b-443f-ad4b-911606732e53",
+    "sittings": [
       {
-        "weekCommencing":false,
-        "sittingDate":"2019-12-25",
-        "judiciary":[
+        "weekCommencing": false,
+        "sittingDate": "2019-12-25",
+        "judiciary": [
         ],
-        "hearings":[
+        "hearings": [
           {
-            "startTime":"2019-12-25T00:00",
-            "hearingType":{
+            "startTime": "2019-12-25T00:00",
+            "hearingType": {
               "id":"06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
               "description":"Plea and Trial Preparation"
             },

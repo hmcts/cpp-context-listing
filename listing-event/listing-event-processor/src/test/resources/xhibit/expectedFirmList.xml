@@ -23,7 +23,7 @@
             <cs:CourtHouse>
                 <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
                 <cs:CourtHouseCode>001</cs:CourtHouseCode>
-                <cs:CourtHouseName>MOCKCOURTNAME</cs:CourtHouseName>
+                <cs:CourtHouseName>MOCKCOURTNAME1</cs:CourtHouseName>
             </cs:CourtHouse>
             <cs:Sittings>
                 <cs:Sitting>
@@ -159,6 +159,14 @@
                     </cs:Hearings>
                 </cs:Sitting>
             </cs:Sittings>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2019-11-04">
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>002</cs:CourtHouseCode>
+                <cs:CourtHouseName>MOCKCOURTNAME2</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
         </cs:CourtList>
     </cs:CourtLists>
 </cs:FirmList>

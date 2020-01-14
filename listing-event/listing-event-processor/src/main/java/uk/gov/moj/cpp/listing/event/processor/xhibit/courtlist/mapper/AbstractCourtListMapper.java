@@ -12,16 +12,16 @@ public abstract class AbstractCourtListMapper {
 
     protected static final ObjectFactory objectFactory = new ObjectFactory();
 
-    protected List<JsonObject> courtListForPublishing;
+    protected List<JsonObject> courtListsJson;
 
     protected CourtServicesMapper courtServicesMapper;
 
     protected CourtListGenerationContext context;
 
-    public AbstractCourtListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListForPublishing,
+    public AbstractCourtListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListsJson,
                                    final CourtServicesMapper courtServicesMapper) {
         this.context = context;
-        this.courtListForPublishing = courtListForPublishing;
+        this.courtListsJson = courtListsJson;
         this.courtServicesMapper = courtServicesMapper;
     }
 

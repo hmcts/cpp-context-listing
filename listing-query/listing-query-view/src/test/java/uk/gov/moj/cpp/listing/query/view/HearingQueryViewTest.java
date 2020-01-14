@@ -457,7 +457,7 @@ public class HearingQueryViewTest {
     }
 
     @Test
-    public void shouldRetrievePublishedCourtList() {
+    public void shouldRetrievePublishedCourtListIfExists() {
 
         final UUID courtCentreId = UUID.randomUUID();
         final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType = uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
@@ -492,6 +492,35 @@ public class HearingQueryViewTest {
         final JsonEnvelope results = hearingsQueryView.retrieveCourtList(queryEnvelope);
 
         assertThat(results.payloadAsJsonObject(), is(courtListJson));
+    }
+
+    @Test
+    public void shouldRetrievePublishedCourtListIfNotExists() {
+
+        final UUID courtCentreId = UUID.randomUUID();
+        final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType = uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
+        final LocalDate startDate = LocalDate.now();
+
+        final JsonEnvelope queryEnvelope = generateQuery(
+                createObjectBuilder()
+                        .add("courtCentreId", courtCentreId.toString())
+                        .add("publishCourtListType", publishCourtListType.name())
+                        .add("startDate", startDate.toString())
+                        .add("published", true)
+                        .build());
+
+        final PublishedCourtListPrimaryKey primaryKey = new PublishedCourtListPrimaryKey(
+                courtCentreId,
+                uk.gov.justice.listing.event.PublishCourtListType.valueOf(publishCourtListType.name()),
+                startDate);
+
+        when(publishedCourtListRepository.findBy(primaryKey)).thenReturn(null);
+
+        final JsonEnvelope response = hearingsQueryView.retrieveCourtList(queryEnvelope);
+
+        JsonObject actualCourtList = response.payloadAsJsonObject().getJsonObject("courtList");
+
+        assertThat(actualCourtList.getJsonArray("sittings").size(), is(0));
     }
 
     private JsonEnvelope generateQuery(final JsonValue payload) {

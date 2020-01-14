@@ -3,16 +3,16 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.WarnedListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
 
 public class WarnedListMapper extends AbstractCourtListMapper {
 
-    public WarnedListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListForPublishing, final CourtServicesMapper courtServicesMapper) {
-        super(context, courtListForPublishing, courtServicesMapper);
+    public WarnedListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListsJson, final CourtServicesMapper courtServicesMapper) {
+        super(context, courtListsJson, courtServicesMapper);
     }
 
     @Override
@@ -32,25 +32,21 @@ public class WarnedListMapper extends AbstractCourtListMapper {
 
         final WarnedListStructure.CourtLists courtLists = objectFactory.createWarnedListStructureCourtLists();
 
-        courtLists.getCourtList().add(generateWarnedCourtListStructure());
+        for (final JsonObject courtListJson : courtListsJson) {
+            courtLists.getCourtList().add(generateWarnedCourtListStructure(courtListJson));
+        }
 
         return courtLists;
     }
 
-    private WarnedListStructure.CourtLists.CourtList generateWarnedCourtListStructure() {
+    private WarnedListStructure.CourtLists.CourtList generateWarnedCourtListStructure(final JsonObject courtListJson) {
 
         final WarnedListStructure.CourtLists.CourtList courtList = objectFactory.createWarnedListStructureCourtListsCourtList();
 
         courtList.setCourtHouse(courtServicesMapper.generateCourtHouseStructure(
-                context.getParameters().getCourtCentreId()));
+                UUID.fromString(courtListJson.getString("courtCentreId"))));
 
-        final List<JsonObject> sittingsJson = new ArrayList<>();
-        courtListForPublishing.forEach(courtForPublishing ->
-            sittingsJson.addAll(courtForPublishing.getJsonObject("courtList").getJsonArray("sittings").getValuesAs(JsonObject.class))
-        );
-
-
-        for (final JsonObject sittingJson : sittingsJson) {
+        for (final JsonObject sittingJson : courtListJson.getJsonArray("sittings").getValuesAs(JsonObject.class)) {
 
             if (sittingJson.getBoolean("weekCommencing")) {
                 courtList.getWithoutFixedDate().add(generateWithoutFixedDate(sittingJson));

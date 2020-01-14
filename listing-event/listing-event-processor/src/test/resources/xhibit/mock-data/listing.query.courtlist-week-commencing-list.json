@@ -1,15 +1,16 @@
 {
   "courtList":{
-    "sittings":[
+    "courtCentreId": "f34a5dba-8c4b-4ec8-8b9a-6af405c00ebf",
+    "sittings": [
       {
-        "sittingDate":"2019-12-15",
+        "sittingDate": "2019-12-15",
         "weekCommencing": true,
-        "courtRoomId":"7cb09222-49e1-3622-a5a6-ad253d2b3c39",
-        "judiciary":[
+        "courtRoomId": "7cb09222-49e1-3622-a5a6-ad253d2b3c39",
+        "judiciary": [
           {
-            "judicialId":"fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
-            "judicialRoleType":{
-              "judiciaryType":"DISTRICT_JUDGE"
+            "judicialId": "fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
+            "judicialRoleType": {
+              "judiciaryType": "DISTRICT_JUDGE"
             }
           }
         ],

@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithDefaults;
-import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
 
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
@@ -21,6 +21,7 @@ import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import java.util.List;
 import java.util.UUID;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 
 import org.junit.Before;
@@ -71,38 +72,10 @@ public class XhibitReferenceDataServiceTest {
     }
 
     @Test
-    public void shouldGetCourtLocationsForSite() throws Exception {
-        final String crestCourtId = "448";
-
-        final JsonObject courtMappings = givenPayload("/xhibit/mock-data/referencedata.query.cp-xhibit-court-mappings.json");
-        final JsonEnvelope responseEnvelope =
-                envelopeFrom(
-                        metadataWithDefaults()
-                                .withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS),
-                        courtMappings);
-
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
-
-        List<CourtLocation> courtLocations = xhibitReferenceDataService.getCourtLocationsForCourt(inputEnvelope, crestCourtId);
-
-        verify(requester).request(requestCaptor.capture());
-
-        assertEquals(4, courtLocations.size());
-        assertEquals(PRESTON_COURT_NAME, courtLocations.get(0).getCourtName());
-        assertEquals(PRESTON_COURT_NAME, courtLocations.get(1).getCourtName());
-        assertEquals(PRESTON_COURT_NAME, courtLocations.get(2).getCourtName());
-        assertEquals(PRESTON_COURT_NAME, courtLocations.get(3).getCourtName());
-
-        assertEquals(PRESTON_COURT_SITE_NAME, courtLocations.get(0).getCourtSiteName());
-        assertEquals(PRESTON_COURT_SITE_NAME2, courtLocations.get(3).getCourtSiteName());
-
-    }
-
-
-    @Test
     public void shouldGetCourtDetails() throws Exception {
 
         final UUID courtCentreId = randomUUID();
+        final String ouCode = "OUCODE";
         final String courtId = "432";
         final String courtSiteId = "433";
         final String crestCourtName = "BLACKFRIARS";
@@ -118,6 +91,7 @@ public class XhibitReferenceDataServiceTest {
                         createObjectBuilder()
                                 .add("cpXhibitCourtMappings", createArrayBuilder()
                                         .add(createObjectBuilder()
+                                                .add("oucode", ouCode)
                                                 .add("crestCourtId", courtId)
                                                 .add("crestCourtSiteId", courtSiteId)
                                                 .add("crestCourtName", crestCourtName)
@@ -136,6 +110,7 @@ public class XhibitReferenceDataServiceTest {
 
         final JsonObject actualRequestParameters = (JsonObject) requestCaptor.getValue().payload();
 
+        assertEquals(courtDetails.getOuCode(), ouCode);
         assertEquals(courtDetails.getCrestCourtId(), courtId);
         assertEquals(courtDetails.getCrestCourtSiteId(), courtSiteId);
         assertEquals(courtDetails.getCourtSiteName(), courtSiteName);
@@ -144,7 +119,6 @@ public class XhibitReferenceDataServiceTest {
         assertEquals(courtDetails.getCourtType(), courtType);
 
         assertEquals(courtCentreId.toString(), actualRequestParameters.getString("ouId"));
-
     }
 
     @Test
@@ -176,7 +150,7 @@ public class XhibitReferenceDataServiceTest {
     }
 
     @Test
-    public void ShouldGetCourtRoomNumber() {
+    public void shouldGetCourtRoomNumber() {
 
         final int expectedCourtRoomNumber = 432;
         final UUID courtCentreId = randomUUID();
@@ -203,7 +177,7 @@ public class XhibitReferenceDataServiceTest {
     }
 
     @Test
-    public void ShouldGetXhibitHearingType() {
+    public void shouldGetXhibitHearingType() {
 
         final UUID cppHearingTypeId = randomUUID();
 
@@ -227,4 +201,47 @@ public class XhibitReferenceDataServiceTest {
 
     }
 
+    @Test
+    public void shouldGetCourtCentreIdsForCrestId() {
+
+        final String crownCourtCrestId = "CRESTID";
+        final UUID ouId = randomUUID();
+
+        final JsonObject courtMapping = Json.createObjectBuilder()
+                .add("oucode", "")
+                .add("crestCourtId", crownCourtCrestId)
+                .add("crestCourtSiteId", "")
+                .add("crestCourtName", "")
+                .add("crestCourtShortName", "")
+                .add("crestCourtSiteName", "")
+                .add("crestCourtSiteCode", "")
+                .add("courtType", "")
+                .build();
+
+        final JsonObject courtMappingResponsePayload = Json.createObjectBuilder()
+                .add("cpXhibitCourtMappings", Json.createArrayBuilder()
+                        .add(courtMapping)
+                        .build()).build();
+
+        final JsonEnvelope courtMappingResponseEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), courtMappingResponsePayload);
+
+        JsonObject orgUnitResponsePayload = Json.createObjectBuilder()
+                .add("id", ouId.toString())
+                .build();
+
+        final JsonObject organisationUnitResponsePayload = Json.createObjectBuilder()
+                .add("organisationunits", Json.createArrayBuilder()
+                        .add(orgUnitResponsePayload)
+                )
+                .build();
+
+        final JsonEnvelope organisationUnitResponseEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), organisationUnitResponsePayload);
+
+        when(requester.request(any(JsonEnvelope.class))).thenReturn(courtMappingResponseEnvelope, organisationUnitResponseEnvelope);
+
+        final List<UUID> courtCentreIds = xhibitReferenceDataService.getCourtCentreIdsForCrestId(inputEnvelope, crownCourtCrestId);
+
+        assertEquals(1, courtCentreIds.size());
+        assertEquals(ouId, courtCentreIds.get(0));
+    }
 }

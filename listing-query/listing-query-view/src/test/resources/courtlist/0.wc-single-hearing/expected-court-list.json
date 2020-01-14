@@ -1,15 +1,16 @@
 {
   "courtList":{
-    "sittings":[
+    "courtCentreId": "eeb81654-eb5b-443f-ad4b-911606732e53",
+    "sittings": [
       {
-        "weekCommencing":true,
-        "sittingDate":"2019-12-16",
-        "courtRoomId":"5e1c7b54-3bca-3a37-a85a-84510f115b76",
-        "judiciary":[
+        "weekCommencing": true,
+        "sittingDate": "2019-12-16",
+        "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
+        "judiciary": [
           {
-            "isDeputy":false,
-            "judicialId":"add2bc84-3bd9-3679-8af4-4b78d9e1d39f",
-            "isBenchChairman":true,
+            "isDeputy": false,
+            "judicialId": "add2bc84-3bd9-3679-8af4-4b78d9e1d39f",
+            "isBenchChairman": true,
             "judicialRoleType":{
               "judiciaryType":"MAGISTRATE"
             }

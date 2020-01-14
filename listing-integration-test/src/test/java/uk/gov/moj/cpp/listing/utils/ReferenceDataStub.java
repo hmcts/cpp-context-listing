@@ -31,6 +31,8 @@ public class ReferenceDataStub {
     private static final String REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE = "application/vnd.referencedata.query.hearing-types+json";
     private static final String REFERENCE_DATA_GET_COURTROOM_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms";
     private static final String REFERENCE_DATA_GET_COURTROOM_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.ou-courtroom+json";
+    private static final String REFERENCE_DATA_ORGANISATIONAL_UNITS_URL = "/referencedata-service/query/api/rest/referencedata/organisationunits";
+    private static final String REFERENCE_DATA_ORGANISATIONAL_UNITS_MEDIA_TYPE = "application/vnd.referencedata.query.organisationunits+json";
 
     public static void stubGetReferenceDataCourtMappings(final CourtCentreData courtReferenceData) {
         InternalEndpointMockUtils.stubPingFor("referencedata-service");
@@ -130,4 +132,16 @@ public class ReferenceDataStub {
         InternalEndpointMockUtils.stubPingFor("referencedata-service");
     }
 
+    public static void stubOrganisationUnit(final UUID ouId) {
+        stubPingForReferenceDataService();
+        String payload = getPayload("stub-data/referencedata.query.organisationunits.json")
+                .replace("OU_ID", ouId.toString());
+
+        stubFor(get(urlPathMatching(REFERENCE_DATA_ORGANISATIONAL_UNITS_URL))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", UUID.randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_ORGANISATIONAL_UNITS_MEDIA_TYPE)
+                        .withBody(payload)));
+        waitForStubToBeReady(REFERENCE_DATA_ORGANISATIONAL_UNITS_URL, REFERENCE_DATA_ORGANISATIONAL_UNITS_MEDIA_TYPE);
+    }
 }

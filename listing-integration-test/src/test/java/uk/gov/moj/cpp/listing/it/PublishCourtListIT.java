@@ -9,6 +9,7 @@ import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCou
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetAllCrownCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 import static uk.gov.moj.cpp.listing.utils.SystemIdMapperStub.stubIdMapperReturningExistingAssociation;
 
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
@@ -48,6 +49,7 @@ public class PublishCourtListIT extends AbstractIT {
                 startDate);
 
         stubGetReferenceDataCourtMappings(new CourtCentreData(UUID.randomUUID(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID));
+        stubOrganisationUnit(courtCentreId);
         stubIdMapperReturningExistingAssociation(courtListId);
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(null, publishCourtListCommandPayload);
@@ -75,6 +77,7 @@ public class PublishCourtListIT extends AbstractIT {
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId);
 
         stubIdMapperReturningExistingAssociation(courtListId);
+        stubOrganisationUnit(courtCentreId);
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
         publishCourtListSteps.verifyHearingListedFromAPI(true);

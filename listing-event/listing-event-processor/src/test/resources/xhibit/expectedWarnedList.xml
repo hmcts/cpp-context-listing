@@ -23,7 +23,7 @@
             <cs:CourtHouse>
                 <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
                 <cs:CourtHouseCode>001</cs:CourtHouseCode>
-                <cs:CourtHouseName>MOCKCOURTNAME</cs:CourtHouseName>
+                <cs:CourtHouseName>MOCKCOURTNAME1</cs:CourtHouseName>
             </cs:CourtHouse>
             <cs:WithFixedDate HearingType="HRG">
                 <cs:Fixture>
@@ -120,6 +120,13 @@
                     </cs:Cases>
                 </cs:Fixture>
             </cs:WithoutFixedDate>
+        </cs:CourtList>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>002</cs:CourtHouseCode>
+                <cs:CourtHouseName>MOCKCOURTNAME2</cs:CourtHouseName>
+            </cs:CourtHouse>
         </cs:CourtList>
     </cs:CourtLists>
 </cs:WarnedList>

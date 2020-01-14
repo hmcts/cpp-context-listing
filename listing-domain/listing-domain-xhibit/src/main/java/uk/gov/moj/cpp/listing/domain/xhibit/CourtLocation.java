@@ -1,7 +1,12 @@
 package uk.gov.moj.cpp.listing.domain.xhibit;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+
 public class CourtLocation {
 
+    private String ouCode;
     private String crestCourtId;        // e.g. 433 - CREST identifier for the crown court (aka parent court) of the court site
     private String crestCourtSiteId;    // e.g. 433 - CREST identifier for a court site (aka court house, court centre)
     private String courtName;           // e.g. LIVERPOOL
@@ -10,13 +15,17 @@ public class CourtLocation {
     private String courtSiteCode;       // e.g. A
     private String courtType;           // e.g CROWN_COURT
 
-    public CourtLocation(final String crestCourtId,
-                         final String crestCourtSiteId,
-                         final String courtName,
-                         final String courtShortName,
-                         final String courtSiteName,
-                         final String courtSiteCode,
-                         final String courtType) {
+    @SuppressWarnings({"squid:S00107"})
+    public CourtLocation(
+            final String ouCode,
+            final String crestCourtId,
+            final String crestCourtSiteId,
+            final String courtName,
+            final String courtShortName,
+            final String courtSiteName,
+            final String courtSiteCode,
+            final String courtType) {
+        this.ouCode = ouCode;
         this.crestCourtId = crestCourtId;
         this.crestCourtSiteId = crestCourtSiteId;
         this.courtName = courtName;
@@ -24,6 +33,10 @@ public class CourtLocation {
         this.courtSiteName = courtSiteName;
         this.courtSiteCode = courtSiteCode;
         this.courtType = courtType;
+    }
+
+    public String getOuCode() {
+        return ouCode;
     }
 
     public String getCrestCourtId() {
@@ -56,14 +69,6 @@ public class CourtLocation {
 
     @Override
     public String toString() {
-        return "CourtLocation{" +
-                "crestCourtId='" + crestCourtId + '\'' +
-                ", crestCourtSiteId='" + crestCourtSiteId + '\'' +
-                ", courtName='" + courtName + '\'' +
-                ", courtShortName='" + courtShortName + '\'' +
-                ", courtSiteName='" + courtSiteName + '\'' +
-                ", courtSiteCode='" + courtSiteCode + '\'' +
-                ", courtType='" + courtType + '\'' +
-                '}';
+        return ReflectionToStringBuilder.toString(this, SHORT_PREFIX_STYLE);
     }
 }
