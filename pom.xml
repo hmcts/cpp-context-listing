@@ -40,7 +40,7 @@
         <com.sun.xml.bind.jaxb.version>2.2.11</com.sun.xml.bind.jaxb.version>   <!-- Version property added to common-bom:2.2.1. Replace with com.sun.xml.bind.jaxb.version after upgrade to Framework 6 -->
         <slf4j-log4j12.version>1.7.10</slf4j-log4j12.version>
         <postgresql.version>42.1.4</postgresql.version>
-        <cpp-platform-data-utils.version>6.4.2</cpp-platform-data-utils.version>
+        <cpp-platform-data-utils.version>6.4.7</cpp-platform-data-utils.version>
         <mssql.jdbc.version>7.0.0.jre8</mssql.jdbc.version>
         <commons-csv.version>1.4</commons-csv.version>
     </properties>

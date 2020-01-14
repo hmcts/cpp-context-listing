@@ -501,6 +501,10 @@ public class ListingCommandHandlerTest {
         final List<NonDefaultDay> nonDefaultDays = singletonList(NonDefaultDay.nonDefaultDay()
                 .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneId.of("UTC")))
                 .withDuration(Optional.empty())
+                .withCourtScheduleId(Optional.empty())
+                .withCourtRoomId(Optional.empty())
+                .withOucode(Optional.empty())
+                .withSession(Optional.empty())
                 .build());
 
         final List<JudicialRole> judicialRoles = Arrays.asList(JudicialRole.judicialRole()
@@ -558,6 +562,10 @@ public class ListingCommandHandlerTest {
         final List<NonDefaultDay> nonDefaultDays = singletonList(NonDefaultDay.nonDefaultDay()
                 .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneId.of("UTC")))
                 .withDuration(Optional.empty())
+                .withCourtScheduleId(Optional.empty())
+                .withCourtRoomId(Optional.empty())
+                .withOucode(Optional.empty())
+                .withSession(Optional.empty())
                 .build());
 
         final List<JudicialRole> judicialRoles = Arrays.asList(JudicialRole.judicialRole()

@@ -13,7 +13,6 @@ import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataWithR
 import static uk.gov.justice.services.test.utils.core.messaging.JsonEnvelopeBuilder.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
 
-import uk.gov.justice.api.resource.DefaultQueryApiUpdateHearingSlotsResource;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingDay;
 import uk.gov.justice.core.courts.HearingType;
@@ -21,17 +20,22 @@ import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingLanguage;
 import uk.gov.justice.listing.courts.JurisdictionType;
+import uk.gov.justice.listing.events.NonDefaultDay;
+import uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing;
+import uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
-import uk.gov.moj.cpp.listing.event.processor.azure.util.SlotCriteriaConverter;
+import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
+import uk.gov.moj.cpp.listing.event.processor.azure.util.SlotsToJsonStringConverter;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,41 +65,73 @@ public class AzureListingEventProcessorTest {
     private static final ZonedDateTime START_DATE_TIME = now();
     private static final DateTimeFormatter DATE_TIME_FORMAT = ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final String CIRCUIT_JUDGE = "CIRCUIT_JUDGE";
+    private static final String TEST_OUTPUT = "sample";
 
     @Mock
     private JsonObjectToObjectConverter jsonObjectConverter;
 
     @Mock
-    private SlotCriteriaConverter slotCriteriaConverter;
+    private SlotsToJsonStringConverter slotsToJsonStringConverter;
 
     @Mock
-    private DefaultQueryApiUpdateHearingSlotsResource defaultQueryApiUpdateHearingSlotsResource;
+    private HearingSlotsService hearingSlotsService;
 
     @InjectMocks
     private AzureListingEventProcessor azureListingEventProcessor;
 
     @Test
+    public void shouldUpdateSlotsInAzureWhenNonDefaultDaysAssigned() {
+        final Envelope<NonDefaultDaysAssignedToHearing> envelope = (Envelope<NonDefaultDaysAssignedToHearing>) mock(Envelope.class);
+
+        final NonDefaultDaysAssignedToHearing hearing = NonDefaultDaysAssignedToHearing.nonDefaultDaysAssignedToHearing()
+                .withNonDefaultDays(nonDefaultDays())
+                .withHearingId(HEARING_ID)
+                .build();
+        given(envelope.payload()).willReturn(hearing);
+
+        given(slotsToJsonStringConverter.convertNonDefaultDaysToJson(HEARING_ID, hearing.getNonDefaultDays())).willReturn(TEST_OUTPUT);
+
+        azureListingEventProcessor.nonDefaultDaysAssignedForHearing(envelope);
+
+        verify(hearingSlotsService).update(TEST_OUTPUT);
+    }
+
+    @Test
+    public void shouldUpdateSlotsInAzureWhenNonDefaultDaysChanged() {
+        final Envelope<NonDefaultDaysChangedForHearing> envelope = (Envelope<NonDefaultDaysChangedForHearing>) mock(Envelope.class);
+
+        final NonDefaultDaysChangedForHearing hearing = NonDefaultDaysChangedForHearing.nonDefaultDaysChangedForHearing()
+                .withNonDefaultDays(nonDefaultDays())
+                .withHearingId(HEARING_ID)
+                .build();
+        given(envelope.payload()).willReturn(hearing);
+
+        given(slotsToJsonStringConverter.convertNonDefaultDaysToJson(HEARING_ID, hearing.getNonDefaultDays())).willReturn(TEST_OUTPUT);
+
+        azureListingEventProcessor.nonDefaultDaysChangedForHearing(envelope);
+
+        verify(hearingSlotsService).update(TEST_OUTPUT);
+    }
+
+    @Test
     public void shouldUpdateSlotsInAzureWhenHandleWhenHearingConfirmedAfterHearingAllocatedForListingMessage() throws Exception {
 
         HearingConfirmed hearingConfirmed = hearingConfirmed();
-        //given
+
         final JsonEnvelope event = hearingAllocatedEvent();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingConfirmed.class)).willReturn(hearingConfirmed);
 
-        final String value = "sample";
-        given(slotCriteriaConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed)). willReturn(value);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed)).willReturn(TEST_OUTPUT);
 
         Response response = mock(Response.class);
-        given(defaultQueryApiUpdateHearingSlotsResource.updateHearingSlots(value)).willReturn(response);
+        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
 
         String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
-        //when
         azureListingEventProcessor.handleHearingConfirmedMessage(event);
 
-        //then
-        verify(defaultQueryApiUpdateHearingSlotsResource).updateHearingSlots(value);
+        verify(hearingSlotsService).update(TEST_OUTPUT);
     }
 
     private JsonEnvelope hearingAllocatedEvent() {
@@ -113,6 +149,30 @@ public class AzureListingEventProcessorTest {
                 .add("hearingDate", hearingDate.build());
 
         return envelopeFrom(metadataWithRandomUUIDAndName(), hearingAllocated.build());
+    }
+
+    private List<NonDefaultDay> nonDefaultDays() {
+
+        final NonDefaultDay nonDefaultDay1 = NonDefaultDay.nonDefaultDay()
+                .withStartTime(START_DATE_TIME)
+                .withDuration(of(1))
+                .withCourtRoomId(of(123))
+                .withCourtScheduleId(of("224686"))
+                .withOucode(of("BA09US"))
+                .withSession(of("AD"))
+                .build();
+
+        final NonDefaultDay nonDefaultDay2 = NonDefaultDay.nonDefaultDay()
+                .withStartTime(START_DATE_TIME)
+                .withDuration(of(311))
+                .withCourtRoomId(of(34))
+                .withCourtScheduleId(of("224686"))
+                .withOucode(of("BA09US"))
+                .withSession(of("AD"))
+                .build();
+
+
+        return Arrays.asList(nonDefaultDay1, nonDefaultDay2);
     }
 
     private HearingConfirmed hearingConfirmed() {

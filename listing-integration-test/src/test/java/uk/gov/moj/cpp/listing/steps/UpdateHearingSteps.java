@@ -116,6 +116,10 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String MEDIA_TYPE_CHANGE_JUDICIARY_FOR_HEARINGS = "application/vnd.listing.command.change-judiciary-for-hearings+json";
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHearingSteps.class);
     public static final String FIELD_DURATION = "duration";
+    public static final String FIELD_COURT_SCHEDULE_ID = "courtScheduleId";
+    public static final String FIELD_OUCODE = "oucode";
+    public static final String FIELD_SESSION = "session";
+
     private final UpdatedHearingData updatedHearingData;
     private final HearingData hearingData;
     private MessageConsumer privateMessageConsumerAllocatedHearingUpdatedForListing;
@@ -244,6 +248,10 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                     JsonObjectBuilder nonDefaultDayBuilder = createObjectBuilder()
                             .add(FIELD_START_TIME, ndd.getStartTime());
                     addNullableIntegerField(nonDefaultDayBuilder, FIELD_DURATION, ndd.getDuration());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_COURT_SCHEDULE_ID, ndd.getCourtScheduleId());
+                    addNullableIntegerFieldIfNotNull(nonDefaultDayBuilder, FIELD_COURT_ROOM_ID, ndd.getCourtRoomId());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_OUCODE, ndd.getOucode());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_SESSION, ndd.getSession());
 
                     return nonDefaultDayBuilder;
                 })
@@ -255,6 +263,18 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
             builder.add(fieldName, value);
         } else {
             builder.addNull(fieldName);
+        }
+    }
+
+    private static void addNullableStringField(JsonObjectBuilder builder, String fieldName, Optional<String> value) {
+        if (value.isPresent()) {
+            builder.add(fieldName, value.get());
+        }
+    }
+
+    private static void addNullableIntegerFieldIfNotNull(JsonObjectBuilder builder, String fieldName, Optional<Integer> value) {
+        if (value.isPresent()) {
+            builder.add(fieldName, value.get());
         }
     }
 

@@ -60,16 +60,14 @@ public class HearingDayDetailConverterTest {
         assertThat(meridian, is("PM"));
     }
 
-    @Test
-    public void shouldGetAdMeridian() {
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldThrowIllegalArgumentExceptionIfTimeIsNotInAgreedRange() {
         final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T19:15:30-05:00");
 
-        final String meridian = getMeridian(zonedDateTime);
-
-        assertThat(meridian, is("AD"));
+        getMeridian(zonedDateTime);
     }
 
-    private List<HearingDay> getHearingDayDetail(){
+    private List<HearingDay> getHearingDayDetail() {
         final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
         final String formattedDateTime1 = DATE_TIME_FORMAT.format(START_DATE_TIME1);
         final HearingDay hearingDay = HearingDay.hearingDay()

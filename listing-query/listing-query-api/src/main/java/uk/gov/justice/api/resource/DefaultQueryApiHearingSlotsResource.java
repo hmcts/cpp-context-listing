@@ -2,35 +2,21 @@ package uk.gov.justice.api.resource;
 
 import static java.util.stream.Collectors.toMap;
 
-import uk.gov.justice.services.common.configuration.Value;
 import uk.gov.justice.services.core.annotation.Adapter;
 import uk.gov.justice.services.core.annotation.Component;
-import uk.gov.moj.cpp.platform.data.utils.rest.service.RestClientService;
+import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.inject.Inject;
-import javax.json.JsonObject;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import com.google.common.collect.ImmutableMap;
 
 @Adapter(Component.QUERY_API)
 public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlotsResource {
 
     @Inject
-    @Value(key = "rotasl.search-hearing-slots.url", defaultValue = "https://api-ste-ccm-scsl.azure-api.net/fa-ste-ccm-scsl/hearingSlots")
-    private String searchHearingSlotsUrl;
-
-    @Inject
-    @Value(key = "rotasl.search-hearing-slots.subscription.key", defaultValue = "75e6ff1510914801b91d176bcbeef0dc")
-    private String searchHearingSlotsSubscriptionKey;
-
-    @Inject
-    private RestClientService restClientService;
+    private HearingSlotsService hearingSlotsService;
 
     @Override
     public Response getHearingSlots(final String panel,
@@ -46,14 +32,7 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
 
         final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, oucodeL2Code, ouCode, courtRoomId, businessType, courtSession, pageSize, pageNumber);
 
-        return restClientService.newResponseFrom(restClientService.get(searchHearingSlotsUrl, getRotaSlHeaders(), params), JsonObject.class);
-    }
-
-    private Map<String, String> getRotaSlHeaders() {
-        return ImmutableMap.of(
-                HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON,
-                "Ocp-Apim-Subscription-Key", searchHearingSlotsSubscriptionKey,
-                "Ocp-Apim-Trace", "true");
+        return hearingSlotsService.search(params);
     }
 
     private Map<String, String> buildParamsMap(final String panel,

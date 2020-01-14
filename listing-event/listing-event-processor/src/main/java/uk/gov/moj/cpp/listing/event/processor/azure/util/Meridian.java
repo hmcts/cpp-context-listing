@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.azure.util;
 
 public enum Meridian {
+    TWELVE_AM("00"),
     TEN_AM("10"),
     ELEVEN_AM("11"),
     TWELVE_PM("12"),

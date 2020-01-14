@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -56,8 +55,6 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
         }
         stubGetReferenceDataCourtRoom(updatedHearingDataForAllocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingDataForAllocation.getCourtRoomId());
-
-        stubUpdateAvailableHearingSlots();
     }
 
     @Test

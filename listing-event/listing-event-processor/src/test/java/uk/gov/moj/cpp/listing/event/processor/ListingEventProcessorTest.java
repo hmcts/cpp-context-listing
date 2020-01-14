@@ -46,7 +46,6 @@ import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLI
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_HEARING_UPDATED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.PUBLIC_EVENT_RESTRICT_COURT_LIST;
 
-import uk.gov.justice.api.resource.DefaultQueryApiUpdateHearingSlotsResource;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtApplication;
@@ -101,7 +100,6 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher;
 import uk.gov.justice.services.test.utils.core.random.Generator;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
-import uk.gov.moj.cpp.listing.event.processor.azure.util.SlotCriteriaConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommandCollectionConverter;
@@ -157,7 +155,6 @@ public class ListingEventProcessorTest {
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     public static final String CIRCUIT_JUDGE = "CIRCUIT_JUDGE";
 
-
     @Mock
     private Sender sender;
 
@@ -186,10 +183,10 @@ public class ListingEventProcessorTest {
     private DefendantsToBeUpdated defendantsToBeUpdated;
 
     @Mock
-    private DefendantsToBeAddedForCourtProceedings defendantsToBeAddedForCourtProceedings ;
+    private DefendantsToBeAddedForCourtProceedings defendantsToBeAddedForCourtProceedings;
 
     @Mock
-    private CaseOrApplicationEjected  caseOrApplicationEjected;
+    private CaseOrApplicationEjected caseOrApplicationEjected;
 
     @Mock
     private OffencesToBeUpdated offencesToBeUpdated;
@@ -268,12 +265,6 @@ public class ListingEventProcessorTest {
 
     @Mock
     private AllocatedHearingUpdatedFactory allocatedHearingUpdatedFactory;
-
-    @Mock
-    private SlotCriteriaConverter slotCriteriaConverter;
-
-    @Mock
-    private DefaultQueryApiUpdateHearingSlotsResource defaultQueryApiUpdateHearingSlotsResource;
 
     @Captor
     private ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor;
@@ -532,11 +523,13 @@ public class ListingEventProcessorTest {
                 .withUpdatedHearing(buildHearing(formattedDateTime))
                 .build();
     }
-    private CourtListRestricted restrictCourtList(){
+
+    private CourtListRestricted restrictCourtList() {
         return CourtListRestricted.courtListRestricted()
                 .withHearingId(HEARING_ID)
                 .withDefendantIds(Arrays.asList(DEFENDANT_ID)).build();
     }
+
     @Test
     public void shouldHandleCaseDefendantChangedMessage() throws Exception {
         final DefendantUpdated defendantUpdated = defendantUpdated();
@@ -564,7 +557,7 @@ public class ListingEventProcessorTest {
     }
 
     @Test
-    public void shouldHandleDefendantsAddedForCourtProceedings(){
+    public void shouldHandleDefendantsAddedForCourtProceedings() {
         final DefendantsAddedToCourtProceedings defendantsAddedToCourtProceedings = defendantsAddedToCourtProceedings();
         final JsonObject defendantAddedToCourtProceedingsJsonObject = this.objectToJsonObjectConverter.convert(defendantsAddedToCourtProceedings);
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), defendantAddedToCourtProceedingsJsonObject);
@@ -583,10 +576,11 @@ public class ListingEventProcessorTest {
         ));
 
         final DefendantsAddedToCourtProceedings resultPayload = jsonObjectConverter
-                .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), DefendantsAddedToCourtProceedings.class) ;
+                .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), DefendantsAddedToCourtProceedings.class);
         assertThat(resultPayload, equalTo(defendantsAddedToCourtProceedings));
 
     }
+
     @Test
     public void shouldHandleDefendantOffencesChangedMessage() throws Exception {
         final OffencesForDefendantUpdated offencesForDefendantUpdated = offencesForDefendantUpdated();
@@ -615,7 +609,7 @@ public class ListingEventProcessorTest {
     @Test
     public void shouldHandleCourtApplicationUpdatedOnHearingMessage() throws Exception {
         final CourtApplicationChanged courtApplicationChanged = courtApplicationChanged();
-        final JsonObject courtApplicationChangedJsonObject =  this.objectToJsonObjectConverter.convert(courtApplicationChanged);
+        final JsonObject courtApplicationChangedJsonObject = this.objectToJsonObjectConverter.convert(courtApplicationChanged);
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), courtApplicationChangedJsonObject);
         final JsonEnvelopeMatcher jsonEnvelopeMatcher = new JsonEnvelopeMatcher();
 
@@ -637,33 +631,35 @@ public class ListingEventProcessorTest {
         assertThat(resultPayload, equalTo(courtApplicationChanged));
         assertThat(resultPayload, not(equalTo(courtApplicationChanged())));
     }
+
     @Test
-    public void shouldHandleCourtApplicationAddedForListedHearing(){
-            //Given
-            given(envelope.payloadAsJsonObject()).willReturn(payload);
-            given(jsonObjectConverter.convert(payload, CourtApplicationAddedForHearing.class)).willReturn(courtApplicationAddedForHearing);
-            given(enveloper.withMetadataFrom(envelope, PRIVATE_EVENT_COURT_APPLICATION_ADDED_FOR_LISTED_HEARING)).willReturn
-                    (enveloperFunction);
-            given(enveloper.withMetadataFrom(envelope, COMMAND_ADD_COURT_APPLICATION_TO_HEARING)).willReturn
-                    (enveloperFunction);
-            given(enveloperFunction.apply(any(CourtApplicationAddedForHearing.class))).willReturn(finalEnvelope);
-            given(courtApplicationAddedForHearing.getCourtApplication())
-                    .willReturn(uk.gov.justice.listing.events.CourtApplication.courtApplication().withId(UUID.randomUUID()).build());
-            given(courtApplicationAddedForHearing.getHearingId())
+    public void shouldHandleCourtApplicationAddedForListedHearing() {
+        //Given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, CourtApplicationAddedForHearing.class)).willReturn(courtApplicationAddedForHearing);
+        given(enveloper.withMetadataFrom(envelope, PRIVATE_EVENT_COURT_APPLICATION_ADDED_FOR_LISTED_HEARING)).willReturn
+                (enveloperFunction);
+        given(enveloper.withMetadataFrom(envelope, COMMAND_ADD_COURT_APPLICATION_TO_HEARING)).willReturn
+                (enveloperFunction);
+        given(enveloperFunction.apply(any(CourtApplicationAddedForHearing.class))).willReturn(finalEnvelope);
+        given(courtApplicationAddedForHearing.getCourtApplication())
+                .willReturn(uk.gov.justice.listing.events.CourtApplication.courtApplication().withId(UUID.randomUUID()).build());
+        given(courtApplicationAddedForHearing.getHearingId())
                 .willReturn(UUID.randomUUID());
-            given(jsonObjectConverter.convert(payload, CourtApplicationAddedForHearing.class)).willReturn(courtApplicationAddedForHearing);
+        given(jsonObjectConverter.convert(payload, CourtApplicationAddedForHearing.class)).willReturn(courtApplicationAddedForHearing);
 
-            final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                    ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
+                ArgumentCaptor.forClass(JsonEnvelope.class);
 
-            //when
-            listingEventProcessor.handleCourtApplicationAddedForListedHearing(envelope);
+        //when
+        listingEventProcessor.handleCourtApplicationAddedForListedHearing(envelope);
 
-            //then
-            verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+        //then
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
     }
+
     @Test
-    public void shouldHandleCourtApplicationToBeUpdated(){
+    public void shouldHandleCourtApplicationToBeUpdated() {
         //Given
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, CourtApplicationToBeUpdated.class)).willReturn(courtApplicationToBeUpdated);
@@ -682,6 +678,7 @@ public class ListingEventProcessorTest {
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
     }
+
     private CourtApplicationChanged courtApplicationChanged() {
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
         final CourtApplicationChanged.Builder courtApplicationChangedBuilder = new CourtApplicationChanged.Builder();
@@ -706,8 +703,9 @@ public class ListingEventProcessorTest {
 
         return courtapplicationChanged;
     }
+
     @Test
-    public void shouldHandleEjectEventFromProgressionAndPassToCommandHandler(){
+    public void shouldHandleEjectEventFromProgressionAndPassToCommandHandler() {
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
 
         final CaseOrApplicationEjected ejectCaseOrApplication = CaseOrApplicationEjected.caseOrApplicationEjected()
@@ -730,14 +728,15 @@ public class ListingEventProcessorTest {
         ));
 
         final CaseOrApplicationEjected resultPayload = jsonObjectConverter
-                .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), CaseOrApplicationEjected.class) ;
+                .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), CaseOrApplicationEjected.class);
         assertThat(resultPayload, equalTo(ejectCaseOrApplication));
 
     }
+
     @Test
     public void shouldHandleCourtApplicationAddedOnHearingMessage() throws Exception {
         final CourtApplication courtApplicationAddedForHearings = courtApplicationAdded();
-        final JsonObject courtApplicationChangedJsonObject =  this.objectToJsonObjectConverter.convert(courtApplicationAddedForHearings);
+        final JsonObject courtApplicationChangedJsonObject = this.objectToJsonObjectConverter.convert(courtApplicationAddedForHearings);
         final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), courtApplicationChangedJsonObject);
         final JsonEnvelopeMatcher jsonEnvelopeMatcher = new JsonEnvelopeMatcher();
 
@@ -837,7 +836,7 @@ public class ListingEventProcessorTest {
         return defendantOffencesChanged;
     }
 
-    private DefendantsAddedToCourtProceedings defendantsAddedToCourtProceedings(){
+    private DefendantsAddedToCourtProceedings defendantsAddedToCourtProceedings() {
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
 
         final Generator<String> stringGenerator = string(5);
@@ -847,7 +846,7 @@ public class ListingEventProcessorTest {
         final Person.Builder personBuilder = new Person.Builder();
         final PersonDefendant.Builder personDefendantBuilder = new PersonDefendant.Builder();
         final ListDefendantRequest.Builder listDefendantRequestBuilder = new ListDefendantRequest.Builder();
-        final ListHearingRequest.Builder listHearingRequestBuilder = new ListHearingRequest.Builder() ;
+        final ListHearingRequest.Builder listHearingRequestBuilder = new ListHearingRequest.Builder();
 
         final Address address = progressionAddressBuilder
                 .withAddress1(stringGenerator.next())
@@ -898,7 +897,7 @@ public class ListingEventProcessorTest {
         final ListDefendantRequest listDefendantRequest = listDefendantRequestBuilder
                 .withDefendantOffences(asList(UUID.randomUUID()))
                 .withProsecutionCaseId(Optional.of(UUID.randomUUID()))
-                .build() ;
+                .build();
 
         final ListHearingRequest listHearingRequest = listHearingRequestBuilder
                 .withCourtCentre(CourtCentre.courtCentre()
@@ -909,14 +908,14 @@ public class ListingEventProcessorTest {
                         .withDescription(TYPE).withId(UUID.randomUUID()).build())
                 .withJurisdictionType(JurisdictionType.CROWN)
                 .withListDefendantRequests(asList(listDefendantRequest))
-                .build() ;
+                .build();
 
-    final DefendantsAddedToCourtProceedings defendantsAddedToCourtProceedings = defendantsAddedToCourtProceedingsBuilder
-            .withDefendants(asList(defendant))
-            .withListHearingRequests(asList(listHearingRequest))
-            .build();
+        final DefendantsAddedToCourtProceedings defendantsAddedToCourtProceedings = defendantsAddedToCourtProceedingsBuilder
+                .withDefendants(asList(defendant))
+                .withListHearingRequests(asList(listHearingRequest))
+                .build();
 
-    return defendantsAddedToCourtProceedings;
+        return defendantsAddedToCourtProceedings;
 
     }
 

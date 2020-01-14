@@ -97,6 +97,11 @@
             <artifactId>access-control-test-utils</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

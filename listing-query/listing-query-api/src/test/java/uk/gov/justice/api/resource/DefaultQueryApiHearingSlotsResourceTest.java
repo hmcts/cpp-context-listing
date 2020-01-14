@@ -4,9 +4,8 @@ import static javax.json.Json.createArrayBuilder;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
-import uk.gov.moj.cpp.platform.data.utils.rest.service.RestClientService;
+import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
 
 import java.util.Map;
 
@@ -23,7 +22,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultQueryApiHearingSlotsResourceTest {
     @Mock
-    private RestClientService restClientService;
+    private HearingSlotsService hearingSlotsService;
 
     @Mock
     private Response response;
@@ -33,9 +32,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
 
     @Test
     public void searchHearingSlots() {
-        setField(resource, "searchHearingSlotsUrl", "http://localhost/");
-        setField(resource, "searchHearingSlotsSubscriptionKey", "12345");
-        when(restClientService.get(any(String.class), any(Map.class), any(Map.class))).thenReturn(response);
+        when(hearingSlotsService.search(any(Map.class))).thenReturn(response);
         when(response.readEntity(JsonObject.class)).thenReturn(createJsonObject());
 
         resource.getHearingSlots("ADULT",
@@ -49,8 +46,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
                 "20",
                 "1");
 
-        verify(restClientService).get(any(String.class), any(Map.class), any(Map.class));
-        verify(restClientService).newResponseFrom(response, JsonObject.class);
+        verify(hearingSlotsService).search(any(Map.class));
     }
 
     private JsonObject createJsonObject() {

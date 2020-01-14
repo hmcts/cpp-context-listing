@@ -862,6 +862,10 @@ public class ListingCommandHandler {
             domainDefaultDays = commandDefaultDays.stream().map(ndd -> NonDefaultDay.nonDefaultDay()
                     .withStartTime(ndd.getStartTime())
                     .withDuration(ndd.getDuration())
+                    .withCourtScheduleId(ndd.getCourtScheduleId())
+                    .withCourtRoomId(ndd.getCourtRoomId())
+                    .withOucode(ndd.getOucode())
+                    .withSession(ndd.getSession())
                     .build())
                     .collect(toList());
         }

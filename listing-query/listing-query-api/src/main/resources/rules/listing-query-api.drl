@@ -61,3 +61,11 @@ rule "Query - API - listing.court.list.publish.status"
   then
     $outcome.setSuccess(true);
 end
+rule "Query - API - listing.search.hearing.slots"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.hearing.slots");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.COURT_CLERKS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.LISTING_OFFICERS, RuleConstants.LEGAL_ADVISERS));
+  then
+    $outcome.setSuccess(true);
+end

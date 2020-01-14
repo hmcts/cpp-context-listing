@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.utils;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_COURT_CENTRE_ID;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_COURT_ROOM_ID;
+import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_COURT_SCHEDULE_ID;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_DURATION;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_END_DATE;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_HEARING_LANGUAGE;
@@ -18,6 +19,8 @@ import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_JUDICIARY_TY
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_JURISDICTION_TYPE;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_NON_DEFAULT_DAYS;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_NON_SITTING_DAYS;
+import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_OUCODE;
+import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_SESSION;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_START_DATE;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_START_TIME;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_TYPE;
@@ -82,6 +85,12 @@ public class JsonObjectBuilderHelper {
         }
     }
 
+    public static void addNullableStringField(final JsonObjectBuilder builder, final String fieldName, final Optional<String> value) {
+        if (value.isPresent()) {
+            builder.add(fieldName, value.get());
+        }
+    }
+
     public static void addNullableIntegerField(final JsonObjectBuilder builder, final String fieldName, final Optional<Integer> value) {
         if (value.isPresent()) {
             builder.add(fieldName, value.get());
@@ -115,6 +124,10 @@ public class JsonObjectBuilderHelper {
                     JsonObjectBuilder nonDefaultDayBuilder = createObjectBuilder()
                             .add(FIELD_START_TIME, ndd.getStartTime());
                     addNullableIntegerField(nonDefaultDayBuilder, FIELD_DURATION, ndd.getDuration());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_COURT_SCHEDULE_ID, ndd.getCourtScheduleId());
+                    addNullableIntegerField(nonDefaultDayBuilder, FIELD_COURT_ROOM_ID, ndd.getCourtRoomId());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_OUCODE, ndd.getOucode());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_SESSION, ndd.getSession());
 
                     return nonDefaultDayBuilder;
                 })

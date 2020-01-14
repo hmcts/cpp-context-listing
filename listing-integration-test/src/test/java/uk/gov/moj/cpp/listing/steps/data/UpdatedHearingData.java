@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
+import static java.util.Arrays.asList;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 
@@ -22,6 +23,9 @@ public class UpdatedHearingData {
     private static final String HEARING_LANGUAGE_WELSH = "WELSH";
     private static final String HEARING_LANGUAGE_ENGLISH = "ENGLISH";
     private static final String JURISDICTION_TYPE_MAGISTRATES = "MAGISTRATES";
+    private static final String COURT_SCHEDULE_ID = randomUUID().toString();
+    private static final String OUCODE = "BKROOL";
+    private static final String SESSION = "AM";
     private static final int DURATION = 120;
 
     private final UUID hearingId;
@@ -57,13 +61,17 @@ public class UpdatedHearingData {
     private static UpdatedHearingData updatedHearingDataForAllocation(final UUID hearingId, final List<JudicialRoleData> judiciary) {
 
         final LocalDate startDate = LocalDate.now();
-        LocalTime startTime = LocalTime.now();
-        ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, LocalTime.parse(startTime.format(dtf)), UTC);
+        final LocalTime startTime = LocalTime.now();
+        final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, LocalTime.parse(startTime.format(dtf)), UTC);
 
-        List<String> nonSittingDays = Arrays.asList(startDate.plusDays(1).toString());
-        List<NonDefaultDayData> nonDefaultDays = Arrays.asList(new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION)));
+        final List<String> nonSittingDays = asList(startDate.plusDays(1).toString());
+
+        final NonDefaultDayData firstNonDefaultDayData = new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION), of(COURT_SCHEDULE_ID), of(1), of(OUCODE), of(SESSION));
+        final NonDefaultDayData secondNonDefaultDayData = new NonDefaultDayData(startTimeWithZone.plusDays(1).format(DATE_TIME_FORMAT), of(DURATION), of(randomUUID().toString()), of(2), of("BAHOO2"), of("PM"));
+
+        final List<NonDefaultDayData> nonDefaultDays = asList(firstNonDefaultDayData, secondNonDefaultDayData);
+
         String endDate = startDate.plusDays(2).toString();
-
 
         return new UpdatedHearingData(hearingId, randomUUID(), randomUUID(), SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
@@ -81,7 +89,7 @@ public class UpdatedHearingData {
         List<JudicialRoleData> judiciary = Collections.singletonList(new JudicialRoleData(of(true), of(false), UUID.randomUUID(), new JudicialRoleTypeData(Optional.empty(), "CIRCUIT_JUDGE")));
 
         ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, startTime, UTC);
-        List<NonDefaultDayData> nonDefaultDays = Arrays.asList(new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION)));
+        List<NonDefaultDayData> nonDefaultDays = asList(new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION)));
 
         return new UpdatedHearingData(hearingData.getId(), hearingData.getCourtCentreId(), courtRoomId, SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,

@@ -1083,16 +1083,23 @@ public class Hearing implements Aggregate {
                 .map(ndd -> uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay()
                         .withStartTime(ndd.getStartTime())
                         .withDuration(ndd.getDuration())
+                        .withSession(ndd.getSession())
+                        .withOucode(ndd.getOucode())
+                        .withCourtScheduleId(ndd.getCourtScheduleId())
+                        .withCourtRoomId(ndd.getCourtRoomId())
                         .build())
                 .collect(toList());
     }
-
 
     private List<NonDefaultDay> convertNonDefaultDaysToDomain(List<uk.gov.justice.listing.events.NonDefaultDay> nonDefaultDays) {
         return nonDefaultDays.stream()
                 .map(ndd -> NonDefaultDay.nonDefaultDay()
                         .withStartTime(ndd.getStartTime())
                         .withDuration(ndd.getDuration())
+                        .withSession(ndd.getSession())
+                        .withOucode(ndd.getOucode())
+                        .withCourtScheduleId(ndd.getCourtScheduleId())
+                        .withCourtRoomId(ndd.getCourtRoomId())
                         .build())
                 .collect(toList());
     }

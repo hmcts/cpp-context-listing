@@ -50,6 +50,12 @@ baseUri: message://event/processor/message/listing
         application/vnd.listing.event.published-court-list-stored+json:
             schema: !include json/schema/listing.event.published-court-list-stored.json
             example: !include json/listing.event.published-court-list-stored.json
+        application/vnd.listing.events.non-default-days-assigned-to-hearing+json:
+            example: !include json/listing.events.non-default-days-assigned-to-hearing.json
+            schema: !include json/schema/listing.events.non-default-days-assigned-to-hearing.json
+        application/vnd.listing.events.non-default-days-changed-for-hearing+json:
+            example: !include json/listing.events.non-default-days-changed-for-hearing.json
+            schema: !include json/schema/listing.events.non-default-days-changed-for-hearing.json
 /public.event:
     post:
       body:

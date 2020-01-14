@@ -47,7 +47,11 @@
             <artifactId>test-utils-core</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>uk.gov.moj.cpp.common.library.utils</groupId>
+            <artifactId>cpp-platform-data-utils-rest</artifactId>
+            <version>${cpp-platform-data-utils.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
