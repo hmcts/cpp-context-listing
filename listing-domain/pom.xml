@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.listing</groupId>
         <artifactId>listing-parent</artifactId>
-        <version>1.0.86-SCSL-SNAPSHOT</version>
+        <version>1.0.87-SCSL-SNAPSHOT</version>
     </parent>
 
     <artifactId>listing-domain</artifactId>
