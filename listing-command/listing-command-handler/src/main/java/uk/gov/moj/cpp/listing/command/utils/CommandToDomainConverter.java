@@ -196,7 +196,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
     }
 
     private Optional<HearingLanguageNeeds> getHearingLanguageNeeds(HearingListingNeeds commandHearing, Defendant d) {
-        Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
+        final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
         if(listDefendantRequest.isPresent() && listDefendantRequest.get().getHearingLanguageNeeds().isPresent()){
             return valueFor(listDefendantRequest.orElseThrow(IllegalArgumentException::new)
                     .getHearingLanguageNeeds().orElseThrow(IllegalArgumentException::new).toString());
@@ -210,6 +210,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .withId(o.getId())
                 .withEndDate(o.getEndDate())
                 .withStartDate(o.getStartDate())
+                .withLaidDate(o.getLaidDate())
                 .withOffenceCode(o.getOffenceCode())
                 .withOffenceWording(o.getWording())
                 .withStatementOfOffence(buildStatementOfOffence(o))

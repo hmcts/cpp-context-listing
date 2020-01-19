@@ -9,7 +9,8 @@
           "id": "OFFENCE_ID1",
           "wording": "TFL ticket dodged",
           "offenceDefinitionId": "bfd0a307-7c59-43f9-8713-d568fa4e4fff",
-          "startDate": "2019-05-01"
+          "startDate": "2019-05-01",
+          "laidDate": "2019-05-01"
         }
       ],
       "id": "DEFENDANT_ID1",
@@ -40,7 +41,8 @@
           "id": "OFFENCE_ID1",
           "wording": "TFL ticket dodged",
           "offenceDefinitionId": "bfd0a307-7c59-43f9-8713-d568fa4e4fff",
-          "startDate": "2019-05-01"
+          "startDate": "2019-05-01",
+          "laidDate": "2019-05-01"
         }
       ],
       "id": "DEFENDANT_ID2",

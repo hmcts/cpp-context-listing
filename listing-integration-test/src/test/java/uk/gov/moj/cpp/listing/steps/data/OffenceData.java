@@ -18,11 +18,12 @@ public class OffenceData {
     private final int count;
     private final UUID offenceDefinitionId;
     private final Optional<CustodyTimeLimit> custodyTimeLimit;
+    private final LocalDate laidDate;
 
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                        final String statementOfOffenceTitleWelsh, final String offenceWording,
-                       final int count, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit) {
+                       final int count, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit, final LocalDate laidDate) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
@@ -35,6 +36,7 @@ public class OffenceData {
         this.count = count;
         this.offenceDefinitionId = offenceDefinitionId;
         this.custodyTimeLimit =  custodyTimeLimit;
+        this.laidDate = laidDate;
     }
 
     public UUID getOffenceId() { return offenceId; }
@@ -69,4 +71,7 @@ public class OffenceData {
 
     public Optional<CustodyTimeLimit> getCustodyTimeLimit() { return custodyTimeLimit; }
 
+    public LocalDate getLaidDate() {
+        return laidDate;
+    }
 }

@@ -137,7 +137,7 @@ public class HearingsDataFactory {
     private static OffenceData randomOffence() {
         return new OffenceData(randomUUID(), STRING.next(), LocalDate.now(),
                 LocalDate.now(), STRING.next(), STRING.next(), STRING.next(),
-                1, randomUUID(), Optional.of(randomCustodyTimeLimit()));
+                1, randomUUID(), Optional.of(randomCustodyTimeLimit()), LocalDate.now());
     }
 
     private static CustodyTimeLimit randomCustodyTimeLimit() {

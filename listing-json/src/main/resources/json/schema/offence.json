@@ -23,6 +23,9 @@
     },
     "restrictFromCourtList": {
       "type":"boolean"
+    },
+    "laidDate": {
+      "type": "string"
     }
   },
   "required": [

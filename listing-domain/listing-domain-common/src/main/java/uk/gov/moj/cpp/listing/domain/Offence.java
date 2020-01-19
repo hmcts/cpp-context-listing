@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.domain;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S1067", "squid:S00121"})
+@SuppressWarnings({"squid:S1067", "squid:S00121", "squid:S00122", "pmd:BeanMembersShouldSerialize"})
 public class Offence {
     private final Optional<String> endDate;
 
@@ -19,7 +19,9 @@ public class Offence {
 
     private final Optional<CustodyTimeLimit> custodyTimeLimit;
 
-    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit) {
+    private final Optional<String> laidDate;
+
+    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit, final Optional<String> laidDate) {
         this.endDate = endDate;
         this.id = id;
         this.offenceCode = offenceCode;
@@ -27,6 +29,7 @@ public class Offence {
         this.startDate = startDate;
         this.statementOfOffence = statementOfOffence;
         this.custodyTimeLimit = custodyTimeLimit;
+        this.laidDate = laidDate;
     }
 
     public Optional<String> getEndDate() {
@@ -55,6 +58,10 @@ public class Offence {
 
     public Optional<CustodyTimeLimit> getCustodyTimeLimit(){ return custodyTimeLimit;}
 
+    public Optional<String> getLaidDate() {
+        return laidDate;
+    }
+
     public static Builder offence() {
         return new Offence.Builder();
     }
@@ -71,12 +78,13 @@ public class Offence {
                 java.util.Objects.equals(this.offenceWording, that.offenceWording) &&
                 java.util.Objects.equals(this.startDate, that.startDate) &&
                 java.util.Objects.equals(this.statementOfOffence, that.statementOfOffence) &&
-                java.util.Objects.equals(this.custodyTimeLimit, that.custodyTimeLimit);
+                java.util.Objects.equals(this.custodyTimeLimit, that.custodyTimeLimit) &&
+                java.util.Objects.equals(this.laidDate, that.laidDate);
     }
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit);
+        return java.util.Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laidDate);
     }
 
     @Override
@@ -89,6 +97,7 @@ public class Offence {
                 "startDate='" + startDate + "'," +
                 "statementOfOffence='" + statementOfOffence + "'," +
                 "custodyTimeLimit='" + custodyTimeLimit + "'" +
+                "laidDate='" + laidDate + "'" +
                 "}";
     }
 
@@ -106,6 +115,8 @@ public class Offence {
         private StatementOfOffence statementOfOffence;
 
         private Optional<CustodyTimeLimit> custodyTimeLimit;
+
+        private Optional<String> laidDate;
 
         public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
@@ -141,8 +152,14 @@ public class Offence {
             this.statementOfOffence = statementOfOffence;
             return this;
         }
+
+        public Builder withLaidDate(final Optional<String> laidDate) {
+            this.laidDate = laidDate;
+            return this;
+        }
+
         public Offence build() {
-            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laidDate);
         }
     }
 }

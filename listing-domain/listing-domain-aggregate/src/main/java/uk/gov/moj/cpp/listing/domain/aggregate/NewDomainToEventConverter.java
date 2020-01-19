@@ -119,6 +119,7 @@ public class NewDomainToEventConverter {
                 .withStatementOfOffence(buildStatementOfOffence(o))
                 .withOffenceWording(o.getOffenceWording())
                 .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+                .withLaidDate(o.getLaidDate())
                 .build();
     }
 
