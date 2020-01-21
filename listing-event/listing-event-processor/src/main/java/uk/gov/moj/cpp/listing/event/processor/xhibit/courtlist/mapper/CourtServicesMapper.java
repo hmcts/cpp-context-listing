@@ -50,7 +50,7 @@ public class CourtServicesMapper {
     private static final String JUDICIAL_ID = "judicialId";
     private static final String NONE = "NONE";
     private static final String CPS_PROSECUTOR_CODE = "CPS";
-    private static final List JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
+    private static final List<String> JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
     private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
     private static final ObjectFactory objectFactory = new ObjectFactory();
     public static final String OFFENCES = "offences";
@@ -109,8 +109,19 @@ public class CourtServicesMapper {
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
         courtHouseStructure.setCourtHouseType(CourtType.valueOf(courtLocation.getCourtType()));
-        courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(courtLocation));
+        courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(courtLocation.getCrestCourtSiteId()));
         courtHouseStructure.setCourtHouseName(courtLocation.getCourtSiteName());
+
+        return courtHouseStructure;
+    }
+
+    public CourtHouseStructure generateCourtHouseStructure(final JsonObject crestCourtSite) {
+
+        final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
+
+        courtHouseStructure.setCourtHouseType(CourtType.valueOf(crestCourtSite.getString("courtType")));
+        courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(crestCourtSite.getString("crestCourtSiteId")));
+        courtHouseStructure.setCourtHouseName(crestCourtSite.getString("crestCourtSiteName"));
 
         return courtHouseStructure;
     }
@@ -123,10 +134,10 @@ public class CourtServicesMapper {
         return courtHouseCode;
     }
 
-    private CourtHouseStructure.CourtHouseCode generateCourtHouseCode(final CourtLocation courtLocation) {
+    private CourtHouseStructure.CourtHouseCode generateCourtHouseCode(final String crestCourtSiteId) {
 
         final CourtHouseStructure.CourtHouseCode courtHouseCode = objectFactory.createCourtHouseStructureCourtHouseCode();
-        courtHouseCode.setValue(courtLocation.getCrestCourtSiteId());
+        courtHouseCode.setValue(crestCourtSiteId);
 
         return courtHouseCode;
     }

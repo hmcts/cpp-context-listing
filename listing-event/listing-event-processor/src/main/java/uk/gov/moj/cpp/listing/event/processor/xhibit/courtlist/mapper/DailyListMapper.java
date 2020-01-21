@@ -5,7 +5,6 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.DailyListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
 import java.util.List;
-import java.util.UUID;
 
 import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
@@ -44,9 +43,8 @@ public class DailyListMapper extends AbstractCourtListMapper {
 
         final DailyCourtListStructure dailyCourtListStructure = objectFactory.createDailyCourtListStructure();
 
-        final UUID courtCentreId = UUID.fromString(courtListJson.getString("courtCentreId"));
         dailyCourtListStructure.setCourtHouse(courtServicesMapper.generateCourtHouseStructure(
-                courtCentreId));
+                courtListJson.getJsonObject("crestCourtSite")));
 
         dailyCourtListStructure.setSittings(generateSittings(courtListJson.getJsonArray("sittings").getValuesAs(JsonObject.class)));
 

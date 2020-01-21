@@ -1,0 +1,33 @@
+package uk.gov.moj.cpp.listing.query.view.courtlist;
+
+import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+
+import uk.gov.justice.services.core.annotation.Component;
+import uk.gov.justice.services.core.annotation.ServiceComponent;
+import uk.gov.justice.services.core.requester.Requester;
+import uk.gov.justice.services.messaging.Envelope;
+
+import java.util.List;
+import java.util.UUID;
+
+import javax.inject.Inject;
+import javax.json.JsonObject;
+
+public class XhibitReferenceDataService {
+
+    private static final String REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS = "referencedata.query.cp-xhibit-court-mappings";
+
+    @Inject
+    @ServiceComponent(Component.QUERY_VIEW)
+    private Requester requester;
+
+    public List<JsonObject> getCrestCourtSitesForCourtCentre(final Envelope envelope, final UUID courtCentreId) {
+
+        final JsonObject queryParameters = createObjectBuilder().add("ouId", courtCentreId.toString()).build();
+
+        return requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS)
+                .withMetadataFrom(envelope))
+                .payloadAsJsonObject().getJsonArray("cpXhibitCourtMappings").getValuesAs(JsonObject.class);
+    }
+}

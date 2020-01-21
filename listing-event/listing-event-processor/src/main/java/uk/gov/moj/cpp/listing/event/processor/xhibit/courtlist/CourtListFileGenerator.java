@@ -1,13 +1,13 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
-import static java.util.stream.Collectors.toList;
-
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.AbstractCourtListMapper;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.json.JsonObject;
@@ -44,8 +44,10 @@ public class CourtListFileGenerator {
                         envelope,
                         courtCentreId,
                         requestParameters.getPublishCourtListType(),
-                        requestParameters.getStartDate()).getJsonObject("courtList"))
-                .collect(toList());
+                        requestParameters.getStartDate()).getJsonArray("courtLists").getValuesAs(JsonObject.class)
+                )
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
 
         final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, courtListsJson);
 

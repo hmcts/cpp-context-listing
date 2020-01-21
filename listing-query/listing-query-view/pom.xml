@@ -12,6 +12,10 @@
     <artifactId>listing-query-view</artifactId>
     <packaging>war</packaging>
 
+    <properties>
+        <cpp.service-component>QUERY_VIEW</cpp.service-component>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>javax</groupId>
@@ -24,6 +28,10 @@
             <artifactId>query-view</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>uk.gov.justice.framework-generators</groupId>
+            <artifactId>rest-client-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
@@ -47,5 +55,58 @@
             <scope>test</scope>
         </dependency>
 
+
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>generator-plugin</artifactId>
+                <groupId>uk.gov.justice.maven.generator</groupId>
+                <executions>
+                    <execution>
+                        <id>query-view-client-generation</id>
+                        <configuration>
+                            <skip>false</skip>
+                            <sourceDirectory>src/raml/json/schema</sourceDirectory>
+                            <generatorProperties>
+                                <typeMappings>
+                                    <typeMapping>
+                                        <name>date-time</name>
+                                        <type>format</type>
+                                        <implementation>java.time.ZonedDateTime</implementation>
+                                    </typeMapping>
+                                    <typeMapping>
+                                        <name>uuid</name>
+                                        <type>reference</type>
+                                        <implementation>java.util.UUID</implementation>
+                                    </typeMapping>
+                                    <typeMapping>
+                                        <name>localDate</name>
+                                        <type>reference</type>
+                                        <implementation>java.time.LocalDate</implementation>
+                                    </typeMapping>
+                                </typeMappings>
+                            </generatorProperties>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.referencedata</groupId>
+                        <artifactId>referencedata-query-api</artifactId>
+                        <version>${referencedata.version}</version>
+                        <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

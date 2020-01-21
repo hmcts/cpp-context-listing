@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 import org.apache.log4j.BasicConfigurator;
 import org.junit.Before;
@@ -145,12 +146,22 @@ public class CourtListFileGeneratorTest {
 
     private JsonObject emptyCourtList(final UUID courtCentreId) {
         return Json.createObjectBuilder()
-                .add("courtList",
-                        Json.createObjectBuilder()
-                                .add("courtCentreId", courtCentreId.toString())
-                                .add("sittings", Json.createArrayBuilder().build())
-                                .build()
+                .add("courtCentreId", courtCentreId.toString())
+                .add("courtLists", Json.createArrayBuilder()
+                        .add(
+                                Json.createObjectBuilder()
+                                        .add("crestCourtSite", crestCourtSite())
+                                        .add("sittings", Json.createArrayBuilder().build())
+                                        .build()
+                        ).build()
                 ).build();
+    }
+
+    private JsonObjectBuilder crestCourtSite() {
+        return Json.createObjectBuilder()
+                .add("crestCourtSiteId", "002")
+                .add("crestCourtSiteName", "MOCKCOURTNAME2")
+                .add("courtType", "CROWN_COURT");
     }
 
     @Test

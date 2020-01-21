@@ -4,7 +4,6 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.WarnedListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
 import java.util.List;
-import java.util.UUID;
 
 import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
@@ -44,7 +43,7 @@ public class WarnedListMapper extends AbstractCourtListMapper {
         final WarnedListStructure.CourtLists.CourtList courtList = objectFactory.createWarnedListStructureCourtListsCourtList();
 
         courtList.setCourtHouse(courtServicesMapper.generateCourtHouseStructure(
-                UUID.fromString(courtListJson.getString("courtCentreId"))));
+                courtListJson.getJsonObject("crestCourtSite")));
 
         for (final JsonObject sittingJson : courtListJson.getJsonArray("sittings").getValuesAs(JsonObject.class)) {
 

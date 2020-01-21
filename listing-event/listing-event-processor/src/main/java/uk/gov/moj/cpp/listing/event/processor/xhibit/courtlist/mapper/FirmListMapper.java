@@ -1,7 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
-import static java.util.UUID.fromString;
-
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.FirmCourtListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.FirmListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
@@ -46,7 +44,7 @@ public class FirmListMapper extends AbstractCourtListMapper {
         final FirmCourtListStructure firmCourtListStructure = objectFactory.createFirmCourtListStructure();
 
         firmCourtListStructure.setCourtHouse(courtServicesMapper.generateCourtHouseStructure(
-                fromString(courtListJson.getString("courtCentreId"))));
+                courtListJson.getJsonObject("crestCourtSite")));
 
         firmCourtListStructure.setSittings(generateSittings(courtListJson.getJsonArray("sittings").getValuesAs(JsonObject.class)));
         firmCourtListStructure.setSittingDate(context.getParameters().getStartDate());
