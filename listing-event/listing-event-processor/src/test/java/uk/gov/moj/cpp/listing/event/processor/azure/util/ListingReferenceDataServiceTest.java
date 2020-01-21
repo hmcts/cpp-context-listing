@@ -37,7 +37,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class ListingReferenceDataServiceTest {
 
-    private static final String REFERENCE_DATA_GET_COURTROOM = "referencedata.query.courtrooms";
+    private static final String REFERENCE_DATA_GET_COURTROOM = "referencedata.query.courtroom";
 
     private static final String HEARING_ALLOCATED_FOR_LISTING = "listing.events.hearing-allocated-for-listing";
 

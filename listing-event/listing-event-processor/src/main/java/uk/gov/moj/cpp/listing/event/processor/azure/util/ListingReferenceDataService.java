@@ -15,7 +15,7 @@ import javax.json.Json;
 import javax.json.JsonObject;
 
 public class ListingReferenceDataService {
-    private static final String REFERENCE_DATA_GET_COURTROOM = "referencedata.query.courtrooms";
+    private static final String REFERENCE_DATA_GET_COURTROOM = "referencedata.query.courtroom";
 
     @Inject
     @ServiceComponent(EVENT_PROCESSOR)
@@ -23,7 +23,7 @@ public class ListingReferenceDataService {
 
     public JsonEnvelope getPayLoadForCourtRoom(final JsonEnvelope jsonEnvelope, final String courtCentreId){
         final JsonObject ouCodeQueryParameter = Json.createObjectBuilder()
-                .add("courtCentreId", courtCentreId)
+                .add("id", courtCentreId)
                 .build();
 
         final JsonEnvelope response = requester.request(envelop(ouCodeQueryParameter).withName(REFERENCE_DATA_GET_COURTROOM).withMetadataFrom(jsonEnvelope));

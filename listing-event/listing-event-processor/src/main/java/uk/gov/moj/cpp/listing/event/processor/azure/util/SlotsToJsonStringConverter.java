@@ -47,6 +47,10 @@ public class SlotsToJsonStringConverter {
 
         final JsonEnvelope payLoadForCourtRoom = listingReferenceDataService.getPayLoadForCourtRoom(jsonEnvelope, courtCentre.getId().toString());
 
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(format("Court Room Payload = %s looked up with Court Centre Id %s", payLoadForCourtRoom, courtCentre.getId().toString()));
+        }
+
         final int courtRoomId = listingReferenceDataService.retrieveCourtRoomId(payLoadForCourtRoom.payloadAsJsonObject(), roomId, courtCentre.getId());
 
         final String ouCode = payLoadForCourtRoom.payloadAsJsonObject().getString("oucode");

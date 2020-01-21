@@ -18,14 +18,14 @@ import java.util.List;
 import org.junit.Test;
 
 public class HearingDayDetailConverterTest {
-    private static final ZonedDateTime START_DATE_TIME = ZonedDateTime.now();
-    private static final ZonedDateTime START_DATE_TIME1 = ZonedDateTime.now().plusDays(2).plusHours(3);
+    private static final ZonedDateTime START_DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
+    private static final ZonedDateTime START_DATE_TIME1 = ZonedDateTime.parse("2019-12-04T11:15:30-05:00");
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-    private static final String EXPECTED_SECOND_HEARING_DETAIL_DATE = ZonedDateTime.now().plusDays(2).plusHours(3).toLocalDate().toString();
-    private static final String EXPECTED_FIRST_HEARING_DETAIL_DATE = ZonedDateTime.now().toLocalDate().toString();
-    private static final String EXPECTED_FIRST_HEARING_DETAIL_TIME = getMeridian(ZonedDateTime.now());
-    private static final String EXPECTED_SECOND_HEARING_DETAIL_TIME = getMeridian(ZonedDateTime.now().plusDays(2).plusHours(3));
+    private static final String EXPECTED_SECOND_HEARING_DETAIL_DATE = "2019-12-04";
+    private static final String EXPECTED_FIRST_HEARING_DETAIL_DATE = "2019-12-02";
+    private static final String EXPECTED_FIRST_HEARING_DETAIL_TIME = getMeridian(ZonedDateTime.parse("2019-12-04T11:15:30-05:00"));
+    private static final String EXPECTED_SECOND_HEARING_DETAIL_TIME = getMeridian(ZonedDateTime.parse("2019-12-04T11:15:30-05:00"));
 
     @Test
     public void shouldGetHearingDayDetails() {
