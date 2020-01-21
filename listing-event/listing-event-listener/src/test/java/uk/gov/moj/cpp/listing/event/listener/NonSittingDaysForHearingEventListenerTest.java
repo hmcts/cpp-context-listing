@@ -94,7 +94,7 @@ public class NonSittingDaysForHearingEventListenerTest {
         given(hearing.getProperties()).willReturn(properties);
         given(objectToJsonObjectConverter.convert(any(List.class))).willReturn(createTestJsonObject());
 
-         //when
+        //when
         nonSittingDaysForHearingEventListener.nonSittingDaysChangedForHearing(envelope);
 
         //then

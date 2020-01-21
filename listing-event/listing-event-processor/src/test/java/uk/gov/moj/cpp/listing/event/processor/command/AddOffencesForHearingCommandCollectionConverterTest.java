@@ -43,25 +43,25 @@ public class AddOffencesForHearingCommandCollectionConverterTest {
         //then
         String expected =
                 "[\n" +
-                "  {\n" +
-                "    \"offences\": [\n" +
-                "      {\n" +
-                "        \"endDate\": \"2017-08-01\",\n" +
-                "        \"id\": \"0baecac5-222b-402d-9047-84803679edad\",\n" +
-                "        \"offenceCode\": \"OF61131\",\n" +
-                "        \"startDate\": \"2016-06-21\",\n" +
-                "        \"statementOfOffence\": {\n" +
-                "          \"legislation\": \"legislation\",\n" +
-                "          \"title\": \"Wounding with intent\",\n" +
-                "          \"welshLegislation\": \"legislation in welsh\",\n" +
-                "          \"welshTitle\": \"Wounding with intent in welsh\"\n" +
-                "        }\n" +
-                "      }\n" +
-                "    ],\n" +
-                "    \"hearingId\": \"0baecac5-222b-402d-9047-84803679edaf\"\n" +
-                "  }\n" +
-                "]\n";
-        
+                        "  {\n" +
+                        "    \"offences\": [\n" +
+                        "      {\n" +
+                        "        \"endDate\": \"2017-08-01\",\n" +
+                        "        \"id\": \"0baecac5-222b-402d-9047-84803679edad\",\n" +
+                        "        \"offenceCode\": \"OF61131\",\n" +
+                        "        \"startDate\": \"2016-06-21\",\n" +
+                        "        \"statementOfOffence\": {\n" +
+                        "          \"legislation\": \"legislation\",\n" +
+                        "          \"title\": \"Wounding with intent\",\n" +
+                        "          \"welshLegislation\": \"legislation in welsh\",\n" +
+                        "          \"welshTitle\": \"Wounding with intent in welsh\"\n" +
+                        "        }\n" +
+                        "      }\n" +
+                        "    ],\n" +
+                        "    \"hearingId\": \"0baecac5-222b-402d-9047-84803679edaf\"\n" +
+                        "  }\n" +
+                        "]\n";
+
         assertEquals(expected, objectMapper.writeValueAsString(actualList), true);
     }
 }

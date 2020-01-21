@@ -61,7 +61,7 @@ public class DomainBuilder {
     private static Hearing buildHearing() {
         return new Hearing(randomUUID().toString(), randomUUID().toString(), randomUUID().toString(),
                 STRING.next(), LocalDate.now(),  LocalDate.now().plusDays(2),
-                ONE_HOUR_ESTIMATE, null, null, null, 
+                ONE_HOUR_ESTIMATE, null, null, null,
                 asList(buildDefendant()), UNALLOCATED);
     }
 

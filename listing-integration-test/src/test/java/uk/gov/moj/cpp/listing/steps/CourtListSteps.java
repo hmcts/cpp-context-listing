@@ -3,10 +3,13 @@ package uk.gov.moj.cpp.listing.steps;
 import static java.text.MessageFormat.format;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.junit.Assert.assertEquals;
+import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.moj.cpp.listing.it.CourtListIT.STANDARD;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.DEFAULT_START_TIME;
 import static uk.gov.moj.cpp.listing.utils.DocumentGeneratorStub.stubDocumentCreate;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
@@ -43,11 +46,11 @@ public class CourtListSteps  extends AbstractIT{
 
     private Response getResponseData(final String listId) {
         String endDate = listId.equals(STANDARD) ? updatedHearingData.getStartDate() : updatedHearingData.getEndDate() ;
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.create.court.list"), updatedHearingData.getCourtCentreId(),
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.create.court.list"), updatedHearingData.getCourtCentreId(),
                         updatedHearingData.getStartDate(),listId, endDate));
         final RequestParams requestParams = requestParams(searchHearingUrl, "application/vnd.listing.search.court.list+json")
-                .withHeader(CPP_UID_HEADER.getName(), CPP_UID_HEADER.getValue())
+                .withHeader(USER_ID, USER_ID_VALUE)
                 .build();
         return new RestClient().query(requestParams.getUrl(), requestParams.getMediaType(), requestParams.getHeaders());
     }

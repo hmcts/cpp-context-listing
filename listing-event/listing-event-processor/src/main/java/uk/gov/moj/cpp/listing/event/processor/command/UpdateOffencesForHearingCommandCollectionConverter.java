@@ -43,12 +43,12 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
     }
 
     private StatementOfOffence convertStatementOfOffence(uk.gov.justice.listing.events.StatementOfOffence soo) {
-            return StatementOfOffence.statementOfOffence()
-                    .withWelshTitle(soo.getWelshTitle())
-                    .withWelshLegislation(soo.getWelshLegislation())
-                    .withTitle(soo.getTitle())
-                    .withLegislation(soo.getLegislation())
-                    .build();
+        return StatementOfOffence.statementOfOffence()
+                .withWelshTitle(soo.getWelshTitle())
+                .withWelshLegislation(soo.getWelshLegislation())
+                .withTitle(soo.getTitle())
+                .withLegislation(soo.getLegislation())
+                .build();
 
     }
 }

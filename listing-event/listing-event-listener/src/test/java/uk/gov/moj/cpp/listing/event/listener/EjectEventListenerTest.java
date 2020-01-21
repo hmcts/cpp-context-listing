@@ -96,7 +96,7 @@ public class EjectEventListenerTest {
         final Envelope<CaseEjected> caseEjectedEnvelope = (Envelope<CaseEjected>) mock(Envelope.class);
 
         CaseEjected ejectCase = CaseEjected.caseEjected()
-                .withHearingIds(Arrays.asList(HEARING_ID))
+                .withHearingId(HEARING_ID)
                 .withProsecutionCaseId(CASE_ID)
                 .build();
         given(caseEjectedEnvelope.payload()).willReturn(ejectCase);
@@ -128,7 +128,7 @@ public class EjectEventListenerTest {
         final Envelope<ApplicationEjected> applicationEjectedEnvelope = (Envelope<ApplicationEjected>) mock(Envelope.class);
 
         ApplicationEjected ejectApplication = ApplicationEjected.applicationEjected()
-                .withHearingIds(Arrays.asList(HEARING_ID))
+                .withHearingId(HEARING_ID)
                 .withApplicationId(COURT_APPLICATIONS_ID)
                 .build();
         given(applicationEjectedEnvelope.payload()).willReturn(ejectApplication);

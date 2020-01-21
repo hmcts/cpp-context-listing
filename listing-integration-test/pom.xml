@@ -3,11 +3,15 @@
     <parent>
         <artifactId>listing-parent</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>1.0.39-SNAPSHOT</version>
+        <version>6.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>listing-integration-test</artifactId>
+
+    <properties>
+        <jboss-logging.version>3.3.1.Final</jboss-logging.version>
+    </properties>
 
     <dependencies>
         <!-- Test Dependencies -->
@@ -88,8 +92,8 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>generator-plugin</artifactId>
-                <groupId>uk.gov.justice.maven.generator</groupId>
+                <groupId>uk.gov.justice.generators</groupId>
+                <artifactId>pojo-generation-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>pojo-generation</id>

@@ -4,13 +4,13 @@
     <parent>
         <groupId>uk.gov.moj.cpp.common</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>7.1.4</version>
+        <version>9.4.14</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>uk.gov.moj.cpp.listing</groupId>
     <artifactId>listing-parent</artifactId>
-    <version>1.0.39-SNAPSHOT</version>
+    <version>6.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
@@ -43,6 +43,7 @@
         <module>listing-query</module>
         <module>listing-service</module>
         <module>listing-json</module>
+        <module>listing-event-sources</module>
     </modules>
 
     <build>

@@ -12,11 +12,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataOf;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
 import uk.gov.justice.core.courts.BailStatus;
@@ -38,6 +40,7 @@ import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.AddDefendantForCourtProceedingsData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
+import uk.gov.moj.cpp.listing.utils.PropertyUtil;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.util.Arrays;
@@ -176,8 +179,8 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
 
 
     public void verifyHearingListedFromAPI(boolean isAllocated) {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
 
         AddDefendantForCourtProceedingsData addDefendantForCourtProceedingsData = getAddDefendantDetails(caseId);
         final Defendant defendant = addDefendantForCourtProceedingsData.getDefendants().get(0);

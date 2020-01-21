@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.event.processor.command;
 
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
-import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -18,9 +17,9 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class deleteOffencesForHearingCommandCollectionConverterTest {
+public class DeleteOffencesForHearingCommandCollectionConverterTest {
 
-    private DeleteOffencesForHearingCommandCollectionConverter  deleteOffencesForHearingCommandCollectionConverter = new DeleteOffencesForHearingCommandCollectionConverter();
+    private DeleteOffencesForHearingCommandCollectionConverter deleteOffencesForHearingCommandCollectionConverter = new DeleteOffencesForHearingCommandCollectionConverter();
 
     @Spy
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -43,17 +42,17 @@ public class deleteOffencesForHearingCommandCollectionConverterTest {
         //then
         String expected =
                 "[\n" +
-                "  {\n" +
-                "    \"offences\": [\n" +
-                "      {\n" +
-                "        \"id\": \"0baecac5-222b-402d-9047-84803679edad\",\n" +
-                "        \"defendantId\": \"bd9f602d-428e-4aec-adee-91cc45d71ebf\"\n" +
-                "      }\n" +
-                "    ],\n" +
-                "    \"hearingId\": \"0baecac5-222b-402d-9047-84803679edaf\"\n" +
-                "  }\n" +
-                "]\n";
-        
+                        "  {\n" +
+                        "    \"offences\": [\n" +
+                        "      {\n" +
+                        "        \"id\": \"0baecac5-222b-402d-9047-84803679edad\",\n" +
+                        "        \"defendantId\": \"bd9f602d-428e-4aec-adee-91cc45d71ebf\"\n" +
+                        "      }\n" +
+                        "    ],\n" +
+                        "    \"hearingId\": \"0baecac5-222b-402d-9047-84803679edaf\"\n" +
+                        "  }\n" +
+                        "]\n";
+
         assertEquals(expected, objectMapper.writeValueAsString(actualList), true);
     }
 }

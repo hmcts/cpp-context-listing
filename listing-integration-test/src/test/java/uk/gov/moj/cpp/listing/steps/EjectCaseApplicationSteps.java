@@ -12,11 +12,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataOf;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -128,7 +130,7 @@ public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseab
         JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventsMessageCaseEjected);
         LOGGER.debug("jsonResponse from privateEventsMessageCaseEjected: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.getString("hearingIds"), is(jsRequest.getString("hearingIds")));
+        assertThat(jsonResponse.getString("hearingId"), is(jsRequest.getString("hearingIds[0]")));
         assertThat(jsonResponse.getString("prosecutionCaseId"), is(jsRequest.getString("prosecutionCaseId")));
     }
 
@@ -139,14 +141,14 @@ public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseab
         JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventsMessageApplicationEjected);
         LOGGER.debug("jsonResponse from privateEventsMessageApplicationEjected: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.getString("hearingIds"), is(jsRequest.getString("hearingIds")));
+        assertThat(jsonResponse.getString("hearingId"), is(jsRequest.getString("hearingIds[0]")));
         assertThat(jsonResponse.getString("applicationId"), is(jsRequest.getString("applicationId")));
     }
 
 
     public void verifyListedCasesInHearings(boolean isAllocated, int numberOfListedCases) {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
 
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
@@ -165,8 +167,8 @@ public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseab
     }
 
     public void verifyCourtApplicationInHearings(boolean isAllocated, int numberOfCourtApplications) {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
 
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
@@ -183,9 +185,10 @@ public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseab
                                 withJsonPath("$.hearings[0].courtApplications", hasSize(numberOfCourtApplications))
                         )));
     }
+
     public void verifyNoHearingsReturned(boolean isAllocated) {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
 
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);

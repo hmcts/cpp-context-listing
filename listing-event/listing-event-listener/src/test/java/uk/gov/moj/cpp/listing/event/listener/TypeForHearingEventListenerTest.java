@@ -51,7 +51,7 @@ public class TypeForHearingEventListenerTest {
 
     @Test
     public void shouldChangeTypeForHearing() {
-         Envelope<TypeChangedForHearing> envelope = (Envelope<TypeChangedForHearing>) mock(Envelope.class);
+        Envelope<TypeChangedForHearing> envelope = (Envelope<TypeChangedForHearing>) mock(Envelope.class);
         TypeChangedForHearing hearingData = TypeChangedForHearing.typeChangedForHearing()
                 .withType(TYPE)
                 .withHearingId(HEARING_ID)

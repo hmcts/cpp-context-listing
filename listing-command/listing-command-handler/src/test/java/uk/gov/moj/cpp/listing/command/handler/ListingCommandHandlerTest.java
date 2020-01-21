@@ -262,6 +262,11 @@ public class ListingCommandHandlerTest {
 
     private static final UUID COURT_APPLICATION_ID = randomUUID();
     private static final String COURT_APPLICATION_TYPE = STRING.next();
+    private static final String HEARING_ID = "hearingId";
+    private static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
+    private static final String FIELD_APPLICATION_ID ="applicationId";
+    private static final String REMOVAL_REASON = "removalReason";
+
     @Mock
     CaseOffences caseOffences;
     @Mock
@@ -1077,15 +1082,63 @@ public class ListingCommandHandlerTest {
 
         final JsonEnvelope commandEnvelope = ejectCaseCommandEnvelope();
 
-        givenEventStream(CASE_ID, eventStream, aCase, Case.class);
+        givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
 
         when(eventSource.getStreamById(CASE_ID)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Case.class)).thenReturn(aCase);
-        when(aCase.ejectCase(eq(Arrays.asList(HEARING_ID_1)), eq(CASE_ID), eq(Optional.of("SomeReason")))).thenReturn(mock(Stream.class));
+        when(aCase.ejectCaseForHearings(eq(Arrays.asList(HEARING_ID_1)), eq(CASE_ID), eq(Optional.of("SomeReason")))).thenReturn(mock(Stream.class));
 
         listingCommandHandler.ejectCaseOrApplication(commandEnvelope);
 
-        verify(aCase).ejectCase((Arrays.asList(HEARING_ID_1)), CASE_ID, Optional.of("SomeReason"));
+        verify(aCase).ejectCaseForHearings((Arrays.asList(HEARING_ID_1)), CASE_ID, Optional.of("SomeReason"));
+
+    }
+
+    @Test
+    public void shouldEjectCaseForHearing() throws Exception {
+
+        final JsonObject ejectCasePayload = Json.createObjectBuilder()
+                .add(HEARING_ID, HEARING_ID_1.toString())
+                .add(PROSECUTION_CASE_ID, CASE_ID.toString())
+                .add(REMOVAL_REASON, "SomeReason")
+                .build();
+
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.eject-case",ejectCasePayload);
+
+        givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
+
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.ejectCase(eq(HEARING_ID_1), eq(CASE_ID), eq("SomeReason"))).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.ejectCase(commandEnvelope);
+
+        verify(hearing).ejectCase(HEARING_ID_1, CASE_ID, "SomeReason");
+
+    }
+
+    @Test
+    public void shouldEjectApplicationForHearing() throws Exception {
+
+        final JsonObject ejectCasePayload = Json.createObjectBuilder()
+                .add(HEARING_ID, HEARING_ID_1.toString())
+                .add(FIELD_APPLICATION_ID, APPLICATION_ID.toString())
+                .add(REMOVAL_REASON, "SomeReason")
+                .build();
+
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.eject-application",ejectCasePayload);
+
+        givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
+
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.ejectApplication(eq(HEARING_ID_1), eq(APPLICATION_ID), eq("SomeReason"))).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.ejectApplication(commandEnvelope);
+
+        verify(hearing).ejectApplication(HEARING_ID_1, APPLICATION_ID, "SomeReason");
 
     }
 
@@ -1097,11 +1150,11 @@ public class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(COURT_APPLICATION_ID)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Application.class)).thenReturn(anApplication);
-        when(anApplication.ejectApplication(eq(Arrays.asList(HEARING_ID_1)), eq(COURT_APPLICATION_ID),eq(Optional.of("SomeReason")))).thenReturn(mock(Stream.class));
+        when(anApplication.ejectApplicationForHearings(eq(Arrays.asList(HEARING_ID_1)), eq(COURT_APPLICATION_ID),eq(Optional.of("SomeReason")))).thenReturn(mock(Stream.class));
 
         listingCommandHandler.ejectCaseOrApplication(commandEnvelope);
 
-        verify(anApplication).ejectApplication((Arrays.asList(HEARING_ID_1)), COURT_APPLICATION_ID,Optional.of("SomeReason"));
+        verify(anApplication).ejectApplicationForHearings((Arrays.asList(HEARING_ID_1)), COURT_APPLICATION_ID,Optional.of("SomeReason"));
 
     }
 
@@ -1273,7 +1326,7 @@ public class ListingCommandHandlerTest {
 
     private JsonEnvelope updateCourtApplicationCommandEnvelope() {
         return createEnvelope("listing.command.update-court-application", createObjectBuilder().add("courtApplication",
-                createObjectBuilder().add("id", APPLICATION_ID.toString())
+                createObjectBuilder().add("id",APPLICATION_ID.toString())
                         .add("type", createObjectBuilder().add("ApplicationType", "type"))
                         .add("applicant", createObjectBuilder()
                                 .add("id", randomUUID().toString()))

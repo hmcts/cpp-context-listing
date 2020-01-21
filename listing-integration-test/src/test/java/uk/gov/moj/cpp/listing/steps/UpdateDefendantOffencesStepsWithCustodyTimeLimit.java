@@ -4,7 +4,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
-import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataOf;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
 import uk.gov.justice.core.courts.Offence;
@@ -21,14 +21,17 @@ import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceDataWithCustodyTimeLimit;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.json.JsonObject;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.path.json.JsonPath;
 import org.skyscreamer.jsonassert.Customization;
@@ -58,7 +61,6 @@ public class UpdateDefendantOffencesStepsWithCustodyTimeLimit extends AbstractIT
 
 
     JSONComparator ignoreMetaDataComparator = new CustomComparator(JSONCompareMode.LENIENT, new Customization("_metadata", (o1, o2) -> true));
-
 
 
     private MessageProducer publicEventDefendantOffencesUpdated;
@@ -136,7 +138,7 @@ public class UpdateDefendantOffencesStepsWithCustodyTimeLimit extends AbstractIT
     }
 
 
-    public void verifyPublicEventDefendantOffencesUpdatedInActiveMQ() throws Exception{
+    public void verifyPublicEventDefendantOffencesUpdatedInActiveMQ() throws Exception {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -152,11 +154,11 @@ public class UpdateDefendantOffencesStepsWithCustodyTimeLimit extends AbstractIT
                         "        {\n" +
                         "          \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "          \"id\": \"" + updatedOffenceData.getRandomOffenceId() + "\",\n" +
-                        "          \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() +"\",\n" +
-                        "          \"offenceLegislation\": \"" + updatedOffenceData.getLegislation() +"\",\n" +
-                        "          \"offenceLegislationWelsh\": \"" + updatedOffenceData.getLegislationWelsh() +"\",\n" +
-                        "          \"offenceTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitle() +"\",\n" +
-                        "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() +"\",\n" +
+                        "          \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
+                        "          \"offenceLegislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
+                        "          \"offenceLegislationWelsh\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
+                        "          \"offenceTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
+                        "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
                         "          \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "          \"count\": " + offenceData.getCount() + ",\n" +
                         "          \"offenceDefinitionId\": \"" + offenceData.getOffenceDefinitionId() + "\",\n" +
@@ -167,12 +169,12 @@ public class UpdateDefendantOffencesStepsWithCustodyTimeLimit extends AbstractIT
                         "      }\n" +
                         "        }\n" +
                         "      ],\n" +
-                        "      \"prosecutionCaseId\": \"" + caseId +"\"\n" +
+                        "      \"prosecutionCaseId\": \"" + caseId + "\"\n" +
                         "    }\n" +
                         "  ],\n" +
                         "  \"deletedOffences\": [\n" +
                         "    {\n" +
-                        "      \"defendantId\": \"" + defendantData.getDefendantId() +"\",\n" +
+                        "      \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
                         "      \"offences\": [\n" +
                         "        \"" + offenceIdToBeDeleted + "\"\n" +
                         "      ],\n" +
@@ -187,11 +189,11 @@ public class UpdateDefendantOffencesStepsWithCustodyTimeLimit extends AbstractIT
                         "        {\n" +
                         "          \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "          \"id\": \"" + updatedOffenceData.getOffenceId() + "\",\n" +
-                        "          \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() +"\",\n" +
-                        "          \"offenceLegislation\": \"" + updatedOffenceData.getLegislation() +"\",\n" +
-                        "          \"offenceLegislationWelsh\": \"" + updatedOffenceData.getLegislationWelsh() +"\",\n" +
-                        "          \"offenceTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitle() +"\",\n" +
-                        "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() +"\",\n" +
+                        "          \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
+                        "          \"offenceLegislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
+                        "          \"offenceLegislationWelsh\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
+                        "          \"offenceTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
+                        "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
                         "          \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "          \"count\": " + offenceData.getCount() + ",\n" +
                         "          \"offenceDefinitionId\": \"" + offenceData.getOffenceDefinitionId() + "\",\n" +
@@ -216,8 +218,6 @@ public class UpdateDefendantOffencesStepsWithCustodyTimeLimit extends AbstractIT
 
         assertEquals(expected, jsonResponse, true);
     }
-
-
 
 
     private OffencesForDefendantUpdated getOffencesForDefendantUpdated(UUID caseId, UUID defendantId) {

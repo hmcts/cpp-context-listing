@@ -11,11 +11,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataOf;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
 import uk.gov.justice.core.courts.Offence;
@@ -512,8 +514,8 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
     }
 
     public void verifyDefendentOffenceUpdatedOnlyFromAPI(boolean isAllocated) {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
 
         poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
@@ -537,8 +539,8 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
     }
 
     public void verifyDefendentOffenceAddedOnlyFromAPI(boolean isAllocated) {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
 
         poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
@@ -562,8 +564,8 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
     }
 
     public void verifyDefendentOffenceDeletedOnlyFromAPI(boolean isAllocated) {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
 
         poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(

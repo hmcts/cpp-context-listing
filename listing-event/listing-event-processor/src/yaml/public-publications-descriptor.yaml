@@ -1,0 +1,17 @@
+subscriptions_descriptor:
+  spec_version: 1.0.0
+  service: listing
+  service_component: EVENT_PROCESSOR
+  subscriptions:
+    - name: public event processor subscription
+      events:
+        - name: public.listing.hearing-confirmed
+          schema_uri: http://justice.gov.uk/listing/courts/hearing-confirmed.json
+
+        - name: public.listing.hearing-updated
+          schema_uri: http://justice.gov.uk/listing/courts/hearing-updated.json
+
+        - name: public.listing.court-list-restricted
+          schema_uri: http://justice.gov.uk/listing/courts/court-list-restricted.json
+
+      event_source_name: public.event.source

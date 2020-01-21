@@ -54,8 +54,22 @@ public class CaseMarkersEventListener {
         final List<ListedCase> listedCases = cases;
         final ListedCase listedCase = find(listedCases, caze -> caze.getId().equals(caseId));
         final List<Marker> markers = listedCase.getMarkers();
-        markers.clear();
-        markers.addAll(updatedCaseMarkers);
+        if(null != markers) {
+            markers.clear();
+            markers.addAll(updatedCaseMarkers);
+        }
+        else {
+            final ListedCase newListedCase = ListedCase.listedCase()
+                    .withCaseIdentifier(listedCase.getCaseIdentifier())
+                    .withDefendants(listedCase.getDefendants())
+                    .withId(listedCase.getId())
+                    .withIsEjected(listedCase.getIsEjected())
+                    .withRestrictFromCourtList(listedCase.getRestrictFromCourtList())
+                    .withMarkers(updatedCaseMarkers)
+                    .build();
+            listedCases.remove(listedCase);
+            listedCases.add(newListedCase);
+        }
 
         return listedCases;
     }

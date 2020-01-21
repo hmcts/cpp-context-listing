@@ -20,6 +20,8 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
@@ -304,8 +306,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     public void whenHearingIsUpdatedForListing() {
         stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId()));
         stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
-        final String updateHearingUrl = String.format("%s/%s", baseUri, format
-                (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING), updatedHearingData.getHearingId()));
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING), updatedHearingData.getHearingId()));
 
         request = prepareJsonForUpdatedHearingData(updatedHearingData);
 
@@ -319,8 +321,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void whenJudiciaryIsChangedForHearings() {
 
-        final String updateHearingUrl = String.format("%s/%s", baseUri, format
-                (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS), updatedHearingData.getHearingId()));
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS), updatedHearingData.getHearingId()));
 
         request = prepareJsonForChangeJudiciaryForHearings(updatedHearingData);
 
@@ -684,8 +686,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingUpdatedWithNoCourtRoomAndUnallocatedWhenQueryingFromAPI(){
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), UNALLOCATED));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), UNALLOCATED));
 
 
         final Filter idFilter = filter(where("id").is(hearingData.getId().toString()));
@@ -704,8 +706,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingUpdatedWithNoEndDateAndUnallocatedWhenQueryingFromAPI(){
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), UNALLOCATED));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), UNALLOCATED));
 
 
         final Filter idFilter = filter(where("id").is(hearingData.getId().toString()));
@@ -723,8 +725,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     }
     public void verifyHearingWithUpdatedJudiciaryWhenQueryingFromAPI(){
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), ALLOCATED));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), ALLOCATED));
 
 
         final Filter idFilter = filter(where("id").is(hearingData.getId().toString()));
@@ -744,13 +746,13 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].judiciary[0].isBenchChairman",
                                         equalTo(updatedHearingData.getJudiciary().get(0).getIsBenchChairman().get())),
                                 withJsonPath("$.hearings[0].judiciary[0].isDeputy"
-                        ))));
+                                ))));
     }
 
     public void verifyHearingUpdatedWhenQueryingFromAPI(){
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), ALLOCATED));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), ALLOCATED));
 
 
         final Filter idFilter = filter(where("id").is(hearingData.getId().toString()));
@@ -784,8 +786,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingFoundByAllocatedFromAPI() {
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings.by.allocated"),
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated"),
                         ALLOCATED));
 
         verifyHearingFound(searchHearingUrl);
@@ -794,8 +796,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDate() {
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings.by.allocated.court-centre-id.start-date.end-date"),
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.start-date.end-date"),
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId(),
                         hearingData.getHearingStartDate(),
@@ -806,8 +808,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndSearchDate() {
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings.by.allocated.court-centre-id.search-date"),
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.search-date"),
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId(),
                         hearingData.getHearingStartDate()));
@@ -817,8 +819,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingFoundByAllocatedAndCourtCentreFromAPI() {
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings.by.allocated.court-centre-id"),
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id"),
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId()));
 
@@ -827,8 +829,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingFoundByAllocatedAndCourtCentreAndCourtRoomFromAPI() {
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings.by.allocated.court-centre-id.court-room-id"),
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.court-room-id"),
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId(),
                         updatedHearingData.getCourtRoomId()));
@@ -839,8 +841,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingFoundByAllocatedAndCourtCentreAndAuthorityIdFromAPI() {
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings.by.allocated.court-centre-id.authority-code"),
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.authority-code"),
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId(),
                         hearingData.getListedCases().get(0).getAuthorityId()));
@@ -850,8 +852,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingFoundByAllocatedAndCourtCentreAndAuthorityIdAndHearingTypFromAPI() {
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings.by.allocated.court-centre-id.authority-code.hearing-type"),
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.authority-code.hearing-type"),
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId(),
                         hearingData.getListedCases().get(0).getAuthorityId(),
@@ -862,8 +864,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingFoundByAllocatedAndCourtCentreAndIdHearingTypAndJurisdictionTypeFromAPI() {
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.search.hearings.by.allocated.court-centre-id.authority-code.hearing-type.jurisdiction-type"),
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.authority-code.hearing-type.jurisdiction-type"),
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId(),
                         hearingData.getListedCases().get(0).getAuthorityId(),
@@ -889,8 +891,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     public void verifyHearingAllocatedWhenQueryingFromAPI() {
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), ALLOCATED));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), ALLOCATED));
 
 
         final Filter idFilter = filter(where("id").is(hearingData.getId().toString()));

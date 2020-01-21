@@ -9,8 +9,10 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -38,10 +40,19 @@ public class CourtApplicationEventListener {
         final TypeReference<List<CourtApplication>> typeRef = new TypeReference<List<CourtApplication>>() {
         };
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putSubList(COURT_APPLICATION_FIELD, typeRef, getCourtApplicationsAddFunction(courtApplication))
-                .save();
+        final Hearing hearing = hearingRepository.findBy(hearingId);
+        if(null != hearing.getProperties().get(COURT_APPLICATION_FIELD)) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putSubList(COURT_APPLICATION_FIELD, typeRef, getCourtApplicationsAddFunction(courtApplication))
+                    .save();
+        }
+        else {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putObject(COURT_APPLICATION_FIELD, Collections.singletonList(courtApplication))
+                    .save();
+        }
     }
 
     @Handles("listing.events.court-application-updated-for-hearing")
@@ -89,12 +100,14 @@ public class CourtApplicationEventListener {
         return courtApplications -> getCourtApplications(courtApplication, courtApplications);
     }
 
+
     private List<CourtApplication> getCourtApplications(CourtApplication addCourtApplication,
                                                         List<CourtApplication> courtApplications) {
 
         courtApplications.add(addCourtApplication);
         return courtApplications;
     }
+
 
 
 }

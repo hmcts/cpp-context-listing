@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
+import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -7,12 +8,25 @@ import uk.gov.moj.cpp.listing.steps.data.RestrictCourtListData;
 
 import java.util.UUID;
 
+import org.junit.Before;
 import org.junit.Test;
 
 public class ListCourtHearingIT extends AbstractIT {
 
     static final boolean UNALLOCATED = false;
     static final boolean ALLOCATED = true;
+    private static final String CONTEXT_NAME = "listing";
+
+    private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
+
+    @Before
+    public void cleanPublishedEventTable() {
+        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
+        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
+        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
+    }
+
 
     @Test
     public void listHearingWithUnallocatedData() {
@@ -51,4 +65,3 @@ public class ListCourtHearingIT extends AbstractIT {
         }
     }
 }
-                                                                                                                                                                                                                                     

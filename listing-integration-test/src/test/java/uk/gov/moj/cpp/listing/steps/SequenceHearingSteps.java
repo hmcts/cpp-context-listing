@@ -18,6 +18,8 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
@@ -75,8 +77,8 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
 
 
     public void whenHearingDaysAreSequenced() {
-        final String updateHearingUrl = String.format("%s/%s", baseUri, format
-                (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_SEQUENCE_HEARING_DAYS), sequenceHearingData.getHearingId()));
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_SEQUENCE_HEARING_DAYS), sequenceHearingData.getHearingId()));
 
         request = prepareJsonForSequenceHearingDays();
 
@@ -95,8 +97,8 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
 
 
     public void verifyHearingDaysAreSequencedFromAPI() {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), sequenceHearingData.getUpdatedHearingData().getCourtCentreId(), ALLOCATED));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), sequenceHearingData.getUpdatedHearingData().getCourtCentreId(), ALLOCATED));
 
 
         final Filter idFilter = filter(where("id").is(sequenceHearingData.getHearingId().toString()));

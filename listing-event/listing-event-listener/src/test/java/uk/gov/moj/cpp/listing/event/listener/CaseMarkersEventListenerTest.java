@@ -215,6 +215,42 @@ public class CaseMarkersEventListenerTest {
         verify(hearingRepository).save(hearing);
     }
 
+    @Test
+    public void shouldHandleCaseMarkerToBeUpdatedWhenItsNull() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<ListedCase> testCases = createListedCasesWithNullMarker();
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        final Marker marker1 = marker()
+                .withId(CASE_MARKER_ID_1)
+                .withMarkerTypeid(CASE_MARKER_TYPE_ID_1)
+                .withMarkerTypeDescription(CASE_MARKER_DESCRIPTION_1)
+                .withMarkerTypeCode(CASE_MARKER_CODE_1)
+                .build();
+
+        final NewCaseMarkerUpdated caseMarkersToBeUpdated = NewCaseMarkerUpdated.newCaseMarkerUpdated()
+                .withHearingId(HEARING_ID)
+                .withCaseId(CASE_ID)
+                .withCaseMarkers(Arrays.asList(marker1))
+                .build();
+
+        given(caseMarkersToBeUpdatedEnvelope.payload()).willReturn(caseMarkersToBeUpdated);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptur =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        caseMarkersEventListener.handleCaseMarkersUpdated(caseMarkersToBeUpdatedEnvelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptur.capture());
+        final int markersSize = objectNodeCaptur.getValue().get(0).get("markers").size();
+        MatcherAssert.assertThat(markersSize, equalTo(1));
+        verify(hearingRepository).save(hearing);
+    }
+
 
     private List<ListedCase> createListedCases() {
         return singletonList(ListedCase.listedCase()
@@ -289,6 +325,19 @@ public class CaseMarkersEventListenerTest {
                                 .withTitle(STRING.next())
                                 .build())
                         .build()))
+                .build());
+    }
+
+    private List<ListedCase> createListedCasesWithNullMarker() {
+        return singletonList(ListedCase.listedCase()
+                .withCaseIdentifier(CaseIdentifier.caseIdentifier()
+                        .withAuthorityCode(STRING.next())
+                        .withAuthorityId(randomUUID())
+                        .withCaseReference(STRING.next())
+                        .build())
+                .withDefendants(buildDefendantList())
+                .withMarkers(null)
+                .withId(CASE_ID)
                 .build());
     }
 

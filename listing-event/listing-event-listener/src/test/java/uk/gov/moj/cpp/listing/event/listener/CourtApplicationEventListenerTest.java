@@ -6,7 +6,9 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
@@ -48,8 +50,8 @@ public class CourtApplicationEventListenerTest {
     private static final UUID LINKED_CASE_ID = randomUUID();
     private static final UUID LINKED_APPLICATION_ID = randomUUID();
     private static final String APPLICATION_TYPE = STRING.next();
-    private static final String FIRST_NAME = STRING.next();
-    private static final String LAST_NAME = STRING.next();
+    private static final String FIRST_NAME = "A";
+    private static final String LAST_NAME = "B";
     private static final String UPDATED_FIRST_NAME = STRING.next();
     private static final String UPDATED_LAST_NAME = STRING.next();
 
@@ -122,7 +124,8 @@ public class CourtApplicationEventListenerTest {
         assertThat(objectNodeCaptor.getValue().get(0).get("applicant").get("lastName").toString(), equalTo("\"" + UPDATED_LAST_NAME + "\""));
         verify(hearingRepository).save(hearing);
     }
-        public void shouldAddCourtApplicationForHearing() throws IOException {
+    @Test
+    public void shouldAddCourtApplicationForHearing() throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         List<CourtApplication> testCases = createCourtApplications();
         String testCasesString =  mapper.writeValueAsString(testCases);
@@ -165,6 +168,48 @@ public class CourtApplicationEventListenerTest {
         assertThat(objectNodeCaptor.getValue().get(0).get("applicant").get("lastName").toString(), equalTo("\"" + LAST_NAME + "\""));
         verify(hearingRepository).save(hearing);
     }
+
+    @Test
+    public void shouldAddCourtApplicationForHearingWhenCourtApplicationsArrayNotPresentInHearingPayload() {
+        Envelope<CourtApplicationAddedForHearing> envelope = (Envelope<CourtApplicationAddedForHearing>) mock(Envelope.class);
+        CourtApplicationAddedForHearing hearingData = CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
+                .withHearingId(HEARING_ID)
+                .withCourtApplication(CourtApplication.courtApplication()
+                        .withLinkedCaseId(of(LINKED_CASE_ID))
+                        .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                        .withId(ID)
+                        .withApplicationType(APPLICATION_TYPE)
+                        .withApplicant(ApplicantRespondent.applicantRespondent()
+                                .withFirstName(of(UPDATED_FIRST_NAME))
+                                .withLastName(UPDATED_LAST_NAME)
+                                .withIsRespondent(false)
+                                .build())
+                        .withRespondents(Arrays.asList(ApplicantRespondent.applicantRespondent()
+                                .withFirstName(of(FIRST_NAME))
+                                .withLastName(LAST_NAME)
+                                .withIsRespondent(true)
+                                .build()))
+                        .build())
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(COURT_APPLICATIONS)).willReturn(null);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        courtApplicationEventListener.courtApplicationAdded(envelope);
+
+        verify(properties).set(anyString(), objectNodeCaptor.capture());
+        assertThat(objectNodeCaptor.getValue().get(0).get("applicant").get("firstName").toString(), equalTo("\"" + UPDATED_FIRST_NAME + "\""));
+        assertThat(objectNodeCaptor.getValue().get(0).get("applicant").get("lastName").toString(), equalTo("\"" + UPDATED_LAST_NAME + "\""));
+        verify(hearingRepository).save(hearing);
+    }
+
 
 
     private List<CourtApplication> createCourtApplications() {

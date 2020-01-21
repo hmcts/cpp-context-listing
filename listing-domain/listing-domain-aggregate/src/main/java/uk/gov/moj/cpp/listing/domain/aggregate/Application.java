@@ -1,24 +1,24 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
-
 import uk.gov.justice.domain.aggregate.Aggregate;
-import uk.gov.justice.listing.events.ApplicationEjected;
+import uk.gov.justice.listing.events.ApplicationEjectedForHearings;
 import uk.gov.justice.listing.events.CourtApplicationAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
 import uk.gov.justice.listing.events.NoHearingFoundForCourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
+
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
 
 public class Application implements Aggregate {
 
@@ -29,7 +29,7 @@ public class Application implements Aggregate {
         return match(event).with(
                 when(CourtApplicationAddedToHearing.class).apply(this::onCourtApplicationAddedToHearing),
                 when(CourtApplicationToBeUpdated.class).apply(e-> onCourtApplicationToBeUpdated()),
-                when(ApplicationEjected.class).apply(e -> onApplicationEjected()),
+                when(ApplicationEjectedForHearings.class).apply(e -> onApplicationEjectedForHearings()),
                 otherwiseDoNothing());
     }
 
@@ -44,7 +44,8 @@ public class Application implements Aggregate {
         return hearingIds.isEmpty() ? apply(Stream.of(new NoHearingFoundForCourtApplication(NewDomainToEventConverter.buildCourtApplications(courtApplication))))
                 : apply(Stream.of(new CourtApplicationToBeUpdated(NewDomainToEventConverter.buildCourtApplications(courtApplication), hearingIds)));
     }
-    public Stream<Object> ejectApplication(List<UUID> hearingIdForApplicationToBeEjected, UUID applicationId, Optional<String> removalReason){
+
+    public Stream<Object> ejectApplicationForHearings(List<UUID> hearingIdForApplicationToBeEjected, UUID applicationId, Optional<String> removalReason){
 
         final Set<UUID> mergedHearingIds = new HashSet<>(this.hearingIds);
         if(Objects.nonNull(hearingIdForApplicationToBeEjected)){
@@ -52,7 +53,7 @@ public class Application implements Aggregate {
         }
         final String ejectReason = removalReason.isPresent()? removalReason.get() : null;
 
-        return mergedHearingIds.isEmpty() ? Stream.empty() : apply(Stream.of(ApplicationEjected.applicationEjected()
+        return mergedHearingIds.isEmpty() ? Stream.empty() : apply(Stream.of(ApplicationEjectedForHearings.applicationEjectedForHearings()
                 .withApplicationId(applicationId)
                 .withHearingIds(new ArrayList<>(mergedHearingIds))
                 .withRemovalReason(ejectReason)
@@ -60,12 +61,13 @@ public class Application implements Aggregate {
         );
     }
 
-
     private void onCourtApplicationToBeUpdated() {
         //Do nothing
     }
 
-    private void onApplicationEjected() {
+    private void onApplicationEjectedForHearings() {
         //Do nothing
     }
+
+
 }

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
+import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
@@ -145,6 +146,10 @@ public class ListingCommandHandler {
     @Inject
     private HearingTypeFactory hearingTypeFactory;
 
+    private static final String APPLICATION_ID = "applicationId";
+    private static final String HEARING_ID = "hearingId";
+    public static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
+    public static final String REMOVAL_REASON = "removalReason";
 
     @Handles("listing.command.list-court-hearing-enriched")
     public void listCourtHearing(final JsonEnvelope command) throws EventStreamException {
@@ -604,7 +609,7 @@ public class ListingCommandHandler {
     @Handles("listing.command.eject-case-or-application")
     public void ejectCaseOrApplication(final JsonEnvelope commandEnvelope) throws EventStreamException {
         if(LOGGER.isDebugEnabled()) {
-            LOGGER.debug("'listing.command.add-hearing-to-case' received with payload {}", commandEnvelope.toObfuscatedDebugString());
+            LOGGER.debug("'listing.command.eject-case-or-application' received with payload {}", commandEnvelope.toObfuscatedDebugString());
         }
 
         final CaseOrApplicationEjected command = jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), CaseOrApplicationEjected.class);
@@ -613,13 +618,39 @@ public class ListingCommandHandler {
         final Optional<UUID> applicationId = command.getApplicationId();
         if(caseId.isPresent()){
         updateCaseEventStream(commandEnvelope, caseId.get(), (Case listingCase) ->
-                listingCase.ejectCase(hearingIds, caseId.get(), command.getRemovalReason()));
+                listingCase.ejectCaseForHearings(hearingIds, caseId.get(), command.getRemovalReason()));
         }
         if(applicationId.isPresent()){
             updateApplicationEventStream(commandEnvelope, applicationId.get(), (Application application) ->
-                    application.ejectApplication(hearingIds, applicationId.get(), (command.getRemovalReason())));
+                    application.ejectApplicationForHearings(hearingIds, applicationId.get(), (command.getRemovalReason())));
         }
 
+    }
+
+    @Handles("listing.command.eject-case")
+    public void ejectCase(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.eject-case' received with payload {}", commandEnvelope.toObfuscatedDebugString());
+        }
+        final JsonObject commandPayload = commandEnvelope.payloadAsJsonObject();
+        final UUID caseId = fromString(commandPayload.getString(PROSECUTION_CASE_ID));
+        final UUID hearingId = fromString(commandPayload.getString(HEARING_ID));
+        final String removalReason = commandPayload.getString(REMOVAL_REASON);
+        updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) ->
+                hearing.ejectCase(hearingId, caseId, removalReason));
+    }
+
+    @Handles("listing.command.eject-application")
+    public void ejectApplication(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.eject-application' received with payload {}", commandEnvelope.toObfuscatedDebugString());
+        }
+        final JsonObject commandPayload = commandEnvelope.payloadAsJsonObject();
+        final UUID applicationId = fromString(commandPayload.getString(APPLICATION_ID));
+        final UUID hearingId = fromString(commandPayload.getString(HEARING_ID));
+        final String removalReason = commandPayload.getString(REMOVAL_REASON);
+        updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) ->
+                hearing.ejectApplication(hearingId, applicationId, removalReason));
     }
 
     private List<uk.gov.moj.cpp.listing.domain.SequenceHearing> convertSequenceHearingsToDomain(SequenceHearings sequenceHearingsCommand) {

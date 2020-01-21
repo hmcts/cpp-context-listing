@@ -40,7 +40,7 @@ public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
                 .withReportingRestrictionReason(hearingUpdatedForListing.getReportingRestrictionReason())
                 .withType(buildType(type));
         if (hearingUpdatedForListing.getProsecutionCaseDefendantsOffenceIds()!=null) {
-                builder.withProsecutionCases(hearingUpdatedForListing.getProsecutionCaseDefendantsOffenceIds().stream()
+            builder.withProsecutionCases(hearingUpdatedForListing.getProsecutionCaseDefendantsOffenceIds().stream()
                     .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
                             .withDefendants(pcdo.getDefendants().stream()
                                     .map(d -> ConfirmedDefendant.confirmedDefendant()

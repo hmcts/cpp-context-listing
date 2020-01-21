@@ -8,18 +8,18 @@ import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataOf;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtApplicationParty;
@@ -56,7 +56,6 @@ import com.jayway.restassured.path.json.JsonPath;
 import org.hamcrest.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtApplicationSteps.class);
@@ -105,6 +104,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
 
         givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
     }
+
     public void whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended() {
         AddCourtApplicationData addCourtApplicationData = getCourtApplicationForHearingData(hearingsData);
         final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
@@ -185,8 +185,8 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyCourtApplicationUpdatedFromAPI() {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), false));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), false));
 
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
@@ -218,12 +218,12 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
                                 withJsonPath("$.hearings[0].courtApplications[0].restrictCourtApplicationType",
                                         equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictCourtApplicationType()))
-                                )));
+                        )));
     }
 
     public void verifyCourtApplicationAddedFromAPI() {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), false));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), false));
 
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
@@ -251,7 +251,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                                         Matchers.anyOf(equalTo(LINKED_APPLICATION_ID.toString()),
                                                 equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getParentApplicationId().toString()))),
                                 withJsonPath("$.hearings[0].courtApplications[0].restrictFromCourtList",
-                                                equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
+                                        equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictFromCourtList())),
                                 withJsonPath("$.hearings[0].courtApplications[0].restrictCourtApplicationType",
                                         equalTo(hearingsData.getHearingData().get(0).getCourtApplications().get(0).getRestrictCourtApplicationType())),
                                 withJsonPath("$.hearings[0].courtApplications[1].respondents[0].id",
@@ -294,43 +294,44 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
         CourtApplication courtApplication = getCourtApplication(courtApplicationData);
         return new AddCourtApplicationData(hearingId, courtApplication);
     }
-        private CourtApplication getCourtApplication(final CourtApplicationData courtApplicationData) {
+
+    private CourtApplication getCourtApplication(final CourtApplicationData courtApplicationData) {
         return CourtApplication.courtApplication()
-                    .withApplicant(CourtApplicationParty.courtApplicationParty()
-                            .withPersonDetails(of(Person.person()
-                                    .withFirstName(of(APPLICANT_FIRST_NAME))
-                                    .withLastName(APPLICANT_LAST_NAME)
-                                    .withGender(Gender.FEMALE)
-                                    .build()))
-                            .withId(APPLICANT_ID)
-                            .build())
-                    .withRespondents(Collections.singletonList(CourtApplicationRespondent.courtApplicationRespondent()
-                            .withPartyDetails(CourtApplicationParty.courtApplicationParty()
-                                    .withPersonDetails(of(Person.person()
-                                            .withFirstName(of(RESPONDENT_FIRST_NAME))
-                                            .withLastName(RESPONDENT_LAST_NAME)
-                                            .withGender(Gender.MALE)
-                                            .build()))
-                                    .withId(RESPONDENT_ID)
-                                    .build())
-                            .build()))
-                    .withId(courtApplicationData.getId())
-                    .withLinkedCaseId(of(LINKED_CASE_ID))
-                    .withParentApplicationId(of(LINKED_APPLICATION_ID))
-                    .withType(CourtApplicationType.courtApplicationType()
-                            .withApplicationType(APPLICATION_TYPE)
-                            .withId(UUID.randomUUID())
-                            .withApplicationCode(Optional.of(STRING.next()))
-                            .withApplicationLegislation(Optional.of(STRING.next()))
-                            .withApplicationCategory(STRING.next())
-                            .withLinkType(LinkType.EITHER)
-                            .withApplicationSummonsTemplateType(Optional.of(ApplicationSummonsTemplateType.GENERIC_SUMMONS))
-                            .withApplicationJurisdictionType(ApplicationJurisdictionType.CROWN)
-                            .build())
-                    .withApplicationStatus(ApplicationStatus.LISTED)
-                    .withApplicationReceivedDate(LocalDate.now().toString())
-                    .withApplicationReference(Optional.of(STRING.next()))
-                    .build();
+                .withApplicant(CourtApplicationParty.courtApplicationParty()
+                        .withPersonDetails(of(Person.person()
+                                .withFirstName(of(APPLICANT_FIRST_NAME))
+                                .withLastName(APPLICANT_LAST_NAME)
+                                .withGender(Gender.FEMALE)
+                                .build()))
+                        .withId(APPLICANT_ID)
+                        .build())
+                .withRespondents(Collections.singletonList(CourtApplicationRespondent.courtApplicationRespondent()
+                        .withPartyDetails(CourtApplicationParty.courtApplicationParty()
+                                .withPersonDetails(of(Person.person()
+                                        .withFirstName(of(RESPONDENT_FIRST_NAME))
+                                        .withLastName(RESPONDENT_LAST_NAME)
+                                        .withGender(Gender.MALE)
+                                        .build()))
+                                .withId(RESPONDENT_ID)
+                                .build())
+                        .build()))
+                .withId(courtApplicationData.getId())
+                .withLinkedCaseId(of(LINKED_CASE_ID))
+                .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                .withType(CourtApplicationType.courtApplicationType()
+                        .withApplicationType(APPLICATION_TYPE)
+                        .withId(UUID.randomUUID())
+                        .withApplicationCode(Optional.of(STRING.next()))
+                        .withApplicationLegislation(Optional.of(STRING.next()))
+                        .withApplicationCategory(STRING.next())
+                        .withLinkType(LinkType.EITHER)
+                        .withApplicationSummonsTemplateType(Optional.of(ApplicationSummonsTemplateType.GENERIC_SUMMONS))
+                        .withApplicationJurisdictionType(ApplicationJurisdictionType.CROWN)
+                        .build())
+                .withApplicationStatus(ApplicationStatus.LISTED)
+                .withApplicationReceivedDate(LocalDate.now().toString())
+                .withApplicationReference(Optional.of(STRING.next()))
+                .build();
     }
 
     @Override

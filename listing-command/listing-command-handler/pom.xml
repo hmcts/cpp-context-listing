@@ -3,7 +3,7 @@
     <parent>
         <artifactId>listing-command</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>1.0.39-SNAPSHOT</version>
+        <version>6.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -67,8 +67,8 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>uk.gov.justice.maven.generator</groupId>
-                <artifactId>generator-plugin</artifactId>
+                <groupId>uk.gov.justice.framework-generators</groupId>
+                <artifactId>rest-client-generator-plugin</artifactId>
                 <dependencies>
                     <dependency>
                         <groupId>uk.gov.moj.cpp.referencedata</groupId>
@@ -85,8 +85,8 @@
                 </dependencies>
             </plugin>
             <plugin>
-                <artifactId>generator-plugin</artifactId>
-                <groupId>uk.gov.justice.maven.generator</groupId>
+                <groupId>uk.gov.justice.generators</groupId>
+                <artifactId>pojo-generation-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>pojo-generation</id>

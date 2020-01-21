@@ -22,6 +22,8 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMa
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
@@ -175,8 +177,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 .forEach(cci -> stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null)));
         hearingsData.getHearingData().stream().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
 
-        final String listCaseForHearingUrl = String.format("%s/%s", baseUri, format
-                (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
+        final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
 
         ListCourtHearing listCourtHearingData = null;
         if (isStandaloneApp) {
@@ -199,8 +201,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 .map(HearingData::getCourtCentreId)
                 .forEach(cci -> stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null)));
         hearingsData.getHearingData().stream().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
-        final String listCaseForHearingUrl = String.format("%s/%s", baseUri, format
-                (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
+        final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
 
         ListCourtHearing listCourtHearingData = getListCourtHearingDataWithLegalEntity(hearingsData);
 
@@ -250,8 +252,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     public void verifyHearingListedFromAPI(boolean isAllocated) {
         HearingData hearingData = hearingsData.getHearingData().get(0);
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
 
 
         ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
@@ -304,8 +306,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     public void verifyHearingListedWithLegalEntity(boolean isAllocated) {
         HearingData hearingData = hearingsData.getHearingData().get(0);
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
 
         ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
 
@@ -348,8 +350,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     public void verifyHearingListedFromAPIForStandaloneApplication(boolean isAllocated) {
         HearingData hearingData = hearingsData.getHearingData().get(0);
 
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
 
         poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(

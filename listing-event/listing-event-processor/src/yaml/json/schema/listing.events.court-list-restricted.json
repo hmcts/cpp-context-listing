@@ -82,13 +82,13 @@
     },
     {
       "required": [
-        "courtApplicationRespondentIds"
+        "courtApplicationIds",
+        "courtApplicationType"
       ]
     },
     {
       "required": [
-        "courtApplicationIds",
-        "courtApplicationType"
+        "courtApplicationRespondentIds"
       ]
     }
   ],

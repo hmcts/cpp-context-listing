@@ -11,12 +11,12 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.messaging.JsonObjectMetadata.metadataOf;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -30,7 +30,6 @@ import uk.gov.moj.cpp.listing.steps.data.RestrictCourtListData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.util.Arrays;
-import java.util.UUID;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -81,8 +80,8 @@ public class RestrictCourtListSteps extends AbstractIT implements AutoCloseable 
     }
     public void whenRestrictingCaseOrStandaloneApplicationForCourtListing(RestrictCourtListData restrictListingFromCourtData) {
         final JsonObject restrictCourtListDataObject = (JsonObject) objectToJsonValueConverter.convert(restrictListingFromCourtData);
-        final String hearingRestrictUrl = String.format("%s/%s", baseUri, format
-                (ENDPOINT_PROPERTIES.getProperty(LISTING_COMMAND_RESTRICT_COURT_LIST, hearingsData.getHearingData().get(0).getId().toString())));
+        final String hearingRestrictUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_RESTRICT_COURT_LIST, hearingsData.getHearingData().get(0).getId().toString())));
 
         request = restrictCourtListDataObject.toString();
         final Response response = restClient.postCommand(hearingRestrictUrl, MEDIA_TYPE_RESTRICT_COURT_LIST,
@@ -106,8 +105,8 @@ public class RestrictCourtListSteps extends AbstractIT implements AutoCloseable 
 
 
     public void verifyCaseOrDefendantOrOffenceListingRestrictedInHearing(Boolean restrictCourtListingOfCase, Boolean restrictCourtListingOfDefendant, Boolean restrictCourtListingOfOffence ) {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), false));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), false));
 
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
@@ -136,8 +135,8 @@ public class RestrictCourtListSteps extends AbstractIT implements AutoCloseable 
     }
 
     public void verifyCourtApplicationorApplicantorRespondentListingRestrictedInHearing(Boolean restrictCourtListingOfCourtApplication, Boolean restrictCourtListingOfApplicant, Boolean restrictCourtListingOfRespondent, Boolean restrictCourtListingOfCourtApplicationType ) {
-        final String searchHearingUrl = String.format("%s/%s", baseUri,
-                format(ENDPOINT_PROPERTIES.getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), false));
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), false));
 
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);

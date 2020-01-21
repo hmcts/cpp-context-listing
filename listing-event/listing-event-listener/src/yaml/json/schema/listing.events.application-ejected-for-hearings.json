@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/events/case-ejected.json",
+  "id": "http://justice.gov.uk/listing/events/application-ejected-for-hearings.json",
   "type": "object",
   "properties": {
     "hearingIds":{
@@ -10,7 +10,7 @@
         "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
       }
     },
-    "prosecutionCaseId": {
+    "applicationId": {
       "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
     "removalReason": {
@@ -18,7 +18,7 @@
     }
   },
   "required": [
-    "prosecutionCaseId",
+    "applicationId",
     "removalReason"
   ],
   "additionalProperties": false

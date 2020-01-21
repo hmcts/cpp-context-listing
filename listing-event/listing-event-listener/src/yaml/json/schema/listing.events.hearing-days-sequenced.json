@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/events/hearing-days-sequenced.json",
+  "id": "http://justice.gov.uk/listing/events/listing.events.hearing-days-sequenced.json",
   "type": "object",
   "properties": {
     "hearingDays": {

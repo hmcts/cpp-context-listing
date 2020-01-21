@@ -38,36 +38,32 @@ public class EjectEventListener {
     @Handles("listing.events.case-ejected")
     public void caseEjected(final Envelope<CaseEjected> event) {
         final CaseEjected caseEjected = event.payload();
-        final List<UUID> hearingIdList = caseEjected.getHearingIds();
+        final UUID hearingId = caseEjected.getHearingId();
         final UUID caseId = caseEjected.getProsecutionCaseId();
 
         final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
         };
         final TypeReference<List<CourtApplication>> typeRefCourtApplication = new TypeReference<List<CourtApplication>>() {
         };
-        hearingIdList.forEach(hearingId -> {
+        using(hearingRepository)
+                .find(hearingId).putSubList(LISTED_CASES, typeRef, getCasesFunction(caseId)).save();
             using(hearingRepository)
-                    .find(hearingId).putSubList(LISTED_CASES, typeRef, getCasesFunction(caseId)).save();
-                using(hearingRepository)
-                        .find(hearingId)
-                        .putSubList(COURT_APPLICATION_FIELD, typeRefCourtApplication, getCourtApplicationFunctionForLinkedCaseId(caseId)).save();
-        });
+                    .find(hearingId)
+                    .putSubList(COURT_APPLICATION_FIELD, typeRefCourtApplication, getCourtApplicationFunctionForLinkedCaseId(caseId)).save();
 
     }
 
     @Handles("listing.events.application-ejected")
     public void applicationEjected(final Envelope<ApplicationEjected> event) {
         final ApplicationEjected applicationEjected = event.payload();
-        final List<UUID> hearingIdList = applicationEjected.getHearingIds();
+        final UUID hearingId = applicationEjected.getHearingId();
         final UUID applicationId = applicationEjected.getApplicationId();
 
         final TypeReference<List<CourtApplication>> typeRefCourtApplication = new TypeReference<List<CourtApplication>>() {
         };
-        hearingIdList.forEach(hearingId ->
             using(hearingRepository)
                     .find(hearingId)
-                    .putSubList(COURT_APPLICATION_FIELD, typeRefCourtApplication, getCourtApplicationFunction(applicationId)).save()
-        );
+                    .putSubList(COURT_APPLICATION_FIELD, typeRefCourtApplication, getCourtApplicationFunction(applicationId)).save();
 
     }
 

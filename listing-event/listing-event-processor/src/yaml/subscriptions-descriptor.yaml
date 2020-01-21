@@ -1,0 +1,75 @@
+subscriptions_descriptor:
+  spec_version: 1.0.0
+  service: listing
+  service_component: EVENT_PROCESSOR
+  subscriptions:
+    - name: event processor subscription
+      events:
+        - name: listing.events.hearing-listed
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-listed.json
+
+        - name: listing.events.hearing-allocated-for-listing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-allocated-for-listing.json
+
+        - name: listing.events.allocated-hearing-updated-for-listing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.allocated-hearing-updated-for-listing.json
+
+        - name: listing.events.defendants-to-be-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.defendants-to-be-updated.json
+
+        - name: listing.events.defendants-to-be-added-for-court-proceedings
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.defendants-to-be-added-for-court-proceedings.json
+
+        - name: listing.events.offences-to-be-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offences-to-be-updated.json
+
+        - name: listing.events.offences-to-be-deleted
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offences-to-be-deleted.json
+
+        - name: listing.events.offences-to-be-added
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offences-to-be-added.json
+
+        - name: listing.events.court-application-added-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.court-application-added-for-hearing.json
+
+        - name: listing.events.court-application-to-be-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.court-application-to-be-updated.json
+
+        - name: listing.events.court-list-restricted
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.court-list-restricted.json
+
+        - name: listing.events.case-markers-to-be-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.case-markers-to-be-updated.json
+
+        - name: listing.events.case-ejected-for-hearings
+          schema_uri: http://justice.gov.uk/listing/events/case-ejected-for-hearings.json
+
+        - name: listing.events.application-ejected-for-hearings
+          schema_uri: http://justice.gov.uk/listing/events/application-ejected-for-hearings.json
+
+      event_source_name: listing
+
+    - name: public event subscription
+      events:
+        - name: public.progression.defendant-offences-changed
+          schema_uri: http://justice.gov.uk/listing/courts/offences-for-defendant-updated.json
+
+        - name: public.progression.case-defendant-changed
+          schema_uri: http://justice.gov.uk/listing/courts/defendant-updated.json
+
+        - name: public.progression.court-application-changed
+          schema_uri: http://justice.gov.uk/progression/courts/court-application-changed.json
+
+        - name: public.progression.events.hearing-extended
+          schema_uri: http://justice.gov.uk/progression/courts/hearing-extended.json
+
+        - name: public.progression.defendants-added-to-court-proceedings
+          schema_uri: http://justice.gov.uk/listing/courts/progression.defendants-added-to-court-proceedings
+
+        - name: public.progression.events.case-or-application-ejected
+          schema_uri: http://justice.gov.uk/listing/courts/case-or-application-ejected
+
+        - name: public.progression.case-markers-updated
+          schema_uri: http://justice.gov.uk/core/courts/case-markers-updated.json
+
+      event_source_name: public.event.source

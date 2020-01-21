@@ -17,7 +17,7 @@ public class AddCourtApplicationToHearingCommandCollectionConverter implements C
         UUID hearingId = event.getHearing().getId();
         return event.getHearing().getCourtApplications().stream()
                 .map(courtApplication ->
-                AddApplicationToHearingCommand.addApplicationToHearingCommand().withApplicationId(courtApplication.getId())
-                        .withHearingId(hearingId).build()).collect(toList());
+                        AddApplicationToHearingCommand.addApplicationToHearingCommand().withApplicationId(courtApplication.getId())
+                                .withHearingId(hearingId).build()).collect(toList());
     }
 }
