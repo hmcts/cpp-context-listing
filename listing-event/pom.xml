@@ -3,7 +3,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.listing</groupId>
         <artifactId>listing-parent</artifactId>
-        <version>1.0.88-SCSL-SNAPSHOT</version>
+        <version>1.0.89-SCSL-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
