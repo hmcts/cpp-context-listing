@@ -15,8 +15,8 @@ public class JsonPropertyUtils {
 
     public static Optional<UUID> getOptionalUUID(final JsonObject jsonObject, final String propertyName) {
 
-        final Optional<String> courtRoomIdString = ofNullable(jsonObject.getString(propertyName, null));
+        final Optional<String> optionalUUID = ofNullable(jsonObject.getString(propertyName, null));
 
-        return courtRoomIdString.map(UUID::fromString);
+        return optionalUUID.map(UUID::fromString);
     }
 }

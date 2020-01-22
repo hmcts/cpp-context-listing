@@ -5,6 +5,7 @@ import static java.util.UUID.fromString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonUtils.compareJson;
@@ -16,8 +17,8 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -36,6 +37,10 @@ import org.slf4j.Logger;
 public class RangeSearchConverterTest {
 
     private static final Logger LOGGER = getLogger(RangeSearchConverterTest.class);
+
+    private static final UUID COURT_SITE_A_COURT_ROOM_ID = UUID.fromString("5e1c7b54-3bca-3a37-a85a-84510f115b76");
+    private static final UUID COURT_SITE_B_COURT_ROOM_ID = UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39");
+    private static final UUID UNKNOWN_COURT_SITE_COURT_ROOM_ID = UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d");
 
     @Parameterized.Parameter(0)
     public String rangeSearchResponseFilename;
@@ -72,14 +77,16 @@ public class RangeSearchConverterTest {
 
         final UUID courtCentreId = fromString("eeb81654-eb5b-443f-ad4b-911606732e53");
 
-        final List<JsonObject> courtSites = Collections.singletonList(
-                Json.createObjectBuilder()
-                        .add("crestCourtSiteId", "001")
-                        .add("crestCourtSiteName", "SITENAME")
-                        .add("courtType", "CROWN_COURT")
-                        .build());
+        final List<JsonObject> courtSites = Arrays.asList(
+                buildCourtSite("A"), buildCourtSite("B"));
+
+        final Optional<JsonObject> courtRoom1 = courtRoom("A");
+        final Optional<JsonObject> courtRoom2 = courtRoom("B");
 
         when(xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(envelope, courtCentreId)).thenReturn(courtSites);
+        when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID))).thenReturn(courtRoom1);
+        when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(COURT_SITE_B_COURT_ROOM_ID))).thenReturn(courtRoom2);
+        when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(UNKNOWN_COURT_SITE_COURT_ROOM_ID))).thenReturn(Optional.empty());
 
         final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse);
 
@@ -90,5 +97,20 @@ public class RangeSearchConverterTest {
         LOGGER.info(prettifyJson(generatedCourtList));
 
         compareJson(generatedCourtList, expectedCourtList);
+    }
+
+    private Optional<JsonObject> courtRoom(final String crestCourtSiteCode) {
+        return Optional.of(Json.createObjectBuilder()
+                .add("crestCourtSiteCode", crestCourtSiteCode)
+                .build());
+    }
+
+    private JsonObject buildCourtSite(final String crestCourtSiteCode) {
+        return Json.createObjectBuilder()
+                .add("crestCourtSiteId", "001")
+                .add("crestCourtSiteCode", crestCourtSiteCode)
+                .add("crestCourtSiteName", "SITENAME " + crestCourtSiteCode)
+                .add("courtType", "CROWN_COURT")
+                .build();
     }
 }

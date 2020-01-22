@@ -4,7 +4,103 @@
     {
       "crestCourtSite":{
         "crestCourtSiteId":"001",
-        "crestCourtSiteName":"SITENAME",
+        "crestCourtSiteCode":"A",
+        "crestCourtSiteName":"SITENAME A",
+        "courtType":"CROWN_COURT"
+      },
+      "sittings":[
+        {
+          "sittingDate":"2019-12-15",
+          "weekCommencing":false,
+          "courtRoomId":"6508af42-e4d4-396d-a752-d676ebd38f6d",
+          "judiciary":[
+            {
+              "judicialId":"fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
+              "judicialRoleType":{
+                "judiciaryType":"DISTRICT_JUDGE"
+              }
+            }
+          ],
+          "hearings":[
+            {
+              "startTime":"2019-12-15T09:22",
+              "hearingType":{
+                "id":"5ae4c090-0f70-4694-b4fc-707633d2b430",
+                "description":"Sentence"
+              },
+              "restrictFromCourtList":false,
+              "weekCommencing":false,
+              "endTime":"2019-12-15T10:07",
+              "caseIdentifier":{
+                "authorityId":"3cd8e977-d53b-471f-85dc-9e19bb36e49a",
+                "authorityCode":"CPS",
+                "caseReference":"44FE772625"
+              },
+              "defendants":[
+                {
+                  "id":"6e4c5278-f63f-4760-bd20-77b96f955db5",
+                  "lastName":"LAZZERI",
+                  "offences":[
+                    {
+                      "id":"326f75ec-2403-4107-a525-c4ab550e9882",
+                      "endDate":"2019-12-15",
+                      "startDate":"2019-12-14",
+                      "offenceCode":"OF61131",
+                      "offenceWording":"Facap tifujra vab zavukke tedas fiskuk vij iruhe wujhop botduzo eppa vecu hasisus hu dak.",
+                      "statementOfOffence":{
+                        "title":"Wounding with intent",
+                        "welshTitle":"Wounding with intent",
+                        "legislation":"legislation"
+                      },
+                      "restrictFromCourtList":false
+                    }
+                  ],
+                  "firstName":"Harriett",
+                  "dateOfBirth":"1989-12-13",
+                  "custodyTimeLimit":"2020-01-13",
+                  "specificRequirements":"Esihez ojwir kuhgebti piwum farmapsel woruh nofri jipte zid ozsic iveulies ma odseil bemki idtotni paoweim kuh.",
+                  "restrictFromCourtList":false
+                }
+              ]
+            },
+            {
+              "startTime":"2019-12-15T09:21:11",
+              "hearingType":{
+                "id":"5ae4c090-0f70-4694-b4fc-707633d2b430",
+                "description":"Sentence"
+              },
+              "restrictFromCourtList":false,
+              "weekCommencing":false,
+              "endTime":"2019-12-15T09:51:11",
+              "applicationReference":"41TL769069",
+              "applicant":{
+                "id":"cb9ee4d4-369f-422e-8a5f-fa2af408247b",
+                "lastName":"BENINI",
+                "firstName":"Olga",
+                "isRespondent":false,
+                "restrictFromCourtList":false,
+                "courtApplicationPartyType":"PERSON_DEFENDANT"
+              },
+              "respondents":[
+                {
+                  "id":"a1ac08ac-99e9-4507-ad84-77ec9b674e06",
+                  "lastName":"MARIE",
+                  "firstName":"Eula",
+                  "isRespondent":true,
+                  "restrictFromCourtList":false,
+                  "courtApplicationPartyType":"PERSON"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "crestCourtSite":{
+        "crestCourtSiteId":"001",
+        "crestCourtSiteCode":"B",
+        "crestCourtSiteName":"SITENAME B",
         "courtType":"CROWN_COURT"
       },
       "sittings":[
@@ -109,91 +205,6 @@
                   "id":"9cc9b614-ccc6-42b0-aa1b-1bfc27382e32",
                   "lastName":"BOUVIER",
                   "firstName":"Adele",
-                  "isRespondent":true,
-                  "restrictFromCourtList":false,
-                  "courtApplicationPartyType":"PERSON"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "sittingDate":"2019-12-15",
-          "weekCommencing":false,
-          "courtRoomId":"6508af42-e4d4-396d-a752-d676ebd38f6d",
-          "judiciary":[
-            {
-              "judicialId":"fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
-              "judicialRoleType":{
-                "judiciaryType":"DISTRICT_JUDGE"
-              }
-            }
-          ],
-          "hearings":[
-            {
-              "startTime":"2019-12-15T09:22",
-              "hearingType":{
-                "id":"5ae4c090-0f70-4694-b4fc-707633d2b430",
-                "description":"Sentence"
-              },
-              "restrictFromCourtList":false,
-              "weekCommencing":false,
-              "endTime":"2019-12-15T10:07",
-              "caseIdentifier":{
-                "authorityId":"3cd8e977-d53b-471f-85dc-9e19bb36e49a",
-                "authorityCode":"CPS",
-                "caseReference":"44FE772625"
-              },
-              "defendants":[
-                {
-                  "id":"6e4c5278-f63f-4760-bd20-77b96f955db5",
-                  "lastName":"LAZZERI",
-                  "offences":[
-                    {
-                      "id":"326f75ec-2403-4107-a525-c4ab550e9882",
-                      "endDate":"2019-12-15",
-                      "startDate":"2019-12-14",
-                      "offenceCode":"OF61131",
-                      "offenceWording":"Facap tifujra vab zavukke tedas fiskuk vij iruhe wujhop botduzo eppa vecu hasisus hu dak.",
-                      "statementOfOffence":{
-                        "title":"Wounding with intent",
-                        "welshTitle":"Wounding with intent",
-                        "legislation":"legislation"
-                      },
-                      "restrictFromCourtList":false
-                    }
-                  ],
-                  "firstName":"Harriett",
-                  "dateOfBirth":"1989-12-13",
-                  "custodyTimeLimit":"2020-01-13",
-                  "specificRequirements":"Esihez ojwir kuhgebti piwum farmapsel woruh nofri jipte zid ozsic iveulies ma odseil bemki idtotni paoweim kuh.",
-                  "restrictFromCourtList":false
-                }
-              ]
-            },
-            {
-              "startTime":"2019-12-15T09:21:11",
-              "hearingType":{
-                "id":"5ae4c090-0f70-4694-b4fc-707633d2b430",
-                "description":"Sentence"
-              },
-              "restrictFromCourtList":false,
-              "weekCommencing":false,
-              "endTime":"2019-12-15T09:51:11",
-              "applicationReference":"41TL769069",
-              "applicant":{
-                "id":"cb9ee4d4-369f-422e-8a5f-fa2af408247b",
-                "lastName":"BENINI",
-                "firstName":"Olga",
-                "isRespondent":false,
-                "restrictFromCourtList":false,
-                "courtApplicationPartyType":"PERSON_DEFENDANT"
-              },
-              "respondents":[
-                {
-                  "id":"a1ac08ac-99e9-4507-ad84-77ec9b674e06",
-                  "lastName":"MARIE",
-                  "firstName":"Eula",
                   "isRespondent":true,
                   "restrictFromCourtList":false,
                   "courtApplicationPartyType":"PERSON"

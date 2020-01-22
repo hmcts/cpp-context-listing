@@ -7,8 +7,8 @@
     </cs:DocumentID>
     <cs:ListHeader>
         <cs:ListCategory>Criminal</cs:ListCategory>
-        <cs:StartDate>2019-11-04</cs:StartDate>
-        <cs:EndDate>2019-11-05</cs:EndDate>
+        <cs:StartDate>2020-01-22</cs:StartDate>
+        <cs:EndDate>2020-01-27</cs:EndDate>
         <cs:Version>NOT VERSIONED</cs:Version>
         <cs:PublishedTime>PUBLISHEDTIME</cs:PublishedTime>
     </cs:ListHeader>
@@ -18,11 +18,35 @@
         <cs:CourtHouseName>PRESTON</cs:CourtHouseName>
     </cs:CrownCourt>
     <cs:CourtLists>
-        <cs:CourtList SittingDate="2019-11-04">
+        <cs:CourtList SittingDate="2020-01-22">
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>448</cs:CourtHouseCode>
+                <cs:CourtHouseName>PRESTON</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2020-01-22">
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>448</cs:CourtHouseCode>
+                <cs:CourtHouseName>PRESTON [THE SESSIONS HOUSE]</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2020-01-22">
             <cs:CourtHouse>
                 <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
                 <cs:CourtHouseCode>751</cs:CourtHouseCode>
                 <cs:CourtHouseName>BARROW-IN-FURNESS</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2020-01-22">
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>768</cs:CourtHouseCode>
+                <cs:CourtHouseName>LANCASTER</cs:CourtHouseName>
             </cs:CourtHouse>
             <cs:Sittings/>
         </cs:CourtList>

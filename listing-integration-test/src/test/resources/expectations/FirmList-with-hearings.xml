@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice">
+<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice"
+             xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
     <cs:DocumentID>
         <cs:DocumentName>FILENAME</cs:DocumentName>
         <cs:UniqueID>UNIQUEID</cs:UniqueID>
@@ -7,22 +8,179 @@
     </cs:DocumentID>
     <cs:ListHeader>
         <cs:ListCategory>Criminal</cs:ListCategory>
-        <cs:StartDate>2019-11-04</cs:StartDate>
-        <cs:EndDate>2019-11-05</cs:EndDate>
+        <cs:StartDate>2020-01-23</cs:StartDate>
+        <cs:EndDate>2020-01-28</cs:EndDate>
         <cs:Version>NOT VERSIONED</cs:Version>
         <cs:PublishedTime>PUBLISHEDTIME</cs:PublishedTime>
     </cs:ListHeader>
     <cs:CrownCourt>
         <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
-        <cs:CourtHouseCode CourtHouseShortName="DUMMY">000</cs:CourtHouseCode>
-        <cs:CourtHouseName>DUMMYCOURTNAME</cs:CourtHouseName>
+        <cs:CourtHouseCode CourtHouseShortName="PREST">448</cs:CourtHouseCode>
+        <cs:CourtHouseName>PRESTON</cs:CourtHouseName>
     </cs:CrownCourt>
     <cs:CourtLists>
-        <cs:CourtList SittingDate="2019-11-04">
+        <cs:CourtList SittingDate="2020-01-23">
             <cs:CourtHouse>
                 <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
-                <cs:CourtHouseCode CourtHouseShortName="DUMMY">000</cs:CourtHouseCode>
-                <cs:CourtHouseName>DUMMYCOURTNAME</cs:CourtHouseName>
+                <cs:CourtHouseCode>448</cs:CourtHouseCode>
+                <cs:CourtHouseName>PRESTON</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2020-01-23">
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>448</cs:CourtHouseCode>
+                <cs:CourtHouseName>PRESTON [THE SESSIONS HOUSE]</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>231</cs:CourtRoomNumber>
+                    <cs:SittingSequenceNo>1</cs:SittingSequenceNo>
+                    <cs:SittingPriority>T</cs:SittingPriority>
+                    <cs:Judiciary>
+                        <cs:Judge>
+                            <apd:CitizenNameSurname>Ainsworth</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Mark J</apd:CitizenNameRequestedName>
+                        </cs:Judge>
+                    </cs:Judiciary>
+                    <cs:Hearings>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="PTP">
+                                <cs:HearingDescription>Plea &amp; Trial Preparation</cs:HearingDescription>
+                                <cs:HearingDate>2020-01-23</cs:HearingDate>
+                            </cs:HearingDetails>
+                            <cs:CaseNumber>TpyFuve0zO</cs:CaseNumber>
+                            <cs:Prosecution ProsecutingAuthority="Other Prosecutor">
+                                <cs:ProsecutingReference>TpyFuve0zO</cs:ProsecutingReference>
+                            </cs:Prosecution>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>EJPAXocTe8</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>ZVcApg9EJu</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="iRczUCDnRZ">
+                                            <cs:OffenceStatement>9E9wdHybww</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="E8FbGSmq11">
+                                            <cs:OffenceStatement>CoiYopj65p</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="uYytvuCcv3">
+                                            <cs:OffenceStatement>OWtnxhlvs5</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>QILSLnPtkH</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>ZsbzWEW9T7</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="wbTpsCUHCw">
+                                            <cs:OffenceStatement>9zf8ENRfRO</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="FeMvtuAkXP">
+                                            <cs:OffenceStatement>pwZFplBnrw</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="RUsyyw8MZZ">
+                                            <cs:OffenceStatement>3E8mysn98W</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                    </cs:Hearings>
+                </cs:Sitting>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>231</cs:CourtRoomNumber>
+                    <cs:SittingSequenceNo>2</cs:SittingSequenceNo>
+                    <cs:SittingPriority>T</cs:SittingPriority>
+                    <cs:Judiciary>
+                        <cs:Judge>
+                            <apd:CitizenNameSurname>Ainsworth</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Mark J</apd:CitizenNameRequestedName>
+                        </cs:Judge>
+                    </cs:Judiciary>
+                    <cs:Hearings>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="PTP">
+                                <cs:HearingDescription>Plea &amp; Trial Preparation</cs:HearingDescription>
+                                <cs:HearingDate>2020-01-23</cs:HearingDate>
+                            </cs:HearingDetails>
+                            <cs:CaseNumber>TpyFuve0zO</cs:CaseNumber>
+                            <cs:Prosecution ProsecutingAuthority="Other Prosecutor">
+                                <cs:ProsecutingReference>TpyFuve0zO</cs:ProsecutingReference>
+                            </cs:Prosecution>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>EJPAXocTe8</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>ZVcApg9EJu</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="iRczUCDnRZ">
+                                            <cs:OffenceStatement>9E9wdHybww</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="E8FbGSmq11">
+                                            <cs:OffenceStatement>CoiYopj65p</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="uYytvuCcv3">
+                                            <cs:OffenceStatement>OWtnxhlvs5</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameSurname>QILSLnPtkH</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>ZsbzWEW9T7</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="wbTpsCUHCw">
+                                            <cs:OffenceStatement>9zf8ENRfRO</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="FeMvtuAkXP">
+                                            <cs:OffenceStatement>pwZFplBnrw</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="RUsyyw8MZZ">
+                                            <cs:OffenceStatement>3E8mysn98W</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                    </cs:Hearings>
+                </cs:Sitting>
+            </cs:Sittings>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2020-01-23">
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>751</cs:CourtHouseCode>
+                <cs:CourtHouseName>BARROW-IN-FURNESS</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
+        </cs:CourtList>
+        <cs:CourtList SittingDate="2020-01-23">
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>768</cs:CourtHouseCode>
+                <cs:CourtHouseName>LANCASTER</cs:CourtHouseName>
             </cs:CourtHouse>
             <cs:Sittings/>
         </cs:CourtList>

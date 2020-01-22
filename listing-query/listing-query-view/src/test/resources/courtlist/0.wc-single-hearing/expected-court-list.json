@@ -4,13 +4,15 @@
     {
       "crestCourtSite":{
         "crestCourtSiteId":"001",
-        "crestCourtSiteName":"SITENAME",
+        "crestCourtSiteCode":"A",
+        "crestCourtSiteName":"SITENAME A",
         "courtType":"CROWN_COURT"
       },
       "sittings":[
         {
           "sittingDate":"2019-12-16",
           "weekCommencing":true,
+          "courtRoomId":"5e1c7b54-3bca-3a37-a85a-84510f115b76",
           "judiciary":[
             {
               "isDeputy":false,
@@ -21,7 +23,6 @@
               }
             }
           ],
-          "courtRoomId":"5e1c7b54-3bca-3a37-a85a-84510f115b76",
           "hearings":[
             {
               "startTime":"2019-12-25T00:00",
@@ -64,6 +65,16 @@
             }
           ]
         }
+      ]
+    },
+    {
+      "crestCourtSite":{
+        "crestCourtSiteId":"001",
+        "crestCourtSiteCode":"B",
+        "crestCourtSiteName":"SITENAME B",
+        "courtType":"CROWN_COURT"
+      },
+      "sittings":[
       ]
     }
   ]

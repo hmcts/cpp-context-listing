@@ -4,7 +4,18 @@
     {
       "crestCourtSite":{
         "crestCourtSiteId":"001",
-        "crestCourtSiteName":"SITENAME",
+        "crestCourtSiteCode":"A",
+        "crestCourtSiteName":"SITENAME A",
+        "courtType":"CROWN_COURT"
+      },
+      "sittings":[
+      ]
+    },
+    {
+      "crestCourtSite":{
+        "crestCourtSiteId":"001",
+        "crestCourtSiteCode":"B",
+        "crestCourtSiteName":"SITENAME B",
         "courtType":"CROWN_COURT"
       },
       "sittings":[

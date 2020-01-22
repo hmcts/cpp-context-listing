@@ -9,6 +9,7 @@ import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -17,6 +18,7 @@ import javax.json.JsonObject;
 public class XhibitReferenceDataService {
 
     private static final String REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS = "referencedata.query.cp-xhibit-court-mappings";
+    private static final String REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS = "referencedata.query.cp-xhibit-courtroom-mappings";
 
     @Inject
     @ServiceComponent(Component.QUERY_VIEW)
@@ -29,5 +31,16 @@ public class XhibitReferenceDataService {
         return requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS)
                 .withMetadataFrom(envelope))
                 .payloadAsJsonObject().getJsonArray("cpXhibitCourtMappings").getValuesAs(JsonObject.class);
+    }
+
+    public Optional<JsonObject> getCourtRoom(final Envelope envelope, final UUID courtCentreId, final UUID courtRoomId) {
+
+        final JsonObject queryParameters = createObjectBuilder().add("ouId", courtCentreId.toString()).build();
+
+        return requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS)
+                .withMetadataFrom(envelope))
+                .payloadAsJsonObject().getJsonArray("cpXhibitCourtRoomMappings").getValuesAs(JsonObject.class)
+                .stream().filter(c -> UUID.fromString(c.getString("id")).equals(courtRoomId))
+                .findFirst();
     }
 }
