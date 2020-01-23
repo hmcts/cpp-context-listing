@@ -34,8 +34,10 @@ public class Defendant {
 
     private final Optional<String> specificRequirements;
 
+    private final Boolean isYouth;
 
-    public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final UUID prosecutionCaseId) {
+
+    public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final UUID prosecutionCaseId, final Boolean isYouth) {
         this.bailStatus = bailStatus;
         this.custodyTimeLimit = custodyTimeLimit;
         this.dateOfBirth = dateOfBirth;
@@ -49,6 +51,7 @@ public class Defendant {
         this.offences = offences == null ? emptyList() : offences;
         this.organisationName = organisationName;
         this.specificRequirements = specificRequirements;
+        this.isYouth = isYouth;
 
     }
 
@@ -102,6 +105,10 @@ public class Defendant {
 
     public UUID getProsecutionCaseId() {
         return prosecutionCaseId;
+    }
+
+    public Boolean getYouth() {
+        return isYouth;
     }
 
     public static Builder defendant() {
@@ -184,6 +191,8 @@ public class Defendant {
 
         private UUID prosecutionCaseId;
 
+        private Boolean isYouth;
+
         public Builder withBailStatus(final Optional<BailStatus> bailStatus) {
             this.bailStatus = bailStatus;
             return this;
@@ -249,8 +258,13 @@ public class Defendant {
             return this;
         }
 
+        public Builder withIsYouth(final Boolean isYouth) {
+            this.isYouth = isYouth;
+            return this;
+        }
+
         public Defendant build() {
-            return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements, prosecutionCaseId);
+            return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements, prosecutionCaseId, isYouth);
         }
     }
 }

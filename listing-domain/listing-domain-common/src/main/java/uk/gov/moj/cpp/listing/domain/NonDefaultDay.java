@@ -1,5 +1,8 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -9,45 +12,45 @@ import java.util.Optional;
 public class NonDefaultDay implements Serializable {
   private static final long serialVersionUID = 1L;
 
-  private final Optional<String> courtScheduleId;
+  private final String courtScheduleId;
 
-  private final Optional<Integer> courtRoomId;
+  private final Integer courtRoomId;
 
-  private final Optional<Integer> duration;
+  private final Integer duration;
 
-  private final Optional<String> oucode;
+  private final String oucode;
 
-  private final Optional<String> session;
+  private final String session;
 
   private final ZonedDateTime startTime;
 
   public NonDefaultDay(final Optional<String> courtScheduleId, final Optional<Integer> courtRoomId, final Optional<Integer> duration, final Optional<String> oucode, final Optional<String> session, final ZonedDateTime startTime) {
-    this.courtScheduleId = courtScheduleId;
-    this.courtRoomId = courtRoomId;
-    this.duration = duration;
-    this.oucode = oucode;
-    this.session = session;
+    this.courtScheduleId = courtScheduleId.orElse(null);
+    this.courtRoomId = courtRoomId.orElse(null);
+    this.duration = duration.orElse(null);
+    this.oucode = oucode.orElse(null);
+    this.session = session.orElse(null);
     this.startTime = startTime;
   }
 
   public Optional<String> getCourtScheduleId() {
-    return courtScheduleId;
+    return courtScheduleId!=null ? of(courtScheduleId) : empty();
   }
 
   public Optional<Integer> getCourtRoomId() {
-    return courtRoomId;
+    return courtRoomId!=null ? of(courtRoomId) : empty();
   }
 
   public Optional<Integer> getDuration() {
-    return duration;
+    return duration!=null ? of(duration) : empty();
   }
 
   public Optional<String> getOucode() {
-    return oucode;
+    return oucode!=null ? of(oucode) : empty();
   }
 
   public Optional<String> getSession() {
-    return session;
+    return session!=null ? of(session) : empty();
   }
 
   public ZonedDateTime getStartTime() {
@@ -90,15 +93,15 @@ public class NonDefaultDay implements Serializable {
   }
 
   public static class Builder {
-    private Optional<String> courtScheduleId;
+    private Optional<String> courtScheduleId = empty();
 
-    private Optional<Integer> courtRoomId;
+    private Optional<Integer> courtRoomId = empty();
 
     private Optional<Integer> duration;
 
-    private Optional<String> oucode;
+    private Optional<String> oucode = empty();
 
-    private Optional<String> session;
+    private Optional<String> session =empty();
 
     private ZonedDateTime startTime;
 
