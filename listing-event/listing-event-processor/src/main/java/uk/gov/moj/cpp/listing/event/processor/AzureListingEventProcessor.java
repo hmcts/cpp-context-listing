@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import static java.net.URLEncoder.encode;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
@@ -17,7 +16,6 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
 import uk.gov.moj.cpp.listing.event.processor.azure.util.SlotsToJsonStringConverter;
 
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.UUID;
 
@@ -66,16 +64,12 @@ public class AzureListingEventProcessor {
             LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PUBLIC_EVENT_HEARING_CONFIRMED, envelope.toObfuscatedDebugString());
         }
 
-        try {
-            final HearingConfirmed hearingConfirmed = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingConfirmed.class);
+        final HearingConfirmed hearingConfirmed = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingConfirmed.class);
 
-            final String updateSlotsPayload = jsonStringConverter.getSlotDetailFromHearingConfirmed(envelope, hearingConfirmed);
+        final String updateSlotsPayload = jsonStringConverter.getSlotDetailFromHearingConfirmed(envelope, hearingConfirmed);
 
-            if (isNotEmpty(updateSlotsPayload)) {
-                hearingSlotsService.update(encode(updateSlotsPayload, "UTF-8"));
-            }
-        } catch (UnsupportedEncodingException e) {
-            LOGGER.info("Unsupported Encoding Exception", e);
+        if (isNotEmpty(updateSlotsPayload)) {
+            hearingSlotsService.update(updateSlotsPayload);
         }
     }
 
