@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.json.Json;
 import javax.json.JsonObject;
 
 @ApplicationScoped
@@ -23,10 +24,13 @@ public class CourtListService {
     @Inject
     private RangeSearchQuery rangeSearchQuery;
 
-    public JsonObject retrieveCourtList(final UUID courtCentreId,
-                                        final PublishCourtListType publishCourtListType,
-                                        final LocalDate startDate,
-                                        final JsonEnvelope envelope) {
+    @Inject
+    private XhibitReferenceDataService xhibitReferenceDataService;
+
+    public JsonObject retrieveUnPublishedCourtList(final UUID courtCentreId,
+                                                   final PublishCourtListType publishCourtListType,
+                                                   final LocalDate startDate,
+                                                   final JsonEnvelope envelope) {
 
         final JsonEnvelope rangeSearchQueryEnvelope = rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(
                 courtCentreId,
@@ -38,5 +42,17 @@ public class CourtListService {
         final JsonEnvelope rangeSearchResponse = rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope);
 
         return rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse.payloadAsJsonObject());
+    }
+
+    public JsonObject emptyCourtList(final JsonEnvelope envelope, final UUID courtCentreId) {
+        return Json.createObjectBuilder()
+                .add("courtCentreId", courtCentreId.toString())
+                .add("courtLists", Json.createArrayBuilder().add(
+                        Json.createObjectBuilder()
+                                .add("crestCourtSite", xhibitReferenceDataService.getCrestCourtSiteJson(envelope, courtCentreId))
+                                .add("sittings", Json.createArrayBuilder().build())
+                                .build()
+                        ).build()
+                ).build();
     }
 }

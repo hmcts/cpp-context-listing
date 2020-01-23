@@ -20,6 +20,7 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -41,6 +42,9 @@ public class CourtListServiceTest {
 
     @Mock
     private RangeSearchQuery rangeSearchQuery;
+
+    @Mock
+    private XhibitReferenceDataService xhibitReferenceDataService;
 
     @InjectMocks
     private CourtListService courtListService;
@@ -64,9 +68,27 @@ public class CourtListServiceTest {
         when(rangeSearchResponse.payloadAsJsonObject()).thenReturn(rangeSearchResponsePayload);
         when(rangeSearchConverter.generateCourtListQueryPayload(queryEnvelope, courtCentreId, rangeSearchResponsePayload)).thenReturn(courtListResponse);
 
-        final JsonObject response = courtListService.retrieveCourtList(courtCentreId, publishCourtListType, startDate, queryEnvelope);
+        final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, queryEnvelope);
 
         assertThat(response, is(courtListResponse));
+    }
+
+    @Test
+    public void shouldReturnEmptyCourtList() {
+
+        final UUID courtCentreId = UUID.randomUUID();
+        final JsonEnvelope queryEnvelope = generateQuery(createObjectBuilder().build());
+
+        final JsonObject crestCourtSiteJson = mock(JsonObject.class);
+        when(xhibitReferenceDataService.getCrestCourtSiteJson(queryEnvelope, courtCentreId)).thenReturn(crestCourtSiteJson);
+
+        final JsonObject courtList = courtListService.emptyCourtList(queryEnvelope, courtCentreId);
+
+        final JsonObject actualCourtList = courtList.getJsonArray("courtLists").getJsonObject(0);
+
+        Assert.assertThat(actualCourtList.getJsonArray("sittings").size(), is(0));
+
+        Assert.assertThat(actualCourtList.getJsonObject("crestCourtSite"), is(crestCourtSiteJson));
     }
 
     private JsonEnvelope generateQuery(final JsonValue payload) {

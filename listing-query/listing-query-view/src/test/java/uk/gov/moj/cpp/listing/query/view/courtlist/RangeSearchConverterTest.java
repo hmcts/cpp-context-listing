@@ -87,6 +87,7 @@ public class RangeSearchConverterTest {
         when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID))).thenReturn(courtRoom1);
         when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(COURT_SITE_B_COURT_ROOM_ID))).thenReturn(courtRoom2);
         when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(UNKNOWN_COURT_SITE_COURT_ROOM_ID))).thenReturn(Optional.empty());
+        when(xhibitReferenceDataService.getDefaultCrestCourtSiteCode(envelope, courtCentreId)).thenReturn("A");
 
         final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse);
 

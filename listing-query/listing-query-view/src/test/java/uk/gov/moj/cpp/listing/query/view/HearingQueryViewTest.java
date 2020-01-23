@@ -441,7 +441,7 @@ public class HearingQueryViewTest {
                 .add("courtCentreId", courtCentreId.toString())
                 .build();
 
-        when(courtListService.retrieveCourtList(courtCentreId,publishCourtListType,
+        when(courtListService.retrieveUnPublishedCourtList(courtCentreId,publishCourtListType,
                 startDate,
                 queryEnvelope)).thenReturn(courtListResponsePayload);
 
@@ -514,13 +514,14 @@ public class HearingQueryViewTest {
                 uk.gov.justice.listing.event.PublishCourtListType.valueOf(publishCourtListType.name()),
                 startDate);
 
+        final JsonObject emptyCourtListJson = Json.createObjectBuilder().build();
+
         when(publishedCourtListRepository.findBy(primaryKey)).thenReturn(null);
+        when(courtListService.emptyCourtList(queryEnvelope, courtCentreId)).thenReturn(emptyCourtListJson);
 
         final JsonEnvelope response = hearingsQueryView.retrieveCourtList(queryEnvelope);
 
-        JsonObject actualCourtList = response.payloadAsJsonObject().getJsonObject("courtList");
-
-        assertThat(actualCourtList.getJsonArray("sittings").size(), is(0));
+        assertThat(response.payloadAsJsonObject(), is(emptyCourtListJson));
     }
 
     private JsonEnvelope generateQuery(final JsonValue payload) {

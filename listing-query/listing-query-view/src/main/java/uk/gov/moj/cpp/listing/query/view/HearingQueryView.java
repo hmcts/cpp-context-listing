@@ -41,7 +41,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -181,19 +180,19 @@ public class HearingQueryView {
     }
 
     @Handles("listing.courtlist")
-    public JsonEnvelope retrieveCourtList(final JsonEnvelope query) {
+    public JsonEnvelope retrieveCourtList(final JsonEnvelope queryEnvelope) {
 
-        final JsonObject queryPayload = query.payloadAsJsonObject();
+        final JsonObject queryPayload = queryEnvelope.payloadAsJsonObject();
 
         final JsonObject courtListResponsePayload = (queryPayload.containsKey("published") &&
                 queryPayload.getBoolean("published"))
-                ? getPublishedCourtListResponsePayload(queryPayload)
-                : getUnpublishedCourtListResponsePayload(query, queryPayload);
+                ? getPublishedCourtListResponsePayload(queryEnvelope, queryPayload)
+                : getUnpublishedCourtListResponsePayload(queryEnvelope, queryPayload);
 
-        return enveloper.withMetadataFrom(query, "listing.courtlist").apply(courtListResponsePayload);
+        return enveloper.withMetadataFrom(queryEnvelope, "listing.courtlist").apply(courtListResponsePayload);
     }
 
-    private JsonObject getPublishedCourtListResponsePayload(final JsonObject queryPayload) {
+    private JsonObject getPublishedCourtListResponsePayload(final JsonEnvelope envelope, final JsonObject queryPayload) {
 
         final UUID courtCentreId = fromString(queryPayload.getString("courtCentreId"));
 
@@ -206,21 +205,11 @@ public class HearingQueryView {
 
         return publishedCourtList != null
                 ? publishedCourtListToJsonConverter.convert(publishedCourtList).getJsonObject("courtListJson")
-                : emptyCourtList(courtCentreId);
-    }
-
-    private JsonObject emptyCourtList(final UUID courtCentreId) {
-        return Json.createObjectBuilder()
-                .add("courtList",
-                        Json.createObjectBuilder()
-                                .add("courtCentreId", courtCentreId.toString())
-                                .add("sittings", Json.createArrayBuilder().build())
-                                .build()
-                ).build();
+                : courtListService.emptyCourtList(envelope, courtCentreId);
     }
 
     private JsonObject getUnpublishedCourtListResponsePayload(final JsonEnvelope query, final JsonObject queryPayload) {
-        return courtListService.retrieveCourtList(
+        return courtListService.retrieveUnPublishedCourtList(
                 fromString(queryPayload.getString("courtCentreId")),
                 uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.valueOf(queryPayload.getString("publishCourtListType")),
                 parse(queryPayload.getString("startDate")),

@@ -19,7 +19,6 @@ import javax.json.JsonObject;
 public class CourtListsBuilder {
 
     private static final String CREST_COURT_SITE_CODE = "crestCourtSiteCode";
-    public static final String DEFAULT_CREST_COURT_SITE_CODE = "A";
 
     private final Map<String, List<FlatHearing>> crestCourtSiteCodeHearingsMap = new HashMap<>();
     private final Map<String, List<Sitting>> crestCourtSiteCodeSittingsMap = new HashMap<>();
@@ -114,22 +113,13 @@ public class CourtListsBuilder {
     private String getCrestCourtSiteCodeForCourtRoom(final Optional<UUID> courtRoomId) {
 
         if (!courtRoomId.isPresent()) {
-            return getDefaultCrestCourtSiteCode(courtCentreId);
+            return xhibitReferenceDataService.getDefaultCrestCourtSiteCode(envelope, courtCentreId);
         }
 
         final Optional<JsonObject> courtRoomJson = xhibitReferenceDataService.getCourtRoom(envelope, courtCentreId,
                 courtRoomId.get());
 
         return courtRoomJson.isPresent() ? courtRoomJson.get().getString(CREST_COURT_SITE_CODE)
-                : getDefaultCrestCourtSiteCode(courtCentreId);
-    }
-
-    private String getDefaultCrestCourtSiteCode(final UUID courtCentreId) {
-
-        return xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(envelope, courtCentreId)
-                .stream()
-                .map(courtSite -> courtSite.getString(CREST_COURT_SITE_CODE))
-                .sorted()
-                .findFirst().orElse(DEFAULT_CREST_COURT_SITE_CODE);
+                : xhibitReferenceDataService.getDefaultCrestCourtSiteCode(envelope, courtCentreId);
     }
 }
