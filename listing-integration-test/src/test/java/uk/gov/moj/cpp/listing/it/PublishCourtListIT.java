@@ -9,6 +9,7 @@ import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCou
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetAllCrownCourtCentres;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataXhibitCourtRoomMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 import static uk.gov.moj.cpp.listing.utils.SystemIdMapperStub.stubIdMapperReturningExistingAssociation;
@@ -67,6 +68,7 @@ public class PublishCourtListIT extends AbstractIT {
 
         final UUID courtCentreId = randomUUID();
         final UUID courtListId = randomUUID();
+        final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
 
@@ -79,7 +81,8 @@ public class PublishCourtListIT extends AbstractIT {
 
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
-        stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
+        stubGetReferenceDataCpCourtRooms(hearingsData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(courtRoomId);
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
         publishCourtListSteps.verifyHearingListedFromAPI(true);

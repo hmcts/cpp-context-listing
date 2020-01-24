@@ -5,11 +5,13 @@ import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.query.view.RangeSearchQuery;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 
 @ApplicationScoped
@@ -45,14 +47,20 @@ public class CourtListService {
     }
 
     public JsonObject emptyCourtList(final JsonEnvelope envelope, final UUID courtCentreId) {
+
+        final List<JsonObject> courtSites = xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(envelope, courtCentreId);
+
+        final JsonArrayBuilder courtListsBuilder = Json.createArrayBuilder();
+
+        courtSites.forEach(courtSiteJson -> courtListsBuilder.add(Json.createObjectBuilder()
+                .add("crestCourtSite", courtSiteJson)
+                .add("sittings", Json.createArrayBuilder().build())
+                .build())
+        );
+
         return Json.createObjectBuilder()
                 .add("courtCentreId", courtCentreId.toString())
-                .add("courtLists", Json.createArrayBuilder().add(
-                        Json.createObjectBuilder()
-                                .add("crestCourtSite", xhibitReferenceDataService.getCrestCourtSiteJson(envelope, courtCentreId))
-                                .add("sittings", Json.createArrayBuilder().build())
-                                .build()
-                        ).build()
-                ).build();
+                .add("courtLists", courtListsBuilder)
+                .build();
     }
 }

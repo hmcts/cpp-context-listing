@@ -110,14 +110,14 @@ public class CourtListsBuilder {
                 .build();
     }
 
-    private String getCrestCourtSiteCodeForCourtRoom(final Optional<UUID> courtRoomId) {
+    private String getCrestCourtSiteCodeForCourtRoom(final Optional<UUID> courtRoomUUID) {
 
-        if (!courtRoomId.isPresent()) {
+        if (!courtRoomUUID.isPresent()) {
             return xhibitReferenceDataService.getDefaultCrestCourtSiteCode(envelope, courtCentreId);
         }
 
         final Optional<JsonObject> courtRoomJson = xhibitReferenceDataService.getCourtRoom(envelope, courtCentreId,
-                courtRoomId.get());
+                courtRoomUUID.get());
 
         return courtRoomJson.isPresent() ? courtRoomJson.get().getString(CREST_COURT_SITE_CODE)
                 : xhibitReferenceDataService.getDefaultCrestCourtSiteCode(envelope, courtCentreId);

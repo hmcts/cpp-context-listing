@@ -15,11 +15,13 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 public class XhibitReferenceDataService {
 
     private static final String REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS = "referencedata.query.cp-xhibit-court-mappings";
     private static final String REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS = "referencedata.query.cp-xhibit-courtroom-mappings";
+    private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
     private static final String CREST_COURT_SITE_CODE = "crestCourtSiteCode";
     private static final String DEFAULT_CREST_COURT_SITE_CODE = "A";
 
@@ -36,18 +38,24 @@ public class XhibitReferenceDataService {
                 .payloadAsJsonObject().getJsonArray("cpXhibitCourtMappings").getValuesAs(JsonObject.class);
     }
 
-    public Optional<JsonObject> getCourtRoom(final Envelope envelope, final UUID courtCentreId, final UUID courtRoomId) {
+    public Optional<JsonObject> getCourtRoom(final Envelope envelope, final UUID courtCentreId, final UUID courtRoomUUID) {
+
+        final JsonObject cpCourtRoom = getCpCourtRoom(envelope, courtCentreId, courtRoomUUID);
+
+        final String courtRoomId = cpCourtRoom.getJsonNumber("courtroomId").toString();
 
         final JsonObject queryParameters = createObjectBuilder().add("ouId", courtCentreId.toString()).build();
 
-        return requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS)
-                .withMetadataFrom(envelope))
-                .payloadAsJsonObject().getJsonArray("cpXhibitCourtRoomMappings").getValuesAs(JsonObject.class)
-                .stream().filter(c -> UUID.fromString(c.getString("id")).equals(courtRoomId))
+        final JsonEnvelope response = requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS)
+                .withMetadataFrom(envelope));
+
+        return response.payload().equals(JsonValue.NULL) ? Optional.empty()
+                : response.payloadAsJsonObject().getJsonArray("cpXhibitCourtRoomMappings").getValuesAs(JsonObject.class)
+                .stream().filter(c -> c.getJsonNumber("courtRoomId").toString().equals(courtRoomId))
                 .findFirst();
     }
 
-    public  String getDefaultCrestCourtSiteCode(final Envelope envelope, final UUID courtCentreId) {
+    public String getDefaultCrestCourtSiteCode(final Envelope envelope, final UUID courtCentreId) {
 
         return getCrestCourtSitesForCourtCentre(envelope, courtCentreId)
                 .stream()
@@ -56,13 +64,15 @@ public class XhibitReferenceDataService {
                 .findFirst().orElse(DEFAULT_CREST_COURT_SITE_CODE);
     }
 
-    public JsonObject getCrestCourtSiteJson(final JsonEnvelope envelope, final UUID courtCentreId) {
+    private JsonObject getCpCourtRoom(final Envelope envelope, final UUID courtCentreId, final UUID courtRoomUUID) {
 
-        final String crestCourtSiteCode = getDefaultCrestCourtSiteCode(envelope, courtCentreId);
+        final JsonObject queryParameters = createObjectBuilder().add("id", courtCentreId.toString()).build();
 
-        return getCrestCourtSitesForCourtCentre(envelope, courtCentreId)
-                .stream().filter(courtSite -> crestCourtSiteCode.equals(courtSite.getString(CREST_COURT_SITE_CODE)))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Cannot find site"));
+        final JsonEnvelope response = requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_COURTROOM)
+                .withMetadataFrom(envelope));
+
+        return response.payloadAsJsonObject().getJsonArray("courtrooms").getValuesAs(JsonObject.class)
+                .stream().filter(c -> UUID.fromString(c.getString("id")).equals(courtRoomUUID))
+                .findFirst().orElseThrow(() -> new RuntimeException("Cannot find court room uuid " + courtRoomUUID.toString()));
     }
 }

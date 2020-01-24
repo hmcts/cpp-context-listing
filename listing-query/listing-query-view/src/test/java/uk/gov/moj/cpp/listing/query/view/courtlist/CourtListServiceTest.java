@@ -15,6 +15,8 @@ import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.query.view.RangeSearchQuery;
 
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -79,8 +81,9 @@ public class CourtListServiceTest {
         final UUID courtCentreId = UUID.randomUUID();
         final JsonEnvelope queryEnvelope = generateQuery(createObjectBuilder().build());
 
-        final JsonObject crestCourtSiteJson = mock(JsonObject.class);
-        when(xhibitReferenceDataService.getCrestCourtSiteJson(queryEnvelope, courtCentreId)).thenReturn(crestCourtSiteJson);
+        final JsonObject courtSite1 = mock(JsonObject.class);
+        final List<JsonObject> crestCourtSitesJson = Collections.singletonList(courtSite1);
+        when(xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(queryEnvelope, courtCentreId)).thenReturn(crestCourtSitesJson);
 
         final JsonObject courtList = courtListService.emptyCourtList(queryEnvelope, courtCentreId);
 
@@ -88,7 +91,7 @@ public class CourtListServiceTest {
 
         Assert.assertThat(actualCourtList.getJsonArray("sittings").size(), is(0));
 
-        Assert.assertThat(actualCourtList.getJsonObject("crestCourtSite"), is(crestCourtSiteJson));
+        Assert.assertThat(actualCourtList.getJsonObject("crestCourtSite"), is(courtSite1));
     }
 
     private JsonEnvelope generateQuery(final JsonValue payload) {
