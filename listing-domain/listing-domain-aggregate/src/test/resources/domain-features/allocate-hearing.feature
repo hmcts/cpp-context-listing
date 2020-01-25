@@ -5,7 +5,7 @@ Feature: Allocate a hearing
 
     Given hearing listed
     When you applyAllocationRules to a Hearing
-    Then no events occured
+    Then no events occurred
 
 
   Scenario: An unallocated hearing has been listed, a courtroom has been assigned and non default days
@@ -27,7 +27,7 @@ Feature: Allocate a hearing
       And court room removed from hearing
       And hearing days changed for hearing
     When you applyAllocationRules to a Hearing using a no-args
-    Then no events occured
+    Then no events occurred
 
 
   Scenario: A hearing has been listed with the necessary fields for allocation

@@ -141,7 +141,7 @@ function runEventTrackingLiquibase {
 
 
 function buildDeployAndTest {
-  buildWars
+#  buildWars
   deployAndTest
 }
 
@@ -156,11 +156,11 @@ function runLiquibase {
 }
 
 function deployAndTest {
-  deleteWars
-  startVagrant
-  runLiquibase
-  deployWiremock
-  deployWars
+#  deleteWars
+#  startVagrant
+#  runLiquibase
+#  deployWiremock
+#  deployWars
   healthCheck
   integrationTests
 }

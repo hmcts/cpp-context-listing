@@ -9,6 +9,18 @@
     },
     "duration": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
+    },
+    "courtScheduleId": {
+      "type": "string"
+    },
+    "session": {
+      "type": "string"
+    },
+    "oucode": {
+      "type": "string"
+    },
+    "courtRoomId": {
+      "type": "integer"
     }
   },
   "required": [

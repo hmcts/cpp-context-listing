@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice">
+    <cs:CourtLists>
+        <cs:CourtList SittingDate="2019-11-04">
+            <cs:Sittings>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingNote>TESTNOTE</cs:SittingNote>
+                </cs:Sitting>
+            </cs:Sittings>
+        </cs:CourtList>
+    </cs:CourtLists>
+</cs:FirmList>

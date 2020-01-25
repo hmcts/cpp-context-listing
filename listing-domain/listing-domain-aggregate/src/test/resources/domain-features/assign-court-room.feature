@@ -23,4 +23,4 @@ Feature: Assign a court-room to a hearing or change the court-room
     Given hearing listed
       And court room assigned to hearing
     When you assignCourtRoom to a Hearing using a the-same-court-room
-    Then no events occured
+    Then no events occurred

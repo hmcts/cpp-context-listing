@@ -12,13 +12,16 @@ Feature: Change the end date of the hearing
 
     Given hearing listed
     When you changeEndDate to a Hearing using a the same end date
-    Then no events occured
+    Then no events occurred
 
 
-  Scenario: A request to change the end date for a hearing that has not been listed
-            does not result in any change
+  Scenario: An unallocated hearing has been listed and removing the end date
+            results in the hearing end date being removed
 
-    Given no previous events
-    When you changeEndDate to a Hearing using an end date
-    Then no events occured
+    Given hearing listed
+    When you removeEndDate to a Hearing using a hearing id
+    Then end date removed for hearing
+
+
+
 

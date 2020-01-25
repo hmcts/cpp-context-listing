@@ -18,4 +18,4 @@ Feature: List a hearing
 
     Given hearing listed
     When you list to a Hearing using a the same hearing details
-    Then no events occured
+    Then no events occurred

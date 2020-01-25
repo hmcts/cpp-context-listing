@@ -12,14 +12,14 @@ Feature: Assign a court-room to a hearing or change the court-room
 
     Given hearing listed
     When you changeCourtCentre to a Hearing using a the same court centre
-    Then no events occured
+    Then no events occurred
 
   Scenario: A request to change the court centre for a hearing that has not been listed
             does not result in any change
 
     Given no previous events
     When you changeCourtCentre to a Hearing using a court centre
-    Then no events occured
+    Then no events occurred
 
 
 

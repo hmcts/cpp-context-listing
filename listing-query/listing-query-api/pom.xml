@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.listing</groupId>
         <artifactId>listing-query</artifactId>
-        <version>6.4.1-SNAPSHOT</version>
+        <version>6.4.1-SCSL-SNAPSHOT</version>
     </parent>
 
     <artifactId>listing-query-api</artifactId>
@@ -80,7 +80,11 @@
             <artifactId>javaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
-
+        <dependency>
+            <groupId>uk.gov.moj.cpp.common.library.utils</groupId>
+            <artifactId>cpp-platform-data-utils-rest</artifactId>
+            <version>${cpp-platform-data-utils.version}</version>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>uk.gov.justice.services</groupId>
@@ -92,6 +96,11 @@
             <groupId>uk.gov.moj.cpp.access-control</groupId>
             <artifactId>access-control-test-utils</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-common</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

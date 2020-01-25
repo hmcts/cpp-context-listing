@@ -17,4 +17,4 @@ Feature: Add defendant details following public event from Progression
 
       Given hearing listed in the past
       When you addDefendantsForCourtProceedings to a Hearing with a new defendants
-      Then no events occured
+      Then no events occurred

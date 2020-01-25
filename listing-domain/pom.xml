@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.listing</groupId>
         <artifactId>listing-parent</artifactId>
-        <version>6.4.1-SNAPSHOT</version>
+        <version>6.4.1-SCSL-SNAPSHOT</version>
     </parent>
 
     <artifactId>listing-domain</artifactId>
@@ -16,6 +16,7 @@
         <module>listing-domain-aggregate</module>
         <module>listing-domain-transformations</module>
         <module>listing-domain-transform-pojo</module>
+        <module>listing-domain-xhibit</module>
     </modules>
  
 </project>

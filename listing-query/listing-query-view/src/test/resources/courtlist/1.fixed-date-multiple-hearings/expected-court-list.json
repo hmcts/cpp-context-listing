@@ -1,0 +1,134 @@
+{
+  "courtCentreId": "eeb81654-eb5b-443f-ad4b-911606732e53",
+  "courtLists": [
+    {
+      "crestCourtSite": {
+        "crestCourtSiteId": "001",
+        "crestCourtSiteCode": "A",
+        "crestCourtSiteName": "SITENAME A",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+      ]
+    },
+    {
+      "crestCourtSite": {
+        "crestCourtSiteId": "001",
+        "crestCourtSiteCode": "B",
+        "crestCourtSiteName": "SITENAME B",
+        "courtType": "CROWN_COURT"
+      },
+      "sittings": [
+        {
+          "sittingDate": "2019-12-10",
+          "weekCommencing": false,
+          "courtRoomId": "7cb09222-49e1-3622-a5a6-ad253d2b3c39",
+          "judiciary": [
+            {
+              "judicialId": "fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
+              "judicialRoleType": {
+                "judiciaryType": "DISTRICT_JUDGE"
+              }
+            }
+          ],
+          "hearings": [
+            {
+              "startTime": "2019-12-10T14:58",
+              "hearingType": {
+                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+                "description": "Sentence"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "endTime": "2019-12-10T15:43",
+              "caseIdentifier": {
+                "authorityId": "e8ef7f69-89ef-472c-a877-4329175bd6ca",
+                "authorityCode": "CPS",
+                "caseReference": "35WX606859"
+              },
+              "defendants": [
+                {
+                  "id": "641fb670-5beb-4de1-9684-9970fb6c432f",
+                  "lastName": "ROBERTSON",
+                  "offences": [
+                    {
+                      "id": "cc4ca121-de8e-4d12-a2ea-1fccd31140b9",
+                      "endDate": "2019-12-11",
+                      "startDate": "2019-12-10",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Fokvowlev bavepli sug iluten deataven ke cag efi gilzevro ba lan bilibel.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Albert",
+                  "dateOfBirth": "1989-12-09",
+                  "custodyTimeLimit": "2020-01-09",
+                  "specificRequirements": "Kah oja nuovukul reg og sinboruti hi wo badacpat vel zakepfa zefliju.",
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "9a933369-66ba-43db-aa99-62d270b5eaa5",
+                  "lastName": "MONTINI",
+                  "offences": [
+                    {
+                      "id": "e5f81501-bf9b-4b1f-a292-2d197fa59b67",
+                      "endDate": "2019-12-11",
+                      "startDate": "2019-12-10",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Lu zuchov silhupmic vahasaj gavsu op abuocbi cin uzekebso cos ecjig baf seja kenveepa favzobiw moter.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Lenora",
+                  "dateOfBirth": "1989-12-09",
+                  "custodyTimeLimit": "2020-01-09",
+                  "specificRequirements": "Vod be zabarej mibot seh gej vucpev cuvil zowje gan ofa as lu zoma upacamut ku.",
+                  "restrictFromCourtList": false
+                }
+              ]
+            },
+            {
+              "startTime": "2019-12-10T14:59",
+              "hearingType": {
+                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+                "description": "Sentence"
+              },
+              "restrictFromCourtList": false,
+              "weekCommencing": false,
+              "endTime": "2019-12-10T15:44",
+              "applicationReference": "65OF146907",
+              "applicant": {
+                "id": "9aee20ca-b0b2-4133-b512-7bec3d835134",
+                "lastName": "PINZAUTI",
+                "firstName": "Adrian",
+                "isRespondent": false,
+                "restrictFromCourtList": false,
+                "courtApplicationPartyType": "PERSON_DEFENDANT"
+              },
+              "respondents": [
+                {
+                  "id": "5f12406b-3609-4659-a1ba-0200e7bb4ed9",
+                  "lastName": "WALTER",
+                  "firstName": "Addie",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

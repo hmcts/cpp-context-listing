@@ -17,4 +17,4 @@ Feature: Change defendant details following public event from Progression
 
     Given hearing listed in the past
     When you updateDefendants to a Hearing with a changed defendants
-    Then no events occured
+    Then no events occurred

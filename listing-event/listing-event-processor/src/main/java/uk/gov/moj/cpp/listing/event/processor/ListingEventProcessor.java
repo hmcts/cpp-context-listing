@@ -484,11 +484,15 @@ public class ListingEventProcessor {
      * Publish a public event to notify that the hearing has been confirmed.
      */
     private void publishHearingConfirmedPublicEvent(final JsonEnvelope envelope) {
-        final HearingAllocatedForListing hearingAllocatedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
-        final HearingConfirmed hearingConfirmed = hearingConfirmedFactory.create(hearingAllocatedForListing);
+        final HearingConfirmed hearingConfirmed = getHearingConfirmed(envelope);
 
         LOGGER.info("Publishing '{}' public event with payload {}", PUBLIC_EVENT_HEARING_CONFIRMED, hearingConfirmed);
         sender.send(enveloper.withMetadataFrom(envelope, PUBLIC_EVENT_HEARING_CONFIRMED).apply(hearingConfirmed));
+    }
+
+    private HearingConfirmed getHearingConfirmed(final JsonEnvelope envelope) {
+        final HearingAllocatedForListing hearingAllocatedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
+        return hearingConfirmedFactory.create(hearingAllocatedForListing);
     }
 
     /*

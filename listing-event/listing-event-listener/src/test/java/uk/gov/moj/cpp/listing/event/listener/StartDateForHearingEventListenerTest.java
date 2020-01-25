@@ -1,12 +1,14 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import static java.util.UUID.randomUUID;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
+import uk.gov.justice.listing.events.StartDateRemovedForHearing;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
@@ -15,10 +17,12 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import static java.util.UUID.randomUUID;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StartDateForHearingEventListenerTest {
@@ -53,6 +57,22 @@ public class StartDateForHearingEventListenerTest {
         startDateForHearingEventListener.startDateChangedForHearing(envelope);
 
         verify(properties).put(eq(START_DATE_FIELD), eq(START_DATE.toString()));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldRemoveStartDateForHearing() throws Exception {
+        final Envelope<StartDateRemovedForHearing> envelope = (Envelope<StartDateRemovedForHearing>) mock(Envelope.class);
+        final StartDateRemovedForHearing hearingData = StartDateRemovedForHearing.startDateRemovedForHearing().withHearingId(HEARING_ID).build();
+
+        given(envelope.payload()).willReturn(hearingData);
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
+        startDateForHearingEventListener.startDateRemovedForHearing(envelope);
+
+        verify(properties).remove("startDate");
         verify(hearingRepository).save(hearing);
     }
 }

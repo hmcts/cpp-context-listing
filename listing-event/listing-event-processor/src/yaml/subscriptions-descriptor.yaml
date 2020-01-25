@@ -47,6 +47,28 @@ subscriptions_descriptor:
         - name: listing.events.application-ejected-for-hearings
           schema_uri: http://justice.gov.uk/listing/events/application-ejected-for-hearings.json
 
+        - name: listing.event.publish-court-list-produced
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-produced.json
+
+        - name: listing.event.publish-court-list-requested
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-requested.json
+
+
+        - name: listing.event.court-list-export-requested
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.court-list-export-requested.json
+
+
+        - name: listing.event.published-court-list-stored
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.published-court-list-stored.json
+
+
+        - name: listing.events.non-default-days-assigned-to-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.non-default-days-assigned-to-hearing.json
+
+
+        - name: listing.events.non-default-days-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.non-default-days-changed-for-hearing.json
+
       event_source_name: listing
 
     - name: public event subscription
@@ -71,5 +93,9 @@ subscriptions_descriptor:
 
         - name: public.progression.case-markers-updated
           schema_uri: http://justice.gov.uk/core/courts/case-markers-updated.json
+
+        # Update available slots in azure with resource from public hearing confirmed event
+        - name: public.listing.hearing-confirmed
+          schema_uri: http://justice.gov.uk/listing/courts/hearing-confirmed.json
 
       event_source_name: public.event.source
