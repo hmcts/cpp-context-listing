@@ -36,16 +36,13 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>LAZZERI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Harriett
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Harriett</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0"
-                                                   CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent
-                                            </cs:OffenceStatement>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -58,8 +55,7 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>BENINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Olga
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Olga</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
@@ -79,16 +75,13 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>BERTINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Corey
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Corey</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0"
-                                                   CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent
-                                            </cs:OffenceStatement>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -98,16 +91,13 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>NEWMAN</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Mable
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Mable</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0"
-                                                   CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent
-                                            </cs:OffenceStatement>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -120,8 +110,7 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>LUCAS</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Vernon
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Vernon</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>

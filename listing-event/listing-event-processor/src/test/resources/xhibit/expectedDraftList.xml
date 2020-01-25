@@ -44,8 +44,7 @@
                         <cs:Hearing>
                             <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
                             <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION
-                                </cs:HearingDescription>
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-10</cs:HearingDate>
                             </cs:HearingDetails>
                             <cs:CaseNumber>35WX606859</cs:CaseNumber>
@@ -56,18 +55,14 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameSurname>ROBERTSON
-                                            </apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Albert
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameSurname>ROBERTSON</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Albert</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0"
-                                                   CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent
-                                            </cs:OffenceStatement>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -75,16 +70,13 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>MONTINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Lenora
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Lenora</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0"
-                                                   CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent
-                                            </cs:OffenceStatement>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -93,8 +85,7 @@
                         <cs:Hearing>
                             <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
                             <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION
-                                </cs:HearingDescription>
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-10</cs:HearingDate>
                             </cs:HearingDetails>
                             <cs:CaseNumber>65OF146907</cs:CaseNumber>
@@ -102,10 +93,8 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameSurname>PINZAUTI
-                                            </apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Adrian
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameSurname>PINZAUTI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Adrian</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>

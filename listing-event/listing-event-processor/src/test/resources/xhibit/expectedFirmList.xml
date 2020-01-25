@@ -40,8 +40,7 @@
                         <cs:Hearing>
                             <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
                             <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION
-                                </cs:HearingDescription>
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
                             <cs:CaseNumber>71JC777146</cs:CaseNumber>
@@ -53,16 +52,13 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>BERTINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Corey
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Corey</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0"
-                                                   CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent
-                                            </cs:OffenceStatement>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -70,16 +66,13 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>NEWMAN</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Mable
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Mable</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0"
-                                                   CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent
-                                            </cs:OffenceStatement>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -88,8 +81,7 @@
                         <cs:Hearing>
                             <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
                             <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION
-                                </cs:HearingDescription>
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
                             <cs:CaseNumber>19RV576068</cs:CaseNumber>
@@ -98,8 +90,7 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>LUCAS</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Vernon
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Vernon</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
@@ -122,8 +113,7 @@
                         <cs:Hearing>
                             <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
                             <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION
-                                </cs:HearingDescription>
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
                             <cs:CaseNumber>44FE772625</cs:CaseNumber>
@@ -135,16 +125,13 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>LAZZERI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Harriett
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Harriett</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0"
-                                                   CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent
-                                            </cs:OffenceStatement>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -153,8 +140,7 @@
                         <cs:Hearing>
                             <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
                             <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION
-                                </cs:HearingDescription>
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
                             <cs:CaseNumber>41TL769069</cs:CaseNumber>
@@ -163,8 +149,7 @@
                                     <cs:PersonalDetails>
                                         <cs:Name>
                                             <apd:CitizenNameSurname>BENINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Olga
-                                            </apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Olga</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
