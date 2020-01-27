@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
+import static org.apache.commons.collections.ListUtils.union;
+
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.AbstractCourtListMapper;
@@ -30,7 +32,8 @@ public class CourtListFileGenerator {
 
     public String generateXml(final JsonEnvelope envelope,
                               final PublishCourtListRequestParameters requestParameters,
-                              final CourtListMetadata courtListMetadata) {
+                              final CourtListMetadata courtListMetadata,
+                              final JsonObject courtListJson) {
 
         final CourtListGenerationContext context =
                 new CourtListGenerationContext(envelope, requestParameters, courtListMetadata);
@@ -39,7 +42,8 @@ public class CourtListFileGenerator {
 
         final List<UUID> courtCentreIds = xhibitReferenceDataService.getCourtCentreIdsForCrestId(envelope, crownCourtCrestId);
 
-        final List<JsonObject> courtListsJson = courtCentreIds.stream()
+        final List<JsonObject> publishedCourtListsJson = courtCentreIds.stream()
+                .filter(courtCentreId -> !courtCentreId.equals(requestParameters.getCourtCentreId()))
                 .map(courtCentreId -> listingService.getPublishedCourtListForCourtCentre(
                         envelope,
                         courtCentreId,
@@ -49,7 +53,9 @@ public class CourtListFileGenerator {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
-        final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, courtListsJson);
+        final List<JsonObject> courtCentreCourtLists = courtListJson.getJsonArray("courtLists").getValuesAs(JsonObject.class);
+
+        final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, union(courtCentreCourtLists, publishedCourtListsJson));
 
         return xmlUtils.convertToXml(mapper.generate());
     }

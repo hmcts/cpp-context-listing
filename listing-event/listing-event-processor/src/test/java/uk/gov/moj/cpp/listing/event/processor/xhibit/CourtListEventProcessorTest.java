@@ -65,10 +65,10 @@ public class CourtListEventProcessorTest {
 
         final JsonEnvelope tEnvelope = mock(JsonEnvelope.class);
         final PublishCourtListRequestParameters parameters = mock(PublishCourtListRequestParameters.class);
-        final JsonObject courtListData = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json");
+        final JsonObject courtListJson = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json");
 
         when(publishCourtListRequestParametersParser.parse(tEnvelope)).thenReturn(parameters);
-        when(listingService.getUnpublishedCourtListForCourtCentre(tEnvelope, parameters)).thenReturn(courtListData);
+        when(listingService.getUnpublishedCourtListForCourtCentre(tEnvelope, parameters)).thenReturn(courtListJson);
 
         doAnswer(invocation -> {
             Object arg0 = invocation.getArgumentAt(0, JsonEnvelope.class);
@@ -77,13 +77,13 @@ public class CourtListEventProcessorTest {
             assertEquals(tEnvelope, arg0);
             assertEquals(parameters, arg1);
             return null;
-        }).when(courtListExportService).exportCourtList(tEnvelope, parameters);
+        }).when(courtListExportService).exportCourtList(tEnvelope, parameters, courtListJson);
 
         // Tested method
         courtListEventProcessor.handlePublishCourtListRequested(tEnvelope);
 
         // Assertions
-        assertCourtListPublished(parameters, tEnvelope, courtListData);
+        assertCourtListPublished(parameters, tEnvelope, courtListJson);
     }
 
     @Test
@@ -92,6 +92,7 @@ public class CourtListEventProcessorTest {
         final UUID courtCentreId = randomUUID();
         final UUID courtListId = randomUUID();
         final LocalDate startDate = LocalDate.now();
+        final JsonObject courtListJson = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json");
 
         final ZonedDateTime requestedTime = parse("2018-01-02T13:04:05+00:00[UTC]");
         final PublishCourtListRequestParameters parameters = new PublishCourtListRequestParameters(
@@ -109,6 +110,7 @@ public class CourtListEventProcessorTest {
                 .add("publishCourtListType", PublishCourtListType.WARN.name())
                 .add("startDate", startDate.toString())
                 .add("requestedTime", requestedTime.toString())
+                .add("courtListJson", courtListJson.toString())
                 .build();
         final Metadata metadata = metadataBuilder()
                 .withId(randomUUID())
@@ -124,7 +126,7 @@ public class CourtListEventProcessorTest {
             assertEquals(tEnvelope, arg0);
             assertEquals(parameters, arg1);
             return null;
-        }).when(courtListExportService).exportCourtList(tEnvelope, parameters);
+        }).when(courtListExportService).exportCourtList(tEnvelope, parameters, courtListJson);
 
         // Tested method
         courtListEventProcessor.handleCourtListExportRequested(tEnvelope);

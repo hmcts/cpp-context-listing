@@ -10,6 +10,7 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListR
 import java.util.UUID;
 
 import javax.inject.Inject;
+import javax.json.JsonObject;
 
 import org.slf4j.Logger;
 
@@ -36,12 +37,12 @@ public class CourtListExportService {
 
     @SuppressWarnings("squid:S2221")
     // Allow any exception to be handled by recording it as a failed export
-    public void exportCourtList(final JsonEnvelope envelope, final PublishCourtListRequestParameters parameters) {
+    public void exportCourtList(final JsonEnvelope envelope, final PublishCourtListRequestParameters parameters, final JsonObject courtListJson) {
         try {
 
             final CourtListMetadata courtListMetadata = courtListMetadataGenerator.generate(envelope, parameters);
 
-            final String courtListXml = courtListFileGenerator.generateXml(envelope, parameters, courtListMetadata);
+            final String courtListXml = courtListFileGenerator.generateXml(envelope, parameters, courtListMetadata, courtListJson);
 
             courtListFileGenerator.validateXml(parameters, courtListXml);
 

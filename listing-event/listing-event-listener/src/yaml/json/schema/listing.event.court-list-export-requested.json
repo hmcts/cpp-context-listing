@@ -24,6 +24,9 @@
     "requestedTime": {
       "type": "string",
       "format": "date-time"
+    },
+    "courtListJson": {
+      "type": "string"
     }
   },
   "required": [
@@ -31,7 +34,8 @@
     "courtCentreId",
     "startDate",
     "publishCourtListType",
-    "requestedTime"
+    "requestedTime",
+    "courtListJson"
   ],
   "additionalProperties": false,
   "definitions": {

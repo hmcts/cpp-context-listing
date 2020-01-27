@@ -717,6 +717,7 @@ public class ListingCommandHandler {
         final CourtListExportRequested event = new CourtListExportRequested(
                 courtListRequestExport.getCourtCentreId(),
                 courtListId,
+                courtListRequestExport.getCourtListJson(),
                 uk.gov.justice.listing.event.PublishCourtListType.valueOf(courtListRequestExport.getPublishCourtListType().name()),
                 now(),
                 courtListRequestExport.getStartDate()

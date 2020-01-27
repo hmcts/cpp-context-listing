@@ -72,6 +72,8 @@ public class CourtListFileGeneratorTest {
     @Spy
     private MapperFactory mapperFactory;
 
+    private JsonObject courtListJson;
+
     @Parameterized.Parameters(name = "{index}: Test with PublishCourtListType={0}, expectedXmlFile is:{2} ")
     public static Collection<Object[]> data() {
         Object[][] data = new Object[][]{
@@ -119,12 +121,8 @@ public class CourtListFileGeneratorTest {
                 .build();
         when(xhibitReferenceDataService.getXhibitHearingType(any(), any())).thenReturn(hearingType);
 
-        final JsonObject courtListData = givenPayload(courtListJsonFile);
-        when(listingService.getPublishedCourtListForCourtCentre(
-                envelope,
-                courtCentreId1,
-                publishCourtListType,
-                startDate)).thenReturn(courtListData);
+        courtListJson = givenPayload(courtListJsonFile);
+
         when(listingService.getPublishedCourtListForCourtCentre(
                 envelope,
                 courtCentreId2,
@@ -176,7 +174,7 @@ public class CourtListFileGeneratorTest {
         final CourtListMetadata metadata = new CourtListMetadata(publishCourtListType.name() + "-FILENAME",
                 "UNIQUEID", parse("2018-01-02T13:04:05+00:00[Europe/London]"));
 
-        final String generatedXml = courtListFileGenerator.generateXml(envelope, requestParameters, metadata);
+        final String generatedXml = courtListFileGenerator.generateXml(envelope, requestParameters, metadata, courtListJson);
 
         LOGGER.info("generatedXml:\n{}", generatedXml);
 

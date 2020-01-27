@@ -1312,11 +1312,13 @@ public class ListingCommandHandlerTest {
         final UUID courtCentreId = UUID.fromString("9689207b-a9d2-4c2e-bd38-269b78a132a8");
         final uk.gov.justice.listing.commands.PublishCourtListType publishCourtListType = uk.gov.justice.listing.commands.PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
+        final String courtListJson = "{}";
 
         final JsonObject payload = Json.createObjectBuilder()
                 .add("courtCentreId", courtCentreId.toString())
                 .add("publishCourtListType", publishCourtListType.name())
                 .add("startDate", startDate.toString())
+                .add("courtListJson", courtListJson)
                 .build();
 
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.court-list-request-export", payload);
@@ -1334,7 +1336,9 @@ public class ListingCommandHandlerTest {
                                 withJsonPath("$.courtListId", equalTo(courtListId.toString())),
                                 withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
                                 withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
-                                withJsonPath("$.startDate", equalTo(startDate.toString())))))));
+                                withJsonPath("$.startDate", equalTo(startDate.toString())),
+                                withJsonPath("$.courtListJson", equalTo(courtListJson))
+                        )))));
     }
 
     @Test

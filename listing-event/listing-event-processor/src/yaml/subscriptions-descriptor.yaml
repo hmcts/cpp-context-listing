@@ -58,10 +58,6 @@ subscriptions_descriptor:
           schema_uri: http://justice.gov.uk/listing/event/listing.event.court-list-export-requested.json
 
 
-        - name: listing.event.published-court-list-stored
-          schema_uri: http://justice.gov.uk/listing/event/listing.event.published-court-list-stored.json
-
-
         - name: listing.events.non-default-days-assigned-to-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.non-default-days-assigned-to-hearing.json
 

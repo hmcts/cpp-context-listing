@@ -6,7 +6,6 @@ import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_PRODUCED;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_REQUESTED;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
 
-import uk.gov.justice.listing.event.CourtListExportRequested;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
@@ -89,13 +88,6 @@ public class PublishCourtListEventListener {
                 );
 
         publishedCourtListRepository.save(proposedPublishedCourtList);
-    }
-
-    @Handles("listing.event.court-list-export-requested")
-    public void courtListPublishExportRequested(final Envelope<CourtListExportRequested> event) {
-        final CourtListExportRequested eventPayload = event.payload();
-
-        logger.info("Export requested for {}", eventPayload.getCourtCentreId());
     }
 
     @Handles("listing.event.publish-court-list-export-successful")

@@ -17,13 +17,17 @@
         "FIRM",
         "FINAL"
       ]
+    },
+    "courtListJson": {
+      "type": "string"
     }
   },
   "additionalProperties": false,
   "required": [
     "courtCentreId",
     "startDate",
-    "publishCourtListType"
+    "publishCourtListType",
+    "courtListJson"
   ],
   "definitions": {
     "localDate": {

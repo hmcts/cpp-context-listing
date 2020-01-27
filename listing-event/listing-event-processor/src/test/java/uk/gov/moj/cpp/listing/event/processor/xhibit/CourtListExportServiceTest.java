@@ -4,6 +4,7 @@ import static java.time.ZonedDateTime.parse;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
@@ -71,7 +72,7 @@ public class CourtListExportServiceTest {
 
         final CourtListMetadata courtListMetadata = new CourtListMetadata("TESTFILENAME",
                 "UNIQUE_ID", parse("2018-01-02T13:04:05+00:00[Europe/London]"));
-        final JsonObject courtListData = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json");
+        final JsonObject courtListJson = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json");
 
         final JsonObject courtListExportRequested = createObjectBuilder()
                 .add("courtCentreId", courtCentreId.toString())
@@ -88,11 +89,11 @@ public class CourtListExportServiceTest {
         final JsonEnvelope tEnvelope = envelopeFrom(metadata, courtListExportRequested);
 
         when(courtListMetadataGenerator.generate(any(), any())).thenReturn(courtListMetadata);
-        when(courtListFileGenerator.generateXml(any(), any(), any())).thenReturn(mockFileContent);
+        when(courtListFileGenerator.generateXml(any(), any(), any(), eq(courtListJson))).thenReturn(mockFileContent);
         when(fileServiceClient.store(courtListMetadata, mockFileContent)).thenReturn(generatedfileId);
 
         // Tested method
-        courtListExportService.exportCourtList(tEnvelope, parameters);
+        courtListExportService.exportCourtList(tEnvelope, parameters, courtListJson);
 
         // Assertions
         verify(publishCourtListCommandSender).recordCourtListExportSuccessful(parameters);

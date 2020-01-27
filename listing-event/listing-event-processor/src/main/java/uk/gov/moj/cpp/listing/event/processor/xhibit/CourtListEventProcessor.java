@@ -3,21 +3,22 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 
 import uk.gov.justice.listing.event.CourtListExportRequested;
-import uk.gov.justice.listing.event.PublishedCourtListStored;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.ListingService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
 
+import java.io.StringReader;
 import java.time.LocalDate;
 import java.util.UUID;
 
 import javax.inject.Inject;
+import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonReader;
 
 import org.slf4j.Logger;
 
@@ -51,27 +52,11 @@ public class CourtListEventProcessor {
 
         logger.info("handlePublishCourtListRequested: parameters={}", parameters);
 
-        storeAsPublishedCourtList(envelope, parameters);
-    }
+        final JsonObject courtListJson = listingService.getUnpublishedCourtListForCourtCentre(envelope, parameters);
 
-    @Handles("listing.event.published-court-list-stored")
-    public void handleCourtListStored(final JsonEnvelope envelope) {
+        publishCourtListCommandSender.storePublishedCourtList(parameters, courtListJson);
 
-        final PublishedCourtListStored publishedCourtListStored =
-                jsonObjectConverter.convert(envelope.payloadAsJsonObject(), PublishedCourtListStored.class);
-
-        final PublishCourtListRequestParameters parameters = new PublishCourtListRequestParameters(
-                publishedCourtListStored.getCourtListId(),
-                publishedCourtListStored.getCourtCentreId(),
-                publishedCourtListStored.getStartDate(),
-                calculateEndDate(
-                        PublishCourtListType.valueOf(publishedCourtListStored.getPublishCourtListType().name()),
-                        publishedCourtListStored.getStartDate()),
-                PublishCourtListType.valueOf(publishedCourtListStored.getPublishCourtListType().name()),
-                publishedCourtListStored.getLastUpdated()
-        );
-
-        publishCourtListCommandSender.requestExportCourtList(parameters);
+        publishCourtListCommandSender.requestExportCourtList(parameters, courtListJson);
     }
 
     @Handles("listing.event.court-list-export-requested")
@@ -95,7 +80,7 @@ public class CourtListEventProcessor {
                 publishCourtListType,
                 courtListExportRequested.getRequestedTime());
 
-        courtListExportService.exportCourtList(envelope, parameters);
+        courtListExportService.exportCourtList(envelope, parameters, courtCentreCourtListJson(envelope));
     }
 
     private LocalDate calculateEndDate(final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType, final LocalDate stateDate) {
@@ -103,10 +88,12 @@ public class CourtListEventProcessor {
         return publishCourtListType.isWeekCommencing() ? stateDate.plusDays(5) : stateDate;
     }
 
-    private void storeAsPublishedCourtList(final JsonEnvelope envelope, final PublishCourtListRequestParameters parameters) {
+    private JsonObject courtCentreCourtListJson(final JsonEnvelope envelope) {
 
-        final JsonObject courtListJson = listingService.getUnpublishedCourtListForCourtCentre(envelope, parameters);
+        final String courtListJsonString = envelope.payloadAsJsonObject().getString("courtListJson");
 
-        publishCourtListCommandSender.storePublishedCourtList(parameters, courtListJson);
+        try (final JsonReader jsonReader = Json.createReader(new StringReader(courtListJsonString))) {
+            return jsonReader.readObject();
+        }
     }
 }

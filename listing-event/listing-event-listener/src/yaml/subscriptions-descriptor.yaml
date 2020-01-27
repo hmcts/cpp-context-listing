@@ -135,8 +135,4 @@ subscriptions_descriptor:
           schema_uri: http://justice.gov.uk/listing/event/listing.event.published-court-list-stored.json
 
 
-        - name: listing.event.court-list-export-requested
-          schema_uri: http://justice.gov.uk/listing/event/listing.event.court-list-export-requested.json
-
-
       event_source_name: listing
