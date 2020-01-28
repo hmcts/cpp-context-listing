@@ -120,7 +120,7 @@
             <version>${project.version}</version>
         </dependency>
         <!-- End of Listing Dependencies -->
-        
+
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>

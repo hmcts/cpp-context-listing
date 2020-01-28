@@ -57,7 +57,6 @@ import uk.gov.justice.listing.courts.InitiationCode;
 import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.courts.LinkType;
 import uk.gov.justice.listing.courts.ListCourtHearing;
-import uk.gov.justice.listing.courts.Title;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
@@ -108,6 +107,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private static final String ORGANISATION_NAME = "ABC LTD";
+    private static final String PERSON_TITLE = "Baroness";
 
     private static final boolean UNALLOCATED = false;
     private final HearingsData hearingsData;
@@ -468,7 +468,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                 .withPersonDefendant(of(PersonDefendant.personDefendant()
                                                         .withBailStatus(of(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build()))
                                                         .withPersonDetails(Person.person()
-                                                                .withTitle(of(Title.MISS))
+                                                                .withTitle(of(PERSON_TITLE))
                                                                 .withNationalityId(of(randomUUID()))
                                                                 .withFirstName(of(d.getFirstName()))
                                                                 .withLastName(d.getLastName())
@@ -488,7 +488,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                                 .withGender(Gender.FEMALE)
                                                                 .withLastName(d.getLastName())
                                                                 .withNationalityId(of(randomUUID()))
-                                                                .withTitle(of(Title.MISS))
+                                                                .withTitle(of(PERSON_TITLE))
                                                                 .withEthnicity(of(Ethnicity.ethnicity()
                                                                         .withObservedEthnicityId(of(randomUUID()))
                                                                         .withObservedEthnicityDescription(of(STRING.next()))
@@ -510,10 +510,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                 .withProsecutionCaseId(listedCaseData.getCaseId())
                                                 .build())
                                                 .collect(Collectors.toList()))
-
                                         .build())
                                 .collect(Collectors.toList()))
-
                         .withDefendantListingNeeds(hearingData.getListedCases().stream()
                                 .map(lc -> lc.getDefendants().stream().map(d ->
                                         DefendantListingNeeds.defendantListingNeeds()
