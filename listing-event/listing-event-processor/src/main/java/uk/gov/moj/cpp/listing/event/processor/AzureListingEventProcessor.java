@@ -1,7 +1,9 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 
 import uk.gov.justice.listing.courts.HearingConfirmed;
@@ -66,11 +68,22 @@ public class AzureListingEventProcessor {
 
         final HearingConfirmed hearingConfirmed = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingConfirmed.class);
 
-        final String updateSlotsPayload = jsonStringConverter.getSlotDetailFromHearingConfirmed(envelope, hearingConfirmed);
+        if(isMagistratesAndSlotNotAlreadyUpdated(hearingConfirmed)){
+            final String updateSlotsPayload = jsonStringConverter.getSlotDetailFromHearingConfirmed(envelope, hearingConfirmed);
 
-        if (isNotEmpty(updateSlotsPayload)) {
-            hearingSlotsService.update(updateSlotsPayload);
+            if (isNotEmpty(updateSlotsPayload)) {
+                hearingSlotsService.update(updateSlotsPayload);
+            }
         }
+        else{
+            if (LOGGER.isInfoEnabled()){
+                LOGGER.info(format("Azure update slot service is applicable only to judiciary type MAGISTRATES. Judiciary type provided is %s.", hearingConfirmed.getConfirmedHearing().getJurisdictionType()));
+            }
+        }
+    }
+
+    private boolean isMagistratesAndSlotNotAlreadyUpdated(final HearingConfirmed hearingConfirmed) {
+        return MAGISTRATES==hearingConfirmed.getConfirmedHearing().getJurisdictionType();
     }
 
     private void updateHearingSlots(final UUID hearingId, final List<NonDefaultDay> nonDefaultDays) {

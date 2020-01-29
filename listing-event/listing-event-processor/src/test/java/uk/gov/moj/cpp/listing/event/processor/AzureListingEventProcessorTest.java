@@ -7,8 +7,10 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
@@ -116,22 +118,43 @@ public class AzureListingEventProcessorTest {
     @Test
     public void shouldUpdateSlotsInAzureWhenHandleWhenHearingConfirmedAfterHearingAllocatedForListingMessage() throws Exception {
 
-        HearingConfirmed hearingConfirmed = hearingConfirmed();
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(true);
 
         final JsonEnvelope event = hearingAllocatedEvent();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingConfirmed.class)).willReturn(hearingConfirmed);
 
         given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed)).willReturn(TEST_OUTPUT);
 
-        Response response = mock(Response.class);
+        final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
 
-        String resp = "sample1";
+        final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
         azureListingEventProcessor.handleHearingConfirmedMessage(event);
 
         verify(hearingSlotsService).update(TEST_OUTPUT);
+    }
+
+    @Test
+    public void shouldNotUpdateSlotsInAzureWhenJurisdictionTypeIsCrown() throws Exception {
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(false);
+
+        final JsonEnvelope event = hearingAllocatedEvent();
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingConfirmed.class)).willReturn(hearingConfirmed);
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed)).willReturn(TEST_OUTPUT);
+
+        final Response response = mock(Response.class);
+        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+
+        final String resp = "sample1";
+        when(response.readEntity(String.class)).thenReturn(resp);
+
+        azureListingEventProcessor.handleHearingConfirmedMessage(event);
+
+        verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
     }
 
     private JsonEnvelope hearingAllocatedEvent() {
@@ -175,16 +198,16 @@ public class AzureListingEventProcessorTest {
         return Arrays.asList(nonDefaultDay1, nonDefaultDay2);
     }
 
-    private HearingConfirmed hearingConfirmed() {
+    private HearingConfirmed hearingConfirmed(final boolean isMagistrates) {
 
         String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
         return HearingConfirmed.hearingConfirmed()
-                .withConfirmedHearing(buildHearing(formattedDateTime))
+                .withConfirmedHearing(buildHearing(formattedDateTime, isMagistrates))
                 .build();
     }
 
-    private uk.gov.justice.core.courts.ConfirmedHearing buildHearing(String formattedDateTime) {
+    private uk.gov.justice.core.courts.ConfirmedHearing buildHearing(String formattedDateTime, final boolean isMagistrates) {
         return uk.gov.justice.core.courts.ConfirmedHearing.confirmedHearing()
                 .withId(HEARING_ID)
                 .withHearingDays(Arrays.asList(HearingDay.hearingDay()
@@ -197,7 +220,7 @@ public class AzureListingEventProcessorTest {
                         .build())
                 .withHearingLanguage(of(HearingLanguage.WELSH))
                 .withCourtApplicationIds(Arrays.asList(randomUUID()))
-                .withJurisdictionType(JurisdictionType.CROWN)
+                .withJurisdictionType(isMagistrates? MAGISTRATES: JurisdictionType.CROWN)
                 .withType(HearingType.hearingType().withDescription(TYPE).withId(randomUUID()).build())
                 .withJudiciary(Arrays.asList(JudicialRole.judicialRole()
                         .withJudicialId(JUDICIAL_ID)
