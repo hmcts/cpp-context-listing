@@ -39,7 +39,7 @@ public class CourtListMetadataGenerator {
 
     private String getSendDate(final ZonedDateTime createdDate) {
 
-        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("YYMMddHHmmss");
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuuMMddHHmmss");
 
         return createdDate.format(formatter);
     }
