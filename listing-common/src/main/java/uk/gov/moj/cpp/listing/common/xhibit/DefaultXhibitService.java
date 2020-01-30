@@ -2,17 +2,12 @@ package uk.gov.moj.cpp.listing.common.xhibit;
 
 import static java.lang.String.format;
 
-import uk.gov.justice.services.fileservice.api.FileRetriever;
-import uk.gov.justice.services.fileservice.api.FileServiceException;
-import uk.gov.justice.services.fileservice.domain.FileReference;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.ws.rs.NotFoundException;
 
 import org.slf4j.Logger;
 
@@ -22,15 +17,9 @@ public class DefaultXhibitService implements XhibitService {
     @SuppressWarnings("squid:S1312")
     @Inject
     private Logger logger;
-    @Inject
-    private FileRetriever fileRetriever;
 
     @Inject
     private XhibitSessionFactory xhibitSessionFactory;
-
-    public void sendToXhibit(final UUID fileId, final String fileName) throws ExportFailedException {
-        send(retrieveFile(fileId).getContentStream(), fileName, fileId);
-    }
 
     public void sendToXhibit(final InputStream inputStream, final String fileName) throws ExportFailedException {
         send(inputStream, fileName, null);
@@ -50,16 +39,4 @@ public class DefaultXhibitService implements XhibitService {
             throw new ExportFailedException(message, e.getCause());
         }
     }
-
-    @SuppressWarnings({"squid:S1166", "squid:S1162"})
-    private FileReference retrieveFile(final UUID fileId) throws ExportFailedException {
-        try {
-            return fileRetriever.retrieve(fileId).orElseThrow(NotFoundException::new);
-        } catch (final FileServiceException e) {
-            final String message = format("Failed to retrieve file from File Service, %s, %s", e.getMessage(), fileId);
-            logger.error(message);
-            throw new ExportFailedException(message, e.getCause());
-        }
-    }
-
 }

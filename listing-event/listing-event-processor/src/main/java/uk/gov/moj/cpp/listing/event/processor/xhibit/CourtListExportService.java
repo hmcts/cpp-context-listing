@@ -7,7 +7,8 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadataGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 
-import java.util.UUID;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
 import javax.inject.Inject;
 import javax.json.JsonObject;
@@ -30,9 +31,6 @@ public class CourtListExportService {
     private CourtListFileGenerator courtListFileGenerator;
 
     @Inject
-    private FileServiceClient fileServiceClient;
-
-    @Inject
     private XhibitService xhibitService;
 
     @SuppressWarnings("squid:S2221")
@@ -46,9 +44,9 @@ public class CourtListExportService {
 
             courtListFileGenerator.validateXml(parameters, courtListXml);
 
-            final UUID fileId = fileServiceClient.store(courtListMetadata, courtListXml);
-
-            xhibitService.sendToXhibit(fileId, courtListMetadata.getFilename());
+            try (final InputStream courtListXmlInputStream = new ByteArrayInputStream(courtListXml.getBytes())) {
+                xhibitService.sendToXhibit(courtListXmlInputStream, courtListMetadata.getFilename());
+            }
             publishCourtListCommandSender.recordCourtListExportSuccessful(parameters);
 
         } catch (final Exception e) {

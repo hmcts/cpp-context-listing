@@ -20,6 +20,7 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadataGenerator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -43,8 +44,6 @@ public class CourtListExportServiceTest {
     @Mock
     private CourtListFileGenerator courtListFileGenerator;
     @Mock
-    private FileServiceClient fileServiceClient;
-    @Mock
     private XhibitService xhibitService;
     @Mock
     private Logger LOGGER;
@@ -56,7 +55,6 @@ public class CourtListExportServiceTest {
     public void shouldExportCourtList() throws Exception {
 
         final UUID courtCentreId = randomUUID();
-        final UUID generatedfileId = randomUUID();
         final UUID courtListId = randomUUID();
         final LocalDate startDate = LocalDate.now();
         final String mockFileContent = "FILE_CONTENT";
@@ -90,12 +88,12 @@ public class CourtListExportServiceTest {
 
         when(courtListMetadataGenerator.generate(any(), any())).thenReturn(courtListMetadata);
         when(courtListFileGenerator.generateXml(any(), any(), any(), eq(courtListJson))).thenReturn(mockFileContent);
-        when(fileServiceClient.store(courtListMetadata, mockFileContent)).thenReturn(generatedfileId);
 
         // Tested method
         courtListExportService.exportCourtList(tEnvelope, parameters, courtListJson);
 
         // Assertions
+        verify(xhibitService).sendToXhibit(any(InputStream.class), eq(courtListMetadata.getFilename()));
         verify(publishCourtListCommandSender).recordCourtListExportSuccessful(parameters);
     }
 }
