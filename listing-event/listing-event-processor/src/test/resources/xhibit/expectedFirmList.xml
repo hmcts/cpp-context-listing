@@ -45,7 +45,7 @@
                             </cs:HearingDetails>
                             <cs:CaseNumber>71JC777146</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
-                                <cs:ProsecutingReference>71JC777146</cs:ProsecutingReference>
+                                <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
                             </cs:Prosecution>
                             <cs:Defendants>
                                 <cs:Defendant>
@@ -118,7 +118,7 @@
                             </cs:HearingDetails>
                             <cs:CaseNumber>44FE772625</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
-                                <cs:ProsecutingReference>44FE772625</cs:ProsecutingReference>
+                                <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
                             </cs:Prosecution>
                             <cs:Defendants>
                                 <cs:Defendant>

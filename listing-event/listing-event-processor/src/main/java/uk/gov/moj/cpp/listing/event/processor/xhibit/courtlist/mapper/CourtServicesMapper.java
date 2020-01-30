@@ -298,8 +298,6 @@ public class CourtServicesMapper {
 
         final ProsecutionStructure prosecutionStructure = objectFactory.createProsecutionStructure();
 
-        prosecutionStructure.setProsecutingReference(listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE));
-
         final String authorityType = listedCase.getJsonObject(CASE_IDENTIFIER).getString("authorityCode");
 
         final ProsecutingAuthorityType prosecutingAuthorityType = CPS_PROSECUTOR_CODE.equals(authorityType)
@@ -307,6 +305,7 @@ public class CourtServicesMapper {
                 : OTHER_PROSECUTOR;
 
         prosecutionStructure.setProsecutingAuthority(prosecutingAuthorityType);
+        prosecutionStructure.setProsecutingReference(prosecutingAuthorityType.value());
 
         return prosecutionStructure;
     }

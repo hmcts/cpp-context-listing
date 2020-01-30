@@ -49,7 +49,7 @@
                             </cs:HearingDetails>
                             <cs:CaseNumber>35WX606859</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
-                                <cs:ProsecutingReference>35WX606859</cs:ProsecutingReference>
+                                <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
                             </cs:Prosecution>
                             <cs:Defendants>
                                 <cs:Defendant>
