@@ -35,8 +35,9 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
+                                            <apd:CitizenNameForename>Harriett</apd:CitizenNameForename>
                                             <apd:CitizenNameSurname>LAZZERI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Harriett</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Harriett LAZZERI</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
@@ -54,8 +55,9 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
+                                            <apd:CitizenNameForename>Olga</apd:CitizenNameForename>
                                             <apd:CitizenNameSurname>BENINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Olga</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Olga BENINI</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
@@ -74,8 +76,9 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
+                                            <apd:CitizenNameForename>Corey</apd:CitizenNameForename>
                                             <apd:CitizenNameSurname>BERTINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Corey</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Corey BERTINI</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
@@ -90,8 +93,9 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
+                                            <apd:CitizenNameForename>Mable</apd:CitizenNameForename>
                                             <apd:CitizenNameSurname>NEWMAN</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Mable</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Mable NEWMAN</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
@@ -109,8 +113,9 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
+                                            <apd:CitizenNameForename>Vernon</apd:CitizenNameForename>
                                             <apd:CitizenNameSurname>LUCAS</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Vernon</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameRequestedName>Vernon LUCAS</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>

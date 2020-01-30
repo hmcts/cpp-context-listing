@@ -129,7 +129,7 @@
               "defendants": [
                 {
                   "id": "641fb670-5beb-4de1-9684-9970fb6c432f",
-                  "lastName": "RESTRICTEDDEFENDANT",
+                  "lastName": "RESTRICTEDDEFENDANTLASTNAME",
                   "offences": [
                     {
                       "id": "cc4ca121-de8e-4d12-a2ea-1fccd31140b9",
@@ -145,7 +145,7 @@
                       "restrictFromCourtList": false
                     }
                   ],
-                  "firstName": "Albert",
+                  "firstName": "RESTRICTEDDEFENDANTFIRSTNAME",
                   "dateOfBirth": "1989-12-09",
                   "custodyTimeLimit": "2020-01-09",
                   "specificRequirements": "Kah oja nuovukul reg og sinboruti hi wo badacpat vel zakepfa zefliju.",

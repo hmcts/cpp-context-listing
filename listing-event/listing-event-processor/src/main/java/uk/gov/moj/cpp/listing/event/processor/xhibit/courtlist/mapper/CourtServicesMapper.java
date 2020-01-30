@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
+import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.UUID.fromString;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.CROWN_PROSECUTION_SERVICE;
@@ -44,6 +45,11 @@ import javax.json.JsonObject;
 public class CourtServicesMapper {
 
     public static final String MASKED_VALUE = "******";
+    public static final String OFFENCES = "offences";
+    public static final String FIRST_NAME = "firstName";
+    public static final String LAST_NAME = "lastName";
+    public static final String FORENAMES = "forenames";
+    public static final String SURNAME = "surname";
     private static final String CASE_IDENTIFIER = "caseIdentifier";
     private static final String CASE_REFERENCE = "caseReference";
     private static final String APPLICATION_REFERENCE = "applicationReference";
@@ -53,7 +59,6 @@ public class CourtServicesMapper {
     private static final List<String> JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
     private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
     private static final ObjectFactory objectFactory = new ObjectFactory();
-    public static final String OFFENCES = "offences";
     private CourtListGenerationContext context;
 
     private XhibitReferenceDataService xhibitReferenceDataService;
@@ -194,6 +199,7 @@ public class CourtServicesMapper {
         final JudiciaryStructure.Judge judgeStructure = objectFactory.createJudiciaryStructureJudge();
 
         judgeStructure.setCitizenNameRequestedName(NONE);
+        judgeStructure.getCitizenNameForename().add(NONE);
         judgeStructure.setCitizenNameSurname(NONE);
 
         return judgeStructure;
@@ -205,8 +211,12 @@ public class CourtServicesMapper {
 
         final JudiciaryStructure.Judge judgeStructure = objectFactory.createJudiciaryStructureJudge();
 
-        judgeStructure.setCitizenNameRequestedName(judiciary.getString("forenames"));
-        judgeStructure.setCitizenNameSurname(judiciary.getString("surname"));
+        judgeStructure.setCitizenNameRequestedName(
+                buildCitizenRequestedName(
+                        judiciary.getString(FORENAMES), judiciary.getString(SURNAME)
+                ));
+        judgeStructure.getCitizenNameForename().add(judiciary.getString(FORENAMES));
+        judgeStructure.setCitizenNameSurname(judiciary.getString(SURNAME));
 
         return judgeStructure;
     }
@@ -217,8 +227,12 @@ public class CourtServicesMapper {
 
         final JudiciaryStructure.Justice justice = objectFactory.createJudiciaryStructureJustice();
 
-        justice.setCitizenNameRequestedName(judiciary.getString("forenames"));
-        justice.setCitizenNameSurname(judiciary.getString("surname"));
+        justice.setCitizenNameRequestedName(
+                buildCitizenRequestedName(
+                        judiciary.getString(FORENAMES), judiciary.getString(SURNAME)
+                ));
+        justice.getCitizenNameForename().add(judiciary.getString(FORENAMES));
+        justice.setCitizenNameSurname(judiciary.getString(SURNAME));
 
         return justice;
     }
@@ -373,8 +387,12 @@ public class CourtServicesMapper {
 
         final CitizenNameStructure citizenNameStructure = objectFactory.createCitizenNameStructure();
 
-        citizenNameStructure.setCitizenNameSurname(defendant.getString("lastName"));
-        citizenNameStructure.setCitizenNameRequestedName(defendant.getString("firstName"));
+        citizenNameStructure.getCitizenNameForename().add(defendant.getString(FIRST_NAME));
+        citizenNameStructure.setCitizenNameSurname(defendant.getString(LAST_NAME));
+        citizenNameStructure.setCitizenNameRequestedName(
+                buildCitizenRequestedName(
+                        defendant.getString(FIRST_NAME), defendant.getString(LAST_NAME)
+                ));
 
         return citizenNameStructure;
     }
@@ -489,5 +507,9 @@ public class CourtServicesMapper {
         caseStructureCaseDefendants.setDefendant(generateDefendantStructureForDefendant(defendant));
 
         return caseStructureCaseDefendants;
+    }
+
+    private String buildCitizenRequestedName(final String forenames, final String surname) {
+        return format("%s %s", forenames, surname);
     }
 }
