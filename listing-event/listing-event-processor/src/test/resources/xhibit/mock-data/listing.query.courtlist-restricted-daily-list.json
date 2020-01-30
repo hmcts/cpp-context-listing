@@ -32,7 +32,7 @@
               "caseIdentifier": {
                 "authorityId": "e8ef7f69-89ef-472c-a877-4329175bd6ca",
                 "authorityCode": "CPS",
-                "caseReference": "35WX606859"
+                "caseReference": "35WX6068590"
               },
               "defendants": [
                 {
@@ -93,7 +93,7 @@
                 "description": "Sentence"
               },
               "restrictFromCourtList": true,
-              "applicationReference": "65OF146907",
+              "applicationReference": "65OF1469070",
               "applicant": {
                 "id": "9aee20ca-b0b2-4133-b512-7bec3d835134",
                 "lastName": "RESTRICTEDCOURTAPPLICATION",
@@ -124,7 +124,7 @@
               "caseIdentifier": {
                 "authorityId": "e8ef7f69-89ef-472c-a877-4329175bd6ca",
                 "authorityCode": "CPS",
-                "caseReference": "35WX606859"
+                "caseReference": "35WX6068590"
               },
               "defendants": [
                 {
@@ -188,7 +188,7 @@
               "caseIdentifier": {
                 "authorityId": "e8ef7f69-89ef-472c-a877-4329175bd6ca",
                 "authorityCode": "CPS",
-                "caseReference": "35WX606859"
+                "caseReference": "35WX6068590"
               },
               "defendants": [
                 {

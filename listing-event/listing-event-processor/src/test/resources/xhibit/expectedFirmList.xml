@@ -44,7 +44,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>71JC777146</cs:CaseNumber>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
                             </cs:Prosecution>
@@ -58,6 +58,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>71JC7771460</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
@@ -73,6 +74,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>71JC7771460</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
@@ -87,7 +89,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>19RV576068</cs:CaseNumber>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -98,6 +100,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>19RV5760680</cs:URN>
                                 </cs:Defendant>
                             </cs:Defendants>
                         </cs:Hearing>
@@ -121,7 +124,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>44FE772625</cs:CaseNumber>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
                             </cs:Prosecution>
@@ -135,6 +138,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>44FE7726250</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
@@ -149,7 +153,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>41TL769069</cs:CaseNumber>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -160,6 +164,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>41TL7690690</cs:URN>
                                 </cs:Defendant>
                             </cs:Defendants>
                         </cs:Hearing>

@@ -30,7 +30,7 @@
                     <cs:FixedDate>2019-12-15</cs:FixedDate>
                     <cs:Cases>
                         <cs:Case>
-                            <cs:CaseNumber>44FE772625</cs:CaseNumber>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -41,6 +41,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>44FE7726250</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
@@ -50,7 +51,7 @@
                             </cs:Defendants>
                         </cs:Case>
                         <cs:Case>
-                            <cs:CaseNumber>41TL769069</cs:CaseNumber>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -61,6 +62,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>41TL7690690</cs:URN>
                                 </cs:Defendant>
                             </cs:Defendants>
                         </cs:Case>
@@ -71,7 +73,7 @@
                 <cs:Fixture>
                     <cs:Cases>
                         <cs:Case>
-                            <cs:CaseNumber>71JC777146</cs:CaseNumber>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -82,6 +84,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>71JC7771460</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
@@ -99,6 +102,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>71JC7771460</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
@@ -108,7 +112,7 @@
                             </cs:Defendants>
                         </cs:Case>
                         <cs:Case>
-                            <cs:CaseNumber>19RV576068</cs:CaseNumber>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -119,6 +123,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>19RV5760680</cs:URN>
                                 </cs:Defendant>
                             </cs:Defendants>
                         </cs:Case>

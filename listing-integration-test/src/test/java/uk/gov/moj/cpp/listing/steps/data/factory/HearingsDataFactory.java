@@ -12,6 +12,8 @@ import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
 import uk.gov.justice.core.courts.CustodyTimeLimit;
 import uk.gov.justice.listing.courts.HearingLanguageNeeds;
+import uk.gov.justice.services.test.utils.core.random.BigDecimalGenerator;
+import uk.gov.justice.services.test.utils.core.random.StringGenerator;
 import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
 import uk.gov.moj.cpp.listing.steps.data.CaseMarkerData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
@@ -153,11 +155,17 @@ public class HearingsDataFactory {
     }
 
     private static ListedCaseData randomListedCase() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendants(2), false, false, manyRandomCaseMarkers(1));
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendants(2), false, false, manyRandomCaseMarkers(1));
     }
 
     private static ListedCaseData randomListedCaseWithLegalEntity() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendantsWithLegalEntity(1), false, false, manyRandomCaseMarkers(1));
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantsWithLegalEntity(1), false, false, manyRandomCaseMarkers(1));
+    }
+
+    private static String randomCaseReference() {
+        return String.format("%s%s",
+                new StringGenerator(4).next(),
+                new BigDecimalGenerator(1000000,9999999,0).next().toString());
     }
 
     private static OffenceData randomOffence() {

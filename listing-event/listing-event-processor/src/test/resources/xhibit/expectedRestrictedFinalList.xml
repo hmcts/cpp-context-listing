@@ -44,7 +44,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-10</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>35WX606859</cs:CaseNumber>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
                             </cs:Prosecution>
@@ -59,6 +59,7 @@
                                         <cs:MaskedName>******</cs:MaskedName>
                                         <cs:IsMasked>yes</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>35WX6068590</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
@@ -74,6 +75,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>35WX6068590</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
@@ -88,7 +90,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-10</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:CaseNumber>35WX606859</cs:CaseNumber>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
                             </cs:Prosecution>
@@ -102,6 +104,7 @@
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
+                                    <cs:URN>35WX6068590</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0">
                                             <cs:OffenceStatement>******</cs:OffenceStatement>

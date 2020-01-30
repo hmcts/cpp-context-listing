@@ -59,6 +59,7 @@ public class CourtServicesMapper {
     private static final List<String> JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
     private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
     private static final ObjectFactory objectFactory = new ObjectFactory();
+    public static final String CPP_CASE_NUMBER = "CPP";
     private CourtListGenerationContext context;
 
     private XhibitReferenceDataService xhibitReferenceDataService;
@@ -265,7 +266,7 @@ public class CourtServicesMapper {
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
         hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
-        hearingStructure.setCaseNumber(hearingJson.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE));
+        hearingStructure.setCaseNumber(CPP_CASE_NUMBER);
         hearingStructure.setHearingDetails(generateHearingTypeStructure(hearingJson));
         hearingStructure.setProsecution(generateProsecutionStructure(hearingJson));
         hearingStructure.setDefendants(generateHearingStructureDefendantsForCase(hearingJson));
@@ -282,7 +283,7 @@ public class CourtServicesMapper {
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
         hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
-        hearingStructure.setCaseNumber(hearingJson.getString(APPLICATION_REFERENCE));
+        hearingStructure.setCaseNumber(CPP_CASE_NUMBER);
         hearingStructure.setHearingDetails(generateHearingTypeStructure(hearingJson));
 
         // Map applicant to defendant
@@ -329,7 +330,8 @@ public class CourtServicesMapper {
         final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
 
         for (final JsonObject defendant : listedCase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
-            defendants.getDefendant().add(generateDefendantStructureForDefendant(defendant));
+            defendants.getDefendant().add(generateDefendantStructureForDefendant(defendant,
+                    listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE)));
         }
 
         return defendants;
@@ -339,15 +341,17 @@ public class CourtServicesMapper {
 
         final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
 
-        defendants.getDefendant().add(generateDefendantStructureForApplicant(courtApplication.getJsonObject("applicant")));
+        defendants.getDefendant().add(generateDefendantStructureForApplicant(courtApplication.getJsonObject("applicant"),
+                courtApplication.getString(APPLICATION_REFERENCE)));
 
         return defendants;
     }
 
-    private DefendantStructure generateDefendantStructureForDefendant(final JsonObject defendant) {
+    private DefendantStructure generateDefendantStructureForDefendant(final JsonObject defendant, final String caseUrn) {
 
         final DefendantStructure defendantStructure = objectFactory.createDefendantStructure();
 
+        defendantStructure.setURN(caseUrn);
         defendantStructure.setPersonalDetails(generatePersonalDetailsStructure(defendant));
         if (defendant.containsKey(OFFENCES)) {  // Court Applications don't have offences
             defendantStructure.setCharges(generateDefendantStructureCharges(defendant.getJsonArray(OFFENCES)));
@@ -356,10 +360,11 @@ public class CourtServicesMapper {
         return defendantStructure;
     }
 
-    private DefendantStructure generateDefendantStructureForApplicant(final JsonObject applicant) {
+    private DefendantStructure generateDefendantStructureForApplicant(final JsonObject applicant, final String urn) {
 
         final DefendantStructure defendantStructure = objectFactory.createDefendantStructure();
 
+        defendantStructure.setURN(urn);
         defendantStructure.setPersonalDetails(generatePersonalDetailsStructure(applicant));
 
         return defendantStructure;
@@ -479,10 +484,10 @@ public class CourtServicesMapper {
 
         final CasesStructure.Case casesStructureCase = objectFactory.createCasesStructureCase();
 
-        casesStructureCase.setCaseNumber(listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE));
+        casesStructureCase.setCaseNumber(CPP_CASE_NUMBER);
 
         for (final JsonObject defendant : listedCase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
-            casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(defendant));
+            casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(defendant, listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE)));
         }
 
         return casesStructureCase;
@@ -491,20 +496,20 @@ public class CourtServicesMapper {
     private CasesStructure.Case generateCaseStructureForCourtApplication(final JsonObject courtApplication) {
         final CasesStructure.Case casesStructureCase = objectFactory.createCasesStructureCase();
 
-        casesStructureCase.setCaseNumber(courtApplication.getString(APPLICATION_REFERENCE));
+        casesStructureCase.setCaseNumber(CPP_CASE_NUMBER);
 
         if (!courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-            casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(courtApplication.getJsonObject("applicant")));
+            casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(courtApplication.getJsonObject("applicant"), courtApplication.getString(APPLICATION_REFERENCE)));
         }
 
         return casesStructureCase;
     }
 
-    private CasesStructure.Case.Defendants generateCaseStructureCaseDefendants(final JsonObject defendant) {
+    private CasesStructure.Case.Defendants generateCaseStructureCaseDefendants(final JsonObject defendant, final String caseUrn) {
 
         final CasesStructure.Case.Defendants caseStructureCaseDefendants = objectFactory.createCasesStructureCaseDefendants();
 
-        caseStructureCaseDefendants.setDefendant(generateDefendantStructureForDefendant(defendant));
+        caseStructureCaseDefendants.setDefendant(generateDefendantStructureForDefendant(defendant, caseUrn));
 
         return caseStructureCaseDefendants;
     }
