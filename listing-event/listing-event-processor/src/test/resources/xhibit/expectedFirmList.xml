@@ -107,7 +107,7 @@
                     </cs:Hearings>
                 </cs:Sitting>
                 <cs:Sitting>
-                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:CourtRoomNumber>20</cs:CourtRoomNumber>
                     <cs:SittingSequenceNo>2</cs:SittingSequenceNo>
                     <cs:SittingPriority>T</cs:SittingPriority>
                     <cs:Judiciary>

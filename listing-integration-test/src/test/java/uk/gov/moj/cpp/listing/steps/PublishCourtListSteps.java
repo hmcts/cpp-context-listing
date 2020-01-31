@@ -147,7 +147,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 "/*[local-name()='CourtHouse']/*[local-name()='CourtHouseName']/text()", sentXml);
         assertXpathEvaluatesTo(PRESTON_COURT_SITE_ID, "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='CourtHouse']/*[local-name()='CourtHouseCode']/text()", sentXml);
-        assertXpathEvaluatesTo("231", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+        assertXpathEvaluatesTo("1", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='CourtRoomNumber']/text()", sentXml);
         assertXpathEvaluatesTo("Ainsworth", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameSurname']/text()", sentXml);

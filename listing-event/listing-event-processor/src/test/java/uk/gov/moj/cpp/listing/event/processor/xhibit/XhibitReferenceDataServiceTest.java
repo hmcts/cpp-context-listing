@@ -150,7 +150,7 @@ public class XhibitReferenceDataServiceTest {
     }
 
     @Test
-    public void shouldGetCourtRoomNumber() {
+    public void shouldGetCourtRoomNumberForMappedCourtRoom() {
 
         final int expectedCourtRoomNumber = 432;
         final UUID courtCentreId = randomUUID();
@@ -163,8 +163,9 @@ public class XhibitReferenceDataServiceTest {
                         createObjectBuilder()
                                 .add("courtrooms", createArrayBuilder()
                                         .add(createObjectBuilder()
-                                                .add("courtroomId", expectedCourtRoomNumber)
-                                                .add("id", courtRoomId.toString()).build()))
+                                                .add("id", courtRoomId.toString())
+                                                .add("courtroomName", "Court " + expectedCourtRoomNumber)
+                                                .build()))
                                 .build());
 
         when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
@@ -173,7 +174,30 @@ public class XhibitReferenceDataServiceTest {
 
         verify(requester).request(requestCaptor.capture());
         assertEquals(actualCourtRoomNumber, expectedCourtRoomNumber);
+    }
 
+    @Test
+    public void shouldGetCourtRoomNumberForUnmappedCourtRoom() {
+
+        final int expectedCourtRoomNumber = -99;
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+
+        final JsonEnvelope responseEnvelope =
+                envelopeFrom(
+                        metadataWithDefaults()
+                                .withName(REFERENCEDATA_QUERY_COURTROOM),
+                        createObjectBuilder()
+                                .add("courtrooms", createArrayBuilder()
+                                .build())
+                );
+
+        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+
+        int actualCourtRoomNumber = xhibitReferenceDataService.getCourtRoomNumber(inputEnvelope, courtCentreId, courtRoomId);
+
+        verify(requester).request(requestCaptor.capture());
+        assertEquals(actualCourtRoomNumber, expectedCourtRoomNumber);
     }
 
     @Test

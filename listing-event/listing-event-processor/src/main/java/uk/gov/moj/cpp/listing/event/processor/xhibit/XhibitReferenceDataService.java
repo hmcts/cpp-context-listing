@@ -26,7 +26,7 @@ public class XhibitReferenceDataService {
     private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
     private static final String REFERENCE_DATA_HEARING_TYPES = "referencedata.query.hearing-types";
     private static final String REFERENCEDATA_QUERY_ORGANISATION_UNITS = "referencedata.query.organisationunits";
-    private static final int UNMAPPED_COURT_ROOM_NUMBER = -99;
+    private static final String UNMAPPED_COURT_ROOM_NAME = "Court -99";
 
     @Inject
     @ServiceComponent(Component.EVENT_PROCESSOR)
@@ -88,9 +88,16 @@ public class XhibitReferenceDataService {
                 .payloadAsJsonObject().getJsonArray("courtrooms").getValuesAs(JsonObject.class)
                 .stream().filter(c -> UUID.fromString(c.getString("id")).equals(courtRoomId))
                 .findFirst()
-                .orElse(Json.createObjectBuilder().add("courtroomId", UNMAPPED_COURT_ROOM_NUMBER).build());
+                .orElse(Json.createObjectBuilder().add("courtroomName", UNMAPPED_COURT_ROOM_NAME).build());
 
-        return courtRoom.getInt("courtroomId");
+        return courtRoomNumberForCourtRoom(courtRoom.getString("courtroomName"));
+    }
+
+    private int courtRoomNumberForCourtRoom(final String courtRoomName) {
+
+        final String[] splitName = courtRoomName.split(" ");
+
+        return Integer.parseInt(splitName[splitName.length-1]);
     }
 
     public JsonObject getJudiciary(final JsonEnvelope envelope, final UUID judiciaryId) {
