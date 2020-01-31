@@ -13,6 +13,7 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.ChargeStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CitizenNameStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtHouseStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtType;
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.DefenceStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.DefendantStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.DocumentIDstructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.FixtureStructure;
@@ -21,10 +22,13 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.HearingTypeStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.JudiciaryStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ListHeaderStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ObjectFactory;
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.OrganisationStructure;
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.PartyStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.PersonalDetailsStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutionStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.SolicitorStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.YesNoType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
@@ -60,6 +64,7 @@ public class CourtServicesMapper {
     private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
     private static final ObjectFactory objectFactory = new ObjectFactory();
     public static final String CPP_CASE_NUMBER = "CPP";
+    public static final String DEFENCE_ORGANISATION = "defenceOrganisation";
     private CourtListGenerationContext context;
 
     private XhibitReferenceDataService xhibitReferenceDataService;
@@ -356,8 +361,42 @@ public class CourtServicesMapper {
         if (defendant.containsKey(OFFENCES)) {  // Court Applications don't have offences
             defendantStructure.setCharges(generateDefendantStructureCharges(defendant.getJsonArray(OFFENCES)));
         }
+        if (defendant.containsKey(DEFENCE_ORGANISATION)) {
+            defendantStructure.getCounsel().add(generateDefenceStructure(defendant.getString(DEFENCE_ORGANISATION)));
+        }
 
         return defendantStructure;
+    }
+
+    private DefenceStructure generateDefenceStructure(final String defenceOrganisation) {
+
+        final DefenceStructure defenceStructure = objectFactory.createDefenceStructure();
+
+        defenceStructure.getSolicitor().add(generateSolictorStructure(defenceOrganisation));
+
+        return defenceStructure;
+    }
+
+    private SolicitorStructure generateSolictorStructure(final String defenceOrganisation) {
+
+        final SolicitorStructure solicitorStructure = objectFactory.createSolicitorStructure();
+
+        solicitorStructure.setParty(generatePartyStructure(defenceOrganisation));
+
+        return solicitorStructure;
+    }
+
+    private PartyStructure generatePartyStructure(final String defenceOrganisation) {
+
+        final OrganisationStructure organisationStructure = objectFactory.createOrganisationStructure();
+
+        organisationStructure.setOrganisationName(defenceOrganisation);
+
+        final PartyStructure partyStructure= objectFactory.createPartyStructure();
+
+        partyStructure.setOrganisation(organisationStructure);
+
+        return partyStructure;
     }
 
     private DefendantStructure generateDefendantStructureForApplicant(final JsonObject applicant, final String urn) {

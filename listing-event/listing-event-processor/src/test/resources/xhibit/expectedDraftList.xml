@@ -64,6 +64,15 @@
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
                                     <cs:URN>35WX6068590</cs:URN>
+                                    <cs:Counsel>
+                                        <cs:Solicitor>
+                                            <cs:Party>
+                                                <cs:Organisation>
+                                                    <cs:OrganisationName>Flynch and Fleece Solicitors</cs:OrganisationName>
+                                                </cs:Organisation>
+                                            </cs:Party>
+                                        </cs:Solicitor>
+                                    </cs:Counsel>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
