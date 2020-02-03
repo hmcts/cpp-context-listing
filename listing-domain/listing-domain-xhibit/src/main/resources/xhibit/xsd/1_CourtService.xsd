@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSpy v2008 sp1 (http://www.altova.com) by LCMG (LogicaCMG) -->
 <!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Doug Climie (Electronic Data Systems LTD) -->
-<xsd:schema xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails"
-            xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice"
-            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            xmlns="http://www.courtservice.gov.uk/schemas/courtservice"
-            targetNamespace="http://www.courtservice.gov.uk/schemas/courtservice"
-            elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.7"
-            id="CourtService">
+<xsd:schema xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails" xmlns:bs7666="http://www.govtalk.gov.uk/people/bs7666" xmlns="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.courtservice.gov.uk/schemas/courtservice" elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.7" id="CourtService">
     <xsd:annotation>
         <xsd:appinfo>
             <Metadata xmlns="http://www.govtalk.gov.uk/metadata/egms">
@@ -16,12 +10,8 @@
                 <Modified>2015-04-23</Modified>
                 <Format Schema="http://www.iana.org/assignments/media-types">text/xml</Format>
                 <Identifier>CourtService</Identifier>
-                <Language codeListID="ISO639-2"
-                          codeListURI="http://www.loc.gov/standards/iso639-2/langcodes.html">eng
-                </Language>
-                <Publisher>Department for Constitutional Affairs, Clive House, 70 Petty France,
-                    London, SW1H 9HD
-                </Publisher>
+                <Language codeListID="ISO639-2" codeListURI="http://www.loc.gov/standards/iso639-2/langcodes.html">eng</Language>
+                <Publisher>Department for Constitutional Affairs, Clive House, 70 Petty France, London, SW1H 9HD</Publisher>
                 <ConformsTo>http://www.w3.org/2001/XMLSchema</ConformsTo>
                 <Copyright>Crown Copyright 2006</Copyright>
                 <ProtectiveMarking>unclassified</ProtectiveMarking>
@@ -34,8 +24,7 @@
             </Metadata>
         </xsd:appinfo>
     </xsd:annotation>
-    <xsd:import namespace="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails"
-                schemaLocation="apd.xsd"/>
+    <xsd:import namespace="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails" schemaLocation="apd.xsd"/>
     <!--=================================================================	-->
     <!--====================  Start of Simple Type Definition ==================== -->
     <!--=================================================================	-->
@@ -107,6 +96,7 @@
     </xsd:simpleType>
     <xsd:simpleType name="CaseNumberType">
         <xsd:restriction base="xsd:string">
+            <xsd:pattern value="[A-Z][0-9]{8}"/>
         </xsd:restriction>
     </xsd:simpleType>
     <xsd:simpleType name="CaseType">
@@ -253,8 +243,7 @@
     </xsd:simpleType>
     <xsd:simpleType name="SentenceLengthType">
         <xsd:restriction base="xsd:string">
-            <xsd:pattern
-                    value="([0-9]|[1-9][0-9]*)-([0-9]|10|11)-([0-9]|[1-9][0-9]*)|life|section93-94"/>
+            <xsd:pattern value="([0-9]|[1-9][0-9]*)-([0-9]|10|11)-([0-9]|[1-9][0-9]*)|life|section93-94"/>
         </xsd:restriction>
     </xsd:simpleType>
     <xsd:simpleType name="SentenceTypeType">
@@ -301,24 +290,24 @@
     <!--=================================================================	-->
     <!--====================  Start of Complex Type Definition ==================  -->
     <!--=================================================================	-->
-    <!--    &lt;!&ndash;ADDED FOR CCN400 - START &ndash;&gt;-->
-    <!--    <xsd:complexType name="DeportationStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Reason" type="xsd:string" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    &lt;!&ndash; ADDED FOR CCN400 - END &ndash;&gt;-->
-    <!--    <xsd:complexType name="ActivityStructure">-->
-    <!--        <xsd:complexContent>-->
-    <!--            <xsd:extension base="BaseOrderRequirementStructure">-->
-    <!--                <xsd:sequence>-->
-    <!--                    <xsd:element name="Contact" type="xsd:string" minOccurs="0"/>-->
-    <!--                    <xsd:element name="Location" type="LocationStructure" minOccurs="0"/>-->
-    <!--                    <xsd:element name="Activity" type="xsd:string" minOccurs="0"/>-->
-    <!--                </xsd:sequence>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:complexContent>-->
-    <!--    </xsd:complexType>-->
+    <!--ADDED FOR CCN400 - START -->
+    <xsd:complexType name="DeportationStructure">
+        <xsd:sequence>
+            <xsd:element name="Reason" type="xsd:string" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <!-- ADDED FOR CCN400 - END -->
+    <xsd:complexType name="ActivityStructure">
+        <xsd:complexContent>
+            <xsd:extension base="BaseOrderRequirementStructure">
+                <xsd:sequence>
+                    <xsd:element name="Contact" type="xsd:string" minOccurs="0"/>
+                    <xsd:element name="Location" type="LocationStructure" minOccurs="0"/>
+                    <xsd:element name="Activity" type="xsd:string" minOccurs="0"/>
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
     <xsd:complexType name="AdvocateStructure">
         <xsd:complexContent>
             <xsd:extension base="PersonStructure">
@@ -329,65 +318,64 @@
             </xsd:extension>
         </xsd:complexContent>
     </xsd:complexType>
-    <!--    <xsd:complexType name="AssociatedCaseStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="AssociatedCase" type="CaseNumberType" maxOccurs="unbounded"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="AttachmentTypeStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Attachment" type="AttachmentTypeType" minOccurs="0" maxOccurs="3"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="BailChangesStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="ChangeType" type="BailChangeType" minOccurs="0"/>-->
-    <!--            <xsd:element name="AmendedVariedDate" type="xsd:date" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="AssociatedCaseStructure">
+        <xsd:sequence>
+            <xsd:element name="AssociatedCase" type="CaseNumberType" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="AttachmentTypeStructure">
+        <xsd:sequence>
+            <xsd:element name="Attachment" type="AttachmentTypeType" minOccurs="0" maxOccurs="3"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="BailChangesStructure">
+        <xsd:sequence>
+            <xsd:element name="ChangeType" type="BailChangeType" minOccurs="0"/>
+            <xsd:element name="AmendedVariedDate" type="xsd:date" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
     <xsd:complexType name="BaseOrderRequirementStructure">
         <xsd:sequence>
             <xsd:element name="Duration" type="OrderDurationType" minOccurs="0"/>
             <xsd:element name="AdditionalInformation" type="xsd:string" minOccurs="0"/>
         </xsd:sequence>
     </xsd:complexType>
-    <!--    <xsd:complexType name="BreachStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="OriginatingCourt">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:complexContent>-->
-    <!--                        <xsd:extension base="OriginatingCourtStructure">-->
-    <!--                            <xsd:sequence>-->
-    <!--                                <xsd:element name="OriginalOrderType" type="xsd:string"/>-->
-    <!--                            </xsd:sequence>-->
-    <!--                        </xsd:extension>-->
-    <!--                    </xsd:complexContent>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="BreachCourt">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:complexContent>-->
-    <!--                        <xsd:extension base="OriginatingCourtStructure">-->
-    <!--                            <xsd:sequence>-->
-    <!--                                <xsd:element name="SentToCrownCourt" type="YesNoType"/>-->
-    <!--                            </xsd:sequence>-->
-    <!--                        </xsd:extension>-->
-    <!--                    </xsd:complexContent>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="BreachStructure">
+        <xsd:sequence>
+            <xsd:element name="OriginatingCourt">
+                <xsd:complexType>
+                    <xsd:complexContent>
+                        <xsd:extension base="OriginatingCourtStructure">
+                            <xsd:sequence>
+                                <xsd:element name="OriginalOrderType" type="xsd:string"/>
+                            </xsd:sequence>
+                        </xsd:extension>
+                    </xsd:complexContent>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="BreachCourt">
+                <xsd:complexType>
+                    <xsd:complexContent>
+                        <xsd:extension base="OriginatingCourtStructure">
+                            <xsd:sequence>
+                                <xsd:element name="SentToCrownCourt" type="YesNoType"/>
+                            </xsd:sequence>
+                        </xsd:extension>
+                    </xsd:complexContent>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
     <xsd:complexType name="CasesStructure">
         <xsd:sequence>
             <xsd:element name="Case" maxOccurs="unbounded">
                 <xsd:complexType>
                     <xsd:sequence>
-                        <xsd:element name="CaseNumber" type="CaseNumberType"/>
+                        <xsd:element name="CaseNumber" type="xsd:string"/>
                         <xsd:element name="CaseArrivedFrom" minOccurs="0">
                             <xsd:complexType>
                                 <xsd:choice>
-                                    <xsd:element name="OriginatingCourt"
-                                                 type="CourtHouseStructure"/>
+                                    <xsd:element name="OriginatingCourt" type="CourtHouseStructure"/>
                                     <xsd:element name="Section53" type="YesNoType" default="yes"/>
                                 </xsd:choice>
                             </xsd:complexType>
@@ -402,11 +390,9 @@
                         </xsd:element>
                         <xsd:element name="Prosecution" type="ProsecutionStructure" minOccurs="0"/>
                         <xsd:element name="AppealCaseDescription" type="xsd:string" minOccurs="0"/>
-                        <xsd:element name="MethodOfInstigation" type="MethodOfInstigationType"
-                                     minOccurs="0"/>
+                        <xsd:element name="MethodOfInstigation" type="MethodOfInstigationType" minOccurs="0"/>
                         <xsd:element name="DateOfInstigation" type="xsd:date" minOccurs="0"/>
-                        <xsd:element name="CaseClassNumber" type="xsd:positiveInteger"
-                                     minOccurs="0"/>
+                        <xsd:element name="CaseClassNumber" type="xsd:positiveInteger" minOccurs="0"/>
                     </xsd:sequence>
                 </xsd:complexType>
             </xsd:element>
@@ -433,8 +419,7 @@
                 <xsd:complexType>
                     <xsd:sequence>
                         <xsd:element name="Disposal" type="xsd:string" maxOccurs="unbounded"/>
-                        <xsd:element name="CRESTDisposalData" type="cs:CRESTDisposalDataStructure"
-                                     minOccurs="0" maxOccurs="unbounded"/>
+                        <xsd:element name="CRESTDisposalData" type="cs:CRESTDisposalDataStructure" minOccurs="0" maxOccurs="unbounded"/>
                     </xsd:sequence>
                 </xsd:complexType>
             </xsd:element>
@@ -457,25 +442,22 @@
         <xsd:attribute name="Life" type="YesNoType" use="optional"/>
         <xsd:attribute name="BreachMultiple" type="xsd:int" use="optional"/>
     </xsd:complexType>
-    <!--    <xsd:complexType name="CollectionCentreStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="CollectionCentreName" type="xsd:string"/>-->
-    <!--            <xsd:element name="CollectionCentreAddress" type="apd:UKPostalAddressStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="CollectionCentreTelephone" type="apd:TelephoneNumberType"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="CollectionCentreFax" type="apd:TelephoneNumberType" minOccurs="0"/>-->
-    <!--            <xsd:element name="Description" type="xsd:string" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="CollectionCentreStructure">
+        <xsd:sequence>
+            <xsd:element name="CollectionCentreName" type="xsd:string"/>
+            <xsd:element name="CollectionCentreAddress" type="apd:UKPostalAddressStructure" minOccurs="0"/>
+            <xsd:element name="CollectionCentreTelephone" type="apd:TelephoneNumberType" minOccurs="0"/>
+            <xsd:element name="CollectionCentreFax" type="apd:TelephoneNumberType" minOccurs="0"/>
+            <xsd:element name="Description" type="xsd:string" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
     <xsd:complexType name="CRESTDisposalDataStructure">
         <xsd:sequence>
             <xsd:element name="DisposalCode">
                 <xsd:complexType>
                     <xsd:simpleContent>
                         <xsd:extension base="xsd:string">
-                            <xsd:attribute name="TemplateVersion" type="xsd:integer"
-                                           use="required"/>
+                            <xsd:attribute name="TemplateVersion" type="xsd:integer" use="required"/>
                         </xsd:extension>
                     </xsd:simpleContent>
                 </xsd:complexType>
@@ -490,68 +472,66 @@
             </xsd:element>
         </xsd:sequence>
     </xsd:complexType>
-    <!--    <xsd:complexType name="CommunityOrderStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="DocumentID" type="DocumentIDstructure"/>-->
-    <!--            <xsd:element name="OrderHeader" type="CourtOrderHeaderStructure"/>-->
-    <!--            <xsd:element name="CommittingCourt" type="OriginatingCourtStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="Breach" type="BreachStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="OriginalOrderRevoked" minOccurs="0">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:choice>-->
-    <!--                        <xsd:element name="BreachCourt" type="YesNoType" default="yes"/>-->
-    <!--                        <xsd:element name="CurrentCourt" type="YesNoType" default="yes"/>-->
-    <!--                    </xsd:choice>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="FailedToComply" type="YesNoType" minOccurs="0"/>-->
-    <!--            <xsd:element name="AfterHearingFrom" type="YesNoType" minOccurs="0"/>-->
-    <!--            <xsd:element name="PettySessionalArea" type="CourtHouseStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="CommunityPunishment" minOccurs="0">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:sequence>-->
-    <!--                        <xsd:element name="Hours" minOccurs="0">-->
-    <!--                            <xsd:complexType>-->
-    <!--                                <xsd:simpleContent>-->
-    <!--                                    <xsd:extension base="xsd:int">-->
-    <!--                                        <xsd:attribute name="TermType" type="TermTypeType"-->
-    <!--                                                       use="optional"/>-->
-    <!--                                    </xsd:extension>-->
-    <!--                                </xsd:simpleContent>-->
-    <!--                            </xsd:complexType>-->
-    <!--                        </xsd:element>-->
-    <!--                        <xsd:element name="Period" type="xsd:duration" minOccurs="0"/>-->
-    <!--                    </xsd:sequence>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="RehabilitationPeriod" type="xsd:duration" minOccurs="0"/>-->
-    <!--            <xsd:element name="Conditions" minOccurs="0">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:sequence>-->
-    <!--                        <xsd:element name="Condition" type="ConditionStructure"-->
-    <!--                                     maxOccurs="unbounded"/>-->
-    <!--                    </xsd:sequence>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="AssociatedCases" type="AssociatedCaseStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="AdditionalNotes" type="xsd:string" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="ConditionStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Description" type="xsd:string"/>-->
-    <!--            <xsd:element name="Period" type="xsd:duration" minOccurs="0"/>-->
-    <!--            <xsd:element name="Date" type="xsd:date" minOccurs="0"/>-->
-    <!--            <xsd:element name="Surety" type="MoneyType" minOccurs="0"/>-->
-    <!--            <xsd:element name="Security" type="MoneyType" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="CourtAppearanceStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="AppearanceCourt" type="CourtHouseStructure"/>-->
-    <!--            <xsd:element name="AppearanceDateTime" type="xsd:dateTime" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="CommunityOrderStructure">
+        <xsd:sequence>
+            <xsd:element name="DocumentID" type="DocumentIDstructure"/>
+            <xsd:element name="OrderHeader" type="CourtOrderHeaderStructure"/>
+            <xsd:element name="CommittingCourt" type="OriginatingCourtStructure" minOccurs="0"/>
+            <xsd:element name="Breach" type="BreachStructure" minOccurs="0"/>
+            <xsd:element name="OriginalOrderRevoked" minOccurs="0">
+                <xsd:complexType>
+                    <xsd:choice>
+                        <xsd:element name="BreachCourt" type="YesNoType" default="yes"/>
+                        <xsd:element name="CurrentCourt" type="YesNoType" default="yes"/>
+                    </xsd:choice>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="FailedToComply" type="YesNoType" minOccurs="0"/>
+            <xsd:element name="AfterHearingFrom" type="YesNoType" minOccurs="0"/>
+            <xsd:element name="PettySessionalArea" type="CourtHouseStructure" minOccurs="0"/>
+            <xsd:element name="CommunityPunishment" minOccurs="0">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Hours" minOccurs="0">
+                            <xsd:complexType>
+                                <xsd:simpleContent>
+                                    <xsd:extension base="xsd:int">
+                                        <xsd:attribute name="TermType" type="TermTypeType" use="optional"/>
+                                    </xsd:extension>
+                                </xsd:simpleContent>
+                            </xsd:complexType>
+                        </xsd:element>
+                        <xsd:element name="Period" type="xsd:duration" minOccurs="0"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="RehabilitationPeriod" type="xsd:duration" minOccurs="0"/>
+            <xsd:element name="Conditions" minOccurs="0">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Condition" type="ConditionStructure" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="AssociatedCases" type="AssociatedCaseStructure" minOccurs="0"/>
+            <xsd:element name="AdditionalNotes" type="xsd:string" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="ConditionStructure">
+        <xsd:sequence>
+            <xsd:element name="Description" type="xsd:string"/>
+            <xsd:element name="Period" type="xsd:duration" minOccurs="0"/>
+            <xsd:element name="Date" type="xsd:date" minOccurs="0"/>
+            <xsd:element name="Surety" type="MoneyType" minOccurs="0"/>
+            <xsd:element name="Security" type="MoneyType" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="CourtAppearanceStructure">
+        <xsd:sequence>
+            <xsd:element name="AppearanceCourt" type="CourtHouseStructure"/>
+            <xsd:element name="AppearanceDateTime" type="xsd:dateTime" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
     <xsd:complexType name="CourtHouseStructure">
         <xsd:sequence>
             <xsd:element name="CourtHouseType" type="CourtType"/>
@@ -571,8 +551,7 @@
                 </xsd:complexType>
             </xsd:element>
             <xsd:element name="CourtHouseName" type="xsd:string"/>
-            <xsd:element name="CourtHouseAddress" type="apd:UKPostalAddressStructure"
-                         minOccurs="0"/>
+            <xsd:element name="CourtHouseAddress" type="apd:UKPostalAddressStructure" minOccurs="0"/>
             <xsd:element name="CourtHouseDX" type="xsd:string" minOccurs="0"/>
             <xsd:element name="CourtHouseTelephone" type="apd:TelephoneNumberType" minOccurs="0"/>
             <xsd:element name="CourtHouseFax" type="apd:TelephoneNumberType" minOccurs="0"/>
@@ -583,141 +562,139 @@
             </xsd:element>
         </xsd:sequence>
     </xsd:complexType>
-    <!--    <xsd:complexType name="CourtOrderHeaderStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="OrderType" type="OrderTypeType"/>-->
-    <!--            <xsd:element name="CourtHouse" type="CourtHouseStructure"/>-->
-    <!--            <xsd:element name="Judiciary" type="JudiciaryStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="CaseNumber" type="CaseNumberType"/>-->
-    <!--            <xsd:element name="SubjectType" type="SubjectTypeType" minOccurs="0"/>-->
-    <!--            <xsd:element name="Defendant" type="DefendantStructure"/>-->
-    <!--            <xsd:element name="OrderDate" type="xsd:date"/>-->
-    <!--            <xsd:element name="SignedBy">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:choice>-->
-    <!--                        <xsd:element name="CourtOfficer" type="apd:CitizenNameStructure"/>-->
-    <!--                        <xsd:element name="Judiciary" type="JudiciaryStructure"/>-->
-    <!--                    </xsd:choice>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="SignedDate" type="xsd:date"/>-->
-    <!--            <xsd:element name="RevisionDetails" type="RevisionDetailsStructure" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="CourtReportingStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Firm" type="OrganisationStructure"/>-->
-    <!--            <xsd:element name="Reporter" maxOccurs="unbounded">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:complexContent>-->
-    <!--                        <xsd:extension base="PersonStructure">-->
-    <!--                            <xsd:sequence>-->
-    <!--                                <xsd:element name="OperatorType" type="xsd:string"/>-->
-    <!--                                <xsd:element name="StartDate" type="xsd:date"/>-->
-    <!--                            </xsd:sequence>-->
-    <!--                        </xsd:extension>-->
-    <!--                    </xsd:complexContent>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="SUSImprisonmentPeriod">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Years" minOccurs="0">-->
-    <!--                <xsd:simpleType>-->
-    <!--                    <xsd:restriction base="xsd:short">-->
-    <!--                        <xsd:minInclusive value="0"/>-->
-    <!--                        <xsd:maxInclusive value="99"/>-->
-    <!--                    </xsd:restriction>-->
-    <!--                </xsd:simpleType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="Months" minOccurs="0">-->
-    <!--                <xsd:simpleType>-->
-    <!--                    <xsd:restriction base="xsd:short">-->
-    <!--                        <xsd:minInclusive value="0"/>-->
-    <!--                        <xsd:maxInclusive value="999"/>-->
-    <!--                    </xsd:restriction>-->
-    <!--                </xsd:simpleType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="Weeks" minOccurs="0">-->
-    <!--                <xsd:simpleType>-->
-    <!--                    <xsd:restriction base="xsd:short">-->
-    <!--                        <xsd:minInclusive value="0"/>-->
-    <!--                        <xsd:maxInclusive value="999"/>-->
-    <!--                    </xsd:restriction>-->
-    <!--                </xsd:simpleType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="Days" minOccurs="0">-->
-    <!--                <xsd:simpleType>-->
-    <!--                    <xsd:restriction base="xsd:short">-->
-    <!--                        <xsd:minInclusive value="0"/>-->
-    <!--                        <xsd:maxInclusive value="999"/>-->
-    <!--                    </xsd:restriction>-->
-    <!--                </xsd:simpleType>-->
-    <!--            </xsd:element>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="CustodialTermStructure">-->
-    <!--        <xsd:choice>-->
-    <!--            <xsd:sequence>-->
-    <!--                <xsd:element name="Term" minOccurs="0">-->
-    <!--                    <xsd:complexType>-->
-    <!--                        <xsd:simpleContent>-->
-    <!--                            <xsd:extension base="ModifiedTermStructure">-->
-    <!--                                <xsd:attribute name="Consecutive" type="YesNoType" use="optional"/>-->
-    <!--                                <xsd:attribute name="Concurrent" type="YesNoType" use="optional"/>-->
-    <!--                            </xsd:extension>-->
-    <!--                        </xsd:simpleContent>-->
-    <!--                    </xsd:complexType>-->
-    <!--                </xsd:element>-->
-    <!--                <xsd:element name="s235-236" type="ExtendedTermStructure" minOccurs="0"/>-->
-    <!--                <xsd:element name="ExtendedPeriod" type="ModifiedTermStructure" minOccurs="0"/>-->
-    <!--                <xsd:element name="Section44" type="YesNoType" minOccurs="0"/>-->
-    <!--                <xsd:element name="TotalTerm" type="ModifiedTermStructure"/>-->
-    <!--            </xsd:sequence>-->
-    <!--            <xsd:element name="LifeSentence" type="LifeSentenceStructure"/>-->
-    <!--        </xsd:choice>-->
-    <!--        <xsd:attribute name="Section44" type="YesNoType" use="optional"/>-->
-    <!--        <xsd:attribute name="Section91" type="YesNoType" use="optional"/>-->
-    <!--        <xsd:attribute name="IndeterminateSentence" type="YesNoType" use="optional"/>-->
-    <!--        <xsd:attribute name="SectionType" use="optional">-->
-    <!--            <xsd:simpleType>-->
-    <!--                <xsd:restriction base="xsd:string">-->
-    <!--                    <xsd:enumeration value="s224a"/>-->
-    <!--                    <xsd:enumeration value="s225"/>-->
-    <!--                    <xsd:enumeration value="s226"/>-->
-    <!--                    <xsd:enumeration value="s226a"/>-->
-    <!--                    <xsd:enumeration value="s226b"/>-->
-    <!--                    <xsd:enumeration value="s227"/>-->
-    <!--                    <xsd:enumeration value="s228"/>-->
-    <!--                </xsd:restriction>-->
-    <!--            </xsd:simpleType>-->
-    <!--        </xsd:attribute>-->
-    <!--        <xsd:attribute name="Section236A" type="YesNoType" use="optional"/>-->
-    <!--    </xsd:complexType>-->
-    <xsd:complexType name="DefenceStructure">
+    <xsd:complexType name="CourtOrderHeaderStructure">
         <xsd:sequence>
-            <xsd:element name="Solicitor" type="SolicitorStructure" minOccurs="0"
-                         maxOccurs="unbounded"/>
-            <xsd:element name="Advocate" type="AdvocateStructure" minOccurs="0"
-                         maxOccurs="unbounded"/>
+            <xsd:element name="OrderType" type="OrderTypeType"/>
+            <xsd:element name="CourtHouse" type="CourtHouseStructure"/>
+            <xsd:element name="Judiciary" type="JudiciaryStructure" minOccurs="0"/>
+            <xsd:element name="CaseNumber" type="CaseNumberType"/>
+            <xsd:element name="SubjectType" type="SubjectTypeType" minOccurs="0"/>
+            <xsd:element name="Defendant" type="DefendantStructure"/>
+            <xsd:element name="OrderDate" type="xsd:date"/>
+            <xsd:element name="SignedBy">
+                <xsd:complexType>
+                    <xsd:choice>
+                        <xsd:element name="CourtOfficer" type="apd:CitizenNameStructure"/>
+                        <xsd:element name="Judiciary" type="JudiciaryStructure"/>
+                    </xsd:choice>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="SignedDate" type="xsd:date"/>
+            <xsd:element name="RevisionDetails" type="RevisionDetailsStructure" minOccurs="0"/>
         </xsd:sequence>
     </xsd:complexType>
-    <!--    <xsd:complexType name="IndeterminateSentenceStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="MinimumSentence" type="xsd:duration"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="CreditOnRemandStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="CreditPeriod" type="xsd:duration"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="CreditOnBailStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="CreditPeriod" type="xsd:duration"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="CourtReportingStructure">
+        <xsd:sequence>
+            <xsd:element name="Firm" type="OrganisationStructure"/>
+            <xsd:element name="Reporter" maxOccurs="unbounded">
+                <xsd:complexType>
+                    <xsd:complexContent>
+                        <xsd:extension base="PersonStructure">
+                            <xsd:sequence>
+                                <xsd:element name="OperatorType" type="xsd:string"/>
+                                <xsd:element name="StartDate" type="xsd:date"/>
+                            </xsd:sequence>
+                        </xsd:extension>
+                    </xsd:complexContent>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="SUSImprisonmentPeriod">
+        <xsd:sequence>
+            <xsd:element name="Years" minOccurs="0">
+                <xsd:simpleType>
+                    <xsd:restriction base="xsd:short">
+                        <xsd:minInclusive value="0"/>
+                        <xsd:maxInclusive value="99"/>
+                    </xsd:restriction>
+                </xsd:simpleType>
+            </xsd:element>
+            <xsd:element name="Months" minOccurs="0">
+                <xsd:simpleType>
+                    <xsd:restriction base="xsd:short">
+                        <xsd:minInclusive value="0"/>
+                        <xsd:maxInclusive value="999"/>
+                    </xsd:restriction>
+                </xsd:simpleType>
+            </xsd:element>
+            <xsd:element name="Weeks" minOccurs="0">
+                <xsd:simpleType>
+                    <xsd:restriction base="xsd:short">
+                        <xsd:minInclusive value="0"/>
+                        <xsd:maxInclusive value="999"/>
+                    </xsd:restriction>
+                </xsd:simpleType>
+            </xsd:element>
+            <xsd:element name="Days" minOccurs="0">
+                <xsd:simpleType>
+                    <xsd:restriction base="xsd:short">
+                        <xsd:minInclusive value="0"/>
+                        <xsd:maxInclusive value="999"/>
+                    </xsd:restriction>
+                </xsd:simpleType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="CustodialTermStructure">
+        <xsd:choice>
+            <xsd:sequence>
+                <xsd:element name="Term" minOccurs="0">
+                    <xsd:complexType>
+                        <xsd:simpleContent>
+                            <xsd:extension base="ModifiedTermStructure">
+                                <xsd:attribute name="Consecutive" type="YesNoType" use="optional"/>
+                                <xsd:attribute name="Concurrent" type="YesNoType" use="optional"/>
+                            </xsd:extension>
+                        </xsd:simpleContent>
+                    </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="s235-236" type="ExtendedTermStructure" minOccurs="0"/>
+                <xsd:element name="ExtendedPeriod" type="ModifiedTermStructure" minOccurs="0"/>
+                <xsd:element name="Section44" type="YesNoType" minOccurs="0"/>
+                <xsd:element name="TotalTerm" type="ModifiedTermStructure"/>
+            </xsd:sequence>
+            <xsd:element name="LifeSentence" type="LifeSentenceStructure"/>
+        </xsd:choice>
+        <xsd:attribute name="Section44" type="YesNoType" use="optional"/>
+        <xsd:attribute name="Section91" type="YesNoType" use="optional"/>
+        <xsd:attribute name="IndeterminateSentence" type="YesNoType" use="optional"/>
+        <xsd:attribute name="SectionType" use="optional">
+            <xsd:simpleType>
+                <xsd:restriction base="xsd:string">
+                    <xsd:enumeration value="s224a"/>
+                    <xsd:enumeration value="s225"/>
+                    <xsd:enumeration value="s226"/>
+                    <xsd:enumeration value="s226a"/>
+                    <xsd:enumeration value="s226b"/>
+                    <xsd:enumeration value="s227"/>
+                    <xsd:enumeration value="s228"/>
+                </xsd:restriction>
+            </xsd:simpleType>
+        </xsd:attribute>
+        <xsd:attribute name="Section236A" type="YesNoType" use="optional"/>
+    </xsd:complexType>
+    <xsd:complexType name="DefenceStructure">
+        <xsd:sequence>
+            <xsd:element name="Solicitor" type="SolicitorStructure" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="Advocate" type="AdvocateStructure" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="IndeterminateSentenceStructure">
+        <xsd:sequence>
+            <xsd:element name="MinimumSentence" type="xsd:duration"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="CreditOnRemandStructure">
+        <xsd:sequence>
+            <xsd:element name="CreditPeriod" type="xsd:duration"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="CreditOnBailStructure">
+        <xsd:sequence>
+            <xsd:element name="CreditPeriod" type="xsd:duration"/>
+        </xsd:sequence>
+    </xsd:complexType>
     <xsd:complexType name="DefendantStructure">
         <xsd:complexContent>
             <xsd:extension base="PersonStructure">
@@ -725,30 +702,25 @@
                     <xsd:element name="ASNs" minOccurs="0">
                         <xsd:complexType>
                             <xsd:sequence>
-                                <xsd:element name="ASN" type="cs:ASnumberType"
-                                             maxOccurs="unbounded"/>
+                                <xsd:element name="ASN" type="cs:ASnumberType" maxOccurs="unbounded"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:element>
                     <xsd:element name="CRESTdefendantID" type="xsd:int" minOccurs="0"/>
                     <xsd:element name="PNCnumber" type="PNCnumberType" minOccurs="0"/>
-                    <xsd:element name="URN" type="URNtype" minOccurs="0"/>
+                    <xsd:element name="URN" type="xsd:string" minOccurs="0"/>
                     <xsd:element name="CROnumber" type="xsd:string" minOccurs="0"/>
                     <xsd:element name="MagistratesCourtRefNumber" type="xsd:string" minOccurs="0"/>
                     <xsd:element name="PrisonerID" type="PrisonerIDtype" minOccurs="0"/>
-                    <xsd:element name="PrisonLocation" type="PrisonLocationStructure"
-                                 minOccurs="0"/>
+                    <xsd:element name="PrisonLocation" type="PrisonLocationStructure" minOccurs="0"/>
                     <xsd:element name="CustodyStatus" type="BailStatusType" minOccurs="0"/>
-                    <xsd:element name="Counsel" type="DefenceStructure" minOccurs="0"
-                                 maxOccurs="unbounded"/>
+                    <xsd:element name="Counsel" type="DefenceStructure" minOccurs="0" maxOccurs="unbounded"/>
                     <xsd:element name="Charges" minOccurs="0">
                         <xsd:complexType>
                             <xsd:sequence>
-                                <xsd:element name="Charge" type="ChargeStructure"
-                                             maxOccurs="unbounded"/>
+                                <xsd:element name="Charge" type="ChargeStructure" maxOccurs="unbounded"/>
                             </xsd:sequence>
-                            <xsd:attribute name="NumberOfCharges" type="xsd:integer"
-                                           use="optional"/>
+                            <xsd:attribute name="NumberOfCharges" type="xsd:integer" use="optional"/>
                         </xsd:complexType>
                     </xsd:element>
                     <xsd:element name="OriginalCharges" minOccurs="0">
@@ -756,19 +728,12 @@
                             <xsd:sequence>
                                 <xsd:element name="OriginalCharge" maxOccurs="unbounded">
                                     <xsd:annotation>
-                                        <xsd:documentation>OriginalCharges are only applicable to
-                                            trial cases. Each OriginalCharge must be regarded as
-                                            related to (and 'disposed' via) a defendant disposal.
-                                            This relationship is relevant to, and identified in, the
-                                            Trial Record Sheet XML Schema document.
-                                        </xsd:documentation>
+                                        <xsd:documentation>OriginalCharges are only applicable to trial cases. Each  OriginalCharge must be regarded as related to (and 'disposed' via) a defendant disposal. This relationship is relevant to, and identified in, the Trial Record Sheet XML Schema document. </xsd:documentation>
                                     </xsd:annotation>
                                     <xsd:complexType>
                                         <xsd:sequence>
-                                            <xsd:element name="OriginalChargeSequenceNumber"
-                                                         type="xsd:int"/>
-                                            <xsd:element name="OriginalChargeDescription"
-                                                         type="xsd:string"/>
+                                            <xsd:element name="OriginalChargeSequenceNumber" type="xsd:int"/>
+                                            <xsd:element name="OriginalChargeDescription" type="xsd:string"/>
                                         </xsd:sequence>
                                     </xsd:complexType>
                                 </xsd:element>
@@ -801,49 +766,49 @@
             </xsd:element>
         </xsd:sequence>
     </xsd:complexType>
-    <!--    <xsd:complexType name="DrugRehabilitationStructure">-->
-    <!--        <xsd:complexContent>-->
-    <!--            <xsd:extension base="TreatmentStructure">-->
-    <!--                <xsd:sequence>-->
-    <!--                    <xsd:element name="Samples" type="YesNoType" minOccurs="0"/>-->
-    <!--                    <xsd:element name="Review" type="OrderReviewStructure" minOccurs="0"/>-->
-    <!--                </xsd:sequence>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:complexContent>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="EducationStructure">-->
-    <!--        <xsd:complexContent>-->
-    <!--            <xsd:extension base="BaseOrderRequirementStructure">-->
-    <!--                <xsd:sequence>-->
-    <!--                    <xsd:element name="ArrangedBy" type="xsd:string" minOccurs="0"/>-->
-    <!--                    <xsd:element name="LocalAuthority" type="xsd:string" minOccurs="0"/>-->
-    <!--                </xsd:sequence>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:complexContent>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="ExclusionStructure">-->
-    <!--        <xsd:complexContent>-->
-    <!--            <xsd:extension base="BaseOrderRequirementStructure">-->
-    <!--                <xsd:sequence>-->
-    <!--                    <xsd:element name="Location" type="LocationStructure"/>-->
-    <!--                    <xsd:element name="Between" type="xsd:string" minOccurs="0"/>-->
-    <!--                </xsd:sequence>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:complexContent>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="ExtendedTermStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="CustodialTerm" type="ModifiedTermStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="ExtensionPeriod" type="ModifiedTermStructure" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--        <xsd:attribute name="Consecutive" type="YesNoType" use="optional"/>-->
-    <!--        <xsd:attribute name="Concurrent" type="YesNoType" use="optional"/>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="ExtensionType">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:any processContents="skip" minOccurs="0" maxOccurs="unbounded"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="DrugRehabilitationStructure">
+        <xsd:complexContent>
+            <xsd:extension base="TreatmentStructure">
+                <xsd:sequence>
+                    <xsd:element name="Samples" type="YesNoType" minOccurs="0"/>
+                    <xsd:element name="Review" type="OrderReviewStructure" minOccurs="0"/>
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    <xsd:complexType name="EducationStructure">
+        <xsd:complexContent>
+            <xsd:extension base="BaseOrderRequirementStructure">
+                <xsd:sequence>
+                    <xsd:element name="ArrangedBy" type="xsd:string" minOccurs="0"/>
+                    <xsd:element name="LocalAuthority" type="xsd:string" minOccurs="0"/>
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    <xsd:complexType name="ExclusionStructure">
+        <xsd:complexContent>
+            <xsd:extension base="BaseOrderRequirementStructure">
+                <xsd:sequence>
+                    <xsd:element name="Location" type="LocationStructure"/>
+                    <xsd:element name="Between" type="xsd:string" minOccurs="0"/>
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    <xsd:complexType name="ExtendedTermStructure">
+        <xsd:sequence>
+            <xsd:element name="CustodialTerm" type="ModifiedTermStructure" minOccurs="0"/>
+            <xsd:element name="ExtensionPeriod" type="ModifiedTermStructure" minOccurs="0"/>
+        </xsd:sequence>
+        <xsd:attribute name="Consecutive" type="YesNoType" use="optional"/>
+        <xsd:attribute name="Concurrent" type="YesNoType" use="optional"/>
+    </xsd:complexType>
+    <xsd:complexType name="ExtensionType">
+        <xsd:sequence>
+            <xsd:any processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
     <xsd:complexType name="FixtureStructure">
         <xsd:sequence>
             <xsd:element name="FixedDate" type="xsd:date" minOccurs="0"/>
@@ -852,25 +817,25 @@
             <xsd:element name="LinkedCases" type="LinkedCasesStructure" minOccurs="0"/>
         </xsd:sequence>
     </xsd:complexType>
-    <!--    <xsd:complexType name="ForeignTravelProhibitionRequirementStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Days" type="xsd:string" minOccurs="0"/>-->
-    <!--            <xsd:element name="FromDate" type="xsd:date" minOccurs="0"/>-->
-    <!--            <xsd:element name="ToDate" type="xsd:date" minOccurs="0"/>-->
-    <!--            <xsd:element name="ProhibitedFrom" type="xsd:string"/>-->
-    <!--            <xsd:element name="Exception" type="xsd:string" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="FosteringStructure">-->
-    <!--        <xsd:complexContent>-->
-    <!--            <xsd:extension base="BaseOrderRequirementStructure">-->
-    <!--                <xsd:sequence>-->
-    <!--                    <xsd:element name="LocalAuthority" type="xsd:string" minOccurs="0"/>-->
-    <!--                    <xsd:element name="BeginDate" type="xsd:date" minOccurs="0"/>-->
-    <!--                </xsd:sequence>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:complexContent>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="ForeignTravelProhibitionRequirementStructure">
+        <xsd:sequence>
+            <xsd:element name="Days" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="FromDate" type="xsd:date" minOccurs="0"/>
+            <xsd:element name="ToDate" type="xsd:date" minOccurs="0"/>
+            <xsd:element name="ProhibitedFrom" type="xsd:string"/>
+            <xsd:element name="Exception" type="xsd:string" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="FosteringStructure">
+        <xsd:complexContent>
+            <xsd:extension base="BaseOrderRequirementStructure">
+                <xsd:sequence>
+                    <xsd:element name="LocalAuthority" type="xsd:string" minOccurs="0"/>
+                    <xsd:element name="BeginDate" type="xsd:date" minOccurs="0"/>
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
     <xsd:complexType name="HateCrimeStructure">
         <xsd:sequence>
             <xsd:element name="Reason" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
@@ -882,7 +847,7 @@
             <xsd:element name="HearingDetails" type="HearingTypeStructure"/>
             <xsd:element name="CRESThearingID" type="xsd:int" minOccurs="0"/>
             <xsd:element name="TimeMarkingNote" type="xsd:string" minOccurs="0"/>
-            <xsd:element name="CaseNumber" type="CaseNumberType"/>
+            <xsd:element name="CaseNumber" type="xsd:string"/>
             <xsd:element name="Prosecution" type="ProsecutionStructure" minOccurs="0"/>
             <xsd:element name="CommittingCourt" type="CourtHouseStructure" minOccurs="0"/>
             <xsd:element name="ListNote" type="xsd:string" minOccurs="0"/>
@@ -890,39 +855,36 @@
             <xsd:element name="Defendants" minOccurs="0">
                 <xsd:complexType>
                     <xsd:sequence>
-                        <xsd:element name="Defendant" type="DefendantStructure" minOccurs="0"
-                                     maxOccurs="unbounded"/>
+                        <xsd:element name="Defendant" type="DefendantStructure" minOccurs="0" maxOccurs="unbounded"/>
                     </xsd:sequence>
                 </xsd:complexType>
             </xsd:element>
             <xsd:element name="Respondent" type="xsd:string" minOccurs="0"/>
         </xsd:sequence>
     </xsd:complexType>
-    <!--    <xsd:complexType name="HearingBailChangesStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="BailChangeDate" type="xsd:date"/>-->
-    <!--            <xsd:choice>-->
-    <!--                <xsd:element name="HearingBailResult">-->
-    <!--                    <xsd:annotation>-->
-    <!--                        <xsd:documentation>Exists if application during preliminary hearing-->
-    <!--                        </xsd:documentation>-->
-    <!--                    </xsd:annotation>-->
-    <!--                    <xsd:simpleType>-->
-    <!--                        <xsd:restriction base="xsd:string">-->
-    <!--                            <xsd:enumeration value="Granted"/>-->
-    <!--                            <xsd:enumeration value="Refused"/>-->
-    <!--                        </xsd:restriction>-->
-    <!--                    </xsd:simpleType>-->
-    <!--                </xsd:element>-->
-    <!--                <xsd:element name="NewBailStatus" type="BailStatusType">-->
-    <!--                    <xsd:annotation>-->
-    <!--                        <xsd:documentation>Exists when bail status change during Main hearing-->
-    <!--                        </xsd:documentation>-->
-    <!--                    </xsd:annotation>-->
-    <!--                </xsd:element>-->
-    <!--            </xsd:choice>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="HearingBailChangesStructure">
+        <xsd:sequence>
+            <xsd:element name="BailChangeDate" type="xsd:date"/>
+            <xsd:choice>
+                <xsd:element name="HearingBailResult">
+                    <xsd:annotation>
+                        <xsd:documentation>Exists if application during preliminary hearing</xsd:documentation>
+                    </xsd:annotation>
+                    <xsd:simpleType>
+                        <xsd:restriction base="xsd:string">
+                            <xsd:enumeration value="Granted"/>
+                            <xsd:enumeration value="Refused"/>
+                        </xsd:restriction>
+                    </xsd:simpleType>
+                </xsd:element>
+                <xsd:element name="NewBailStatus" type="BailStatusType">
+                    <xsd:annotation>
+                        <xsd:documentation>Exists when bail status change during Main hearing</xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
+            </xsd:choice>
+        </xsd:sequence>
+    </xsd:complexType>
     <xsd:complexType name="HearingTypeStructure">
         <xsd:sequence>
             <xsd:element name="HearingDescription" type="xsd:string"/>
@@ -960,16 +922,16 @@
             <xsd:element name="EndDate" type="xsd:date" minOccurs="0"/>
         </xsd:sequence>
     </xsd:complexType>
-    <!--    <xsd:complexType name="LifeSentenceStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="MinimumLifeTerm" type="ModifiedTermStructure" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--        <xsd:attribute name="HMPleasure" type="YesNoType" use="optional"/>-->
-    <!--        <xsd:attribute name="MandatoryLife" type="YesNoType" use="optional"/>-->
-    <!--        <xsd:attribute name="Section9394" type="YesNoType" use="optional"/>-->
-    <!--        <xsd:attribute name="AutomaticLife" type="YesNoType" use="optional"/>-->
-    <!--        <xsd:attribute name="DiscretionaryLife" type="YesNoType" use="optional"/>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="LifeSentenceStructure">
+        <xsd:sequence>
+            <xsd:element name="MinimumLifeTerm" type="ModifiedTermStructure" minOccurs="0"/>
+        </xsd:sequence>
+        <xsd:attribute name="HMPleasure" type="YesNoType" use="optional"/>
+        <xsd:attribute name="MandatoryLife" type="YesNoType" use="optional"/>
+        <xsd:attribute name="Section9394" type="YesNoType" use="optional"/>
+        <xsd:attribute name="AutomaticLife" type="YesNoType" use="optional"/>
+        <xsd:attribute name="DiscretionaryLife" type="YesNoType" use="optional"/>
+    </xsd:complexType>
     <xsd:complexType name="LinkedCasesStructure">
         <xsd:sequence>
             <xsd:element name="CaseNumber" type="CaseLinkRefType" maxOccurs="unbounded"/>
@@ -1000,30 +962,29 @@
         </xsd:choice>
         <xsd:attribute name="ResidencyStatus" type="ResidenceStatusType" use="optional"/>
     </xsd:complexType>
-    <!--    <xsd:complexType name="MoneyType">-->
-    <!--        <xsd:simpleContent>-->
-    <!--            <xsd:extension base="xsd:decimal">-->
-    <!--                <xsd:attribute name="Currency" type="xsd:string" use="optional"/>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:simpleContent>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="NBSSOrderStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="OriginalTermUnaltered" type="YesNoType" minOccurs="0"/>-->
-    <!--            <xsd:element name="LesserTerm" type="ModifiedTermStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="Fine" type="xsd:string" minOccurs="0"/>-->
-    <!--            <xsd:element name="Requirements" type="xsd:string" minOccurs="0"/>-->
-    <!--            <xsd:element name="SupervisionPeriod" type="ModifiedTermStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="OperationalPeriod" type="ModifiedTermStructure" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="OfficerStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="OfficerName" type="xsd:string" minOccurs="0"/>-->
-    <!--            <xsd:element name="ContactDetails" type="apd:CitizenContactDetailsStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="MoneyType">
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:decimal">
+                <xsd:attribute name="Currency" type="xsd:string" use="optional"/>
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+    <xsd:complexType name="NBSSOrderStructure">
+        <xsd:sequence>
+            <xsd:element name="OriginalTermUnaltered" type="YesNoType" minOccurs="0"/>
+            <xsd:element name="LesserTerm" type="ModifiedTermStructure" minOccurs="0"/>
+            <xsd:element name="Fine" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="Requirements" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="SupervisionPeriod" type="ModifiedTermStructure" minOccurs="0"/>
+            <xsd:element name="OperationalPeriod" type="ModifiedTermStructure" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="OfficerStructure">
+        <xsd:sequence>
+            <xsd:element name="OfficerName" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="ContactDetails" type="apd:CitizenContactDetailsStructure" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
     <xsd:complexType name="OrderDurationType">
         <xsd:simpleContent>
             <xsd:extension base="xsd:duration">
@@ -1031,57 +992,47 @@
             </xsd:extension>
         </xsd:simpleContent>
     </xsd:complexType>
-    <!--    <xsd:complexType name="OrderRequirementsStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="UnpaidWorkRequirement" type="UnpaidWorkStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="ActivityRequirement" type="ActivityStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="ProgrammeRequirement" type="ProgrammeStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="ProhibitedActivityRequirement" type="ProhibitedActivityStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="CurfewRequirement" type="BaseOrderRequirementStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="ExclusionRequirement" type="ExclusionStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="ResidenceRequirement" type="ResidenceStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="MentalHealthTreatmentRequirement" type="TreatmentStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="DrugRehabilitationRequirement" type="DrugRehabilitationStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="AlcoholTreatmentRequirement" type="TreatmentStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="SupervisionRequirement" type="BaseOrderRequirementStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="ForeignTravelProhibitionRequirement"-->
-    <!--                         type="ForeignTravelProhibitionRequirementStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="RehabilitationActivityRequirement"-->
-    <!--                         type="RehabilitationActivityRequirementStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="AttendanceCentreRequirement" type="YesNoType" minOccurs="0"/>-->
-    <!--            <xsd:element name="ElectronicMonitoringProvision" type="YesNoType" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="OrderReviewStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Periodicity" type="xsd:string"/>-->
-    <!--            <xsd:element name="Location" type="CourtHouseStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="DateTime" type="xsd:dateTime" minOccurs="0"/>-->
-    <!--            <xsd:element name="Telephone" type="apd:TelephoneNumberType" minOccurs="0"/>-->
-    <!--            <xsd:element name="CompulsoryAttendance" type="YesNoType" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="OriginatingCourtStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Date" type="xsd:date" minOccurs="0"/>-->
-    <!--            <xsd:element name="CourtHouse" type="CourtHouseStructure"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="OrderRequirementsStructure">
+        <xsd:sequence>
+            <xsd:element name="UnpaidWorkRequirement" type="UnpaidWorkStructure" minOccurs="0"/>
+            <xsd:element name="ActivityRequirement" type="ActivityStructure" minOccurs="0"/>
+            <xsd:element name="ProgrammeRequirement" type="ProgrammeStructure" minOccurs="0"/>
+            <xsd:element name="ProhibitedActivityRequirement" type="ProhibitedActivityStructure" minOccurs="0"/>
+            <xsd:element name="CurfewRequirement" type="BaseOrderRequirementStructure" minOccurs="0"/>
+            <xsd:element name="ExclusionRequirement" type="ExclusionStructure" minOccurs="0"/>
+            <xsd:element name="ResidenceRequirement" type="ResidenceStructure" minOccurs="0"/>
+            <xsd:element name="MentalHealthTreatmentRequirement" type="TreatmentStructure" minOccurs="0"/>
+            <xsd:element name="DrugRehabilitationRequirement" type="DrugRehabilitationStructure" minOccurs="0"/>
+            <xsd:element name="AlcoholTreatmentRequirement" type="TreatmentStructure" minOccurs="0"/>
+            <xsd:element name="SupervisionRequirement" type="BaseOrderRequirementStructure" minOccurs="0"/>
+            <xsd:element name="ForeignTravelProhibitionRequirement" type="ForeignTravelProhibitionRequirementStructure" minOccurs="0"/>
+            <xsd:element name="RehabilitationActivityRequirement" type="RehabilitationActivityRequirementStructure" minOccurs="0"/>
+            <xsd:element name="AttendanceCentreRequirement" type="YesNoType" minOccurs="0"/>
+            <xsd:element name="ElectronicMonitoringProvision" type="YesNoType" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="OrderReviewStructure">
+        <xsd:sequence>
+            <xsd:element name="Periodicity" type="xsd:string"/>
+            <xsd:element name="Location" type="CourtHouseStructure" minOccurs="0"/>
+            <xsd:element name="DateTime" type="xsd:dateTime" minOccurs="0"/>
+            <xsd:element name="Telephone" type="apd:TelephoneNumberType" minOccurs="0"/>
+            <xsd:element name="CompulsoryAttendance" type="YesNoType" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="OriginatingCourtStructure">
+        <xsd:sequence>
+            <xsd:element name="Date" type="xsd:date" minOccurs="0"/>
+            <xsd:element name="CourtHouse" type="CourtHouseStructure"/>
+        </xsd:sequence>
+    </xsd:complexType>
     <xsd:complexType name="OrganisationStructure">
         <xsd:sequence>
             <xsd:element name="OrganisationCode" type="xsd:string" minOccurs="0"/>
             <xsd:element name="OrganisationName" type="xsd:string"/>
-            <xsd:element name="OrganisationAddress" type="apd:UKPostalAddressStructure"
-                         minOccurs="0"/>
+            <xsd:element name="OrganisationAddress" type="apd:UKPostalAddressStructure" minOccurs="0"/>
             <xsd:element name="OrganisationDX" type="xsd:string" minOccurs="0"/>
-            <xsd:element name="ContactDetails" type="apd:CitizenContactDetailsStructure"
-                         minOccurs="0"/>
+            <xsd:element name="ContactDetails" type="apd:CitizenContactDetailsStructure" minOccurs="0"/>
         </xsd:sequence>
     </xsd:complexType>
     <xsd:complexType name="PartyStructure">
@@ -1106,13 +1057,10 @@
         <xsd:sequence>
             <xsd:element name="PersonalDetails" type="PersonalDetailsStructure">
                 <xsd:annotation>
-                    <xsd:documentation>PersonalDetails must include at least one of Name or
-                        MaskedName (it may include both)
-                    </xsd:documentation>
+                    <xsd:documentation>PersonalDetails must include at least one of  Name or MaskedName (it may include both)</xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
-            <xsd:element name="ContactDetails" type="apd:CitizenContactDetailsStructure"
-                         minOccurs="0"/>
+            <xsd:element name="ContactDetails" type="apd:CitizenContactDetailsStructure" minOccurs="0"/>
         </xsd:sequence>
     </xsd:complexType>
     <xsd:complexType name="PrisonLocationStructure">
@@ -1131,155 +1079,153 @@
             </xsd:extension>
         </xsd:complexContent>
     </xsd:complexType>
-    <!--    <xsd:complexType name="ProhibitedActivityStructure">-->
-    <!--        <xsd:complexContent>-->
-    <!--            <xsd:extension base="BaseOrderRequirementStructure">-->
-    <!--                <xsd:sequence>-->
-    <!--                    <xsd:element name="Activity" type="xsd:string"/>-->
-    <!--                </xsd:sequence>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:complexContent>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="ProhibitedActivityStructure">
+        <xsd:complexContent>
+            <xsd:extension base="BaseOrderRequirementStructure">
+                <xsd:sequence>
+                    <xsd:element name="Activity" type="xsd:string"/>
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
     <xsd:complexType name="ProsecutionStructure">
         <xsd:sequence>
-            <xsd:element name="Advocate" type="AdvocateStructure" minOccurs="0"
-                         maxOccurs="unbounded"/>
+            <xsd:element name="Advocate" type="AdvocateStructure" minOccurs="0" maxOccurs="unbounded"/>
             <xsd:element name="ProsecutingReference" type="xsd:string" minOccurs="0"/>
             <xsd:element name="ProsecutingOrganisation" type="OrganisationStructure" minOccurs="0"/>
         </xsd:sequence>
         <xsd:attribute name="ProsecutingAuthority" type="ProsecutingAuthorityType"/>
     </xsd:complexType>
-    <!--    <xsd:complexType name="ReasonsStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Reason" type="xsd:string" maxOccurs="unbounded"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="RecordSheetHeaderStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="RecordSheetType" type="RecordSheetTypeType"/>-->
-    <!--            <xsd:element name="CourtHouse" type="CourtHouseStructure"/>-->
-    <!--            <xsd:element name="CaseNumber" type="CaseNumberType"/>-->
-    <!--            <xsd:element name="MagistratesCourt" type="CourtHouseStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="TransferInCourt" minOccurs="0">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:complexContent>-->
-    <!--                        <xsd:extension base="cs:CourtHouseStructure">-->
-    <!--                            <xsd:sequence>-->
-    <!--                                <xsd:element name="DateOfTransferIn" type="xsd:date" minOccurs="0"/>-->
-    <!--                            </xsd:sequence>-->
-    <!--                        </xsd:extension>-->
-    <!--                    </xsd:complexContent>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="SubjectType" type="SubjectTypeType" minOccurs="0"/>-->
-    <!--            <xsd:element name="MethodOfInstigation" type="MethodOfInstigationType" minOccurs="0"/>-->
-    <!--            <xsd:element name="DateOfInstigation" type="xsd:date" minOccurs="0"/>-->
-    <!--            <xsd:element name="OriginalCaseNumber" type="xsd:string" minOccurs="0"/>-->
-    <!--            <xsd:element name="Defendant">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:complexContent>-->
-    <!--                        <xsd:extension base="DefendantStructure">-->
-    <!--                            <xsd:sequence>-->
-    <!--                                <xsd:element name="CRESTdefendantNumber" type="xsd:int"-->
-    <!--                                             minOccurs="0"/>-->
-    <!--                            </xsd:sequence>-->
-    <!--                        </xsd:extension>-->
-    <!--                    </xsd:complexContent>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="VulnerableVictimIndicator" type="xsd:string" minOccurs="0"/>-->
-    <!--            <xsd:element name="TotalDefendants" type="xsd:int" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="RehabilitationActivityRequirementStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Duration" type="xsd:string" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="RemandReasonStructure">-->
-    <!--        <xsd:choice>-->
-    <!--            <xsd:element name="SentforTrial" type="OriginatingCourtStructure"/>-->
-    <!--            <xsd:element name="CrownCourtCommittal" type="OriginatingCourtStructure"/>-->
-    <!--            <xsd:element name="VoluntaryBillOfIndictment" type="xsd:date"/>-->
-    <!--            <xsd:element name="CertificateOfTransfer" type="xsd:date"/>-->
-    <!--            <xsd:element name="AppealAgainstBailGranted" type="YesNoType"/>-->
-    <!--        </xsd:choice>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="RemandTypeStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="DesignatedLocalAuthority" type="xsd:string"/>-->
-    <!--            <xsd:element name="RequirementOnLocalAuthority" type="xsd:string" minOccurs="0"/>-->
-    <!--            <xsd:element name="ConditionsOnDefendant" type="xsd:string" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--        <xsd:attribute name="RemandType" type="RemandOrderTypeType"/>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="ResidenceStructure">-->
-    <!--        <xsd:complexContent>-->
-    <!--            <xsd:extension base="BaseOrderRequirementStructure">-->
-    <!--                <xsd:sequence>-->
-    <!--                    <xsd:element name="Location" type="LocationStructure"/>-->
-    <!--                    <xsd:element name="AlternativeLocation" type="LocationStructure" minOccurs="0"/>-->
-    <!--                </xsd:sequence>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:complexContent>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="ReturnToImprisonmentStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="OffenceDate">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:simpleContent>-->
-    <!--                        <xsd:extension base="xsd:date">-->
-    <!--                            <xsd:attribute name="Qualifier" type="DateQualifierType"/>-->
-    <!--                        </xsd:extension>-->
-    <!--                    </xsd:simpleContent>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="SentencingCourt" type="OriginatingCourtStructure"/>-->
-    <!--            <xsd:element name="ReturnPeriod" minOccurs="0">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:choice>-->
-    <!--                        <xsd:element name="Period" type="xsd:duration"/>-->
-    <!--                        <xsd:element name="Max116" type="YesNoType" default="yes"/>-->
-    <!--                    </xsd:choice>-->
-    <!--                    <xsd:attribute name="DetentionType" type="DetentionTypeType"/>-->
-    <!--                    <xsd:attribute name="TermType" type="TermTypeType" use="optional"/>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--            <xsd:element name="TotalPeriodOfReturn" minOccurs="0">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:simpleContent>-->
-    <!--                        <xsd:extension base="xsd:duration">-->
-    <!--                            <xsd:attribute name="IncludesNewOffenceTerm" type="YesNoType"/>-->
-    <!--                        </xsd:extension>-->
-    <!--                    </xsd:simpleContent>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="RevisionDetailsStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="PreviousOrderDate" type="xsd:date"/>-->
-    <!--            <xsd:element name="RevisionNumber" type="xsd:int"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="Section85Structure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="TermType" type="TermTypeType" minOccurs="0"/>-->
-    <!--            <xsd:element name="Section85Total" type="SentenceLengthType"/>-->
-    <!--            <xsd:element name="Section85Custodial" type="SentenceLengthType"/>-->
-    <!--            <xsd:element name="Section85Extension" type="SentenceLengthType"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="SentenceStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="SentenceType" type="SentenceTypeType"/>-->
-    <!--            <xsd:element name="SentenceCode" type="xsd:string" minOccurs="0"/>-->
-    <!--            <xsd:element name="TermType" type="TermTypeType" minOccurs="0"/>-->
-    <!--            <xsd:element name="Term" type="TermStructure"/>-->
-    <!--            <xsd:element name="Chapter3" type="YesNoType"/>-->
-    <!--            <xsd:element name="Section85" type="Section85Structure" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="ReasonsStructure">
+        <xsd:sequence>
+            <xsd:element name="Reason" type="xsd:string" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="RecordSheetHeaderStructure">
+        <xsd:sequence>
+            <xsd:element name="RecordSheetType" type="RecordSheetTypeType"/>
+            <xsd:element name="CourtHouse" type="CourtHouseStructure"/>
+            <xsd:element name="CaseNumber" type="CaseNumberType"/>
+            <xsd:element name="MagistratesCourt" type="CourtHouseStructure" minOccurs="0"/>
+            <xsd:element name="TransferInCourt" minOccurs="0">
+                <xsd:complexType>
+                    <xsd:complexContent>
+                        <xsd:extension base="cs:CourtHouseStructure">
+                            <xsd:sequence>
+                                <xsd:element name="DateOfTransferIn" type="xsd:date" minOccurs="0"/>
+                            </xsd:sequence>
+                        </xsd:extension>
+                    </xsd:complexContent>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="SubjectType" type="SubjectTypeType" minOccurs="0"/>
+            <xsd:element name="MethodOfInstigation" type="MethodOfInstigationType" minOccurs="0"/>
+            <xsd:element name="DateOfInstigation" type="xsd:date" minOccurs="0"/>
+            <xsd:element name="OriginalCaseNumber" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="Defendant">
+                <xsd:complexType>
+                    <xsd:complexContent>
+                        <xsd:extension base="DefendantStructure">
+                            <xsd:sequence>
+                                <xsd:element name="CRESTdefendantNumber" type="xsd:int" minOccurs="0"/>
+                            </xsd:sequence>
+                        </xsd:extension>
+                    </xsd:complexContent>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="VulnerableVictimIndicator" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="TotalDefendants" type="xsd:int" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="RehabilitationActivityRequirementStructure">
+        <xsd:sequence>
+            <xsd:element name="Duration" type="xsd:string" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="RemandReasonStructure">
+        <xsd:choice>
+            <xsd:element name="SentforTrial" type="OriginatingCourtStructure"/>
+            <xsd:element name="CrownCourtCommittal" type="OriginatingCourtStructure"/>
+            <xsd:element name="VoluntaryBillOfIndictment" type="xsd:date"/>
+            <xsd:element name="CertificateOfTransfer" type="xsd:date"/>
+            <xsd:element name="AppealAgainstBailGranted" type="YesNoType"/>
+        </xsd:choice>
+    </xsd:complexType>
+    <xsd:complexType name="RemandTypeStructure">
+        <xsd:sequence>
+            <xsd:element name="DesignatedLocalAuthority" type="xsd:string"/>
+            <xsd:element name="RequirementOnLocalAuthority" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="ConditionsOnDefendant" type="xsd:string" minOccurs="0"/>
+        </xsd:sequence>
+        <xsd:attribute name="RemandType" type="RemandOrderTypeType"/>
+    </xsd:complexType>
+    <xsd:complexType name="ResidenceStructure">
+        <xsd:complexContent>
+            <xsd:extension base="BaseOrderRequirementStructure">
+                <xsd:sequence>
+                    <xsd:element name="Location" type="LocationStructure"/>
+                    <xsd:element name="AlternativeLocation" type="LocationStructure" minOccurs="0"/>
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    <xsd:complexType name="ReturnToImprisonmentStructure">
+        <xsd:sequence>
+            <xsd:element name="OffenceDate">
+                <xsd:complexType>
+                    <xsd:simpleContent>
+                        <xsd:extension base="xsd:date">
+                            <xsd:attribute name="Qualifier" type="DateQualifierType"/>
+                        </xsd:extension>
+                    </xsd:simpleContent>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="SentencingCourt" type="OriginatingCourtStructure"/>
+            <xsd:element name="ReturnPeriod" minOccurs="0">
+                <xsd:complexType>
+                    <xsd:choice>
+                        <xsd:element name="Period" type="xsd:duration"/>
+                        <xsd:element name="Max116" type="YesNoType" default="yes"/>
+                    </xsd:choice>
+                    <xsd:attribute name="DetentionType" type="DetentionTypeType"/>
+                    <xsd:attribute name="TermType" type="TermTypeType" use="optional"/>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="TotalPeriodOfReturn" minOccurs="0">
+                <xsd:complexType>
+                    <xsd:simpleContent>
+                        <xsd:extension base="xsd:duration">
+                            <xsd:attribute name="IncludesNewOffenceTerm" type="YesNoType"/>
+                        </xsd:extension>
+                    </xsd:simpleContent>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="RevisionDetailsStructure">
+        <xsd:sequence>
+            <xsd:element name="PreviousOrderDate" type="xsd:date"/>
+            <xsd:element name="RevisionNumber" type="xsd:int"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="Section85Structure">
+        <xsd:sequence>
+            <xsd:element name="TermType" type="TermTypeType" minOccurs="0"/>
+            <xsd:element name="Section85Total" type="SentenceLengthType"/>
+            <xsd:element name="Section85Custodial" type="SentenceLengthType"/>
+            <xsd:element name="Section85Extension" type="SentenceLengthType"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="SentenceStructure">
+        <xsd:sequence>
+            <xsd:element name="SentenceType" type="SentenceTypeType"/>
+            <xsd:element name="SentenceCode" type="xsd:string" minOccurs="0"/>
+            <xsd:element name="TermType" type="TermTypeType" minOccurs="0"/>
+            <xsd:element name="Term" type="TermStructure"/>
+            <xsd:element name="Chapter3" type="YesNoType"/>
+            <xsd:element name="Section85" type="Section85Structure" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
     <xsd:complexType name="SittingStructure">
         <xsd:sequence>
             <xsd:element name="CourtRoomNumber" type="xsd:int"/>
@@ -1299,8 +1245,7 @@
             <xsd:element name="Hearings">
                 <xsd:complexType>
                     <xsd:sequence>
-                        <xsd:element name="Hearing" type="HearingStructure" minOccurs="0"
-                                     maxOccurs="unbounded"/>
+                        <xsd:element name="Hearing" type="HearingStructure" minOccurs="0" maxOccurs="unbounded"/>
                     </xsd:sequence>
                 </xsd:complexType>
             </xsd:element>
@@ -1313,95 +1258,85 @@
             <xsd:element name="EndDate" type="xsd:date" minOccurs="0"/>
         </xsd:sequence>
     </xsd:complexType>
-    <!--    <xsd:complexType name="TermStructure">-->
-    <!--        <xsd:simpleContent>-->
-    <!--            <xsd:extension base="xsd:duration">-->
-    <!--                <xsd:attribute name="TermType" type="TermTypeType" use="optional"/>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:simpleContent>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="ModifiedTermStructure">-->
-    <!--        <xsd:simpleContent>-->
-    <!--            <xsd:extension base="xsd:string">-->
-    <!--                <xsd:attribute name="TermType" type="TermTypeType" use="optional"/>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:simpleContent>-->
-    <!--        &lt;!&ndash; This is a variation on the existing TermStructure and based on xsd:duration but with the additional ability to hold a value for weeks - NOT VALIDATED &ndash;&gt;-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="TestingStructure">-->
-    <!--        <xsd:complexContent>-->
-    <!--            <xsd:extension base="BaseOrderRequirementStructure">-->
-    <!--                <xsd:choice>-->
-    <!--                    <xsd:element name="ResponsibleOfficerInstructions" type="YesNoType"-->
-    <!--                                 default="yes"/>-->
-    <!--                    <xsd:element name="MinimumOccasions" type="xsd:string"/>-->
-    <!--                    <xsd:element name="Requirements" type="xsd:string"/>-->
-    <!--                </xsd:choice>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:complexContent>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="TotalSentenceStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="Term" type="TermStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="OtherOrders" minOccurs="0">-->
-    <!--                <xsd:complexType>-->
-    <!--                    <xsd:sequence>-->
-    <!--                        <xsd:element name="Order" type="xsd:string" maxOccurs="unbounded"/>-->
-    <!--                        <xsd:element name="CRESTOrderData" type="cs:CRESTDisposalDataStructure"-->
-    <!--                                     maxOccurs="unbounded"/>-->
-    <!--                    </xsd:sequence>-->
-    <!--                </xsd:complexType>-->
-    <!--            </xsd:element>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="TreatmentStructure">-->
-    <!--        <xsd:complexContent>-->
-    <!--            <xsd:extension base="BaseOrderRequirementStructure">-->
-    <!--                <xsd:sequence>-->
-    <!--                    <xsd:element name="TreatmentDirector" type="xsd:string" minOccurs="0"/>-->
-    <!--                    <xsd:element name="TreatmentLocation" type="LocationStructure" minOccurs="0"/>-->
-    <!--                </xsd:sequence>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:complexContent>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="UnpaidWorkStructure">-->
-    <!--        <xsd:complexContent>-->
-    <!--            <xsd:extension base="BaseOrderRequirementStructure">-->
-    <!--                <xsd:sequence>-->
-    <!--                    <xsd:element name="Concurrent" type="YesNoType" minOccurs="0"/>-->
-    <!--                    <xsd:element name="ConcurrentOrConsecutiveWorkDetails" type="xsd:string"-->
-    <!--                                 minOccurs="0"/>-->
-    <!--                    <xsd:element name="EndDate" type="xsd:date" minOccurs="0"/>-->
-    <!--                </xsd:sequence>-->
-    <!--            </xsd:extension>-->
-    <!--        </xsd:complexContent>-->
-    <!--    </xsd:complexType>-->
-    <!--    <xsd:complexType name="YouthOrderRequirementsStructure">-->
-    <!--        <xsd:sequence>-->
-    <!--            <xsd:element name="UnpaidWorkRequirement" type="UnpaidWorkStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="ActivityRequirement" type="ActivityStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="ProgrammeRequirement" type="ProgrammeStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="ProhibitedActivityRequirement" type="ProhibitedActivityStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="CurfewRequirement" type="BaseOrderRequirementStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="ExclusionRequirement" type="ExclusionStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="ResidenceRequirement" type="ResidenceStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="LocalAuthorityResidenceRequirement" type="ResidenceStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="FosteringRequirement" type="FosteringStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="MentalHealthTreatmentRequirement" type="TreatmentStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="DrugRehabilitationRequirement" type="DrugRehabilitationStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="DrugTestingRequirement" type="TestingStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="IntoxicatingSubstanceRequirement" type="TreatmentStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="SupervisionRequirement" type="BaseOrderRequirementStructure"-->
-    <!--                         minOccurs="0"/>-->
-    <!--            <xsd:element name="EducationRequirement" type="EducationStructure" minOccurs="0"/>-->
-    <!--            <xsd:element name="AttendanceCentreRequirement" type="YesNoType" minOccurs="0"/>-->
-    <!--            <xsd:element name="ElectronicMonitoringProvision" type="YesNoType" minOccurs="0"/>-->
-    <!--        </xsd:sequence>-->
-    <!--    </xsd:complexType>-->
+    <xsd:complexType name="TermStructure">
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:duration">
+                <xsd:attribute name="TermType" type="TermTypeType" use="optional"/>
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+    <xsd:complexType name="ModifiedTermStructure">
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:string">
+                <xsd:attribute name="TermType" type="TermTypeType" use="optional"/>
+            </xsd:extension>
+        </xsd:simpleContent>
+        <!-- This is a variation on the existing TermStructure and based on xsd:duration but with the additional ability to hold a value for weeks - NOT VALIDATED -->
+    </xsd:complexType>
+    <xsd:complexType name="TestingStructure">
+        <xsd:complexContent>
+            <xsd:extension base="BaseOrderRequirementStructure">
+                <xsd:choice>
+                    <xsd:element name="ResponsibleOfficerInstructions" type="YesNoType" default="yes"/>
+                    <xsd:element name="MinimumOccasions" type="xsd:string"/>
+                    <xsd:element name="Requirements" type="xsd:string"/>
+                </xsd:choice>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    <xsd:complexType name="TotalSentenceStructure">
+        <xsd:sequence>
+            <xsd:element name="Term" type="TermStructure" minOccurs="0"/>
+            <xsd:element name="OtherOrders" minOccurs="0">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="Order" type="xsd:string" maxOccurs="unbounded"/>
+                        <xsd:element name="CRESTOrderData" type="cs:CRESTDisposalDataStructure" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="TreatmentStructure">
+        <xsd:complexContent>
+            <xsd:extension base="BaseOrderRequirementStructure">
+                <xsd:sequence>
+                    <xsd:element name="TreatmentDirector" type="xsd:string" minOccurs="0"/>
+                    <xsd:element name="TreatmentLocation" type="LocationStructure" minOccurs="0"/>
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    <xsd:complexType name="UnpaidWorkStructure">
+        <xsd:complexContent>
+            <xsd:extension base="BaseOrderRequirementStructure">
+                <xsd:sequence>
+                    <xsd:element name="Concurrent" type="YesNoType" minOccurs="0"/>
+                    <xsd:element name="ConcurrentOrConsecutiveWorkDetails" type="xsd:string" minOccurs="0"/>
+                    <xsd:element name="EndDate" type="xsd:date" minOccurs="0"/>
+                </xsd:sequence>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    <xsd:complexType name="YouthOrderRequirementsStructure">
+        <xsd:sequence>
+            <xsd:element name="UnpaidWorkRequirement" type="UnpaidWorkStructure" minOccurs="0"/>
+            <xsd:element name="ActivityRequirement" type="ActivityStructure" minOccurs="0"/>
+            <xsd:element name="ProgrammeRequirement" type="ProgrammeStructure" minOccurs="0"/>
+            <xsd:element name="ProhibitedActivityRequirement" type="ProhibitedActivityStructure" minOccurs="0"/>
+            <xsd:element name="CurfewRequirement" type="BaseOrderRequirementStructure" minOccurs="0"/>
+            <xsd:element name="ExclusionRequirement" type="ExclusionStructure" minOccurs="0"/>
+            <xsd:element name="ResidenceRequirement" type="ResidenceStructure" minOccurs="0"/>
+            <xsd:element name="LocalAuthorityResidenceRequirement" type="ResidenceStructure" minOccurs="0"/>
+            <xsd:element name="FosteringRequirement" type="FosteringStructure" minOccurs="0"/>
+            <xsd:element name="MentalHealthTreatmentRequirement" type="TreatmentStructure" minOccurs="0"/>
+            <xsd:element name="DrugRehabilitationRequirement" type="DrugRehabilitationStructure" minOccurs="0"/>
+            <xsd:element name="DrugTestingRequirement" type="TestingStructure" minOccurs="0"/>
+            <xsd:element name="IntoxicatingSubstanceRequirement" type="TreatmentStructure" minOccurs="0"/>
+            <xsd:element name="SupervisionRequirement" type="BaseOrderRequirementStructure" minOccurs="0"/>
+            <xsd:element name="EducationRequirement" type="EducationStructure" minOccurs="0"/>
+            <xsd:element name="AttendanceCentreRequirement" type="YesNoType" minOccurs="0"/>
+            <xsd:element name="ElectronicMonitoringProvision" type="YesNoType" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
 </xsd:schema>

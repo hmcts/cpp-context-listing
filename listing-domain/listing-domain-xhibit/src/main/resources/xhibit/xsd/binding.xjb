@@ -8,5 +8,8 @@
     <xjc:javaType xmlType="xs:date" name="java.time.LocalDate"
                   adapter="uk.gov.moj.cpp.listing.domain.xhibit.LocalDateAdapter"/>
   </jaxb:globalBindings>
+  <jaxb:bindings schemaLocation = "1_CourtService.xsd"    node="//xs:complexType[@name='CustodialTermStructure']//xs:attribute[@name='Section44']">
+       <jaxb:property name="Section440"/>
+  </jaxb:bindings>
 
 </jaxb:bindings>

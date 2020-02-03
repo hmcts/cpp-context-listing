@@ -29,8 +29,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <bindingDirectory>src/main/resources/xhibit/bindings
-                            </bindingDirectory>
+
                             <generatePackage>uk.gov.moj.cpp.listing.domain.xhibit.generated
                             </generatePackage>
                         </configuration>
