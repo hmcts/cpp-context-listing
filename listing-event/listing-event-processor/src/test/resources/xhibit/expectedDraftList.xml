@@ -29,6 +29,7 @@
                 <cs:Sitting>
                     <cs:CourtRoomNumber>10</cs:CourtRoomNumber>
                     <cs:SittingSequenceNo>1</cs:SittingSequenceNo>
+                    <cs:SittingAt>14:58:00</cs:SittingAt>
                     <cs:SittingPriority>T</cs:SittingPriority>
                     <cs:Judiciary>
                         <cs:Judge>

@@ -32,12 +32,15 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.SolicitorStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.YesNoType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.JsonArray;
@@ -169,6 +172,15 @@ public class CourtServicesMapper {
         sittingStructure.setJudiciary(generateJudiciaryStructure(sittingJson.getJsonArray("judiciary").getValuesAs(JsonObject.class)));
         sittingStructure.setHearings(generateSittingStructureHearings(sittingJson));
 
+
+        final Optional<LocalDateTime> minimumStartTime = sittingJson.getJsonArray("hearings")
+                .getValuesAs(JsonObject.class).stream()
+                .map(hearingJson -> LocalDateTime.parse(hearingJson.getString("startTime")))
+                .min(LocalDateTime::compareTo);
+
+        if (minimumStartTime.isPresent()) {
+            sittingStructure.setSittingAt(XmlUtils.convertDate(minimumStartTime.get().format(DateTimeFormatter.ISO_DATE_TIME)));
+        }
         return sittingStructure;
     }
 
