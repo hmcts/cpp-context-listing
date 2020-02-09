@@ -24,8 +24,10 @@ import static uk.gov.justice.listing.events.NonSittingDaysChangedForHearing.nonS
 import static uk.gov.justice.listing.events.StartDateChangedForHearing.startDateChangedForHearing;
 import static uk.gov.justice.listing.events.TypeChangedForHearing.typeChangedForHearing;
 
+import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
+import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
@@ -35,6 +37,7 @@ import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
 import uk.gov.justice.listing.events.CourtRoomChangedForHearing;
 import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
+import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
 import uk.gov.justice.listing.events.EndDateChangedForHearing;
 import uk.gov.justice.listing.events.EndDateRemovedFromHearing;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
@@ -157,6 +160,7 @@ public class Hearing implements Aggregate {
                 when(SequencesResetOnHearingDays.class).apply(this::onSequencesResetOnHearingDays),
                 when(CourtApplicationUpdatedForHearing.class).apply(this::onCourtApplicationUpdatedForHearing),
                 when(NewDefendantAddedForCourtProceedings.class).apply(this::onNewDefendantAddedForCourtProceedings),
+                when(CaseUpdateDefendantProceedingsUpdated.class).apply(this::onCaseUpdateDefendantProceedingsUpdated),
                 when(CaseEjected.class).apply(e -> onCaseEjected()),
                 when(ApplicationEjected.class).apply(e -> onApplicationEjected()),
                 otherwiseDoNothing());
@@ -382,7 +386,7 @@ public class Hearing implements Aggregate {
 
 
     public Stream<Object> removeJudiciary(final UUID hearingId) {
-        if (currentlyAssigned(this.judiciary)) {
+        if (currentlyAssigned(this.judiciary) && !this.judiciary.isEmpty()) {
             return apply(Stream.of(JudiciaryRemovedFromHearing.judiciaryRemovedFromHearing()
                     .withHearingId(hearingId)
                     .build()));
@@ -602,6 +606,16 @@ public class Hearing implements Aggregate {
         return Stream.empty();
     }
 
+    public Stream<Object> updateDefendantProceedingConcludedForHearing(final UUID hearingId, final ProsecutionCase prosecutionCase) {
+        if (!isHearingInThePast()) {
+            return apply(Stream.of(CaseUpdateDefendantProceedingsUpdated.caseUpdateDefendantProceedingsUpdated()
+                    .withHearingId(hearingId)
+                    .withProsecutionCase(prosecutionCase)
+                    .build()));
+        }
+        return Stream.empty();
+    }
+
     public Stream<Object> restrictDetailsFromCourt(UUID hearingId, RestrictCourtList restrictCourtList) {
 
         if (!isHearingInThePast()) {
@@ -619,6 +633,21 @@ public class Hearing implements Aggregate {
         }
 
         return Stream.empty();
+    }
+
+    public Stream<Object> updateDefendantLegalAidStatusForHearing(final UUID hearingId, final UUID caseId,
+                                                                  final UUID defendantId, final String legalAidStatus) {
+        if (!isHearingInThePast()) {
+            return apply(Stream.of(DefendantLegalaidStatusUpdatedForHearing.defendantLegalaidStatusUpdatedForHearing()
+                    .withHearingId(hearingId)
+                    .withCaseId(caseId)
+                    .withDefendantId(defendantId)
+                    .withLegalAidStatus(legalAidStatus)
+                    .build()));
+        }
+
+        return Stream.empty();
+
     }
 
     public Stream<Object> ejectCase(final UUID hearingIdOfEjectCase, final UUID caseId, final String removalReason){
@@ -1201,6 +1230,10 @@ public class Hearing implements Aggregate {
 
     private void onApplicationEjected() {
         //Do nothing
+    }
+
+    private void onCaseUpdateDefendantProceedingsUpdated(final CaseUpdateDefendantProceedingsUpdated caseUpdateDefendantProceedingsUpdated) {
+        // do nothing
     }
 
 }

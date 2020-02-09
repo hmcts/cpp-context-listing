@@ -12,7 +12,7 @@ Feature: Change the end date of the hearing
 
     Given hearing listed
     When you changeEndDate to a Hearing using a the same end date
-    Then no events occured
+    Then no events occurred
 
 
   Scenario: A request to change the end date for a hearing that has not been listed
@@ -20,5 +20,5 @@ Feature: Change the end date of the hearing
 
     Given no previous events
     When you changeEndDate to a Hearing using an end date
-    Then no events occured
+    Then no events occurred
 

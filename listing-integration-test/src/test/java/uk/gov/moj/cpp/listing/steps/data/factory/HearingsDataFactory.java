@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.steps.data.factory;
 
 import static java.util.Collections.singletonList;
+import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
@@ -20,6 +21,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingTypeData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleTypeData;
+import uk.gov.moj.cpp.listing.steps.data.LaaReferenceData;
 import uk.gov.moj.cpp.listing.steps.data.LegalEntityDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
@@ -108,6 +110,12 @@ public class HearingsDataFactory {
                 .collect(toList());
     }
 
+    private static List<LaaReferenceData> manyRandomLaaReferencesData(final Integer numberOfLaaReferenceData) {
+        return IntStream.range(0, numberOfLaaReferenceData)
+                .mapToObj((int i) -> randomLaaReferenceData())
+                .collect(toList());
+    }
+
     private static List<DefendantData> manyRandomDefendants(final Integer numberOfDefendants) {
         return IntStream.range(0, numberOfDefendants)
                 .mapToObj((int i) -> randomDefendant())
@@ -127,17 +135,21 @@ public class HearingsDataFactory {
     }
 
     private static ListedCaseData randomListedCase() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendants(2), false, false, manyRandomCaseMarkers(1));
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendants(2), false, false, manyRandomCaseMarkers(1), STRING.next());
     }
 
     private static ListedCaseData randomListedCaseWithLegalEntity() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendantsWithLegalEntity(1), false, false, manyRandomCaseMarkers(1));
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), STRING.next(), manyRandomDefendantsWithLegalEntity(1), false, false, manyRandomCaseMarkers(1), STRING.next());
+    }
+
+    private static LaaReferenceData randomLaaReferenceData() {
+        return new LaaReferenceData(STRING.next(), of(LocalDate.now()), Optional.of(LocalDate.now()), STRING.next(), LocalDate.now(), STRING.next(), randomUUID());
     }
 
     private static OffenceData randomOffence() {
         return new OffenceData(randomUUID(), STRING.next(), LocalDate.now(),
                 LocalDate.now(), STRING.next(), STRING.next(), STRING.next(),
-                1, randomUUID(), Optional.of(randomCustodyTimeLimit()), LocalDate.now());
+                1, randomUUID(), Optional.of(randomCustodyTimeLimit()), Optional.of(randomLaaReferenceData()), LocalDate.now());
     }
 
     private static CustodyTimeLimit randomCustodyTimeLimit() {
@@ -147,17 +159,17 @@ public class HearingsDataFactory {
     private static DefendantData randomDefendant() {
         return new DefendantData(randomUUID(), STRING.next(), STRING.next(),
                 LocalDate.now(), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
-                manyRandomOffences(3), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()),Boolean.FALSE, Boolean.TRUE);
+                manyRandomOffences(3), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()), Boolean.FALSE, Boolean.TRUE, Boolean.FALSE);
     }
 
     private static DefendantData randomDefendantWithLegalEntityDefendant() {
         return new DefendantData(randomUUID(), STRING.next(), STRING.next(),
                 LocalDate.now(), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
-                manyRandomOffences(1), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()), false, Boolean.FALSE);
+                manyRandomOffences(1), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()), false, Boolean.FALSE, Boolean.FALSE);
     }
 
     private static CaseMarkerData randomCaseMarker() {
-        return new CaseMarkerData(randomUUID(), randomUUID(),STRING.next(), STRING.next());
+        return new CaseMarkerData(randomUUID(), randomUUID(), STRING.next(), STRING.next());
     }
 
     private static HearingData randomHearing() {
@@ -218,7 +230,7 @@ public class HearingsDataFactory {
     }
 
     private static CourtApplicationPartyListingNeeds randomCourtApplicationPartyNeed() {
-        return new CourtApplicationPartyListingNeeds(randomUUID(), randomUUID(), Optional.of(HearingLanguageNeeds.ENGLISH));
+        return new CourtApplicationPartyListingNeeds(randomUUID(), randomUUID(), of(HearingLanguageNeeds.ENGLISH));
     }
 
     private static OrganisationData getOrganisationData() {

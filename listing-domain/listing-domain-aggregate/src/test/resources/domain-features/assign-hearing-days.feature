@@ -12,16 +12,15 @@ Feature: Assign hearing days to a hearing or change the hearing days
 
     Given no previous events
     When you assignHearingDays to a Hearing using a hearing days
-    Then no events occured
+    Then no events occurred
 
 
   Scenario: An unallocated hearing has been listed and hearing days assigned. Requesting the original
             hearing days to be changed to the same hearing days does not result in any change
 
-    Given hearing listed
-      And hearing days changed for hearing
+    Given no previous events
     When you assignHearingDays to a Hearing using a the same hearing days
-    Then no events occured
+    Then no events occurred
 
 
   Scenario: An unallocated hearing has been listed and hearing days assigned. A request to change

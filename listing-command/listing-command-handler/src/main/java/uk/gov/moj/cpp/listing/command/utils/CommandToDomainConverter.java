@@ -14,6 +14,7 @@ import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.DefendantListingNeeds;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingType;
+import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.ListDefendantRequest;
 import uk.gov.justice.core.courts.ListHearingRequest;
 import uk.gov.justice.core.courts.Marker;
@@ -214,6 +215,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .withOffenceCode(o.getOffenceCode())
                 .withOffenceWording(o.getWording())
                 .withStatementOfOffence(buildStatementOfOffence(o))
+                .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference((o.getLaaApplnReference().get())) : empty())
                 .build();
     }
 
@@ -287,6 +289,18 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
         return commandDefendants.stream().map(d -> buildDefendantsForCourtProceedings(listHearingRequests, d)).collect(Collectors.toList());
     }
 
+    private Optional<uk.gov.moj.cpp.listing.domain.LaaReference> buildLaaReference(final LaaReference laaReference) {
+
+        return Optional.of(uk.gov.moj.cpp.listing.domain.LaaReference.laaReference()
+                .withApplicationReference(laaReference.getApplicationReference())
+                .withEffectiveEndDate((laaReference.getEffectiveEndDate()))
+                .withEffectiveStartDate((laaReference.getEffectiveStartDate()))
+                .withStatusCode(laaReference.getStatusCode())
+                .withStatusDate(laaReference.getStatusDate())
+                .withStatusDescription(laaReference.getStatusDescription())
+                .withStatusId(laaReference.getStatusId())
+                .build());
+    }
 }
 
 

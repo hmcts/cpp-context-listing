@@ -13,7 +13,7 @@ Feature: Change the start date of the hearing
 
     Given hearing listed
     When you changeStartDate to a Hearing using a the same start date
-    Then no events occured
+    Then no events occurred
 
 
   Scenario: A request to change the start date for a hearing that has not been listed
@@ -21,4 +21,4 @@ Feature: Change the start date of the hearing
 
     Given no previous events
     When you changeStartDate to a Hearing using a start date
-    Then no events occured
+    Then no events occurred

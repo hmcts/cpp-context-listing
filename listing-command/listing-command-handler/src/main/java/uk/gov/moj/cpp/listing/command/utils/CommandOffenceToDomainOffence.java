@@ -1,9 +1,11 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.commands.Offence;
 import uk.gov.justice.services.common.converter.Converter;
+import uk.gov.moj.cpp.listing.domain.LaaReference;
 import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
@@ -23,6 +25,8 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
 
     private uk.gov.moj.cpp.listing.domain.Offence convertToDomainOffence(final Offence commandOffence) {
 
+        final Optional<uk.gov.justice.listing.commands.LaaReference> laaReference =
+                commandOffence.getLaaApplnReference();
         StatementOfOffence statementOfOffence = null;
         if (commandOffence.getStatementOfOffence() != null) {
             uk.gov.justice.listing.commands.StatementOfOffence commandSoo = commandOffence.getStatementOfOffence();
@@ -53,7 +57,21 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
                 .withStatementOfOffence(statementOfOffence)
                 .withOffenceWording(commandOffence.getOffenceWording())
                 .withCustodyTimeLimit(custodyTimeLimit)
+                .withLaaApplnReference(laaReference.isPresent() ? buildLaaReference((laaReference.get())) : empty())
                 .build();
+    }
+
+    private Optional<LaaReference> buildLaaReference(final uk.gov.justice.listing.commands.LaaReference laaReference) {
+
+        return Optional.of(uk.gov.moj.cpp.listing.domain.LaaReference.laaReference()
+                .withApplicationReference(laaReference.getApplicationReference())
+                .withEffectiveEndDate((laaReference.getEffectiveEndDate()))
+                .withEffectiveStartDate((laaReference.getEffectiveStartDate()))
+                .withStatusCode(laaReference.getStatusCode())
+                .withStatusDate(laaReference.getStatusDate())
+                .withStatusDescription(laaReference.getStatusDescription())
+                .withStatusId(laaReference.getStatusId())
+                .build());
     }
 
 }

@@ -18,16 +18,18 @@ public class OffenceData {
     private final int count;
     private final UUID offenceDefinitionId;
     private final Optional<CustodyTimeLimit> custodyTimeLimit;
+    private final Optional<LaaReferenceData> laaApplnReference;
     private final LocalDate laidDate;
 
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                        final String statementOfOffenceTitleWelsh, final String offenceWording,
-                       final int count, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit, final LocalDate laidDate) {
+                       final int count, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit, final Optional<LaaReferenceData> laaApplnReference, final LocalDate laidDate) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
         this.offenceId = offenceId;
+        this.laaApplnReference = laaApplnReference;
         this.randomOffenceId = UUID.randomUUID();
         this.startDate = startDate;
         this.offenceWording = offenceWording;
@@ -37,6 +39,10 @@ public class OffenceData {
         this.offenceDefinitionId = offenceDefinitionId;
         this.custodyTimeLimit =  custodyTimeLimit;
         this.laidDate = laidDate;
+    }
+
+    public Optional<LaaReferenceData> getLaaApplnReference() {
+        return laaApplnReference;
     }
 
     public UUID getOffenceId() { return offenceId; }

@@ -9,6 +9,10 @@ import static java.util.Optional.of;
 
 import uk.gov.justice.core.courts.DefendantAlias;
 import uk.gov.justice.core.courts.BailStatus;
+import uk.gov.justice.core.courts.AssociatedDefenceOrganisation;
+import uk.gov.justice.core.courts.DefenceOrganisation;
+import uk.gov.justice.core.courts.Organisation;
+import uk.gov.justice.listing.courts.FundingType;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -32,9 +36,11 @@ public class UpdatedDefendantData {
     private final Boolean restrictFromCourtList ;
     private final Boolean isYouth;
 
+    private final AssociatedDefenceOrganisation associatedDefenceOrganisation;
+
     public static UpdatedDefendantData updatedDefendantData(DefendantData defendantData) {
-        return UpdatedDefendantData.Builder.UpdatedDefendantData()
-                .withBailStatus(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build())
+        return Builder.UpdatedDefendantData()
+                .withBailStatus(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).build())
                 .withCustodyTimeLimit("2018-10-10")
                 .withDateOfBirth("1975-01-01")
                 .withDefendantId(defendantData.getDefendantId())
@@ -47,6 +53,16 @@ public class UpdatedDefendantData {
                 .withCourtCentreId(randomUUID())
                 .withPncId("pncId")
                 .withIsYouth(Boolean.TRUE)
+                .withAssociatedDefenceOrganisation(AssociatedDefenceOrganisation.associatedDefenceOrganisation()
+                        .withFundingType(FundingType.REPRESENTATION_ORDER)
+                        .withAssociationStartDate("2018-10-10")
+                        .withDefenceOrganisation(DefenceOrganisation.defenceOrganisation()
+                                .withOrganisation(Organisation.organisation()
+                                        .withName("withOrganisationName")
+                                        .build())
+                                .withLaaContractNumber("LAACONTRACT")
+                                .build())
+                        .build())
                 .withAliases(Arrays.asList(DefendantAlias.defendantAlias()
                 										.withFirstName(of("Alias First Name"))
                 										.withLastName(of("Alias Last Name"))
@@ -68,7 +84,8 @@ public class UpdatedDefendantData {
                                 final String pncId,
                                 final List<DefendantAlias> aliases,
                                 final Boolean restrictFromCourtList,
-                                final Boolean isYouth) {
+                                final Boolean isYouth,
+                                final AssociatedDefenceOrganisation associatedDefenceOrganisation) {
         this.bailStatus = bailStatus;
         this.custodyTimeLimit = custodyTimeLimit;
         this.dateOfBirth = dateOfBirth;
@@ -84,6 +101,7 @@ public class UpdatedDefendantData {
         this.aliases = aliases;
         this.restrictFromCourtList = restrictFromCourtList;
         this.isYouth = isYouth;
+        this.associatedDefenceOrganisation = associatedDefenceOrganisation;
     }
 
     public BailStatus getBailStatus() {
@@ -138,6 +156,10 @@ public class UpdatedDefendantData {
 		return aliases;
 	}
 
+    public AssociatedDefenceOrganisation getAssociatedDefenceOrganisation() {
+        return associatedDefenceOrganisation;
+    }
+
 	public static class Builder {
         private BailStatus bailStatus;
         private String custodyTimeLimit;
@@ -154,6 +176,7 @@ public class UpdatedDefendantData {
         private List<DefendantAlias> aliases;
         private Boolean restrictFromCourtList ;
         private Boolean isYouth;
+        private AssociatedDefenceOrganisation associatedDefenceOrganisation;
 
         public static Builder UpdatedDefendantData() {
             return new Builder();
@@ -234,9 +257,15 @@ public class UpdatedDefendantData {
             this.restrictFromCourtList = restrictFromCourtList;
             return this;
         }
+
+        public Builder withAssociatedDefenceOrganisation(final AssociatedDefenceOrganisation associatedDefenceOrganisation) {
+            this.associatedDefenceOrganisation = associatedDefenceOrganisation;
+            return this;
+        }
+
         public UpdatedDefendantData build() {
             return new UpdatedDefendantData(bailStatus, custodyTimeLimit, dateOfBirth, firstName, defendantId, lastName, organisationName,
-            								legalEntityName, legalEntityId, specificRequirements, courtCentreId, pncId, aliases, restrictFromCourtList, isYouth);
+            								legalEntityName, legalEntityId, specificRequirements, courtCentreId, pncId, aliases, restrictFromCourtList, isYouth,associatedDefenceOrganisation);
         }
     }
 }

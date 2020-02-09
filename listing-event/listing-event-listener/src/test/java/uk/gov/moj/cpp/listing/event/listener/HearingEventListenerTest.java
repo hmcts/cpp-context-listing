@@ -1,12 +1,18 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static com.google.common.io.Resources.getResource;
+import static java.nio.charset.Charset.defaultCharset;
+import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
@@ -14,15 +20,20 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
+import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.io.Resources;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -31,6 +42,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class HearingEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
+    private static final String LISTED_CASES = "listedCases";
 
     @Mock
     private HearingRepository hearingRepository;
@@ -113,5 +125,42 @@ public class HearingEventListenerTest {
 
         final Hearing hearing = new Hearing(HEARING_ID, jsonNode);
         verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldHandleDefendantProceedingsConcluded() throws Exception {
+        final UUID CASE_ID = UUID.fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final UUID DEFENDANT_ID = UUID.fromString("ddc332a5-c141-40e2-b50f-94ab7552b763");
+        final String testCases1 = getStringFromResource("defendant-proceedings-concluded.json");
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
+        final Envelope<CaseUpdateDefendantProceedingsUpdated> envelope = (Envelope<CaseUpdateDefendantProceedingsUpdated>) mock(Envelope.class);
+
+        final CaseUpdateDefendantProceedingsUpdated caseUpdateDefendantProceedingsUpdated = CaseUpdateDefendantProceedingsUpdated
+                .caseUpdateDefendantProceedingsUpdated()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCase(ProsecutionCase.prosecutionCase()
+                        .withId(CASE_ID)
+                        .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
+                                .withId(DEFENDANT_ID)
+                                .withProceedingsConcluded(Optional.of(Boolean.TRUE))
+                                .build()))
+                        .build())
+                .build();
+        given(envelope.payload()).willReturn(caseUpdateDefendantProceedingsUpdated);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        hearingEventListener.defendantProceedingsConcluded(envelope);
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(hearingRepository).save(hearing);
+    }
+
+    private String getStringFromResource(final String path) throws IOException {
+        return Resources.toString(getResource(path), defaultCharset());
     }
 }

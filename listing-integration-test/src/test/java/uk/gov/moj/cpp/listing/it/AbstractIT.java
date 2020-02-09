@@ -17,8 +17,7 @@ import org.junit.Before;
 
 @SuppressWarnings("WeakerAccess")
 public class AbstractIT {
-
-    public static final UUID USER_ID_VALUE = randomUUID();
+        public static final UUID USER_ID_VALUE = randomUUID();
 
     protected static RestClient restClient = new RestClient();
     protected static final DateTimeFormatter ZONED_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -50,5 +49,4 @@ public class AbstractIT {
         header.add(USER_ID, getLoggedInUser().toString());
         return header;
     }
-
 }

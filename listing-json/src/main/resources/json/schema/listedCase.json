@@ -9,6 +9,9 @@
     "caseIdentifier": {
       "$ref": "listing-definitions.json#/definitions/caseIdentifier"
     },
+    "caseStatus" : {
+      "type" : "string"
+    },
     "defendants": {
       "type": "array",
       "minItems": 1,

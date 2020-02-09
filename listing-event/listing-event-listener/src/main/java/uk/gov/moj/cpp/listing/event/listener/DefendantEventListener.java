@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.listener;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.Defendant;
+import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.NewBaseDefendant;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
@@ -13,7 +14,9 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -38,7 +41,8 @@ public class DefendantEventListener {
         final UUID caseId = defendantDetailsUpdated.getCaseId();
         final NewBaseDefendant defendant = defendantDetailsUpdated.getDefendant();
 
-        TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {};
+        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
+        };
 
         using(hearingRepository)
                 .find(hearingId)
@@ -47,19 +51,74 @@ public class DefendantEventListener {
     }
 
     @Handles("listing.events.new-defendant-added-for-court-proceedings")
-    public void defendantDetailsAddedForCourtProceedings(final Envelope<NewDefendantAddedForCourtProceedings> event){
-        final NewDefendantAddedForCourtProceedings defendantDetailsAddedForCourtProceedings = event.payload() ;
-        final UUID hearingId = defendantDetailsAddedForCourtProceedings.getHearingId() ;
+    public void defendantDetailsAddedForCourtProceedings(final Envelope<NewDefendantAddedForCourtProceedings> event) {
+        final NewDefendantAddedForCourtProceedings defendantDetailsAddedForCourtProceedings = event.payload();
+        final UUID hearingId = defendantDetailsAddedForCourtProceedings.getHearingId();
         final UUID caseId = defendantDetailsAddedForCourtProceedings.getCaseId();
         final Defendant defendant = defendantDetailsAddedForCourtProceedings.getDefendant();
 
-        TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {};
+        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
+        };
 
         using(hearingRepository)
                 .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD,typeRef, getDefendantsAddFunction(caseId, defendant)).save();
+                .putSubList(LISTED_CASES_FIELD, typeRef, getDefendantsAddFunction(caseId, defendant)).save();
 
     }
+
+    @Handles("listing.events.defendant-legalaid-status-updated-for-hearing")
+    public void defendantLegalStatusUpdatedForHearing(final Envelope<DefendantLegalaidStatusUpdatedForHearing> event) {
+        final DefendantLegalaidStatusUpdatedForHearing defendantLegalaidStatusUpdatedForHearing = event.payload();
+        final UUID hearingId = defendantLegalaidStatusUpdatedForHearing.getHearingId();
+        final UUID caseId = defendantLegalaidStatusUpdatedForHearing.getCaseId();
+        final UUID defendantId = defendantLegalaidStatusUpdatedForHearing.getDefendantId();
+        final String legalAidStatus = defendantLegalaidStatusUpdatedForHearing.getLegalAidStatus();
+
+        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
+        };
+
+        using(hearingRepository)
+                .find(hearingId)
+                .putSubList(LISTED_CASES_FIELD, typeRef, getListedCaseWithDefendantLegalAidStatusUpdate(caseId, defendantId, legalAidStatus)).save();
+
+    }
+
+    private Function<List<ListedCase>, List<ListedCase>> getListedCaseWithDefendantLegalAidStatusUpdate(final UUID caseId, final UUID defendantId,
+                                                                                                        final String legalAidStatus) {
+        return cases -> getUpdatedListedCase(caseId, defendantId, legalAidStatus, cases);
+
+    }
+
+    private List<ListedCase> getUpdatedListedCase(final UUID caseId, final UUID defendantId,
+                                                  final String legalAidStatus, final List<ListedCase> cases) {
+        final List<ListedCase> listedCases = new ArrayList<>(cases);
+        final ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
+        final List<Defendant> defendants = listedCase.getDefendants();
+        final Defendant originalDefendant = Iterables.find(defendants, defendant1 -> defendant1.getId().equals(defendantId));
+        final Defendant newDefendant = Defendant.defendant()
+                .withBailStatus(originalDefendant.getBailStatus())
+                .withCustodyTimeLimit(originalDefendant.getCustodyTimeLimit())
+                .withId(originalDefendant.getId())
+                .withOffences(originalDefendant.getOffences())
+                .withDateOfBirth(originalDefendant.getDateOfBirth())
+                .withDefenceOrganisation(originalDefendant.getDefenceOrganisation())
+                .withFirstName(originalDefendant.getFirstName())
+                .withLastName(originalDefendant.getLastName())
+                .withOrganisationName(originalDefendant.getOrganisationName())
+                .withSpecificRequirements(originalDefendant.getSpecificRequirements())
+                .withDatesToAvoid(originalDefendant.getDatesToAvoid())
+                .withHearingLanguageNeeds(originalDefendant.getHearingLanguageNeeds())
+                .withRestrictFromCourtList(originalDefendant.getRestrictFromCourtList())
+                .withLegalAidStatus("NO_VALUE".equals(legalAidStatus) ? Optional.empty() : Optional.of(legalAidStatus))
+                .withProceedingsConcluded(originalDefendant.getProceedingsConcluded())
+                .build();
+
+        defendants.replaceAll(defendant -> defendant.getId().equals(newDefendant.getId()) ? newDefendant : defendant);
+        return listedCases;
+
+    }
+
+
     private Function<List<ListedCase>, List<ListedCase>> getUpdatedListedCaseFunction(UUID caseId, NewBaseDefendant defendant) {
         return cases -> getUpdatedListedCase(caseId, defendant, cases);
     }
@@ -84,20 +143,22 @@ public class DefendantEventListener {
                 .withHearingLanguageNeeds(originalDefendant.getHearingLanguageNeeds())
                 .withRestrictFromCourtList(originalDefendant.getRestrictFromCourtList())
                 .withIsYouth(updatedDefendant.getIsYouth())
+                .withLegalAidStatus(originalDefendant.getLegalAidStatus())
+                .withProceedingsConcluded(originalDefendant.getProceedingsConcluded())
                 .build();
 
         defendants.replaceAll(defendant -> defendant.getId().equals(newDefendant.getId()) ? newDefendant : defendant);
         return listedCases;
     }
 
-    private Function<List<ListedCase>, List<ListedCase>> getDefendantsAddFunction(UUID caseId, Defendant defendant){
+    private Function<List<ListedCase>, List<ListedCase>> getDefendantsAddFunction(UUID caseId, Defendant defendant) {
         return cases -> getDefendants(caseId, defendant, cases);
     }
 
-    private List<ListedCase> getDefendants(UUID caseId, Defendant defendant, List<ListedCase> cases){
+    private List<ListedCase> getDefendants(UUID caseId, Defendant defendant, List<ListedCase> cases) {
         Iterables.find(cases, listedCase -> listedCase.getId().equals(caseId)).getDefendants().add(defendant);
 
-        return cases ;
+        return cases;
 
     }
 }

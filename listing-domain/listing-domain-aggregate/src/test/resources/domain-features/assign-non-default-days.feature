@@ -23,4 +23,4 @@ Feature: Assign non default days to a hearing or change the start times
     Given hearing listed
       And non default days assigned to hearing
     When you assignNonDefaultDays to a Hearing using a the same non default days
-    Then no events occured
+    Then no events occurred

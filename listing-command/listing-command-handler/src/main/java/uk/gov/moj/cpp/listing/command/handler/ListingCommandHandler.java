@@ -8,6 +8,7 @@ import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.ListHearingRequest;
+import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.UpdateCaseMarkersCommand;
 import uk.gov.justice.core.courts.UpdateCaseMarkersToHearingCommand;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
@@ -47,8 +48,8 @@ import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CommandSimpleOffenceToDomainOffence;
@@ -97,6 +98,8 @@ import org.slf4j.LoggerFactory;
 public class ListingCommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandHandler.class);
+    public static final String HEARING_ID = "hearingId";
+    private static final String PROSECUTION_CASE = "prosecutionCase";
 
     @Inject
     private EventSource eventSource;
@@ -146,8 +149,11 @@ public class ListingCommandHandler {
     @Inject
     private HearingTypeFactory hearingTypeFactory;
 
+    private static final String DEFENDANT_ID = "defendantId";
+    private static final String CASE_ID = "caseId";
+    private static final String LEGAL_AID_STATUS = "legalAidStatus";
+
     private static final String APPLICATION_ID = "applicationId";
-    private static final String HEARING_ID = "hearingId";
     public static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
     public static final String REMOVAL_REASON = "removalReason";
 
@@ -203,6 +209,7 @@ public class ListingCommandHandler {
 
         }
     }
+
     private AddHearingToCaseCommand getAddHearingToCaseCommand(final JsonEnvelope envelope) {
         return jsonObjectConverter.convert(envelope.payloadAsJsonObject(), AddHearingToCaseCommand.class);
     }
@@ -593,9 +600,10 @@ public class ListingCommandHandler {
 
 
     }
+
     @Handles("listing.command.add-hearing-to-case")
     public void addHearingToCase(final JsonEnvelope commandEnvelope) throws EventStreamException {
-        if(LOGGER.isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("'listing.command.add-hearing-to-case' received with payload {}", commandEnvelope.toObfuscatedDebugString());
         }
         final AddHearingToCaseCommand command = getAddHearingToCaseCommand(commandEnvelope);
@@ -620,7 +628,7 @@ public class ListingCommandHandler {
         updateCaseEventStream(commandEnvelope, caseId.get(), (Case listingCase) ->
                 listingCase.ejectCaseForHearings(hearingIds, caseId.get(), command.getRemovalReason()));
         }
-        if(applicationId.isPresent()){
+        if (applicationId.isPresent()) {
             updateApplicationEventStream(commandEnvelope, applicationId.get(), (Application application) ->
                     application.ejectApplicationForHearings(hearingIds, applicationId.get(), (command.getRemovalReason())));
         }
@@ -652,6 +660,58 @@ public class ListingCommandHandler {
         updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) ->
                 hearing.ejectApplication(hearingId, applicationId, removalReason));
     }
+
+    @Handles("listing.command.update-defendant-legalaid-status")
+    public void updateDefendantLegalAidStatus(final JsonEnvelope envelope) throws EventStreamException {
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("listing.command.update-defendant-legalaid-status event received {}", envelope.toObfuscatedDebugString());
+        }
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        final UUID defendantId = fromString(payload.getString(DEFENDANT_ID));
+        final String legalAidStatus = payload.getString(LEGAL_AID_STATUS);
+        final UUID caseId = fromString(payload.getString(CASE_ID));
+        updateCaseEventStream(envelope, caseId, (Case listingCase) ->
+                listingCase.updateDefendantLegalAidStatus(caseId, defendantId, legalAidStatus));
+    }
+
+    @Handles("listing.command.update-defendant-legalaid-status-for-hearing")
+    public void updateDefendantLegalAidStatusForHearing(final JsonEnvelope envelope) throws EventStreamException {
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("listing.command.update-defendant-legalaid-status-for-hearing event received {}", envelope.toObfuscatedDebugString());
+        }
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        final UUID defendantId = fromString(payload.getString(DEFENDANT_ID));
+        final String legalAidStatus = payload.getString(LEGAL_AID_STATUS);
+        final UUID caseId = fromString(payload.getString(CASE_ID));
+        final UUID hearingId = fromString(payload.getString(HEARING_ID));
+
+        updateHearingEventStream(envelope, hearingId, (Hearing hearing) ->
+                hearing.updateDefendantLegalAidStatusForHearing(hearingId, caseId, defendantId, legalAidStatus));
+    }
+
+    @Handles("listing.command.update-case-resulted-defendant-proceedings-concluded")
+    public void updateDefendantHearingResultedAndCaseResulted(JsonEnvelope envelope) throws EventStreamException {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("listing.command.update-case-resulted-defendant-proceedings-concluded event received {}", envelope.toObfuscatedDebugString());
+        }
+
+        final ProsecutionCase prosecutionCase = jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject(PROSECUTION_CASE), ProsecutionCase.class);
+        final UUID caseId = prosecutionCase.getId();
+        updateCaseEventStream(envelope, caseId, (Case listingCase) -> listingCase.updateDefendantCaseResultedAndUpdated(prosecutionCase));
+    }
+
+    @Handles("listing.command.case-update-defendant-proceedings-updated")
+    public void updateDefendantProceedingsConcluded(JsonEnvelope envelope) throws EventStreamException {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("listing.command.case-update-defendant-proceedings-updated event received {}", envelope.toObfuscatedDebugString());
+        }
+        final UUID hearingId = UUID.fromString(envelope.payloadAsJsonObject().getString(HEARING_ID));
+        final ProsecutionCase prosecutionCase = jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject(PROSECUTION_CASE), ProsecutionCase.class);
+        updateHearingEventStream(envelope, hearingId, (Hearing hearing) -> hearing.updateDefendantProceedingConcludedForHearing(hearingId, prosecutionCase));
+    }
+
 
     private List<uk.gov.moj.cpp.listing.domain.SequenceHearing> convertSequenceHearingsToDomain(SequenceHearings sequenceHearingsCommand) {
         List<uk.gov.moj.cpp.listing.domain.SequenceHearing> domainSequenceHearings = Collections.emptyList();

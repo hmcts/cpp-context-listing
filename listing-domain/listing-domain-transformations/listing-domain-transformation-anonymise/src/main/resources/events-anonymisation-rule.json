@@ -48,6 +48,18 @@
         "$.courtApplication.applicant.courtApplicationPartyType",
         "$.courtApplication.respondents[*].courtApplicationPartyType"
       ]
+    },
+    {
+      "eventName": "listing.events.defendant-legalaid-status-updated",
+      "fieldsToBeIgnored": [
+        "$.legalAidStatus"
+      ]
+    },
+    {
+      "eventName": "listing.events.defendant-legalaid-status-updated-for-hearing",
+      "fieldsToBeIgnored": [
+        "$.legalAidStatus"
+      ]
     }
 
   ]

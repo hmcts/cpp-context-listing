@@ -13,11 +13,11 @@ Feature: Change the type of the hearing
 
     Given hearing listed
     When you changeHearingLanguage to a Hearing using a the same hearing language
-    Then no events occured
+    Then no events occurred
 
 
   Scenario: A request to change the type for a hearing that has not been listed does not result in any change
 
     Given no previous events
     When you changeHearingLanguage to a Hearing using a english hearing language
-    Then no events occured
+    Then no events occurred

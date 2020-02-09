@@ -1,7 +1,9 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 
+import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
 import uk.gov.moj.cpp.listing.domain.Offence;
@@ -36,6 +38,7 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
 
     private uk.gov.moj.cpp.listing.domain.Offence convertToDomainOffence(final uk.gov.justice.core.courts.Offence courtOffence) {
 
+        final Optional<LaaReference> laaReference = courtOffence.getLaaApplnReference();
         StatementOfOffence statement = StatementOfOffence.statementOfOffence()
                 .withTitle(courtOffence.getOffenceTitle())
                 .withWelshTitle(courtOffence.getOffenceTitleWelsh().orElse(courtOffence.getOffenceTitle()))
@@ -59,7 +62,21 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
                 .withStatementOfOffence(statement)
                 .withOffenceWording(courtOffence.getWording())
                 .withCustodyTimeLimit(custodyTimeLimit)
+                .withLaaApplnReference(laaReference.isPresent() ? buildLaaReference((laaReference.get())) : empty())
                 .build();
+    }
+
+    private Optional<uk.gov.moj.cpp.listing.domain.LaaReference> buildLaaReference(final LaaReference laaReference) {
+
+        return Optional.of(uk.gov.moj.cpp.listing.domain.LaaReference.laaReference()
+                .withApplicationReference(laaReference.getApplicationReference())
+                .withEffectiveEndDate(laaReference.getEffectiveEndDate())
+                .withEffectiveStartDate(laaReference.getEffectiveStartDate())
+                .withStatusCode(laaReference.getStatusCode())
+                .withStatusDate(laaReference.getStatusDate())
+                .withStatusDescription(laaReference.getStatusDescription())
+                .withStatusId(laaReference.getStatusId())
+                .build());
     }
 
 }

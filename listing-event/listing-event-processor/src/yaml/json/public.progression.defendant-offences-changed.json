@@ -21,6 +21,9 @@
           "chargeDate":"2018-01-01",
           "orderIndex":1,
           "count":0,
+          "proceedingsConcluded": true,
+          "isDiscontinued": true,
+          "isIntroduceAfterInitialProceedings": true,
           "notifiedPlea":{
             "offenceId":"3789ab16-0bb7-4ef1-87ef-c936bf0364f1",
             "notifiedPleaDate":"2018-04-01",

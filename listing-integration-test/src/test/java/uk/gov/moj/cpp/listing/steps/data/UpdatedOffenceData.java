@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.steps.data;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 public class UpdatedOffenceData {
@@ -17,15 +18,17 @@ public class UpdatedOffenceData {
     private final String statementOfOffenceTitleWelsh;
     private final String legislation;
     private final String legislationWelsh;
+    private final Optional<LaaReferenceData> laaApplnReference;
 
     private UpdatedOffenceData(final UUID offenceId, final String offenceCode,
                                final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                                final String statementOfOffenceTitleWelsh, final String offenceWording,
-                               final String legislation, final String legislationWelsh) {
+                               final String legislation, final String legislationWelsh, final Optional<LaaReferenceData> laaReferences) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
         this.offenceId = offenceId;
+        this.laaApplnReference = laaReferences;
         this.randomOffenceId = UUID.randomUUID();
         this.startDate = startDate;
         this.offenceWording = offenceWording;
@@ -51,6 +54,7 @@ public class UpdatedOffenceData {
                 .withOffenceWording(STRING.next())
                 .withLegislation(STRING.next())
                 .withLegislationWelsh(STRING.next())
+                .withLaaApplnReference((offenceData.getLaaApplnReference()))
                 .build();
     }
 
@@ -58,6 +62,10 @@ public class UpdatedOffenceData {
 
     public String getOffenceWording() {
         return offenceWording;
+    }
+
+    public Optional<LaaReferenceData> getLaaReferences() {
+        return laaApplnReference;
     }
 
     public UUID getRandomOffenceId() { return randomOffenceId; }
@@ -86,6 +94,7 @@ public class UpdatedOffenceData {
         private String offenceWording;
         private String legislation;
         private String legislationWelsh;
+        private Optional<LaaReferenceData> laaApplnReference;
 
         public Builder withOffenceId(final UUID offenceId) {
             this.offenceId = offenceId;
@@ -127,6 +136,11 @@ public class UpdatedOffenceData {
             return this;
         }
 
+        public Builder withLaaApplnReference(final Optional<LaaReferenceData> laaApplnReferences) {
+            this.laaApplnReference = laaApplnReferences;
+            return this;
+        }
+
         public Builder withLegislationWelsh(final String legislationWelsh) {
             this.legislationWelsh = legislationWelsh;
             return this;
@@ -135,7 +149,7 @@ public class UpdatedOffenceData {
         public UpdatedOffenceData build() {
             return new UpdatedOffenceData(offenceId, offenceCode, startDate, endDate,
                     statementOfOffenceTitle, statementOfOffenceTitleWelsh, offenceWording,
-                    legislation, legislationWelsh);
+                    legislation, legislationWelsh, laaApplnReference);
         }
     }
 }
