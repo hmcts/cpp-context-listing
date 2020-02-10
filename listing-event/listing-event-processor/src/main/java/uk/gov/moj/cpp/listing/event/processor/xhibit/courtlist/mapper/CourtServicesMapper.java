@@ -53,6 +53,8 @@ public class CourtServicesMapper {
 
     public static final String MASKED_VALUE = "******";
     public static final String OFFENCES = "offences";
+    public static final String TITLE_PREFIX = "titlePrefix";
+    public static final String TITLE_SUFFIX = "titleSuffix";
     public static final String FIRST_NAME = "firstName";
     public static final String LAST_NAME = "lastName";
     public static final String FORENAMES = "forenames";
@@ -231,7 +233,7 @@ public class CourtServicesMapper {
 
         judgeStructure.setCitizenNameRequestedName(
                 buildCitizenRequestedName(
-                        judiciary.getString(FORENAMES), judiciary.getString(SURNAME)
+                        judiciary.getString(TITLE_PREFIX, ""), judiciary.getString(FORENAMES), judiciary.getString(SURNAME), judiciary.getString(TITLE_SUFFIX, "")
                 ));
         judgeStructure.getCitizenNameForename().add(judiciary.getString(FORENAMES));
         judgeStructure.setCitizenNameSurname(judiciary.getString(SURNAME));
@@ -247,7 +249,7 @@ public class CourtServicesMapper {
 
         justice.setCitizenNameRequestedName(
                 buildCitizenRequestedName(
-                        judiciary.getString(FORENAMES), judiciary.getString(SURNAME)
+                        judiciary.getString(TITLE_PREFIX, ""), judiciary.getString(FORENAMES), judiciary.getString(SURNAME), judiciary.getString(TITLE_SUFFIX, "")
                 ));
         justice.getCitizenNameForename().add(judiciary.getString(FORENAMES));
         justice.setCitizenNameSurname(judiciary.getString(SURNAME));
@@ -566,6 +568,11 @@ public class CourtServicesMapper {
     }
 
     private String buildCitizenRequestedName(final String forenames, final String surname) {
-        return format("%s %s", forenames, surname);
+        return buildCitizenRequestedName("", forenames, surname, "");
     }
+
+    private String buildCitizenRequestedName(final String titlePrefix, final String forenames, final String surname, final String titleSuffix) {
+        return format("%s %s %s %s", titlePrefix, forenames, surname, titleSuffix).trim();
+    }
+
 }
