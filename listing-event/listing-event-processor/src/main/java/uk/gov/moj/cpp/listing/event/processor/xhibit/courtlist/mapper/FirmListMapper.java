@@ -2,8 +2,11 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.FirmCourtListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.FirmListStructure;
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.json.JsonObject;
@@ -55,12 +58,13 @@ public class FirmListMapper extends AbstractCourtListMapper {
     private FirmCourtListStructure.Sittings generateSittings(final List<JsonObject> sittingsJson) {
 
         final FirmCourtListStructure.Sittings sittings = objectFactory.createFirmCourtListStructureSittings();
-
+        final List<SittingStructure> sittingStructureList = new ArrayList<>();
         int sittingSequenceNumber = 1;
         for (final JsonObject sittingJson : sittingsJson) {
-            sittings.getSitting().add(courtServicesMapper.generateSittingStructure(sittingJson, sittingSequenceNumber++));
+            sittingStructureList.add(courtServicesMapper.generateSittingStructure(sittingJson, sittingSequenceNumber++));
         }
-
+        sittingStructureList.sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));
+        sittings.getSitting().addAll(sittingStructureList);
         return sittings;
     }
 }
