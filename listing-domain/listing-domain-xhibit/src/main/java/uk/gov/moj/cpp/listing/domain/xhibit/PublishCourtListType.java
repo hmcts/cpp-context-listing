@@ -4,7 +4,7 @@ public enum PublishCourtListType {
     WARN("WarnedList", "WL", "WarnedList.xsd", true),
     DRAFT("DailyList", "DL", "DailyList.xsd", false),
     FINAL("DailyList", "DL", "DailyList.xsd", false),
-    FIRM("FirmedList", "FL", "FirmList.xsd", true);
+    FIRM("FirmList", "FL", "FirmList.xsd", true);
 
     private final String filenamePrefix;
     private final String documentType;
