@@ -41,13 +41,7 @@ public class HearingQueryApi {
         return requester.request(query);
     }
 
-    @Handles("listing.court.list.publish.status")
-    public JsonEnvelope publishCourtListStatus(final JsonEnvelope query) {
-        return requester.request(query);
-    }
-
     @Handles("listing.search.hearing")
-    @SuppressWarnings("WeakerAccess") // Must be public for framework
     public JsonEnvelope searchForHearingById(final JsonEnvelope query) {
         ensureThatHearingIdIsAValidUUID(query);
         return requester.request(query);
@@ -67,4 +61,8 @@ public class HearingQueryApi {
         }
     }
 
+    @Handles("listing.court.list.publish.status")
+    public JsonEnvelope publishCourtListStatus(final JsonEnvelope query) {
+        return requester.request(query);
+    }
 }

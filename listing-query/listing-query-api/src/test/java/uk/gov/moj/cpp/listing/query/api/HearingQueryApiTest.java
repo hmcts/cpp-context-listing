@@ -42,6 +42,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class HearingQueryApiTest {
 
+
     private static final String PATH_TO_RAML = "src/raml/listing-query-api.raml";
     private static final String NAME = "name:";
     private static final String LISTING_SEARCH = "listing.search";

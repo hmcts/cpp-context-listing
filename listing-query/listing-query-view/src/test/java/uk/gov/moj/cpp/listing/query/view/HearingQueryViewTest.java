@@ -41,6 +41,7 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -62,6 +63,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class HearingQueryViewTest {
@@ -96,6 +98,9 @@ public class HearingQueryViewTest {
     private static final LocalDate SEARCH_DATE = LocalDate.now();
     private static final LocalTime START_TIME = LocalTime.now();
     private static final LocalTime END_TIME = LocalTime.now();
+    private static final LocalDateTime EARLIEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MIN);
+    private static final LocalDateTime LATEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MAX);
+
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -292,7 +297,6 @@ public class HearingQueryViewTest {
         ));
 
     }
-
 
     @Test
     public void searchHearingsAllCaseApplicationsEjected() throws Exception {
@@ -560,5 +564,4 @@ public class HearingQueryViewTest {
         return newArrayList(hearing1, hearing2);
 
     }
-
 }

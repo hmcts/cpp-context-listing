@@ -47,7 +47,6 @@ import uk.gov.justice.listing.courts.AddCourtApplicationToHearingCommand;
 import uk.gov.justice.listing.courts.AddHearingToCaseCommand;
 import uk.gov.justice.listing.courts.Gender;
 import uk.gov.justice.listing.courts.SequenceHearings;
-import uk.gov.justice.listing.courts.Title;
 import uk.gov.justice.listing.courts.UpdateCourtApplicationForHearings;
 import uk.gov.justice.listing.event.CourtListExportRequested;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
@@ -249,6 +248,7 @@ public class ListingCommandHandlerTest {
     private static final String ADDRESS_LINE_3 = "Address line 1";
     private static final String ADDRESS_LINE_4 = "Address line 1";
     private static final String POSTCODE = "Postcode";
+    private static final String PERSON_TITLE = "Doctor";
     private static final String PERSON_FIRST_NAME1 = "firstName";
     private static final String PERSON_LAST_NAME1 = "lastName";
     private static final String PERSON_DOB = "1980-06-01";
@@ -2122,7 +2122,7 @@ public class ListingCommandHandlerTest {
 
     private JsonObject createCourtsPersonDetailsJson() {
         return createObjectBuilder()
-                .add("title", Title.MISS.toString())
+                .add("title", PERSON_TITLE)
                 .add("firstName", PERSON_FIRST_NAME1)
                 .add("lastName", PERSON_LAST_NAME1)
                 .add("dateOfBirth", PERSON_DOB)

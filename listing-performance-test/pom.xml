@@ -7,9 +7,9 @@
         <artifactId>listing-parent</artifactId>
         <version>6.4.16-SCSL-SNAPSHOT</version>
     </parent>
-    
+
     <artifactId>listing-performance-test</artifactId>
-    
+
     <properties>
 
         <jmeter-maven-plugin.version>1.10.1</jmeter-maven-plugin.version>
@@ -33,8 +33,8 @@
             </properties>
             <build>
                 <plugins>
-               
-                  <plugin>
+
+                    <plugin>
                         <groupId>com.lazerycode.jmeter</groupId>
                         <artifactId>jmeter-maven-plugin</artifactId>
                       <version>${jmeter-maven-plugin.version}</version>
@@ -95,7 +95,7 @@
                             </execution>
                         </executions>
                     </plugin>
-            
+
                 </plugins>
             </build>
         </profile>

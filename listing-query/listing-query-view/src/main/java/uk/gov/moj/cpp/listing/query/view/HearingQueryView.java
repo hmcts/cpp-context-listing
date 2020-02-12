@@ -50,6 +50,7 @@ import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 @SuppressWarnings({"squid:S1192", "squid:S00107"})
 @ServiceComponent(Component.QUERY_VIEW)
 public class HearingQueryView {
@@ -336,5 +337,4 @@ public class HearingQueryView {
             return ALL_AUTHORITY_CODES_SEARCH;
         }
     }
-
 }

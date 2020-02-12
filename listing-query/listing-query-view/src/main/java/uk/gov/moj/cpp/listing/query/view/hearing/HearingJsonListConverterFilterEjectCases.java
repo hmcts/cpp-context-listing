@@ -29,10 +29,10 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     private static final String JUDICIARY = "judiciary";
     private static final String HEARINGS = "hearings";
     private static final JsonArray EMPTY_JSON_ARRAY = Json.createArrayBuilder().build();
-    private static final String HEARINGS_BY_COURT_CENTRE_ID = "hearingsByCourtCentreId";
-    private static final String HEARINGS_BY_HEARING_DATE = "hearingsByHearingDate";
-    private static final String HEARING = "hearing";
-    private static final String COURT_APPLICATIONS = "courtApplications";
+    public static final String HEARINGS_BY_COURT_CENTRE_ID = "hearingsByCourtCentreId";
+    public static final String HEARINGS_BY_HEARING_DATE = "hearingsByHearingDate";
+    public static final String HEARING = "hearing";
+    public static final String COURT_APPLICATIONS = "courtApplications";
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingJsonListConverterFilterEjectCases.class);
 
 
@@ -85,7 +85,6 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
         final JsonNode courtApplicationsNode = properties.path(COURT_APPLICATIONS);
         return arrayContainElements(listedCaseNode) || arrayContainElements(courtApplicationsNode);
     }
-
     private boolean arrayContainElements(final JsonNode jsonNode) {
         if (!jsonNode.isMissingNode()) {
             final ArrayNode arrayNode = (ArrayNode) jsonNode;

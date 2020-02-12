@@ -39,7 +39,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 
-// This must be run only via the PersistenceTestSuite.
+// It seems that this must only be run with PersistenceTestSuite.
 @RunWith(CdiTestRunner.class)
 public class HearingRepositoryTest extends BaseTransactionalTest {
 
@@ -97,7 +97,6 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
     @Inject
     private ObjectToJsonValueConverter objectToJsonValueConverter;
-
 
     @Test
     public void shouldFindHearingById() {
@@ -678,6 +677,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
     }
+
 
     @Test
     public void shouldSaveAndFindHearingForPublicCourList() {
