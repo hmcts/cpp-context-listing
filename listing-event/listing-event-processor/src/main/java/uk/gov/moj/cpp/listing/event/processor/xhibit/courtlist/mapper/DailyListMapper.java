@@ -5,12 +5,10 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.DailyListStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
 import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
+import java.util.Comparator;
+import java.util.List;
 
 public class DailyListMapper extends AbstractCourtListMapper {
 
@@ -57,13 +55,11 @@ public class DailyListMapper extends AbstractCourtListMapper {
     private DailyCourtListStructure.Sittings generateSittings(final List<JsonObject> sittingsJson) {
 
         final DailyCourtListStructure.Sittings sittings = objectFactory.createDailyCourtListStructureSittings();
-        final List<SittingStructure> sittingStructureList = new ArrayList<>();
         int sittingSequenceNumber = 1;
         for (final JsonObject sittingJson : sittingsJson) {
-            sittingStructureList.add(courtServicesMapper.generateSittingStructure(sittingJson, sittingSequenceNumber++));
+            sittings.getSitting().add(courtServicesMapper.generateSittingStructure(sittingJson, sittingSequenceNumber++));
         }
-        sittingStructureList.sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));
-        sittings.getSitting().addAll(sittingStructureList);
+        sittings.getSitting().sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));
         return sittings;
     }
 }
