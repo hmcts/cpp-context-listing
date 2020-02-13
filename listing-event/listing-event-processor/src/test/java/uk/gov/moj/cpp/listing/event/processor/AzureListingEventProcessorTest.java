@@ -9,7 +9,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
@@ -118,7 +117,7 @@ public class AzureListingEventProcessorTest {
     @Test
     public void shouldUpdateSlotsInAzureWhenHandleWhenHearingConfirmedAfterHearingAllocatedForListingMessage() throws Exception {
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(true);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(true, false);
 
         final JsonEnvelope event = hearingAllocatedEvent();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingConfirmed.class)).willReturn(hearingConfirmed);
@@ -127,9 +126,6 @@ public class AzureListingEventProcessorTest {
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
-
-        final String resp = "sample1";
-        when(response.readEntity(String.class)).thenReturn(resp);
 
         azureListingEventProcessor.handleHearingConfirmedMessage(event);
 
@@ -137,9 +133,9 @@ public class AzureListingEventProcessorTest {
     }
 
     @Test
-    public void shouldNotUpdateSlotsInAzureWhenJurisdictionTypeIsCrown() throws Exception {
+    public void shouldNotUpdateSlotsInAzureWhenHandlingWhenHearingConfirmedIfAlreadyCalledByNonSittingDaysAssignedOrNonDefaultDaysAssigned() throws Exception {
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(false);
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(true, true);
 
         final JsonEnvelope event = hearingAllocatedEvent();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingConfirmed.class)).willReturn(hearingConfirmed);
@@ -149,8 +145,23 @@ public class AzureListingEventProcessorTest {
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
 
-        final String resp = "sample1";
-        when(response.readEntity(String.class)).thenReturn(resp);
+        azureListingEventProcessor.handleHearingConfirmedMessage(event);
+
+        verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
+    }
+
+    @Test
+    public void shouldNotUpdateSlotsInAzureWhenJurisdictionTypeIsCrown() throws Exception {
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(false, false);
+
+        final JsonEnvelope event = hearingAllocatedEvent();
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingConfirmed.class)).willReturn(hearingConfirmed);
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed)).willReturn(TEST_OUTPUT);
+
+        final Response response = mock(Response.class);
+        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
 
         azureListingEventProcessor.handleHearingConfirmedMessage(event);
 
@@ -198,12 +209,13 @@ public class AzureListingEventProcessorTest {
         return Arrays.asList(nonDefaultDay1, nonDefaultDay2);
     }
 
-    private HearingConfirmed hearingConfirmed(final boolean isMagistrates) {
+    private HearingConfirmed hearingConfirmed(final boolean isMagistrates, final boolean slotAlreadyUpdated) {
 
         String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
         return HearingConfirmed.hearingConfirmed()
                 .withConfirmedHearing(buildHearing(formattedDateTime, isMagistrates))
+                .withUpdateSlot(of(slotAlreadyUpdated))
                 .build();
     }
 

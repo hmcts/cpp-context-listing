@@ -83,7 +83,20 @@ public class AzureListingEventProcessor {
     }
 
     private boolean isMagistratesAndSlotNotAlreadyUpdated(final HearingConfirmed hearingConfirmed) {
-        return MAGISTRATES==hearingConfirmed.getConfirmedHearing().getJurisdictionType();
+        return MAGISTRATES==hearingConfirmed.getConfirmedHearing().getJurisdictionType() && !checkIfUpdateSlot(hearingConfirmed);
+    }
+
+    @SuppressWarnings({"squid:S3655"})
+    private boolean checkIfUpdateSlot(final HearingConfirmed hearingConfirmed) {
+        if(hearingConfirmed.getUpdateSlot().isPresent()){
+            final boolean isUpdateSlot = hearingConfirmed.getUpdateSlot().get();
+            if (LOGGER.isInfoEnabled()){
+                LOGGER.info(format("is update slot service already executed = %s", isUpdateSlot));
+            }
+            return isUpdateSlot;
+        }
+
+        return false;
     }
 
     private void updateHearingSlots(final UUID hearingId, final List<NonDefaultDay> nonDefaultDays) {
@@ -101,5 +114,4 @@ public class AzureListingEventProcessor {
                 .filter(ndd -> ndd.getCourtScheduleId().isPresent())
                 .collect(toList());
     }
-
 }

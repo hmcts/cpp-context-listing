@@ -132,6 +132,7 @@ public class Hearing implements Aggregate {
     private LocalDate weekCommencingStartDate;
     private LocalDate weekCommencingEndDate;
     private Integer weekCommencingDurationInWeeks;
+    private boolean updateSlot;
 
     @Override
     public Object apply(final Object event) {
@@ -767,6 +768,7 @@ public class Hearing implements Aggregate {
                                 .build()
                         ).collect(toList()))
                 .withCourtApplicationIds(this.confirmedCourtApplicationIds.isEmpty() ? null : this.confirmedCourtApplicationIds)
+                .withUpdateSlot(of(this.updateSlot))
                 .build();
     }
 
@@ -1031,6 +1033,7 @@ public class Hearing implements Aggregate {
 
     private void onNonDefaultDaysAssignedToHearing(NonDefaultDaysAssignedToHearing event) {
         this.nonDefaultDays = convertNonDefaultDaysToDomain(event.getNonDefaultDays());
+        this.updateSlot = true;
     }
 
     private void onHearingLanguageChanged(HearingLanguageChangedForHearing event) {
@@ -1045,6 +1048,7 @@ public class Hearing implements Aggregate {
 
     private void onNonDefaultDaysChangedForHearing(NonDefaultDaysChangedForHearing event) {
         this.nonDefaultDays = convertNonDefaultDaysToDomain(event.getNonDefaultDays());
+        this.updateSlot = true;
     }
 
     private void onHearingDaysChangedForHearing(HearingDaysChangedForHearing hearingDaysChangedForHearing) {

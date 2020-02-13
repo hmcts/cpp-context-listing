@@ -10,7 +10,7 @@
   "judiciary": [],
   "jurisdictionType": "CROWN",
   "hearingLanguage" : "WELSH",
-  "updateSlot": true,
+  "updateSlot": false,
   "hearingDays": [
     {
       "hearingDate": "2018-06-01",
