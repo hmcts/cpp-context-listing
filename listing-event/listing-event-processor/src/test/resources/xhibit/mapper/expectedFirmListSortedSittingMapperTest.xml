@@ -27,7 +27,7 @@
             <cs:Sittings>
                 <cs:Sitting>
                     <cs:CourtRoomNumber>10</cs:CourtRoomNumber>
-                    <cs:SittingSequenceNo>2</cs:SittingSequenceNo>
+                    <cs:SittingSequenceNo>1</cs:SittingSequenceNo>
                     <cs:SittingAt>14:58:00</cs:SittingAt>
                     <cs:SittingPriority>T</cs:SittingPriority>
                     <cs:Judiciary>
@@ -122,7 +122,7 @@
                 </cs:Sitting>
                 <cs:Sitting>
                     <cs:CourtRoomNumber>20</cs:CourtRoomNumber>
-                    <cs:SittingSequenceNo>3</cs:SittingSequenceNo>
+                    <cs:SittingSequenceNo>1</cs:SittingSequenceNo>
                     <cs:SittingAt>14:58:00</cs:SittingAt>
                     <cs:SittingPriority>T</cs:SittingPriority>
                     <cs:Judiciary>
@@ -218,6 +218,101 @@
                 <cs:Sitting>
                     <cs:CourtRoomNumber>30</cs:CourtRoomNumber>
                     <cs:SittingSequenceNo>1</cs:SittingSequenceNo>
+                    <cs:SittingAt>14:58:00</cs:SittingAt>
+                    <cs:SittingPriority>T</cs:SittingPriority>
+                    <cs:Judiciary>
+                        <cs:Judge>
+                            <apd:CitizenNameForename>Mark J</apd:CitizenNameForename>
+                            <apd:CitizenNameSurname>Ainsworth-MAGISTRATE</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Mr Mark J Ainsworth-MAGISTRATE judge</apd:CitizenNameRequestedName>
+                        </cs:Judge>
+                        <cs:Justice>
+                            <apd:CitizenNameForename>Mark J</apd:CitizenNameForename>
+                            <apd:CitizenNameSurname>Ainsworth-MAGISTRATE</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Mr Mark J Ainsworth-MAGISTRATE judge</apd:CitizenNameRequestedName>
+                        </cs:Justice>
+                    </cs:Judiciary>
+                    <cs:Hearings>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-10</cs:HearingDate>
+                            </cs:HearingDetails>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
+                                <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
+                            </cs:Prosecution>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Albert</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>ROBERTSON</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Albert ROBERTSON</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>35WX6068590</cs:URN>
+                                    <cs:Counsel>
+                                        <cs:Solicitor>
+                                            <cs:Party>
+                                                <cs:Organisation>
+                                                    <cs:OrganisationName>Flynch and Fleece Solicitors</cs:OrganisationName>
+                                                </cs:Organisation>
+                                            </cs:Party>
+                                        </cs:Solicitor>
+                                    </cs:Counsel>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Lenora</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>MONTINI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Lenora MONTINI</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>35WX6068590</cs:URN>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-10</cs:HearingDate>
+                            </cs:HearingDetails>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Adrian</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>PINZAUTI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Adrian PINZAUTI</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>65OF1469070</cs:URN>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                    </cs:Hearings>
+                </cs:Sitting>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>30</cs:CourtRoomNumber>
+                    <cs:SittingSequenceNo>2</cs:SittingSequenceNo>
                     <cs:SittingAt>14:58:00</cs:SittingAt>
                     <cs:SittingPriority>T</cs:SittingPriority>
                     <cs:Judiciary>

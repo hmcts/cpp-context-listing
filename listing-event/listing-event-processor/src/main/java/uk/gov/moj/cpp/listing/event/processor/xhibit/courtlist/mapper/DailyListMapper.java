@@ -8,7 +8,11 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerati
 import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
+
+import static java.util.UUID.fromString;
 
 public class DailyListMapper extends AbstractCourtListMapper {
 
@@ -55,9 +59,18 @@ public class DailyListMapper extends AbstractCourtListMapper {
     private DailyCourtListStructure.Sittings generateSittings(final List<JsonObject> sittingsJson) {
 
         final DailyCourtListStructure.Sittings sittings = objectFactory.createDailyCourtListStructureSittings();
-        int sittingSequenceNumber = 1;
+        final HashMap<UUID,Integer> currentSeqNumOfCourt = new HashMap<>();
+
         for (final JsonObject sittingJson : sittingsJson) {
-            sittings.getSitting().add(courtServicesMapper.generateSittingStructure(sittingJson, sittingSequenceNumber++));
+            if (sittingJson.containsKey("courtRoomId")) {
+                final UUID courtRoomId = fromString(sittingJson.getString("courtRoomId"));
+                if (null == currentSeqNumOfCourt.get(courtRoomId)) {
+                    currentSeqNumOfCourt.put(courtRoomId, 1);
+                } else {
+                    currentSeqNumOfCourt.put(courtRoomId, currentSeqNumOfCourt.get(courtRoomId) + 1);
+                }
+                sittings.getSitting().add(courtServicesMapper.generateSittingStructure(sittingJson, currentSeqNumOfCourt.get(courtRoomId)));
+            }
         }
         sittings.getSitting().sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));
         return sittings;

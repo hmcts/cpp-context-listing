@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice"
-             xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
+<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:p2="http://www.govtalk.gov.uk/people/bs7666" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
     <cs:DocumentID>
         <cs:DocumentName>FIRM-FILENAME</cs:DocumentName>
         <cs:UniqueID>UNIQUEID</cs:UniqueID>
@@ -27,7 +26,7 @@
             </cs:CourtHouse>
             <cs:Sittings>
                 <cs:Sitting>
-                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:CourtRoomNumber>20</cs:CourtRoomNumber>
                     <cs:SittingSequenceNo>1</cs:SittingSequenceNo>
                     <cs:SittingAt>09:20:00</cs:SittingAt>
                     <cs:SittingPriority>T</cs:SittingPriority>
