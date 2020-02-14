@@ -67,10 +67,12 @@ public class FirmListMapper extends AbstractCourtListMapper {
                 final UUID courtRoomId = fromString(sittingJson.getString("courtRoomId"));
                 if(null == currentSeqNumOfCourt.get(courtRoomId)) {
                     currentSeqNumOfCourt.put(courtRoomId, 1);
-                }else {
+                } else {
                     currentSeqNumOfCourt.put(courtRoomId, currentSeqNumOfCourt.get(courtRoomId) + 1);
                 }
                 sittings.getSitting().add(courtServicesMapper.generateSittingStructure(sittingJson, currentSeqNumOfCourt.get(courtRoomId)));
+            } else {
+                sittings.getSitting().add(courtServicesMapper.generateSittingStructure(sittingJson, 1));
             }
         }
         sittings.getSitting().sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));

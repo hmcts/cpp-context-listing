@@ -68,6 +68,7 @@ public class CourtServicesMapper {
     private static final List<String> JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
     private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
     private static final ObjectFactory objectFactory = new ObjectFactory();
+    private static final int UNMAPPED_COURT_ROOM = 99;
     public static final String CPP_CASE_NUMBER = "CPP";
     public static final String DEFENCE_ORGANISATION = "defenceOrganisation";
     private CourtListGenerationContext context;
@@ -168,12 +169,15 @@ public class CourtServicesMapper {
             final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
             sittingStructure.setCourtRoomNumber(xhibitReferenceDataService.getCourtRoomNumber(context.getEnvelope(), courtCentreId, courtRoomId));
+            sittingStructure.setSittingPriority("T");
+        } else {
+            sittingStructure.setCourtRoomNumber(UNMAPPED_COURT_ROOM);
+            sittingStructure.setSittingPriority("F");
         }
+
         sittingStructure.setSittingSequenceNo(valueOf(sittingSequenceNumber));
-        sittingStructure.setSittingPriority("T");
         sittingStructure.setJudiciary(generateJudiciaryStructure(sittingJson.getJsonArray("judiciary").getValuesAs(JsonObject.class)));
         sittingStructure.setHearings(generateSittingStructureHearings(sittingJson));
-
 
         final Optional<LocalDateTime> minimumStartTime = sittingJson.getJsonArray("hearings")
                 .getValuesAs(JsonObject.class).stream()
