@@ -40,6 +40,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
                 "2020-10-11",
                 "BAOOUS",
                 "BAOOUS",
+                "001c067d-eaca-4ce5-ad90-a366ef3e4bb6",
                 "1234",
                 "BYS",
                 "AM",

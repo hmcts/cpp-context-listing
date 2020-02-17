@@ -14,6 +14,7 @@ public interface QueryApiHearingSlotsResource {
     String OU_L2_CODE = "oucodeL2Code";
     String OUCODE = "ouCode";
     String COURT_ROOM_ID = "courtRoomId";
+    String COURT_ROOM_NUMBER = "courtRoomNumber";
     String BUSINESS_TYPE = "businessType";
     String COURT_SESSION = "courtSession";
     String PAGE_SIZE = "pageSize";
@@ -27,6 +28,7 @@ public interface QueryApiHearingSlotsResource {
                              @QueryParam(OU_L2_CODE) String oucodeL2Code,
                              @QueryParam(OUCODE) String ouCode,
                              @QueryParam(COURT_ROOM_ID) String courtRoomId,
+                             @QueryParam(COURT_ROOM_NUMBER) String courtRoomNumber,
                              @QueryParam(BUSINESS_TYPE) String businessType,
                              @QueryParam(COURT_SESSION) String courtSession,
                              @QueryParam(PAGE_SIZE) String pageSize,

@@ -25,12 +25,13 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                     final String oucodeL2Code,
                                     final String ouCode,
                                     final String courtRoomId,
+                                    final String courtRoomNumber,
                                     final String businessType,
                                     final String courtSession,
                                     final String pageSize,
                                     final String pageNumber) {
 
-        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, oucodeL2Code, ouCode, courtRoomId, businessType, courtSession, pageSize, pageNumber);
+        final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, pageSize, pageNumber);
 
         return hearingSlotsService.search(params);
     }
@@ -41,6 +42,7 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                                final String oucodeL2Code,
                                                final String ouCode,
                                                final String courtRoomId,
+                                               final String courtRoomNumber,
                                                final String businessType,
                                                final String courtSession,
                                                final String pageSize,
@@ -52,6 +54,7 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
         params.put(OU_L2_CODE, oucodeL2Code);
         params.put(OUCODE, ouCode);
         params.put(COURT_ROOM_ID, courtRoomId);
+        params.put(COURT_ROOM_NUMBER, courtRoomNumber);
         params.put(BUSINESS_TYPE, businessType);
         params.put(COURT_SESSION, courtSession);
         params.put(PAGE_SIZE, pageSize);
