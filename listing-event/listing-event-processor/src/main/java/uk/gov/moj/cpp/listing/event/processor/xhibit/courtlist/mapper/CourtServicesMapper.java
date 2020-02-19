@@ -503,6 +503,15 @@ public class CourtServicesMapper {
 
         final UUID cppHearingId = fromString(hearing.getJsonObject("hearingType").getString("id"));
 
+        return getHearingTypeForHearing(cppHearingId);
+    }
+
+    public String getHearingTypeForHearing(final UUID cppHearingId) {
+
+        if (cppHearingId == null) {
+            return null;
+        }
+
         return xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(), cppHearingId).getString("hearingCode");
     }
 
@@ -542,6 +551,7 @@ public class CourtServicesMapper {
         final CasesStructure.Case casesStructureCase = objectFactory.createCasesStructureCase();
 
         casesStructureCase.setCaseNumber(CPP_CASE_NUMBER);
+        casesStructureCase.setHearing(generateHearingTypeStructure(listedCase));
 
         for (final JsonObject defendant : listedCase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
             casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(defendant, listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE)));
@@ -554,6 +564,7 @@ public class CourtServicesMapper {
         final CasesStructure.Case casesStructureCase = objectFactory.createCasesStructureCase();
 
         casesStructureCase.setCaseNumber(CPP_CASE_NUMBER);
+        casesStructureCase.setHearing(generateHearingTypeStructure(courtApplication));
 
         if (!courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST)) {
             casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(courtApplication.getJsonObject("applicant"), courtApplication.getString(APPLICATION_REFERENCE)));

@@ -24,12 +24,16 @@
                 <cs:CourtHouseCode>001</cs:CourtHouseCode>
                 <cs:CourtHouseName>MOCKCOURTNAME1</cs:CourtHouseName>
             </cs:CourtHouse>
-            <cs:WithFixedDate HearingType="HRG">
+            <cs:WithFixedDate HearingType="XXX">
                 <cs:Fixture>
                     <cs:FixedDate>2019-12-15</cs:FixedDate>
                     <cs:Cases>
                         <cs:Case>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Hearing HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-15</cs:HearingDate>
+                            </cs:Hearing>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -51,6 +55,10 @@
                         </cs:Case>
                         <cs:Case>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Hearing HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-15</cs:HearingDate>
+                            </cs:Hearing>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -68,11 +76,15 @@
                     </cs:Cases>
                 </cs:Fixture>
             </cs:WithFixedDate>
-            <cs:WithoutFixedDate HearingType="HRG">
+            <cs:WithoutFixedDate HearingType="XXX">
                 <cs:Fixture>
                     <cs:Cases>
                         <cs:Case>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Hearing HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-15</cs:HearingDate>
+                            </cs:Hearing>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -112,6 +124,10 @@
                         </cs:Case>
                         <cs:Case>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Hearing HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-15</cs:HearingDate>
+                            </cs:Hearing>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>

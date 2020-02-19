@@ -4,11 +4,20 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.WarnedListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class WarnedListMapper extends AbstractCourtListMapper {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WarnedListMapper.class);
+    private static final String HEARINGS = "hearings";
+    private static final String HEARING_TYPE = "hearingType";
 
     public WarnedListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListsJson, final CourtServicesMapper courtServicesMapper) {
         super(context, courtListsJson, courtServicesMapper);
@@ -63,7 +72,7 @@ public class WarnedListMapper extends AbstractCourtListMapper {
                 .createWarnedListStructureCourtListsCourtListWithoutFixedDate();
 
         withoutFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(sittingJson));
-        withoutFixedDate.setHearingType("HRG"); // For Hearing
+        withoutFixedDate.setHearingType(getXhibitHearingType(sittingJson));
 
         return withoutFixedDate;
     }
@@ -74,8 +83,31 @@ public class WarnedListMapper extends AbstractCourtListMapper {
                 .createWarnedListStructureCourtListsCourtListWithFixedDate();
 
         withFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(sittingJson));
-        withFixedDate.setHearingType("HRG"); // For Hearing
+        withFixedDate.setHearingType(getXhibitHearingType(sittingJson));
 
         return withFixedDate;
+    }
+
+    protected String getXhibitHearingType(final JsonObject sittingJson) {
+        final Set<UUID> hearingTypeUuids = sittingJson.getJsonArray(HEARINGS)
+                .stream()
+                .map(JsonObject.class::cast)
+                .map(hearing -> hearing.getJsonObject(HEARING_TYPE))
+                .map(hearing -> hearing.getString("id"))
+                .map(UUID::fromString)
+                .collect(Collectors.toSet());
+
+        if (hearingTypeUuids.isEmpty()) {
+            LOGGER.warn("Expecting 1 hearingTye, got nothing");
+            return null;
+        }
+
+        if (hearingTypeUuids.size() > 1) {
+            LOGGER.warn("Expecting 1 hearingTye, got {} ", hearingTypeUuids);
+        }
+
+        final UUID hearingUUID = hearingTypeUuids.stream().findFirst().orElse(null);
+
+        return courtServicesMapper.getHearingTypeForHearing(hearingUUID);
     }
 }
