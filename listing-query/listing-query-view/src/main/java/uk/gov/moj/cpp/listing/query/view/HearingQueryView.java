@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
-import javax.json.Json;
 import javax.ws.rs.NotFoundException;
 
 import com.google.common.base.Strings;
