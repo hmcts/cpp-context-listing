@@ -18,7 +18,22 @@
         }
       ],
       "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
-      "hearingDays": [],
+      "hearingDays": [
+        {
+          "endTime": "2020-02-18T12:07:00.000Z",
+          "sequence": 0,
+          "startTime": "2020-02-18T10:07:00.000Z",
+          "hearingDate": "2020-02-18",
+          "durationMinutes": 120
+        },
+        {
+          "endTime": "2020-02-20T17:00:00.000Z",
+          "sequence": 0,
+          "startTime": "2020-02-20T10:30:00.000Z",
+          "hearingDate": "2020-02-20",
+          "durationMinutes": 390
+        }
+      ],
       "listedCases": [
         {
           "id": "f746625a-c512-4ffc-a05a-c055cfa81bd9",

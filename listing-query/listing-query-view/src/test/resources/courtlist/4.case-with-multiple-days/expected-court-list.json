@@ -1,163 +1,55 @@
 {
   "courtCentreId": "eeb81654-eb5b-443f-ad4b-911606732e53",
-  "courtLists": [
-    {
-      "crestCourtSite": {
-        "crestCourtSiteId": "001",
-        "crestCourtSiteCode": "A",
-        "crestCourtSiteName": "SITENAME A",
-        "courtType": "CROWN_COURT"
-      },
-      "sittings": [
-        {
-          "sittingDate": "2019-12-25",
-          "weekCommencing": false,
-          "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
-          "judiciary": [
-          ],
-          "hearings": [
-            {
-              "startTime": "2019-12-25T00:00",
-              "hearingType": {
-                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
-                "description": "Plea and Trial Preparation"
-              },
-              "restrictFromCourtList": false,
-              "weekCommencing": false,
-              "endTime": "2019-12-25T00:20",
-              "caseIdentifier": {
-                "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
-                "authorityCode": "TFL",
-                "caseReference": "TFL6221184999"
-              },
-              "defendants": [
-                {
-                  "id": "924a3c04-c594-419d-b50c-68b12005283d",
-                  "lastName": "Protractor-6221184999",
-                  "offences": [
-                    {
-                      "id": "01624a4c-f97b-422c-9ca1-7564427b7429",
-                      "startDate": "2019-11-06",
-                      "offenceCode": "PS90010",
-                      "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
-                      "statementOfOffence": {
-                        "title": "Public service vehicle - passenger use altered / defaced   ticket",
-                        "welshTitle": "",
-                        "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
-                        "welshLegislation": ""
-                      },
-                      "restrictFromCourtList": false
-                    }
-                  ],
-                  "firstName": "John",
-                  "dateOfBirth": "1977-10-17",
-                  "hearingLanguageNeeds": "ENGLISH",
-                  "restrictFromCourtList": false
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "sittingDate": "2019-12-27",
-          "weekCommencing": false,
-          "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
-          "judiciary": [
-          ],
-          "hearings": [
-            {
-              "startTime": "2019-12-25T00:00",
-              "hearingType": {
-                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
-                "description": "Plea and Trial Preparation"
-              },
-              "restrictFromCourtList": false,
-              "weekCommencing": false,
-              "endTime": "2019-12-25T00:20",
-              "caseIdentifier": {
-                "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
-                "authorityCode": "TFL",
-                "caseReference": "TFL6221184999"
-              },
-              "defendants": [
-                {
-                  "id": "924a3c04-c594-419d-b50c-68b12005283d",
-                  "lastName": "Protractor-6221184999",
-                  "offences": [
-                    {
-                      "id": "01624a4c-f97b-422c-9ca1-7564427b7429",
-                      "startDate": "2019-11-06",
-                      "offenceCode": "PS90010",
-                      "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
-                      "statementOfOffence": {
-                        "title": "Public service vehicle - passenger use altered / defaced   ticket",
-                        "welshTitle": "",
-                        "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
-                        "welshLegislation": ""
-                      },
-                      "restrictFromCourtList": false
-                    }
-                  ],
-                  "firstName": "John",
-                  "dateOfBirth": "1977-10-17",
-                  "hearingLanguageNeeds": "ENGLISH",
-                  "restrictFromCourtList": false
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "sittingDate": "2019-12-28",
-          "weekCommencing": false,
-          "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
-          "judiciary": [
-          ],
-          "hearings": [
-            {
-              "startTime": "2019-12-25T00:00",
-              "hearingType": {
-                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
-                "description": "Plea and Trial Preparation"
-              },
-              "restrictFromCourtList": false,
-              "weekCommencing": false,
-              "endTime": "2019-12-25T00:20",
-              "caseIdentifier": {
-                "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
-                "authorityCode": "TFL",
-                "caseReference": "TFL6221184999"
-              },
-              "defendants": [
-                {
-                  "id": "924a3c04-c594-419d-b50c-68b12005283d",
-                  "lastName": "Protractor-6221184999",
-                  "offences": [
-                    {
-                      "id": "01624a4c-f97b-422c-9ca1-7564427b7429",
-                      "startDate": "2019-11-06",
-                      "offenceCode": "PS90010",
-                      "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
-                      "statementOfOffence": {
-                        "title": "Public service vehicle - passenger use altered / defaced   ticket",
-                        "welshTitle": "",
-                        "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
-                        "welshLegislation": ""
-                      },
-                      "restrictFromCourtList": false
-                    }
-                  ],
-                  "firstName": "John",
-                  "dateOfBirth": "1977-10-17",
-                  "hearingLanguageNeeds": "ENGLISH",
-                  "restrictFromCourtList": false
-                }
-              ]
-            }
-          ]
-        }
-      ]
+  "courtLists": [{
+    "crestCourtSite": {
+      "crestCourtSiteId": "001",
+      "crestCourtSiteCode": "A",
+      "crestCourtSiteName": "SITENAME A",
+      "courtType": "CROWN_COURT"
     },
+    "sittings": [{
+      "sittingDate": "2019-12-16",
+      "weekCommencing": false,
+      "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
+      "judiciary": [],
+      "hearings": [{
+        "startTime": "2019-12-16T00:00",
+        "hearingType": {
+          "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+          "description": "Plea and Trial Preparation"
+        },
+        "restrictFromCourtList": false,
+        "weekCommencing": false,
+        "endTime": "2019-12-16T00:20",
+        "caseIdentifier": {
+          "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+          "authorityCode": "TFL",
+          "caseReference": "TFL6221184999"
+        },
+        "defendants": [{
+          "id": "924a3c04-c594-419d-b50c-68b12005283d",
+          "lastName": "Protractor-6221184999",
+          "offences": [{
+            "id": "01624a4c-f97b-422c-9ca1-7564427b7429",
+            "startDate": "2019-11-06",
+            "offenceCode": "PS90010",
+            "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
+            "statementOfOffence": {
+              "title": "Public service vehicle - passenger use altered / defaced   ticket",
+              "welshTitle": "",
+              "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
+              "welshLegislation": ""
+            },
+            "restrictFromCourtList": false
+          }],
+          "firstName": "John",
+          "dateOfBirth": "1977-10-17",
+          "hearingLanguageNeeds": "ENGLISH",
+          "restrictFromCourtList": false
+        }]
+      }]
+    }]
+  },
     {
       "crestCourtSite": {
         "crestCourtSiteId": "001",
@@ -165,8 +57,7 @@
         "crestCourtSiteName": "SITENAME B",
         "courtType": "CROWN_COURT"
       },
-      "sittings": [
-      ]
+      "sittings": []
     }
   ]
 }

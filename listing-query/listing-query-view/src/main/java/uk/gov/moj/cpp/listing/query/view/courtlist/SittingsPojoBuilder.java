@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
+import static java.util.Optional.empty;
 import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonPropertyUtils.getOptionalUUID;
 
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.CaseDetails;
@@ -9,6 +10,7 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Hearing;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Sitting;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.SittingKey;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -22,12 +24,14 @@ import javax.json.JsonObject;
 public class SittingsPojoBuilder {
 
     public static final String LISTED_CASES = "listedCases";
+    private static final String START_TIME = "startTime";
+    private static final String END_TIME = "endTime";
 
     private SittingsPojoBuilder() {
         throw new IllegalStateException("Utility class");
     }
 
-    public static List<Sitting> assignFlatHearingsToSittings(final List<FlatHearing> flatHearings) {
+    public static List<Sitting> assignFlatHearingsToSittings(final List<FlatHearing> flatHearings, final LocalDate startDate) {
 
         final List<Sitting> sittings = new ArrayList<>();
 
@@ -39,10 +43,12 @@ public class SittingsPojoBuilder {
 
             if (sitting.isPresent()) {
 
-                sitting.get().getHearings().add(convertFlatHearing(flatHearing));
+                sitting.get().getHearings().add(convertFlatHearing(flatHearing, startDate));
             } else {
+                if(flatHearing.getHearingDate().equals(startDate)){
+                    sittings.add(createNewSitting(flatHearing, startDate));
+                }
 
-                sittings.add(createNewSitting(flatHearing));
             }
         }
 
@@ -57,12 +63,12 @@ public class SittingsPojoBuilder {
             }
         }
 
-        return Optional.empty();
+        return empty();
     }
 
-    private static Sitting createNewSitting(final FlatHearing flatHearing) {
+    private static Sitting createNewSitting(final FlatHearing flatHearing, final LocalDate startDate) {
 
-        final Hearing hearing = convertFlatHearing(flatHearing);
+        final Hearing hearing = convertFlatHearing(flatHearing, startDate);
 
         final List<Hearing> hearings = new ArrayList<>();
         hearings.add(hearing);
@@ -78,7 +84,7 @@ public class SittingsPojoBuilder {
 
         final JsonArray judiciaryArray = flatHearing.getJudiciary();
 
-        final Optional<UUID> judicialId = judiciaryArray.isEmpty() ? Optional.empty() :
+        final Optional<UUID> judicialId = judiciaryArray.isEmpty() ? empty() :
                 Optional.of(UUID.fromString(judiciaryArray.getJsonObject(0).getString("judicialId")));
 
         return new SittingKey(
@@ -88,38 +94,54 @@ public class SittingsPojoBuilder {
         );
     }
 
-    private static LocalDateTime getHearingStartTime(final JsonObject caseHearingsJson) {
+    private static LocalDateTime getHearingStartTime(final Optional<JsonObject> hearingDayJson, final JsonObject caseHearingsJson, final Optional<JsonObject> hearingDateJson) {
 
         if (isHearingWeekCommencing(caseHearingsJson)) {
             return ZonedDateTime.parse(caseHearingsJson.getJsonArray("nonDefaultDays")
-                    .getJsonObject(0).getString("startTime")).toLocalDateTime();
+                    .getJsonObject(0).getString(START_TIME)).toLocalDateTime();
         } else {
-            return ZonedDateTime.parse(caseHearingsJson.getJsonArray("hearingDays")
-                    .getJsonObject(0).getString("startTime")).toLocalDateTime();
+            return hearingDayJson.map(jsonObject -> ZonedDateTime.parse(jsonObject
+                    .getString(START_TIME)).toLocalDateTime()).orElseGet(() -> getDefaultStartOrEndTime(hearingDateJson, caseHearingsJson, START_TIME));
+
         }
     }
 
-    private static Optional<LocalDateTime> getHearingEndTime(final JsonObject caseHearingsJson) {
+    private static Optional<LocalDateTime> getHearingEndTime(final Optional<JsonObject> hearingDayJson, final JsonObject caseHearingsJson, final Optional<JsonObject> hearingDateJson) {
 
         if (isHearingWeekCommencing(caseHearingsJson)) {
             final Optional<String> endTimeString = Optional.ofNullable(caseHearingsJson.getJsonArray("nonDefaultDays")
-                    .getJsonObject(0).getString("endTime", null));
+                    .getJsonObject(0).getString(END_TIME, null));
 
             return endTimeString.map(s -> ZonedDateTime.parse(s).toLocalDateTime());
         } else {
-            return Optional.of(ZonedDateTime.parse(caseHearingsJson.getJsonArray("hearingDays")
-                    .getJsonObject(0).getString("endTime")).toLocalDateTime());
+            return Optional.ofNullable(hearingDayJson.map(jsonObject -> ZonedDateTime.parse(jsonObject
+                    .getString(END_TIME)).toLocalDateTime()).orElseGet(() -> getDefaultStartOrEndTime(hearingDateJson, caseHearingsJson, END_TIME)));
+
         }
     }
 
-    private static Hearing convertFlatHearing(final FlatHearing flatHearing) {
+    private static LocalDateTime getDefaultStartOrEndTime(final Optional<JsonObject> hearingDateJson, final JsonObject caseHearingsJson, final String time){
+
+        return hearingDateJson.map(jsonObject -> ZonedDateTime.parse(jsonObject.getString(time)).toLocalDateTime()).orElseGet(() -> ZonedDateTime.parse(caseHearingsJson.getJsonArray("hearingDays")
+                .getJsonObject(0).getString(START_TIME)).toLocalDateTime());
+    }
+
+    private static Hearing convertFlatHearing(final FlatHearing flatHearing, final LocalDate startDate) {
 
         final JsonObject caseHearingsJson = flatHearing.getCaseHearings();
 
         final Hearing hearing = new Hearing();
 
-        hearing.setStartTime(getHearingStartTime(caseHearingsJson));
-        hearing.setEndTime(getHearingEndTime(caseHearingsJson));
+        Optional<JsonObject> jsonObjectByStartDate = empty();
+        Optional<JsonObject> jsonObjectByHearingDate = empty();
+
+        if(!flatHearing.isWeekCommencing()){
+            jsonObjectByStartDate = getJsonObjectBySpecifiedDate(caseHearingsJson, startDate.toString());
+            jsonObjectByHearingDate = getJsonObjectBySpecifiedDate(caseHearingsJson, flatHearing.getHearingDate().toString());
+        }
+
+        hearing.setStartTime(getHearingStartTime(jsonObjectByStartDate, caseHearingsJson, jsonObjectByHearingDate));
+        hearing.setEndTime(getHearingEndTime(jsonObjectByStartDate, caseHearingsJson, jsonObjectByHearingDate));
         hearing.setWeekCommencing(flatHearing.isWeekCommencing());
 
         hearing.setHearingType(caseHearingsJson.getJsonObject("type"));
@@ -130,20 +152,28 @@ public class SittingsPojoBuilder {
             hearing.setCommittingCourtCentreId(
                     getOptionalUUID(caseHearingsJson, "committingCourtCentreId"));
         } else {
-            hearing.setCommittingCourtCentreId(Optional.empty());
+            hearing.setCommittingCourtCentreId(empty());
         }
 
         if (isCaseHearing(caseHearingsJson)) {
 
             hearing.setCaseDetails(buildCaseDetails(caseHearingsJson.getJsonArray(LISTED_CASES).getJsonObject(0)));
-            hearing.setCourtApplicationDetails(Optional.empty());
+            hearing.setCourtApplicationDetails(empty());
 
         } else {
             hearing.setCourtApplicationDetails(buildCourtApplicationDetails(caseHearingsJson.getJsonArray("courtApplications").getJsonObject(0)));
-            hearing.setCaseDetails(Optional.empty());
+            hearing.setCaseDetails(empty());
         }
 
         return hearing;
+    }
+
+    private static Optional<JsonObject> getJsonObjectBySpecifiedDate(final JsonObject caseHearingsJson, final String date) {
+
+        final Optional<JsonObject> jsonObject = caseHearingsJson.getJsonArray("hearingDays").getValuesAs(JsonObject.class)
+                .stream().filter(c -> c.getString("hearingDate").equals(date))
+                .findFirst();
+        return jsonObject;
     }
 
     private static boolean isCaseHearing(final JsonObject caseHearingsJson) {

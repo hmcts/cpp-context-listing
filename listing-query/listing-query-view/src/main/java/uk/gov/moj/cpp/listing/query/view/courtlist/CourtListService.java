@@ -43,7 +43,7 @@ public class CourtListService {
 
         final JsonEnvelope rangeSearchResponse = rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope);
 
-        return rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse.payloadAsJsonObject());
+        return rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse.payloadAsJsonObject(), startDate);
     }
 
     public JsonObject emptyCourtList(final JsonEnvelope envelope, final UUID courtCentreId) {

@@ -10,7 +10,7 @@
       },
       "sittings": [
         {
-          "sittingDate": "2019-12-15",
+          "sittingDate": "2019-12-16",
           "weekCommencing": false,
           "courtRoomId": "6508af42-e4d4-396d-a752-d676ebd38f6d",
           "judiciary": [
@@ -23,14 +23,14 @@
           ],
           "hearings": [
             {
-              "startTime": "2019-12-15T09:22",
+              "startTime": "2019-12-16T09:22",
               "hearingType": {
                 "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
                 "description": "Sentence"
               },
               "restrictFromCourtList": false,
               "weekCommencing": false,
-              "endTime": "2019-12-15T10:07",
+              "endTime": "2019-12-16T10:07",
               "caseIdentifier": {
                 "authorityId": "3cd8e977-d53b-471f-85dc-9e19bb36e49a",
                 "authorityCode": "CPS",
@@ -43,7 +43,7 @@
                   "offences": [
                     {
                       "id": "326f75ec-2403-4107-a525-c4ab550e9882",
-                      "endDate": "2019-12-15",
+                      "endDate": "2019-12-16",
                       "startDate": "2019-12-14",
                       "offenceCode": "OF61131",
                       "offenceWording": "Facap tifujra vab zavukke tedas fiskuk vij iruhe wujhop botduzo eppa vecu hasisus hu dak.",
@@ -64,14 +64,14 @@
               ]
             },
             {
-              "startTime": "2019-12-15T09:21:11",
+              "startTime": "2019-12-16T09:21:11",
               "hearingType": {
                 "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
                 "description": "Sentence"
               },
               "restrictFromCourtList": false,
               "weekCommencing": false,
-              "endTime": "2019-12-15T09:51:11",
+              "endTime": "2019-12-16T09:51:11",
               "applicationReference": "41TL769069",
               "applicant": {
                 "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
@@ -105,7 +105,7 @@
       },
       "sittings": [
         {
-          "sittingDate": "2019-12-15",
+          "sittingDate": "2019-12-16",
           "weekCommencing": false,
           "courtRoomId": "7cb09222-49e1-3622-a5a6-ad253d2b3c39",
           "judiciary": [
@@ -118,14 +118,14 @@
           ],
           "hearings": [
             {
-              "startTime": "2019-12-15T09:20",
+              "startTime": "2019-12-16T09:20",
               "hearingType": {
                 "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
                 "description": "Sentence"
               },
               "restrictFromCourtList": false,
               "weekCommencing": false,
-              "endTime": "2019-12-15T09:50",
+              "endTime": "2019-12-16T09:50",
               "caseIdentifier": {
                 "authorityId": "11d09fab-0591-48d3-a916-9bf153d1a60b",
                 "authorityCode": "CPS",
@@ -138,7 +138,7 @@
                   "offences": [
                     {
                       "id": "f6a5f414-d78c-4875-96b8-b4908d874912",
-                      "endDate": "2019-12-15",
+                      "endDate": "2019-12-16",
                       "startDate": "2019-12-14",
                       "offenceCode": "OF61131",
                       "offenceWording": "Nuzid leh umiidipis bezbolivu so cihnejhof faslone doru sol pufges vad iroraku.",
@@ -162,7 +162,7 @@
                   "offences": [
                     {
                       "id": "28faf0b3-f37d-4980-85eb-36c02dc76b2e",
-                      "endDate": "2019-12-15",
+                      "endDate": "2019-12-16",
                       "startDate": "2019-12-14",
                       "offenceCode": "OF61131",
                       "offenceWording": "Muluf ro ajhut gazfa wilitib soate nuduc ho akilus honel zupdan loco okuto vuodiok jiarib.",
@@ -183,14 +183,14 @@
               ]
             },
             {
-              "startTime": "2019-12-15T09:21",
+              "startTime": "2019-12-16T09:21",
               "hearingType": {
                 "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
                 "description": "Sentence"
               },
               "restrictFromCourtList": false,
               "weekCommencing": false,
-              "endTime": "2019-12-15T09:51",
+              "endTime": "2019-12-16T09:51",
               "applicationReference": "19RV576068",
               "applicant": {
                 "id": "8d41b127-ad50-4175-b590-3d253356f1de",

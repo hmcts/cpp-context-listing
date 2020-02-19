@@ -20,7 +20,7 @@
       },
       "sittings": [
         {
-          "sittingDate": "2019-12-10",
+          "sittingDate": "2019-12-16",
           "weekCommencing": false,
           "courtRoomId": "7cb09222-49e1-3622-a5a6-ad253d2b3c39",
           "judiciary": [
@@ -33,14 +33,14 @@
           ],
           "hearings": [
             {
-              "startTime": "2019-12-10T14:58",
+              "startTime": "2019-12-16T14:58",
               "hearingType": {
                 "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
                 "description": "Sentence"
               },
               "restrictFromCourtList": false,
               "weekCommencing": false,
-              "endTime": "2019-12-10T15:43",
+              "endTime": "2019-12-16T15:43",
               "caseIdentifier": {
                 "authorityId": "e8ef7f69-89ef-472c-a877-4329175bd6ca",
                 "authorityCode": "CPS",
@@ -55,7 +55,7 @@
                     {
                       "id": "cc4ca121-de8e-4d12-a2ea-1fccd31140b9",
                       "endDate": "2019-12-11",
-                      "startDate": "2019-12-10",
+                      "startDate": "2019-12-16",
                       "offenceCode": "OF61131",
                       "offenceWording": "Fokvowlev bavepli sug iluten deataven ke cag efi gilzevro ba lan bilibel.",
                       "statementOfOffence": {
@@ -79,7 +79,7 @@
                     {
                       "id": "e5f81501-bf9b-4b1f-a292-2d197fa59b67",
                       "endDate": "2019-12-11",
-                      "startDate": "2019-12-10",
+                      "startDate": "2019-12-16",
                       "offenceCode": "OF61131",
                       "offenceWording": "Lu zuchov silhupmic vahasaj gavsu op abuocbi cin uzekebso cos ecjig baf seja kenveepa favzobiw moter.",
                       "statementOfOffence": {
@@ -99,14 +99,14 @@
               ]
             },
             {
-              "startTime": "2019-12-10T14:59",
+              "startTime": "2019-12-16T14:59",
               "hearingType": {
                 "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
                 "description": "Sentence"
               },
               "restrictFromCourtList": false,
               "weekCommencing": false,
-              "endTime": "2019-12-10T15:44",
+              "endTime": "2019-12-16T15:44",
               "applicationReference": "65OF146907",
               "applicant": {
                 "id": "9aee20ca-b0b2-4133-b512-7bec3d835134",

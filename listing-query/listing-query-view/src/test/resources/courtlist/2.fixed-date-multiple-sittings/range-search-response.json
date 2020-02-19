@@ -6,7 +6,7 @@
         "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
         "description": "Sentence"
       },
-      "endDate": "2019-12-15",
+      "endDate": "2019-12-16",
       "allocated": true,
       "judiciary": [
         {
@@ -16,14 +16,14 @@
           }
         }
       ],
-      "startDate": "2019-12-15",
+      "startDate": "2019-12-16",
       "courtRoomId": "7cb09222-49e1-3622-a5a6-ad253d2b3c39",
       "hearingDays": [
         {
-          "endTime": "2019-12-15T09:50:00.000Z",
+          "endTime": "2019-12-16T09:50:00.000Z",
           "sequence": 1,
-          "startTime": "2019-12-15T09:20:00.000Z",
-          "hearingDate": "2019-12-15",
+          "startTime": "2019-12-16T09:20:00.000Z",
+          "hearingDate": "2019-12-16",
           "durationMinutes": 30
         }
       ],
@@ -37,7 +37,7 @@
               "offences": [
                 {
                   "id": "f6a5f414-d78c-4875-96b8-b4908d874912",
-                  "endDate": "2019-12-15",
+                  "endDate": "2019-12-16",
                   "startDate": "2019-12-14",
                   "offenceCode": "OF61131",
                   "offenceWording": "Nuzid leh umiidipis bezbolivu so cihnejhof faslone doru sol pufges vad iroraku.",
@@ -61,7 +61,7 @@
               "offences": [
                 {
                   "id": "28faf0b3-f37d-4980-85eb-36c02dc76b2e",
-                  "endDate": "2019-12-15",
+                  "endDate": "2019-12-16",
                   "startDate": "2019-12-14",
                   "offenceCode": "OF61131",
                   "offenceWording": "Muluf ro ajhut gazfa wilitib soate nuduc ho akilus honel zupdan loco okuto vuodiok jiarib.",
@@ -92,7 +92,7 @@
       "nonDefaultDays": [
         {
           "duration": 30,
-          "startTime": "2019-12-15T09:20:00.000Z"
+          "startTime": "2019-12-16T09:20:00.000Z"
         }
       ],
       "nonSittingDays": [],
@@ -133,7 +133,7 @@
         "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
         "description": "Sentence"
       },
-      "endDate": "2019-12-15",
+      "endDate": "2019-12-16",
       "allocated": true,
       "judiciary": [
         {
@@ -143,14 +143,14 @@
           }
         }
       ],
-      "startDate": "2019-12-15",
+      "startDate": "2019-12-16",
       "courtRoomId": "7cb09222-49e1-3622-a5a6-ad253d2b3c39",
       "hearingDays": [
         {
-          "endTime": "2019-12-15T09:51:00.000Z",
+          "endTime": "2019-12-16T09:51:00.000Z",
           "sequence": 2,
-          "startTime": "2019-12-15T09:21:00.000Z",
-          "hearingDate": "2019-12-15",
+          "startTime": "2019-12-16T09:21:00.000Z",
+          "hearingDate": "2019-12-16",
           "durationMinutes": 30
         }
       ],
@@ -158,7 +158,7 @@
       "nonDefaultDays": [
         {
           "duration": 30,
-          "startTime": "2019-12-15T09:21:00.000Z"
+          "startTime": "2019-12-16T09:21:00.000Z"
         }
       ],
       "nonSittingDays": [],
@@ -199,7 +199,7 @@
         "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
         "description": "Sentence"
       },
-      "endDate": "2019-12-15",
+      "endDate": "2019-12-16",
       "allocated": true,
       "judiciary": [
         {
@@ -209,14 +209,14 @@
           }
         }
       ],
-      "startDate": "2019-12-15",
+      "startDate": "2019-12-16",
       "courtRoomId": "6508af42-e4d4-396d-a752-d676ebd38f6d",
       "hearingDays": [
         {
-          "endTime": "2019-12-15T10:07:00.000Z",
+          "endTime": "2019-12-16T10:07:00.000Z",
           "sequence": 1,
-          "startTime": "2019-12-15T09:22:00.000Z",
-          "hearingDate": "2019-12-15",
+          "startTime": "2019-12-16T09:22:00.000Z",
+          "hearingDate": "2019-12-16",
           "durationMinutes": 45
         }
       ],
@@ -230,7 +230,7 @@
               "offences": [
                 {
                   "id": "326f75ec-2403-4107-a525-c4ab550e9882",
-                  "endDate": "2019-12-15",
+                  "endDate": "2019-12-16",
                   "startDate": "2019-12-14",
                   "offenceCode": "OF61131",
                   "offenceWording": "Facap tifujra vab zavukke tedas fiskuk vij iruhe wujhop botduzo eppa vecu hasisus hu dak.",
@@ -261,7 +261,7 @@
       "nonDefaultDays": [
         {
           "duration": 45,
-          "startTime": "2019-12-15T09:22:00.000Z"
+          "startTime": "2019-12-16T09:22:00.000Z"
         }
       ],
       "nonSittingDays": [],
@@ -276,7 +276,7 @@
         "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
         "description": "Sentence"
       },
-      "endDate": "2019-12-15",
+      "endDate": "2019-12-16",
       "allocated": true,
       "judiciary": [
         {
@@ -286,14 +286,14 @@
           }
         }
       ],
-      "startDate": "2019-12-15",
+      "startDate": "2019-12-16",
       "courtRoomId": "6508af42-e4d4-396d-a752-d676ebd38f6d",
       "hearingDays": [
         {
-          "endTime": "2019-12-15T09:51:11.000Z",
+          "endTime": "2019-12-16T09:51:11.000Z",
           "sequence": 1,
-          "startTime": "2019-12-15T09:21:11.000Z",
-          "hearingDate": "2019-12-15",
+          "startTime": "2019-12-16T09:21:11.000Z",
+          "hearingDate": "2019-12-16",
           "durationMinutes": 30
         }
       ],
@@ -301,7 +301,7 @@
       "nonDefaultDays": [
         {
           "duration": 30,
-          "startTime": "2019-12-15T09:21:11.000Z"
+          "startTime": "2019-12-16T09:21:11.000Z"
         }
       ],
       "nonSittingDays": [],

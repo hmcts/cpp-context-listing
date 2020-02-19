@@ -9,14 +9,14 @@
       "endDate": "2019-12-28",
       "allocated": true,
       "judiciary": [],
-      "startDate": "2019-12-25",
+      "startDate": "2019-12-16",
       "courtRoomId": "5e1c7b54-3bca-3a37-a85a-84510f115b76",
       "hearingDays": [
         {
-          "endTime": "2019-12-25T00:20:00.000Z",
+          "endTime": "2019-12-16T00:20:00.000Z",
           "sequence": 1,
-          "startTime": "2019-12-25T00:00:00.000Z",
-          "hearingDate": "2019-12-25",
+          "startTime": "2019-12-16T00:00:00.000Z",
+          "hearingDate": "2019-12-16",
           "durationMinutes": 20
         },
         {
@@ -74,7 +74,7 @@
       "nonDefaultDays": [
         {
           "duration": 20,
-          "startTime": "2019-12-25T00:00:00.000Z"
+          "startTime": "2019-12-16T00:00:00.000Z"
         }
       ],
       "nonSittingDays": [

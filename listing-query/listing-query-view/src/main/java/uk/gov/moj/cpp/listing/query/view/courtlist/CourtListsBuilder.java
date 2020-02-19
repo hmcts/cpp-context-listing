@@ -4,6 +4,7 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.FlatHearing;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Sitting;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,7 +62,7 @@ public class CourtListsBuilder {
         return this;
     }
 
-    public CourtListsBuilder groupFlatHearingsIntoSittings() {
+    public CourtListsBuilder groupFlatHearingsIntoSittings(final LocalDate startDate) {
 
         for (final Map.Entry<String, List<FlatHearing>> entry : crestCourtSiteCodeHearingsMap.entrySet()) {
 
@@ -69,7 +70,7 @@ public class CourtListsBuilder {
 
             final List<FlatHearing> courtSiteFlatHearings = entry.getValue();
 
-            final List<Sitting> courtSiteSittings = SittingsPojoBuilder.assignFlatHearingsToSittings(courtSiteFlatHearings);
+            final List<Sitting> courtSiteSittings = SittingsPojoBuilder.assignFlatHearingsToSittings(courtSiteFlatHearings, startDate);
 
             crestCourtSiteCodeSittingsMap.put(crestCourtSiteCode, courtSiteSittings);
         }

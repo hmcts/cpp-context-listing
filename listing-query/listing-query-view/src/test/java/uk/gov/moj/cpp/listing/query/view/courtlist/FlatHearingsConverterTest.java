@@ -29,7 +29,7 @@ public class FlatHearingsConverterTest {
         final FlatHearing flatHearing1 = flatHearings.get(1);
         final FlatHearing flatHearing2 = flatHearings.get(2);
 
-        assertThat(flatHearing0.getHearingDate(), is(LocalDate.parse("2019-12-25")));
+        assertThat(flatHearing0.getHearingDate(), is(LocalDate.parse("2019-12-16")));
         assertThat(flatHearing1.getHearingDate(), is(LocalDate.parse("2019-12-27")));
         assertThat(flatHearing2.getHearingDate(), is(LocalDate.parse("2019-12-28")));
     }
