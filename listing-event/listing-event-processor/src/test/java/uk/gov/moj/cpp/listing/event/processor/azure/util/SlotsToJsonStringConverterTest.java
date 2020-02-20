@@ -59,9 +59,9 @@ public class SlotsToJsonStringConverterTest {
     private static final Integer ESTIMATED_MINUTES = RandomGenerator.INTEGER.next();
     private static final UUID COURT_CENTRE_ID = randomUUID();
     private static final UUID JUDICIAL_ID = randomUUID();
-    private static final LocalDate START_DATE = LocalDate.now();
+    private static final LocalDate START_DATE = LocalDate.parse("2019-12-02");
     private static final LocalTime START_TIME = LocalTime.now();
-    private static final ZonedDateTime START_DATE_TIME = ZonedDateTime.now();
+    private static final ZonedDateTime START_DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final String CIRCUIT_JUDGE = "CIRCUIT_JUDGE";
     private static final String HEARING_ALLOCATED_FOR_LISTING = "listing.events.hearing-allocated-for-listing";
@@ -72,13 +72,14 @@ public class SlotsToJsonStringConverterTest {
     @InjectMocks
     private SlotsToJsonStringConverter converter;
 
-    @Ignore("Benster could you please have a look at this test?")
     @Test
     public void getSlotDetailFromHearingConfirmed() {
         final JsonEnvelope event = hearingAllocatedEvent();
         final String ouCode = "B01LY00";
         final int courtRoomId = 2;
-        final String expectedZoneDateTime = HearingDayDetailConverter.getMeridian(ZonedDateTime.now());
+        final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
+
+        final String expectedZoneDateTime = HearingDayDetailConverter.getMeridian(DATE_TIME);
 
         final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
 

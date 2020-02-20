@@ -90,8 +90,4 @@ subscriptions_descriptor:
         - name: public.progression.case-markers-updated
           schema_uri: http://justice.gov.uk/core/courts/case-markers-updated.json
 
-        # Update available slots in azure with resource from public hearing confirmed event
-        - name: public.listing.hearing-confirmed
-          schema_uri: http://justice.gov.uk/listing/courts/hearing-confirmed.json
-
       event_source_name: public.event.source

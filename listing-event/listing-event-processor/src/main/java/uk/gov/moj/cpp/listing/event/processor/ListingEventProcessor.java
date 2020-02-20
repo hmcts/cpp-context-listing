@@ -150,6 +150,9 @@ public class ListingEventProcessor {
     @Inject
     private ObjectToJsonValueConverter objectToJsonValueConverter;
 
+    @Inject
+    private SlotUpdater slotUpdater;
+
     @Handles(PRIVATE_EVENT_HEARING_LISTED)
     public void handleHearingListedMessage(final JsonEnvelope envelope) {
         if (LOGGER.isInfoEnabled()) {
@@ -219,7 +222,11 @@ public class ListingEventProcessor {
         }
 
         publishHearingConfirmedPublicEvent(envelope);
+
+        slotUpdater.updateSlot(envelope);
     }
+
+
 
     @Handles(PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING)
     public void handleAllocatedHearingUpdatedForListingMessage(final JsonEnvelope envelope) {
@@ -492,6 +499,10 @@ public class ListingEventProcessor {
 
     private HearingConfirmed getHearingConfirmed(final JsonEnvelope envelope) {
         final HearingAllocatedForListing hearingAllocatedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
+        return getHearingConfirmed(hearingAllocatedForListing);
+    }
+
+    private HearingConfirmed getHearingConfirmed(final HearingAllocatedForListing hearingAllocatedForListing) {
         return hearingConfirmedFactory.create(hearingAllocatedForListing);
     }
 
