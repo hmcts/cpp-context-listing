@@ -512,7 +512,7 @@ public class CourtServicesMapper {
             return null;
         }
 
-        return xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(), cppHearingId).getString("hearingCode");
+        return xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(), cppHearingId).getString("exhibitHearingCode");
     }
 
     public FixtureStructure generateFixtureStructure(final JsonObject sittingJson) {

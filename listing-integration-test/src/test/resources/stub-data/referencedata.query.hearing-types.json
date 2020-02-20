@@ -4,6 +4,7 @@
       "id": "HEARING_TYPE_ID",
       "seqId": 1,
       "hearingCode": "PTP",
+      "exhibitHearingCode": "PTP",
       "hearingDescription": "Plea & Trial Preparation",
       "welshHearingDescription": "Diffynnydd i fynychu i",
       "defaultDurationMin": 390,
