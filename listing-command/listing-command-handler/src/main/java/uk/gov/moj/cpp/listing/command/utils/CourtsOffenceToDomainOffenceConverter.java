@@ -19,7 +19,7 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
 
     protected CaseOffences createOffences(UUID caseId, UUID defendantId, List<uk.gov.justice.core.courts.Offence> offencesToBeConverted) {
 
-        List<Offence> offences = convertOffence(offencesToBeConverted);
+        final List<Offence> offences = convertOffence(offencesToBeConverted);
 
         return CaseOffences.createCaseOffencesBuilder()
                 .setCaseId(caseId)
@@ -39,7 +39,7 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
     private uk.gov.moj.cpp.listing.domain.Offence convertToDomainOffence(final uk.gov.justice.core.courts.Offence courtOffence) {
 
         final Optional<LaaReference> laaReference = courtOffence.getLaaApplnReference();
-        StatementOfOffence statement = StatementOfOffence.statementOfOffence()
+        final StatementOfOffence statement = StatementOfOffence.statementOfOffence()
                 .withTitle(courtOffence.getOffenceTitle())
                 .withWelshTitle(courtOffence.getOffenceTitleWelsh().orElse(courtOffence.getOffenceTitle()))
                 .withLegislation(courtOffence.getOffenceLegislation())

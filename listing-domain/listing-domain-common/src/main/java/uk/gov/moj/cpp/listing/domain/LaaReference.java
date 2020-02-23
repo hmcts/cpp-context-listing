@@ -98,6 +98,7 @@ public class LaaReference {
                 "}";
     }
 
+    @SuppressWarnings("pmd:BeanMembersShouldSerialize")
     public static class Builder {
         private String applicationReference;
 

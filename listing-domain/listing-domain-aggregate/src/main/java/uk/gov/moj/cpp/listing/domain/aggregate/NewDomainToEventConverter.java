@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 
 
-@SuppressWarnings({"squid:S3655"})
 public class NewDomainToEventConverter {
 
     private NewDomainToEventConverter() {
@@ -59,6 +58,7 @@ public class NewDomainToEventConverter {
     }
 
 
+    @SuppressWarnings({"squid:S3655"})
     public static Defendant buildDefendant(uk.gov.moj.cpp.listing.domain.Defendant d) {
         return Defendant.defendant()
                 .withId(d.getId())
@@ -110,6 +110,7 @@ public class NewDomainToEventConverter {
         return o.stream().map(NewDomainToEventConverter::buildOffence).collect(toList());
     }
 
+    @SuppressWarnings({"squid:S3655"})
     public static Offence buildOffence(uk.gov.moj.cpp.listing.domain.Offence o) {
         return Offence.offence()
                 .withId(o.getId())

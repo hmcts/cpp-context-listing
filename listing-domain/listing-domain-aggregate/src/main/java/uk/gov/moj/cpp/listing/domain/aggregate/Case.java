@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-@SuppressWarnings("squid:S1068")
+@SuppressWarnings({"pmd:BeanMembersShouldSerialize", "squid:S1068"})
 public class Case implements Aggregate {
 
     private static final long serialVersionUID = 201L;

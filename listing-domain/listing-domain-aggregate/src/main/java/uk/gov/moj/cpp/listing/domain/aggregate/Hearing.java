@@ -102,7 +102,6 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings({"squid:S1172", "squid:S2629", "squid:S1948", "squid:S00107", "squid:S3655", "squid:S1067", "squid:CommentedOutCodeLine"})
 public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
@@ -167,6 +166,7 @@ public class Hearing implements Aggregate {
     }
 
 
+    @SuppressWarnings({"squid:S00107"})
     public Stream<Object> list(final UUID hearingId, final Type type,
                                final int estimateMinutes, final List<ListedCase> listedCases,
                                final UUID courtCentreId, final List<JudicialRole> judiciary,
@@ -184,7 +184,7 @@ public class Hearing implements Aggregate {
                     .withStartTime(startDate)
                     .build());
 
-            LocalDate hearingEndDate = HearingEndDateRule.apply(endDate, startDate.toLocalDate());
+            final LocalDate hearingEndDate = HearingEndDateRule.apply(endDate, startDate.toLocalDate());
             return apply(Stream.of(hearingListed()
                     .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                             .withId(hearingId)
@@ -549,11 +549,11 @@ public class Hearing implements Aggregate {
             return Stream.empty();
         }
 
-        Map<LocalDate, Integer> hearingDaysSequencesMap = sequenceHearing.getHearingDays().stream()
+        final Map<LocalDate, Integer> hearingDaysSequencesMap = sequenceHearing.getHearingDays().stream()
                 .collect(Collectors.toMap(HearingDay::getHearingDate, HearingDay::getSequence));
         final boolean sequenceChanged = hasSequenceChanged(hearingDaysSequencesMap);
 
-        List<uk.gov.justice.listing.events.HearingDay> updatedHearingDays = this.hearingDays.stream()
+        final List<uk.gov.justice.listing.events.HearingDay> updatedHearingDays = this.hearingDays.stream()
                 .map(d -> new uk.gov.justice.listing.events.HearingDay.Builder()
                         .withDurationMinutes(d.getDurationMinutes())
                         .withEndTime(d.getEndTime())
@@ -727,6 +727,7 @@ public class Hearing implements Aggregate {
                 && currentlyAssigned(this.courtRoomId) && currentlyAssigned(this.endDate);
     }
 
+    @SuppressWarnings({"squid:S1067"})
     private boolean canUnallocate() {
         return this.allocated && (notCurrentlyAssigned(this.hearingLanguage) || notCurrentlyAssigned(this.courtRoomId)
                 || notCurrentlyAssigned(this.jurisdictionType) || notCurrentlyAssigned(this.endDate));
@@ -869,15 +870,17 @@ public class Hearing implements Aggregate {
     }
 
     // Methods to apply aggregate state
-
+    @SuppressWarnings({"squid:S1172"})
     private void onNewDefendantDetailsUpdated(NewDefendantDetailsUpdated event) {
         // Do nothing
     }
 
+    @SuppressWarnings({"squid:S1172"})
     private void onOffenceUpdated(OffenceUpdated offenceUpdated) {
         // Do nothing
     }
 
+    @SuppressWarnings({"squid:S1172"})
     private void onCourtApplicationUpdatedForHearing(CourtApplicationUpdatedForHearing courtApplicationUpdatedForHearing) {
         // Do nothing
     }
@@ -903,6 +906,7 @@ public class Hearing implements Aggregate {
     }
 
 
+    @SuppressWarnings({"squid:S3655"})
     private Optional<DefendantOffenceIds> getDefendantOffenceIds(final UUID caseId, final UUID defendantId) {
         if(isNull(this.prosecutionCaseDefendantOffenceIds)){
             return Optional.empty();
@@ -1069,6 +1073,7 @@ public class Hearing implements Aggregate {
         this.judiciary = convertToDomain(event.getJudiciary());
     }
 
+    @SuppressWarnings({"squid:S1172"})
     private void onJudiciaryRemovedFromHearing(JudiciaryRemovedFromHearing event) {
         this.judiciary = null;
     }
@@ -1085,10 +1090,12 @@ public class Hearing implements Aggregate {
         this.courtRoomId = event.getCourtRoomId();
     }
 
+    @SuppressWarnings({"squid:S1172"})
     private void onCourtRoomRemovedFromHearing(CourtRoomRemovedFromHearing event) {
         this.courtRoomId = null;
     }
 
+    @SuppressWarnings({"squid:S1172"})
     private void onSequencesResetOnHearingDays(SequencesResetOnHearingDays event) {
         if (!this.hearingDays.isEmpty()) {
             this.hearingDays = this.hearingDays.stream()
@@ -1103,6 +1110,7 @@ public class Hearing implements Aggregate {
         }
     }
 
+    @SuppressWarnings({"squid:S1172"})
     private void onEndDateRemovedFromHearing(EndDateRemovedFromHearing event) {
         this.endDate = null;
     }
@@ -1111,14 +1119,17 @@ public class Hearing implements Aggregate {
         this.hearingDays = convertHearingDaysToDomain(hearingDaysSequenced.getHearingDays());
     }
 
+    @SuppressWarnings({"squid:S1172"})
     private void onHearingAllocatedForListing(HearingAllocatedForListing event) {
         this.allocated = Boolean.TRUE;
     }
 
+    @SuppressWarnings({"squid:S1172"})
     private void onAllocatedHearingUpdatedForListing(AllocatedHearingUpdatedForListing event) {
         // Do nothing
     }
 
+    @SuppressWarnings({"squid:S1172"})
     private void onHearingUnallocatedForListing(HearingUnallocatedForListing event) {
         this.allocated = Boolean.FALSE;
     }
@@ -1232,6 +1243,7 @@ public class Hearing implements Aggregate {
         //Do nothing
     }
 
+    @SuppressWarnings({"squid:S1172"})
     private void onCaseUpdateDefendantProceedingsUpdated(final CaseUpdateDefendantProceedingsUpdated caseUpdateDefendantProceedingsUpdated) {
         // do nothing
     }

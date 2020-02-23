@@ -54,14 +54,14 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
             final JsonObject publicHearingResult = this.jsonFromString(hearing.getProperties().toString());
             final JsonArray judiciary = publicHearingResult.isNull(JUDICIARY) ?  EMPTY_JSON_ARRAY : publicHearingResult.getJsonArray(JUDICIARY);
             if(publicHearingResult.isNull(HEARINGS)) {
-                return EMPTY_JSON_ARRAY;
+                return Json.createArrayBuilder().build();
             }
             return publicHearingResult.getJsonArray(HEARINGS).getValuesAs(JsonObject.class).stream()
                     .map(hearingByCourtCentreId -> this.enrich(hearingByCourtCentreId, JUDICIARY, judiciary))
                     .collect(JsonArrayCollector.toArrayNode());
 
         }
-        return EMPTY_JSON_ARRAY;
+        return Json.createArrayBuilder().build();
     }
 
 

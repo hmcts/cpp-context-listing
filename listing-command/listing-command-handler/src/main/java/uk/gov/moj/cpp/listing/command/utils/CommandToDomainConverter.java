@@ -43,9 +43,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@SuppressWarnings({"squid:S3655", "squid:S1067", "squid:MethodCyclomaticComplexity"})
 public class CommandToDomainConverter implements Converter<uk.gov.justice.core.courts.HearingListingNeeds, Hearing> {
 
+    @SuppressWarnings({"squid:S3655"})
     @Override
     public uk.gov.moj.cpp.listing.domain.Hearing convert(final uk.gov.justice.core.courts.HearingListingNeeds commandHearing) {
         List<uk.gov.moj.cpp.listing.domain.JudicialRole> domainJudicialRoles = emptyList();
@@ -86,6 +86,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .build();
     }
 
+    @SuppressWarnings({"squid:S3655"})
     private ZonedDateTime getStartDateTime(HearingListingNeeds commandHearing) {
         final ZonedDateTime listedStartDateTime = commandHearing.getListedStartDateTime().isPresent()? commandHearing.getListedStartDateTime().get() : null;
         final ZonedDateTime earliestStartDateTime =  commandHearing.getEarliestStartDateTime().isPresent()? commandHearing.getEarliestStartDateTime().get() : null;
@@ -160,6 +161,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .build();
     }
 
+    @SuppressWarnings({"squid:S3655", "squid:S1067"})
     private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingListingNeeds commandHearing, Defendant d) {
         return defendant()
                 .withId(d.getId())
@@ -206,6 +208,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
     }
 
 
+    @SuppressWarnings({"squid:S3655"})
     private uk.gov.moj.cpp.listing.domain.Offence buildOffence(final uk.gov.justice.core.courts.Offence o) {
         return uk.gov.moj.cpp.listing.domain.Offence.offence()
                 .withId(o.getId())
@@ -232,6 +235,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
         return isNull(listDefendantRequests) ? empty() : listDefendantRequests.stream().filter(ldr -> ldr.getDefendantId().equals(defendantId)).findFirst();
     }
 
+    @SuppressWarnings({"squid:S3655"})
     private CourtApplicationPartyListingNeeds buildCourtApplicationPartyNeeds(uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds partyNeeds) {
         return CourtApplicationPartyListingNeeds.courtApplicationPartyListingNeeds()
                 .withCourtApplicationId(partyNeeds.getCourtApplicationId())
@@ -241,6 +245,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .build();
     }
 
+    @SuppressWarnings({"squid:S3655", "squid:S1067"})
     private uk.gov.moj.cpp.listing.domain.Defendant buildDefendantsForCourtProceedings(final List<ListHearingRequest> listHearingRequests, uk.gov.justice.core.courts.Defendant d) {
 
         return defendant()

@@ -168,10 +168,10 @@ public class HearingQueryView {
         final Optional<CourtListType> listType = CourtListType.valueFor(listId);
         if (listType.isPresent()) {
             if (listType.get().equals(CourtListType.PUBLIC) || listType.get().equals(CourtListType.STANDARD)) {
-                Hearing matchedHearingsJsonObject = repository.findHearingsForPublicStandardList(Boolean.TRUE, courtCentreId, startDate, endDate);
+                final Hearing matchedHearingsJsonObject = repository.findHearingsForPublicStandardList(Boolean.TRUE, courtCentreId, startDate, endDate);
                 return createPublicStandardCourtListJsonEnvelope(query, matchedHearingsJsonObject);
             } else {
-                List<Hearing> matchedHearings = repository.findHearingsForAlphabeticalList(Boolean.TRUE, courtCentreId, startDate);
+                final List<Hearing> matchedHearings = repository.findHearingsForAlphabeticalList(Boolean.TRUE, courtCentreId, startDate);
                 return createAlphabeticalListJsonEnvelope(query, matchedHearings);
             }
             // Plug in queries for other list types

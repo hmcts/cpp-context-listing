@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.domain;
 
+@SuppressWarnings("pmd:BeanMembersShouldSerialize")
 public class CustodyTimeLimit {
   private final Integer daysSpent;
 
@@ -49,6 +50,7 @@ public class CustodyTimeLimit {
             "}";
   }
 
+  @SuppressWarnings("pmd:BeanMembersShouldSerialize")
   public static class Builder {
     private Integer daysSpent;
 

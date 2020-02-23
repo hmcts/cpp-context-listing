@@ -112,6 +112,7 @@ public class Offence {
                 "}";
     }
 
+    @SuppressWarnings("pmd:BeanMembersShouldSerialize")
     public static class Builder {
         private Optional<String> endDate;
 

@@ -177,7 +177,7 @@ public class ListingCommandHandler {
             final uk.gov.moj.cpp.listing.domain.Hearing domainHearing = commandToDomainConverter.convert(commandHearing);
             final CourtCentreDetails courtCentre = courtCentres.get(domainHearing.getCourtCentreId());
 
-            CourtCentreDefaults courtCentreDefaults = CourtCentreDefaults.courtCentreDefaults()
+            final CourtCentreDefaults courtCentreDefaults = CourtCentreDefaults.courtCentreDefaults()
                     .withDefaultDuration(courtCentre.getDefaultDuration())
                     .withDefaultStartTime(courtCentre.getDefaultStartTime())
                     .withCourtCentreId(courtCentre.getId())
@@ -320,7 +320,7 @@ public class ListingCommandHandler {
         final UpdateCaseDefendantOffences updateCaseDefendantOffences = jsonObjectConverter.convert(payload, UpdateCaseDefendantOffences.class);
 
         // Handle the updated offences
-        List<UpdatedOffences> updatedOffence = updateCaseDefendantOffences.getUpdatedOffences();
+        final List<UpdatedOffences> updatedOffence = updateCaseDefendantOffences.getUpdatedOffences();
         final List<CaseOffences> multipleCaseOffences = courtsUpdatedOffenceToDomainOffence.convert(updatedOffence);
         for (final CaseOffences caseOffences : multipleCaseOffences) {
             final UUID caseId = caseOffences.getCaseId();
@@ -330,7 +330,7 @@ public class ListingCommandHandler {
         }
 
         // Handle the deleted offences
-        List<DeletedOffences> deletedOffence = updateCaseDefendantOffences.getDeletedOffences();
+       final  List<DeletedOffences> deletedOffence = updateCaseDefendantOffences.getDeletedOffences();
         final List<CaseSimpleOffences> offencesToBeDeleted = courtsDeletedOffenceToDomainCaseSimpleOffence.convert(deletedOffence);
         for (final CaseSimpleOffences offenceToBeDeleted : offencesToBeDeleted) {
             final UUID caseId = offenceToBeDeleted.getCaseId();
@@ -340,7 +340,7 @@ public class ListingCommandHandler {
         }
 
         // Handle the added offences
-        List<AddedOffences> addedOffence = updateCaseDefendantOffences.getAddedOffences();
+        final List<AddedOffences> addedOffence = updateCaseDefendantOffences.getAddedOffences();
         final List<CaseOffences> addedOffences = courtsAddedOffenceToDomainOffence.convert(addedOffence);
         for (final CaseOffences caseBaseOffences : addedOffences) {
             final UUID caseId = caseBaseOffences.getCaseId();
@@ -444,10 +444,10 @@ public class ListingCommandHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("'listing.command.sequence-hearings' received with payload {}", command.toObfuscatedDebugString());
         }
-        SequenceHearings sequenceHearings = jsonObjectConverter.convert(command.payloadAsJsonObject(), SequenceHearings.class);
-        List<uk.gov.moj.cpp.listing.domain.SequenceHearing> sequenceHearingList = convertSequenceHearingsToDomain(sequenceHearings);
+        final SequenceHearings sequenceHearings = jsonObjectConverter.convert(command.payloadAsJsonObject(), SequenceHearings.class);
+        final List<uk.gov.moj.cpp.listing.domain.SequenceHearing> sequenceHearingList = convertSequenceHearingsToDomain(sequenceHearings);
 
-        for (uk.gov.moj.cpp.listing.domain.SequenceHearing sequenceHearing : sequenceHearingList) {
+        for (final uk.gov.moj.cpp.listing.domain.SequenceHearing sequenceHearing : sequenceHearingList) {
             updateHearingEventStream(command, sequenceHearing.getId(), (Hearing hearing) ->
                     hearing.sequenceHearingDays(sequenceHearing));
         }

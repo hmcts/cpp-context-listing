@@ -29,7 +29,7 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
                 commandOffence.getLaaApplnReference();
         StatementOfOffence statementOfOffence = null;
         if (commandOffence.getStatementOfOffence() != null) {
-            uk.gov.justice.listing.commands.StatementOfOffence commandSoo = commandOffence.getStatementOfOffence();
+            final uk.gov.justice.listing.commands.StatementOfOffence commandSoo = commandOffence.getStatementOfOffence();
 
             statementOfOffence = StatementOfOffence.statementOfOffence()
                     .withTitle(commandSoo.getTitle())
