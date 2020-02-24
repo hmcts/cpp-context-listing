@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view;
 
+import static java.lang.String.format;
 import static java.time.LocalDate.parse;
 import static java.time.LocalTime.MAX;
 import static java.time.LocalTime.MIN;
@@ -9,6 +10,7 @@ import static java.util.stream.Collectors.toSet;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
+import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
@@ -47,6 +49,7 @@ import javax.json.JsonObjectBuilder;
 import javax.ws.rs.NotFoundException;
 
 import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -210,10 +213,15 @@ public class HearingQueryView {
     }
 
     private JsonObject getUnpublishedCourtListResponsePayload(final JsonEnvelope query, final JsonObject queryPayload) {
+        if(LOGGER.isInfoEnabled()){
+            LOGGER.info(format("getUnpublishedCourtListResponsePayload payLoad = %s", queryPayload));
+        }
+        final String endDate = trimToEmpty(queryPayload.getString("endDate", ""));
         return courtListService.retrieveUnPublishedCourtList(
                 fromString(queryPayload.getString("courtCentreId")),
                 uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.valueOf(queryPayload.getString("publishCourtListType")),
                 parse(queryPayload.getString("startDate")),
+                StringUtils.isNotBlank(endDate)? endDate: StringUtils.EMPTY,
                 query
         );
     }
@@ -332,7 +340,7 @@ public class HearingQueryView {
 
     private String getAuthorityIdSearchString(String authorityId) {
         if (authorityId != null) {
-            return String.format(AUTHORITY_ID_SEARCH, authorityId);
+            return format(AUTHORITY_ID_SEARCH, authorityId);
         } else {
             return ALL_AUTHORITY_CODES_SEARCH;
         }

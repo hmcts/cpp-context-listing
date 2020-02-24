@@ -11,11 +11,15 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ListingService {
 
@@ -23,13 +27,21 @@ public class ListingService {
     @FrameworkComponent(EVENT_PROCESSOR)
     private Requester requester;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ListingService.class);
+
     public JsonObject getUnpublishedCourtListForCourtCentre(final JsonEnvelope envelope,
                                                             final PublishCourtListRequestParameters publishCourtListRequestParameters) {
+
+        final Optional<String> endDate = Optional.of(publishCourtListRequestParameters.getEndDate().format(ISO_LOCAL_DATE));
 
         final JsonObjectBuilder restRequestParametersBuilder = createObjectBuilder()
                 .add("courtCentreId", publishCourtListRequestParameters.getCourtCentreId().toString())
                 .add("startDate", publishCourtListRequestParameters.getStartDate().format(ISO_LOCAL_DATE))
                 .add("publishCourtListType", publishCourtListRequestParameters.getPublishCourtListType().name());
+
+        endDate.ifPresent(s -> LOGGER.info("endDate is: {}", s));
+
+        endDate.ifPresent(pEndDate -> restRequestParametersBuilder.add("endDate", pEndDate));
 
         final JsonEnvelope response = requester.request(envelop(restRequestParametersBuilder.build()).withName("listing.courtlist").withMetadataFrom(envelope));
 

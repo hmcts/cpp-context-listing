@@ -62,7 +62,7 @@ public class CourtListsBuilder {
         return this;
     }
 
-    public CourtListsBuilder groupFlatHearingsIntoSittings(final LocalDate startDate) {
+    public CourtListsBuilder groupFlatHearingsIntoSittings(final LocalDate startDate, final String endDate) {
 
         for (final Map.Entry<String, List<FlatHearing>> entry : crestCourtSiteCodeHearingsMap.entrySet()) {
 
@@ -70,7 +70,7 @@ public class CourtListsBuilder {
 
             final List<FlatHearing> courtSiteFlatHearings = entry.getValue();
 
-            final List<Sitting> courtSiteSittings = SittingsPojoBuilder.assignFlatHearingsToSittings(courtSiteFlatHearings, startDate);
+            final List<Sitting> courtSiteSittings = SittingsPojoBuilder.assignFlatHearingsToSittings(courtSiteFlatHearings, startDate, endDate);
 
             crestCourtSiteCodeSittingsMap.put(crestCourtSiteCode, courtSiteSittings);
         }

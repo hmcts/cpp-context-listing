@@ -32,7 +32,7 @@ public class CourtListService {
     public JsonObject retrieveUnPublishedCourtList(final UUID courtCentreId,
                                                    final PublishCourtListType publishCourtListType,
                                                    final LocalDate startDate,
-                                                   final JsonEnvelope envelope) {
+                                                   final String endDate, final JsonEnvelope envelope) {
 
         final JsonEnvelope rangeSearchQueryEnvelope = rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(
                 courtCentreId,
@@ -43,7 +43,7 @@ public class CourtListService {
 
         final JsonEnvelope rangeSearchResponse = rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope);
 
-        return rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse.payloadAsJsonObject(), startDate);
+        return rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse.payloadAsJsonObject(), startDate, endDate);
     }
 
     public JsonObject emptyCourtList(final JsonEnvelope envelope, final UUID courtCentreId) {

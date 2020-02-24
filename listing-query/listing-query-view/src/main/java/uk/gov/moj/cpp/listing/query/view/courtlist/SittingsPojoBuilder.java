@@ -21,23 +21,31 @@ import java.util.UUID;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SittingsPojoBuilder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SittingsPojoBuilder.class);
 
     public static final String LISTED_CASES = "listedCases";
     private static final String START_TIME = "startTime";
     private static final String END_TIME = "endTime";
+    private static final String UNABLE_TO_GET_DEFAULT_START_OR_END_TIME = "Unable to get default start or end time";
 
     private SittingsPojoBuilder() {
         throw new IllegalStateException("Utility class");
     }
 
-    public static List<Sitting> assignFlatHearingsToSittings(final List<FlatHearing> flatHearings, final LocalDate startDate) {
+    public static List<Sitting> assignFlatHearingsToSittings(final List<FlatHearing> flatHearings, final LocalDate startDate, final String endDate) {
 
         final List<Sitting> sittings = new ArrayList<>();
 
         // Create new sitting for hearing or add to existing hearing
 
         for (final FlatHearing flatHearing : flatHearings) {
+            logParamsForSittingCreation(startDate, endDate, flatHearing);
 
             final Optional<Sitting> sitting = findExistingSittingForFlatHearing(sittings, flatHearing);
 
@@ -45,14 +53,35 @@ public class SittingsPojoBuilder {
 
                 sitting.get().getHearings().add(convertFlatHearing(flatHearing, startDate));
             } else {
-                if(flatHearing.getHearingDate().equals(startDate)){
-                    sittings.add(createNewSitting(flatHearing, startDate));
-                }
+                buildNewSitting(startDate, endDate, sittings, flatHearing);
 
             }
         }
 
         return sittings;
+    }
+
+    private static void logParamsForSittingCreation(final LocalDate startDate, final String endDate, final FlatHearing flatHearing) {
+        LOGGER.info("hearing date = {}", flatHearing.getHearingDate());
+        LOGGER.info("is week commencing = {}", flatHearing.isWeekCommencing());
+        LOGGER.info("startDate = {}", startDate);
+        LOGGER.info("endDate = {}", endDate);
+    }
+
+    private static void buildNewSitting(final LocalDate startDate, final String endDate, final List<Sitting> sittings, final FlatHearing flatHearing) {
+        if(flatHearing.getHearingDate().equals(startDate) || flatHearing.isWeekCommencing() || isForMultiDay(flatHearing.getHearingDate(), startDate, endDate)){
+            LOGGER.info("Creating new sitting for FlatHearing with {}", flatHearing.getHearingDate());
+            sittings.add(createNewSitting(flatHearing, startDate));
+        }
+    }
+
+    private static boolean isForMultiDay(final LocalDate hearingDate, final LocalDate startDate, final String endDate) {
+        LOGGER.info("isForMultiDay params {}, {}, {}", hearingDate, startDate, endDate);
+        return StringUtils.isNotBlank(endDate) && isHearingDateValidForMultiDay(hearingDate, startDate, LocalDate.parse(endDate));
+    }
+
+    private static boolean isHearingDateValidForMultiDay(final LocalDate hearingDate, final LocalDate startDate, final LocalDate endDate) {
+        return (hearingDate.isEqual(startDate) || hearingDate.isAfter(startDate)) && (hearingDate.isEqual(endDate) || hearingDate.isBefore(endDate));
     }
 
     private static Optional<Sitting> findExistingSittingForFlatHearing(final List<Sitting> sittings, final FlatHearing flatHearing) {
@@ -94,14 +123,14 @@ public class SittingsPojoBuilder {
         );
     }
 
-    private static LocalDateTime getHearingStartTime(final Optional<JsonObject> hearingDayJson, final JsonObject caseHearingsJson, final Optional<JsonObject> hearingDateJson) {
+    private static LocalDateTime getHearingStartTime(final JsonObject caseHearingsJson, final Optional<JsonObject> hearingDayJson, final Optional<JsonObject> hearingDateJson) {
 
         if (isHearingWeekCommencing(caseHearingsJson)) {
             return ZonedDateTime.parse(caseHearingsJson.getJsonArray("nonDefaultDays")
                     .getJsonObject(0).getString(START_TIME)).toLocalDateTime();
         } else {
             return hearingDayJson.map(jsonObject -> ZonedDateTime.parse(jsonObject
-                    .getString(START_TIME)).toLocalDateTime()).orElseGet(() -> getDefaultStartOrEndTime(hearingDateJson, caseHearingsJson, START_TIME));
+                    .getString(START_TIME)).toLocalDateTime()).orElseGet(() -> getDefaultStartOrEndTime(hearingDateJson));
 
         }
     }
@@ -114,16 +143,29 @@ public class SittingsPojoBuilder {
 
             return endTimeString.map(s -> ZonedDateTime.parse(s).toLocalDateTime());
         } else {
-            return Optional.ofNullable(hearingDayJson.map(jsonObject -> ZonedDateTime.parse(jsonObject
-                    .getString(END_TIME)).toLocalDateTime()).orElseGet(() -> getDefaultStartOrEndTime(hearingDateJson, caseHearingsJson, END_TIME)));
+            return Optional.ofNullable(hearingDateJson.map(jsonObject -> ZonedDateTime.parse(jsonObject
+                    .getString(END_TIME)).toLocalDateTime()).orElseGet(() -> getDefaultStartOrEndTime(hearingDayJson)));
 
         }
     }
 
-    private static LocalDateTime getDefaultStartOrEndTime(final Optional<JsonObject> hearingDateJson, final JsonObject caseHearingsJson, final String time){
+    private static LocalDateTime getDefaultStartOrEndTime(final Optional<JsonObject> hearingDayJson){
 
-        return hearingDateJson.map(jsonObject -> ZonedDateTime.parse(jsonObject.getString(time)).toLocalDateTime()).orElseGet(() -> ZonedDateTime.parse(caseHearingsJson.getJsonArray("hearingDays")
-                .getJsonObject(0).getString(START_TIME)).toLocalDateTime());
+        if(hearingDayJson.isPresent()){
+            final String defaultTime = hearingDayJson.get().getString(END_TIME, "");
+            if(StringUtils.isNotBlank(defaultTime)){
+                return ZonedDateTime.parse(defaultTime).toLocalDateTime();
+            }
+            else{
+                try {
+                    throw new IllegalArgumentException(UNABLE_TO_GET_DEFAULT_START_OR_END_TIME);
+                } catch (IllegalArgumentException e) {
+                    LOGGER.info(UNABLE_TO_GET_DEFAULT_START_OR_END_TIME, e);
+
+                }
+            }
+        }
+        return null;
     }
 
     private static Hearing convertFlatHearing(final FlatHearing flatHearing, final LocalDate startDate) {
@@ -140,7 +182,7 @@ public class SittingsPojoBuilder {
             jsonObjectByHearingDate = getJsonObjectBySpecifiedDate(caseHearingsJson, flatHearing.getHearingDate().toString());
         }
 
-        hearing.setStartTime(getHearingStartTime(jsonObjectByStartDate, caseHearingsJson, jsonObjectByHearingDate));
+        hearing.setStartTime(getHearingStartTime(caseHearingsJson, jsonObjectByHearingDate, jsonObjectByStartDate));
         hearing.setEndTime(getHearingEndTime(jsonObjectByStartDate, caseHearingsJson, jsonObjectByHearingDate));
         hearing.setWeekCommencing(flatHearing.isWeekCommencing());
 

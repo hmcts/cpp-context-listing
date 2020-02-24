@@ -57,6 +57,7 @@ public class CourtListServiceTest {
         final UUID courtCentreId = UUID.randomUUID();
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
+        final String endDate = LocalDate.now().toString();
 
         final JsonEnvelope queryEnvelope = generateQuery(createObjectBuilder().build());
 
@@ -68,9 +69,9 @@ public class CourtListServiceTest {
         when(rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(courtCentreId, publishCourtListType, startDate, queryEnvelope)).thenReturn(rangeSearchQueryEnvelope);
         when(rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope)).thenReturn(rangeSearchResponse);
         when(rangeSearchResponse.payloadAsJsonObject()).thenReturn(rangeSearchResponsePayload);
-        when(rangeSearchConverter.generateCourtListQueryPayload(queryEnvelope, courtCentreId, rangeSearchResponsePayload, startDate)).thenReturn(courtListResponse);
+        when(rangeSearchConverter.generateCourtListQueryPayload(queryEnvelope, courtCentreId, rangeSearchResponsePayload, startDate, endDate)).thenReturn(courtListResponse);
 
-        final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, queryEnvelope);
+        final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, endDate, queryEnvelope);
 
         assertThat(response, is(courtListResponse));
     }

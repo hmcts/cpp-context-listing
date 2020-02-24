@@ -27,13 +27,14 @@ public class SittingsPojoBuilderTest {
         final UUID courtRoomId = randomUUID();
         final UUID judicialId = randomUUID();
         final LocalDate startDate = LocalDate.parse("2019-12-11");
+        final String endDate = "2019-12-11";
 
         final FlatHearing flatHearing1 = buildFlatHearing("2019-12-11", courtRoomId, judicialId);
         final FlatHearing flatHearing2 = buildFlatHearing("2019-12-11", courtRoomId, judicialId);
 
         final List<FlatHearing> flatHearings = Arrays.asList(flatHearing1, flatHearing2);
 
-        final List<Sitting> sittingsMap = SittingsPojoBuilder.assignFlatHearingsToSittings(flatHearings, startDate);
+        final List<Sitting> sittingsMap = SittingsPojoBuilder.assignFlatHearingsToSittings(flatHearings, startDate, endDate);
 
         assertThat(sittingsMap.size(), is(1));
     }
@@ -43,13 +44,14 @@ public class SittingsPojoBuilderTest {
 
         final UUID judicialId = randomUUID();
         final LocalDate startDate = LocalDate.parse("2019-12-11");
+        final String endDate = "2019-12-11";
 
         final FlatHearing flatHearing1 = buildFlatHearing("2019-12-11", randomUUID(), judicialId);
         final FlatHearing flatHearing2 = buildFlatHearing("2019-12-11", randomUUID(), judicialId);
 
         final List<FlatHearing> flatHearings = Arrays.asList(flatHearing1, flatHearing2);
 
-        final List<Sitting> sittingsMap = SittingsPojoBuilder.assignFlatHearingsToSittings(flatHearings, startDate);
+        final List<Sitting> sittingsMap = SittingsPojoBuilder.assignFlatHearingsToSittings(flatHearings, startDate, endDate);
 
         assertThat(sittingsMap.size(), is(2));
     }

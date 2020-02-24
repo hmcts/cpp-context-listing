@@ -433,12 +433,14 @@ public class HearingQueryViewTest {
         final UUID courtCentreId = UUID.randomUUID();
         final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType = uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
+        final String endDate = LocalDate.now().toString();
 
         final JsonEnvelope queryEnvelope = generateQuery(
                 createObjectBuilder()
                         .add("courtCentreId", courtCentreId.toString())
                         .add("publishCourtListType", publishCourtListType.name())
                         .add("startDate", startDate.toString())
+                        .add("endDate", endDate.toString())
                         .build());
 
         final JsonObject courtListResponsePayload = Json.createObjectBuilder()
@@ -447,6 +449,7 @@ public class HearingQueryViewTest {
 
         when(courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType,
                 startDate,
+                endDate,
                 queryEnvelope)).thenReturn(courtListResponsePayload);
 
         final JsonEnvelope results = hearingsQueryView.retrieveCourtList(queryEnvelope);

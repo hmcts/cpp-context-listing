@@ -18,14 +18,14 @@ public class RangeSearchConverter {
     @Inject
     private XhibitReferenceDataService xhibitReferenceDataService;
 
-    public JsonObject generateCourtListQueryPayload(final JsonEnvelope envelope, final UUID courtCentreId, final JsonObject rangeSearchResponsePayload, final LocalDate startDate) {
+    public JsonObject generateCourtListQueryPayload(final JsonEnvelope envelope, final UUID courtCentreId, final JsonObject rangeSearchResponsePayload, final LocalDate startDate, final String endDate) {
 
         final List<FlatHearing> flatHearings = FlatHearingsConverter.generateFlatHearingList(rangeSearchResponsePayload.getJsonArray("hearings"));
 
         final JsonArray courtLists = CourtListsBuilder.forCourtCentre(courtCentreId, xhibitReferenceDataService, envelope)
                 .prepareEmptyCourtSiteHearings()
                 .assignHearingsToCourtSitesUsingCourtRoom(flatHearings)
-                .groupFlatHearingsIntoSittings(startDate)
+                .groupFlatHearingsIntoSittings(startDate, endDate)
                 .buildCourtListsArray();
 
         return createObjectBuilder()

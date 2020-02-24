@@ -25,6 +25,7 @@ import java.util.UUID;
 import javax.json.Json;
 import javax.json.JsonObject;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,6 +48,9 @@ public class RangeSearchConverterTest {
     public String rangeSearchResponseFilename;
     @Parameterized.Parameter(1)
     public String expectedCourtListFilename;
+    @Parameterized.Parameter(2)
+    public String endDate;
+
     @Mock
     private JsonEnvelope envelope;
     @Mock
@@ -54,15 +58,15 @@ public class RangeSearchConverterTest {
     @InjectMocks
     private RangeSearchConverter rangeSearchConverter;
 
-    @Parameterized.Parameters(name = "{index}: Test with ={0}, expectedCourtListFilename is:{1} ")
+    @Parameterized.Parameters(name = "{index}: Test with ={0}, expectedCourtListFilename is:{1}, endDate ={2} ")
     public static Collection<Object[]> data() {
         Object[][] data = new Object[][]{
-                {"courtlist/0.wc-single-hearing/range-search-response.json", "courtlist/0.wc-single-hearing/expected-court-list.json"},
-                {"courtlist/1.fixed-date-multiple-hearings/range-search-response.json", "courtlist/1.fixed-date-multiple-hearings/expected-court-list.json"},
-                {"courtlist/2.fixed-date-multiple-sittings/range-search-response.json", "courtlist/2.fixed-date-multiple-sittings/expected-court-list.json"},
-                {"courtlist/3.wc-unallocated/range-search-response.json", "courtlist/3.wc-unallocated/expected-court-list.json"},
-                {"courtlist/4.case-with-multiple-days/range-search-response.json", "courtlist/4.case-with-multiple-days/expected-court-list.json"},
-                {"courtlist/5.case-with-multiple-days-ste/range-search-response.json", "courtlist/5.case-with-multiple-days-ste/expected-court-list.json"}
+                {"courtlist/0.wc-single-hearing/range-search-response.json", "courtlist/0.wc-single-hearing/expected-court-list.json", null},
+                {"courtlist/1.fixed-date-multiple-hearings/range-search-response.json", "courtlist/1.fixed-date-multiple-hearings/expected-court-list.json", null},
+                {"courtlist/2.fixed-date-multiple-sittings/range-search-response.json", "courtlist/2.fixed-date-multiple-sittings/expected-court-list.json", null},
+                {"courtlist/3.wc-unallocated/range-search-response.json", "courtlist/3.wc-unallocated/expected-court-list.json", null},
+                {"courtlist/4.case-with-multiple-days/range-search-response.json", "courtlist/4.case-with-multiple-days/expected-court-list.json", "2019-12-27"},
+                {"courtlist/5.case-with-multiple-days-ste/range-search-response.json", "courtlist/5.case-with-multiple-days-ste/expected-court-list.json", "2020-02-21"}
 
         };
         return Arrays.asList(data);
@@ -87,6 +91,7 @@ public class RangeSearchConverterTest {
         final Optional<JsonObject> courtRoom2 = courtRoom("B");
 
         final LocalDate startDate = LocalDate.parse("2019-12-16");
+        final String pEndDate = StringUtils.isNotBlank(endDate) ? endDate : StringUtils.EMPTY;
 
         when(xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(envelope, courtCentreId)).thenReturn(courtSites);
         when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID))).thenReturn(courtRoom1);
@@ -94,7 +99,7 @@ public class RangeSearchConverterTest {
         when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(UNKNOWN_COURT_SITE_COURT_ROOM_ID))).thenReturn(Optional.empty());
         when(xhibitReferenceDataService.getDefaultCrestCourtSiteCode(envelope, courtCentreId)).thenReturn("A");
 
-        final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse, startDate);
+        final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse, startDate, pEndDate);
 
         final JsonObject expectedCourtList = getJsonFile(expectedCourtListFilename);
 
