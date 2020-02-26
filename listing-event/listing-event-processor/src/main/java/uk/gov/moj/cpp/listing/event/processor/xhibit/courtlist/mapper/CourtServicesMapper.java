@@ -39,9 +39,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -267,7 +269,13 @@ public class CourtServicesMapper {
 
         int hearingSequenceNumber = 1;
 
-        for (final JsonObject hearingJson : sittingJson.getJsonArray("hearings").getValuesAs(JsonObject.class)) {
+        final List<JsonObject> hearingJsonList = sittingJson.getJsonArray("hearings")
+                .getValuesAs(JsonObject.class)
+                .stream()
+                .sorted(Comparator.comparing(hearing -> LocalDateTime.parse(((JsonObject) hearing).getString("startTime"))))
+                .collect(Collectors.toList());
+
+        for (final JsonObject hearingJson : hearingJsonList) {
 
             if (!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)) {
                 if (hearingJson.containsKey(CASE_IDENTIFIER)) {

@@ -45,6 +45,27 @@
                                 <cs:HearingDate>2019-12-15</cs:HearingDate>
                             </cs:HearingDetails>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Olga</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>BENINI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Olga BENINI</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>41TL7690690</cs:URN>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2019-12-15</cs:HearingDate>
+                            </cs:HearingDetails>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
                             </cs:Prosecution>
@@ -64,27 +85,6 @@
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
-                                </cs:Defendant>
-                            </cs:Defendants>
-                        </cs:Hearing>
-                        <cs:Hearing>
-                            <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
-                            <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
-                                <cs:HearingDate>2019-12-15</cs:HearingDate>
-                            </cs:HearingDetails>
-                            <cs:CaseNumber>CPP</cs:CaseNumber>
-                            <cs:Defendants>
-                                <cs:Defendant>
-                                    <cs:PersonalDetails>
-                                        <cs:Name>
-                                            <apd:CitizenNameForename>Olga</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>BENINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Olga BENINI</apd:CitizenNameRequestedName>
-                                        </cs:Name>
-                                        <cs:IsMasked>no</cs:IsMasked>
-                                    </cs:PersonalDetails>
-                                    <cs:URN>41TL7690690</cs:URN>
                                 </cs:Defendant>
                             </cs:Defendants>
                         </cs:Hearing>
