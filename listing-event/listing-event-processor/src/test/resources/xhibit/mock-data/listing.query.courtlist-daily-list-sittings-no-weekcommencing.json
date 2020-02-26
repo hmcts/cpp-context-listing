@@ -280,77 +280,6 @@
               "startTime": "2020-02-16T08:41:55",
               "defendants": [
                 {
-                  "id": "3e48f9a2-caf7-4ab2-bdb7-42143d9b2735",
-                  "lastName": "FAINI",
-                  "offences": [
-                    {
-                      "id": "587eddd9-f871-4419-a9ce-23da665f35b8",
-                      "endDate": "2020-02-16",
-                      "startDate": "2020-02-15",
-                      "offenceCode": "OF61131",
-                      "offenceWording": "Hasejog sub tu mazziw akna buobco hirgazbur hab refnol jegna ebihal hirka takenkih bikga.",
-                      "statementOfOffence": {
-                        "title": "Wounding with intent",
-                        "welshTitle": "Wounding with intent",
-                        "legislation": "legislation"
-                      },
-                      "restrictFromCourtList": false
-                    }
-                  ],
-                  "firstName": "Herbert",
-                  "dateOfBirth": "1990-02-14",
-                  "custodyTimeLimit": "2020-03-14",
-                  "specificRequirements": "Idren kak kektuac ronat san sizusfor obetama wapal wuropme nel sazmana ib wogad wujwe fowdomep lufrowu itisitonu.",
-                  "restrictFromCourtList": false
-                },
-                {
-                  "id": "f892de50-7cb2-40b3-9a90-bd9c42d4bb08",
-                  "lastName": "MULLINS",
-                  "offences": [
-                    {
-                      "id": "2788e56e-065d-4f4a-83f0-f275f74857c8",
-                      "endDate": "2020-02-16",
-                      "startDate": "2020-02-15",
-                      "offenceCode": "OF61131",
-                      "offenceWording": "Akuebak hontihir atujalvaw cag tukwul maw igzator cic uctebib fasaz fovabo ju asser ache.",
-                      "statementOfOffence": {
-                        "title": "Wounding with intent",
-                        "welshTitle": "Wounding with intent",
-                        "legislation": "legislation"
-                      },
-                      "restrictFromCourtList": false
-                    }
-                  ],
-                  "firstName": "Tillie",
-                  "dateOfBirth": "1990-02-14",
-                  "custodyTimeLimit": "2020-03-14",
-                  "specificRequirements": "Owami juwjam komip ralekid de libve banra pomli ar coamo avendad opjiv vimki afba pic vobtad zoreh kubewew.",
-                  "restrictFromCourtList": false
-                }
-              ],
-              "hearingType": {
-                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
-                "description": "First hearing"
-              },
-              "caseIdentifier": {
-                "authorityId": "5717dbd9-337e-4e90-8f3d-dfe8b5ae7a4b",
-                "authorityCode": "CPS",
-                "caseReference": "99II821359"
-              },
-              "weekCommencing": true,
-              "restrictFromCourtList": false
-            }
-          ],
-          "judiciary": [],
-          "sittingDate": "2020-03-09",
-          "weekCommencing": true
-        },
-        {
-          "hearings": [
-            {
-              "startTime": "2020-02-16T08:41:55",
-              "defendants": [
-                {
                   "id": "52901e17-6918-4cee-ae9f-a2b01af8af4f",
                   "lastName": "ROBERTSON",
                   "offences": [
@@ -417,61 +346,7 @@
           "judiciary": [],
           "courtRoomId": "27bbb5dc-6124-3281-950f-2890d27c9b0d",
           "sittingDate": "2020-03-09",
-          "weekCommencing": true
-        },
-        {
-          "hearings": [
-            {
-              "startTime": "2020-02-16T08:41:55",
-              "defendants": [
-                {
-                  "id": "6bebbeb6-6d11-4aff-a493-512f25430d54",
-                  "lastName": "SHERMAN",
-                  "offences": [
-                    {
-                      "id": "ee445e84-135e-457c-9a06-3f474e1a38e7",
-                      "endDate": "2020-02-16",
-                      "startDate": "2020-02-15",
-                      "offenceCode": "OF61131",
-                      "offenceWording": "Fev lazafopo ili fa omibe lopir bionvaz tozsusfo kohov don abifodti om.",
-                      "statementOfOffence": {
-                        "title": "Wounding with intent",
-                        "welshTitle": "Wounding with intent",
-                        "legislation": "legislation"
-                      },
-                      "restrictFromCourtList": false
-                    }
-                  ],
-                  "firstName": "Herman",
-                  "dateOfBirth": "1990-02-14",
-                  "custodyTimeLimit": "2020-03-14",
-                  "specificRequirements": "Zogezoed uget relivpiw tud tidik ke gewuwi pidno acivu zaja deini wuk nunekad siow ejocago ri ka.",
-                  "restrictFromCourtList": false
-                }
-              ],
-              "hearingType": {
-                "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
-                "description": "First hearing"
-              },
-              "caseIdentifier": {
-                "authorityId": "9a9e1c75-e6e8-426b-82e9-50b6bdd69797",
-                "authorityCode": "CPS",
-                "caseReference": "57LH840882"
-              },
-              "weekCommencing": true,
-              "restrictFromCourtList": false
-            }
-          ],
-          "judiciary": [
-            {
-              "judicialId": "6f3ef77a-c0e3-319e-9815-9e9b6febf557",
-              "judicialRoleType": {
-                "judiciaryType": "RECORDER"
-              }
-            }
-          ],
-          "sittingDate": "2020-03-09",
-          "weekCommencing": true
+          "weekCommencing": false
         }
       ],
       "crestCourtSite": {

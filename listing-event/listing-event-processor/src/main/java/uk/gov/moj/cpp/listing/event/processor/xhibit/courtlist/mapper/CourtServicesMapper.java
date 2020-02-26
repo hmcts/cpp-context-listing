@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.UUID.fromString;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.CROWN_PROSECUTION_SERVICE;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.OTHER_PROSECUTOR;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.convertDate;
@@ -142,9 +143,9 @@ public class CourtServicesMapper {
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
-        courtHouseStructure.setCourtHouseType(CourtType.valueOf(crestCourtSite.getString("courtType")));
-        courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(crestCourtSite.getString("crestCourtSiteId")));
-        courtHouseStructure.setCourtHouseName(crestCourtSite.getString("crestCourtSiteName"));
+        courtHouseStructure.setCourtHouseType(CourtType.valueOf(crestCourtSite.getString("courtType", EMPTY)));
+        courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(crestCourtSite.getString("crestCourtSiteId", EMPTY)));
+        courtHouseStructure.setCourtHouseName(crestCourtSite.getString("crestCourtSiteName", EMPTY));
 
         return courtHouseStructure;
     }
@@ -267,7 +268,7 @@ public class CourtServicesMapper {
         return justice;
     }
 
-    private SittingStructure.Hearings generateSittingStructureHearings(final JsonObject sittingJson) {
+    public SittingStructure.Hearings generateSittingStructureHearings(final JsonObject sittingJson) {
 
         final SittingStructure.Hearings sittingStructureHearings = objectFactory.createSittingStructureHearings();
         final boolean weekCommencing = sittingJson.getBoolean("weekCommencing");

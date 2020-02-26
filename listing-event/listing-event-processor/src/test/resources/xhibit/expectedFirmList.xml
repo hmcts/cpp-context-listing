@@ -18,7 +18,7 @@
         <cs:CourtHouseName>MOCK_CROWN_COURTNAME</cs:CourtHouseName>
     </cs:CrownCourt>
     <cs:CourtLists>
-        <cs:CourtList SittingDate="2019-11-04">
+        <cs:CourtList SittingDate="2019-12-15">
             <cs:CourtHouse>
                 <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
                 <cs:CourtHouseCode>001</cs:CourtHouseCode>
@@ -92,90 +92,9 @@
                         </cs:Hearing>
                     </cs:Hearings>
                 </cs:Sitting>
-                <cs:Sitting>
-                    <cs:CourtRoomNumber>99</cs:CourtRoomNumber>
-                    <cs:SittingSequenceNo>1</cs:SittingSequenceNo>
-                    <cs:SittingAt>09:20:00</cs:SittingAt>
-                    <cs:SittingPriority>F</cs:SittingPriority>
-                    <cs:Judiciary>
-                        <cs:Judge>
-                            <apd:CitizenNameForename>Mark J</apd:CitizenNameForename>
-                            <apd:CitizenNameSurname>Ainsworth-MAGISTRATE</apd:CitizenNameSurname>
-                            <apd:CitizenNameRequestedName>Mr Mark J Ainsworth-MAGISTRATE judge</apd:CitizenNameRequestedName>
-                        </cs:Judge>
-                    </cs:Judiciary>
-                    <cs:Hearings>
-                        <cs:Hearing>
-                            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
-                            <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
-                                <cs:HearingDate>2019-12-15</cs:HearingDate>
-                            </cs:HearingDetails>
-                            <cs:CaseNumber>CPP</cs:CaseNumber>
-                            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
-                                <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
-                            </cs:Prosecution>
-                            <cs:Defendants>
-                                <cs:Defendant>
-                                    <cs:PersonalDetails>
-                                        <cs:Name>
-                                            <apd:CitizenNameForename>Corey</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>BERTINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Corey BERTINI</apd:CitizenNameRequestedName>
-                                        </cs:Name>
-                                        <cs:IsMasked>no</cs:IsMasked>
-                                    </cs:PersonalDetails>
-                                    <cs:URN>71JC7771460</cs:URN>
-                                    <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
-                                        </cs:Charge>
-                                    </cs:Charges>
-                                </cs:Defendant>
-                                <cs:Defendant>
-                                    <cs:PersonalDetails>
-                                        <cs:Name>
-                                            <apd:CitizenNameForename>Mable</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>NEWMAN</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Mable NEWMAN</apd:CitizenNameRequestedName>
-                                        </cs:Name>
-                                        <cs:IsMasked>no</cs:IsMasked>
-                                    </cs:PersonalDetails>
-                                    <cs:URN>71JC7771460</cs:URN>
-                                    <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
-                                        </cs:Charge>
-                                    </cs:Charges>
-                                </cs:Defendant>
-                            </cs:Defendants>
-                        </cs:Hearing>
-                        <cs:Hearing>
-                            <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
-                            <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
-                                <cs:HearingDate>2019-12-15</cs:HearingDate>
-                            </cs:HearingDetails>
-                            <cs:CaseNumber>CPP</cs:CaseNumber>
-                            <cs:Defendants>
-                                <cs:Defendant>
-                                    <cs:PersonalDetails>
-                                        <cs:Name>
-                                            <apd:CitizenNameForename>Vernon</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>LUCAS</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Vernon LUCAS</apd:CitizenNameRequestedName>
-                                        </cs:Name>
-                                        <cs:IsMasked>no</cs:IsMasked>
-                                    </cs:PersonalDetails>
-                                    <cs:URN>19RV5760680</cs:URN>
-                                </cs:Defendant>
-                            </cs:Defendants>
-                        </cs:Hearing>
-                    </cs:Hearings>
-                </cs:Sitting>
             </cs:Sittings>
         </cs:CourtList>
-        <cs:CourtList SittingDate="2019-11-04">
+        <cs:CourtList>
             <cs:CourtHouse>
                 <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
                 <cs:CourtHouseCode>002</cs:CourtHouseCode>
@@ -184,4 +103,72 @@
             <cs:Sittings/>
         </cs:CourtList>
     </cs:CourtLists>
+    <cs:ReserveList>
+        <cs:Hearing>
+            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
+            <cs:HearingDetails HearingType="XXX">
+                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                <cs:HearingDate>2019-12-15</cs:HearingDate>
+            </cs:HearingDetails>
+            <cs:CaseNumber>CPP</cs:CaseNumber>
+            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
+                <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
+            </cs:Prosecution>
+            <cs:Defendants>
+                <cs:Defendant>
+                    <cs:PersonalDetails>
+                        <cs:Name>
+                            <apd:CitizenNameForename>Corey</apd:CitizenNameForename>
+                            <apd:CitizenNameSurname>BERTINI</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Corey BERTINI</apd:CitizenNameRequestedName>
+                        </cs:Name>
+                        <cs:IsMasked>no</cs:IsMasked>
+                    </cs:PersonalDetails>
+                    <cs:URN>71JC7771460</cs:URN>
+                    <cs:Charges>
+                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                        </cs:Charge>
+                    </cs:Charges>
+                </cs:Defendant>
+                <cs:Defendant>
+                    <cs:PersonalDetails>
+                        <cs:Name>
+                            <apd:CitizenNameForename>Mable</apd:CitizenNameForename>
+                            <apd:CitizenNameSurname>NEWMAN</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Mable NEWMAN</apd:CitizenNameRequestedName>
+                        </cs:Name>
+                        <cs:IsMasked>no</cs:IsMasked>
+                    </cs:PersonalDetails>
+                    <cs:URN>71JC7771460</cs:URN>
+                    <cs:Charges>
+                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                        </cs:Charge>
+                    </cs:Charges>
+                </cs:Defendant>
+            </cs:Defendants>
+        </cs:Hearing>
+        <cs:Hearing>
+            <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
+            <cs:HearingDetails HearingType="XXX">
+                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                <cs:HearingDate>2019-12-15</cs:HearingDate>
+            </cs:HearingDetails>
+            <cs:CaseNumber>CPP</cs:CaseNumber>
+            <cs:Defendants>
+                <cs:Defendant>
+                    <cs:PersonalDetails>
+                        <cs:Name>
+                            <apd:CitizenNameForename>Vernon</apd:CitizenNameForename>
+                            <apd:CitizenNameSurname>LUCAS</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Vernon LUCAS</apd:CitizenNameRequestedName>
+                        </cs:Name>
+                        <cs:IsMasked>no</cs:IsMasked>
+                    </cs:PersonalDetails>
+                    <cs:URN>19RV5760680</cs:URN>
+                </cs:Defendant>
+            </cs:Defendants>
+        </cs:Hearing>
+    </cs:ReserveList>
 </cs:FirmList>

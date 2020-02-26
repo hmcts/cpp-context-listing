@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:p2="http://www.govtalk.gov.uk/people/bs7666" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
     <cs:CourtLists>
-        <cs:CourtList SittingDate="2019-12-10">
-            <cs:Sittings>
-                <cs:Sitting>
-                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
-                    <cs:SittingNote>TESTNOTE</cs:SittingNote>
-                </cs:Sitting>
-            </cs:Sittings>
+        <cs:CourtList>
+            <cs:Sittings/>
         </cs:CourtList>
     </cs:CourtLists>
 </cs:FirmList>
