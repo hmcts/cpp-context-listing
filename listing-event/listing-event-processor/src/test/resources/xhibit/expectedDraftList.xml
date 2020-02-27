@@ -50,6 +50,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-10</cs:HearingDate>
                             </cs:HearingDetails>
+                            <cs:TimeMarkingNote>NOT BEFORE 2:58 PM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
@@ -104,6 +105,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-10</cs:HearingDate>
                             </cs:HearingDetails>
+                            <cs:TimeMarkingNote>NOT BEFORE 2:59 PM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>

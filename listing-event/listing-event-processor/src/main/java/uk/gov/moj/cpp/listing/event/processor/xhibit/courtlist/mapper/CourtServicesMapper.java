@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -73,6 +74,9 @@ public class CourtServicesMapper {
     private static final int UNMAPPED_COURT_ROOM = 99;
     public static final String CPP_CASE_NUMBER = "CPP";
     public static final String DEFENCE_ORGANISATION = "defenceOrganisation";
+    private static final String AM_PM_TIME_FORMAT = "h:mm a";
+    private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern(AM_PM_TIME_FORMAT, Locale.ENGLISH);
+    private static final String TIME_MARKING_NOTE_TEXT = "NOT BEFORE %s";
     private CourtListGenerationContext context;
 
     private XhibitReferenceDataService xhibitReferenceDataService;
@@ -266,6 +270,7 @@ public class CourtServicesMapper {
     private SittingStructure.Hearings generateSittingStructureHearings(final JsonObject sittingJson) {
 
         final SittingStructure.Hearings sittingStructureHearings = objectFactory.createSittingStructureHearings();
+        final boolean weekCommencing = sittingJson.getBoolean("weekCommencing");
 
         int hearingSequenceNumber = 1;
 
@@ -279,11 +284,11 @@ public class CourtServicesMapper {
 
             if (!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)) {
                 if (hearingJson.containsKey(CASE_IDENTIFIER)) {
-                    sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearingJson, hearingSequenceNumber++));
+                    sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearingJson, hearingSequenceNumber++, weekCommencing));
                 }
 
                 if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
-                    sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearingJson, hearingSequenceNumber++));
+                    sittingStructureHearings.getHearing().add(generateHearingStructureForCourtApplication(hearingJson, hearingSequenceNumber++, weekCommencing));
                 }
             }
         }
@@ -292,7 +297,8 @@ public class CourtServicesMapper {
     }
 
     private HearingStructure generateHearingStructureForListedCase(final JsonObject hearingJson,
-                                                                   final int hearingSequenceNumber) {
+                                                                   final int hearingSequenceNumber,
+                                                                   final boolean weekCommencing) {
 
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
@@ -302,6 +308,10 @@ public class CourtServicesMapper {
         hearingStructure.setProsecution(generateProsecutionStructure(hearingJson));
         hearingStructure.setDefendants(generateHearingStructureDefendantsForCase(hearingJson));
 
+        if (!weekCommencing) {
+            generateAndSetTimeMarkingNote(hearingJson, hearingStructure);
+        }
+
         if (hearingJson.containsKey("courtCentreId")) {
             hearingStructure.setCommittingCourt(generateCourtHouseStructure(fromString(hearingJson.getString("courtCentreId"))));
         }
@@ -310,12 +320,17 @@ public class CourtServicesMapper {
     }
 
     private HearingStructure generateHearingStructureForCourtApplication(final JsonObject hearingJson,
-                                                                         final int hearingSequenceNumber) {
+                                                                         final int hearingSequenceNumber,
+                                                                         final boolean weekCommencing) {
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
         hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
         hearingStructure.setCaseNumber(CPP_CASE_NUMBER);
         hearingStructure.setHearingDetails(generateHearingTypeStructure(hearingJson));
+
+        if (!weekCommencing) {
+            generateAndSetTimeMarkingNote(hearingJson, hearingStructure);
+        }
 
         // Map applicant to defendant
         hearingStructure.setDefendants(generateHearingStructureDefendantsForCourtApplication(hearingJson));
@@ -596,6 +611,11 @@ public class CourtServicesMapper {
 
     private String buildCitizenRequestedName(final String titlePrefix, final String forenames, final String surname, final String titleSuffix) {
         return format("%s %s %s %s", titlePrefix, forenames, surname, titleSuffix).trim();
+    }
+
+    private void generateAndSetTimeMarkingNote(final JsonObject hearingJson, final HearingStructure hearingStructure) {
+        final LocalDateTime startTime = LocalDateTime.parse(hearingJson.getString("startTime"));
+        hearingStructure.setTimeMarkingNote(String.format(TIME_MARKING_NOTE_TEXT, startTime.format(timeFormatter)));
     }
 
 }
