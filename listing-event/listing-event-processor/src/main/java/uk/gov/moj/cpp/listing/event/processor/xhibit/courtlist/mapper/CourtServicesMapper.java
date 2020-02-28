@@ -576,6 +576,7 @@ public class CourtServicesMapper {
 
         casesStructureCase.setCaseNumber(CPP_CASE_NUMBER);
         casesStructureCase.setHearing(generateHearingTypeStructure(listedCase));
+        casesStructureCase.setProsecution(generateProsecutionStructure(listedCase));
 
         for (final JsonObject defendant : listedCase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
             casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(defendant, listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE)));
