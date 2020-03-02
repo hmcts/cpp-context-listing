@@ -11,6 +11,7 @@ import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingUpdated;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.CaseMarkersToBeUpdated;
+import uk.gov.justice.listing.events.CaseResultedDefendantProceedingsConcluded;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
@@ -21,6 +22,7 @@ import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -43,6 +45,7 @@ import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCo
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommandCollectionConverter;
 
 import java.util.List;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.json.Json;
@@ -63,6 +66,7 @@ public class ListingEventProcessor {
     static final String PUBLIC_EVENT_PROGRESSION_CASE_DEFENDANT_CHANGED = "public.progression.case-defendant-changed"; //public
     static final String PUBLIC_EVENT_PROGRESSION_COURT_APPLICATION_CHANGED = "public.progression.court-application-changed";
     static final String PUBLIC_PROGRESSION_CASE_MARKERS_UPDATED = "public.progression.case-markers-updated";
+    static final String PUBLIC_PROGRESSION_HEARING_RESULTED_CASE_UPDATED = "public.progression.hearing-resulted-case-updated";
     static final String PUBLIC_EVENT_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     static final String PUBLIC_EVENT_HEARING_UPDATED = "public.listing.hearing-updated";
     static final String PUBLIC_EVENT_RESTRICT_COURT_LIST = "public.listing.court-list-restricted";
@@ -80,31 +84,42 @@ public class ListingEventProcessor {
     static final String PRIVATE_EVENT_OFFENCES_TO_BE_UPDATED = "listing.events.offences-to-be-updated";
     static final String PRIVATE_EVENT_OFFENCES_TO_BE_DELETED = "listing.events.offences-to-be-deleted";
     static final String PRIVATE_EVENT_OFFENCES_TO_BE_ADDED = "listing.events.offences-to-be-added";
-    static final String PRIVATE_EVENT_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS ="listing.events.defendants-to-be-added-for-court-proceedings" ;
+    static final String PRIVATE_EVENT_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS = "listing.events.defendants-to-be-added-for-court-proceedings";
     static final String PRIVATE_EVENT_RESTRICT_COURT_LIST = "listing.events.court-list-restricted";
     static final String PRIVATE_EVENT_CASE_MARKERS_TO_BE_UPDATED = "listing.events.case-markers-to-be-updated";
+    static final String LISTING_EVENTS_CASE_RESULTED_DEFENDANT_PROCEEDINGS_UPDATED = "listing.events.case-resulted-defendant-proceedings-updated";
     static final String COMMAND_ADD_HEARING_TO_CASE = "listing.command.add-hearing-to-case";
     static final String COMMAND_ADD_COURT_APPLICATION_TO_HEARING = "listing.command.add-court-application-to-hearing";
     static final String COMMAND_UPDATE_DEFENDANTS_FOR_HEARING = "listing.command.update-defendants-for-hearing"; // command back of private event
-    static final String COMMAND_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS_FOR_HEARING="listing.command.add-defendants-to-court-proceedings-for-hearing" ;
+    static final String COMMAND_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS_FOR_HEARING = "listing.command.add-defendants-to-court-proceedings-for-hearing";
     static final String COMMAND_UPDATE_CASE_DEFENDANT_DETAILS = "listing.command.update-case-defendant-details"; //command back of public event
     static final String COMMAND_UPDATE_CASE_DEFENDANT_OFFENCES = "listing.command.update-case-defendant-offences";
     static final String COMMAND_UPDATE_OFFENCES_FOR_HEARING = "listing.command.update-offences-for-hearing";
     static final String COMMAND_DELETE_OFFENCES_FOR_HEARING = "listing.command.delete-offences-for-hearing";
     static final String COMMAND_ADD_OFFENCES_FOR_HEARING = "listing.command.add-offences-for-hearing";
     static final String COMMAND_UPDATE_COURT_APPLICATION_FOR_HEARINGS = "listing.command.update-court-application-for-hearings";
-    static final String COMMAND_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS="listing.command.add-defendants-to-court-proceedings";
+    static final String COMMAND_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS = "listing.command.add-defendants-to-court-proceedings";
     static final String COMMAND_UPDATE_COURT_APPLICATION = "listing.command.update-court-application";
     static final String COMMAND_UPDATE_CASE_MARKERS_TO_HEARING = "listing.command.update-case-markers-to-hearing";
     static final String COMMAND_UPDATE_CASE_MARKERS = "listing.command.update-case-markers";
     static final String COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING = "listing.command.add-court-application-for-hearing";
-    static final String COMMAND_CASE_OR_APPLICATION_EJECTED = "listing.command.eject-case-or-application" ;
+    static final String COMMAND_CASE_OR_APPLICATION_EJECTED = "listing.command.eject-case-or-application";
+    static final String COMMAND_CASE_UPDATE_DEFENDANT_PROCEEDINGS_UPDATED = "listing.command.case-update-defendant-proceedings-updated";
     static final String COMMAND_CASE_EJECTED = "listing.command.eject-case" ;
     static final String COMMAND_APPLICATION_EJECTED = "listing.command.eject-application" ;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
     private static final String APPLICATION_ID = "applicationId";
     private static final String HEARING_ID = "hearingId";
+    private static final String PUBLIC_PROGRESSION_DEFENDANT_LEGALAID_STATUS_UPDATED = "public.progression.defendant-legalaid-status-updated";
+    private static final String COMMAND_UPDATE_DEFENDANT_LEGALAID_STATUS = "listing.command.update-defendant-legalaid-status";
+    private static final String COMMAND_UPDATE_DEFENDANT_LEGALAID_STATUS_FOR_HEARING = "listing.command.update-defendant-legalaid-status-for-hearing";
+    private static final String LISTING_EVENTS_DEFENDANT_LEGALAID_STATUS_UPDATED = "listing.events.defendant-legalaid-status-updated";
+    private static final String COMMAND_UPDATE_CASE_RESULTED_DEFENDANT_PROCEEDINGS_CONCLUDED = "listing.command.update-case-resulted-defendant-proceedings-concluded";
+    private static final String LEGAL_AID_STATUS = "legalAidStatus";
+    private static final String DEFENDANT_ID = "defendantId";
+    private static final String CASE_ID = "caseId";
+    private static final String PROSECUTION_CASE = "prosecutionCase";
     public static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
     public static final String REMOVAL_REASON = "removalReason";
 
@@ -149,6 +164,9 @@ public class ListingEventProcessor {
 
     @Inject
     private ObjectToJsonValueConverter objectToJsonValueConverter;
+
+    @Inject
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
     @Inject
     private SlotUpdater slotUpdater;
@@ -226,8 +244,6 @@ public class ListingEventProcessor {
         slotUpdater.updateSlot(envelope);
     }
 
-
-
     @Handles(PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING)
     public void handleAllocatedHearingUpdatedForListingMessage(final JsonEnvelope envelope) {
         if (LOGGER.isInfoEnabled()) {
@@ -290,7 +306,7 @@ public class ListingEventProcessor {
     }
 
     @Handles(PRIVATE_EVENT_COURT_APPLICATION_TO_BE_UPDATED)
-    public void handleCourtApplicationToBeUpdated(final JsonEnvelope envelope){
+    public void handleCourtApplicationToBeUpdated(final JsonEnvelope envelope) {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENT_COURT_APPLICATION_TO_BE_UPDATED, envelope.toObfuscatedDebugString());
         }
@@ -373,6 +389,63 @@ public class ListingEventProcessor {
         }
 
     }
+
+    @Handles(PUBLIC_PROGRESSION_DEFENDANT_LEGALAID_STATUS_UPDATED)
+    public void defendantLegalStatusUpdate(final JsonEnvelope envelop) {
+
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("progression.defendant-legalaid-status-updated event received {}", envelop.toObfuscatedDebugString());
+        }
+
+        this.sender.send(this.enveloper.withMetadataFrom(envelop, COMMAND_UPDATE_DEFENDANT_LEGALAID_STATUS).apply(envelop.payloadAsJsonObject()));
+    }
+
+    @Handles(LISTING_EVENTS_DEFENDANT_LEGALAID_STATUS_UPDATED)
+    public void handleDefendantLegalStatusUpdateForHearings(final JsonEnvelope envelop) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("listing.events.defendant-legalaid-status-updated event received {}", envelop.toObfuscatedDebugString());
+        }
+        final JsonObject eventPayload = envelop.payloadAsJsonObject();
+        final JsonArray hearingIds = eventPayload.getJsonArray("hearingIds");
+        hearingIds.stream().forEach(hearingId -> {
+            final JsonObject commandPayload = Json.createObjectBuilder()
+                    .add(HEARING_ID, hearingId)
+                    .add(CASE_ID, eventPayload.getString(CASE_ID))
+                    .add(DEFENDANT_ID, eventPayload.getString(DEFENDANT_ID))
+                    .add(LEGAL_AID_STATUS, eventPayload.getString(LEGAL_AID_STATUS))
+                    .build();
+            this.sender.send(this.enveloper.withMetadataFrom(envelop, COMMAND_UPDATE_DEFENDANT_LEGALAID_STATUS_FOR_HEARING).apply(commandPayload));
+        });
+    }
+
+    @Handles(PUBLIC_PROGRESSION_HEARING_RESULTED_CASE_UPDATED)
+    public void handleHearingResultedAndCaseUpdated(final JsonEnvelope envelope) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("public.progression.hearing-resulted-case-updated event received {}", envelope.toObfuscatedDebugString());
+        }
+
+        this.sender.send(this.enveloper.withMetadataFrom(envelope, COMMAND_UPDATE_CASE_RESULTED_DEFENDANT_PROCEEDINGS_CONCLUDED).apply(envelope.payloadAsJsonObject()));
+
+    }
+
+
+    @Handles(LISTING_EVENTS_CASE_RESULTED_DEFENDANT_PROCEEDINGS_UPDATED)
+    public void handleCaseResultedAndDefendantProceedingsUpdated(final JsonEnvelope envelope) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("listing.events.case-resulted-defendant-proceedings-updated event received {}", envelope.toObfuscatedDebugString());
+        }
+        final CaseResultedDefendantProceedingsConcluded caseResultedDefendantProceedingsConcluded = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), CaseResultedDefendantProceedingsConcluded.class);
+        final List<UUID> hearingIds = caseResultedDefendantProceedingsConcluded.getHearingIds();
+        hearingIds.forEach(hearingId -> {
+            final JsonObject commandPayload = Json.createObjectBuilder()
+                    .add(HEARING_ID, hearingId.toString())
+                    .add(PROSECUTION_CASE, objectToJsonObjectConverter.convert(caseResultedDefendantProceedingsConcluded.getProsecutionCase()))
+                    .build();
+            this.sender.send(this.enveloper.withMetadataFrom(envelope, COMMAND_CASE_UPDATE_DEFENDANT_PROCEEDINGS_UPDATED).apply(commandPayload));
+
+        });
+    }
+
     /*
      * For each hearing in the 'case-sent-for-listing' event, extract it
      * and send each one through as a separate 'list-hearing' command.
@@ -405,12 +478,13 @@ public class ListingEventProcessor {
     private void sendCommandAddApplicationToHearing(JsonEnvelope envelope) {
         final HearingListed event = getHearingListedEvent(envelope);
         final List<AddApplicationToHearingCommand> addApplicationToHearingCommands = addCourtApplicationToHearingCommandCollectionConverter.convert(event);
-        addApplicationToHearingCommands.forEach(addApplicationToHearingCommand ->{
+        addApplicationToHearingCommands.forEach(addApplicationToHearingCommand -> {
             LOGGER.debug(COMMAND_PAYLOAD_DEBUG_STRING, COMMAND_ADD_COURT_APPLICATION_TO_HEARING, addApplicationToHearingCommand);
             sender.send(enveloper.withMetadataFrom(envelope,
                     COMMAND_ADD_COURT_APPLICATION_TO_HEARING).apply(objectToJsonValueConverter.convert(addApplicationToHearingCommand)));
         });
     }
+
     private void sendCommandAddApplicationToListedHearing(JsonEnvelope envelope) {
         final CourtApplicationAddedForHearing event = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), CourtApplicationAddedForHearing.class);
         sender.send(enveloper.withMetadataFrom(envelope,
@@ -418,6 +492,7 @@ public class ListingEventProcessor {
                 .add(APPLICATION_ID, event.getCourtApplication().getId().toString())
                 .add(HEARING_ID, event.getHearingId().toString()).build()));
     }
+
     /*
      * For each hearingId in the 'defendants-to-be-updated' event, extract it
      * and send each one through as a separate 'update-defendants-for-Hearing' command.
@@ -447,6 +522,7 @@ public class ListingEventProcessor {
                 }
         );
     }
+
     private void sendUpdatedOffencesForHearings(final JsonEnvelope envelope) {
         final OffencesToBeUpdated event = getOffencesToBeUpdated(envelope);
         final List<UpdateOffencesForHearingCommand> commands = updateOffencesForHearingCommandCollectionConverter.convert(event);

@@ -128,6 +128,7 @@ public class DefendantOffencesEventListener {
                 .withOffenceCode(updatedOffence.getOffenceCode())
                 .withStartDate(updatedOffence.getStartDate())
                 .withRestrictFromCourtList(restrictCourtList)
+                .withLaaApplnReference(updatedOffence.getLaaApplnReference())
                 .build();
     }
 

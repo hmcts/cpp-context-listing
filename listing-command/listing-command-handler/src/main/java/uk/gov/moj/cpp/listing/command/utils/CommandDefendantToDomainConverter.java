@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.commands.Defendant;
@@ -7,9 +8,11 @@ import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
+import uk.gov.moj.cpp.listing.domain.LaaReference;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -41,6 +44,8 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
     }
 
     private uk.gov.moj.cpp.listing.domain.Offence buildOffence(final Offence o) {
+        final Optional<uk.gov.justice.listing.events.LaaReference> laaApplnReference =
+                o.getLaaApplnReference();
         return uk.gov.moj.cpp.listing.domain.Offence.offence()
                 .withId(o.getId())
                 .withEndDate(o.getEndDate())
@@ -48,6 +53,9 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
                 .withOffenceCode(o.getOffenceCode())
                 .withOffenceWording(o.getOffenceWording())
                 .withStatementOfOffence(buildStatementOfOffence(o))
+                .withLaaApplnReference(laaApplnReference.isPresent() ?
+                        buildLaaReference(laaApplnReference.get()) :
+                        empty())
                 .build();
     }
 
@@ -58,6 +66,20 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
                 .withWelshLegislation(offence.getStatementOfOffence().getWelshLegislation())
                 .withWelshTitle(offence.getStatementOfOffence().getWelshTitle())
                 .build();
+    }
+
+    private Optional<LaaReference> buildLaaReference(
+            final uk.gov.justice.listing.events.LaaReference laaReference) {
+
+        return Optional.of(uk.gov.moj.cpp.listing.domain.LaaReference.laaReference()
+                .withApplicationReference(laaReference.getApplicationReference())
+                .withEffectiveEndDate(laaReference.getEffectiveEndDate())
+                .withEffectiveStartDate(laaReference.getEffectiveStartDate())
+                .withStatusCode(laaReference.getStatusCode())
+                .withStatusDate(laaReference.getStatusDate())
+                .withStatusDescription(laaReference.getStatusDescription())
+                .withStatusId(laaReference.getStatusId())
+                .build());
     }
 
 }

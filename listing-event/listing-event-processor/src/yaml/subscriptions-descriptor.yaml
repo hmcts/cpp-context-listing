@@ -47,6 +47,12 @@ subscriptions_descriptor:
         - name: listing.events.application-ejected-for-hearings
           schema_uri: http://justice.gov.uk/listing/events/application-ejected-for-hearings.json
 
+        - name: listing.events.defendant-legalaid-status-updated
+          schema_uri: http://justice.gov.uk/listing/events/defendant-legalaid-status-updated.json
+
+        - name: listing.events.case-resulted-defendant-proceedings-updated
+          schema_uri: http://justice.gov.uk/listing/events/case-resulted-defendant-proceedings-updated.json
+
         - name: listing.event.publish-court-list-produced
           schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-produced.json
 
@@ -89,5 +95,11 @@ subscriptions_descriptor:
 
         - name: public.progression.case-markers-updated
           schema_uri: http://justice.gov.uk/core/courts/case-markers-updated.json
+
+        - name: public.progression.hearing-resulted-case-updated
+          schema_uri: http://justice.gov.uk/core/courts/hearing-resulted-case-updated.json
+
+        - name: public.progression.defendant-legalaid-status-updated
+          schema_uri: http://justice.gov.uk/core/courts/defendant-legalaid-status-updated.json
 
       event_source_name: public.event.source

@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.domain;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S1067", "squid:S00121", "squid:S00122", "pmd:BeanMembersShouldSerialize"})
+@SuppressWarnings({"squid:S1067", "squid:S00121", "PMD:BeanMembersShouldSerialize", "squid:S00107", "squid:S00122"})
 public class Offence {
     private final Optional<String> endDate;
 
@@ -19,9 +19,11 @@ public class Offence {
 
     private final Optional<CustodyTimeLimit> custodyTimeLimit;
 
+    private final Optional<LaaReference> laaApplnReference;
+
     private final Optional<String> laidDate;
 
-    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit, final Optional<String> laidDate) {
+    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit, final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate) {
         this.endDate = endDate;
         this.id = id;
         this.offenceCode = offenceCode;
@@ -29,6 +31,7 @@ public class Offence {
         this.startDate = startDate;
         this.statementOfOffence = statementOfOffence;
         this.custodyTimeLimit = custodyTimeLimit;
+        this.laaApplnReference = laaApplnReference;
         this.laidDate = laidDate;
     }
 
@@ -42,6 +45,10 @@ public class Offence {
 
     public String getOffenceCode() {
         return offenceCode;
+    }
+
+    public Optional<LaaReference> getLaaApplnReference() {
+        return laaApplnReference;
     }
 
     public String getOffenceWording() {
@@ -68,8 +75,10 @@ public class Offence {
 
     @Override
     public boolean equals(final Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
         final Offence that = (Offence) obj;
 
         return java.util.Objects.equals(this.endDate, that.endDate) &&
@@ -79,12 +88,13 @@ public class Offence {
                 java.util.Objects.equals(this.startDate, that.startDate) &&
                 java.util.Objects.equals(this.statementOfOffence, that.statementOfOffence) &&
                 java.util.Objects.equals(this.custodyTimeLimit, that.custodyTimeLimit) &&
-                java.util.Objects.equals(this.laidDate, that.laidDate);
+                java.util.Objects.equals(this.laidDate, that.laidDate) &&
+                java.util.Objects.equals(this.laaApplnReference, that.laaApplnReference);
     }
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laidDate);
+        return java.util.Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate);
     }
 
     @Override
@@ -97,10 +107,12 @@ public class Offence {
                 "startDate='" + startDate + "'," +
                 "statementOfOffence='" + statementOfOffence + "'," +
                 "custodyTimeLimit='" + custodyTimeLimit + "'" +
+                "laaApplnReference='" + laaApplnReference + "'" +
                 "laidDate='" + laidDate + "'" +
                 "}";
     }
 
+    @SuppressWarnings("pmd:BeanMembersShouldSerialize")
     public static class Builder {
         private Optional<String> endDate;
 
@@ -117,6 +129,8 @@ public class Offence {
         private Optional<CustodyTimeLimit> custodyTimeLimit;
 
         private Optional<String> laidDate;
+
+        private Optional<LaaReference> laaApplnReference;
 
         public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
@@ -153,13 +167,18 @@ public class Offence {
             return this;
         }
 
+        public Builder withLaaApplnReference(final Optional<LaaReference> laaApplnReferences) {
+            this.laaApplnReference = laaApplnReferences;
+            return this;
+        }
+
         public Builder withLaidDate(final Optional<String> laidDate) {
             this.laidDate = laidDate;
             return this;
         }
 
         public Offence build() {
-            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laidDate);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate);
         }
     }
 }

@@ -44,3 +44,9 @@ Feature: Change defendant offences
     Given hearing listed in the past
     When you deleteOffences to a Hearing with a delete offences
     Then no events occurred
+
+  Scenario: Defendant offences are updated to add laa following an event from Progression
+
+    Given hearing added to case
+    When you updateDefendantOffences to a Case with a updated defendant offences for laa
+    Then defendant offences to be updated for hearing for laa

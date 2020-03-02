@@ -11,6 +11,7 @@ import uk.gov.justice.listing.events.CourtApplicationPartyType;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.HearingLanguageNeeds;
 import uk.gov.justice.listing.events.JudicialRoleType;
+import uk.gov.justice.listing.events.LaaReference;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NewBaseDefendant;
 import uk.gov.justice.listing.events.Offence;
@@ -26,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 
 
-@SuppressWarnings({"squid:S3655"})
 public class NewDomainToEventConverter {
 
     private NewDomainToEventConverter() {
@@ -58,6 +58,7 @@ public class NewDomainToEventConverter {
     }
 
 
+    @SuppressWarnings({"squid:S3655"})
     public static Defendant buildDefendant(uk.gov.moj.cpp.listing.domain.Defendant d) {
         return Defendant.defendant()
                 .withId(d.getId())
@@ -109,6 +110,7 @@ public class NewDomainToEventConverter {
         return o.stream().map(NewDomainToEventConverter::buildOffence).collect(toList());
     }
 
+    @SuppressWarnings({"squid:S3655"})
     public static Offence buildOffence(uk.gov.moj.cpp.listing.domain.Offence o) {
         return Offence.offence()
                 .withId(o.getId())
@@ -119,6 +121,7 @@ public class NewDomainToEventConverter {
                 .withStatementOfOffence(buildStatementOfOffence(o))
                 .withOffenceWording(o.getOffenceWording())
                 .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+                .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference(o.getLaaApplnReference().get()) : empty())
                 .withLaidDate(o.getLaidDate())
                 .build();
     }
@@ -184,6 +187,21 @@ public class NewDomainToEventConverter {
     private static CourtApplicationPartyType buildCourtApplicationPartyTypeEvent(uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType courtApplicationPartyType) {
 
         return CourtApplicationPartyType.valueOf(courtApplicationPartyType.name());
+    }
+
+    private static Optional<LaaReference> buildLaaReference(uk.gov.moj.cpp.listing.domain.LaaReference laaReference) {
+
+        return Optional.of(LaaReference.laaReference()
+                .withApplicationReference(laaReference.getApplicationReference())
+                .withEffectiveEndDate((laaReference.getEffectiveEndDate()))
+                .withEffectiveStartDate(laaReference.getEffectiveStartDate())
+                .withStatusCode(laaReference.getStatusCode())
+                .withStatusDescription(laaReference.getStatusDescription())
+                .withStatusDate(laaReference.getStatusDate())
+                .withStatusId(laaReference.getStatusId())
+                .build());
+
+
     }
 
 }

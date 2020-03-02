@@ -20,6 +20,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
+import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.progression.courts.AddedOffences;
 import uk.gov.justice.progression.courts.DeletedOffences;
@@ -30,6 +31,7 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.LaaReferenceData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
@@ -191,7 +193,14 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "          \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "          \"count\": " + offenceData.getCount() + ",\n" +
                         "          \"offenceDefinitionId\": \"" + offenceData.getOffenceDefinitionId() + "\",\n" +
-                        "          \"wording\": \"" + updatedOffenceData.getOffenceWording() + "\"\n" +
+                        "          \"wording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
+                        "      \"laaApplnReference\": {" +
+                        "        \"applicationReference\": \"" + updatedOffenceData.getLaaReferences().get().getApplicationReference() + "\",\n" +
+                        "        \"statusCode\": \"" + updatedOffenceData.getLaaReferences().get().getStatusCode() + "\",\n" +
+                        "        \"statusDate\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDate().toString() + "\",\n" +
+                        "        \"statusDescription\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDescription() + "\",\n" +
+                        "        \"statusId\": \"" + updatedOffenceData.getLaaReferences().get().getStatusId() + "\"\n}\n" +
+                        "      \n" +
                         "        }\n" +
                         "      ],\n" +
                         "      \"prosecutionCaseId\": \"" + caseId +"\"\n" +
@@ -222,7 +231,14 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "          \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "          \"count\": " + offenceData.getCount() + ",\n" +
                         "          \"offenceDefinitionId\": \"" + offenceData.getOffenceDefinitionId() + "\",\n" +
-                        "          \"wording\": \"" + updatedOffenceData.getOffenceWording() + "\"\n" +
+                        "          \"wording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
+                        "      \"laaApplnReference\": {" +
+                        "        \"applicationReference\": \"" + updatedOffenceData.getLaaReferences().get().getApplicationReference() + "\",\n" +
+                        "        \"statusCode\": \"" + updatedOffenceData.getLaaReferences().get().getStatusCode() + "\",\n" +
+                        "        \"statusDate\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDate().toString() + "\",\n" +
+                        "        \"statusDescription\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDescription() + "\",\n" +
+                        "        \"statusId\": \"" + updatedOffenceData.getLaaReferences().get().getStatusId() + "\"\n}\n" +
+                        "      \n" +
                         "        }\n" +
                         "      ],\n" +
                         "      \"prosecutionCaseId\": \"" + caseId + "\"\n" +
@@ -282,7 +298,13 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                 "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() +"\",\n" +
                 "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() +"\",\n" +
                 "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() +"\",\n" +
-                "      }\n" +
+                "      },\n" +
+                "      \"laaApplnReference\": {" +
+                "        \"applicationReference\": \"" + updatedOffenceData.getLaaReferences().get().getApplicationReference() + "\",\n" +
+                "        \"statusCode\": \"" + updatedOffenceData.getLaaReferences().get().getStatusCode() + "\",\n" +
+                "        \"statusDate\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDate().toString() + "\",\n" +
+                "        \"statusDescription\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDescription() + "\",\n" +
+                "        \"statusId\": \"" + updatedOffenceData.getLaaReferences().get().getStatusId() + "\"\n}\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}\n";
@@ -423,7 +445,13 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() +"\",\n" +
                         "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() +"\",\n" +
                         "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() +"\",\n" +
-                        "      }\n" +
+                        "      },\n" +
+                        "      \"laaApplnReference\": {" +
+                        "        \"applicationReference\": \"" + updatedOffenceData.getLaaReferences().get().getApplicationReference() + "\",\n" +
+                        "        \"statusCode\": \"" + updatedOffenceData.getLaaReferences().get().getStatusCode() + "\",\n" +
+                        "        \"statusDate\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDate().toString() + "\",\n" +
+                        "        \"statusDescription\": \"" + updatedOffenceData.getLaaReferences().get().getStatusDescription() + "\",\n" +
+                        "        \"statusId\": \"" + updatedOffenceData.getLaaReferences().get().getStatusId() + "\"\n}\n" +
                         "  }\n" +
                         "}\n";
 
@@ -651,10 +679,20 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                 .withOffenceLegislationWelsh(of(updatedOffenceData.getLegislationWelsh()))
                 .withCount(Optional.of(offenceData.getCount()))
                 .withOffenceDefinitionId(offenceData.getOffenceDefinitionId())
+                .withLaaApplnReference((buildLaaReference(updatedOffenceData.getLaaReferences().get())))
                 .build();
     }
 
+    private Optional<LaaReference> buildLaaReference(LaaReferenceData laaReferenceData) {
 
+        return Optional.ofNullable(LaaReference.laaReference()
+                .withStatusCode(laaReferenceData.getStatusCode())
+                .withStatusDescription(laaReferenceData.getStatusDescription())
+                .withStatusId(laaReferenceData.getStatusId())
+                .withStatusDate(String.valueOf((laaReferenceData.getStatusDate())))
+                .withApplicationReference(laaReferenceData.getApplicationReference())
+                .build());
+    }
     @Override
     public void close() {
         try {

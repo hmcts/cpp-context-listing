@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.toList;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.justice.services.common.converter.LocalDates;
+import uk.gov.moj.cpp.listing.domain.LaaReference;
 import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
@@ -37,6 +38,7 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
                     .withStartDate(offence.getStartDate())
                     .withStatementOfOffence(soo)
                     .withOffenceWording(offence.getOffenceWording())
+                    .withLaaApplnReference(offence.getLaaApplnReference().isPresent()? buildLaaReference(offence.getLaaApplnReference().get()):Optional.empty())
                     .build();
 
         }).collect(toList());
@@ -50,5 +52,18 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
                 .withLegislation(soo.getLegislation())
                 .build();
 
+    }
+
+    private Optional<LaaReference> buildLaaReference(final uk.gov.justice.listing.events.LaaReference laaReference) {
+
+        return Optional.of(LaaReference.laaReference()
+                .withApplicationReference(laaReference.getApplicationReference())
+                .withEffectiveEndDate((laaReference.getEffectiveEndDate()))
+                .withEffectiveStartDate((laaReference.getEffectiveStartDate()))
+                .withStatusCode(laaReference.getStatusCode())
+                .withStatusDate(laaReference.getStatusDate())
+                .withStatusDescription(laaReference.getStatusDescription())
+                .withStatusId(laaReference.getStatusId())
+                .build());
     }
 }

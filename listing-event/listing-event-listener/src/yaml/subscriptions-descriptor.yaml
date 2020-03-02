@@ -101,6 +101,12 @@ subscriptions_descriptor:
         - name: listing.events.application-ejected
           schema_uri: http://justice.gov.uk/listing/events/application-ejected.json
 
+        - name: listing.events.defendant-legalaid-status-updated-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/defendant-legalaid-status-updated-for-hearing.json
+
+        - name: listing.events.case-update-defendant-proceedings-updated
+          schema_uri: http://justice.gov.uk/listing/events/case-update-defendant-proceedings-updated.json
+
         - name: listing.events.start-date-removed-for-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.start-date-removed-for-hearing.json
 

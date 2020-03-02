@@ -20,9 +20,3 @@ Feature: Assign a court-room to a hearing or change the court-room
     Given no previous events
     When you changeCourtCentre to a Hearing using a court centre
     Then no events occurred
-
-
-
-
-
-    

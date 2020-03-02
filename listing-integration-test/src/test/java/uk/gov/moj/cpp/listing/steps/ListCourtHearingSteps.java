@@ -44,6 +44,7 @@ import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
+import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.LegalEntityDefendant;
 import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.core.courts.Offence;
@@ -611,6 +612,13 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                                 .withStartDate(LocalDate.now().toString())
                                                                 .withOrderIndex(of(INTEGER.next()))
                                                                 .withOffenceTitle(o.getStatementOfOffenceTitle())
+                                                                .withLaaApplnReference(of(
+                                                                        LaaReference.laaReference()
+                                                                                .withApplicationReference(STRING.next())
+                                                                                .withStatusCode(STRING.next())
+                                                                                .withStatusDate((format(LocalDate.now().toString())))
+                                                                                .withStatusDescription(STRING.next())
+                                                                                .withStatusId(randomUUID()).build()))
                                                                 .build())
                                                         .collect(Collectors.toList()))
                                                 .withProsecutionCaseId(listedCaseData.getCaseId())
@@ -724,6 +732,13 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                                 .withStartDate(LocalDate.now().toString())
                                                                 .withOrderIndex(of(INTEGER.next()))
                                                                 .withOffenceTitle(o.getStatementOfOffenceTitle())
+                                                                .withLaaApplnReference(of(
+                                                                        LaaReference.laaReference()
+                                                                                .withApplicationReference(STRING.next())
+                                                                                .withStatusCode(STRING.next())
+                                                                                .withStatusDate((format(LocalDate.now().toString())))
+                                                                                .withStatusDescription(STRING.next())
+                                                                                .withStatusId(randomUUID()).build()))
                                                                 .build())
                                                         .collect(Collectors.toList()))
                                                 .withProsecutionCaseId(listedCaseData.getCaseId())

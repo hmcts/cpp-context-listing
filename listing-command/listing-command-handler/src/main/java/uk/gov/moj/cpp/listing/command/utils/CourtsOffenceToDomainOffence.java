@@ -23,7 +23,7 @@ public class CourtsOffenceToDomainOffence implements Converter<List<Offence>, Li
 
     private uk.gov.moj.cpp.listing.domain.Offence convertToDomainOffence(final Offence courtOffence) {
 
-        StatementOfOffence statement = StatementOfOffence.statementOfOffence()
+        final StatementOfOffence statement = StatementOfOffence.statementOfOffence()
                 .withTitle(courtOffence.getOffenceTitle())
                 .withWelshTitle(courtOffence.getOffenceTitleWelsh().orElse(courtOffence.getOffenceTitle()))
                 .withLegislation(courtOffence.getOffenceLegislation())

@@ -51,7 +51,6 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;

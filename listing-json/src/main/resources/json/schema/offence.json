@@ -22,7 +22,11 @@
       "$ref": "http://justice.gov.uk/listing/events/statementOfOffence.json"
     },
     "restrictFromCourtList": {
-      "type":"boolean"
+      "type": "boolean"
+    },
+    "laaApplnReference": {
+      "description": "A record of legal aid applications for this offence",
+      "$ref": "http://justice.gov.uk/listing/events/laaReference.json"
     },
     "laidDate": {
       "type": "string"

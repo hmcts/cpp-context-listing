@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067"})
 public class Defendant {
     private final Optional<BailStatus> bailStatus;
 
@@ -36,7 +35,8 @@ public class Defendant {
 
   private final Optional<Boolean> isYouth;
 
-  public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final UUID prosecutionCaseId, final Optional<Boolean> isYouth) {
+    @SuppressWarnings({"squid:S00107", "squid:S1067"})
+    public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final UUID prosecutionCaseId, final Optional<Boolean> isYouth) {
     this.bailStatus = bailStatus;
     this.custodyTimeLimit = custodyTimeLimit;
     this.dateOfBirth = dateOfBirth;
@@ -113,6 +113,7 @@ public class Defendant {
   }
 
     @Override
+    @SuppressWarnings({"squid:S00107", "squid:S1067"})
     public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
@@ -161,6 +162,7 @@ public class Defendant {
                 "}";
     }
 
+    @SuppressWarnings({"pmd:BeanMembersShouldSerialize"})
     public static class Builder {
         private Optional<BailStatus> bailStatus;
 

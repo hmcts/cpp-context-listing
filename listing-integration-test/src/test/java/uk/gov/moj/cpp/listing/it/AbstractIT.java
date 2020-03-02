@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.moj.cpp.listing.utils.AuthorisationServiceStub.stubEnableAllCapabilities;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
@@ -19,9 +20,9 @@ import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("WeakerAccess")
 public class AbstractIT {
+        public static final UUID USER_ID_VALUE = randomUUID();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractIT.class);
-    protected static final UUID USER_ID_VALUE = UUID.fromString("a9448185-672e-4aea-94d6-5988355ed459");    // Helen
     protected static final Header CPP_UID_HEADER = new Header(USER_ID, USER_ID_VALUE.toString());
 
     protected static RestClient restClient = new RestClient();
@@ -54,5 +55,4 @@ public class AbstractIT {
         header.add(USER_ID, getLoggedInUser().toString());
         return header;
     }
-
 }

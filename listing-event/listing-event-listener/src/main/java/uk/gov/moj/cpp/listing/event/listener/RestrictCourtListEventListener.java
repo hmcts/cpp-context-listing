@@ -115,6 +115,9 @@ public class RestrictCourtListEventListener {
                 .withDatesToAvoid(originalDefendant.getDatesToAvoid())
                 .withHearingLanguageNeeds(originalDefendant.getHearingLanguageNeeds())
                 .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
+                .withIsYouth(originalDefendant.getIsYouth())
+                .withProceedingsConcluded(originalDefendant.getProceedingsConcluded())
+                .withLegalAidStatus(originalDefendant.getLegalAidStatus())
                 .build();
         defendantList.replaceAll(defendant -> defendant.getId().equals(defendantId) ? newDefendant : defendant);
         return listedCases;

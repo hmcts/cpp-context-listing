@@ -51,10 +51,21 @@
       }
     },
     "restrictFromCourtList": {
-      "type":"boolean"
+      "type": "boolean"
     },
-    "isYouth":{
-      "type" : "boolean"
+    "isYouth": {
+      "type": "boolean"
+    },
+    "legalAidStatus": {
+      "description": "Defendant Legal Aid Status",
+      "type": "string"
+    },
+    "proceedingsConcluded": {
+      "type": "boolean"
+    },
+    "associatedDefenceOrganisation": {
+      "description": "The associated defence representation details",
+      "$ref": "http://justice.gov.uk/core/courts/associatedDefenceOrganisation.json"
     }
   },
   "required": [

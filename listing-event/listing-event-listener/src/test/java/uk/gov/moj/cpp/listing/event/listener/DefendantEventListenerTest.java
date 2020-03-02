@@ -15,6 +15,7 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
+import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.NewBaseDefendant;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
@@ -145,6 +146,36 @@ public class DefendantEventListenerTest {
 
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldHandleDefendantLegalAidStatusUpdated() throws Exception {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<ListedCase> testCases = createListedCases();
+        final String testCasesString =  mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+        final Envelope<DefendantLegalaidStatusUpdatedForHearing>  envelope = (Envelope<DefendantLegalaidStatusUpdatedForHearing>) mock(Envelope.class);
+        final DefendantLegalaidStatusUpdatedForHearing defendantLegalaidStatusData= DefendantLegalaidStatusUpdatedForHearing.defendantLegalaidStatusUpdatedForHearing()
+                .withDefendantId(DEFENDANT_ID)
+                .withHearingId(HEARING_ID)
+                .withCaseId(CASE_ID)
+                .withLegalAidStatus("Granted")
+                .build();
+        given(envelope.payload()).willReturn(defendantLegalaidStatusData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantEventListener.defendantLegalStatusUpdatedForHearing(envelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(hearingRepository).save(hearing);
+
+
     }
 
     private List<ListedCase> createListedCases() {

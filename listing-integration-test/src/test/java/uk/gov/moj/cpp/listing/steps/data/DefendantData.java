@@ -17,25 +17,27 @@ public class DefendantData {
     private final LocalDate dateOfBirth;
     private final LocalDate custodyTimeLimit;
     private final String defenceOrganisation;
-    private final Boolean restrictFromCourtList ;
+    private final Boolean restrictFromCourtList;
     private final LegalEntityDefendantData legalEntityDefendant;
     private final Boolean isYouth;
+    private final Boolean proceedingsConcluded;
 
     public DefendantData(final UUID defendantId, final String firstName,
                          final String lastName, final LocalDate dateOfBirth,
                          final LocalDate custodyTimeLimit, final BailStatus bailStatus,
-                         final String defenceOrganisation, final List<OffenceData> offences, LegalEntityDefendantData legalEntityDefendant, final Boolean restrictFromCourtList, final Boolean isYouth) {
+                         final String defenceOrganisation, final List<OffenceData> offences, LegalEntityDefendantData legalEntityDefendant, final Boolean restrictFromCourtList, final Boolean isYouth, final Boolean proceedingsConcluded) {
         this.defendantId = defendantId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.dateOfBirth = dateOfBirth;
         this.bailStatus = bailStatus;
         this.custodyTimeLimit = custodyTimeLimit;
-        this.offences  = offences;
+        this.offences = offences;
         this.defenceOrganisation = defenceOrganisation;
         this.legalEntityDefendant = legalEntityDefendant;
         this.restrictFromCourtList = restrictFromCourtList;
         this.isYouth = isYouth;
+        this.proceedingsConcluded = proceedingsConcluded;
     }
 
     public UUID getDefendantId() {
@@ -50,13 +52,21 @@ public class DefendantData {
         return firstName + "-Changed";
     }
 
-    public String getLastName() { return lastName; }
+    public String getLastName() {
+        return lastName;
+    }
 
-    public String getChangedLastName() { return lastName + "-Changed"; }
+    public String getChangedLastName() {
+        return lastName + "-Changed";
+    }
 
-    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
 
-    public BailStatus getBailStatus() { return bailStatus; }
+    public BailStatus getBailStatus() {
+        return bailStatus;
+    }
 
     public LocalDate getCustodyTimeLimit() {
         return custodyTimeLimit;
@@ -66,13 +76,23 @@ public class DefendantData {
         return restrictFromCourtList;
     }
 
-    public List<OffenceData> getOffences() { return offences; }
+    public List<OffenceData> getOffences() {
+        return offences;
+    }
 
-    public String getDefenceOrganisation() { return defenceOrganisation; }
+    public String getDefenceOrganisation() {
+        return defenceOrganisation;
+    }
 
     public LegalEntityDefendantData getLegalEntityDefendant() {
         return legalEntityDefendant;
     }
 
-    public Boolean getIsYouth() { return isYouth; }
+    public Boolean getIsYouth() {
+        return isYouth;
+    }
+
+    public Boolean getProceedingsConcluded() {
+        return proceedingsConcluded;
+    }
 }

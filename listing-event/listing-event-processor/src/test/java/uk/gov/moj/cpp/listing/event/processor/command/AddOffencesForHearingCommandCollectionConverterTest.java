@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.listing.event.processor.command;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
 import uk.gov.justice.listing.events.OffencesToBeAdded;
-import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.event.utils.EventBuilder;

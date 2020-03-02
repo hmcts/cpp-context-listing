@@ -43,8 +43,6 @@ public class UpdateCaseMarkersSteps extends AbstractIT implements AutoCloseable 
 
     private static final String EVENT_SELECTOR_CASE_MARKERS_TO_BE_UPDATED = "listing.events.case-markers-to-be-updated";
 
-    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
-
     JSONComparator ignoreMetaDataComparator = new CustomComparator(JSONCompareMode.LENIENT, new Customization("_metadata", (o1, o2) -> true));
 
 

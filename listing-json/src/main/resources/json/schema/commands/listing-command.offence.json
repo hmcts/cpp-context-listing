@@ -23,6 +23,21 @@
     },
     "custodyTimeLimit": {
       "$ref": "http://justice.gov.uk/listing/commands/custodyTimeLimit.json"
+    },
+    "laaApplnReference": {
+      "$ref": "http://justice.gov.uk/listing/commands/laaReference.json"
+    },
+    "proceedingsConcluded": {
+      "description": "Indicates that proceedings for the defendant have been concluded i.e. all offences have been disposed with final results or have been withdrawn by the prosecuting authority",
+      "type": "boolean"
+    },
+    "isDiscontinued": {
+      "description": "Determines that the offence has been discontinued by the prosecutor i.e. is no longer being proceeded with",
+      "type": "boolean"
+    },
+    "isIntroduceAfterInitialProceedings": {
+      "description": "Determines that the offence has been introduced by the prosecutor after proceeedings have already been initiated",
+      "type": "boolean"
     }
   },
   "required": [

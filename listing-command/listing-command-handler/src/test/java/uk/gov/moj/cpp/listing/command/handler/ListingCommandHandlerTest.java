@@ -14,6 +14,7 @@ import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.listing.event.PublishCourtListProduced.publishCourtListProduced;
 import static uk.gov.justice.listing.event.PublishCourtListRequested.publishCourtListRequested;
 import static uk.gov.justice.listing.event.PublishCourtListType.FIRM;
@@ -36,10 +38,12 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatch
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeStreamMatcher.streamContaining;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.command.utils.FileUtil.givenPayload;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
 
+import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.commands.RecordCourtListProduced;
 import uk.gov.justice.listing.courts.AddCourtApplicationForHearing;
@@ -102,6 +106,7 @@ import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.command.service.SystemIdMapperService;
+import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
@@ -376,6 +381,7 @@ public class ListingCommandHandlerTest {
     private ArgumentCaptor<CaseSimpleOffences> deletedCaseOffencesCaptor;
     @Captor
     private ArgumentCaptor<CourtApplication> courtApplicationCaptor;
+    private UUID LAA_STATUS_ID;
     @Mock
     private SystemIdMapperService systemIdMapperService;
     @Spy
@@ -1201,6 +1207,7 @@ public class ListingCommandHandlerTest {
 
     }
 
+
     @Test
     public void shouldEjectCaseFromCourtListing() throws Exception {
 
@@ -1303,6 +1310,168 @@ public class ListingCommandHandlerTest {
         Assert.assertThat(CASE_ID, Matchers.is(caseIdCaptor.getValue()));
         List<Defendant> actualDefendantList = defendantListCaptor.getValue();
         Assert.assertThat(actualDefendantList, Matchers.is(defendants));
+    }
+
+    @Test
+    public void listingCommandHandlerShouldTriggerOffenceUpdatedEventsForLaa() throws Exception {
+        givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
+
+        when(eventSource.getStreamById(CASE_ID)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Case.class)).thenReturn(aCase);
+        when(hearing.updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+
+        final JsonEnvelope commandEnvelope = updateOffencesWithLaaForHearingCommandEnvelope();
+        listingCommandHandler.updateOffencesForHearing(commandEnvelope);
+
+        verify(hearing, atMost(1)).updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), domainOffencesCaptor.capture());
+
+        final List<Offence> capturedDomainOffences = domainOffencesCaptor.getValue();
+
+        final String expectedDomainOffences =
+                "[\n" +
+                        "  {\n" +
+                        "    \"endDate\": \"2011-08-01\",\n" +
+                        "    \"id\": \"" + UPDATED_OFFENCE_ID1 + "\",\n" +
+                        "    \"offenceCode\": \"H8189\",\n" +
+                        "    \"startDate\": \"2010-08-01\",\n" +
+                        "    \"statementOfOffence\": {\n" +
+                        "      \"legislation\": \"Welsh legislation\",\n" +
+                        "      \"title\": \"Wounding with intent\",\n" +
+                        "      \"welshLegislation\": \"legislation\",\n" +
+                        "      \"welshTitle\": \"Wounding with intent in Welsh\"\n},\n" +
+                        "      \"laaApplnReference\": {" +
+                        "        \"applicationReference\": \"APPLICATION_REFERENCE\",\n" +
+                        "        \"effectiveEndDate\": \"2010-09-01\",\n" +
+                        "        \"effectiveStartDate\": \"2011-09-01\",\n" +
+                        "        \"statusCode\": \"STATUS_CODE\",\n" +
+                        "        \"statusDate\": \"2010-12-01\",\n" +
+                        "        \"statusDescription\": \"STATUS_DESCRIPTION\",\n" +
+                        "        \"statusId\": \"" + LAA_STATUS_ID + "\"\n}\n" +
+                        "       \n" +
+                        "  },\n" +
+                        "  {\n" +
+                        "    \"endDate\": \"2011-08-20\",\n" +
+                        "    \"id\": \"" + UPDATED_OFFENCE_ID2 + "\",\n" +
+                        "    \"offenceCode\": \"H8189X\",\n" +
+                        "    \"startDate\": \"2010-08-10\",\n" +
+                        "    \"statementOfOffence\": {\n" +
+                        "      \"legislation\": \"Welsh legislation2\",\n" +
+                        "      \"title\": \"Wounding with intent2\",\n" +
+                        "      \"welshLegislation\": \"legislation2\",\n" +
+                        "      \"welshTitle\": \"Wounding with intent in Welsh2\"\n" +
+                        "    }\n" +
+                        "  }\n" +
+                        "]\n";
+
+        assertEquals(expectedDomainOffences, objectMapper.writeValueAsString(capturedDomainOffences), true);
+    }
+
+    @Test
+    public void testUpdateDefendantLegalAidStatus() throws EventStreamException {
+
+        final UUID defendantId = randomUUID();
+
+        givenEventStream(CASE_ID, eventStream, aCase, Case.class);
+        when(eventSource.getStreamById(CASE_ID)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Case.class)).thenReturn(aCase);
+
+        when(aCase.updateDefendantLegalAidStatus(CASE_ID, defendantId, "Granted")).thenReturn(mock(Stream.class));
+
+
+        final JsonObject commandPayload = Json.createObjectBuilder()
+                .add("defendantId", defendantId.toString())
+                .add("caseId", CASE_ID.toString())
+                .add("legalAidStatus", "Granted")
+                .build();
+
+
+        final JsonEnvelope envelope = envelopeFrom(metadataWithRandomUUID("listing.command.update-defendant-legalaid-status"), commandPayload);
+
+        listingCommandHandler.updateDefendantLegalAidStatus(envelope);
+
+        verify(aCase).updateDefendantLegalAidStatus(CASE_ID, defendantId, "Granted");
+    }
+
+    @Test
+    public void testUpdateDefendantLegalAidStatusForHearing() throws EventStreamException {
+
+        final UUID defendantId = randomUUID();
+
+        givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(listHearingEventStream);
+        when(aggregateService.get(listHearingEventStream, Hearing.class)).thenReturn(hearing);
+
+        when(hearing.updateDefendantLegalAidStatusForHearing(HEARING_ID_1, CASE_ID, defendantId, "Granted")).thenReturn(mock(Stream.class));
+
+
+        final JsonObject commandPayload = Json.createObjectBuilder()
+                .add("hearingId", HEARING_ID_1.toString())
+                .add("defendantId", defendantId.toString())
+                .add("caseId", CASE_ID.toString())
+                .add("legalAidStatus", "Granted")
+                .build();
+
+
+        final JsonEnvelope envelope = envelopeFrom(metadataWithRandomUUID("listing.command.update-defendant-legalaid-status-for-hearing"), commandPayload);
+
+        listingCommandHandler.updateDefendantLegalAidStatusForHearing(envelope);
+
+        verify(hearing).updateDefendantLegalAidStatusForHearing(HEARING_ID_1, CASE_ID, defendantId, "Granted");
+    }
+
+    @Test
+    public void shouldUpdateDefendantHearingResultedAndCaseResulted() throws EventStreamException {
+        final UUID caseId = randomUUID();
+        final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase()
+                .withCaseStatus(of("CASE_CLOSED"))
+                .withId(caseId)
+                .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
+                        .withProceedingsConcluded(Optional.of(Boolean.TRUE))
+                        .build()))
+                .build();
+        final JsonObject commandPayload = Json.createObjectBuilder()
+                .add("prosecutionCase", objectToJsonValueConverter.convert(prosecutionCase))
+                .build();
+        final JsonEnvelope envelope = envelopeFrom(metadataWithRandomUUID("listing.command.update-case-resulted-defendant-proceedings-concluded"), commandPayload);
+
+        givenEventStream(caseId, eventStream, aCase, Case.class);
+        given(jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject("prosecutionCase"), ProsecutionCase.class)).willReturn(prosecutionCase);
+
+        when(eventSource.getStreamById(caseId)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Case.class)).thenReturn(aCase);
+        when(aCase.updateDefendantCaseResultedAndUpdated(prosecutionCase)).thenReturn((mock(Stream.class)));
+
+        listingCommandHandler.updateDefendantHearingResultedAndCaseResulted(envelope);
+
+        verify(aCase).updateDefendantCaseResultedAndUpdated(prosecutionCase);
+    }
+
+    @Test
+    public void shouldUpdateDefendantProceedingsConcluded() throws EventStreamException {
+        final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase()
+                .withCaseStatus(of("CASE_CLOSED"))
+                .withId(CASE_ID)
+                .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
+                        .withProceedingsConcluded(Optional.of(Boolean.TRUE))
+                        .build()))
+                .build();
+        final JsonObject commandPayload = Json.createObjectBuilder()
+                .add("hearingId", HEARING_ID_1.toString())
+                .add("prosecutionCase", objectToJsonValueConverter.convert(prosecutionCase))
+                .build();
+        final JsonEnvelope envelope = envelopeFrom(metadataWithRandomUUID("listing.command.case-update-defendant-proceedings-updated"), commandPayload);
+
+        givenEventStream(CASE_ID, listHearingEventStream, hearing, Hearing.class);
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(listHearingEventStream);
+        when(aggregateService.get(listHearingEventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.updateDefendantProceedingConcludedForHearing(HEARING_ID_1, prosecutionCase)).thenReturn((mock(Stream.class)));
+
+        given(jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject("prosecutionCase"), ProsecutionCase.class)).willReturn(prosecutionCase);
+
+        listingCommandHandler.updateDefendantProceedingsConcluded(envelope);
+
+        verify(hearing).updateDefendantProceedingConcludedForHearing(HEARING_ID_1, prosecutionCase);
     }
 
     @Test
@@ -1613,7 +1782,8 @@ public class ListingCommandHandlerTest {
         String jsonString = FileUtil.givenPayload("/test-data/listing.command.eject-application.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("COURT_APPLICATION_ID_1", COURT_APPLICATION_ID.toString())
-                .replace("REMOVAL_REASON", "SomeReason");;
+                .replace("REMOVAL_REASON", "SomeReason");
+        ;
 
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
@@ -1798,6 +1968,25 @@ public class ListingCommandHandlerTest {
                 .replace("UPDATED_OFFENCE_ID2", UPDATED_OFFENCE_ID2.toString())
                 .replace("START_DATE", START_DATE.toString())
                 .replace("END_DATE", END_DATE);
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.update-offences-for-hearing", jsonReader.readObject());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private JsonEnvelope updateOffencesWithLaaForHearingCommandEnvelope() {
+        LAA_STATUS_ID = UUID.randomUUID();
+        String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-offences-for-hearing-to-add-laa.json").toString()
+                .replace("HEARING_ID", HEARING_ID_1.toString())
+                .replace("CASE_ID", CASE_ID.toString())
+                .replace("DEFENDANT_ID1", DEFENDANT_ID1.toString())
+                .replace("UPDATED_OFFENCE_ID1", UPDATED_OFFENCE_ID1.toString())
+                .replace("UPDATED_OFFENCE_ID2", UPDATED_OFFENCE_ID2.toString())
+                .replace("START_DATE", START_DATE.toString())
+                .replace("END_DATE", END_DATE)
+                .replace("LAA_STATUS_ID", LAA_STATUS_ID.toString());
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-offences-for-hearing", jsonReader.readObject());
@@ -2254,6 +2443,7 @@ public class ListingCommandHandlerTest {
                         .withEndDate(of("2018-01-01"))
                         .withLaidDate(Optional.of("2019-05-01"))
                         .withOffenceWording("No Travel Card")
+                        .withLaaApplnReference(Optional.empty())
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withWelshTitle("a title in Welsh")
                                 .withWelshLegislation(of("legislation in Welsh"))
@@ -2304,6 +2494,7 @@ public class ListingCommandHandlerTest {
                         .withOffenceWording("TFL ticket dodged")
                         .withStartDate("2019-05-01")
                         .withEndDate(Optional.empty())
+                        .withLaaApplnReference(Optional.empty())
                         .withLaidDate(Optional.of("2019-05-01"))
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withWelshTitle("TFL Ticket Dodger")

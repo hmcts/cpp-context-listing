@@ -138,6 +138,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendant.isYouth"), is(jsRequest.getBoolean("defendant.isYouth")));
         assertThat(jsonResponse.get("defendant.aliases[0].firstName"), is(jsRequest.getString("defendant.aliases[0].firstName")));
         assertThat(jsonResponse.get("defendant.aliases[0].lastName"), is(jsRequest.getString("defendant.aliases[0].lastName")));
+        assertThat(jsonResponse.get("defendant.associatedDefenceOrganisation.defenceOrganisation.laaContractNumber"), is(jsRequest.getString("defendant.associatedDefenceOrganisation.defenceOrganisation.laaContractNumber")));
     }
 
     public void verifyEventDefendantsToBeUpdateInActiveMQ() {
@@ -281,6 +282,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
                 .withPncId(of(defendantData.getPncId()))
                 .withIsYouth(defendantData.getYouth())
                 .withAliases(defendantData.getAliases())
+                    .withAssociatedDefenceOrganisation(of(defendantData.getAssociatedDefenceOrganisation()))
                 .build()
             ).build();
     }

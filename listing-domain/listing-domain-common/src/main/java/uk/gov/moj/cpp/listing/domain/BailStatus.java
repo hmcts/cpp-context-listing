@@ -66,6 +66,7 @@ public class BailStatus {
                 '}';
     }
 
+    @SuppressWarnings("pmd:BeanMembersShouldSerialize")
     public static class Builder {
         private String code;
         private String description;
