@@ -165,6 +165,7 @@ public class ListingCommandHandler {
         }
         final ListCourtHearingEnriched listCourtHearingEnriched = jsonObjectConverter.convert(payload, ListCourtHearingEnriched.class);
         LOGGER.debug("'listing.command.list-court-hearing' listCourtHearing: {}", listCourtHearingEnriched);
+        final Optional<String> adjournedFromDate = listCourtHearingEnriched.getAdjournedFromDate();
         final ListCourtHearing listCourtHearing = listCourtHearingEnriched.getListCourtHearing();
         final Map<UUID, CourtCentreDetails> courtCentres = listCourtHearingEnriched.getCourtCentresDetails().stream()
                 .collect(Collectors.toMap(CourtCentreDetails::getId, cc -> cc));
@@ -199,7 +200,8 @@ public class ListingCommandHandler {
                         courtCentreDefaults,
                         domainHearing.getCourtApplications(),
                         domainHearing.getCourtApplicationPartyListingNeeds(),
-                        hearingTypesIdDurationMap.get(domainHearing.getType().getId().toString())
+                        hearingTypesIdDurationMap.get(domainHearing.getType().getId().toString()),
+                        adjournedFromDate
                 );
 
                 final Stream<Object> allocationEvents = hearing.applyAllocationRules();

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067","squid:S2065"})
 public class Defendant {
     private final Optional<BailStatus> bailStatus;
 
@@ -35,8 +36,14 @@ public class Defendant {
 
   private final Optional<Boolean> isYouth;
 
+
+    private final transient Optional<String> nationalityDescription;
+
+    private final transient Optional<Address> address;
+
     @SuppressWarnings({"squid:S00107", "squid:S1067"})
-    public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final UUID prosecutionCaseId, final Optional<Boolean> isYouth) {
+    public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final UUID prosecutionCaseId, final Optional<Boolean> isYouth, final Optional<String> nationalityDescription,  final Optional<Address> address) {
+
     this.bailStatus = bailStatus;
     this.custodyTimeLimit = custodyTimeLimit;
     this.dateOfBirth = dateOfBirth;
@@ -51,6 +58,8 @@ public class Defendant {
     this.organisationName = organisationName;
     this.specificRequirements = specificRequirements;
     this.isYouth = isYouth;
+    this.nationalityDescription = nationalityDescription;
+    this.address = address;
 
     }
 
@@ -107,6 +116,11 @@ public class Defendant {
     }
 
   public Optional<Boolean> getIsYouth() { return isYouth;  }
+
+
+    public Optional<String> getNationalityDescription() { return nationalityDescription; }
+
+    public Optional<Address> getAddress() { return address; }
 
   public static Builder defendant() {
     return new Defendant.Builder();
@@ -192,6 +206,10 @@ public class Defendant {
 
     private Optional<Boolean> isYouth;
 
+        private transient Optional<String> nationalityDescription;
+
+        private transient Optional<Address> address;
+
     public Builder withBailStatus(final Optional<BailStatus> bailStatus) {
       this.bailStatus = bailStatus;
       return this;
@@ -262,8 +280,18 @@ public class Defendant {
       return this;
     }
 
+    public Builder withNationalityDescription(Optional<String> nationalityDescription) {
+        this.nationalityDescription = nationalityDescription;
+        return this;
+    }
+
+
+    public Builder withAddress(Optional<Address> address) {
+        this.address = address;
+        return this;
+    }
     public Defendant build() {
-      return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements, prosecutionCaseId, isYouth);
+      return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements, prosecutionCaseId, isYouth, nationalityDescription, address);
     }
   }
 }

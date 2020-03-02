@@ -67,6 +67,7 @@ public class ListingCommandApi {
         final ListCourtHearingEnriched listCourtHearingEnriched = ListCourtHearingEnriched.listCourtHearingEnriched()
                 .withCourtCentresDetails(new ArrayList<>(courtCentres))
                 .withListCourtHearing(listCourtHearing)
+                .withAdjournedFromDate(listCourtHearing.getAdjournedFromDate())
                 .build();
 
         sender.send(enveloper.withMetadataFrom(envelope, LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED)

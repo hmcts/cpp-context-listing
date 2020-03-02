@@ -45,6 +45,12 @@
     "defenceOrganisation": {
       "type": "string"
     },
+    "nationalityDescription": {
+      "type": "string"
+    },
+    "address": {
+      "$ref": "http://justice.gov.uk/core/courts/address.json"
+    },
     "offences": {
       "type": "array",
       "items": {

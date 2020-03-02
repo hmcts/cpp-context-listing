@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 
+@SuppressWarnings({"squid:S3655","squid:S1067","squid:S2583"})
 public class NewDomainToEventConverter {
 
     private NewDomainToEventConverter() {
@@ -58,7 +59,7 @@ public class NewDomainToEventConverter {
     }
 
 
-    @SuppressWarnings({"squid:S3655"})
+    @SuppressWarnings({"squid:S3655", "squid:S1067"})
     public static Defendant buildDefendant(uk.gov.moj.cpp.listing.domain.Defendant d) {
         return Defendant.defendant()
                 .withId(d.getId())
@@ -79,7 +80,23 @@ public class NewDomainToEventConverter {
                 .withBailStatus(buildBailStatusEvent(d.getBailStatus()))
                 .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
                 .withIsYouth(d.getIsYouth())
+                .withAddress( nonNull(d.getAddress()) && d.getAddress().isPresent() ? buildAddress( d.getAddress() ) : empty())
+                .withNationalityDescription(d.getNationalityDescription())
                 .build();
+    }
+
+
+    @SuppressWarnings({"squid:S3655", "squid:S1067"})
+    public static  Optional<uk.gov.justice.core.courts.Address> buildAddress(Optional<uk.gov.moj.cpp.listing.domain.Address> address) {
+
+            return Optional.of(uk.gov.justice.core.courts.Address.address().
+                    withAddress1( nonNull(address.get().getAddress1())? address.get().getAddress1() : "")
+                    .withAddress2( address.get().getAddress2().isPresent() ? address.get().getAddress2() : empty())
+                    .withAddress3(address.get().getAddress3().isPresent() ? address.get().getAddress3() : empty())
+                    .withAddress4(address.get().getAddress4().isPresent() ? address.get().getAddress4() : empty())
+                    .withAddress5( address.get().getAddress5().isPresent() ? address.get().getAddress5() : empty())
+                    .withPostcode(address.get().getPostcode().isPresent() ? address.get().getPostcode() : empty())
+                    .build());
     }
 
     public static NewBaseDefendant buildNewBaseDefendant(uk.gov.moj.cpp.listing.domain.Defendant d) {
@@ -94,6 +111,8 @@ public class NewDomainToEventConverter {
                 .withDefenceOrganisation(d.getDefenceOrganisation())
                 .withBailStatus(buildBailStatusEvent(d.getBailStatus()))
                 .withIsYouth(d.getIsYouth())
+                .withAddress(nonNull(d.getAddress()) && d.getAddress().isPresent() ? buildAddress(d.getAddress()) : empty())
+                .withNationalityDescription(nonNull(d.getNationalityDescription()) && d.getNationalityDescription().isPresent()  ?  d.getNationalityDescription() : empty())
                 .build();
     }
 

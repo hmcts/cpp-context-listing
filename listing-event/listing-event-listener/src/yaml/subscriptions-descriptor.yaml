@@ -107,4 +107,7 @@ subscriptions_descriptor:
         - name: listing.events.case-update-defendant-proceedings-updated
           schema_uri: http://justice.gov.uk/listing/events/case-update-defendant-proceedings-updated.json
 
+        - name: listing.events.adjourned-hearing-date-added
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.adjourned-hearing-date-added.json
+
       event_source_name: listing

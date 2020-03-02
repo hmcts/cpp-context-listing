@@ -62,8 +62,14 @@
           "description": "When the defendant is a legal entity the additional legal entity specific details for the defendant",
           "$ref": "http://justice.gov.uk/core/courts/legalEntityDefendant.json"
         },
-        "isYouth":{
-          "type" : "boolean"
+        "isYouth": {
+          "type": "boolean"
+        },
+        "nationalityDescription": {
+          "type": "string"
+        },
+        "address": {
+          "$ref": "http://justice.gov.uk/core/courts/address.json"
         }
       },
       "required": [

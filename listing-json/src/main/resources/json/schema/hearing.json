@@ -58,6 +58,10 @@
     "endDate": {
       "$ref": "listing-definitions.json#/definitions/localDate"
     },
+    "adjournedFromDate" : {
+      "description": "Adjournment date",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
     "hearingDays": {
       "type": "array",
       "items": {

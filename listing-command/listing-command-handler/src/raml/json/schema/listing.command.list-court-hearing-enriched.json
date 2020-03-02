@@ -12,6 +12,10 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/commands/court-centre-details.json"
       }
+    },
+    "adjournedFromDate" : {
+      "description": "Adjournment date",
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
     }
   },
   "required": [

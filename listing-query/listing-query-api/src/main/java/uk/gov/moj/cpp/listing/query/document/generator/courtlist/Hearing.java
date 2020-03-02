@@ -14,6 +14,11 @@ public class Hearing {
     private String caseNumber;
     private String prosecutorType;
     private List<Defendant> defendants;
+    private String adjournedHearingDate;
+
+    public String getAdjournedHearingDate() {
+        return adjournedHearingDate;
+    }
 
     public Integer getSequence() {
         return sequence;
@@ -66,6 +71,7 @@ public class Hearing {
         private List<Defendant> defendants;
         private String reportingRestrictionReason;
         private String welshReportingRestrictionReason;
+        private String adjournedHearingDate;
 
         private Builder() {
         }
@@ -119,6 +125,10 @@ public class Hearing {
             return this;
         }
 
+        public Builder withAdjournedHearingDate(String adjournedHearingDate) {
+            this.adjournedHearingDate = adjournedHearingDate;
+            return this;
+        }
 
         public Hearing build() {
             final Hearing hearing = new Hearing();
@@ -131,6 +141,7 @@ public class Hearing {
             hearing.defendants = this.defendants;
             hearing.reportingRestrictionReason = this.reportingRestrictionReason;
             hearing.welshReportingRestrictionReason = this.welshReportingRestrictionReason;
+            hearing.adjournedHearingDate = this.adjournedHearingDate;
             return hearing;
         }
     }
