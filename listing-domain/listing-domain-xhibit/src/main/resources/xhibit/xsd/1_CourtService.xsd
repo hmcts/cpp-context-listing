@@ -24,7 +24,7 @@
             </Metadata>
         </xsd:appinfo>
     </xsd:annotation>
-    <xsd:import namespace="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails" schemaLocation="apd.xsd"/>
+    <xsd:import namespace="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails" schemaLocation="apd-v1-0..xsd"/>
     <!--=================================================================	-->
     <!--====================  Start of Simple Type Definition ==================== -->
     <!--=================================================================	-->

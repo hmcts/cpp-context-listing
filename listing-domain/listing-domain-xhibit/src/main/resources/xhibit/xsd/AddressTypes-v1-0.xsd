@@ -5,18 +5,11 @@
 	UK postcode now uses the data type defined in the BS7666 schema 
 -->
 <!-- Schema for commonly used address types -->
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            xmlns:bs7666="http://www.govtalk.gov.uk/people/bs7666"
-            xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcq="http://purl.org/dc/terms/"
-            xmlns:gms="http://www.govtalk.gov.uk/CM/gms"
-            xmlns="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails"
-            targetNamespace="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails"
-            elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.2"
-            id="AddressTypes">
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:bs7666="http://www.govtalk.gov.uk/people/bs7666" xmlns="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcq="http://purl.org/dc/terms/" xmlns:gms="http://www.govtalk.gov.uk/CM/gms" targetNamespace="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails" elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.2" id="AddressTypes">
     <xsd:annotation>
         <xsd:appinfo>
             <dc:contributor>e-champions,Government Schema Group, IDeA</dc:contributor>
-            <dc:creator>alphaXML Ltd http://www.alphaxml.com
+            <dc:creator>alphaXML Ltd  http://www.alphaxml.com
                 <dcq:owner>Technology Policy Team, Office of the e-Envoy, Cabinet Office</dcq:owner>
                 <dcq:contact>ukgovtalk@citu.gsi.gov.uk</dcq:contact>
             </dc:creator>
@@ -35,8 +28,7 @@
             </dc:format>
             <dc:identifier>AddressTypes</dc:identifier>
             <dc:language>en</dc:language>
-            <dc:publisher>Office of the e-Envoy, Stockley House,130 Wilton Road, London SW1V 1LQ
-            </dc:publisher>
+            <dc:publisher>Office of the e-Envoy, Stockley House,130 Wilton Road, London SW1V 1LQ</dc:publisher>
             <dc:rights>
                 <dcq:copyright>Crown Copyright 2002</dcq:copyright>
                 <gms:SecurityClassification>Unclassified</gms:SecurityClassification>
@@ -45,8 +37,7 @@
                 <gms:Category>People, communities and living</gms:Category>
             </dc:subject>
             <dc:subject>
-                <gms:Project>Govtalk Development of Address and Personal Details Schema
-                </gms:Project>
+                <gms:Project>Govtalk Development of Address and Personal Details Schema</gms:Project>
             </dc:subject>
             <dc:title>Address Types architectural schema</dc:title>
             <dc:description>
@@ -61,14 +52,13 @@
         </xsd:appinfo>
     </xsd:annotation>
     <xsd:import namespace="http://www.govtalk.gov.uk/people/bs7666" schemaLocation="BS7666.xsd"/>
-    <xsd:include schemaLocation="CommonSimpleTypes.xsd"/>
+    <xsd:include schemaLocation="CommonSimpleTypes_CPP-v1-0.xsd"/>
     <!-- start of InternationalAddress type definition -->
     <xsd:complexType name="InternationalAddressStructure">
         <xsd:sequence>
             <xsd:element name="IntAddressLine" type="AddressLineType" minOccurs="2" maxOccurs="5"/>
             <xsd:element name="Country" type="AddressLineType" minOccurs="0"/>
-            <xsd:element name="InternationalPostCode" type="InternationalPostCodeType"
-                         minOccurs="0"/>
+            <xsd:element name="InternationalPostCode" type="InternationalPostCodeType" minOccurs="0"/>
         </xsd:sequence>
     </xsd:complexType>
     <!-- end of InternationalAddress type definition -->
@@ -88,8 +78,7 @@
         <xsd:sequence>
             <xsd:choice>
                 <xsd:annotation>
-                    <xsd:documentation>At least one of' 5LineAddress and BS7666Address.
-                    </xsd:documentation>
+                    <xsd:documentation>At least one of' 5LineAddress and BS7666Address.</xsd:documentation>
                 </xsd:annotation>
                 <!--  modified to make acceptable to WID
                 <xsd:element name="BS7666Address" type="bs7666:BSaddressStructure"/>
@@ -105,8 +94,7 @@
                 <xsd:element name="BS7666Address" type="bs7666:BSaddressStructure"/>
                 <xsd:sequence>
                     <xsd:element name="A_5LineAddress" type="UKPostalAddressStructure"/>
-                    <xsd:element name="BS7666Address" type="bs7666:BSaddressStructure"
-                                 minOccurs="0"/>
+                    <xsd:element name="BS7666Address" type="bs7666:BSaddressStructure" minOccurs="0"/>
                 </xsd:sequence>
                 <!--  end of modification -->
             </xsd:choice>

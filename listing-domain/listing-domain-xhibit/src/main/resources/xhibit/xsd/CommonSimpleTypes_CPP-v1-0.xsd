@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XML Spy v4.2 U (http://www.xmlspy.com) by Paul Spencer (alphaXML Ltd.) -->
 <!-- Schema module for common simple types -->
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:dc="http://purl.org/dc/elements/1.1/"
-            xmlns:dcq="http://purl.org/dc/terms/" xmlns:gms="http://www.govtalk.gov.uk/CM/gms"
-            elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.2"
-            id="CommonSimpleTypes">
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcq="http://purl.org/dc/terms/" xmlns:gms="http://www.govtalk.gov.uk/CM/gms" elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.2" id="CommonSimpleTypes">
     <xsd:annotation>
         <xsd:appinfo>
             <dc:contributor>e-champions,Government Schema Group, IDeA</dc:contributor>
-            <dc:creator>alphaXML Ltd http://www.alphaxml.com
+            <dc:creator>alphaXML Ltd  http://www.alphaxml.com
                 <dcq:owner>Technology Policy Team, Office of the e-Envoy, Cabinet Office</dcq:owner>
                 <dcq:contact>ukgovtalk@citu.gsi.gov.uk</dcq:contact>
             </dc:creator>
@@ -28,8 +25,7 @@
             </dc:format>
             <dc:identifier>CommonSimpleTypes</dc:identifier>
             <dc:language>en</dc:language>
-            <dc:publisher>Office of the e-Envoy, Stockley House,130 Wilton Road, London SW1V 1LQ
-            </dc:publisher>
+            <dc:publisher>Office of the e-Envoy, Stockley House,130 Wilton Road, London SW1V 1LQ</dc:publisher>
             <dc:rights>
                 <dcq:copyright>Crown Copyright 2002</dcq:copyright>
                 <gms:SecurityClassification>Unclassified</gms:SecurityClassification>
@@ -38,8 +34,7 @@
                 <gms:Category>People, communities and living</gms:Category>
             </dc:subject>
             <dc:subject>
-                <gms:Project>Govtalk Development of Address and Personal Details Schema
-                </gms:Project>
+                <gms:Project>Govtalk Development of Address and Personal Details Schema</gms:Project>
             </dc:subject>
             <dc:title>Common Simple Types architectural schema</dc:title>
             <dc:description>
@@ -59,10 +54,7 @@
         </xsd:restriction>
     </xsd:simpleType>
     <xsd:simpleType name="RestrictedStringType">
-        <xsd:restriction base="xsd:string">
-            <xsd:pattern
-                    value="[A-Za-z0-9\s~!&quot;@#$%&amp;'\(\)\*\+,\-\./:;&lt;=&gt;\?\[\\\]_\{\}\^&#xa3;&#x20ac;]*"/>
-        </xsd:restriction>
+        <xsd:restriction base="xsd:string"/>
     </xsd:simpleType>
     <xsd:simpleType name="YesNoType">
         <xsd:restriction base="xsd:string">
@@ -96,9 +88,7 @@
     </xsd:simpleType>
     <xsd:simpleType name="LanguageType">
         <xsd:annotation>
-            <xsd:documentation>A Common DataType Values from the ISO standard for 2 character
-                language codes (ISO 639:1988 Code for the representation of names of languages).
-            </xsd:documentation>
+            <xsd:documentation>A Common DataType Values from the ISO standard for 2 character language codes (ISO 639:1988 Code for the representation of names of languages).  </xsd:documentation>
         </xsd:annotation>
         <xsd:restriction base="xsd:string">
             <xsd:pattern value="[A-Za-z]{2}"/>
