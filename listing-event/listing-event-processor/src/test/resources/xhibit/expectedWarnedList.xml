@@ -54,6 +54,9 @@
                             </cs:Defendants>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
+                                <cs:ProsecutingOrganisation>
+                                    <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
+                                </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
                         </cs:Case>
                         <cs:Case>
@@ -126,6 +129,9 @@
                             </cs:Defendants>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
+                                <cs:ProsecutingOrganisation>
+                                    <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
+                                </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
                         </cs:Case>
                         <cs:Case>

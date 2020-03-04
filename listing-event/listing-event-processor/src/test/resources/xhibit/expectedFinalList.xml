@@ -54,6 +54,9 @@
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
+                                <cs:ProsecutingOrganisation>
+                                    <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
+                                </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
                             <cs:Defendants>
                                 <cs:Defendant>

@@ -368,8 +368,15 @@ public class CourtServicesMapper {
 
         prosecutionStructure.setProsecutingAuthority(prosecutingAuthorityType);
         prosecutionStructure.setProsecutingReference(prosecutingAuthorityType.value());
+        prosecutionStructure.setProsecutingOrganisation(generateProsecutingOrganisation(prosecutingAuthorityType));
 
         return prosecutionStructure;
+    }
+
+    private OrganisationStructure generateProsecutingOrganisation(final ProsecutingAuthorityType prosecutingAuthorityType) {
+        final OrganisationStructure organisationStructure = objectFactory.createOrganisationStructure();
+        organisationStructure.setOrganisationName(prosecutingAuthorityType.value());
+        return organisationStructure;
     }
 
     private HearingStructure.Defendants generateHearingStructureDefendantsForCase(final JsonObject listedCase) {
