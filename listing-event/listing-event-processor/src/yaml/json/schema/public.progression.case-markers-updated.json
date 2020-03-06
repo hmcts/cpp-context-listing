@@ -6,6 +6,9 @@
     "prosecutionCaseId": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
     "caseMarkers": {
       "type": "array",
       "items": {
