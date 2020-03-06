@@ -346,7 +346,8 @@ public class CourtServicesMapper {
         final JsonObject xhibitHearingType = xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(),
                 fromString(hearing.getJsonObject("hearingType").getString("id")));
 
-        hearingTypeStructure.setHearingDescription(xhibitHearingType.getString("hearingDescription"));
+        hearingTypeStructure.setHearingDescription(xhibitHearingType.getString("exhibitHearingDescription"));
+
         if (hearing.containsKey("startTime")) {
             hearingTypeStructure.setHearingDate(LocalDateTime.parse(hearing.getString("startTime")).toLocalDate());
         }

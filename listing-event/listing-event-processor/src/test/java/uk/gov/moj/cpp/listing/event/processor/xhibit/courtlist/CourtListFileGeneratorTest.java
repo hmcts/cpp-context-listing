@@ -119,7 +119,7 @@ public class CourtListFileGeneratorTest {
 
         final JsonObject hearingType = Json.createObjectBuilder()
                 .add("exhibitHearingCode", "XXX")
-                .add("hearingDescription", "XHIBIT_HEARING_DESCRIPTION")
+                .add("exhibitHearingDescription", "XHIBIT_HEARING_DESCRIPTION")
                 .build();
         when(xhibitReferenceDataService.getXhibitHearingType(any(), any())).thenReturn(hearingType);
 
