@@ -2,7 +2,10 @@ package uk.gov.moj.cpp.listing.domain.utils;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -64,6 +67,10 @@ public class DateAndTimeUtils {
         }
         return Optional.of(minutesInTheHours + Integer.parseInt(rawMinutes));
 
+    }
+
+    public static ZonedDateTime convertUTCToLocalTime(LocalDateTime localDateTime) {
+        return localDateTime.atZone(ZoneOffset.UTC).withZoneSameInstant(BST);
     }
 
     private static String correctRawHours(final String rawHours) {

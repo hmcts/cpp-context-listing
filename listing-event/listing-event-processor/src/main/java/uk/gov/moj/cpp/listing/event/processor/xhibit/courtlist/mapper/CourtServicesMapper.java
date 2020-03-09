@@ -8,6 +8,7 @@ import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorit
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.OTHER_PROSECUTOR;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.convertDate;
 
+import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CasesStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ChargeStructure;
@@ -37,6 +38,7 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,6 +79,7 @@ public class CourtServicesMapper {
     public static final String DEFENCE_ORGANISATION = "defenceOrganisation";
     private static final String AM_PM_TIME_FORMAT = "h:mm a";
     private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern(AM_PM_TIME_FORMAT, Locale.ENGLISH);
+    private static final DateTimeFormatter sittingAtFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final String TIME_MARKING_NOTE_TEXT = "NOT BEFORE %s";
     private CourtListGenerationContext context;
 
@@ -192,7 +195,8 @@ public class CourtServicesMapper {
                 .min(LocalDateTime::compareTo);
 
         if (minimumStartTime.isPresent()) {
-            sittingStructure.setSittingAt(XmlUtils.convertDate(minimumStartTime.get().format(DateTimeFormatter.ISO_DATE_TIME)));
+            final ZonedDateTime localTime = DateAndTimeUtils.convertUTCToLocalTime(minimumStartTime.get());
+            sittingStructure.setSittingAt(XmlUtils.convertDate(localTime.format(sittingAtFormatter)));
         }
         return sittingStructure;
     }
@@ -624,8 +628,8 @@ public class CourtServicesMapper {
     }
 
     private void generateAndSetTimeMarkingNote(final JsonObject hearingJson, final HearingStructure hearingStructure) {
-        final LocalDateTime startTime = LocalDateTime.parse(hearingJson.getString("startTime"));
-        hearingStructure.setTimeMarkingNote(String.format(TIME_MARKING_NOTE_TEXT, startTime.format(timeFormatter)));
+        final ZonedDateTime localTime = DateAndTimeUtils.convertUTCToLocalTime(LocalDateTime.parse(hearingJson.getString("startTime")));
+        hearingStructure.setTimeMarkingNote(String.format(TIME_MARKING_NOTE_TEXT, localTime.format(timeFormatter)));
     }
 
 }
