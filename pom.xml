@@ -28,7 +28,7 @@
         <sonar.report.export.path>sonar-report.json</sonar.report.export.path>
         <sonar.scm.provider>git</sonar.scm.provider>
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
-        <referencedata.version>6.4.5</referencedata.version>
+        <referencedata.version>6.4.7</referencedata.version>
         <criminal-court-public-model.version>1.0.67</criminal-court-public-model.version>
         <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
     </properties>
