@@ -9,11 +9,15 @@
 
     <artifactId>listing-domain-transformation-anonymise</artifactId>
 
+    <properties>
+        <stream-transformation-tool.version>6.4.5</stream-transformation-tool.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>uk.gov.justice</groupId>
             <artifactId>stream-transformation-tool-anonymise</artifactId>
-            <version>5.3.3</version>
+            <version>${stream-transformation-tool.version}</version>
         </dependency>
     </dependencies>
 
