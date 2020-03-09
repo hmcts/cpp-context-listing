@@ -10,7 +10,7 @@
 
     <groupId>uk.gov.moj.cpp.listing</groupId>
     <artifactId>listing-parent</artifactId>
-    <version>6.4.32-SCSL-SNAPSHOT</version>
+    <version>6.4.33-SCSL-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Listing Context Microservice Parent</name>
