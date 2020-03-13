@@ -446,7 +446,7 @@ public class CourtServicesMapper {
 
         organisationStructure.setOrganisationName(defenceOrganisation);
 
-        final PartyStructure partyStructure= objectFactory.createPartyStructure();
+        final PartyStructure partyStructure = objectFactory.createPartyStructure();
 
         partyStructure.setOrganisation(organisationStructure);
 
@@ -551,35 +551,55 @@ public class CourtServicesMapper {
         return xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(), cppHearingId).getString("exhibitHearingCode");
     }
 
-    public FixtureStructure generateFixtureStructure(final JsonObject sittingJson) {
+    public FixtureStructure generateFixtureStructure(final JsonObject sittingJson, final UUID hearingTypeId) {
 
         final FixtureStructure fixtureStructure = objectFactory.createFixtureStructure();
 
         if (!sittingJson.getBoolean("weekCommencing")) {
             fixtureStructure.setFixedDate(LocalDate.parse(sittingJson.getString("sittingDate")));
+
         }
-        fixtureStructure.setCases(generateCasesStructure(sittingJson));
+
+        fixtureStructure.setCases(generateCasesStructure(sittingJson, hearingTypeId));
 
         return fixtureStructure;
     }
 
-    private CasesStructure generateCasesStructure(final JsonObject sittingJson) {
+    private CasesStructure generateCasesStructure(final JsonObject sittingJson, final UUID pHearingTypeId) {
 
+        final List<UUID> processedHearingTypes = new ArrayList<>();
         final CasesStructure casesStructure = objectFactory.createCasesStructure();
 
         for (final JsonObject hearingJson : sittingJson.getJsonArray("hearings").getValuesAs(JsonObject.class)) {
 
-            if (!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-                if (hearingJson.containsKey(CASE_IDENTIFIER)) {
-                    casesStructure.getCase().add(generateCaseStructureForCase(hearingJson));
-                }
+            final UUID hearingTypeId = fromString(hearingJson.getJsonObject("hearingType").getString("id"));
 
-                if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
-                    casesStructure.getCase().add(generateCaseStructureForCourtApplication(hearingJson));
-                }
+            if (!processedHearingTypes.contains(hearingTypeId)) {
+
+                verifyCaseStructureGeneration(pHearingTypeId, processedHearingTypes, casesStructure, hearingJson, hearingTypeId);
             }
         }
         return casesStructure;
+    }
+
+    private void verifyCaseStructureGeneration(final UUID pHearingTypeId, final List<UUID> processedHearingTypes, final CasesStructure casesStructure, final JsonObject hearingJson, final UUID hearingTypeId) {
+        if (hearingTypeId.equals(pHearingTypeId)) {
+            processedHearingTypes.add(hearingTypeId);
+
+            if(!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)){
+                generateCaseStructureForCaseOrCourtApplication(casesStructure, hearingJson);
+            }
+        }
+    }
+
+    private void generateCaseStructureForCaseOrCourtApplication(final CasesStructure casesStructure, final JsonObject hearingJson) {
+        if (hearingJson.containsKey(CASE_IDENTIFIER)) {
+            casesStructure.getCase().add(generateCaseStructureForCase(hearingJson));
+        }
+
+        if (hearingJson.containsKey(APPLICATION_REFERENCE)) {
+            casesStructure.getCase().add(generateCaseStructureForCourtApplication(hearingJson));
+        }
     }
 
     private CasesStructure.Case generateCaseStructureForCase(final JsonObject listedCase) {

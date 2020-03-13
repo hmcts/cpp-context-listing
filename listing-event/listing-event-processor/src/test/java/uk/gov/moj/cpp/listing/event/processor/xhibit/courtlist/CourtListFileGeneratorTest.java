@@ -4,6 +4,7 @@ import static java.time.ZonedDateTime.parse;
 import static java.util.Arrays.asList;
 import static java.util.UUID.fromString;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.DRAFT;
@@ -48,6 +49,9 @@ public class CourtListFileGeneratorTest {
     private static final String DAILY_COURT_LIST_SUMMER_TIME_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list-summer-time.json";
     private static final String WEEK_COMMENCING_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-week-commencing-list.json";
     private static final String RESTRICTED_DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-restricted-daily-list.json";
+    private static final String COURT_LIST_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-with-fixed-date-corresponding-hearing-types-list.json";
+    private static final String COURT_LIST_2_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist2-with-fixed-date-corresponding-hearing-types-list.json";
+
     @Parameterized.Parameter(0)
     public PublishCourtListType publishCourtListType;
     @Parameterized.Parameter(1)
@@ -83,7 +87,11 @@ public class CourtListFileGeneratorTest {
                 {DRAFT, DAILY_COURT_LIST_SUMMER_TIME_JSON_FILE, "xhibit/expectedDraftListSummerTime.xml"},
                 {FINAL, DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedFinalList.xml"},
                 {FIRM, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedFirmList.xml"},
-                {FINAL, RESTRICTED_DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedRestrictedFinalList.xml"}};
+                {FINAL, RESTRICTED_DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedRestrictedFinalList.xml"},
+                {WARN, COURT_LIST_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithDifferentHearingTypesInCase.xml"},
+                {WARN, COURT_LIST_2_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithMultipleHearingTypesInCase.xml"}
+
+        };
         return asList(data);
     }
 
@@ -120,10 +128,32 @@ public class CourtListFileGeneratorTest {
         when(xhibitReferenceDataService.getJudiciary(any(), any())).thenReturn(judiciary);
 
         final JsonObject hearingType = Json.createObjectBuilder()
-                .add("exhibitHearingCode", "XXX")
-                .add("exhibitHearingDescription", "XHIBIT_HEARING_DESCRIPTION")
+                .add("exhibitHearingCode", "TRL")
+                .add("exhibitHearingDescription", "XHIBIT_HEARING_DESCRIPTION-TRL")
                 .build();
+
+        final JsonObject hearingType1 = Json.createObjectBuilder()
+                .add("exhibitHearingCode", "PTP")
+                .add("exhibitHearingDescription", "XHIBIT_HEARING_DESCRIPTION-PTP")
+                .build();
+
+        final JsonObject hearingType2 = Json.createObjectBuilder()
+                .add("exhibitHearingCode", "SBT")
+                .add("exhibitHearingDescription", "XHIBIT_HEARING_DESCRIPTION-PTP")
+                .build();
+
+        final UUID hearingTypeId = UUID.fromString("bf8155e1-90b9-4080-b133-bfbad895d6e4");
         when(xhibitReferenceDataService.getXhibitHearingType(any(), any())).thenReturn(hearingType);
+
+        when(xhibitReferenceDataService.getXhibitHearingType(any(), eq(hearingTypeId))).thenReturn(hearingType);
+
+        final UUID hearingTypeId1 = UUID.fromString("06b0c2bf-3f98-46ed-ab7e-56efaf9ecced");
+
+        when(xhibitReferenceDataService.getXhibitHearingType(any(), eq(hearingTypeId1))).thenReturn(hearingType1);
+
+        final UUID hearingTypeId2 = UUID.fromString("c6b0c2bf-3f98-46ed-ab7e-56efaf9ecceb");
+
+        when(xhibitReferenceDataService.getXhibitHearingType(any(), eq(hearingTypeId2))).thenReturn(hearingType2);
 
         courtListJson = givenPayload(courtListJsonFile);
 

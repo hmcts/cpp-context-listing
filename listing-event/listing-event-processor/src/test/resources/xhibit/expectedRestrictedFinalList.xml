@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cs:DailyList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice"
-              xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
+<cs:DailyList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
     <cs:DocumentID>
         <cs:DocumentName>FINAL-FILENAME</cs:DocumentName>
         <cs:UniqueID>UNIQUEID</cs:UniqueID>
@@ -41,8 +40,8 @@
                     <cs:Hearings>
                         <cs:Hearing>
                             <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
-                            <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                            <cs:HearingDetails HearingType="TRL">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-10</cs:HearingDate>
                             </cs:HearingDetails>
                             <cs:TimeMarkingNote>NOT BEFORE 2:58 PM</cs:TimeMarkingNote>
@@ -91,8 +90,8 @@
                         </cs:Hearing>
                         <cs:Hearing>
                             <cs:HearingSequenceNumber>2</cs:HearingSequenceNumber>
-                            <cs:HearingDetails HearingType="XXX">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                            <cs:HearingDetails HearingType="TRL">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-10</cs:HearingDate>
                             </cs:HearingDetails>
                             <cs:TimeMarkingNote>NOT BEFORE 2:58 PM</cs:TimeMarkingNote>

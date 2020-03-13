@@ -55,40 +55,47 @@ public class WarnedListMapper extends AbstractCourtListMapper {
                 courtListJson.getJsonObject("crestCourtSite")));
 
         for (final JsonObject sittingJson : courtListJson.getJsonArray("sittings").getValuesAs(JsonObject.class)) {
+            final List<UUID> hearingTypeIds = sittingJson.getJsonArray(HEARINGS).getValuesAs(JsonObject.class).stream()
+                    .map(j -> j.getJsonObject(HEARING_TYPE).getString("id"))
+                    .map(UUID::fromString)
+                    .collect(Collectors.toList());
 
-            if (sittingJson.getBoolean("weekCommencing")) {
-                courtList.getWithoutFixedDate().add(generateWithoutFixedDate(sittingJson));
-            } else {
-                courtList.getWithFixedDate().add(generateWithFixedDate(sittingJson));
-            }
+            hearingTypeIds.forEach(hearingTypeId -> {
+
+                    if (sittingJson.getBoolean("weekCommencing")) {
+                        courtList.getWithoutFixedDate().add(generateWithoutFixedDate(sittingJson, hearingTypeId));
+                    } else {
+                        courtList.getWithFixedDate().add(generateWithFixedDate(sittingJson, hearingTypeId));
+                    }
+            });
         }
-
         return courtList;
     }
 
-    private WarnedListStructure.CourtLists.CourtList.WithoutFixedDate generateWithoutFixedDate(final JsonObject sittingJson) {
+    private WarnedListStructure.CourtLists.CourtList.WithoutFixedDate generateWithoutFixedDate(final JsonObject sittingJson, final UUID hearingTypeId) {
 
         final WarnedListStructure.CourtLists.CourtList.WithoutFixedDate withoutFixedDate = objectFactory
                 .createWarnedListStructureCourtListsCourtListWithoutFixedDate();
 
-        withoutFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(sittingJson));
-        withoutFixedDate.setHearingType(getXhibitHearingType(sittingJson));
+        withoutFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(sittingJson, hearingTypeId));
+        withoutFixedDate.setHearingType(getXhibitHearingType(sittingJson, hearingTypeId));
+
 
         return withoutFixedDate;
     }
 
-    private WarnedListStructure.CourtLists.CourtList.WithFixedDate generateWithFixedDate(final JsonObject sittingJson) {
+    private WarnedListStructure.CourtLists.CourtList.WithFixedDate generateWithFixedDate(final JsonObject sittingJson, final UUID hearingTypeId) {
 
         final WarnedListStructure.CourtLists.CourtList.WithFixedDate withFixedDate = objectFactory
                 .createWarnedListStructureCourtListsCourtListWithFixedDate();
 
-        withFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(sittingJson));
-        withFixedDate.setHearingType(getXhibitHearingType(sittingJson));
+        withFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(sittingJson, hearingTypeId));
+        withFixedDate.setHearingType(getXhibitHearingType(sittingJson, hearingTypeId));
 
         return withFixedDate;
     }
 
-    protected String getXhibitHearingType(final JsonObject sittingJson) {
+    protected String getXhibitHearingType(final JsonObject sittingJson, final UUID hearingTypeId) {
         final Set<UUID> hearingTypeUuids = sittingJson.getJsonArray(HEARINGS)
                 .stream()
                 .map(JsonObject.class::cast)
@@ -106,7 +113,9 @@ public class WarnedListMapper extends AbstractCourtListMapper {
             LOGGER.warn("Expecting 1 hearingTye, got {} ", hearingTypeUuids);
         }
 
-        final UUID hearingUUID = hearingTypeUuids.stream().findFirst().orElse(null);
+        final UUID hearingUUID = hearingTypeUuids.stream().
+                filter(hearingTypeId::equals)
+                .findAny().orElse(null);
 
         return courtServicesMapper.getHearingTypeForHearing(hearingUUID);
     }

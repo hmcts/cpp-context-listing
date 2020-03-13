@@ -1,12 +1,11 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
+import static java.util.UUID.fromString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
-
-import java.util.UUID;
 
 import javax.json.JsonObject;
 
@@ -29,20 +28,20 @@ public class WarnedListMapperTest {
 
     @Before
     public void before() {
-        when(courtServicesMapper.getHearingTypeForHearing(UUID.fromString("5ae4c090-0f70-4694-b4fc-707633d2b430"))).thenReturn(HEARING_TYPE_CODE);
+        when(courtServicesMapper.getHearingTypeForHearing(fromString("5ae4c090-0f70-4694-b4fc-707633d2b430"))).thenReturn(HEARING_TYPE_CODE);
     }
 
     @Test
     public void shouldGetXhibitHearingType() {
         final JsonObject courtListJson = givenPayload("/xhibit/mock-data/hearingTypesData.json");
-        final String actual = warnedListMapper.getXhibitHearingType(courtListJson);
+        final String actual = warnedListMapper.getXhibitHearingType(courtListJson, fromString("5ae4c090-0f70-4694-b4fc-707633d2b430"));
         assertThat(actual, is(HEARING_TYPE_CODE));
     }
 
     @Test
     public void shouldGetXhibitHearingTypeEmpty() {
         final JsonObject courtListJson = givenPayload("/xhibit/mock-data/hearingTypesEmptyData.json");
-        final String actual = warnedListMapper.getXhibitHearingType(courtListJson);
+        final String actual = warnedListMapper.getXhibitHearingType(courtListJson, fromString("5ae4c090-0f70-4694-b4fc-707633d2b430"));
         assertThat(actual, is(nullValue()));
     }
 }
