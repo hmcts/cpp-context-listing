@@ -162,7 +162,8 @@ public class PublishCourtListEventListenerTest {
         final ZonedDateTime failedTimeStamp = new UtcClock().now();
         final String errorMessage = "some error";
         final PublishCourtListType courtListType = FINAL;
-        final LocalDate startDate = LocalDate.of(2019, Month.DECEMBER, 13);
+        final LocalDate startDate = LocalDate.of(2020, Month.MARCH, 30);
+        final LocalDate endDate = LocalDate.of(2020, Month.MARCH, 30);
         final UUID courtListId = randomUUID();
 
         final PublishCourtListExportFailed publishCourtListExportFailed = publishCourtListExportFailed()
@@ -170,6 +171,7 @@ public class PublishCourtListEventListenerTest {
                 .withCourtCentreId(COURT_CENTRE_ID)
                 .withPublishCourtListType(courtListType)
                 .withStartDate(startDate)
+                .withEndDate(endDate)
                 .withFailedTime(failedTimeStamp)
                 .withErrorMessage(errorMessage)
                 .build();
@@ -186,6 +188,7 @@ public class PublishCourtListEventListenerTest {
         publishCourtListEventListener.courtListPublishExportFailed(publishCourtListExportFailedEvent);
 
         verify(publishedCourtListRepository).save(publishedCourtListArgumentCaptor.capture());
+        verify(courtListRepository).save(courtListPublishStatusArgumentCaptor.capture());
 
         final PublishedCourtList publishedCourtListArg = publishedCourtListArgumentCaptor.getValue();
         assertThat(publishedCourtListArg.getLastFailed(), is(failedTimeStamp));
@@ -196,15 +199,18 @@ public class PublishCourtListEventListenerTest {
     public void shouldRecordPublishCourtListExportSuccessful() {
         final ZonedDateTime exportedTime = new UtcClock().now();
         final PublishCourtListType courtListType = FINAL;
-        final LocalDate startDate = LocalDate.of(2019, Month.DECEMBER, 13);
+        final LocalDate startDate = LocalDate.of(2020, Month.MARCH, 30);
+        final LocalDate endDate = LocalDate.of(2020, Month.MARCH, 30);
         final UUID courtListId = randomUUID();
 
         final PublishCourtListExportSuccessful publishCourtListExportSuccessful = publishCourtListExportSuccessful()
                 .withCourtCentreId(COURT_CENTRE_ID)
                 .withPublishCourtListType(courtListType)
                 .withStartDate(startDate)
+                .withEndDate(endDate)
                 .withExportedTime(exportedTime)
                 .withCourtListId(courtListId)
+                .withCourtListFileName("TESTFILENAME")
                 .build();
 
         final Envelope<PublishCourtListExportSuccessful> publishCourtListExportSuccessfulEvent = envelopeFrom(metadataWithDefaults(), publishCourtListExportSuccessful);
@@ -219,6 +225,7 @@ public class PublishCourtListEventListenerTest {
         publishCourtListEventListener.courtListPublishExportSuccessful(publishCourtListExportSuccessfulEvent);
 
         verify(publishedCourtListRepository).save(publishedCourtListArgumentCaptor.capture());
+        verify(courtListRepository).save(courtListPublishStatusArgumentCaptor.capture());
 
         final PublishedCourtList publishedCourtListArg = publishedCourtListArgumentCaptor.getValue();
         assertThat(publishedCourtListArg.getLastExported(), is(exportedTime));

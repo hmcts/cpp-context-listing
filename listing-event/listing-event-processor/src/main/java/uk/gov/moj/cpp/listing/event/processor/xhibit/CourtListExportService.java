@@ -47,12 +47,12 @@ public class CourtListExportService {
             try (final InputStream courtListXmlInputStream = new ByteArrayInputStream(courtListXml.getBytes())) {
                 xhibitService.sendToXhibit(courtListXmlInputStream, courtListMetadata.getFilename());
             }
-            publishCourtListCommandSender.recordCourtListExportSuccessful(parameters);
+            publishCourtListCommandSender.recordCourtListExportSuccessful(parameters, courtListMetadata.getFilename());
 
         } catch (final Exception e) {
             logger.error("Court List export failed", e);
             publishCourtListCommandSender.recordCourtListExportFailed(parameters,
-                    e.getMessage());
+                    e.getMessage(), "NONE");
         }
     }
 }

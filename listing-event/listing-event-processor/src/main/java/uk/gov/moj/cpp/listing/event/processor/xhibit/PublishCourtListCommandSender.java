@@ -30,6 +30,8 @@ public class PublishCourtListCommandSender {
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String PUBLISH_COURT_LIST_TYPE = "publishCourtListType";
     private static final String START_DATE = "startDate";
+    private static final String END_DATE = "endDate";
+    private static final String COURT_LIST_FILE_NAME = "courtListFileName";
     private static final String COURT_LIST_JSON = "courtListJson";
 
     @Inject
@@ -39,12 +41,14 @@ public class PublishCourtListCommandSender {
     @Inject
     private UtcClock utcClock;
 
-    public void recordCourtListExportSuccessful(final PublishCourtListRequestParameters requestParameters) {
+    public void recordCourtListExportSuccessful(final PublishCourtListRequestParameters requestParameters, final String courtListFileName) {
 
         final JsonObject payload = createObjectBuilder()
                 .add("courtListId", requestParameters.getCourtListId().toString())
                 .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
                 .add(START_DATE, requestParameters.getStartDate().toString())
+                .add(END_DATE, requestParameters.getEndDate().toString())
+                .add(COURT_LIST_FILE_NAME, courtListFileName)
                 .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
                 .add("exportedTime", ZonedDateTimes.toString(utcClock.now()))
                 .build();
@@ -53,12 +57,15 @@ public class PublishCourtListCommandSender {
     }
 
     public void recordCourtListExportFailed(final PublishCourtListRequestParameters requestParameters,
-                                            final String errorMessage) {
+                                            final String errorMessage,
+                                            final String courtListFileName) {
 
         final JsonObjectBuilder objectBuilder = createObjectBuilder()
                 .add("courtListId", requestParameters.getCourtListId().toString())
                 .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
                 .add(START_DATE, requestParameters.getStartDate().toString())
+                .add(END_DATE, requestParameters.getEndDate().toString())
+                .add(COURT_LIST_FILE_NAME, courtListFileName)
                 .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
                 .add("failedTime", ZonedDateTimes.toString(utcClock.now()))
                 .add(ERROR_MESSAGE, errorMessage != null ? errorMessage : "UNKNOWN");

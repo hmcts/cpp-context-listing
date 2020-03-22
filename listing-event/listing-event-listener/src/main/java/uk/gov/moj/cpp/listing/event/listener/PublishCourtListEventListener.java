@@ -4,12 +4,16 @@ import static java.time.LocalDate.parse;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_PRODUCED;
 import static uk.gov.justice.listing.event.PublishStatus.COURT_LIST_REQUESTED;
+import static uk.gov.justice.listing.event.PublishStatus.EXPORT_FAILED;
+import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_LISTENER;
 
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListProduced;
 import uk.gov.justice.listing.event.PublishCourtListRequested;
+import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.listing.event.PublishStatus;
 import uk.gov.justice.listing.event.PublishedCourtListStored;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -21,6 +25,8 @@ import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtLis
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 
 import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.util.UUID;
 
 import javax.inject.Inject;
 
@@ -44,17 +50,14 @@ public class PublishCourtListEventListener {
     public void courtListPublishRequested(final Envelope<PublishCourtListRequested> event) {
         final PublishCourtListRequested publishCourtListRequested = event.payload();
 
-        final String startDate = publishCourtListRequested.getStartDate();
-        final String endDate = publishCourtListRequested.getEndDate();
-        boolean weekCommencing = false;
-        if (!startDate.equalsIgnoreCase(endDate)) {
-            weekCommencing = true;
-        }
-
-        final CourtListPublishStatus publishRequested = new CourtListPublishStatus(randomUUID(),
+        final CourtListPublishStatus publishRequested = generateCourtListPublishStatus(
+                publishCourtListRequested.getStartDate(),
+                publishCourtListRequested.getEndDate(),
                 publishCourtListRequested.getCourtCentreId(),
-                publishCourtListRequested.getPublishCourtListType(), COURT_LIST_REQUESTED,
-                publishCourtListRequested.getRequestedTime(), parse(startDate), weekCommencing);
+                publishCourtListRequested.getPublishCourtListType(),
+                COURT_LIST_REQUESTED,
+                publishCourtListRequested.getRequestedTime());
+
         courtListRepository.save(publishRequested);
     }
 
@@ -104,6 +107,18 @@ public class PublishCourtListEventListener {
         publishedCourtList.setLastExported(publishCourtListExportSuccessful.getExportedTime());
 
         publishedCourtListRepository.save(publishedCourtList);
+
+        final CourtListPublishStatus exportSuccessful = generateCourtListPublishStatus(
+                publishCourtListExportSuccessful.getStartDate().toString(),
+                publishCourtListExportSuccessful.getEndDate().toString(),
+                publishCourtListExportSuccessful.getCourtCentreId(),
+                publishCourtListExportSuccessful.getPublishCourtListType(),
+                EXPORT_SUCCESSFUL,
+                publishCourtListExportSuccessful.getExportedTime());
+
+        exportSuccessful.setCourtListFileName(publishCourtListExportSuccessful.getCourtListFileName());
+
+        courtListRepository.save(exportSuccessful);
     }
 
     @Handles("listing.event.publish-court-list-export-failed")
@@ -121,5 +136,36 @@ public class PublishCourtListEventListener {
         publishedCourtList.setErrorMessage(publishCourtListExportFailed.getErrorMessage());
 
         publishedCourtListRepository.save(publishedCourtList);
+
+        final CourtListPublishStatus exportFailed = generateCourtListPublishStatus(
+                publishCourtListExportFailed.getStartDate().toString(),
+                publishCourtListExportFailed.getEndDate().toString(),
+                publishCourtListExportFailed.getCourtCentreId(),
+                publishCourtListExportFailed.getPublishCourtListType(),
+                EXPORT_FAILED,
+                publishCourtListExportFailed.getFailedTime());
+
+        exportFailed.setErrorMessage(publishCourtListExportFailed.getErrorMessage());
+
+        courtListRepository.save(exportFailed);
+    }
+
+    private CourtListPublishStatus generateCourtListPublishStatus(final String startDate,
+                                                                  final String endDate,
+                                                                  final UUID courtCentreId,
+                                                                  final PublishCourtListType publishCourtListType,
+                                                                  final PublishStatus publishStatus,
+                                                                  final ZonedDateTime lastUpdated) {
+        boolean weekCommencing = false;
+        if (!startDate.equalsIgnoreCase(endDate)) {
+            weekCommencing = true;
+        }
+
+        return new CourtListPublishStatus(randomUUID(),
+                courtCentreId,
+                publishCourtListType,
+                publishStatus,
+                lastUpdated,
+                parse(startDate), weekCommencing);
     }
 }

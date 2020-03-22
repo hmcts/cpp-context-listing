@@ -799,7 +799,9 @@ public class ListingCommandHandler {
 
         final PublishCourtListExportSuccessful event = new PublishCourtListExportSuccessful(
                 command.getCourtCentreId(),
+                command.getCourtListFileName(),
                 command.getCourtListId(),
+                command.getEndDate(),
                 command.getExportedTime(),
                 uk.gov.justice.listing.event.PublishCourtListType.valueOf(command.getPublishCourtListType().name()),
                 command.getStartDate()
@@ -820,7 +822,9 @@ public class ListingCommandHandler {
 
         final PublishCourtListExportFailed event = new PublishCourtListExportFailed(
                 command.getCourtCentreId(),
+                command.getCourtListFileName(),
                 command.getCourtListId(),
+                command.getEndDate(),
                 command.getErrorMessage(),
                 command.getFailedTime(),
                 uk.gov.justice.listing.event.PublishCourtListType.valueOf(command.getPublishCourtListType().name()),

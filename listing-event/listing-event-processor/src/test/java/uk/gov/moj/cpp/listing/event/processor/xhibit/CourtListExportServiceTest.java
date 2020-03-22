@@ -94,6 +94,6 @@ public class CourtListExportServiceTest {
 
         // Assertions
         verify(xhibitService).sendToXhibit(any(InputStream.class), eq(courtListMetadata.getFilename()));
-        verify(publishCourtListCommandSender).recordCourtListExportSuccessful(parameters);
+        verify(publishCourtListCommandSender).recordCourtListExportSuccessful(parameters, courtListMetadata.getFilename());
     }
 }

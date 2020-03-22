@@ -12,6 +12,12 @@
     "startDate": {
       "$ref": "#/definitions/localDate"
     },
+    "endDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "courtListFileName": {
+      "type": "string"
+    },
     "publishCourtListType": {
       "type": "string",
       "enum": [
@@ -30,6 +36,8 @@
     "courtListId",
     "courtCentreId",
     "startDate",
+    "endDate",
+    "courtListFileName",
     "publishCourtListType",
     "exportedTime"
   ],
