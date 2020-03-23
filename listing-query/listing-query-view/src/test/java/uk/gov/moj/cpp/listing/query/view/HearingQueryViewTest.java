@@ -2,21 +2,15 @@ package uk.gov.moj.cpp.listing.query.view;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.time.LocalDate.parse;
-import static java.time.ZonedDateTime.now;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
-import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
@@ -24,7 +18,6 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatch
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
 
-import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -32,27 +25,15 @@ import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusResult;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
-import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import javax.json.Json;
 import javax.json.JsonArray;
-import javax.json.JsonObject;
 import javax.json.JsonValue;
 import javax.ws.rs.NotFoundException;
 
@@ -68,9 +49,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class HearingQueryViewTest {
 
-
     private static final UUID COURT_CENTRE_ID = randomUUID();
-    private static final String PUBLISH_COURT_LIST_TYPES = "FIRM,FINAL";
     private static final UUID COURT_ROOM_ID = randomUUID();
     private static final UUID ID = UUID.fromString("7c5e9d0c-9e28-46a9-b139-68fc0813842c");
     private static final boolean ALLOCATED = true;
@@ -81,9 +60,6 @@ public class HearingQueryViewTest {
     private static final String START_TIME_QUERY_PARAMETER = "startTime";
     private static final String END_TIME_QUERY_PARAMETER = "endTime";
     private static final String COURT_CENTRE_QUERY_PARAMETER = "courtCentreId";
-    private static final String PUBLISH_COURT_LIST_TYPES_QUERY_PARAMETER = "publishCourtListTypes";
-    private static final String PUBLISH_DATE_QUERY_PARAMETER = "publishDate";
-    private static final String WEEK_COMMENCING_QUERY_PARAMETER = "weekCommencing";
 
     private static final String COURT_ROOM_QUERY_PARAMETER = "courtRoomId";
     private static final String AUTHORITY_ID_QUERY_PARAMETER = "authorityId";
@@ -98,9 +74,6 @@ public class HearingQueryViewTest {
     private static final LocalDate SEARCH_DATE = LocalDate.now();
     private static final LocalTime START_TIME = LocalTime.now();
     private static final LocalTime END_TIME = LocalTime.now();
-    private static final LocalDateTime EARLIEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MIN);
-    private static final LocalDateTime LATEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MAX);
-
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -109,93 +82,13 @@ public class HearingQueryViewTest {
     private HearingRepository hearingRepository;
 
     @Mock
-    private CourtListPublishStatusJdbcRepository courtListRepository;
-
-    @Mock
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
 
     @Mock
     private RangeSearchQuery rangeSearchQuery;
 
-    @Mock
-    private CourtListService courtListService;
-
-    @Mock
-    private PublishedCourtListRepository publishedCourtListRepository;
-
-    @Mock
-    private PublishedCourtListToJsonConverter publishedCourtListToJsonConverter;
-
     @InjectMocks
     private HearingQueryView hearingsQueryView;
-
-    private static final String PUBLISH_DATE = "2012-12-11";
-
-    private static final String PUBLISH_DATE_WEEK_COMMENCING = "2012-12-13";
-
-    @Test
-    public void shouldReturnCorrectPublishCourtListStatusForWeekCommencing() {
-
-        final Set<PublishCourtListType> publishCourtListTypeSet = new HashSet();
-        publishCourtListTypeSet.add(PublishCourtListType.FIRM);
-        publishCourtListTypeSet.add(PublishCourtListType.FINAL);
-
-        when(courtListRepository.courtListPublishStatuses(COURT_CENTRE_ID, publishCourtListTypeSet, parse(PUBLISH_DATE_WEEK_COMMENCING), true))
-                .thenReturn(publishCourtListStatuses());
-
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("listing.court.list.publish.status"),
-                createObjectBuilder()
-                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
-                        .add(PUBLISH_COURT_LIST_TYPES_QUERY_PARAMETER, PUBLISH_COURT_LIST_TYPES.toString())
-                        .add(PUBLISH_DATE_QUERY_PARAMETER, PUBLISH_DATE_WEEK_COMMENCING)
-                        .add(WEEK_COMMENCING_QUERY_PARAMETER, true)
-                        .build());
-
-        final JsonEnvelope results = hearingsQueryView.getCourtListPublishStatus(query);
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.court.list.publish.status"), payloadIsJson(
-                allOf(
-                        withJsonPath("$.publishCourtListStatuses", hasSize(1)),
-                        withJsonPath("$.publishCourtListStatuses[0].publishStatus", equalTo(EXPORT_SUCCESSFUL.name())),
-                        withJsonPath("$.publishCourtListStatuses[0].publishCourtListType", equalTo(FINAL.toString()))
-                )))));
-
-    }
-
-    @Test
-    public void shouldReturnCorrectPublishCourtListStatusForFixedDate() {
-
-        final Set<PublishCourtListType> publishCourtListTypeSet = new HashSet();
-        publishCourtListTypeSet.add(PublishCourtListType.FIRM);
-        publishCourtListTypeSet.add(PublishCourtListType.FINAL);
-
-        when(courtListRepository.courtListPublishStatuses(COURT_CENTRE_ID, publishCourtListTypeSet, parse(PUBLISH_DATE), false))
-                .thenReturn(publishCourtListStatuses());
-
-        final JsonEnvelope query = envelopeFrom(
-                metadataBuilder().withId(randomUUID()).withName("listing.court.list.publish.status"),
-                createObjectBuilder()
-                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
-                        .add(PUBLISH_COURT_LIST_TYPES_QUERY_PARAMETER, PUBLISH_COURT_LIST_TYPES.toString())
-                        .add(PUBLISH_DATE_QUERY_PARAMETER, PUBLISH_DATE)
-                        .add(WEEK_COMMENCING_QUERY_PARAMETER, false)
-                        .build());
-
-        final JsonEnvelope results = hearingsQueryView.getCourtListPublishStatus(query);
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.court.list.publish.status"), payloadIsJson(
-                allOf(
-                        withJsonPath("$.publishCourtListStatuses", hasSize(1)),
-                        withJsonPath("$.publishCourtListStatuses[0].publishStatus", equalTo(EXPORT_SUCCESSFUL.name())),
-                        withJsonPath("$.publishCourtListStatuses[0].publishCourtListType", equalTo(FINAL.toString()))
-                )))));
-    }
-
-
-    private List<CourtListPublishStatusResult> publishCourtListStatuses() {
-        final UUID courtCentreId1 = randomUUID();
-        final CourtListPublishStatusResult publishCourtListStatus3 = new CourtListPublishStatusResult(courtCentreId1, FINAL, now(), EXPORT_SUCCESSFUL, "");
-        return newArrayList(publishCourtListStatus3);
-    }
 
     @Test
     public void searchHearingsWithSearchDateWithAllParametersProvided() {
@@ -401,134 +294,6 @@ public class HearingQueryViewTest {
                                 withJsonPath("$.id", equalTo(ID.toString()))
                         ))
                 ));
-    }
-
-    @Test
-    public void shouldGetAllPublishedCourtLists() {
-
-        final List<PublishedCourtList> publishedCourtLists = new ArrayList<>();
-        final JsonObject expectedPayload = Json.createObjectBuilder().build();
-
-        when(publishedCourtListRepository.findAll()).thenReturn(publishedCourtLists);
-        when(publishedCourtListToJsonConverter.convert(publishedCourtLists)).thenReturn(expectedPayload);
-
-        final JsonEnvelope queryEnvelope = generateQuery(
-                createObjectBuilder()
-                        .build());
-
-        final JsonEnvelope results = hearingsQueryView.getPublishedCourtLists(queryEnvelope);
-
-        assertThat(results,
-                is(jsonEnvelope(withMetadataEnvelopedFrom(queryEnvelope)
-                                .withName("listing.publishedcourtlist"),
-                        payloadIsJson(
-                                withJsonPath("$", equalTo(expectedPayload))
-                        ))
-                ));
-    }
-
-    @Test
-    public void shouldRetrieveUnpublishedCourtList() {
-
-        final UUID courtCentreId = UUID.randomUUID();
-        final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType = uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
-        final LocalDate startDate = LocalDate.now();
-        final String endDate = LocalDate.now().toString();
-
-        final JsonEnvelope queryEnvelope = generateQuery(
-                createObjectBuilder()
-                        .add("courtCentreId", courtCentreId.toString())
-                        .add("publishCourtListType", publishCourtListType.name())
-                        .add("startDate", startDate.toString())
-                        .add("endDate", endDate.toString())
-                        .build());
-
-        final JsonObject courtListResponsePayload = Json.createObjectBuilder()
-                .add("courtCentreId", courtCentreId.toString())
-                .build();
-
-        when(courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType,
-                startDate,
-                endDate,
-                queryEnvelope)).thenReturn(courtListResponsePayload);
-
-        final JsonEnvelope results = hearingsQueryView.retrieveCourtList(queryEnvelope);
-
-        assertThat(results,
-                is(jsonEnvelope(withMetadataEnvelopedFrom(queryEnvelope)
-                                .withName("listing.courtlist"),
-                        payloadIsJson(
-                                withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString()))
-                        ))
-                ));
-    }
-
-    @Test
-    public void shouldRetrievePublishedCourtListIfExists() {
-
-        final UUID courtCentreId = UUID.randomUUID();
-        final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType = uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
-        final LocalDate startDate = LocalDate.now();
-
-        final JsonEnvelope queryEnvelope = generateQuery(
-                createObjectBuilder()
-                        .add("courtCentreId", courtCentreId.toString())
-                        .add("publishCourtListType", publishCourtListType.name())
-                        .add("startDate", startDate.toString())
-                        .add("published", true)
-                        .build());
-
-        final JsonObject courtListJson = createObjectBuilder().build();
-
-        final JsonObject expectedPayload = Json.createObjectBuilder()
-                .add("courtListJson", courtListJson)
-                .build();
-
-        final PublishedCourtList publishedCourtList = new PublishedCourtList(courtCentreId,
-                uk.gov.justice.listing.event.PublishCourtListType.valueOf(publishCourtListType.name()), startDate, null,
-                ZonedDateTime.now(), ZonedDateTime.now(), null);
-
-        final PublishedCourtListPrimaryKey primaryKey = new PublishedCourtListPrimaryKey(
-                courtCentreId,
-                uk.gov.justice.listing.event.PublishCourtListType.valueOf(publishCourtListType.name()),
-                startDate);
-
-        when(publishedCourtListRepository.findBy(primaryKey)).thenReturn(publishedCourtList);
-        when(publishedCourtListToJsonConverter.convert(publishedCourtList)).thenReturn(expectedPayload);
-
-        final JsonEnvelope results = hearingsQueryView.retrieveCourtList(queryEnvelope);
-
-        assertThat(results.payloadAsJsonObject(), is(courtListJson));
-    }
-
-    @Test
-    public void shouldRetrievePublishedCourtListIfNotExists() {
-
-        final UUID courtCentreId = UUID.randomUUID();
-        final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType = uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
-        final LocalDate startDate = LocalDate.now();
-
-        final JsonEnvelope queryEnvelope = generateQuery(
-                createObjectBuilder()
-                        .add("courtCentreId", courtCentreId.toString())
-                        .add("publishCourtListType", publishCourtListType.name())
-                        .add("startDate", startDate.toString())
-                        .add("published", true)
-                        .build());
-
-        final PublishedCourtListPrimaryKey primaryKey = new PublishedCourtListPrimaryKey(
-                courtCentreId,
-                uk.gov.justice.listing.event.PublishCourtListType.valueOf(publishCourtListType.name()),
-                startDate);
-
-        final JsonObject emptyCourtListJson = Json.createObjectBuilder().build();
-
-        when(publishedCourtListRepository.findBy(primaryKey)).thenReturn(null);
-        when(courtListService.emptyCourtList(queryEnvelope, courtCentreId)).thenReturn(emptyCourtListJson);
-
-        final JsonEnvelope response = hearingsQueryView.retrieveCourtList(queryEnvelope);
-
-        assertThat(response.payloadAsJsonObject(), is(emptyCourtListJson));
     }
 
     private JsonEnvelope generateQuery(final JsonValue payload) {

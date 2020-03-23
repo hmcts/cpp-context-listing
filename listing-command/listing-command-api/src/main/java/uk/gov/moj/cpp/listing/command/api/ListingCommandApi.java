@@ -118,22 +118,6 @@ public class ListingCommandApi {
         sender.send(jsonEnvelope);
     }
 
-    @Handles("listing.command.publish-court-list")
-    public void publishCourtList(final JsonEnvelope jsonEnvelope) {
-        sender.send(jsonEnvelope);
-    }
-
-    @Handles("listing.command.publish-court-lists-for-crown-courts")
-    @SuppressWarnings("WeakerAccess") // Must be public for the framework
-    public void publishCourtListForCrownCourts(final JsonEnvelope jsonEnvelope) {
-        sender.send(jsonEnvelope);
-    }
-
-    @Handles("listing.command.court-list-request-export")
-    public void courtListRequestExport(final JsonEnvelope jsonEnvelope) {
-        sender.send(jsonEnvelope);
-    }
-
     private boolean isSchedulingAndListingUpdateRequired(final JurisdictionType jurisdictionType, final List<NonDefaultDay> nonDefaultDays) {
         return MAGISTRATES.equals(jurisdictionType)
                 && !nonDefaultDays.isEmpty()

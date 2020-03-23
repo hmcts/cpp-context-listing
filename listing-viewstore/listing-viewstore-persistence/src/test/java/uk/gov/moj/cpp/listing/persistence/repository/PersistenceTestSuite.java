@@ -5,8 +5,6 @@ import static ru.yandex.qatools.embed.postgresql.EmbeddedPostgres.DEFAULT_DB_NAM
 import static ru.yandex.qatools.embed.postgresql.EmbeddedPostgres.DEFAULT_PASSWORD;
 import static ru.yandex.qatools.embed.postgresql.EmbeddedPostgres.DEFAULT_USER;
 
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepositoryTest;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepositoryTest;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,8 +28,6 @@ import ru.yandex.qatools.embed.postgresql.ext.SubdirTempDir;
 @RunWith(Suite.class)
 @SuiteClasses({
         HearingRepositoryTest.class,
-        CourtListPublishStatusJdbcRepositoryTest.class,
-        PublishedCourtListRepositoryTest.class
 })
 public class PersistenceTestSuite {
 
