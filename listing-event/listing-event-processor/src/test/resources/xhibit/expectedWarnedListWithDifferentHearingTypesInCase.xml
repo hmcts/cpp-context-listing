@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cs:WarnedList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
+<cs:WarnedList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:p2="http://www.govtalk.gov.uk/people/bs7666" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
     <cs:DocumentID>
         <cs:DocumentName>WARN-FILENAME</cs:DocumentName>
         <cs:UniqueID>UNIQUEID</cs:UniqueID>
@@ -94,50 +94,6 @@
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
-                                        </cs:Charge>
-                                    </cs:Charges>
-                                </cs:Defendant>
-                            </cs:Defendants>
-                            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
-                                <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
-                                <cs:ProsecutingOrganisation>
-                                    <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
-                                </cs:ProsecutingOrganisation>
-                            </cs:Prosecution>
-                        </cs:Case>
-                    </cs:Cases>
-                </cs:Fixture>
-            </cs:WithFixedDate>
-            <cs:WithFixedDate HearingType="TRL">
-                <cs:Fixture>
-                    <cs:FixedDate>2020-03-30</cs:FixedDate>
-                    <cs:Cases>
-                        <cs:Case>
-                            <cs:CaseNumber>CPP</cs:CaseNumber>
-                            <cs:Hearing HearingType="TRL">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
-                                <cs:HearingDate>2020-03-30</cs:HearingDate>
-                            </cs:Hearing>
-                            <cs:Defendants>
-                                <cs:Defendant>
-                                    <cs:PersonalDetails>
-                                        <cs:Name>
-                                            <apd:CitizenNameForename>Hettie</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>OLSON</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Hettie OLSON</apd:CitizenNameRequestedName>
-                                        </cs:Name>
-                                        <cs:IsMasked>no</cs:IsMasked>
-                                    </cs:PersonalDetails>
-                                    <cs:URN>82RT142177</cs:URN>
-                                    <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
-                                        </cs:Charge>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Harrassment</cs:OffenceStatement>
-                                        </cs:Charge>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Armed robbery</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -413,13 +369,6 @@
                                 </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
                         </cs:Case>
-                    </cs:Cases>
-                </cs:Fixture>
-            </cs:WithFixedDate>
-            <cs:WithFixedDate HearingType="TRL">
-                <cs:Fixture>
-                    <cs:FixedDate>2020-03-30</cs:FixedDate>
-                    <cs:Cases>
                         <cs:Case>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Hearing HearingType="TRL">
@@ -430,16 +379,34 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameForename>Douglas</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>GIANNINI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Douglas GIANNINI</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameForename>Gertrude</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>BRAVO</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Gertrude BRAVO</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
-                                    <cs:URN>35RG682958</cs:URN>
+                                    <cs:URN>34UC737169</cs:URN>
+                                    <cs:Counsel>
+                                        <cs:Solicitor>
+                                            <cs:Party>
+                                                <cs:Organisation>
+                                                    <cs:OrganisationName>EY Solicitors</cs:OrganisationName>
+                                                </cs:Organisation>
+                                            </cs:Party>
+                                        </cs:Solicitor>
+                                    </cs:Counsel>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Robbery</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Armed robbery</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Murder</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>

@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.WarnedListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -60,13 +61,20 @@ public class WarnedListMapper extends AbstractCourtListMapper {
                     .map(UUID::fromString)
                     .collect(Collectors.toList());
 
+            final List<UUID> processedHearingTypes4Fixed = new ArrayList<>();
+            final List<UUID> processedHearingTypes4WithoutFixed = new ArrayList<>();
             hearingTypeIds.forEach(hearingTypeId -> {
-
-                    if (sittingJson.getBoolean("weekCommencing")) {
+                if (sittingJson.getBoolean("weekCommencing")) {
+                    if (!processedHearingTypes4WithoutFixed.contains(hearingTypeId)) {
                         courtList.getWithoutFixedDate().add(generateWithoutFixedDate(sittingJson, hearingTypeId));
-                    } else {
-                        courtList.getWithFixedDate().add(generateWithFixedDate(sittingJson, hearingTypeId));
+                        processedHearingTypes4Fixed.add(hearingTypeId);
                     }
+                } else {
+                    if (!processedHearingTypes4Fixed.contains(hearingTypeId)) {
+                        courtList.getWithFixedDate().add(generateWithFixedDate(sittingJson, hearingTypeId));
+                        processedHearingTypes4Fixed.add(hearingTypeId);
+                    }
+                }
             });
         }
         return courtList;

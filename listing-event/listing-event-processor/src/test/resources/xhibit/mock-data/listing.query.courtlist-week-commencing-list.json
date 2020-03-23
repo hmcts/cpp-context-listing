@@ -1,49 +1,23 @@
 {
-  "courtCentreId": "f34a5dba-8c4b-4ec8-8b9a-6af405c00ebf",
   "courtLists": [
     {
-      "crestCourtSite": {
-        "crestCourtSiteId": "001",
-        "crestCourtSiteName": "MOCKCOURTNAME1",
-        "courtType": "CROWN_COURT"
-      },
       "sittings": [
         {
-          "sittingDate": "2019-12-15",
-          "weekCommencing": true,
-          "judiciary": [
-            {
-              "judicialId": "fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
-              "judicialRoleType": {
-                "judiciaryType": "DISTRICT_JUDGE"
-              }
-            }
-          ],
           "hearings": [
             {
-              "startTime": "2019-12-15T09:20",
-              "endTime": "2019-12-15T09:50",
-              "hearingType": {
-                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
-                "description": "Sentence"
-              },
-              "restrictFromCourtList": false,
-              "caseIdentifier": {
-                "authorityId": "11d09fab-0591-48d3-a916-9bf153d1a60b",
-                "authorityCode": "CPS",
-                "caseReference": "71JC7771460"
-              },
+              "endTime": "2020-03-30T10:15",
+              "startTime": "2020-03-30T10:00",
               "defendants": [
                 {
-                  "id": "2819baf4-940d-4b4c-b2f4-96330a5bb8f2",
-                  "lastName": "BERTINI",
+                  "id": "a6a7a1fd-8b01-4733-8375-a521b68e0271",
+                  "lastName": "MARCHI",
                   "offences": [
                     {
-                      "id": "f6a5f414-d78c-4875-96b8-b4908d874912",
-                      "endDate": "2019-12-15",
-                      "startDate": "2019-12-14",
+                      "id": "46266818-6629-41f3-b7b9-75fe5b698159",
+                      "endDate": "2020-03-05",
+                      "startDate": "2020-03-04",
                       "offenceCode": "OF61131",
-                      "offenceWording": "Nuzid leh umiidipis bezbolivu so cihnejhof faslone doru sol pufges vad iroraku.",
+                      "offenceWording": "Tukas ussevo ubibiz uckolluk jopvuves tubobi gori liw ceslawab walfohon zezri galrejala cadamce henesvo.",
                       "statementOfOffence": {
                         "title": "Wounding with intent",
                         "welshTitle": "Wounding with intent",
@@ -52,22 +26,22 @@
                       "restrictFromCourtList": false
                     }
                   ],
-                  "firstName": "Corey",
-                  "dateOfBirth": "1989-12-13",
-                  "custodyTimeLimit": "2020-01-13",
-                  "specificRequirements": "Pu vuc ih kegjiv ibtas jururlo unu su podo lohvuzna roltepru nenavbik cewhu tu.",
+                  "firstName": "Georgia",
+                  "dateOfBirth": "1990-03-03",
+                  "custodyTimeLimit": "2020-04-03",
+                  "specificRequirements": "Sidde vokoti osgihed mobeb hep heh vag fidu iwbe wakuz odesaginu fopmec dom cid ji ku diluga hodaka.",
                   "restrictFromCourtList": false
                 },
                 {
-                  "id": "4bf39b43-dad8-4e02-a63c-b6a5d3fd89b8",
-                  "lastName": "NEWMAN",
+                  "id": "d66cce32-a4ac-4d3e-820a-759575d764ee",
+                  "lastName": "ROVAI",
                   "offences": [
                     {
-                      "id": "28faf0b3-f37d-4980-85eb-36c02dc76b2e",
-                      "endDate": "2019-12-15",
-                      "startDate": "2019-12-14",
+                      "id": "0b9e842f-0da3-494d-b9ad-92e5a112e168",
+                      "endDate": "2020-03-05",
+                      "startDate": "2020-03-04",
                       "offenceCode": "OF61131",
-                      "offenceWording": "Muluf ro ajhut gazfa wilitib soate nuduc ho akilus honel zupdan loco okuto vuodiok jiarib.",
+                      "offenceWording": "Fuzawi ilomiw gacomip ler rulos noldebja ne soda kafke de deuzi pu ege zem.",
                       "statementOfOffence": {
                         "title": "Wounding with intent",
                         "welshTitle": "Wounding with intent",
@@ -76,81 +50,132 @@
                       "restrictFromCourtList": false
                     }
                   ],
-                  "firstName": "Mable",
-                  "dateOfBirth": "1989-12-13",
-                  "custodyTimeLimit": "2020-01-13",
-                  "specificRequirements": "Efgo dajsu gino ru pet ihva ikijagce puzceg pa co enewutev sadeit.",
-                  "restrictFromCourtList": false
+                  "firstName": "Gussie",
+                  "dateOfBirth": "1990-03-03",
+                  "custodyTimeLimit": "2020-04-03",
+                  "specificRequirements": "Pu sev uparu nifefu rad waajinu hehapa go uw upocano jehfuduto sem jubus tisemad reis afepetil pislu kerlasam.",
+                  "restrictFromCourtList": true
                 }
-              ]
+              ],
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "8f2a4ce9-d25f-4a0d-b56d-6f2b31c7ffe9",
+                "authorityCode": "CPS",
+                "caseReference": "29OZ372379"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
             },
             {
-              "startTime": "2019-12-15T09:21",
-              "endTime": "2019-12-15T09:51",
-              "hearingType": {
-                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
-                "description": "Sentence"
-              },
-              "restrictFromCourtList": false,
-              "applicationReference": "19RV5760680",
+              "endTime": "2020-03-30T11:00",
               "applicant": {
-                "id": "8d41b127-ad50-4175-b590-3d253356f1de",
-                "lastName": "LUCAS",
-                "firstName": "Vernon",
+                "id": "bc390e77-420b-4484-a4d8-5146a75063a0",
+                "lastName": "YOSHIDA",
+                "firstName": "Jackson",
                 "isRespondent": false,
                 "restrictFromCourtList": false,
                 "courtApplicationPartyType": "PERSON_DEFENDANT"
               },
+              "startTime": "2020-03-30T10:30",
+              "hearingType": {
+                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                "description": "Plea and Trial Preparation"
+              },
               "respondents": [
                 {
-                  "id": "9cc9b614-ccc6-42b0-aa1b-1bfc27382e32",
-                  "lastName": "BOUVIER",
-                  "firstName": "Adele",
+                  "id": "1b1ef7ad-dba7-4ead-97c9-4cb2eeece65d",
+                  "lastName": "SHARP",
+                  "firstName": "Lee",
+                  "isRespondent": true,
+                  "restrictFromCourtList": false,
+                  "courtApplicationPartyType": "PERSON"
+                },
+                {
+                  "id": "c9ba3e73-b7d6-419c-ae14-2db1ef8063a2",
+                  "lastName": "TACCONI",
+                  "firstName": "Kyle",
                   "isRespondent": true,
                   "restrictFromCourtList": false,
                   "courtApplicationPartyType": "PERSON"
                 }
-              ]
+              ],
+              "weekCommencing": false,
+              "applicationReference": "22JO397611",
+              "restrictFromCourtList": false
             }
-          ]
-        },
-        {
-          "sittingDate": "2019-12-15",
-          "weekCommencing": false,
-          "courtRoomId": "6508af42-e4d4-396d-a752-d676ebd38f6d",
+          ],
           "judiciary": [
             {
-              "judicialId": "fe6ac6e5-a087-3488-98cd-ca68c8c447d4",
+              "judicialId": "34173cb3-8f07-389d-9beb-c2ac9128303f",
               "judicialRoleType": {
-                "judiciaryType": "DISTRICT_JUDGE"
+                "judiciaryType": "CIRCUIT_JUDGE"
               }
             }
           ],
+          "courtRoomId": "64b0f4cf-2dde-310b-b7da-cab57b285b6f",
+          "sittingDate": "2020-03-30",
+          "weekCommencing": false
+        },
+        {
           "hearings": [
             {
-              "startTime": "2019-12-15T09:22",
-              "endTime": "2019-12-15T10:07",
+              "endTime": "2020-03-30T14:30",
+              "startTime": "2020-03-30T14:00",
+              "defendants": [
+                {
+                  "id": "95f5a62b-8082-4003-8892-10d7452da4b5",
+                  "isYouth": false,
+                  "lastName": "Protractor-3199234783",
+                  "offences": [
+                    {
+                      "id": "01faf31f-0c60-49e8-a296-fbdb1787ebb3",
+                      "startDate": "2020-02-07",
+                      "offenceCode": "PS90010",
+                      "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
+                      "statementOfOffence": {
+                        "title": "Public service vehicle - passenger use altered / defaced   ticket",
+                        "welshTitle": "",
+                        "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
+                        "welshLegislation": ""
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "John",
+                  "dateOfBirth": "1977-10-17",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false
+                }
+              ],
               "hearingType": {
                 "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
                 "description": "Sentence"
               },
-              "restrictFromCourtList": false,
               "caseIdentifier": {
-                "authorityId": "3cd8e977-d53b-471f-85dc-9e19bb36e49a",
-                "authorityCode": "CPS",
-                "caseReference": "44FE7726250"
+                "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+                "authorityCode": "TFL",
+                "caseReference": "TFL3199234783"
               },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            },
+            {
+              "endTime": "2020-03-30T10:15",
+              "startTime": "2020-03-30T10:00",
               "defendants": [
                 {
-                  "id": "6e4c5278-f63f-4760-bd20-77b96f955db5",
-                  "lastName": "LAZZERI",
+                  "id": "8a0225f5-9fc9-4252-bf5b-4a1b502bd836",
+                  "lastName": "MACK",
                   "offences": [
                     {
-                      "id": "326f75ec-2403-4107-a525-c4ab550e9882",
-                      "endDate": "2019-12-15",
-                      "startDate": "2019-12-14",
+                      "id": "f0bea9f7-01ad-4a68-b8bd-eda5161afc8d",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
                       "offenceCode": "OF61131",
-                      "offenceWording": "Facap tifujra vab zavukke tedas fiskuk vij iruhe wujhop botduzo eppa vecu hasisus hu dak.",
+                      "offenceWording": "Dul botumoko folopzo savzoz vig jic lokota fobdot ci raidsi gietesuk pabow bo ziwasa mobnauci tihkohuma siwte zif.",
                       "statementOfOffence": {
                         "title": "Wounding with intent",
                         "welshTitle": "Wounding with intent",
@@ -159,45 +184,600 @@
                       "restrictFromCourtList": false
                     }
                   ],
-                  "firstName": "Harriett",
-                  "dateOfBirth": "1989-12-13",
-                  "custodyTimeLimit": "2020-01-13",
-                  "specificRequirements": "Esihez ojwir kuhgebti piwum farmapsel woruh nofri jipte zid ozsic iveulies ma odseil bemki idtotni paoweim kuh.",
+                  "firstName": "Robert",
+                  "dateOfBirth": "1990-03-05",
+                  "custodyTimeLimit": "2020-04-05",
+                  "specificRequirements": "Wot fi we wo li afgaave pazej gafoso judaefi molecpo ozu bu liko be.",
                   "restrictFromCourtList": false
                 }
-              ]
+              ],
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "b241c183-c35d-4234-b99b-a5f225647bc1",
+                "authorityCode": "CPS",
+                "caseReference": "39MK773201"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "072b030b-a126-32f4-b237-4f342be9ed44",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "28813316-35dc-30b7-a94f-07aeec664d9f",
+          "sittingDate": "2020-03-30",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2020-03-30T14:30",
+              "startTime": "2020-03-30T14:00",
+              "defendants": [
+                {
+                  "id": "74cdbcc7-c7ed-45cf-ada6-1418636ca144",
+                  "lastName": "OLSON",
+                  "offences": [
+                    {
+                      "id": "37fb766d-546f-4324-bd2f-62b2edf4b5e5",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Oh te wigopdi gege reur ilowigu mokzac pu bimrepdi cifofe si sab kupaevi uta sefune powtoro sopkivvo keudubi.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "0ee19239-93cb-454c-8eda-00cfb6865bbc",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Vuj liswudu wale tezaful kef ugojafo bo dupru kihow viczuan hesseteg gaw sohfacoh tamowuk ke os fugeb.",
+                      "statementOfOffence": {
+                        "title": "Harrassment",
+                        "welshTitle": "Harrassment",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "d3b7c2c4-8353-4ccd-8d82-54eec715d4fc",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Fampubvo dibi mitegub epouf uwu jo nisa zidu norcevso nifef aseroljeb gadgi loz.",
+                      "statementOfOffence": {
+                        "title": "Armed robbery",
+                        "welshTitle": "Armed robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Hettie",
+                  "dateOfBirth": "1990-03-05",
+                  "custodyTimeLimit": "2020-04-05",
+                  "specificRequirements": "An na botdi pe ke hiw nusibsi houj bobijuv jopici mo opfukor gujjohos ca lacih leriiv.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "0deb1671-322b-4331-ad30-4fa30b10f8ff",
+                "authorityCode": "CPS",
+                "caseReference": "82RT142177"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
             },
             {
-              "startTime": "2019-12-15T09:21:11",
-              "endTime": "2019-12-15T09:51:11",
-              "hearingType": {
-                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
-                "description": "Sentence"
-              },
-              "restrictFromCourtList": false,
-              "applicationReference": "41TL7690690",
+              "endTime": "2020-03-30T15:00",
               "applicant": {
-                "id": "cb9ee4d4-369f-422e-8a5f-fa2af408247b",
-                "lastName": "BENINI",
-                "firstName": "Olga",
+                "id": "1f793916-f10e-4ddf-9ad3-cb9618d811f1",
+                "lastName": "HEWITT",
+                "firstName": "Jonathan",
                 "isRespondent": false,
                 "restrictFromCourtList": false,
                 "courtApplicationPartyType": "PERSON_DEFENDANT"
               },
+              "startTime": "2020-03-30T14:30",
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
               "respondents": [
                 {
-                  "id": "a1ac08ac-99e9-4507-ad84-77ec9b674e06",
-                  "lastName": "MARIE",
-                  "firstName": "Eula",
+                  "id": "f351250b-bb5b-4af7-bed1-5f35194ceda9",
+                  "lastName": "LORENZ",
+                  "firstName": "Edwin",
                   "isRespondent": true,
                   "restrictFromCourtList": false,
                   "courtApplicationPartyType": "PERSON"
                 }
-              ]
+              ],
+              "weekCommencing": false,
+              "applicationReference": "97NY403444",
+              "restrictFromCourtList": true
             }
-          ]
+          ],
+          "judiciary": [
+            {
+              "judicialId": "1385974e-d590-3a43-8616-ff7bdb3f7439",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            },
+            {
+              "isDeputy": false,
+              "judicialId": "18064d61-b6f9-3dab-8681-a460779b8429",
+              "isBenchChairman": true,
+              "judicialRoleType": {
+                "judiciaryType": "MAGISTRATE"
+              }
+            }
+          ],
+          "courtRoomId": "64b0f4cf-2dde-310b-b7da-cab57b285b6f",
+          "sittingDate": "2020-03-30",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2020-03-31T09:50",
+              "startTime": "2020-03-31T09:30",
+              "defendants": [
+                {
+                  "id": "28ebeda8-2cd2-4c4e-bab1-16ec8a8055e6",
+                  "lastName": "VICIANI",
+                  "offences": [
+                    {
+                      "id": "ea651fce-ca66-4df4-8fc6-8b1df755c326",
+                      "endDate": "2020-02-19",
+                      "startDate": "2020-02-18",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ac ijirut regorlav rusupo udijeke tuljof jadapfo ram voso rotneve fajo ovji us.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "f71c5784-676b-4d90-9900-23e304c75b87",
+                      "endDate": "2020-02-19",
+                      "startDate": "2020-02-18",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Kepba litaha nihugam fezajefi sojowo teju le kijuned lakun aho uvazu pais.",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "21b09769-9e8b-40d8-b7c4-6971a598f293",
+                      "endDate": "2020-02-19",
+                      "startDate": "2020-02-18",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ojuguf sefne wac hibaz hegunoweb misur pel gef onu mal og humji.",
+                      "statementOfOffence": {
+                        "title": "Armed robbery",
+                        "welshTitle": "Armed robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "f97f9945-15d6-46b8-9d4b-4f47e7f2a1d4",
+                      "endDate": "2020-02-19",
+                      "startDate": "2020-02-18",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Tazol kit osersok abumufgaz wug kah wufjulag dejan nupgu russu ron ojpeh zafeszif vemle uviuda hoztu seta keraz.",
+                      "statementOfOffence": {
+                        "title": "Murder",
+                        "welshTitle": "Murder",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Willie",
+                  "dateOfBirth": "1990-02-17",
+                  "custodyTimeLimit": "2020-03-17",
+                  "specificRequirements": "Go vakez uhidiger irvoza obenu jin vimli geju sicora ilhahhoc vi wesguefu uvma muvof vocpad opimoic esi anrar.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                "description": "Plea and Trial Preparation"
+              },
+              "caseIdentifier": {
+                "authorityId": "d6976413-06ca-4d37-81d3-e20ff65a0487",
+                "authorityCode": "CPS",
+                "caseReference": "63PG659815"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "1385974e-d590-3a43-8616-ff7bdb3f7439",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "64b0f4cf-2dde-310b-b7da-cab57b285b6f",
+          "sittingDate": "2020-03-31",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2020-04-01T09:50",
+              "startTime": "2020-04-01T09:30",
+              "defendants": [
+                {
+                  "id": "28ebeda8-2cd2-4c4e-bab1-16ec8a8055e6",
+                  "lastName": "VICIANI",
+                  "offences": [
+                    {
+                      "id": "ea651fce-ca66-4df4-8fc6-8b1df755c326",
+                      "endDate": "2020-02-19",
+                      "startDate": "2020-02-18",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ac ijirut regorlav rusupo udijeke tuljof jadapfo ram voso rotneve fajo ovji us.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "f71c5784-676b-4d90-9900-23e304c75b87",
+                      "endDate": "2020-02-19",
+                      "startDate": "2020-02-18",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Kepba litaha nihugam fezajefi sojowo teju le kijuned lakun aho uvazu pais.",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "21b09769-9e8b-40d8-b7c4-6971a598f293",
+                      "endDate": "2020-02-19",
+                      "startDate": "2020-02-18",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ojuguf sefne wac hibaz hegunoweb misur pel gef onu mal og humji.",
+                      "statementOfOffence": {
+                        "title": "Armed robbery",
+                        "welshTitle": "Armed robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "f97f9945-15d6-46b8-9d4b-4f47e7f2a1d4",
+                      "endDate": "2020-02-19",
+                      "startDate": "2020-02-18",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Tazol kit osersok abumufgaz wug kah wufjulag dejan nupgu russu ron ojpeh zafeszif vemle uviuda hoztu seta keraz.",
+                      "statementOfOffence": {
+                        "title": "Murder",
+                        "welshTitle": "Murder",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Willie",
+                  "dateOfBirth": "1990-02-17",
+                  "custodyTimeLimit": "2020-03-17",
+                  "specificRequirements": "Go vakez uhidiger irvoza obenu jin vimli geju sicora ilhahhoc vi wesguefu uvma muvof vocpad opimoic esi anrar.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                "description": "Plea and Trial Preparation"
+              },
+              "caseIdentifier": {
+                "authorityId": "d6976413-06ca-4d37-81d3-e20ff65a0487",
+                "authorityCode": "CPS",
+                "caseReference": "63PG659815"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "1385974e-d590-3a43-8616-ff7bdb3f7439",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "64b0f4cf-2dde-310b-b7da-cab57b285b6f",
+          "sittingDate": "2020-04-01",
+          "weekCommencing": false
+        },
+        {
+          "hearings": [
+            {
+              "endTime": "2020-04-02T15:30",
+              "startTime": "2020-04-02T15:00",
+              "defendants": [
+                {
+                  "id": "0cdb0ce2-6030-42c9-8993-570ec6e8d202",
+                  "isYouth": false,
+                  "lastName": "Protractor-9475962494",
+                  "offences": [
+                    {
+                      "id": "5941236f-2950-4326-9fa6-6f3547a386ea",
+                      "startDate": "2020-02-07",
+                      "offenceCode": "PS90010",
+                      "offenceWording": "On 10/08/2016 At threadneedle street EC2 Being a passenger on a Public service Vehicle operated on behalf of London Bus Services Limited being used for the carriage of passengers at separate fares where the vehicle was being operated by a Driver without a Conductor did not as directed by the Driver an Inspector or a Notice displayed on the vehicle pay the fare for the journey in accordance with the direction",
+                      "statementOfOffence": {
+                        "title": "Public service vehicle - passenger use altered / defaced   ticket",
+                        "welshTitle": "",
+                        "legislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
+                        "welshLegislation": ""
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "John",
+                  "dateOfBirth": "1977-10-17",
+                  "hearingLanguageNeeds": "ENGLISH",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "5ae4c090-0f70-4694-b4fc-707633d2b430",
+                "description": "Sentence"
+              },
+              "caseIdentifier": {
+                "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+                "authorityCode": "TFL",
+                "caseReference": "TFL9475962494"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "e44e875c-1210-3e4f-a371-6c05008048b2",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "64b0f4cf-2dde-310b-b7da-cab57b285b6f",
+          "sittingDate": "2020-04-02",
+          "weekCommencing": false
         }
-      ]
+      ],
+      "crestCourtSite": {
+        "id": "ab0f75a8-01d8-3e42-8c82-686c44afdf31",
+        "oucode": "C62SS00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "457",
+        "crestCourtName": "SWANSEA",
+        "crestCourtSiteId": "457",
+        "crestCourtFullName": "SWANSEA",
+        "crestCourtSiteCode": "A",
+        "crestCourtSiteName": "SWANSEA",
+        "crestCourtShortName": "SWANS"
+      }
+    },
+    {
+      "sittings": [
+        {
+          "hearings": [
+            {
+              "endTime": "2020-03-30T10:15",
+              "startTime": "2020-03-30T10:00",
+              "defendants": [
+                {
+                  "id": "028d9d29-486c-4847-8872-d1f4c71d00b1",
+                  "lastName": "GIANNINI",
+                  "offences": [
+                    {
+                      "id": "5f7dd932-80c1-424f-a94e-bd501efa3d47",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ecuccot junorwu lila wehub az abfovhe gubo viponwa kovnaji mobup ruda pag dama.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Douglas",
+                  "dateOfBirth": "1990-03-05",
+                  "custodyTimeLimit": "2020-04-05",
+                  "specificRequirements": "Ubifana kema sukagsen zi pausu ruub ro ucnih mowuz podoab supbefe va nudtecol.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "00460a3d-7490-4219-b15d-3666cb22d220",
+                "authorityCode": "CPS",
+                "caseReference": "35RG682958"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            },
+            {
+              "endTime": "2020-03-30T10:45",
+              "startTime": "2020-03-30T10:30",
+              "defendants": [
+                {
+                  "id": "e21e4311-8677-4695-ad6e-ee563ecd2d37",
+                  "lastName": "BRAVO",
+                  "offences": [
+                    {
+                      "id": "153e9eab-5eee-46fb-81c9-b8feccca8a02",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Jaf dumfimam ufwo imnife mitsad tig naghurnaf piumaoti fol festek tobgohi dewijov tikel ove lomi olurif ozaletak zacvaj.",
+                      "statementOfOffence": {
+                        "title": "Wounding with intent",
+                        "welshTitle": "Wounding with intent",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "4a645e7d-3f36-42fd-bede-4fcfaeeee18f",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Ko edcocow gipzu wijtonsid hofivtuc filuvel cejahe jowam mokot cik fez ujuva wosugma meme lu ca omges.",
+                      "statementOfOffence": {
+                        "title": "Robbery",
+                        "welshTitle": "Robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "5db562e2-5f73-4faf-9e2b-0c9fa62b09f6",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Bemuogu win meppu iwsifa ugo po kin ko mal rol afetu aduugeog bahjelpub midag.",
+                      "statementOfOffence": {
+                        "title": "Armed robbery",
+                        "welshTitle": "Armed robbery",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    },
+                    {
+                      "id": "74b70911-c3b9-4c01-859e-cb3c780d4e68",
+                      "endDate": "2020-03-07",
+                      "startDate": "2020-03-06",
+                      "offenceCode": "OF61131",
+                      "offenceWording": "Nifdaiji iga luhifomu ru vebihe hicgocise ebunedi higak azi fibdifih hu li selco.",
+                      "statementOfOffence": {
+                        "title": "Murder",
+                        "welshTitle": "Murder",
+                        "legislation": "legislation"
+                      },
+                      "restrictFromCourtList": false
+                    }
+                  ],
+                  "firstName": "Gertrude",
+                  "dateOfBirth": "1990-03-05",
+                  "custodyTimeLimit": "2020-04-05",
+                  "defenceOrganisation": "EY Solicitors",
+                  "specificRequirements": "Mimces wubepzen so mogvuwlu fiburvud um git jiz amobigok sa mopasa ziezfot kig.",
+                  "restrictFromCourtList": false
+                }
+              ],
+              "hearingType": {
+                "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+                "description": "Trial"
+              },
+              "caseIdentifier": {
+                "authorityId": "363594f1-0389-415d-9922-119a1833fb01",
+                "authorityCode": "CPS",
+                "caseReference": "34UC737169"
+              },
+              "weekCommencing": false,
+              "restrictFromCourtList": false
+            }
+          ],
+          "judiciary": [
+            {
+              "judicialId": "c0c7c76d-30bd-3dca-afc9-6f40275bdc0a",
+              "judicialRoleType": {
+                "judiciaryType": "CIRCUIT_JUDGE"
+              }
+            }
+          ],
+          "courtRoomId": "1f9630dc-e4ba-3378-8880-2369883394b2",
+          "sittingDate": "2020-03-30",
+          "weekCommencing": false
+        }
+      ],
+      "crestCourtSite": {
+        "id": "eb1cea9e-ae67-38eb-8966-f55d038d1350",
+        "oucode": "C62SS00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "457",
+        "crestCourtName": "SWANSEA",
+        "crestCourtSiteId": "756",
+        "crestCourtFullName": "SWANSEA",
+        "crestCourtSiteCode": "B",
+        "crestCourtSiteName": "CARMARTHEN",
+        "crestCourtShortName": "SWANS"
+      }
+    },
+    {
+      "sittings": [],
+      "crestCourtSite": {
+        "id": "c0966b48-ddb3-3fea-91ac-01c2ba7cd1a2",
+        "oucode": "C62SS00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "457",
+        "crestCourtName": "SWANSEA",
+        "crestCourtSiteId": "761",
+        "crestCourtFullName": "SWANSEA",
+        "crestCourtSiteCode": "C",
+        "crestCourtSiteName": "HAVERFORDWEST",
+        "crestCourtShortName": "SWANS"
+      }
+    },
+    {
+      "sittings": [],
+      "crestCourtSite": {
+        "id": "97ae1b36-2c7e-3270-a1da-820f0ecee64b",
+        "oucode": "C62SS00",
+        "courtType": "CROWN_COURT",
+        "crestCourtId": "457",
+        "crestCourtName": "SWANSEA",
+        "crestCourtSiteId": "457",
+        "crestCourtFullName": "SWANSEA",
+        "crestCourtSiteCode": "D",
+        "crestCourtSiteName": "THE CRIMINAL COURT, GUILDHALL",
+        "crestCourtShortName": "SWANS"
+      }
     }
-  ]
+  ],
+  "courtCentreId": "ddce58c9-446f-33f4-89cb-914ed173dfb8"
 }

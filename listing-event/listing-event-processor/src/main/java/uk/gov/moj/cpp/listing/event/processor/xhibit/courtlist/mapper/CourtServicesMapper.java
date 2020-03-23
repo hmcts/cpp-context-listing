@@ -573,11 +573,7 @@ public class CourtServicesMapper {
         for (final JsonObject hearingJson : sittingJson.getJsonArray("hearings").getValuesAs(JsonObject.class)) {
 
             final UUID hearingTypeId = fromString(hearingJson.getJsonObject("hearingType").getString("id"));
-
-            if (!processedHearingTypes.contains(hearingTypeId)) {
-
                 verifyCaseStructureGeneration(pHearingTypeId, processedHearingTypes, casesStructure, hearingJson, hearingTypeId);
-            }
         }
         return casesStructure;
     }
