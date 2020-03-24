@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
-import static java.util.UUID.fromString;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtHouseStructure;
@@ -15,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.UUID;
 
 import javax.json.JsonObject;
 import javax.xml.bind.JAXBElement;
@@ -74,7 +72,7 @@ public class FirmListMapper extends AbstractCourtListMapper {
 
     private Map<String, FirmCourtListStructure> buildFirmListStructure(final List<JsonObject> sittings, final JsonObject crestCourtSite) {
         final HashMap<String, FirmCourtListStructure> firmCourtListStructureSittingMap = new HashMap<>();
-        final HashMap<UUID, Integer> currentSeqNumOfCourt = new HashMap<>();
+        final HashMap<String, Integer> currentSeqNumOfCourt = new HashMap<>();
 
         if (!sittings.isEmpty()) {
             sittings.forEach(sitting -> {
@@ -82,15 +80,15 @@ public class FirmListMapper extends AbstractCourtListMapper {
 
                 final FirmCourtListStructure firmCourtListStructure = getFirmCourtListStructureWithCourtHouse(crestCourtSite);
 
-                final String key = sitting.getString(SITTING_DATE, EMPTY);
+                final String sittingDate = sitting.getString(SITTING_DATE, EMPTY);
                 if (sitting.containsKey(COURT_ROOM_ID)) {
-                    final UUID courtRoomId = fromString(sitting.getString(COURT_ROOM_ID));
-                    if (null == currentSeqNumOfCourt.get(courtRoomId)) {
-                        currentSeqNumOfCourt.put(courtRoomId, 1);
+                    final String sequenceNumOfCourtKey = sittingDate + sitting.getString(COURT_ROOM_ID);
+                    if (null == currentSeqNumOfCourt.get(sequenceNumOfCourtKey)) {
+                        currentSeqNumOfCourt.put(sequenceNumOfCourtKey, 1);
                     } else {
-                        currentSeqNumOfCourt.put(courtRoomId, currentSeqNumOfCourt.get(courtRoomId) + 1);
+                        currentSeqNumOfCourt.put(sequenceNumOfCourtKey, currentSeqNumOfCourt.get(sequenceNumOfCourtKey) + 1);
                     }
-                    sittingList.getSitting().add(courtServicesMapper.generateSittingStructure(sitting, currentSeqNumOfCourt.get(courtRoomId)));
+                    sittingList.getSitting().add(courtServicesMapper.generateSittingStructure(sitting, currentSeqNumOfCourt.get(sequenceNumOfCourtKey)));
                 } else {
                     sittingList.getSitting().add(courtServicesMapper.generateSittingStructure(sitting, 1));
                 }
@@ -98,7 +96,7 @@ public class FirmListMapper extends AbstractCourtListMapper {
                 firmCourtListStructure.setSittings(sittingList);
                 firmCourtListStructure.setSittingDate(LocalDate.parse(sitting.getString(SITTING_DATE)));
 
-                buildFirmCourtListStructureAndReserveList(firmCourtListStructureSittingMap, sitting, sittingList, firmCourtListStructure, key);
+                buildFirmCourtListStructureAndReserveList(firmCourtListStructureSittingMap, sitting, sittingList, firmCourtListStructure, sittingDate);
             });
         } else {
 
@@ -133,6 +131,7 @@ public class FirmListMapper extends AbstractCourtListMapper {
             } else {
                 firmCourtListStructureSittingMap.put(key, firmCourtListStructure);
             }
+            firmCourtListStructureSittingMap.get(key).getSittings().getSitting().sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));
         }
     }
 }

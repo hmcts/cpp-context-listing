@@ -69,11 +69,9 @@ public class WarnedListMapper extends AbstractCourtListMapper {
                         courtList.getWithoutFixedDate().add(generateWithoutFixedDate(sittingJson, hearingTypeId));
                         processedHearingTypes4Fixed.add(hearingTypeId);
                     }
-                } else {
-                    if (!processedHearingTypes4Fixed.contains(hearingTypeId)) {
+                } else if (!processedHearingTypes4Fixed.contains(hearingTypeId)) {
                         courtList.getWithFixedDate().add(generateWithFixedDate(sittingJson, hearingTypeId));
                         processedHearingTypes4Fixed.add(hearingTypeId);
-                    }
                 }
             });
         }
