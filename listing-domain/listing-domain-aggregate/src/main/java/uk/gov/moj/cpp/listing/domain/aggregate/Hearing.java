@@ -189,7 +189,7 @@ public class Hearing implements Aggregate {
                                final String reportingRestrictionReason,
                                final ZonedDateTime startDate, final LocalDate endDate, CourtCentreDefaults courtCentreDefaults,
                                final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds,
-                               final Integer hearingTypeDuration) {
+                               final Integer hearingTypeDuration, final Optional<String> adjournedFromDate) {
 
         if (notCurrentlyListed()) {
             final LocalTime startTime = startDate.toLocalTime();
@@ -207,6 +207,7 @@ public class Hearing implements Aggregate {
                                     .withDescription(type.getDescription())
                                     .build())
                             .withAllocated(false)
+                            .withAdjournedFromDate(adjournedFromDate)
                             .withJudiciary(judiciary.stream()
                                     .map(NewDomainToEventConverter::buildJudicialRole)
                                     .collect(toList()))

@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.core.courts.Defendant;
@@ -19,6 +21,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -30,7 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+@SuppressWarnings({"squid:S3655","squid:S1067"})
 @ServiceComponent(Component.EVENT_LISTENER)
 public class HearingEventListener {
 
@@ -152,9 +155,23 @@ public class HearingEventListener {
                         .withLegalAidStatus(originalDefendant.getLegalAidStatus())
                         .withProceedingsConcluded(defendant.getProceedingsConcluded())
                         .withIsYouth(originalDefendant.getIsYouth())
+                        .withAddress(nonNull(originalDefendant.getAddress()) && originalDefendant.getAddress().isPresent()  ? buildAddress(originalDefendant.getAddress()) : empty())
+                        .withNationalityDescription(nonNull(originalDefendant.getNationalityDescription()) && originalDefendant.getNationalityDescription().isPresent()  ?  originalDefendant.getNationalityDescription() : empty())
                         .build();
     }
 
+    private Optional<uk.gov.justice.core.courts.Address> buildAddress(Optional<uk.gov.justice.core.courts.Address> a) {
+
+        return          Optional.of(uk.gov.justice.core.courts.Address.address().
+                        withAddress1(a.get().getAddress1() )
+                        .withAddress2(a.get().getAddress2().isPresent() ? a.get().getAddress2() : empty())
+                        .withAddress3(a.get().getAddress3().isPresent() ? a.get().getAddress3() : empty())
+                        .withAddress4(a.get().getAddress4().isPresent() ? a.get().getAddress4() : empty())
+                        .withAddress5(a.get().getAddress5().isPresent() ? a.get().getAddress5() : empty())
+                        .withPostcode(a.get().getPostcode().isPresent() ? a.get().getPostcode() : empty())
+                        .build());
+
+    }
     private JsonNode convertToJsonNode(Object source) {
         return mapper.valueToTree(source);
     }

@@ -56,6 +56,12 @@
     "isYouth": {
       "type": "boolean"
     },
+    "nationalityDescription": {
+      "type": "string"
+    },
+    "address": {
+      "$ref": "http://justice.gov.uk/core/courts/address.json"
+    },
     "legalAidStatus": {
       "description": "Defendant Legal Aid Status",
       "type": "string"

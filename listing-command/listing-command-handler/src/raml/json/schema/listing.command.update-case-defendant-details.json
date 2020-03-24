@@ -72,8 +72,14 @@
         "pncId": {
           "type": "string"
         },
-        "isYouth":{
-          "type" : "boolean"
+        "isYouth": {
+          "type": "boolean"
+        },
+        "nationalityDescription": {
+          "type": "string"
+        },
+        "address": {
+          "$ref": "http://justice.gov.uk/core/courts/address.json"
         },
         "associatedDefenceOrganisation": {
           "description": "The associated defence representation details",

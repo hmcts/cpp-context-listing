@@ -3,6 +3,7 @@
     "name": "listing.events.hearing-listed"
   },
   "hearing": {
+    "adjournedFromDate": "2020-02-27",
     "allocated": false,
     "hearingDays": [
       {

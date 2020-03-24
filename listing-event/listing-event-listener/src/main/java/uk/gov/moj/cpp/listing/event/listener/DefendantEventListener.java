@@ -143,6 +143,8 @@ public class DefendantEventListener {
                 .withHearingLanguageNeeds(originalDefendant.getHearingLanguageNeeds())
                 .withRestrictFromCourtList(originalDefendant.getRestrictFromCourtList())
                 .withIsYouth(updatedDefendant.getIsYouth())
+                .withAddress(updatedDefendant.getAddress())
+                .withNationalityDescription(updatedDefendant.getNationalityDescription())
                 .withLegalAidStatus(originalDefendant.getLegalAidStatus())
                 .withProceedingsConcluded(originalDefendant.getProceedingsConcluded())
                 .build();

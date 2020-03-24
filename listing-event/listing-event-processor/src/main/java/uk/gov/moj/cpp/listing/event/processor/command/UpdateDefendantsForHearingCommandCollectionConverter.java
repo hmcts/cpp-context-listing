@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.event.processor.command;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
@@ -12,6 +14,7 @@ import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 import java.util.List;
 import java.util.Optional;
 
+@SuppressWarnings({"squid:S1067"})
 public class UpdateDefendantsForHearingCommandCollectionConverter implements Converter<DefendantsToBeUpdated, List<UpdateDefendantsForHearingCommand> > {
 
     @Override
@@ -40,10 +43,25 @@ public class UpdateDefendantsForHearingCommandCollectionConverter implements Con
                     .withOffences(convertOffences())
                     .withId(defendant.getId())
                     .withIsYouth(defendant.getIsYouth())
+                    .withAddress(nonNull(defendant.getAddress()) && defendant.getAddress().isPresent() ? buildAddress( defendant.getAddress() ) : empty())
+                    .withNationalityDescription(defendant.getNationalityDescription())
                     .build())
                 .collect(toList());
     }
+    public static  Optional<uk.gov.moj.cpp.listing.domain.Address> buildAddress(Optional<uk.gov.justice.core.courts.Address> address) {
 
+        if (nonNull(address) && address.isPresent()) {
+            return Optional.of(uk.gov.moj.cpp.listing.domain.Address.address().
+                    withAddress1( nonNull(address.get().getAddress1())? address.get().getAddress1() : "")
+                    .withAddress2( address.get().getAddress2().isPresent() ? address.get().getAddress2() : empty())
+                    .withAddress3(address.get().getAddress3().isPresent() ? address.get().getAddress3() : empty())
+                    .withAddress4(address.get().getAddress4().isPresent() ? address.get().getAddress4() : empty())
+                    .withAddress5( address.get().getAddress5().isPresent() ? address.get().getAddress5() : empty())
+                    .withPostcode(address.get().getPostcode().isPresent() ? address.get().getPostcode() : empty())
+                    .build());
+        }
+        return empty();
+    }
     private List<uk.gov.moj.cpp.listing.domain.Offence> convertOffences() {
         // Offences are not being updated as part of this event flow originating from
         // event public.progression.events.defendant-updated

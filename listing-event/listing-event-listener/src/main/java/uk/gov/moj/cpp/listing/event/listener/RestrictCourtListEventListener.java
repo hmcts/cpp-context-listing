@@ -116,6 +116,8 @@ public class RestrictCourtListEventListener {
                 .withHearingLanguageNeeds(originalDefendant.getHearingLanguageNeeds())
                 .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
                 .withIsYouth(originalDefendant.getIsYouth())
+                .withAddress(originalDefendant.getAddress())
+                .withNationalityDescription(originalDefendant.getNationalityDescription())
                 .withProceedingsConcluded(originalDefendant.getProceedingsConcluded())
                 .withLegalAidStatus(originalDefendant.getLegalAidStatus())
                 .build();

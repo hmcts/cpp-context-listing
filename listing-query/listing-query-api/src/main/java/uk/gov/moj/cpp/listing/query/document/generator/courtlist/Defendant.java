@@ -15,6 +15,10 @@ public class Defendant {
 
     private String age;
 
+    private String nationality;
+
+    private Address address;
+
     private List<Offence> offences;
 
     public String getOrganisationName() { return organisationName; }
@@ -39,6 +43,14 @@ public class Defendant {
         return offences;
     }
 
+    public String getNationality() {
+        return nationality;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
     public static Defendant.Builder defendant() {
         return new Defendant.Builder();
     }
@@ -49,7 +61,9 @@ public class Defendant {
         private String surname;
         private String dateOfBirth;
         private String age;
+        private String nationality;
         private List<Offence> offences;
+        private Address address;
 
         private Builder() {
         }
@@ -83,8 +97,15 @@ public class Defendant {
             this.offences = offences;
             return this;
         }
+        public Defendant.Builder withNationality(String nationality) {
+            this.nationality = nationality;
+            return this;
+        }
 
-
+        public Defendant.Builder withAddress(Address address) {
+            this.address = address;
+            return this;
+        }
         public Defendant build() {
             final Defendant defendant = new Defendant();
             defendant.organisationName = organisationName;
@@ -93,6 +114,8 @@ public class Defendant {
             defendant.dateOfBirth = this.dateOfBirth;
             defendant.age = this.age;
             defendant.offences = this.offences;
+            defendant.nationality = nationality;
+            defendant.address = address;
             return defendant;
         }
     }

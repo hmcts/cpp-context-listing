@@ -15,6 +15,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import uk.gov.justice.core.courts.Address;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
@@ -113,6 +114,15 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private static final String ORGANISATION_NAME = "ABC LTD";
     private static final String PERSON_TITLE = "Baroness";
+    private static final String PERSON_NATIONALITY_DESCRIPTION = "British";
+    private static final String PERSON_ADDRESS_1 = "address1";
+    private static final String PERSON_ADDRESS_2 = "address2";
+    private static final String PERSON_ADDRESS_3 = "address3";
+    private static final String PERSON_ADDRESS_4 = "address4";
+    private static final String PERSON_ADDRESS_5 = "address5";
+    private static final String PERSON_POSTCODE = "CR1 4BX";
+
+
 
     private static final boolean UNALLOCATED = false;
     private HearingsData hearingsData;
@@ -500,6 +510,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         //   List<DefendantData> defendantData = listedCaseData.getDefendants();
 
         return ListCourtHearing.listCourtHearing()
+                .withAdjournedFromDate(Optional.of(LocalDate.now().toString()))
                 .withHearings(asList(HearingListingNeeds.hearingListingNeeds()
                         .withCourtCentre(CourtCentre.courtCentre()
                                 .withId(hearingData.getCourtCentreId())
@@ -577,6 +588,15 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                         .withPersonDetails(Person.person()
                                                                 .withTitle(of(PERSON_TITLE))
                                                                 .withNationalityId(of(randomUUID()))
+                                                                .withNationalityDescription(of(PERSON_NATIONALITY_DESCRIPTION))
+                                                                .withAddress(of(Address.address()
+                                                                        .withAddress1(PERSON_ADDRESS_1)
+                                                                        .withAddress2(of(PERSON_ADDRESS_2))
+                                                                        .withAddress3(of(PERSON_ADDRESS_3))
+                                                                        .withAddress4(of(PERSON_ADDRESS_4))
+                                                                        .withAddress5(of(PERSON_ADDRESS_5))
+                                                                        .withPostcode(of(PERSON_POSTCODE))
+                                                                        .build()))
                                                                 .withFirstName(of(d.getFirstName()))
                                                                 .withLastName(d.getLastName())
                                                                 .withGender(Gender.MALE)

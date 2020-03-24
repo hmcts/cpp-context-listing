@@ -1,9 +1,11 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
+import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.listing.courts.Defendant;
 import uk.gov.justice.services.common.converter.Converter;
@@ -33,7 +35,30 @@ public class CourtsDefendantToDomainConverter implements Converter<uk.gov.justic
                 .withCustodyTimeLimit(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getCustodyTimeLimit() : empty())
                 .withOffences(emptyList())
                 .withIsYouth(d.getIsYouth().isPresent() ? d.getIsYouth():empty())
+                .withAddress(buildAddress(d))
+                .withNationalityDescription(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getNationalityDescription().isPresent() ?  d.getPersonDefendant().get().getPersonDetails().getNationalityDescription() : empty())
                 .build();
+    }
+
+    private Optional<uk.gov.moj.cpp.listing.domain.Address> buildAddress(Defendant defendant) {
+        Optional<Address> d = empty();
+
+        if (nonNull(defendant) && defendant.getPersonDefendant().isPresent()) {
+            d = defendant.getPersonDefendant().get().getPersonDetails().getAddress();
+
+        } else if (nonNull(defendant) && defendant.getLegalEntityDefendant().isPresent()) {
+            d = defendant.getLegalEntityDefendant().get().getOrganisation().getAddress();
+        }
+
+        return Optional.of(uk.gov.moj.cpp.listing.domain.Address.address().
+                withAddress1(d.isPresent() ? d.get().getAddress1() : "")
+                .withAddress2(d.isPresent() ? d.get().getAddress2() : empty())
+                .withAddress3(d.isPresent() ? d.get().getAddress3() : empty())
+                .withAddress4(d.isPresent() ? d.get().getAddress4() : empty())
+                .withAddress5(d.isPresent() ? d.get().getAddress5() : empty())
+                .withPostcode(d.isPresent() ? d.get().getPostcode() : empty())
+                .build());
+
     }
 
     private Optional<BailStatus> mapBailStatus(Defendant defendant){

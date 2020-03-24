@@ -445,13 +445,13 @@ public class ListingCommandHandlerTest {
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
         when(hearing.list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicalRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
-                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30))).thenReturn(events);
+                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30),eq(Optional.empty()))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicalRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
-                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30));
+                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30),eq(Optional.empty()));
 
     }
 
