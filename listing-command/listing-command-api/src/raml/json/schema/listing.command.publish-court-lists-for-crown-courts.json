@@ -1,0 +1,5 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/publish-court-lists-for-crown-courts.json",
+  "type": "object"
+}

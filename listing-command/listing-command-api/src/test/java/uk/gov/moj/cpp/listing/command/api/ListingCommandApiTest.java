@@ -135,6 +135,30 @@ public class ListingCommandApiTest {
     }
 
     @Test
+    public void listingCommandPublishCourtList() {
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        listingCommandApi.publishCourtList(envelope);
+
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+    }
+
+    public void publishCourtListForCrownCourtsForwardsAsExpected() {
+
+        listingCommandApi.publishCourtListForCrownCourts(envelope);
+
+        verify(sender).send(envelope);
+    }
+
+    public void courtListRequestExportAsExpected() {
+
+        listingCommandApi.courtListRequestExport(envelope);
+
+        verify(sender).send(envelope);
+    }
+
+    @Test
     public void listingCommandApiShouldCallNonDefaultDayDurationBuilder() {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);

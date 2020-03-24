@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.listing.query.view;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 
-
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
 
 import java.io.StringReader;

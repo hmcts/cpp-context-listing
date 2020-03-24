@@ -60,4 +60,9 @@ public class HearingQueryApi {
             throw new BadRequestException("Please ensure that the id is a valid UUID.", ex);
         }
     }
+
+    @Handles("listing.court.list.publish.status")
+    public JsonEnvelope publishCourtListStatus(final JsonEnvelope query) {
+        return requester.request(query);
+    }
 }
