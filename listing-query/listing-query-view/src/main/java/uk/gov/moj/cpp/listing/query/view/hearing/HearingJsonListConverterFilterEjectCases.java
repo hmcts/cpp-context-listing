@@ -1,25 +1,31 @@
 package uk.gov.moj.cpp.listing.query.view.hearing;
 
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.List;
+import java.util.Objects;
+
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import javax.json.JsonValue;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-
-import javax.json.*;
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.List;
-import java.util.Objects;
 
 public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJsonArrayConverter {
 
-
-    public static final String LISTED_CASES = "listedCases";
-    public static final String IS_EJECTED = "isEjected";
+    private static final String LISTED_CASES = "listedCases";
+    private static final String IS_EJECTED = "isEjected";
     private static final String JUDICIARY = "judiciary";
     private static final String HEARINGS = "hearings";
     private static final JsonArray EMPTY_JSON_ARRAY = Json.createArrayBuilder().build();
@@ -36,21 +42,21 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
                 .map(Hearing::getProperties)
                 .map(this::filterEjectCaseAndCourtApplications)
                 .filter(this::casesOrApplicationsExists)
-                .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.toString()) )
+                .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.toString()))
                 .collect(JsonArrayCollector.toArrayNode());
     }
 
     @Override
     public JsonArray convertHearingResultForAlphbeticalList(final List<Hearing> hearings) {
-        return hearings.stream().filter(hearing -> Objects.nonNull(hearing.getProperties()) )
+        return hearings.stream().filter(hearing -> Objects.nonNull(hearing.getProperties()))
                 .map(Hearing::getProperties)
-                .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.get(0).toString()) )
+                .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.get(0).toString()))
                 .collect(JsonArrayCollector.toArrayNode());
     }
 
     @Override
     public JsonArray convertHearingResultForPublicList(final Hearing hearing) {
-        if(hearing!=null){
+        if (hearing != null) {
             final JsonObject publicHearingResult = this.jsonFromString(hearing.getProperties().toString());
             final JsonArray judiciary = publicHearingResult.isNull(JUDICIARY) ?  EMPTY_JSON_ARRAY : publicHearingResult.getJsonArray(JUDICIARY);
             if(publicHearingResult.isNull(HEARINGS)) {
@@ -88,13 +94,13 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     }
 
     private void removeNodeForEjectedFlag(final JsonNode jsonNode) {
-        if(jsonNode!= null && !jsonNode.isMissingNode()) {
+        if (jsonNode != null && !jsonNode.isMissingNode()) {
             final ArrayNode arrayNode = (ArrayNode) jsonNode;
             for (int index = 0; index < arrayNode.size(); index++) {
                 final JsonNode listedCase = arrayNode.get(index);
                 final JsonNode isEjectedNode = listedCase.path(IS_EJECTED);
                 if (!isEjectedNode.isMissingNode() && isEjectedNode.asBoolean()) {
-                        arrayNode.remove(index);
+                    arrayNode.remove(index);
                 }
             }
         }
@@ -115,7 +121,7 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
         builder.add(key, value);
         source.entrySet().
                 forEach(e -> {
-                    if(e.getKey().equals(HEARINGS_BY_COURT_CENTRE_ID)) {
+                    if (e.getKey().equals(HEARINGS_BY_COURT_CENTRE_ID)) {
                         builder.add(e.getKey(), filterEjectCaseAndCourtApplicationFromHearing(e.getValue()));
                     } else {
                         builder.add(e.getKey(), e.getValue());
@@ -124,17 +130,17 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
         return builder.build();
     }
 
-    @SuppressWarnings({"squid:S1166","squid:S2139"})
+    @SuppressWarnings({"squid:S1166", "squid:S2139"})
     private JsonValue filterEjectCaseAndCourtApplicationFromHearing(final JsonValue hearingsByCourtCentreId) {
         final ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
         final JsonNode hearingByCourtCenterIdNode = mapper.valueToTree(hearingsByCourtCentreId);
-        if(hearingByCourtCenterIdNode.isArray()) {
-            final ArrayNode hearingByCourtCenterArrayNode = (ArrayNode)hearingByCourtCenterIdNode;
-            hearingByCourtCenterArrayNode.forEach(h-> {
-                if(h.isObject()) {
-                    final ObjectNode hearingObjectNode = (ObjectNode)h;
-                    final ArrayNode hearingsByHearingDateArrayNode =(ArrayNode)hearingObjectNode.get(HEARINGS_BY_HEARING_DATE);
-                    final ObjectNode hearingJsonObject = (ObjectNode)hearingsByHearingDateArrayNode.get(0).get(HEARING);
+        if (hearingByCourtCenterIdNode.isArray()) {
+            final ArrayNode hearingByCourtCenterArrayNode = (ArrayNode) hearingByCourtCenterIdNode;
+            hearingByCourtCenterArrayNode.forEach(h -> {
+                if (h.isObject()) {
+                    final ObjectNode hearingObjectNode = (ObjectNode) h;
+                    final ArrayNode hearingsByHearingDateArrayNode = (ArrayNode) hearingObjectNode.get(HEARINGS_BY_HEARING_DATE);
+                    final ObjectNode hearingJsonObject = (ObjectNode) hearingsByHearingDateArrayNode.get(0).get(HEARING);
                     removeNodeForEjectedFlag(hearingJsonObject.get(LISTED_CASES));
                     removeNodeForEjectedFlag(hearingJsonObject.get(COURT_APPLICATIONS));
                 }

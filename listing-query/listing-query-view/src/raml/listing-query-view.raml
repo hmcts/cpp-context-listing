@@ -98,6 +98,14 @@ protocols: [ HTTP, HTTPS ]
           description: If not provided then endDate is defaulted to '9999-01-01'.  (hearingStartDate between startDate and endDate) or (hearingEndDate between startDate and endDate) or (hearingStartDate <= startDate and hearingEndDate >= endDate)
           type: date
           required: false
+        weekCommencingStartDate:
+          description: (hearingWeekCommencingStartDate between weekCommencingStartDate and weekCommencingEndDate) or (hearingWeekCommencingStartDate <= weekCommencingStartDate and hearingWeekCommencingEndDate >= weekCommencingEndDate)
+          type: date
+          required: false
+        weekCommencingEndDate:
+          description: (hearingWeekCommencingEndDate between weekCommencingStartDate and weekCommencingEndDate) or (hearingWeekCommencingStartDate <= weekCommencingStartDate and hearingWeekCommencingEndDate >= weekCommencingEndDate)
+          type: date
+          required: false
 
       responses:
             200:
@@ -164,3 +172,100 @@ protocols: [ HTTP, HTTPS ]
               application/vnd.listing.search.court.list+json:
                 example:  !include json/listing.search.court.list.json
                 schema:  !include  json/schema/listing.search.court.list.json
+
+/courtlist/{courtCentreId}/{startDate}/{publishCourtListType}/{endDate}:
+  uriParameters:
+    courtCentreId:
+      description: The ID of the court site
+      type: string
+    startDate:
+      description: Start date for court list (fixed or week-commencing) YYYY-MM-DD
+      type: date
+    publishCourtListType:
+      description: WARN, DRAFT, FIRM, FINAL
+      type: string
+    endDate:
+      description: End date for court list (fixed or week-commencing) YYYY-MM-DD
+      type: date
+      required: false
+
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.courtlist+json
+          name: listing.courtlist
+      ...
+    queryParameters:
+      published:
+        description: True if published court lists are returned
+        type: boolean
+        required: false
+        default: false
+    responses:
+          200:
+              description: OK
+              body:
+                application/vnd.listing.courtlist+json:
+                  example: !include json/listing.courtlist.json
+                  schema:  !include json/schema/listing.courtlist.json
+
+/publishedcourtlist:
+  description: get references to published court lists
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.publishedcourtlist+json
+          name: listing.publishedcourtlist
+      ...
+    queryParameters:
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: false
+        publishCourtListType:
+          description: type of court list
+          type: string
+          required: false
+        startDate:
+          description: court list start date
+          type: string
+          required: false
+    responses:
+      200:
+        body:
+          application/vnd.listing.publishedcourtlist+json:
+            example:  !include json/listing.publishedcourtlist.json
+            schema:  !include  json/schema/listing.publishedcourtlist.json
+
+/courtListPublishStatus/{courtCentreId}:
+  description: get status of latest publish court list document
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.court.list.publish.status+json
+          name: listing.court.list.publish.status
+      ...
+    queryParameters:
+
+        publishCourtListTypes:
+          description: publish court list types delimited by comma(,) (example FIRM,WARN)
+          type: string
+          required: true
+        publishDate:
+          description: publish date in format 'YYYY-MM-DD'
+          type: date
+          required: true
+        weekCommencing:
+          description: set true when the request is for getting the details
+          type: boolean
+          required: false
+          default: false
+    responses:
+      200:
+        body:
+          application/vnd.listing.court.list.publish.status+json:
+            example:  !include json/listing.court.list.publish.status.json
+            schema:  !include  json/schema/listing.court.list.publish.status.json

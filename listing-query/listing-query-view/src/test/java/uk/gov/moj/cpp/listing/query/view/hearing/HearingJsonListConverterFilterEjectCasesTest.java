@@ -1,21 +1,5 @@
 package uk.gov.moj.cpp.listing.query.view.hearing;
 
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
-import org.apache.commons.io.IOUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.runners.MockitoJUnitRunner;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.util.List;
-import java.util.UUID;
-
 import static com.google.common.collect.Lists.newArrayList;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
@@ -24,6 +8,24 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.util.List;
+import java.util.UUID;
+
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+
+import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import org.apache.commons.io.IOUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HearingJsonListConverterFilterEjectCasesTest {

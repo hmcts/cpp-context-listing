@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/query/listing.courtlist.json",
+  "type": "object",
+  "properties": {
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "courtLists": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/json/courtlist.json",
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "courtCentreId",
+    "courtLists"
+  ],
+  "additionalProperties": false
+}

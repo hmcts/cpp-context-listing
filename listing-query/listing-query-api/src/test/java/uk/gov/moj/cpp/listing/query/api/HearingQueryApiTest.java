@@ -48,13 +48,15 @@ public class HearingQueryApiTest {
     private static final String LISTING_SEARCH = "listing.search";
     private static final String LISTING_SEARCH_HEARING = "listing.search.hearing";
     private static final String LISTING_RANGE_SEARCH = "listing.range";
+    private static final String LISTING_COURT_LIST_PUBLISH_STATUS = "listing.court.list.publish.status";
+    private static final String HEARING_SLOTS = "listing.search.hearing.slots";
 
-    private static final List<String> METHODS_WHICH_ARE_NOT_MERELY_PASS_THROUGH = ImmutableList.of("searchForHearingById");
+    private static final List<String> METHODS_WHICH_ARE_NOT_MERELY_PASS_THROUGH = ImmutableList.of("searchForHearingById", "searchHearingSlots");
 
     private Map<String, String> apiMethodsToHandlerNames;
 
     @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Mock
     private Requester requester;
@@ -74,7 +76,8 @@ public class HearingQueryApiTest {
         final List<String> ramlActionNames = readLines(new File(PATH_TO_RAML)).stream()
                 .filter(action -> !action.isEmpty())
                 .filter(line -> line.contains(NAME))
-                .filter(line -> line.contains(LISTING_SEARCH) || line.contains(LISTING_RANGE_SEARCH) || line.contains(LISTING_SEARCH_HEARING))
+                .filter(line -> !line.contains(HEARING_SLOTS))
+                .filter(line -> line.contains(LISTING_SEARCH) || line.contains(LISTING_RANGE_SEARCH) || line.contains(LISTING_COURT_LIST_PUBLISH_STATUS) || line.contains(LISTING_SEARCH_HEARING))
                 .map(line -> line.replaceAll(NAME, "").trim())
                 .collect(toList());
 
@@ -99,26 +102,29 @@ public class HearingQueryApiTest {
     @Test
     public void searchForHearingByIdWhenIdIsNotPresent() {
 
-        final JsonEnvelope proposedQuery = generateQuery(createObjectBuilder().build());
-
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("Attempted to search for a Hearing without an ID.");
 
+        final JsonEnvelope proposedQuery = generateQuery(createObjectBuilder().build());
+
         hearingQueryApi.searchForHearingById(proposedQuery);
+
     }
 
     @Test
     public void searchForHearingByIdWhenIdIsNotValid() {
+
+        expectedException.expect(BadRequestException.class);
+        expectedException.expectMessage("Please ensure that the id is a valid UUID");
 
         final JsonEnvelope proposedQuery = generateQuery(
                 createObjectBuilder()
                         .add("id", "849afced-85b")
                         .build());
 
-        expectedException.expect(BadRequestException.class);
-        expectedException.expectMessage("Please ensure that the id is a valid UUID.");
 
         hearingQueryApi.searchForHearingById(proposedQuery);
+
     }
 
     @Test

@@ -35,8 +35,8 @@ import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMA
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS_FOR_HEARING;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_ADD_OFFENCES_FOR_HEARING;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_APPLICATION_EJECTED;
-import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CASE_OR_APPLICATION_EJECTED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CASE_EJECTED;
+import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_CASE_OR_APPLICATION_EJECTED;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_DELETE_OFFENCES_FOR_HEARING;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_CASE_DEFENDANT_DETAILS;
 import static uk.gov.moj.cpp.listing.event.processor.ListingEventProcessor.COMMAND_UPDATE_CASE_DEFENDANT_OFFENCES;
@@ -173,7 +173,6 @@ public class ListingEventProcessorTest {
     private static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
     private static final String REMOVAL_REASON = "removalReason";
 
-
     @Mock
     private Sender sender;
 
@@ -285,8 +284,14 @@ public class ListingEventProcessorTest {
     @Mock
     private AllocatedHearingUpdatedFactory allocatedHearingUpdatedFactory;
 
+    @Mock
+    private SlotUpdater slotUpdater;
+
     @Captor
     private ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor;
+
+    @Captor
+    private ArgumentCaptor<String> stringArgumentCaptor;
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -453,12 +458,15 @@ public class ListingEventProcessorTest {
         HearingConfirmed hearingConfirmed = hearingConfirmed();
         given(hearingConfirmedFactory.create(hearingAllocatedForListing)).willReturn(hearingConfirmed);
 
-
         //when
         listingEventProcessor.handleHearingAllocatedForListingMessage(event);
 
         //then
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
+
+        verify(slotUpdater).updateSlot(event);
+        verify(slotUpdater, times(1)).updateSlot(event);
+
         assertThat(senderJsonEnvelopeCaptor.getValue(), is(jsonEnvelope(
                 withMetadataEnvelopedFrom(event)
                         .withName(PUBLIC_EVENT_HEARING_CONFIRMED),
@@ -528,6 +536,7 @@ public class ListingEventProcessorTest {
                 .add("type", TYPE)
                 .add("estimatedMinutes", ESTIMATED_MINUTES)
                 .add("judgeId", JUDICIAL_ID.toString())
+                .add("updateSlot", true)
                 .add("courtRoomId", COURT_ROOM_ID.toString())
                 .add("hearingDate", hearingDate.build());
 
@@ -651,7 +660,7 @@ public class ListingEventProcessorTest {
     }
 
     @Test
-    public void shouldHandleCourtApplicationAddedForListedHearing(){
+    public void shouldHandleCourtApplicationAddedForListedHearing() {
         //Given
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, CourtApplicationAddedForHearing.class)).willReturn(courtApplicationAddedForHearing);
@@ -752,7 +761,7 @@ public class ListingEventProcessorTest {
     }
 
     @Test
-    public void shouldHandleEventsCaseEjectedForAllHearingsAndPassToCommandHandler(){
+    public void shouldHandleEventsCaseEjectedForAllHearingsAndPassToCommandHandler() {
 
         final JsonObject ejectCaseForAllHearingObject = Json.createObjectBuilder()
                 .add(HEARING_IDS, Json.createArrayBuilder().add(HEARING_ID.toString()).build())
@@ -779,7 +788,7 @@ public class ListingEventProcessorTest {
     }
 
     @Test
-    public void shouldHandleEventsApplicationEjectedForAllHearingsAndPassToCommandHandler(){
+    public void shouldHandleEventsApplicationEjectedForAllHearingsAndPassToCommandHandler() {
 
         final JsonObject ejectApplicationForAllHearingObject = Json.createObjectBuilder()
                 .add(HEARING_IDS, Json.createArrayBuilder().add(HEARING_ID.toString()).build())
@@ -1176,7 +1185,7 @@ public class ListingEventProcessorTest {
                 .build();
     }
 
-    private uk.gov.justice.core.courts.ConfirmedHearing buildHearing(String formattedDateTime) {
+    private uk.gov.justice.core.courts.ConfirmedHearing buildHearing(final String formattedDateTime) {
         return uk.gov.justice.core.courts.ConfirmedHearing.confirmedHearing()
                 .withId(HEARING_ID)
                 .withHearingDays(Arrays.asList(HearingDay.hearingDay()

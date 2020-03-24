@@ -21,6 +21,15 @@
     "endDate": {
       "$ref": "#/definitions/localDate"
     },
+    "weekCommencingStartDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "weekCommencingEndDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "weekCommencingDurationInWeeks": {
+      "type": "integer"
+    },
     "nonSittingDays": {
       "type": "array",
       "items": {
@@ -49,13 +58,26 @@
   "required": [
     "hearingId",
     "type",
-    "startDate",
-    "nonSittingDays",
-    "nonDefaultDays",
     "jurisdictionType",
     "judiciary",
     "hearingLanguage",
-    "courtCentreId"
+    "courtCentreId",
+    "nonDefaultDays",
+    "nonSittingDays"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "startDate"
+      ]
+    },
+    {
+      "required": [
+        "weekCommencingStartDate",
+        "weekCommencingEndDate",
+        "weekCommencingDurationInWeeks"
+      ]
+    }
   ],
   "definitions": {
     "localDate": {

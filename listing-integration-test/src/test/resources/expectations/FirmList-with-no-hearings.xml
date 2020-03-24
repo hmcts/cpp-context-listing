@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:p2="http://www.govtalk.gov.uk/people/bs7666" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
+    <cs:DocumentID>
+        <cs:DocumentName>FILENAME</cs:DocumentName>
+        <cs:UniqueID>UNIQUEID</cs:UniqueID>
+        <cs:DocumentType>FL</cs:DocumentType>
+    </cs:DocumentID>
+    <cs:ListHeader>
+        <cs:ListCategory>Criminal</cs:ListCategory>
+        <cs:StartDate>2020-02-27</cs:StartDate>
+        <cs:EndDate>2020-03-03</cs:EndDate>
+        <cs:Version>NOT VERSIONED</cs:Version>
+        <cs:PublishedTime>PUBLISHEDTIME</cs:PublishedTime>
+    </cs:ListHeader>
+    <cs:CrownCourt>
+        <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+        <cs:CourtHouseCode CourtHouseShortName="PREST">448</cs:CourtHouseCode>
+        <cs:CourtHouseName>PRESTON</cs:CourtHouseName>
+    </cs:CrownCourt>
+    <cs:CourtLists>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>448</cs:CourtHouseCode>
+                <cs:CourtHouseName>PRESTON</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
+        </cs:CourtList>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>448</cs:CourtHouseCode>
+                <cs:CourtHouseName>PRESTON [THE SESSIONS HOUSE]</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
+        </cs:CourtList>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>751</cs:CourtHouseCode>
+                <cs:CourtHouseName>BARROW-IN-FURNESS</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
+        </cs:CourtList>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>768</cs:CourtHouseCode>
+                <cs:CourtHouseName>LANCASTER</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
+        </cs:CourtList>
+    </cs:CourtLists>
+</cs:FirmList>

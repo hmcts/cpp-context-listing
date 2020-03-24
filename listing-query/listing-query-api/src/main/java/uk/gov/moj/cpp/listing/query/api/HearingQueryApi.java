@@ -37,7 +37,7 @@ public class HearingQueryApi {
     }
 
     @Handles("listing.search.court.list")
-    public JsonEnvelope searchHearingsForCourtList(final JsonEnvelope query){
+    public JsonEnvelope searchHearingsForCourtList(final JsonEnvelope query) {
         return requester.request(query);
     }
 
@@ -61,4 +61,8 @@ public class HearingQueryApi {
         }
     }
 
+    @Handles("listing.court.list.publish.status")
+    public JsonEnvelope publishCourtListStatus(final JsonEnvelope query) {
+        return requester.request(query);
+    }
 }

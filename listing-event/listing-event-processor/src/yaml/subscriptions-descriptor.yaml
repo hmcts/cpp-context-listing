@@ -53,6 +53,24 @@ subscriptions_descriptor:
         - name: listing.events.case-resulted-defendant-proceedings-updated
           schema_uri: http://justice.gov.uk/listing/events/case-resulted-defendant-proceedings-updated.json
 
+        - name: listing.event.publish-court-list-produced
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-produced.json
+
+        - name: listing.event.publish-court-list-requested
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-requested.json
+
+
+        - name: listing.event.court-list-export-requested
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.court-list-export-requested.json
+
+
+        - name: listing.events.non-default-days-assigned-to-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.non-default-days-assigned-to-hearing.json
+
+
+        - name: listing.events.non-default-days-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.non-default-days-changed-for-hearing.json
+
       event_source_name: listing
 
     - name: public event subscription

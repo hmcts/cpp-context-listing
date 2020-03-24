@@ -62,6 +62,15 @@
       "description": "Adjournment date",
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
     },
+    "weekCommencingStartDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "weekCommencingEndDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "weekCommencingDurationInWeeks": {
+      "$ref": "listing-definitions.json#/definitions/positiveInteger"
+    },
     "hearingDays": {
       "type": "array",
       "items": {

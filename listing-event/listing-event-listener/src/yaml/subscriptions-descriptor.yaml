@@ -110,4 +110,41 @@ subscriptions_descriptor:
         - name: listing.events.adjourned-hearing-date-added
           schema_uri: http://justice.gov.uk/listing/events/listing.events.adjourned-hearing-date-added.json
 
+        - name: listing.events.start-date-removed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.start-date-removed-for-hearing.json
+
+        - name: listing.events.end-date-removed-from-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.end-date-removed-for-hearing.json
+
+        - name: listing.events.week-commencing-date-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.week-commencing-date-changed-for-hearing.json
+
+        - name: listing.events.week-commencing-date-removed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.week-commencing-date-removed-for-hearing.json
+
+        - name: listing.event.publish-court-list-export-failed
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-export-failed.json
+
+        - name: listing.event.publish-court-list-produced
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-produced.json
+
+
+        - name: listing.event.publish-court-list-produced
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-produced.json
+
+
+        - name: listing.event.publish-court-list-export-successful
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-export-successful.json
+
+        - name: listing.event.publish-court-list-requested
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-requested.json
+
+
+        - name: listing.event.published-court-list-stored
+          schema_uri: http://justice.gov.uk/listing/event/listing.event.published-court-list-stored.json
+
+
+        - name: listing.events.adjourned-hearing-date-added
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.adjourned-hearing-date-added.json
+
       event_source_name: listing

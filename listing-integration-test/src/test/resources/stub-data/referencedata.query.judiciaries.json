@@ -5,13 +5,13 @@
       "seqId": 1,
       "titlePrefix": "Mr",
       "titleJudiciaryPrefix": "Recorder",
-      "titleSuffix": "",
+      "titleSuffix": "judge",
       "titlePrefixWelsh": "Mr",
       "titleJudiciaryPrefixWelsh": "Recorder",
       "titleSuffixWelsh": "",
       "surname": "Ainsworth",
       "forenames": "Mark J",
-      "judiciaryType": "Recorder",
+      "judiciaryType": "RECORDER",
       "validFrom": "2017-08-01",
       "validTo": "2017-08-01"
     }

@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
-import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
 
 import java.time.LocalDate;
@@ -13,12 +12,12 @@ public class HearingData {
     private final UUID id;
     private final UUID courtCentreId;
     private final HearingTypeData hearingTypeData;
-    private final LocalDate hearingStartDate;
-    private final LocalDate hearingEndDate;
+    private LocalDate hearingStartDate;
+    private LocalDate hearingEndDate;
     private final int hearingEstimateMinutes;
 
     private final UUID courtRoomId;
-    private final ZonedDateTime hearingStartTime;
+    private ZonedDateTime hearingStartTime;
     private final List<ListedCaseData> listedCases;
     private final List<JudicialRoleData> judiciary;
     private final String reportingRestrictionReason;
@@ -26,6 +25,10 @@ public class HearingData {
     private final String jurisdictionType;
     private final List<CourtApplicationData> courtApplications;
     private final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds;
+
+    private LocalDate weekCommencingStartDate;
+    private LocalDate weekCommencingEndDate;
+    private int weekCommencingDuration;
 
     public HearingData(final UUID id, final UUID courtCentreId, final HearingTypeData hearingTypeData,
                        final LocalDate hearingStartDate, final LocalDate hearingEndDate,
@@ -50,6 +53,35 @@ public class HearingData {
         this.reportingRestrictionReason = reportingRestrictionReason;
         this.courtApplications = courtApplications;
         this.courtApplicationPartyNeeds = courtApplicationPartyNeeds;
+    }
+
+    public HearingData(final UUID id, final UUID courtCentreId, final HearingTypeData hearingTypeData,
+                       final LocalDate hearingStartDate, final LocalDate hearingEndDate,
+                       final int hearingEstimateMinutes, final UUID courtRoomId,
+                       final ZonedDateTime hearingStartTime, final List<ListedCaseData> listedCases,
+                       final List<JudicialRoleData> judiciary, final String jurisdictionType,
+                       final String reportingRestrictionReason,
+                       final List<CourtApplicationData> courtApplications,
+                       final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds,
+                       final LocalDate weekCommencingStartDate, final LocalDate weekCommencingEndDate, final int weekCommencingDuration) {
+
+        this.id = id;
+        this.courtCentreId = courtCentreId;
+        this.hearingEstimateMinutes = hearingEstimateMinutes;
+        this.hearingStartDate = hearingStartDate;
+        this.hearingEndDate = hearingEndDate;
+        this.hearingTypeData = hearingTypeData;
+        this.courtRoomId = courtRoomId;
+        this.hearingStartTime = hearingStartTime;
+        this.listedCases = listedCases;
+        this.judiciary = judiciary;
+        this.jurisdictionType = jurisdictionType;
+        this.reportingRestrictionReason = reportingRestrictionReason;
+        this.courtApplications = courtApplications;
+        this.courtApplicationPartyNeeds = courtApplicationPartyNeeds;
+        this.weekCommencingStartDate = weekCommencingStartDate;
+        this.weekCommencingEndDate = weekCommencingEndDate;
+        this.weekCommencingDuration = weekCommencingDuration;
     }
 
     public UUID getId() { return id; }
@@ -96,5 +128,17 @@ public class HearingData {
 
     public List<CourtApplicationPartyListingNeeds> getCourtApplicationPartyNeeds() {
         return courtApplicationPartyNeeds;
+    }
+
+    public LocalDate getWeekCommencingStartDate() {
+        return weekCommencingStartDate;
+    }
+
+    public LocalDate getWeekCommencingEndDate() {
+        return weekCommencingEndDate;
+    }
+
+    public int getWeekCommencingDuration() {
+        return weekCommencingDuration;
     }
 }

@@ -35,4 +35,4 @@ Feature: Allocate a hearing
     Given hearing listed with data for allocation
     And hearing days changed for hearing
     When you applyAllocationRules to a Hearing using a no-args
-    Then hearing allocated for listing
+    Then hearing allocated for listing with is update slot false

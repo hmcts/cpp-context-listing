@@ -1,0 +1,28 @@
+{
+  "cpXhibitCourtRoomMappings": [
+    {
+      "id": "COURT_ROOM_ID",
+      "oucode": "C04PR00",
+      "courtRoomId": 1970,
+      "crestCourtId": "448",
+      "crestCourtSiteId": "448",
+      "crestCourtSiteCode": "B",
+      "crestCourtRoomName": "Court 10 Site B",
+      "courtType": "CROWN_COURT",
+      "crestCourtSiteName": "TESTON",
+      "crestCourtShortName": "TEST"
+    },
+    {
+      "id": "58a2a528-9860-36c6-a429-ccc5840a1257",
+      "oucode": "C04PR00",
+      "courtRoomId": 1969,
+      "crestCourtId": "448",
+      "crestCourtSiteId": "448",
+      "crestCourtSiteCode": "A",
+      "crestCourtRoomName": "Court 9 Site A",
+      "courtType": "CROWN_COURT",
+      "crestCourtSiteName": "TESTON",
+      "crestCourtShortName": "TEST"
+    }
+  ]
+}

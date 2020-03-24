@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/event/listing.event.court-list-export-requested.json",
+  "type": "object",
+  "properties": {
+    "courtListId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "startDate": {
+      "$ref": "#/definitions/localDate"
+    },
+    "publishCourtListType": {
+      "type": "string",
+      "enum": [
+        "WARN",
+        "DRAFT",
+        "FIRM",
+        "FINAL"
+      ]
+    },
+    "requestedTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "courtListJson": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "courtListId",
+    "courtCentreId",
+    "startDate",
+    "publishCourtListType",
+    "requestedTime",
+    "courtListJson"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "localDate": {
+      "type": "string",
+      "format": "date"
+    }
+  }
+}

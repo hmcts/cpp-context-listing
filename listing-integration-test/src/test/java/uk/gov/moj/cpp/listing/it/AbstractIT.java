@@ -13,11 +13,17 @@ import java.util.UUID;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
+import com.jayway.restassured.response.Header;
 import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("WeakerAccess")
 public class AbstractIT {
         public static final UUID USER_ID_VALUE = randomUUID();
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractIT.class);
+    protected static final Header CPP_UID_HEADER = new Header(USER_ID, USER_ID_VALUE.toString());
 
     protected static RestClient restClient = new RestClient();
     protected static final DateTimeFormatter ZONED_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
