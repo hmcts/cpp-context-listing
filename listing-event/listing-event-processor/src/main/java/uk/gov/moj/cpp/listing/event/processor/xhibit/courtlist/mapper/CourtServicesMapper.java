@@ -178,7 +178,7 @@ public class CourtServicesMapper {
             final UUID courtRoomId = fromString(sittingJson.getString("courtRoomId"));
             final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-            sittingStructure.setCourtRoomNumber(xhibitReferenceDataService.getCourtRoomNumber(context.getEnvelope(), courtCentreId, courtRoomId));
+            sittingStructure.setCourtRoomNumber(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId, courtRoomId));
             sittingStructure.setSittingPriority("T");
         } else {
             sittingStructure.setCourtRoomNumber(UNMAPPED_COURT_ROOM);

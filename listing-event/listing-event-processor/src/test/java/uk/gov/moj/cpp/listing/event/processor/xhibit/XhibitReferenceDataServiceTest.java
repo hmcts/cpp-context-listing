@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
+import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
@@ -7,24 +8,37 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithDefaults;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
+import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
+import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
+import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMappingsList;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,7 +47,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.OngoingStubbing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +60,7 @@ public class XhibitReferenceDataServiceTest {
 
     private static final String PUBLISH_COURT_LIST_REQUESTED = "listing.event.publish-court-list-requested";
     private static final String REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS = "referencedata.query.cp-xhibit-court-mappings";
+    private static final String REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS = "referencedata.query.cp-xhibit-courtroom-mappings";
     private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
     private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
     private static final String REFERENCE_DATA_HEARING_TYPES = "referencedata.query.hearing-types";
@@ -52,7 +69,7 @@ public class XhibitReferenceDataServiceTest {
     private static final String PRESTON_COURT_SITE_NAME = "BARROW-IN-FURNESS";
     private static final String PRESTON_COURT_SITE_NAME2 = "LANCASTER";
 
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Requester requester;
 
     @Captor
@@ -61,10 +78,14 @@ public class XhibitReferenceDataServiceTest {
     @InjectMocks
     private XhibitReferenceDataService xhibitReferenceDataService;
 
+    private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectToObjectConverter();
+
     private JsonEnvelope inputEnvelope;
 
     @Before
     public void init() {
+        jsonObjectConverter = new JsonObjectToObjectConverter();
+        setField(this.jsonObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
         inputEnvelope =
                 envelopeFrom(
                         metadataWithDefaults()
@@ -154,51 +175,35 @@ public class XhibitReferenceDataServiceTest {
     @Test
     public void shouldGetCourtRoomNumberForMappedCourtRoom() {
 
-        final int expectedCourtRoomNumber = 432;
+        final int expectedCourtRoomNumber = 777;
         final UUID courtCentreId = randomUUID();
-        final UUID courtRoomId = randomUUID();
+        final UUID courtRoomId = UUID.fromString("b3c9eb70-93eb-4570-a1fa-7516a5e4e9cd");
 
-        final JsonEnvelope responseEnvelope =
-                envelopeFrom(
-                        metadataWithDefaults()
-                                .withName(REFERENCEDATA_QUERY_COURTROOM),
-                        createObjectBuilder()
-                                .add("courtrooms", createArrayBuilder()
-                                        .add(createObjectBuilder()
-                                                .add("id", courtRoomId.toString())
-                                                .add("courtroomName", "Court " + expectedCourtRoomNumber)
-                                                .build()))
-                                .build());
+        final JsonObject courtRoomMappingJson = givenPayload("/xhibit/mock-data/referencedata.query.cp-xhibit-courtroom-mappings.json");
+        final CourtRoomMappingsList courtRoomMappingsList = jsonObjectConverter.convert(courtRoomMappingJson, CourtRoomMappingsList.class);
 
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+        when(requester.request(any(JsonEnvelope.class), eq(CourtRoomMappingsList.class)).payload()).thenReturn(courtRoomMappingsList);
 
-        int actualCourtRoomNumber = xhibitReferenceDataService.getCourtRoomNumber(inputEnvelope, courtCentreId, courtRoomId);
+        int actualCourtRoomNumber = xhibitReferenceDataService.getCourtRoomNumber(courtCentreId, courtRoomId);
 
-        verify(requester).request(requestCaptor.capture());
+        verify(requester).request(requestCaptor.capture(), eq(CourtRoomMappingsList.class));
         assertEquals(actualCourtRoomNumber, expectedCourtRoomNumber);
     }
 
     @Test
     public void shouldGetCourtRoomNumberForUnmappedCourtRoom() {
-
         final int expectedCourtRoomNumber = -99;
         final UUID courtCentreId = randomUUID();
-        final UUID courtRoomId = randomUUID();
+        final UUID wrongCourtRoomId = UUID.fromString("b3c9eb70-93eb-4570-a1fa-7516a5e4e9ce");
 
-        final JsonEnvelope responseEnvelope =
-                envelopeFrom(
-                        metadataWithDefaults()
-                                .withName(REFERENCEDATA_QUERY_COURTROOM),
-                        createObjectBuilder()
-                                .add("courtrooms", createArrayBuilder()
-                                .build())
-                );
+        final JsonObject courtRoomMappingJson = givenPayload("/xhibit/mock-data/referencedata.query.cp-xhibit-courtroom-mappings.json");
+        final CourtRoomMappingsList courtRoomMappingsList = jsonObjectConverter.convert(courtRoomMappingJson, CourtRoomMappingsList.class);
 
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+        when(requester.request(any(JsonEnvelope.class), eq(CourtRoomMappingsList.class)).payload()).thenReturn(courtRoomMappingsList);
 
-        int actualCourtRoomNumber = xhibitReferenceDataService.getCourtRoomNumber(inputEnvelope, courtCentreId, courtRoomId);
+        int actualCourtRoomNumber = xhibitReferenceDataService.getCourtRoomNumber(courtCentreId, wrongCourtRoomId);
 
-        verify(requester).request(requestCaptor.capture());
+        verify(requester).request(requestCaptor.capture(), eq(CourtRoomMappingsList.class));
         assertEquals(actualCourtRoomNumber, expectedCourtRoomNumber);
     }
 

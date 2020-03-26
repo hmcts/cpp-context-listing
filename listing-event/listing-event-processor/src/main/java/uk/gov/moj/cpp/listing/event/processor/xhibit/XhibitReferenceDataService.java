@@ -1,31 +1,37 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
 import static java.lang.String.format;
+import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
+import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMappingsList;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.json.Json;
 import javax.json.JsonObject;
 
 public class XhibitReferenceDataService {
 
     private static final String REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS = "referencedata.query.cp-xhibit-court-mappings";
-    private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
+    private static final String REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS = "referencedata.query.cp-xhibit-courtroom-mappings";
     private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
     private static final String REFERENCE_DATA_HEARING_TYPES = "referencedata.query.hearing-types";
     private static final String REFERENCEDATA_QUERY_ORGANISATION_UNITS = "referencedata.query.organisationunits";
+    private static final String XHIBIT_COURT_MAPPINGS_QUERY_PARAM = "ouId";
     private static final String UNMAPPED_COURT_ROOM_NAME = "Court -99";
 
     @Inject
@@ -79,18 +85,38 @@ public class XhibitReferenceDataService {
         return createCourtLocation(court);
     }
 
-    public int getCourtRoomNumber(final JsonEnvelope envelope, final UUID courtCentreId, final UUID courtRoomId) {
+    public int getCourtRoomNumber(final UUID courtCentreId, final UUID courtRoomId) {
+        final CourtRoomMapping courtRoomMapping = getCourtRoomMappingBy(courtCentreId, courtRoomId);
+        return courtRoomNumberForCourtRoom(courtRoomMapping.getCrestCourtRoomName());
+    }
 
-        final JsonObject queryParameters = createObjectBuilder().add("id", courtCentreId.toString()).build();
+    private CourtRoomMapping getCourtRoomMappingBy(final UUID courtCentreId, final UUID courtRoomId) {
+        final CourtRoomMappingsList courtRoomMappingsList = getCourtRoomMappingsList(courtCentreId.toString());
 
-        final JsonObject courtRoom = requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_COURTROOM)
-                .withMetadataFrom(envelope))
-                .payloadAsJsonObject().getJsonArray("courtrooms").getValuesAs(JsonObject.class)
-                .stream().filter(c -> UUID.fromString(c.getString("id")).equals(courtRoomId))
+        return courtRoomMappingsList
+                .getCpXhibitCourtRoomMappings()
+                .stream()
+                .filter(courtRoomMappings -> Objects.nonNull(courtRoomMappings.getCourtRoomUUID()))
+                .filter(courtRoomMappings -> courtRoomMappings.getCourtRoomUUID().equals(courtRoomId))
                 .findFirst()
-                .orElse(Json.createObjectBuilder().add("courtroomName", UNMAPPED_COURT_ROOM_NAME).build());
+                .orElse(new CourtRoomMapping(UNMAPPED_COURT_ROOM_NAME));
+    }
 
-        return courtRoomNumberForCourtRoom(courtRoom.getString("courtroomName"));
+    private CourtRoomMappingsList getCourtRoomMappingsList(final String courtCentreId) {
+        final JsonObject query = createObjectBuilder()
+                .add(XHIBIT_COURT_MAPPINGS_QUERY_PARAM, courtCentreId)
+                .build();
+
+        final JsonEnvelope jsonEnvelope = envelopeFrom(
+                metadataBuilder()
+                        .withName(REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS)
+                        .withId(randomUUID())
+                        .build(),
+                query);
+
+        return requester
+                .request(jsonEnvelope, CourtRoomMappingsList.class)
+                .payload();
     }
 
     private int courtRoomNumberForCourtRoom(final String courtRoomName) {

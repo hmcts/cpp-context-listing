@@ -121,11 +121,11 @@ public class CourtListFileGeneratorTest {
         when(xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId1)).thenReturn(courtLocation1);
         when(xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId2)).thenReturn(courtLocation2);
         when(xhibitReferenceDataService.getCourtCentreIdsForCrestId(envelope, crestCourtId)).thenReturn(courtCentreIds);
-        when(xhibitReferenceDataService.getCourtRoomNumber(envelope, courtCentreId1,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(10);
-        when(xhibitReferenceDataService.getCourtRoomNumber(envelope, courtCentreId1,UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d"))).thenReturn(20);
-        when(xhibitReferenceDataService.getCourtRoomNumber(envelope, courtCentreId1,UUID.fromString("64b0f4cf-2dde-310b-b7da-cab57b285b6f"))).thenReturn(4);
-        when(xhibitReferenceDataService.getCourtRoomNumber(envelope, courtCentreId1,UUID.fromString("28813316-35dc-30b7-a94f-07aeec664d9f"))).thenReturn(3);
-        when(xhibitReferenceDataService.getCourtRoomNumber(envelope, courtCentreId1,UUID.fromString("1f9630dc-e4ba-3378-8880-2369883394b2"))).thenReturn(1);
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(10);
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d"))).thenReturn(20);
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("64b0f4cf-2dde-310b-b7da-cab57b285b6f"))).thenReturn(4);
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("28813316-35dc-30b7-a94f-07aeec664d9f"))).thenReturn(3);
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("1f9630dc-e4ba-3378-8880-2369883394b2"))).thenReturn(1);
 
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.json");
         when(xhibitReferenceDataService.getJudiciary(any(), any())).thenReturn(judiciary);
