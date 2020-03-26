@@ -5,6 +5,7 @@ import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import javax.json.Json;
 import javax.json.JsonObject;
 
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -265,7 +267,7 @@ public class XhibitReferenceDataServiceTest {
 
         final List<UUID> courtCentreIds = xhibitReferenceDataService.getCourtCentreIdsForCrestId(inputEnvelope, crownCourtCrestId);
 
-        assertEquals(1, courtCentreIds.size());
-        assertEquals(ouId, courtCentreIds.get(0));
+        assertThat(courtCentreIds.size(), is(equalTo(1)));
+        assertThat(courtCentreIds.get(0), is(Matchers.equalTo(ouId)));
     }
 }

@@ -74,10 +74,7 @@ public class DateAndTimeUtils {
     }
 
     private static String correctRawHours(final String rawHours) {
-        if (rawHours.trim().isEmpty()) {
-            return "0";
-        }
 
-        return rawHours.trim();
+        return rawHours.trim().isEmpty() ? "0" : rawHours.trim();
     }
 }

@@ -60,7 +60,7 @@
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
             <artifactId>listing-domain-xhibit</artifactId>
-            <version>1.0.84-SCSL-SNAPSHOT</version>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

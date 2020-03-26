@@ -144,4 +144,7 @@ subscriptions_descriptor:
           schema_uri: http://justice.gov.uk/listing/event/listing.event.published-court-list-stored.json
 
 
+        - name: listing.events.adjourned-hearing-date-added
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.adjourned-hearing-date-added.json
+
       event_source_name: listing

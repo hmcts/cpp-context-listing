@@ -60,9 +60,8 @@ public class ListingCommandApi {
     @Handles("listing.command.list-court-hearing")
     public void listCourtHearing(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("'listing.command.list-court-hearing' received with payload {}", envelope.toObfuscatedDebugString());
-        }
+
+        LOGGER.info("'listing.command.list-court-hearing' received with payload {}", envelope);
 
         final ListCourtHearing listCourtHearing = jsonObjectConverter.convert(payload, ListCourtHearing.class);
         LOGGER.info("'listing.command.list-court-hearing' listCourtHearing: {}", listCourtHearing);

@@ -526,10 +526,6 @@ public class CourtServicesMapper {
 
         chargeStructure.setCJSoffenceCode(offence.getString("offenceCode"));
         chargeStructure.setOffenceStatement(offence.getJsonObject("statementOfOffence").getString("title"));
-//        chargeStructure.setOffenceStartDateTime(convertDate(offence.getString("startDate")));
-//        if (offence.containsKey("endDate")) {
-//            chargeStructure.setOffenceEndDateTime(convertDate(offence.getString("endDate")));
-//        }
 
         return chargeStructure;
     }
