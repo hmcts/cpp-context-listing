@@ -20,6 +20,8 @@ import org.junit.Test;
 public class HearingDayDetailConverterTest {
     private static final ZonedDateTime START_DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
     private static final ZonedDateTime START_DATE_TIME1 = ZonedDateTime.parse("2019-12-04T11:15:30-05:00");
+    private static final ZonedDateTime START_DATE_TIME2 = ZonedDateTime.parse("2019-12-04T19:15:30-05:00");
+
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     private static final String EXPECTED_SECOND_HEARING_DETAIL_DATE = "2019-12-04";
@@ -60,16 +62,19 @@ public class HearingDayDetailConverterTest {
         assertThat(meridian, is("PM"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowIllegalArgumentExceptionIfTimeIsNotInAgreedRange() {
+    @Test
+    public void shouldGetAdMeridian() {
         final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T19:15:30-05:00");
 
-        getMeridian(zonedDateTime);
+        final String meridian = getMeridian(zonedDateTime);
+
+        assertThat(meridian, is("AD"));
     }
 
     private List<HearingDay> getHearingDayDetail() {
         final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
         final String formattedDateTime1 = DATE_TIME_FORMAT.format(START_DATE_TIME1);
+        final String formattedDateTime2 = DATE_TIME_FORMAT.format(START_DATE_TIME2);
         final HearingDay hearingDay = HearingDay.hearingDay()
                 .withSittingDay(ZonedDateTimes.fromString(formattedDateTime))
                 .withListedDurationMinutes(20)
@@ -78,6 +83,10 @@ public class HearingDayDetailConverterTest {
                 .withSittingDay(ZonedDateTimes.fromString(formattedDateTime1))
                 .withListedDurationMinutes(10)
                 .build();
-        return asList(hearingDay, hearingDay1);
+        final HearingDay hearingDay2 = HearingDay.hearingDay()
+                .withSittingDay(ZonedDateTimes.fromString(formattedDateTime2))
+                .withListedDurationMinutes(30)
+                .build();
+        return asList(hearingDay, hearingDay1, hearingDay2);
     }
 }
