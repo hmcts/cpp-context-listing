@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.BDDMockito.given;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -39,7 +40,6 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -62,6 +62,7 @@ public class SlotsToJsonStringConverterTest {
     private static final LocalDate START_DATE = LocalDate.parse("2019-12-02");
     private static final LocalTime START_TIME = LocalTime.now();
     private static final ZonedDateTime START_DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
+    private static final ZonedDateTime START_DATE_TIME_1 = ZonedDateTime.parse("2019-12-02T19:11:30-05:00");
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final String CIRCUIT_JUDGE = "CIRCUIT_JUDGE";
     private static final String HEARING_ALLOCATED_FOR_LISTING = "listing.events.hearing-allocated-for-listing";
@@ -78,6 +79,7 @@ public class SlotsToJsonStringConverterTest {
         final String ouCode = "B01LY00";
         final int courtRoomId = 2;
         final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
+        final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
         final String expectedZoneDateTime = HearingDayDetailConverter.getMeridian(DATE_TIME);
 
@@ -87,7 +89,7 @@ public class SlotsToJsonStringConverterTest {
 
         given(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).willReturn(courtRoomId);
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed();
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
 
         final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed);
 
@@ -99,6 +101,28 @@ public class SlotsToJsonStringConverterTest {
                 .assertThat("$[0].session", equalTo(expectedZoneDateTime))
                 .assertThat("$[0].duration", equalTo(10));
 
+    }
+
+    @Test
+    public void shouldReturnEmptyStringFromGetSlotDetailFromHearingConfirmed() {
+        final JsonEnvelope event = hearingAllocatedEvent();
+        final String ouCode = "B01LY00";
+        final int courtRoomId = 2;
+        final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T19:11:30-05:00");
+        final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME_1);
+
+        final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
+
+        given(listingReferenceDataService.getPayLoadForCourtRoom(event, COURT_CENTRE_ID.toString())).willReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject));
+
+        given(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).willReturn(courtRoomId);
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
+
+        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed);
+
+        assertNotNull(slotDetailFromHearingConfirmed);
+        assertThat(slotDetailFromHearingConfirmed.isEmpty(), equalTo(true));
     }
 
     @Test
@@ -141,9 +165,7 @@ public class SlotsToJsonStringConverterTest {
         return envelopeFrom(metadataWithDefaults().withName(HEARING_ALLOCATED_FOR_LISTING), hearingAllocated);
     }
 
-    private HearingConfirmed hearingConfirmed() {
-
-        final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
+    private HearingConfirmed hearingConfirmed(final String formattedDateTime) {
 
         return HearingConfirmed.hearingConfirmed()
                 .withConfirmedHearing(buildHearing(formattedDateTime))

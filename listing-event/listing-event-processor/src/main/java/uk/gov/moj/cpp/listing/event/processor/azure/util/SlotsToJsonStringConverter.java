@@ -22,6 +22,7 @@ import javax.inject.Inject;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,11 @@ public class SlotsToJsonStringConverter {
         final String ouCode = payLoadForCourtRoom.payloadAsJsonObject().getString("oucode");
 
         final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(hearingConfirmed.getConfirmedHearing().getHearingDays());
+
+        if(hearingDayDetails.isEmpty()){
+            return StringUtils.EMPTY;
+        }
+
         final String hearingId = hearingConfirmed.getConfirmedHearing().getId().toString();
         final Optional<String> courtScheduleId = empty();
 

@@ -16,8 +16,14 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HearingDayDetailConverter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HearingDayDetailConverter.class);
     private static final EnumSet<Meridian> amMeridian = range(TWELVE_AM, ONE_PM);
     private static final EnumSet<Meridian> pmMeridian = range(TWO_PM, FIVE_PM);
 
@@ -28,6 +34,7 @@ public class HearingDayDetailConverter {
 
         return hearingDays.stream()
                 .map(HearingDayDetailConverter::convertHearingDayToHearingDayDetail)
+                .filter(Objects::nonNull)
                 .collect(toList());
     }
 
@@ -48,7 +55,9 @@ public class HearingDayDetailConverter {
             return "PM";
         }
 
-        throw new IllegalArgumentException("Session does not fall within AM or PM range");
+        LOGGER.info("Session {} does not fall within AM or PM range", hour);
+
+        return "AD";
     }
 
     private static boolean checkMeridian(final String value, final String hour) {
@@ -60,6 +69,15 @@ public class HearingDayDetailConverter {
         final ZonedDateTime hearingDaySittingDay = hearingDay.getSittingDay();
         final LocalDate date = hearingDaySittingDay.toLocalDate();
 
-        return new HearingDayDetail(date.toString(), getMeridian(hearingDaySittingDay), duration);
+        final String session = StringUtils.trimToEmpty(getMeridian(hearingDaySittingDay));
+
+        HearingDayDetail hearingDayDetail = null;
+        if("AD".equalsIgnoreCase(session)){
+            LOGGER.info("Session is {} and does not fall within AM or PM range. Slot will not be updated", session);
+        }
+        else{
+            hearingDayDetail =  new HearingDayDetail(date.toString(), getMeridian(hearingDaySittingDay), duration);
+        }
+        return hearingDayDetail;
     }
 }

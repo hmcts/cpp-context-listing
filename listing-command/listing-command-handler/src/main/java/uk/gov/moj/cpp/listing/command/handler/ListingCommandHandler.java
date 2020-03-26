@@ -75,8 +75,7 @@ import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
-import uk.gov.moj.cpp.listing.command.service.SystemIdMapperService;
-import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
+import uk.gov.moj.cpp.listing.command.service.UUIDService;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CommandSimpleOffenceToDomainOffence;
@@ -188,7 +187,7 @@ public class ListingCommandHandler {
     private ReferenceDataService referenceDataService;
 
     @Inject
-    private SystemIdMapperService systemIdMapperService;
+    private UUIDService uuidService;
 
     @Inject
     private Clock clock;
@@ -772,7 +771,7 @@ public class ListingCommandHandler {
         final CourtListRequestExport courtListRequestExport =
                 jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), CourtListRequestExport.class);
 
-        final UUID courtListId = systemIdMapperService.getCourtListId(
+        final UUID courtListId = uuidService.getCourtListId(
                 courtListRequestExport.getCourtCentreId(),
                 courtListRequestExport.getPublishCourtListType(),
                 courtListRequestExport.getStartDate());
@@ -893,7 +892,7 @@ public class ListingCommandHandler {
         final StorePublishedCourtList command =
                 jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), StorePublishedCourtList.class);
 
-        final UUID courtListId = systemIdMapperService.getCourtListId(
+        final UUID courtListId = uuidService.getCourtListId(
                 command.getCourtCentreId(),
                 command.getPublishCourtListType(),
                 command.getStartDate());
