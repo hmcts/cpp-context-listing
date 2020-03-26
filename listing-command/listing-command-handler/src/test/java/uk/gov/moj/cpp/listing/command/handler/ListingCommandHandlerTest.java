@@ -105,8 +105,7 @@ import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
-import uk.gov.moj.cpp.listing.command.service.SystemIdMapperService;
-import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
+import uk.gov.moj.cpp.listing.command.service.UUIDService;
 import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CommandOffenceToDomainOffence;
@@ -383,7 +382,7 @@ public class ListingCommandHandlerTest {
     private ArgumentCaptor<CourtApplication> courtApplicationCaptor;
     private UUID LAA_STATUS_ID;
     @Mock
-    private SystemIdMapperService systemIdMapperService;
+    private UUIDService uuidService;
     @Spy
     private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CourtListExportRequested.class);
 
@@ -1492,7 +1491,7 @@ public class ListingCommandHandlerTest {
 
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.court-list-request-export", payload);
 
-        when(systemIdMapperService.getCourtListId(courtCentreId, publishCourtListType, startDate)).thenReturn(courtListId);
+        when(uuidService.getCourtListId(courtCentreId, publishCourtListType, startDate)).thenReturn(courtListId);
         when(eventSource.getStreamById(courtListId)).thenReturn(eventStream);
 
         listingCommandHandler.courtListRequestExport(commandEnvelope);
@@ -1634,7 +1633,7 @@ public class ListingCommandHandlerTest {
         final String courtListJson = "{}";
 
         when(eventSource.getStreamById(courtListId)).thenReturn(eventStream);
-        when(systemIdMapperService.getCourtListId(courtCentreId,
+        when(uuidService.getCourtListId(courtCentreId,
                 uk.gov.justice.listing.commands.PublishCourtListType.valueOf(publishCourtListType.name()), startDate)).thenReturn(courtListId);
 
         final JsonObject payload = Json.createObjectBuilder()
