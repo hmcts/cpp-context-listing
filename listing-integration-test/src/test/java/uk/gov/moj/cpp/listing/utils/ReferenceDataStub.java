@@ -53,11 +53,11 @@ public class ReferenceDataStub {
         waitForStubToBeReady(REFERENCE_DATA_COURT_MAPPINGS_QUERY_URL, REFERENCE_DATA_COURT_MAPPINGS_MEDIA_TYPE);
     }
 
-    public static void stubGetReferenceDataXhibitCourtRoomMappings(final int courtRoomId) {
+    public static void stubGetReferenceDataXhibitCourtRoomMappings(final UUID courtRoomUUID) {
         InternalEndpointMockUtils.stubPingFor("referencedata-service");
 
         String payload = getPayload("stub-data/referencedata.query.cp-xhibit-courtroom-mappings.json")
-                .replace("COURT_ROOM_ID", Integer.toString(courtRoomId));
+                .replace("COURT_ROOM_UUID", courtRoomUUID.toString());
 
         stubFor(get(urlPathMatching(REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_QUERY_URL))
                 .willReturn(aResponse().withStatus(SC_OK)
