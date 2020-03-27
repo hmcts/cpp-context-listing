@@ -29,6 +29,7 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class PublishCourtListIT extends AbstractIT {
@@ -65,6 +66,7 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.verifySentPublishedCourtListHasNoHearings();
     }
 
+    @Ignore("To be fixed in SCSL-469")
     @Test
     public void shouldPublishCourtListWithHearings() throws Exception {
 
