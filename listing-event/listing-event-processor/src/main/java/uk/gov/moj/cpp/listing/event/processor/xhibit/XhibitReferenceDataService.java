@@ -115,7 +115,7 @@ public class XhibitReferenceDataService {
                 query);
 
         return requester
-                .request(jsonEnvelope, CourtRoomMappingsList.class)
+                .requestAsAdmin(jsonEnvelope, CourtRoomMappingsList.class)
                 .payload();
     }
 

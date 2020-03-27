@@ -173,7 +173,7 @@ protocols: [ HTTP, HTTPS ]
                 example:  !include json/listing.search.court.list.json
                 schema:  !include  json/schema/listing.search.court.list.json
 
-/courtlist/{courtCentreId}/{startDate}/{publishCourtListType}/{endDate}:
+/courtlist/{courtCentreId}/{startDate}/{publishCourtListType}:
   uriParameters:
     courtCentreId:
       description: The ID of the court site
@@ -184,10 +184,6 @@ protocols: [ HTTP, HTTPS ]
     publishCourtListType:
       description: WARN, DRAFT, FIRM, FINAL
       type: string
-    endDate:
-      description: End date for court list (fixed or week-commencing) YYYY-MM-DD
-      type: date
-      required: false
 
   get:
     description: |
@@ -197,6 +193,10 @@ protocols: [ HTTP, HTTPS ]
           name: listing.courtlist
       ...
     queryParameters:
+      endDate:
+        description: End date for court list (fixed or week-commencing) YYYY-MM-DD
+        type: date
+        required: false
       published:
         description: True if published court lists are returned
         type: boolean
