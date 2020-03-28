@@ -91,7 +91,11 @@
                         }
                       ],
                       "firstName": "Cheyanne",
-                      "bailStatus": "UNCONDITIONAL",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
                       "dateOfBirth": "DATE_OF_BIRTH",
                       "defenceOrganisation": "TestOne"
                     },
@@ -127,7 +131,11 @@
                         }
                       ],
                       "firstName": "Rodger",
-                      "bailStatus": "UNCONDITIONAL",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
                       "dateOfBirth": "1980-10-12",
                       "defenceOrganisation": "TestTwo"
                     }
@@ -209,7 +217,6 @@
               ]
             }
           }
-
         ]
       }
     ]

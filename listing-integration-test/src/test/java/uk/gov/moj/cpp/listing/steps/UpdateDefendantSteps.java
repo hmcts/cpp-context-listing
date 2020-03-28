@@ -58,7 +58,9 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
 
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED = "public.progression.case-defendant-changed";
 
+    private static final String COMMAND_SELECTOR_UPDATE_CASE_DEFENDANT_DETAILS = "listing.command.update-case-defendant-details";
     private static final String EVENT_SELECTOR_DEFENDANTS_TO_BE_UPDATED = "listing.events.defendants-to-be-updated";
+    private static final String COMMAND_SELECTOR_UPDATE_DEFENDANTS_FOR_HEARING = "listing.command.update-defendants-for-hearing";
     private static final String EVENT_SELECTOR_DEFENDANT_DETAILS_UPDATED = "listing.events.new-defendant-details-updated";
 
 
@@ -254,33 +256,32 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     private UpdateCaseDefendantData getUpdateCaseDefendantDetails(UUID caseId, UpdatedDefendantData defendantData) {
 
         return UpdateCaseDefendantData.updateCaseDefendantDetails()
-            .withDefendant(Defendant.defendant()
-                .withId(defendantData.getDefendantId())
-                .withLegalEntityDefendant(of(LegalEntityDefendant.legalEntityDefendant()
-                        .withOrganisation(Organisation.organisation()
-                                .withName(defendantData.getLegalEntityName())
+                .withDefendant(Defendant.defendant()
+                        .withId(defendantData.getDefendantId())
+                        .withLegalEntityDefendant(of(LegalEntityDefendant.legalEntityDefendant()
+                                .withOrganisation(Organisation.organisation()
+                                        .withName(defendantData.getLegalEntityName())
+                                        .build())
+                                .build()))
+                        .withPersonDefendant(of(PersonDefendant.personDefendant()
+                                .withPersonDetails(Person.person()
+                                        .withLastName(defendantData.getLastName())
+                                        .withFirstName(of(defendantData.getFirstName()))
+                                        .withDateOfBirth(of(defendantData.getDateOfBirth()))
+                                        .withSpecificRequirements(of(defendantData.getSpecificRequirements()))
+                                        .withGender(Gender.FEMALE)
+                                        .build()
+                                )
+                                .withBailStatus(of(new BailStatus.Builder().withCode(defendantData.getBailStatus().getCode()).withDescription(defendantData.getBailStatus().getDescription()).withId(defendantData.getBailStatus().getId()).build()))
+                                .withCustodyTimeLimit(of(defendantData.getCustodyTimeLimit()))
                                 .build())
-                        .build()))
-                .withPersonDefendant(of(PersonDefendant.personDefendant()
-                    .withPersonDetails(Person.person()
-                            .withLastName(defendantData.getLastName())
-                            .withFirstName(of(defendantData.getFirstName()))
-                            .withDateOfBirth(of(defendantData.getDateOfBirth()))
-                            .withSpecificRequirements(of(defendantData.getSpecificRequirements()))
-                            .withGender(Gender.FEMALE)
-                        .build()
-                    )
-                    .withBailStatus(of(new BailStatus.Builder().withCode(defendantData.getBailStatus().getCode()).withDescription(defendantData.getBailStatus().getDescription()).withId(defendantData.getBailStatus().getId()).build()))
-                    .withCustodyTimeLimit(of(defendantData.getCustodyTimeLimit()))
-                    .build())
-
-                )
-                .withProsecutionCaseId(caseId)
-                .withDefenceOrganisation(of(organisation()
-                        .withName(defendantData.getOrganisationName())
-                        .build()))
-                .withPncId(of(defendantData.getPncId()))
-                .withIsYouth(defendantData.getYouth())
+                        )
+                        .withProsecutionCaseId(caseId)
+                        .withDefenceOrganisation(of(organisation()
+                                .withName(defendantData.getOrganisationName())
+                                .build()))
+                        .withPncId(of(defendantData.getPncId()))
+                        .withIsYouth(defendantData.getYouth())
                 .withAliases(defendantData.getAliases())
                     .withAssociatedDefenceOrganisation(of(defendantData.getAssociatedDefenceOrganisation()))
                 .build()

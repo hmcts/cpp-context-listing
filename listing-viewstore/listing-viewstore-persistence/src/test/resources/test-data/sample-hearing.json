@@ -72,7 +72,11 @@
             }
           ],
           "firstName": "Lina",
-          "bailStatus": "CONDITIONAL",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "B",
+            "description": "Conditional Bail"
+          },
           "dateOfBirth": "1988-11-02",
           "custodyTimeLimit": "2018-12-02",
           "specificRequirements": "Ren ke od vih tosavupum opaesah ligta oroiro lodu hajev uv cuzuc hom kiv rudem ez oho cafsinfu."
@@ -103,7 +107,11 @@
             }
           ],
           "firstName": "Virgie",
-          "bailStatus": "CONDITIONAL",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "B",
+            "description": "Conditional Bail"
+          },
           "dateOfBirth": "1988-11-02",
           "custodyTimeLimit": "2018-12-02",
           "specificRequirements": "Awifuha hutuz tod put sojeif un tojogse soh raw ojoul pofe nonzoani kizicu."

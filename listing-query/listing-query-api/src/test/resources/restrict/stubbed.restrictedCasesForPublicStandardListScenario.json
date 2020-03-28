@@ -92,7 +92,7 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
-                          "restrictFromCourtList" : false
+                          "restrictFromCourtList": false
                         },
                         {
                           "id": "77d5da0e-4d97-4668-8933-780e38b9dd98",
@@ -106,14 +106,18 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
-                          "restrictFromCourtList" : false
+                          "restrictFromCourtList": false
                         }
                       ],
                       "firstName": "Cheyanne",
-                      "bailStatus": "UNCONDITIONAL",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
                       "dateOfBirth": "DATE_OF_BIRTH",
                       "defenceOrganisation": "TestOne",
-                      "restrictFromCourtList" : true
+                      "restrictFromCourtList": true
                     },
                     {
                       "id": "86c38cef-cdbb-46d8-96a5-9b31845e95cc",
@@ -131,7 +135,7 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
-                          "restrictFromCourtList" : false
+                          "restrictFromCourtList": false
                         },
                         {
                           "id": "bfc5a983-a064-48c5-93b4-27d992308df0",
@@ -145,14 +149,18 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
-                          "restrictFromCourtList" : false
+                          "restrictFromCourtList": false
                         }
                       ],
                       "firstName": "Rodger",
-                      "bailStatus": "UNCONDITIONAL",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
                       "dateOfBirth": "1980-10-12",
                       "defenceOrganisation": "TestTwo",
-                      "restrictFromCourtList" : false
+                      "restrictFromCourtList": false
                     }
                   ],
                   "caseIdentifier": {
@@ -160,7 +168,7 @@
                     "authorityCode": "CPS",
                     "caseReference": "42GD8525719"
                   },
-                  "restrictFromCourtList" : true
+                  "restrictFromCourtList": true
                 }
               ],
               "courtCentreId": "COURT_CENTRE_ID",

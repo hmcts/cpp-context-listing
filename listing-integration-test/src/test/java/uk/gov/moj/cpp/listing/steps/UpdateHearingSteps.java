@@ -107,7 +107,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     public static final String FIELD_HEARING_TYPE_ID = "id";
     public static final String FIELD_HEARING_TYPE_DESCRIPTION = "description";
     public static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
-    private static final int DEFAULT_DURATION_MINS = (6*60)+30;
+    private static final int DEFAULT_DURATION_MINS = (6 * 60) + 30;
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final ZoneId BST = ZoneId.of("Europe/London");
     public static final String FIELD_JUDICIAL_ROLE_TYPE_ID = "judicialRoleTypeId";
@@ -226,7 +226,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     private static JsonObjectBuilder prepareJudicialRoleType(JudicialRoleTypeData judicialRoleType) {
-        if (judicialRoleType != null ) {
+        if (judicialRoleType != null) {
             JsonObjectBuilder builder = createObjectBuilder()
                     .add(FIELD_JUDICIARY_TYPE, judicialRoleType.getJudiciaryType());
             addNullableUUIDField(builder, FIELD_JUDICIAL_ROLE_TYPE_ID, judicialRoleType.getJudicialRoleTypeId());
@@ -236,7 +236,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     private static JsonObjectBuilder prepareJsonHearingType(HearingTypeData hearingType) {
-        if (hearingType != null ) {
+        if (hearingType != null) {
             return createObjectBuilder()
                     .add(FIELD_HEARING_TYPE_ID, hearingType.getTypeId().toString())
                     .add(FIELD_HEARING_TYPE_DESCRIPTION, hearingType.getTypeDescription());
@@ -369,7 +369,6 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
 
-
     public void verifyHearingUpdatedResultsInAllocationInMQ() {
 
         JsonPath jsRequest = new JsonPath(request);
@@ -489,22 +488,22 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     private void verifyHearingPublicDetails(JsonPath jsonResponse, String publicEventType) {
-        assertThat(jsonResponse.get(publicEventType+".id"), is(updatedHearingData.getHearingId().toString()));
-        assertThat(jsonResponse.get(publicEventType+".courtCentre.roomId"), is(updatedHearingData.getCourtRoomId().toString()));
-        assertThat(jsonResponse.get(publicEventType+".courtCentre.id"), is(updatedHearingData.getCourtCentreId().toString()));
-        assertThat(jsonResponse.get(publicEventType+".courtApplicationIds[0]"), is(hearingData.getCourtApplications().get(0).getId().toString()));
-        assertThat(jsonResponse.get(publicEventType+".hearingLanguage"), is(updatedHearingData.getHearingLanguage()));
-        assertThat(jsonResponse.get(publicEventType+".type.id"), is(updatedHearingData.getHearingTypData().getTypeId().toString()));
-        assertThat(jsonResponse.get(publicEventType+".type.description"), is(updatedHearingData.getHearingTypData().getTypeDescription()));
-        assertThat(jsonResponse.get(publicEventType+".judiciary[0].judicialId"), is(updatedHearingData.getJudiciary().get(0).getJudicialId().toString()));
-        assertThat(jsonResponse.get(publicEventType+".judiciary[0].judicialRoleType.judiciaryType"), is(updatedHearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType()));
-        assertThat(jsonResponse.get(publicEventType+".prosecutionCases[0].id"), is(hearingData.getListedCases().get(0).getCaseId().toString()));
-        assertThat(jsonResponse.get(publicEventType+".prosecutionCases[0].defendants[0].id"), is(hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString()));
-        assertThat(jsonResponse.get(publicEventType+".prosecutionCases[0].defendants[0].offences[0].id"), is(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getOffenceId().toString()));
-        assertThat(jsonResponse.get(publicEventType+".hearingDays[0].sittingDay"),
+        assertThat(jsonResponse.get(publicEventType + ".id"), is(updatedHearingData.getHearingId().toString()));
+        assertThat(jsonResponse.get(publicEventType + ".courtCentre.roomId"), is(updatedHearingData.getCourtRoomId().toString()));
+        assertThat(jsonResponse.get(publicEventType + ".courtCentre.id"), is(updatedHearingData.getCourtCentreId().toString()));
+        assertThat(jsonResponse.get(publicEventType + ".courtApplicationIds[0]"), is(hearingData.getCourtApplications().get(0).getId().toString()));
+        assertThat(jsonResponse.get(publicEventType + ".hearingLanguage"), is(updatedHearingData.getHearingLanguage()));
+        assertThat(jsonResponse.get(publicEventType + ".type.id"), is(updatedHearingData.getHearingTypData().getTypeId().toString()));
+        assertThat(jsonResponse.get(publicEventType + ".type.description"), is(updatedHearingData.getHearingTypData().getTypeDescription()));
+        assertThat(jsonResponse.get(publicEventType + ".judiciary[0].judicialId"), is(updatedHearingData.getJudiciary().get(0).getJudicialId().toString()));
+        assertThat(jsonResponse.get(publicEventType + ".judiciary[0].judicialRoleType.judiciaryType"), is(updatedHearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType()));
+        assertThat(jsonResponse.get(publicEventType + ".prosecutionCases[0].id"), is(hearingData.getListedCases().get(0).getCaseId().toString()));
+        assertThat(jsonResponse.get(publicEventType + ".prosecutionCases[0].defendants[0].id"), is(hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString()));
+        assertThat(jsonResponse.get(publicEventType + ".prosecutionCases[0].defendants[0].offences[0].id"), is(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getOffenceId().toString()));
+        assertThat(jsonResponse.get(publicEventType + ".hearingDays[0].sittingDay"),
                 is(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime()).format(ZONED_DATE_TIME_FORMAT)));
-        assertThat(jsonResponse.get(publicEventType+".hearingDays[0].listedDurationMinutes"), is(updatedHearingData.getNonDefaultDays().get(0).getDuration().get()));
-        assertThat(jsonResponse.get(publicEventType+".reportingRestrictionReason"), is(hearingData.getReportingRestrictionReason()));
+        assertThat(jsonResponse.get(publicEventType + ".hearingDays[0].listedDurationMinutes"), is(updatedHearingData.getNonDefaultDays().get(0).getDuration().get()));
+        assertThat(jsonResponse.get(publicEventType + ".reportingRestrictionReason"), is(hearingData.getReportingRestrictionReason()));
     }
 
     public void verifyHearingUpdatedWithNoCourtRoomResultsInUnallocationInMQ() {
@@ -707,7 +706,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
 
-    public void verifyHearingUpdatedWithNoCourtRoomAndUnallocatedWhenQueryingFromAPI(){
+    public void verifyHearingUpdatedWithNoCourtRoomAndUnallocatedWhenQueryingFromAPI() {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), UNALLOCATED));
@@ -727,7 +726,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                         )));
     }
 
-    public void verifyHearingUpdatedWithNoEndDateAndUnallocatedWhenQueryingFromAPI(){
+    public void verifyHearingUpdatedWithNoEndDateAndUnallocatedWhenQueryingFromAPI() {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), UNALLOCATED));
@@ -746,7 +745,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                                 hasNoJsonPath("$.hearings[0].endDate")
                         )));
     }
-    public void verifyHearingWithUpdatedJudiciaryWhenQueryingFromAPI(){
+
+    public void verifyHearingWithUpdatedJudiciaryWhenQueryingFromAPI() {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), ALLOCATED));
@@ -772,7 +772,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                                 ))));
     }
 
-    public void verifyHearingUpdatedWhenQueryingFromAPI(){
+    public void verifyHearingUpdatedWhenQueryingFromAPI() {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), ALLOCATED));
@@ -976,6 +976,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(fromString(updatedHearingData.getNonDefaultDays().get(0).getStartTime()).format(ZONED_DATE_TIME_FORMAT)))
                         )));
     }
+
     private void closeMessageConsumers() throws JMSException {
         privateMessageConsumerHearingAllocatedForListing.close();
         privateMessageConsumerTypeChanged.close();

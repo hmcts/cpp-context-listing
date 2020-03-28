@@ -90,8 +90,11 @@
                           }
                         }
                       ],
-
-                      "bailStatus": "UNCONDITIONAL",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
                       "defenceOrganisation": "TestOne"
                     },
                     {
@@ -125,8 +128,11 @@
                           }
                         }
                       ],
-
-                      "bailStatus": "UNCONDITIONAL",
+                      "bailStatus": {
+                        "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                        "code": "U",
+                        "description": "Unconditional Bail"
+                      },
                       "defenceOrganisation": "TestTwo"
                     }
                   ],
@@ -188,7 +194,6 @@
               "courtCentreId": "COURT_CENTRE_ID"
             }
           }
-
         ]
       }
     ]

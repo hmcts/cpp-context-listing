@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.query.api.service;
 
-import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static java.lang.Boolean.FALSE;
 import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.apache.commons.lang3.StringUtils.capitalize;
@@ -9,6 +8,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.trim;
 import static org.apache.commons.lang3.StringUtils.upperCase;
+import static org.drools.core.util.StringUtils.EMPTY;
 
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -146,7 +146,7 @@ public class AlphabeticalCourtListService {
         final AlphabeticalListDefendant.AlphabeticalListDefendantBuilder alphabeticalListDefendantBuilder =
                 AlphabeticalListDefendant.AlphabeticalListDefendantBuilder.anAlphabeticalListDefendant();
         alphabeticalListDefendantBuilder.withDefendantFullName(
-                isNotBlank(defendant.getString(ORGANISATION_NAME,EMPTY)) ? upperCase(defendant.getString(ORGANISATION_NAME)) :
+                isNotBlank(defendant.getString(ORGANISATION_NAME, EMPTY)) ? upperCase(defendant.getString(ORGANISATION_NAME)) :
                         upperCase(defendant.getString(LAST_NAME)) + "," + SPACE + defendant.getString(FIRST_NAME))
                 .withCourtRoomName(courtRoomDetails.getCourtRoomName())
                 .withHearingStartTime(startTime)

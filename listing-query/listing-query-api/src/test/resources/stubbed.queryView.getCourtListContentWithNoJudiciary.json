@@ -8,9 +8,7 @@
           "hearingDate": "START_DATE1",
           "hearingsByHearingDate": [
             {
-
-              "hearing":
-              {
+              "hearing": {
                 "id": "1f889523-4a2b-4662-a5a8-9fa949d97697",
                 "courtRoomId": "COURT_ROOM_ID",
                 "reportingRestrictionReason": "REPORTING_RESTRICTION_REASON",
@@ -57,7 +55,11 @@
                           }
                         ],
                         "firstName": "FIRST_NAME",
-                        "bailStatus": "CONDITIONAL"
+                        "bailStatus": {
+                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                          "code": "B",
+                          "description": "Conditional Bail"
+                        }
                       }
                     ],
                     "caseIdentifier": {
@@ -72,7 +74,6 @@
                   "description": "HEARING_TYPE"
                 }
               }
-
             }
           ]
         }

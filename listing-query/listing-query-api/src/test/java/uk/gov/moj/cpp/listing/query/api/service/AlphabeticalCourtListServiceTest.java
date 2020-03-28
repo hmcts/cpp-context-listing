@@ -203,10 +203,10 @@ public class AlphabeticalCourtListServiceTest {
     private JsonEnvelope buildRequestEnvelope(boolean isBST) {
         final JsonObject queryPayload = createObjectBuilder().add("hearings",
                 createArrayBuilder().add(createObjectBuilder()
-                        .add("hearingDate", isBST? LocalDates.to(SUMMER_HEARING_DATE) :LocalDates.to(HEARING_DATE))
+                        .add("hearingDate", isBST ? LocalDates.to(SUMMER_HEARING_DATE) : LocalDates.to(HEARING_DATE))
                         .add("hearingsByHearingDate", createArrayBuilder()
                                 .add(createObjectBuilder()
-                                        .add("startTime", isBST? ZonedDateTimes.toString(SUMMER_START_DATE_TIME):ZonedDateTimes.toString(START_DATE_TIME))
+                                        .add("startTime", isBST ? ZonedDateTimes.toString(SUMMER_START_DATE_TIME) : ZonedDateTimes.toString(START_DATE_TIME))
                                         .add("courtCentreId", COURT_CENTRE_ID.toString())
                                         .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN))
                                         .add("courtRoomId", COURT_ROOM_ID.toString())
@@ -232,36 +232,6 @@ public class AlphabeticalCourtListServiceTest {
                 queryPayload);
     }
 
-    private JsonEnvelope buildRequestEnvelopeWithOneDefendantRestricted() {
-        final JsonObject queryPayload = createObjectBuilder().add("hearings",
-                createArrayBuilder().add(createObjectBuilder()
-                        .add("hearingDate", LocalDates.to(HEARING_DATE))
-                        .add("hearingsByHearingDate", createArrayBuilder()
-                                .add(createObjectBuilder()
-                                        .add("startTime", ZonedDateTimes.toString(START_DATE_TIME))
-                                        .add("courtCentreId", COURT_CENTRE_ID.toString())
-                                        .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN))
-                                        .add("courtRoomId", COURT_ROOM_ID.toString())
-                                        .add("restrictFromCourtList", FALSE)
-                                        .add("defendants", createArrayBuilder().add(createObjectBuilder()
-                                                        .add("firstName", FIRST_NAME)
-                                                        .add("lastName", LAST_NAME)
-                                                        .add("restrictFromCourtList", FALSE)
-                                                )
-                                                        .add(createObjectBuilder()
-                                                                .add("firstName", FIRST_NAME)
-                                                                .add("lastName", LAST_NAME)
-                                                                .add("restrictFromCourtList", TRUE)
-                                                        )
-                                        )
-                                ))
-                        .build()).build()).build();
-        return envelopeFrom(
-                metadataOf(randomUUID(), QUERY_NAME)
-                        .withUserId(randomUUID().toString())
-                        .build(),
-                queryPayload);
-    }
 
     private JsonEnvelope buildRequestEnvelopeWithRestrictedCase() {
         final JsonObject queryPayload = createObjectBuilder().add("hearings",
@@ -295,6 +265,37 @@ public class AlphabeticalCourtListServiceTest {
                         )
                         .build()).build()).build();
 
+        return envelopeFrom(
+                metadataOf(randomUUID(), QUERY_NAME)
+                        .withUserId(randomUUID().toString())
+                        .build(),
+                queryPayload);
+    }
+
+    private JsonEnvelope buildRequestEnvelopeWithOneDefendantRestricted() {
+        final JsonObject queryPayload = createObjectBuilder().add("hearings",
+                createArrayBuilder().add(createObjectBuilder()
+                        .add("hearingDate", LocalDates.to(HEARING_DATE))
+                        .add("hearingsByHearingDate", createArrayBuilder()
+                                .add(createObjectBuilder()
+                                        .add("startTime", ZonedDateTimes.toString(START_DATE_TIME))
+                                        .add("courtCentreId", COURT_CENTRE_ID.toString())
+                                        .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN))
+                                        .add("courtRoomId", COURT_ROOM_ID.toString())
+                                        .add("restrictFromCourtList", FALSE)
+                                        .add("defendants", createArrayBuilder().add(createObjectBuilder()
+                                                        .add("firstName", FIRST_NAME)
+                                                        .add("lastName", LAST_NAME)
+                                                        .add("restrictFromCourtList", FALSE)
+                                                )
+                                                        .add(createObjectBuilder()
+                                                                .add("firstName", FIRST_NAME)
+                                                                .add("lastName", LAST_NAME)
+                                                                .add("restrictFromCourtList", TRUE)
+                                                        )
+                                        )
+                                ))
+                        .build()).build()).build();
         return envelopeFrom(
                 metadataOf(randomUUID(), QUERY_NAME)
                         .withUserId(randomUUID().toString())

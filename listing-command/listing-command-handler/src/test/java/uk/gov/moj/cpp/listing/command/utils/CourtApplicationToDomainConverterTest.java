@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -29,8 +30,9 @@ public class CourtApplicationToDomainConverterTest {
 
     @InjectMocks
     CommandBuilder commandBuilder;
+
     @Test
-    public void shouldConvertCourtApplicationWithApplicantRespondent(){
+    public void shouldConvertCourtApplicationWithApplicantRespondent() {
 
         final CourtApplication courtApplication = commandBuilder.buildCourtApplication();
         final uk.gov.moj.cpp.listing.domain.CourtApplication actual = converter.convert(courtApplication);
@@ -47,7 +49,7 @@ public class CourtApplicationToDomainConverterTest {
     }
 
     @Test
-    public void shouldConvertCourtApplicationWithLegalEntityDefendant(){
+    public void shouldConvertCourtApplicationWithLegalEntityDefendant() {
         final CourtApplication courtApplication = commandBuilder.buildCourtApplicationWithLegalEntity();
         final uk.gov.moj.cpp.listing.domain.CourtApplication actual = converter.convert(courtApplication);
         assertThat(actual.getId(), is(courtApplication.getId()));
@@ -56,7 +58,7 @@ public class CourtApplicationToDomainConverterTest {
     }
 
     @Test
-    public void shouldConvertCourtApplicationWithOrganisation(){
+    public void shouldConvertCourtApplicationWithOrganisation() {
         final CourtApplication courtApplication = commandBuilder.buildCourtApplicationWithOrganisation();
         final uk.gov.moj.cpp.listing.domain.CourtApplication actual = converter.convert(courtApplication);
         assertThat(actual.getId(), is(courtApplication.getId()));

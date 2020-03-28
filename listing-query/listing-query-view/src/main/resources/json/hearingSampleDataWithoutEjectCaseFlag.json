@@ -74,7 +74,11 @@
             }
           ],
           "firstName": "q5mZCkDLOG",
-          "bailStatus": "CONDITIONAL",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "B",
+            "description": "Conditional Bail"
+          },
           "dateOfBirth": "1998-07-16"
         },
         {
@@ -113,7 +117,11 @@
             }
           ],
           "firstName": "HaOL6VVmlx",
-          "bailStatus": "CONDITIONAL",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "B",
+            "description": "Conditional Bail"
+          },
           "dateOfBirth": "1998-07-16"
         }
       ],
@@ -162,7 +170,11 @@
             }
           ],
           "firstName": "HFoYBuSWzt",
-          "bailStatus": "CONDITIONAL",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "B",
+            "description": "Conditional Bail"
+          },
           "dateOfBirth": "1998-07-16"
         },
         {
@@ -201,7 +213,11 @@
             }
           ],
           "firstName": "VTGdkq9QPw",
-          "bailStatus": "CONDITIONAL",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "B",
+            "description": "Conditional Bail"
+          },
           "dateOfBirth": "1998-07-16"
         }
       ],

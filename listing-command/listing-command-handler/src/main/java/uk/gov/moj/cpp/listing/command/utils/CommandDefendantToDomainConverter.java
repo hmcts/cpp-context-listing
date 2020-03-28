@@ -75,6 +75,7 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
     }
 
     private StatementOfOffence buildStatementOfOffence(final Offence offence) {
+
         return StatementOfOffence.statementOfOffence()
                 .withTitle(offence.getStatementOfOffence().getTitle())
                 .withLegislation(offence.getStatementOfOffence().getLegislation())

@@ -76,7 +76,11 @@
                           }
                         ],
                         "firstName": "FKky7Zf4rS",
-                        "bailStatus": "CONDITIONAL",
+                        "bailStatus": {
+                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                          "code": "B",
+                          "description": "Conditional Bail"
+                        },
                         "dateOfBirth": "1998-07-16"
                       },
                       {
@@ -115,7 +119,11 @@
                           }
                         ],
                         "firstName": "BBMvNGv4KT",
-                        "bailStatus": "CONDITIONAL",
+                        "bailStatus": {
+                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                          "code": "B",
+                          "description": "Conditional Bail"
+                        },
                         "dateOfBirth": "1998-07-16"
                       }
                     ],
@@ -165,7 +173,11 @@
                           }
                         ],
                         "firstName": "Y4HXe7Yv8H",
-                        "bailStatus": "CONDITIONAL",
+                        "bailStatus": {
+                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                          "code": "B",
+                          "description": "Conditional Bail"
+                        },
                         "dateOfBirth": "1998-07-16"
                       },
                       {
@@ -204,7 +216,11 @@
                           }
                         ],
                         "firstName": "7MULvW4Gee",
-                        "bailStatus": "CONDITIONAL",
+                        "bailStatus": {
+                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                          "code": "B",
+                          "description": "Conditional Bail"
+                        },
                         "dateOfBirth": "1998-07-16"
                       }
                     ],
@@ -327,7 +343,11 @@
                           }
                         ],
                         "firstName": "FKky7Zf4rS",
-                        "bailStatus": "CONDITIONAL",
+                        "bailStatus": {
+                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                          "code": "B",
+                          "description": "Conditional Bail"
+                        },
                         "dateOfBirth": "1998-07-16"
                       },
                       {
@@ -366,7 +386,11 @@
                           }
                         ],
                         "firstName": "BBMvNGv4KT",
-                        "bailStatus": "CONDITIONAL",
+                        "bailStatus": {
+                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                          "code": "B",
+                          "description": "Conditional Bail"
+                        },
                         "dateOfBirth": "1998-07-16"
                       }
                     ],
@@ -416,7 +440,11 @@
                           }
                         ],
                         "firstName": "Y4HXe7Yv8H",
-                        "bailStatus": "CONDITIONAL",
+                        "bailStatus": {
+                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                          "code": "B",
+                          "description": "Conditional Bail"
+                        },
                         "dateOfBirth": "1998-07-16"
                       },
                       {
@@ -455,7 +483,11 @@
                           }
                         ],
                         "firstName": "7MULvW4Gee",
-                        "bailStatus": "CONDITIONAL",
+                        "bailStatus": {
+                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                          "code": "B",
+                          "description": "Conditional Bail"
+                        },
                         "dateOfBirth": "1998-07-16"
                       }
                     ],

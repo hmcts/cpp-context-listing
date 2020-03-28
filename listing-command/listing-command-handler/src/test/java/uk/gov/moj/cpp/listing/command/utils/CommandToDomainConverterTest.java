@@ -145,7 +145,7 @@ public class CommandToDomainConverterTest {
         assertThat(actualDefendant.getDefenceOrganisation().get(), is(commandDefendant.getDefenceOrganisation().get().getName()));
         assertThat(actualDefendant.getSpecificRequirements(), is(commandDefendant.getPersonDefendant().get().getPersonDetails().getSpecificRequirements()));
         assertThat(actualDefendant.getDateOfBirth(), is(commandDefendant.getPersonDefendant().get().getPersonDetails().getDateOfBirth()));
-        assertThat(actualDefendant.getCustodyTimeLimit(),is(commandDefendant.getPersonDefendant().get().getCustodyTimeLimit()));
+        assertThat(actualDefendant.getCustodyTimeLimit(), is(commandDefendant.getPersonDefendant().get().getCustodyTimeLimit()));
         assertThat(actualDefendant.getHearingLanguageNeeds().get().toString(), is(commandListDefendantRequests.getHearingLanguageNeeds().get().toString()));
         assertThat(actualDefendant.getDatesToAvoid(), is(commandListDefendantRequests.getDatesToAvoid()));
 

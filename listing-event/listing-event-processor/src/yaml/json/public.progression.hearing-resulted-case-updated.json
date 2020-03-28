@@ -118,7 +118,11 @@
               "fax": "3425678"
             }
           },
-          "bailStatus": "IN_CUSTODY",
+          "bailStatus": {
+            "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+            "code": "C",
+            "description": "Custody or remanded into custody"
+          },
           "custodyTimeLimit": "2018-01-01",
           "perceivedBirthYear": 2015,
           "observedEthnicityId": "d36d2ba2-6862-4114-b9f9-0c620e1e903c",

@@ -3,9 +3,8 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.sun.xml.bind.marshaller.NamespacePrefixMapper;
-
-public class XhibitNamespacePrefixMapper extends NamespacePrefixMapper {
+@SuppressWarnings("squid:S1191")
+public class XhibitNamespacePrefixMapper extends com.sun.xml.bind.marshaller.NamespacePrefixMapper {
 
     private Map<String, String> namespaceMap = new HashMap<>();
 

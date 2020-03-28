@@ -68,26 +68,19 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
-
-
-    private MessageProducer publicEventDefendantAdded;
-    private MessageConsumer publicEventMessageConsumerDefendantAdded;
-    private MessageConsumer privateEventMessageDefendantsToBeAdded;
-    private MessageConsumer privateEventsMessageDefendantDetailsAdded;
-
-
-    private String request;
-
-
+    final UUID DEFENDANT_ID = UUID.randomUUID();
     private final HearingData hearingData;
     private final ListedCaseData listedCaseData;
     private final UUID caseId;
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
-
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
+    private final MessageProducer publicEventDefendantAdded;
+    private final MessageConsumer publicEventMessageConsumerDefendantAdded;
+    private final MessageConsumer privateEventMessageDefendantsToBeAdded;
+    private final MessageConsumer privateEventsMessageDefendantDetailsAdded;
+    private String request;
 
-    final UUID DEFENDANT_ID = UUID.randomUUID();
-    public AddDefendantSteps(UUID caseId, HearingData hearingData) {
+    public AddDefendantSteps(final UUID caseId, final HearingData hearingData) {
         this.caseId = caseId;
         this.hearingData = hearingData;
         this.listedCaseData = hearingData.getListedCases().get(0);
@@ -102,7 +95,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void whenCaseDefendantsAddedPublicEventIsPublished() {
-        AddDefendantForCourtProceedingsData addDefendantForCourtProceedingsData = getAddDefendantDetails(caseId);
+        final AddDefendantForCourtProceedingsData addDefendantForCourtProceedingsData = getAddDefendantDetails(caseId);
         final JsonObject addDefendantDetailsForCourtProceedingsObject = (JsonObject) objectToJsonValueConverter.convert(addDefendantForCourtProceedingsData);
 
         QueueUtil.sendMessage(
@@ -117,10 +110,10 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
 
 
     public void verifyEventDefendantAddedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
+        final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventMessageConsumerDefendantAdded);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventMessageConsumerDefendantAdded);
         LOGGER.debug("jsonResponse from publicEventMessageConsumerDefendantAdded: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("defendants.id").toString(), is(jsRequest.getString("defendants.id")));
@@ -135,10 +128,10 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyEventDefendantsToBeAddedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
+        final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageDefendantsToBeAdded);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageDefendantsToBeAdded);
         LOGGER.debug("jsonResponse from privateEventMessageDefendantsToBeAdded: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("defendants[0].id").toString(), is(jsRequest.getString("defendants[0].id")));
@@ -153,10 +146,10 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyEventDefendantDetailsAddedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
+        final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventsMessageDefendantDetailsAdded);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventsMessageDefendantDetailsAdded);
         LOGGER.debug("jsonResponse from privateEventsMessageDefendantDetailsAdded: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("defendant.id"), is(jsRequest.getString("defendants[0].id")));
@@ -168,9 +161,6 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendant.specificRequirements"), is(jsRequest.getString("defendants[0].personDefendant.personDetails.specificRequirements")));
         assertThat(jsonResponse.get("defendant.organisationName"), is(jsRequest.getString("defendants[0].legalEntityDefendant.organisation.name")));
     }
-
-
-
 
 
     public void verifyHearingListedFromAPI(boolean isAllocated) {
@@ -199,7 +189,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     }
 
 
-    private AddDefendantForCourtProceedingsData getAddDefendantDetails(UUID caseId) {
+    private AddDefendantForCourtProceedingsData getAddDefendantDetails(final UUID caseId) {
 
 
         final List<uk.gov.justice.core.courts.Defendant> defendant = Arrays.asList(Defendant.defendant()
@@ -243,9 +233,9 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
                 .withListHearingRequest(Arrays.asList(getAddHearingRequestData(DEFENDANT_ID, caseId))).build();
     }
 
-        private ListHearingRequest getAddHearingRequestData(UUID defendantId, UUID prosecutionCaseId){
+    private ListHearingRequest getAddHearingRequestData(final UUID defendantId, final UUID prosecutionCaseId) {
 
-             return ListHearingRequest.listHearingRequest()
+        return ListHearingRequest.listHearingRequest()
                 .withCourtCentre(CourtCentre.courtCentre()
                         .withId(UUID.randomUUID())
                         .withRoomId(of(UUID.randomUUID()))
@@ -258,7 +248,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
                         .withDefendantOffences(asList(UUID.randomUUID()))
                         .withProsecutionCaseId(Optional.of(prosecutionCaseId))
                         .build()))
-                .build() ;
+                .build();
 
     }
 
@@ -269,7 +259,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
             publicEventMessageConsumerDefendantAdded.close();
             privateEventMessageDefendantsToBeAdded.close();
             privateEventsMessageDefendantDetailsAdded.close();
-        } catch (JMSException e) {
+        } catch (final JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);
         }

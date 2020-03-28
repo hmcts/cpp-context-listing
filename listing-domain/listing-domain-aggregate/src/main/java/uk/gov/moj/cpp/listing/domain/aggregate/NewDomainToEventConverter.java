@@ -44,6 +44,7 @@ public class NewDomainToEventConverter {
                         .map(NewDomainToEventConverter::buildDefendant)
                         .collect(toList()))
                 .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+
                 .build();
     }
 

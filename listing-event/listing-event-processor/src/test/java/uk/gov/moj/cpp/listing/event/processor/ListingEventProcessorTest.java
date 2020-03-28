@@ -175,31 +175,22 @@ public class ListingEventProcessorTest {
 
     @Mock
     private Sender sender;
-
     @Mock
     private JsonEnvelope envelope;
-
     @Mock
     private JsonObject payload;
-
     @Mock
     private JsonObjectToObjectConverter jsonObjectConverter;
-
     @Mock
     private ObjectMapper mapper;
-
     @Mock
     private ObjectToJsonValueConverter objectToJsonValueConverter;
-
     @Mock
     private Function<Object, JsonEnvelope> enveloperFunction;
-
     @Mock
     private JsonEnvelope finalEnvelope;
-
     @Mock
     private DefendantsToBeUpdated defendantsToBeUpdated;
-
     @Mock
     private DefendantsToBeAddedForCourtProceedings defendantsToBeAddedForCourtProceedings;
 
@@ -208,79 +199,54 @@ public class ListingEventProcessorTest {
 
     @Mock
     private OffencesToBeUpdated offencesToBeUpdated;
-
     @Mock
     private OffencesToBeAdded offencesToBeAdded;
-
     @Mock
     private HearingListed hearingListed;
-
     @Mock
     private CourtApplicationAddedForHearing courtApplicationAddedForHearing;
-
     @Mock
     private CourtApplicationToBeUpdated courtApplicationToBeUpdated;
-
     @Mock
     private OffencesToBeDeleted offencesToBeDeleted;
-
     @Mock
     private HearingAllocatedForListing hearingAllocatedForListing;
-
     @Mock
     private AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing;
-
     @Mock
     private CourtListRestricted restrictCourtList;
-
     @Mock
     private AddHearingToCaseCommandCollectionConverter addHearingToCaseCommandCollectionConverter;
-
     @Mock
     private UpdateDefendantsForHearingCommandCollectionConverter updateDefendantsForHearingCommandCollectionConverter;
-
     @Mock
     private UpdateOffencesForHearingCommandCollectionConverter updateOffencesForHearingCommandCollectionConverter;
-
     @Mock
     private AddOffencesForHearingCommandCollectionConverter addOffencesForHearingCommandCollectionConverter;
-
     @Mock
     private DeleteOffencesForHearingCommandCollectionConverter deleteOffencesForHearingCommandCollectionConverter;
-
     @Mock
     private AddCourtApplicationToHearingCommandCollectionConverter addCourtApplicationToHearingCommandCollectionConverter;
-
     @Mock
     private AddDefendantsForCourtProceedingsCommandCollectionConverter addDefendantsForCourtProceedingsCommandCollectionConverter;
-
     @Mock
     private Hearing hearing;
-
     @Mock
     private AddHearingToCaseCommand addHearingToCaseCommand;
-
     @Mock
     private AddApplicationToHearingCommand addApplicationToHearingCommand;
-
     @Mock
     private UpdateDefendantsForHearingCommand updateDefendantsForHearingCommand;
-
     @Mock
     private AddDefendantsForCourtProceedingsCommand addDefendantsForCourtProceedingsCommand;
-
     @Mock
     private UpdateOffencesForHearingCommand updateOffencesForHearingCommand;
-
     @Mock
     private AddOffencesForHearingCommand addOffencesForHearingCommand;
-
     @Mock
     private DeleteOffencesForHearingCommand deleteOffencesForHearingCommand;
-
     @Mock
     private HearingConfirmedFactory hearingConfirmedFactory;
-
     @Mock
     private AllocatedHearingUpdatedFactory allocatedHearingUpdatedFactory;
 
@@ -455,7 +421,7 @@ public class ListingEventProcessorTest {
         final JsonEnvelope event = hearingAllocatedEvent();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
 
-        HearingConfirmed hearingConfirmed = hearingConfirmed();
+        final HearingConfirmed hearingConfirmed = hearingConfirmed();
         given(hearingConfirmedFactory.create(hearingAllocatedForListing)).willReturn(hearingConfirmed);
 
         //when
@@ -484,7 +450,7 @@ public class ListingEventProcessorTest {
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(),
                 AllocatedHearingUpdatedForListing.class)).willReturn(allocatedHearingUpdatedForListing);
 
-        HearingUpdated hearingUpdated = hearingUpdated();
+        final HearingUpdated hearingUpdated = hearingUpdated();
         given(allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing))
                 .willReturn(hearingUpdated);
 
@@ -544,7 +510,7 @@ public class ListingEventProcessorTest {
     }
 
     private HearingUpdated hearingUpdated() {
-        String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
+        final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
         return HearingUpdated.hearingUpdated()
                 .withUpdatedHearing(buildHearing(formattedDateTime))
@@ -724,7 +690,7 @@ public class ListingEventProcessorTest {
                 .build();
 
 
-        CourtApplicationChanged courtapplicationChanged = courtApplicationChangedBuilder
+        final CourtApplicationChanged courtapplicationChanged = courtApplicationChangedBuilder
                 .withCourtApplication(courtApplication)
                 .build();
 
@@ -1178,7 +1144,7 @@ public class ListingEventProcessorTest {
 
     private HearingConfirmed hearingConfirmed() {
 
-        String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
+        final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
         return HearingConfirmed.hearingConfirmed()
                 .withConfirmedHearing(buildHearing(formattedDateTime))

@@ -78,7 +78,6 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
     JSONComparator ignoreMetaDataComparator = new CustomComparator(JSONCompareMode.LENIENT, new Customization("_metadata", (o1, o2) -> true));
 
 
-
     private MessageProducer publicEventDefendantOffencesUpdated;
     private MessageConsumer publicEventMessageConsumerDefendantOffencesUpdated;
 
@@ -169,7 +168,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
     }
 
 
-    public void verifyPublicEventDefendantOffencesUpdatedInActiveMQ() throws Exception{
+    public void verifyPublicEventDefendantOffencesUpdatedInActiveMQ() throws Exception {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -185,11 +184,11 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "        {\n" +
                         "          \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "          \"id\": \"" + updatedOffenceData.getRandomOffenceId() + "\",\n" +
-                        "          \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() +"\",\n" +
-                        "          \"offenceLegislation\": \"" + updatedOffenceData.getLegislation() +"\",\n" +
-                        "          \"offenceLegislationWelsh\": \"" + updatedOffenceData.getLegislationWelsh() +"\",\n" +
-                        "          \"offenceTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitle() +"\",\n" +
-                        "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() +"\",\n" +
+                        "          \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
+                        "          \"offenceLegislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
+                        "          \"offenceLegislationWelsh\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
+                        "          \"offenceTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
+                        "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
                         "          \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "          \"count\": " + offenceData.getCount() + ",\n" +
                         "          \"offenceDefinitionId\": \"" + offenceData.getOffenceDefinitionId() + "\",\n" +
@@ -203,12 +202,12 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "      \n" +
                         "        }\n" +
                         "      ],\n" +
-                        "      \"prosecutionCaseId\": \"" + caseId +"\"\n" +
+                        "      \"prosecutionCaseId\": \"" + caseId + "\"\n" +
                         "    }\n" +
                         "  ],\n" +
                         "  \"deletedOffences\": [\n" +
                         "    {\n" +
-                        "      \"defendantId\": \"" + defendantData.getDefendantId() +"\",\n" +
+                        "      \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
                         "      \"offences\": [\n" +
                         "        \"" + offenceIdToBeDeleted + "\"\n" +
                         "      ],\n" +
@@ -223,11 +222,11 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "        {\n" +
                         "          \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "          \"id\": \"" + updatedOffenceData.getOffenceId() + "\",\n" +
-                        "          \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() +"\",\n" +
-                        "          \"offenceLegislation\": \"" + updatedOffenceData.getLegislation() +"\",\n" +
-                        "          \"offenceLegislationWelsh\": \"" + updatedOffenceData.getLegislationWelsh() +"\",\n" +
-                        "          \"offenceTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitle() +"\",\n" +
-                        "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() +"\",\n" +
+                        "          \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
+                        "          \"offenceLegislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
+                        "          \"offenceLegislationWelsh\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
+                        "          \"offenceTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
+                        "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
                         "          \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "          \"count\": " + offenceData.getCount() + ",\n" +
                         "          \"offenceDefinitionId\": \"" + offenceData.getOffenceDefinitionId() + "\",\n" +
@@ -256,7 +255,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
         assertEquals(expected, jsonResponse, true);
     }
 
-    public void verifyEventDefendantOffencesToBeUpdateInActiveMQ() throws Exception{
+    public void verifyEventDefendantOffencesToBeUpdateInActiveMQ() throws Exception {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -313,7 +312,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }
 
-    public void verifyEventDefendantOffencesToBeAddedInActiveMQ() throws Exception{
+    public void verifyEventDefendantOffencesToBeAddedInActiveMQ() throws Exception {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -338,7 +337,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "      \"version\": 4\n" +
                         "    }\n" +
                         "  },\n" +
-                        "  \"caseId\": \"" + caseId +"\",\n" +
+                        "  \"caseId\": \"" + caseId + "\",\n" +
                         "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
                         "  \"hearings\": [\n" +
                         "    \"" + hearingData.getId() + "\"\n" +
@@ -347,14 +346,14 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "    {\n" +
                         "      \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "      \"id\": \"" + updatedOffenceData.getRandomOffenceId() + "\",\n" +
-                        "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() +"\",\n" +
+                        "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
                         "      \"offenceWording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
                         "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "      \"statementOfOffence\": {\n" +
-                        "         \"legislation\": \"" + updatedOffenceData.getLegislation() +"\",\n" +
-                        "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() +"\",\n" +
-                        "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() +"\",\n" +
-                        "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() +"\",\n" +
+                        "         \"legislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
+                        "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
+                        "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
+                        "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
                         "      }\n" +
                         "    }\n" +
                         "  ]\n" +
@@ -363,7 +362,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }
 
-    public void verifyEventDefendantOffencesToBeDeletedInActiveMQ() throws Exception{
+    public void verifyEventDefendantOffencesToBeDeletedInActiveMQ() throws Exception {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -388,7 +387,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "      \"version\": 3\n" +
                         "    }\n" +
                         "  },\n" +
-                        "  \"caseId\": \"" + caseId +"\",\n" +
+                        "  \"caseId\": \"" + caseId + "\",\n" +
                         "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
                         "  \"hearings\": [\n" +
                         "    \"" + hearingData.getId() + "\"\n" +
@@ -404,7 +403,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }
 
-    public void verifyEventOffenceUpdatedInActiveMQ() throws Exception{
+    public void verifyEventOffenceUpdatedInActiveMQ() throws Exception {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -431,13 +430,13 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "      \"bb882fb8-6b5c-4752-9367-9945ea7689e6\"\n" +
                         "    ]\n" +
                         "  },\n" +
-                        "  \"caseId\": \"" + caseId +"\",\n" +
+                        "  \"caseId\": \"" + caseId + "\",\n" +
                         "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
-                        "  \"hearingId\": \"" + hearingData.getId() +"\",\n" +
+                        "  \"hearingId\": \"" + hearingData.getId() + "\",\n" +
                         "  \"offence\": {\n" +
                         "      \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "      \"id\": \"" + updatedOffenceData.getOffenceId() + "\",\n" +
-                        "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() +"\",\n" +
+                        "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
                         "      \"offenceWording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
                         "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "      \"statementOfOffence\": {\n" +
@@ -458,7 +457,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }
 
-    public void verifyEventOffenceAddedInActiveMQ() throws Exception{
+    public void verifyEventOffenceAddedInActiveMQ() throws Exception {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -485,20 +484,20 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "      \"bb882fb8-6b5c-4752-9367-9945ea7689e6\"\n" +
                         "    ]\n" +
                         "  },\n" +
-                        "  \"caseId\": \"" + caseId +"\",\n" +
+                        "  \"caseId\": \"" + caseId + "\",\n" +
                         "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
-                        "  \"hearingId\": \"" + hearingData.getId() +"\",\n" +
+                        "  \"hearingId\": \"" + hearingData.getId() + "\",\n" +
                         "  \"offence\": {\n" +
                         "      \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "      \"id\": \"" + updatedOffenceData.getRandomOffenceId() + "\",\n" +
-                        "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() +"\",\n" +
+                        "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
                         "      \"offenceWording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
                         "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "      \"statementOfOffence\": {\n" +
-                        "         \"legislation\": \"" + updatedOffenceData.getLegislation() +"\",\n" +
-                        "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() +"\",\n" +
-                        "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() +"\",\n" +
-                        "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() +"\",\n" +
+                        "         \"legislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
+                        "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
+                        "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
+                        "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
                         "      }\n" +
                         "  }\n" +
                         "}\n";
@@ -506,7 +505,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }
 
-    public void verifyEventOffenceDeletedInActiveMQ() throws Exception{
+    public void verifyEventOffenceDeletedInActiveMQ() throws Exception {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
@@ -515,28 +514,28 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
 
         String expected =
                 "{\n" +
-                "  \"_metadata\": {\n" +
-                "    \"context\": {\n" +
-                "      \"user\": \"6acc7ca4-497c-4b23-8822-60b22e213a01\"\n" +
-                "    },\n" +
-                "    \"createdAt\": \"2018-12-23T17:40:59.174Z\",\n" +
-                "    \"stream\": {\n" +
-                "      \"id\": \"bf202d9c-f2a2-4ad1-a97a-1854593a9fa3\",\n" +
-                "      \"version\": 2\n" +
-                "    },\n" +
-                "    \"id\": \"3e51039e-657f-4ccc-a750-801ccf9604b2\",\n" +
-                "    \"name\": \"listing.events.offence-deleted\",\n" +
-                "    \"causation\": [\n" +
-                "      \"4df3b3cb-a6ef-47b7-84e1-097d54fbcdba\",\n" +
-                "      \"a89dac0a-5b0a-4770-93d5-fe186b7cb751\",\n" +
-                "      \"21eaba37-2d20-4be3-8621-d0e06de18cf0\",\n" +
-                "      \"69a810e3-c161-4a47-b4e6-dedf8e76f330\"\n" +
-                "    ]\n" +
-                "  },\n" +
-                "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
-                "  \"hearingId\": \"" + hearingData.getId() +"\",\n" +
-                "  \"offenceId\": \"" + offenceIdToBeDeleted + "\"\n" +
-                "}\n";
+                        "  \"_metadata\": {\n" +
+                        "    \"context\": {\n" +
+                        "      \"user\": \"6acc7ca4-497c-4b23-8822-60b22e213a01\"\n" +
+                        "    },\n" +
+                        "    \"createdAt\": \"2018-12-23T17:40:59.174Z\",\n" +
+                        "    \"stream\": {\n" +
+                        "      \"id\": \"bf202d9c-f2a2-4ad1-a97a-1854593a9fa3\",\n" +
+                        "      \"version\": 2\n" +
+                        "    },\n" +
+                        "    \"id\": \"3e51039e-657f-4ccc-a750-801ccf9604b2\",\n" +
+                        "    \"name\": \"listing.events.offence-deleted\",\n" +
+                        "    \"causation\": [\n" +
+                        "      \"4df3b3cb-a6ef-47b7-84e1-097d54fbcdba\",\n" +
+                        "      \"a89dac0a-5b0a-4770-93d5-fe186b7cb751\",\n" +
+                        "      \"21eaba37-2d20-4be3-8621-d0e06de18cf0\",\n" +
+                        "      \"69a810e3-c161-4a47-b4e6-dedf8e76f330\"\n" +
+                        "    ]\n" +
+                        "  },\n" +
+                        "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
+                        "  \"hearingId\": \"" + hearingData.getId() + "\",\n" +
+                        "  \"offenceId\": \"" + offenceIdToBeDeleted + "\"\n" +
+                        "}\n";
 
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }

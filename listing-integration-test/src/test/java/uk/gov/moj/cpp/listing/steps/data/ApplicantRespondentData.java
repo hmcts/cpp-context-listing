@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public class ApplicantRespondentData {
 
-    private final UUID id ;
+    private final UUID id;
 
     private final String firstName;
 

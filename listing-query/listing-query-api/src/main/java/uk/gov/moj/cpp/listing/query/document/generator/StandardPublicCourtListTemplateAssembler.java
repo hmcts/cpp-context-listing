@@ -11,6 +11,7 @@ import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 
 import org.apache.commons.lang3.StringUtils;
+
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
@@ -123,7 +124,7 @@ public class StandardPublicCourtListTemplateAssembler {
     public Optional<JsonObject> assemble(JsonEnvelope envelope, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final boolean restricted) {
         final JsonObject payload = envelope.payloadAsJsonObject();
 
-        if(LOGGER.isInfoEnabled()) {
+        if (LOGGER.isInfoEnabled()) {
             LOGGER.info("{} CourtList courtCentreId:{}, payload:{}", courtListType, courtCentreId, envelope.toObfuscatedDebugString());
         }
 
@@ -139,7 +140,7 @@ public class StandardPublicCourtListTemplateAssembler {
             final Comparator<HearingDate> hearingDateComparator = (h1, h2) -> LocalDate.parse(h1.getHearingDate()).compareTo(LocalDate.parse(h2.getHearingDate()));
 
             final Optional<JsonObject> courtListTemplateData = payload.getJsonArray(HEARINGS).getValuesAs(JsonObject.class).stream()
-                    .filter(hearingsByCourtCentre ->  hearingsByCourtCentre.getJsonArray(HEARINGS_BY_COURT_CENTRE_ID)!=null)
+                    .filter(hearingsByCourtCentre -> hearingsByCourtCentre.getJsonArray(HEARINGS_BY_COURT_CENTRE_ID) != null)
                     .map(hearingsByCourtCentre -> {
                         return hearingsByCourtCentre.getJsonArray(HEARINGS_BY_COURT_CENTRE_ID).getValuesAs(JsonObject.class).stream()
                                 .map(hearingByCourtCentreId -> {
@@ -169,13 +170,13 @@ public class StandardPublicCourtListTemplateAssembler {
     private String createWelshHearingDate(LocalDate hearingDate) {
         String welshDate = BLANK_STRING;
         final Optional<WelshMonth> welshMonth = WelshMonth.valueFor(hearingDate.getMonth());
-        if(welshMonth.isPresent()){
-           welshDate =  hearingDate.getDayOfMonth() + SPACE
+        if (welshMonth.isPresent()) {
+            welshDate = hearingDate.getDayOfMonth() + SPACE
                     + capitalize(lowerCase(welshMonth.get().name())) + SPACE
-                    + hearingDate.getYear() ;
+                    + hearingDate.getYear();
         }
-         return welshDate;
-       
+        return welshDate;
+
     }
 
     private Optional<JsonObject> retrieveReferenceDataForJudiciary(JsonObject hearingsByCourtCentre, JsonEnvelope envelope) {
@@ -209,7 +210,7 @@ public class StandardPublicCourtListTemplateAssembler {
 
 
         return hearingsByCourtRoomIdMap.keySet().stream()
-                .filter(courtRoomId -> selectedCourtRoomId == null || selectedCourtRoomId.equals(courtRoomId) )
+                .filter(courtRoomId -> selectedCourtRoomId == null || selectedCourtRoomId.equals(courtRoomId))
                 .map(courtRoomId -> createCourtRoom(hearingsByCourtRoomIdMap.get(courtRoomId), courtCentre.getCourtRooms().get(UUID.fromString(courtRoomId)), referenceDataJudiciariesJo, hearingDate, restrictedListRequired))
                 .sorted(Comparator.comparing(CourtRoom::getCourtRoomName))
                 .collect(toList());
@@ -242,7 +243,6 @@ public class StandardPublicCourtListTemplateAssembler {
                     final Integer sequence = hearingDay.getInt(SEQUENCE);
 
                     final String hearingStartTime = START_TIME_FORMAT.format(startTime.getHour()) + COLON + START_TIME_FORMAT.format(startTime.getMinute());
-
 
 
                     final List<Hearing> hearings = hearingJson.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class).stream()
@@ -287,7 +287,7 @@ public class StandardPublicCourtListTemplateAssembler {
                 .collect(toList());
         return String.join(", ", judiciaryNames);
     }
-    
+
 
     private String createJudiciaryNames(List<JsonObject> hearingsByCourtRoom, JsonObject judiciariesJsonObject) {
         final List<String> courtRoomJudiciaryIds = getJudicialIds(hearingsByCourtRoom);
@@ -302,11 +302,11 @@ public class StandardPublicCourtListTemplateAssembler {
 
     private List<String> getJudicialIds(List<JsonObject> hearingsByCourtRoom) {
         return hearingsByCourtRoom.stream()
-                    .map(hearingByCourtRoom -> hearingByCourtRoom.getJsonArray(JUDICIARY).getValuesAs(JsonObject.class).stream()
-                            .map(j -> j.getString(JUDICIAL_ID))
-                            .collect(toList()))
-                    .flatMap(List::stream)
-                    .collect(toList());
+                .map(hearingByCourtRoom -> hearingByCourtRoom.getJsonArray(JUDICIARY).getValuesAs(JsonObject.class).stream()
+                        .map(j -> j.getString(JUDICIAL_ID))
+                        .collect(toList()))
+                .flatMap(List::stream)
+                .collect(toList());
     }
 
     private StandardCourtList createStandardCourtList(CourtCentreDetails courtCentre, List<HearingDate> hearingDates, String courtListType) {
@@ -317,8 +317,8 @@ public class StandardPublicCourtListTemplateAssembler {
                 .withWelshCourtCentreName(blankStringIfNull(courtCentre.getWelshCourtCentreName()))
                 .withCourtCentreAddress1(blankStringIfNull(courtCentre.getAddress1()) + SPACE + blankStringIfNull(courtCentre.getAddress2()))
                 .withWelshCourtCentreAddress1(blankStringIfNull(courtCentre.getWelshAddress1()) + SPACE + blankStringIfNull(courtCentre.getWelshAddress2()))
-                .withCourtCentreAddress2(blankStringIfNull(courtCentre.getAddress3()) + SPACE + blankStringIfNull(courtCentre.getAddress4())  + SPACE + blankStringIfNull(courtCentre.getAddress5()) + SPACE + blankStringIfNull(courtCentre.getPostcode()))
-                .withWelshCourtCentreAddress2(blankStringIfNull(courtCentre.getWelshAddress3()) + SPACE + blankStringIfNull(courtCentre.getWelshAddress4())  + SPACE + blankStringIfNull(courtCentre.getWelshAddress5()) + SPACE + blankStringIfNull(courtCentre.getPostcode()))
+                .withCourtCentreAddress2(blankStringIfNull(courtCentre.getAddress3()) + SPACE + blankStringIfNull(courtCentre.getAddress4()) + SPACE + blankStringIfNull(courtCentre.getAddress5()) + SPACE + blankStringIfNull(courtCentre.getPostcode()))
+                .withWelshCourtCentreAddress2(blankStringIfNull(courtCentre.getWelshAddress3()) + SPACE + blankStringIfNull(courtCentre.getWelshAddress4()) + SPACE + blankStringIfNull(courtCentre.getWelshAddress5()) + SPACE + blankStringIfNull(courtCentre.getPostcode()))
                 .withHearingDates(hearingDates)
                 .build();
     }
@@ -370,7 +370,7 @@ public class StandardPublicCourtListTemplateAssembler {
         final Defendant.Builder builder = Defendant.defendant();
         final String legalEntityDefendant = d.getString(ORGANISATION_NAME, BLANK_STRING);
         if (restricted) {
-            if(!StringUtils.isBlank(legalEntityDefendant)) {
+            if (!StringUtils.isBlank(legalEntityDefendant)) {
                 builder.withOrganisationName((DEFENDANT + SPACE + defendantSuffix).trim());
             } else {
                 builder.withFirstName(EMPTY)
@@ -399,6 +399,7 @@ public class StandardPublicCourtListTemplateAssembler {
                         .withOffenceWording(o.getString(OFFENCE_WORDING, BLANK_STRING))
                         .build())
                 .collect(toList()));
+
         return builder.build();
     }
 

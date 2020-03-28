@@ -11,12 +11,12 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class AddHearingToCaseCommandCollectionConverter implements Converter<HearingListed, List<AddHearingToCaseCommand> > {
+public class AddHearingToCaseCommandCollectionConverter implements Converter<HearingListed, List<AddHearingToCaseCommand>> {
 
     @Override
-    public List<AddHearingToCaseCommand>  convert(final HearingListed event) {
+    public List<AddHearingToCaseCommand> convert(final HearingListed event) {
 
-        UUID hearingId = event.getHearing().getId();
+        final UUID hearingId = event.getHearing().getId();
         // Standalone applications will not have a case associated
         return Objects.isNull(event.getHearing().getListedCases()) ? emptyList() : event.getHearing().getListedCases().stream()
                 .map(listedCase -> AddHearingToCaseCommand.addHearingToCaseCommand()

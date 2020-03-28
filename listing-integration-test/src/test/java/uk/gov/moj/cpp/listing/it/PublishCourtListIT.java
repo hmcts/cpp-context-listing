@@ -66,7 +66,6 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.verifySentPublishedCourtListHasNoHearings();
     }
 
-    @Ignore("To be fixed in SCSL-469")
     @Test
     public void shouldPublishCourtListWithHearings() throws Exception {
 

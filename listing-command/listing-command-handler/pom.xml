@@ -26,6 +26,11 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>uk.gov.moj.cpp.system.id-mapper</groupId>
+            <artifactId>id-mapper-client</artifactId>
+        </dependency>
+
         <!-- Listing Dependencies -->
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
@@ -59,8 +64,19 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>test-utils-enveloper-provider</artifactId>
+            <version>${test-utils-enveloper-provider.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.skyscreamer</groupId>
             <artifactId>jsonassert</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>test-utils-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

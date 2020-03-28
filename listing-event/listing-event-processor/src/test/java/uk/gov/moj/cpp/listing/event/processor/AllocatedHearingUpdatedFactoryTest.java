@@ -46,7 +46,7 @@ public class AllocatedHearingUpdatedFactoryTest {
     private static final UUID COURT_ROOM_ID = UUID.randomUUID();
     private static final UUID JUDICIAL_ID = UUID.randomUUID();
     private static final LocalDate UPDATED_START_DATE = FUTURE_LOCAL_DATE.next();
-    private static final LocalTime UPDATED_START_TIME = LocalTime.of(10,0);
+    private static final LocalTime UPDATED_START_TIME = LocalTime.of(10, 0);
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final ZoneId BST = ZoneId.of("Europe/London");
     private static final HearingLanguage HEARING_LANGUAGE = HearingLanguage.ENGLISH;
@@ -65,7 +65,7 @@ public class AllocatedHearingUpdatedFactoryTest {
     @Test
     public void shouldCreateAllocatedHearingUpdatedWithJudiciary() throws Exception {
         //given
-        List<JudicialRole> judiciary = Arrays.asList(JudicialRole.judicialRole()
+        final List<JudicialRole> judiciary = Arrays.asList(JudicialRole.judicialRole()
                 .withJudicialId(JUDICIAL_ID)
                 .withJudicialRoleType(uk.gov.justice.listing.events.JudicialRoleType.judicialRoleType()
                         .withJudiciaryType(JUDICIAL_ROLE_TYPE)
@@ -73,13 +73,13 @@ public class AllocatedHearingUpdatedFactoryTest {
                 .withIsBenchChairman(empty())
                 .withIsDeputy(empty())
                 .build());
-        AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = allocatedHearingUpdatedForListing(judiciary);
+        final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = allocatedHearingUpdatedForListing(judiciary);
 
         //when
-        HearingUpdated actual = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing);
+        final HearingUpdated actual = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing);
 
         //then
-        ConfirmedHearing listedHearing = actual.getUpdatedHearing();
+        final ConfirmedHearing listedHearing = actual.getUpdatedHearing();
         assertThat(listedHearing.getId(), is(listedHearing.getId()));
 
         assertThat(listedHearing.getHearingDays().get(0).getSittingDay().toInstant().toString(),
@@ -94,9 +94,9 @@ public class AllocatedHearingUpdatedFactoryTest {
         assertThat(listedHearing.getHearingLanguage().get().toString(), is(HEARING_LANGUAGE.toString()));
         assertThat(listedHearing.getJurisdictionType().toString(), is(JURISDICTION_TYPE.toString()));
 
-        ConfirmedProsecutionCase prosecutionCaseDefendantOffenceIds = listedHearing.getProsecutionCases().get(0);
+        final ConfirmedProsecutionCase prosecutionCaseDefendantOffenceIds = listedHearing.getProsecutionCases().get(0);
         assertThat(prosecutionCaseDefendantOffenceIds.getId(), is(CASE_ID));
-        ConfirmedDefendant defendantOffenceIds = prosecutionCaseDefendantOffenceIds.getDefendants().get(0);
+        final ConfirmedDefendant defendantOffenceIds = prosecutionCaseDefendantOffenceIds.getDefendants().get(0);
         assertThat(defendantOffenceIds.getId(), is(DEFENDANT_ID));
         assertThat(defendantOffenceIds.getOffences().get(0).getId(), is(OFFENCE_ID));
         assertThat(listedHearing.getCourtApplicationIds().get(0), is(COURT_APPLICATION_ID));
@@ -105,22 +105,22 @@ public class AllocatedHearingUpdatedFactoryTest {
     @Test
     public void shouldCreateAHearingConfirmedWithoutJudiciary() throws Exception {
         //given
-        List<JudicialRole> judiciary = Collections.emptyList();
-        AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = allocatedHearingUpdatedForListing(judiciary);
+        final List<JudicialRole> judiciary = Collections.emptyList();
+        final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = allocatedHearingUpdatedForListing(judiciary);
 
         //when
-        HearingUpdated actual =  allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing);
+        final HearingUpdated actual = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing);
 
         //then
-        ConfirmedHearing listedHearing = actual.getUpdatedHearing();
+        final ConfirmedHearing listedHearing = actual.getUpdatedHearing();
         assertThat(listedHearing.getId(), is(listedHearing.getId()));
 
         assertNull(listedHearing.getJudiciary());
 
     }
 
-    private AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing(List<JudicialRole> judiciary) {
-        List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds = Collections.singletonList(
+    private AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing(final List<JudicialRole> judiciary) {
+        final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds = Collections.singletonList(
                 ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                         .withId(CASE_ID)
                         .withDefendants(Collections.singletonList(DefendantOffenceIds.defendantOffenceIds()
@@ -129,14 +129,14 @@ public class AllocatedHearingUpdatedFactoryTest {
                                 .build()))
                         .build()
         );
-        List<HearingDay> hearingDays = Arrays.asList(HearingDay.hearingDay()
+        final List<HearingDay> hearingDays = Arrays.asList(HearingDay.hearingDay()
                 .withSequence(0)
                 .withDurationMinutes(DURATION_MINUTES)
                 .withStartTime(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME, BST).withZoneSameInstant(UTC))
                 .withEndTime(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME.plusMinutes(DURATION_MINUTES), BST).withZoneSameInstant(UTC))
                 .build());
 
-        List<UUID> courtApplicationIds = Collections.singletonList(COURT_APPLICATION_ID);
+        final List<UUID> courtApplicationIds = Collections.singletonList(COURT_APPLICATION_ID);
 
 
         return AllocatedHearingUpdatedForListing.allocatedHearingUpdatedForListing()

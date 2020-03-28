@@ -53,7 +53,11 @@
                   "10gGoceKoB",
                   "fjFRWuP0Ey"
                 ],
-                "bailStatus": "CONDITIONAL",
+                "bailStatus": {
+                  "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
+                  "code": "B",
+                  "description": "Conditional Bail"
+                },
                 "observedEthnicityId": "0d59c19e-1daa-453e-99e0-b4506463d784",
                 "personDetails": {
                   "additionalNationalityId": "c3363bde-5e70-40c5-a56d-062a6c71ee03",

@@ -21,7 +21,9 @@ public class Defendant {
 
     private List<Offence> offences;
 
-    public String getOrganisationName() { return organisationName; }
+    public String getOrganisationName() {
+        return organisationName;
+    }
 
     public String getFirstName() {
         return firstName;
