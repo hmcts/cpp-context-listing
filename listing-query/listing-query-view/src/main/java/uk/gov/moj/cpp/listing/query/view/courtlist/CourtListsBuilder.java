@@ -43,7 +43,7 @@ public class CourtListsBuilder {
 
     public CourtListsBuilder prepareEmptyCourtSiteHearings() {
 
-        xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(envelope, courtCentreId)
+        xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)
                 .forEach(courtSite -> crestCourtSiteCodeHearingsMap.put(courtSite.getString(CREST_COURT_SITE_CODE),
                         new ArrayList<>()));
 
@@ -97,7 +97,7 @@ public class CourtListsBuilder {
 
     private JsonObject getCrestCourtSiteJson(final String crestCourtSiteCode) {
 
-        return xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(envelope, courtCentreId)
+        return xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)
                 .stream().filter(courtSite -> crestCourtSiteCode.equals(courtSite.getString(CREST_COURT_SITE_CODE)))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Cannot find site"));
@@ -114,13 +114,13 @@ public class CourtListsBuilder {
     private String getCrestCourtSiteCodeForCourtRoom(final Optional<UUID> courtRoomUUID) {
 
         if (!courtRoomUUID.isPresent()) {
-            return xhibitReferenceDataService.getDefaultCrestCourtSiteCode(envelope, courtCentreId);
+            return xhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId);
         }
 
         final Optional<JsonObject> courtRoomJson = xhibitReferenceDataService.getCourtRoom(envelope, courtCentreId,
                 courtRoomUUID.get());
 
         return courtRoomJson.isPresent() ? courtRoomJson.get().getString(CREST_COURT_SITE_CODE)
-                : xhibitReferenceDataService.getDefaultCrestCourtSiteCode(envelope, courtCentreId);
+                : xhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId);
     }
 }

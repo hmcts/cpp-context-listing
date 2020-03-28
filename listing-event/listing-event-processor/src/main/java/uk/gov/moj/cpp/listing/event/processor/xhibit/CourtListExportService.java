@@ -38,7 +38,7 @@ public class CourtListExportService {
     public void exportCourtList(final JsonEnvelope envelope, final PublishCourtListRequestParameters parameters, final JsonObject courtListJson) {
         try {
 
-            final CourtListMetadata courtListMetadata = courtListMetadataGenerator.generate(envelope, parameters);
+            final CourtListMetadata courtListMetadata = courtListMetadataGenerator.generate(parameters);
 
             final String courtListXml = courtListFileGenerator.generateXml(envelope, parameters, courtListMetadata, courtListJson);
 

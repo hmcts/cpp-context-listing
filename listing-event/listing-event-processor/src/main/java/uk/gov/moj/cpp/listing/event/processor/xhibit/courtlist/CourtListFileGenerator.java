@@ -39,7 +39,7 @@ public class CourtListFileGenerator {
         final CourtListGenerationContext context =
                 new CourtListGenerationContext(envelope, requestParameters, courtListMetadata);
 
-        final String crownCourtCrestId = xhibitReferenceDataService.getCourtDetails(envelope, requestParameters.getCourtCentreId()).getCrestCourtId();
+        final String crownCourtCrestId = xhibitReferenceDataService.getCourtDetails(requestParameters.getCourtCentreId()).getCrestCourtId();
 
         final List<UUID> courtCentreIds = xhibitReferenceDataService.getCourtCentreIdsForCrestId(envelope, crownCourtCrestId);
 

@@ -3,11 +3,9 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 import static java.time.ZonedDateTime.parse;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import uk.gov.justice.services.common.util.Clock;
-import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
@@ -37,7 +35,6 @@ public class CourtListMetadataGeneratorTest {
     @Test
     public void shouldGenerateMetadataForFirmList() {
 
-        final JsonEnvelope envelope = mock(JsonEnvelope.class);
         final UUID courtCentreId = UUID.randomUUID();
         final String crestCourtId = "421";
         final CourtLocation courtLocation = new CourtLocation(
@@ -50,7 +47,7 @@ public class CourtListMetadataGeneratorTest {
                 null,
                 "CROWN_COURT");
 
-        when(xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId)).thenReturn(courtLocation);
+        when(xhibitReferenceDataService.getCourtDetails(courtCentreId)).thenReturn(courtLocation);
 
         final PublishCourtListRequestParameters requestParameters = PublishCourtListRequestParametersBuilder
                 .withDefaults()
@@ -58,7 +55,7 @@ public class CourtListMetadataGeneratorTest {
                 .publishCourtListType(PublishCourtListType.FIRM)
                 .build();
 
-        final CourtListMetadata metadata = courtListMetadataGenerator.generate(envelope, requestParameters);
+        final CourtListMetadata metadata = courtListMetadataGenerator.generate(requestParameters);
 
         // Validate filename
         final String[] filenamePart = metadata.getFilename().split("_");

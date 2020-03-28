@@ -65,12 +65,13 @@ public class ListingReferenceDataServiceTest {
         final String courtCentreId = randomUUID().toString();
 
         final JsonObject courtRooms = getPayloadForCourtRooms(courtCentreId);
-        when(requester.request(any()))
-                .thenReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), courtRooms));
+
+        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), courtRooms));
 
         final JsonEnvelope jsonEnvelope = listingReferenceDataService.getPayLoadForCourtRoom(event, courtCentreId);
 
-        verify(requester).request(requestCaptor.capture());
+        ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
         assertThat(jsonEnvelope.payloadAsJsonObject().getString("oucode"), is(courtRooms.getString("oucode")));
         assertThat(jsonEnvelope.payloadAsJsonObject().getJsonArray("courtrooms").size(), is(1));
     }

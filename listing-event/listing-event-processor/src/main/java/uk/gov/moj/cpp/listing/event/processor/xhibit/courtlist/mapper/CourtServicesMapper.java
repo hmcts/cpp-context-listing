@@ -118,7 +118,7 @@ public class CourtServicesMapper {
 
     public CourtHouseStructure generateCrownCourtStructure(final UUID courtCentreId) {
 
-        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(context.getEnvelope(), courtCentreId);
+        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(courtCentreId);
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
@@ -131,7 +131,7 @@ public class CourtServicesMapper {
 
     public CourtHouseStructure generateCourtHouseStructure(final UUID courtCentreId) {
 
-        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(context.getEnvelope(), courtCentreId);
+        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(courtCentreId);
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 

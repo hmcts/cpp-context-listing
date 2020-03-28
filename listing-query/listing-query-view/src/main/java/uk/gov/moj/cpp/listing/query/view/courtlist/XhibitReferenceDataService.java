@@ -1,10 +1,14 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
+import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
+import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -29,12 +33,18 @@ public class XhibitReferenceDataService {
     @ServiceComponent(Component.QUERY_VIEW)
     private Requester requester;
 
-    public List<JsonObject> getCrestCourtSitesForCourtCentre(final Envelope envelope, final UUID courtCentreId) {
+    public List<JsonObject> getCrestCourtSitesForCourtCentre(final UUID courtCentreId) {
 
         final JsonObject queryParameters = createObjectBuilder().add("ouId", courtCentreId.toString()).build();
 
-        return requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS)
-                .withMetadataFrom(envelope))
+        final JsonEnvelope requestEnvelope = envelopeFrom(
+                metadataBuilder()
+                        .withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS)
+                        .withId(randomUUID())
+                        .build(),
+                queryParameters);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()))
                 .payloadAsJsonObject().getJsonArray("cpXhibitCourtMappings").getValuesAs(JsonObject.class);
     }
 
@@ -46,8 +56,14 @@ public class XhibitReferenceDataService {
 
         final JsonObject queryParameters = createObjectBuilder().add("ouId", courtCentreId.toString()).build();
 
-        final JsonEnvelope response = requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS)
-                .withMetadataFrom(envelope));
+        final JsonEnvelope requestEnvelope = envelopeFrom(
+                metadataBuilder()
+                        .withName(REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS)
+                        .withId(randomUUID())
+                        .build(),
+                queryParameters);
+
+        final JsonEnvelope response = requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
 
         return response.payload().equals(JsonValue.NULL) ? Optional.empty()
                 : response.payloadAsJsonObject().getJsonArray("cpXhibitCourtRoomMappings").getValuesAs(JsonObject.class)
@@ -55,9 +71,9 @@ public class XhibitReferenceDataService {
                 .findFirst();
     }
 
-    public String getDefaultCrestCourtSiteCode(final Envelope envelope, final UUID courtCentreId) {
+    public String getDefaultCrestCourtSiteCode(final UUID courtCentreId) {
 
-        return getCrestCourtSitesForCourtCentre(envelope, courtCentreId)
+        return getCrestCourtSitesForCourtCentre(courtCentreId)
                 .stream()
                 .map(courtSite -> courtSite.getString(CREST_COURT_SITE_CODE))
                 .sorted()
@@ -65,13 +81,14 @@ public class XhibitReferenceDataService {
     }
 
     private JsonObject getCpCourtRoom(final Envelope envelope, final UUID courtCentreId, final UUID courtRoomUUID) {
-
         final JsonObject queryParameters = createObjectBuilder().add("id", courtCentreId.toString()).build();
 
-        final JsonEnvelope response = requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_COURTROOM)
-                .withMetadataFrom(envelope));
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(queryParameters)
+                .withName(REFERENCEDATA_QUERY_COURTROOM)
+                .withMetadataFrom(envelope);
 
-        return response.payloadAsJsonObject().getJsonArray("courtrooms").getValuesAs(JsonObject.class)
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()))
+                .payloadAsJsonObject().getJsonArray("courtrooms").getValuesAs(JsonObject.class)
                 .stream().filter(c -> UUID.fromString(c.getString("id")).equals(courtRoomUUID))
                 .findFirst().orElseThrow(() -> new RuntimeException("Cannot find court room uuid " + courtRoomUUID.toString()));
     }

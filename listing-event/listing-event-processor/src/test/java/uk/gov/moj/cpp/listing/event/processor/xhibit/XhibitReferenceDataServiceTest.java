@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,6 +24,7 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMappingsList;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 
@@ -31,6 +33,7 @@ import java.util.UUID;
 
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -116,13 +119,14 @@ public class XhibitReferenceDataServiceTest {
                                                 .add("courtType", courtType).build()))
                                 .build());
 
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+        when(requester.requestAsAdmin(any())).thenReturn(responseEnvelope);
 
-        CourtLocation courtDetails = xhibitReferenceDataService.getCourtDetails(inputEnvelope, courtCentreId);
+        CourtLocation courtDetails = xhibitReferenceDataService.getCourtDetails(courtCentreId);
 
-        verify(requester).request(requestCaptor.capture());
+        ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
 
-        final JsonObject actualRequestParameters = (JsonObject) requestCaptor.getValue().payload();
+        final JsonObject actualRequestParameters = (JsonObject) argumentCaptorForRequestEnvelope.getValue().payloadAsJsonObject();
 
         assertEquals(courtDetails.getOuCode(), ouCode);
         assertEquals(courtDetails.getCrestCourtId(), courtId);
@@ -152,12 +156,14 @@ public class XhibitReferenceDataServiceTest {
                                                 .add("titleJudiciaryPrefix", titleJudiciaryPrefix).build()))
                                 .build());
 
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+        when(requester.requestAsAdmin(any())).thenReturn(responseEnvelope);
 
         final UUID judiciaryId = randomUUID();
         JsonObject judiciary = xhibitReferenceDataService.getJudiciary(inputEnvelope, judiciaryId);
 
-        verify(requester).request(requestCaptor.capture());
+        ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
+
         assertThat(judiciary.getString("titlePrefix"), equalTo(titlePrefix));
         assertThat(judiciary.getString("titleJudiciaryPrefix"), equalTo(titleJudiciaryPrefix));
 
@@ -213,12 +219,15 @@ public class XhibitReferenceDataServiceTest {
                                                 .add("id", cppHearingTypeId.toString()).build()))
                                 .build());
 
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+
+        when(requester.requestAsAdmin(any())).thenReturn(responseEnvelope);
 
         final JsonObject xhibitHearingType = xhibitReferenceDataService.getXhibitHearingType(inputEnvelope, cppHearingTypeId);
         LOGGER.info("xhibitHearingType = " + xhibitHearingType);
 
-        verify(requester).request(requestCaptor.capture());
+        ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
+
         assertThat(xhibitHearingType.getString("id"), equalTo(cppHearingTypeId.toString()));
 
     }
@@ -259,7 +268,7 @@ public class XhibitReferenceDataServiceTest {
 
         final JsonEnvelope organisationUnitResponseEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), organisationUnitResponsePayload);
 
-        when(requester.request(any(JsonEnvelope.class))).thenReturn(courtMappingResponseEnvelope, organisationUnitResponseEnvelope);
+        when(requester.requestAsAdmin(any())).thenReturn(courtMappingResponseEnvelope, organisationUnitResponseEnvelope);
 
         final List<UUID> courtCentreIds = xhibitReferenceDataService.getCourtCentreIdsForCrestId(inputEnvelope, crownCourtCrestId);
 

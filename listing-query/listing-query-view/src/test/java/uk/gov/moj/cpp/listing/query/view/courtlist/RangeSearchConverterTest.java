@@ -93,11 +93,11 @@ public class RangeSearchConverterTest {
         final LocalDate startDate = LocalDate.parse("2019-12-16");
         final String pEndDate = StringUtils.isNotBlank(endDate) ? endDate : StringUtils.EMPTY;
 
-        when(xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(envelope, courtCentreId)).thenReturn(courtSites);
+        when(xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)).thenReturn(courtSites);
         when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID))).thenReturn(courtRoom1);
         when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(COURT_SITE_B_COURT_ROOM_ID))).thenReturn(courtRoom2);
         when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(UNKNOWN_COURT_SITE_COURT_ROOM_ID))).thenReturn(Optional.empty());
-        when(xhibitReferenceDataService.getDefaultCrestCourtSiteCode(envelope, courtCentreId)).thenReturn("A");
+        when(xhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId)).thenReturn("A");
 
         final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse, startDate, pEndDate);
 

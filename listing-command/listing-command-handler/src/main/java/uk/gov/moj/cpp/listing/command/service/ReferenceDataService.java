@@ -3,10 +3,12 @@ package uk.gov.moj.cpp.listing.command.service;
 
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import javax.inject.Inject;
@@ -31,18 +33,28 @@ public class ReferenceDataService {
 
     public JsonEnvelope getHearingTypes(final JsonEnvelope event) {
         LOGGER.info("'referencedata.query.hearing-types' request");
-        return requester.request(enveloper.withMetadataFrom(event, REFERENCEDATA_QUERY_HEARING_TYPES).apply(createObjectBuilder().build()));
+
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(createObjectBuilder().build())
+                .withName(REFERENCEDATA_QUERY_HEARING_TYPES)
+                .withMetadataFrom(event);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
     }
 
     public JsonEnvelope getAllCrownCourtCentres(final JsonEnvelope eventEnvelope) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Attempting to get all of the crown court centres...");
         }
+
         final JsonObject payload = createObjectBuilder()
                 .add("oucodeL1Code", "C")
                 .build();
-        final JsonEnvelope requestEnvelope = enveloper.withMetadataFrom(eventEnvelope, REFERENCEDATA_QUERY_COURT_CENTRES).apply(payload);
-        return requester.request(requestEnvelope);
+
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(payload)
+                .withName(REFERENCEDATA_QUERY_COURT_CENTRES)
+                .withMetadataFrom(eventEnvelope);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
     }
 
     @VisibleForTesting

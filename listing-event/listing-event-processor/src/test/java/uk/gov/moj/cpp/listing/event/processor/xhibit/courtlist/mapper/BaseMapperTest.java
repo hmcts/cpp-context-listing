@@ -60,7 +60,7 @@ public abstract class BaseMapperTest {
                 "MOCKSITECODE",
                 "CROWN_COURT");
 
-        when(xhibitReferenceDataService.getCourtDetails(any(), any())).thenReturn(courtLocation);
+        when(xhibitReferenceDataService.getCourtDetails(any())).thenReturn(courtLocation);
 
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.json");
         when(xhibitReferenceDataService.getJudiciary(any(), any())).thenReturn(judiciary);

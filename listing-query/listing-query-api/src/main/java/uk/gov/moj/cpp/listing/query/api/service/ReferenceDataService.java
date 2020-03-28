@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import javax.inject.Inject;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
 public class ReferenceDataService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReferenceDataService.class);
@@ -34,15 +36,23 @@ public class ReferenceDataService {
     public JsonEnvelope getCourtCentreById(final UUID courtCentreId, final JsonEnvelope event) {
         final JsonObject payload = createObjectBuilder().add("id", courtCentreId.toString()).build();
         LOGGER.info("'referencedata.query.courtroom' request with payload {}", payload);
-        final JsonEnvelope request = enveloper.withMetadataFrom(event, REFERENCEDATA_QUERY_COURTROOM).apply(payload);
-        return requester.request(request);
+
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(payload)
+                .withName(REFERENCEDATA_QUERY_COURTROOM)
+                .withMetadataFrom(event);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
     }
 
     public JsonEnvelope getJudiciariesByIdList(final List<UUID> judiciaryIds, final JsonEnvelope event) {
         final JsonObject payload = createObjectBuilder().add("ids", judiciaryIds.stream().map(UUID::toString).collect(Collectors.joining(","))).build();
         LOGGER.info("'referencedata.query.judiciaries' request with payload {}", payload);
-        final JsonEnvelope request = enveloper.withMetadataFrom(event, REFERENCEDATA_QUERY_JUDICIARIES).apply(payload);
-        return requester.request(request);
+
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(payload)
+                .withName(REFERENCEDATA_QUERY_JUDICIARIES)
+                .withMetadataFrom(event);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
     }
 
     public Optional<Boolean> isHearingLanguageWelsh(final JsonEnvelope envelope, final String courtCentreId) {
