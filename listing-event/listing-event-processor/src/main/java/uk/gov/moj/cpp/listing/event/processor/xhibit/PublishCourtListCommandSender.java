@@ -68,7 +68,7 @@ public class PublishCourtListCommandSender {
                 .add(COURT_LIST_FILE_NAME, courtListFileName)
                 .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
                 .add("failedTime", ZonedDateTimes.toString(utcClock.now()))
-                .add(ERROR_MESSAGE, errorMessage != null ? errorMessage : "UNKNOWN");
+                .add(ERROR_MESSAGE, errorMessage);
 
         sendCommandWith(RECORD_COURT_LIST_EXPORT_FAILED, requestParameters.getCourtListId(), objectBuilder.build());
     }

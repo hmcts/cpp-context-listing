@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit;
 import static java.lang.String.format;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
-import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 
@@ -34,6 +34,8 @@ public class XhibitReferenceDataService {
     private static final String REFERENCEDATA_QUERY_ORGANISATION_UNITS = "referencedata.query.organisationunits";
     private static final String XHIBIT_COURT_MAPPINGS_QUERY_PARAM = "ouId";
     private static final String UNMAPPED_COURT_ROOM_NAME = "Court -99";
+
+    private XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
 
     @Inject
     @ServiceComponent(Component.EVENT_PROCESSOR)
@@ -168,14 +170,25 @@ public class XhibitReferenceDataService {
     }
 
     private CourtLocation createCourtLocation(final JsonObject jsonObject) {
+        final String oucode = jsonObject.getString("oucode", EMPTY);
+        final String crestCourtId = jsonObject.getString("crestCourtId", EMPTY);
+        final String crestCourtSiteId = jsonObject.getString("crestCourtSiteId", EMPTY);
+        final String crestCourtName = jsonObject.getString("crestCourtName", EMPTY);
+        final String crestCourtShortName = jsonObject.getString("crestCourtShortName", EMPTY);
+        final String crestCourtSiteName = jsonObject.getString("crestCourtSiteName", EMPTY);
+        final String crestCourtSiteCode = jsonObject.getString("crestCourtSiteCode", EMPTY);
+        final String courtType = jsonObject.getString("courtType", EMPTY);
+
+        xhibitReferenceDataValidator.validate("crestCourtSiteId", crestCourtSiteId, jsonObject);
+
         return new CourtLocation(
-                jsonObject.getString("oucode"),
-                jsonObject.getString("crestCourtId"),
-                jsonObject.getString("crestCourtSiteId"),
-                jsonObject.getString("crestCourtName"),
-                jsonObject.getString("crestCourtShortName"),
-                jsonObject.getString("crestCourtSiteName"),
-                jsonObject.getString("crestCourtSiteCode"),
-                jsonObject.getString("courtType"));
+                oucode,
+                crestCourtId,
+                crestCourtSiteId,
+                crestCourtName,
+                crestCourtShortName,
+                crestCourtSiteName,
+                crestCourtSiteCode,
+                courtType);
     }
 }

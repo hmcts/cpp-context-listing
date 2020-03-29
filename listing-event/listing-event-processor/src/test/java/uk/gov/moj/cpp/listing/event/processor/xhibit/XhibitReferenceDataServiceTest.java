@@ -9,7 +9,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,7 +23,6 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMappingsList;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 
@@ -33,7 +31,6 @@ import java.util.UUID;
 
 import javax.json.Json;
 import javax.json.JsonObject;
-import javax.json.JsonValue;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -241,7 +238,7 @@ public class XhibitReferenceDataServiceTest {
         final JsonObject courtMapping = Json.createObjectBuilder()
                 .add("oucode", "")
                 .add("crestCourtId", crownCourtCrestId)
-                .add("crestCourtSiteId", "")
+                .add("crestCourtSiteId", "1")
                 .add("crestCourtName", "")
                 .add("crestCourtShortName", "")
                 .add("crestCourtSiteName", "")
