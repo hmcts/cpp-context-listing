@@ -86,7 +86,7 @@ public class CourtListExportServiceTest {
                 .withUserId(randomUUID().toString()).build();
         final JsonEnvelope tEnvelope = envelopeFrom(metadata, courtListExportRequested);
 
-        when(courtListMetadataGenerator.generate(any(), any())).thenReturn(courtListMetadata);
+        when(courtListMetadataGenerator.generate(any())).thenReturn(courtListMetadata);
         when(courtListFileGenerator.generateXml(any(), any(), any(), eq(courtListJson))).thenReturn(mockFileContent);
 
         // Tested method

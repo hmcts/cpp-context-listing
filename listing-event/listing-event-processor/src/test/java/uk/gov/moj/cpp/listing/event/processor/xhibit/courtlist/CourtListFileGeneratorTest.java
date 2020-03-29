@@ -118,8 +118,8 @@ public class CourtListFileGeneratorTest {
 
         final List<UUID> courtCentreIds = Arrays.asList(courtCentreId1, courtCentreId2);
 
-        when(xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId1)).thenReturn(courtLocation1);
-        when(xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId2)).thenReturn(courtLocation2);
+        when(xhibitReferenceDataService.getCourtDetails(courtCentreId1)).thenReturn(courtLocation1);
+        when(xhibitReferenceDataService.getCourtDetails(courtCentreId2)).thenReturn(courtLocation2);
         when(xhibitReferenceDataService.getCourtCentreIdsForCrestId(envelope, crestCourtId)).thenReturn(courtCentreIds);
         when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(10);
         when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d"))).thenReturn(20);

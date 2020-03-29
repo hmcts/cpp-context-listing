@@ -524,7 +524,7 @@ public class HearingQueryViewTest {
         final JsonObject emptyCourtListJson = Json.createObjectBuilder().build();
 
         when(publishedCourtListRepository.findBy(primaryKey)).thenReturn(null);
-        when(courtListService.emptyCourtList(queryEnvelope, courtCentreId)).thenReturn(emptyCourtListJson);
+        when(courtListService.emptyCourtList(courtCentreId)).thenReturn(emptyCourtListJson);
 
         final JsonEnvelope response = hearingsQueryView.retrieveCourtList(queryEnvelope);
 

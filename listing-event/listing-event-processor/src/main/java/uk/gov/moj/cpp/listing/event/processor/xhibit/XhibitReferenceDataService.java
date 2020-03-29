@@ -3,12 +3,13 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit;
 import static java.lang.String.format;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
-import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
+import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -34,13 +35,15 @@ public class XhibitReferenceDataService {
     private static final String XHIBIT_COURT_MAPPINGS_QUERY_PARAM = "ouId";
     private static final String UNMAPPED_COURT_ROOM_NAME = "Court -99";
 
+    private XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
+
     @Inject
     @ServiceComponent(Component.EVENT_PROCESSOR)
     private Requester requester;
 
     public List<UUID> getCourtCentreIdsForCrestId(final Envelope envelope, final String crownCourtCrestId) {
 
-        final List<CourtLocation> courtLocations = getSitesForCrownCourt(envelope, crownCourtCrestId);
+        final List<CourtLocation> courtLocations = getSitesForCrownCourt(crownCourtCrestId);
 
         return courtLocations.stream()
                 .map(courtLocation -> getOrganisationUnitId(envelope, courtLocation.getOuCode()))
@@ -48,12 +51,18 @@ public class XhibitReferenceDataService {
                 .collect(Collectors.toList());
     }
 
-    private List<CourtLocation> getSitesForCrownCourt(final Envelope envelope, final String crownCourtCrestId) {
+    private List<CourtLocation> getSitesForCrownCourt(final String crownCourtCrestId) {
 
         final JsonObject queryParameters = createObjectBuilder().build();
 
-        return requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS)
-                .withMetadataFrom(envelope))
+        final JsonEnvelope requestEnvelope = envelopeFrom(
+                metadataBuilder()
+                        .withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS)
+                        .withId(randomUUID())
+                        .build(),
+                queryParameters);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()))
                 .payloadAsJsonObject().getJsonArray("cpXhibitCourtMappings").getValuesAs(JsonObject.class)
                 .stream()
                 .filter(court -> court.getString("crestCourtId").equals(crownCourtCrestId))
@@ -62,23 +71,31 @@ public class XhibitReferenceDataService {
     }
 
     private UUID getOrganisationUnitId(final Envelope envelope, final String ouCode) {
-
         final JsonObject queryParameters = createObjectBuilder().add("oucode", ouCode).build();
 
-        final JsonObject organisationUnit = requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_ORGANISATION_UNITS)
-                .withMetadataFrom(envelope))
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(queryParameters)
+                .withName(REFERENCEDATA_QUERY_ORGANISATION_UNITS)
+                .withMetadataFrom(envelope);
+
+        final JsonObject organisationUnit = requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()))
                 .payloadAsJsonObject().getJsonArray("organisationunits").getValuesAs(JsonObject.class)
                 .stream().findFirst().orElseThrow(() -> new RuntimeException(format("Cannot find organisation unit with code %s", ouCode)));
 
         return UUID.fromString(organisationUnit.getString("id"));
     }
 
-    public CourtLocation getCourtDetails(final Envelope envelope, final UUID courtCentreId) {
+    public CourtLocation getCourtDetails(final UUID courtCentreId) {
 
         final JsonObject queryParameters = createObjectBuilder().add("ouId", courtCentreId.toString()).build();
 
-        final JsonObject court = requester.request(envelop(queryParameters).withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS)
-                .withMetadataFrom(envelope))
+        final JsonEnvelope requestEnvelope = envelopeFrom(
+                metadataBuilder()
+                        .withName(REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS)
+                        .withId(randomUUID())
+                        .build(),
+                queryParameters);
+
+        final JsonObject court = requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()))
                 .payloadAsJsonObject().getJsonArray("cpXhibitCourtMappings").getValuesAs(JsonObject.class)
                 .stream().findFirst().orElseThrow(() -> new RuntimeException(format("Cannot find court details with courtCentre %s", courtCentreId)));
 
@@ -115,7 +132,7 @@ public class XhibitReferenceDataService {
                 query);
 
         return requester
-                .request(jsonEnvelope, CourtRoomMappingsList.class)
+                .requestAsAdmin(jsonEnvelope, CourtRoomMappingsList.class)
                 .payload();
     }
 
@@ -130,18 +147,22 @@ public class XhibitReferenceDataService {
 
         final JsonObject queryParameters = createObjectBuilder().add("ids", judiciaryId.toString()).build();
 
-        return requester.request(envelop(queryParameters)
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(queryParameters)
                 .withName(REFERENCEDATA_QUERY_JUDICIARIES)
-                .withMetadataFrom(envelope))
+                .withMetadataFrom(envelope);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()))
                 .payloadAsJsonObject().getJsonArray("judiciaries")
                 .getValuesAs(JsonObject.class).get(0);
     }
 
     public JsonObject getXhibitHearingType(final JsonEnvelope envelope, final UUID cppHearingTypeId) {
 
-        return requester.request(envelop(createObjectBuilder().build())
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(createObjectBuilder().build())
                 .withName(REFERENCE_DATA_HEARING_TYPES)
-                .withMetadataFrom(envelope))
+                .withMetadataFrom(envelope);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()))
                 .payloadAsJsonObject()
                 .getJsonArray("hearingTypes").getValuesAs(JsonObject.class).stream()
                 .filter(h -> UUID.fromString(h.getString("id")).equals(cppHearingTypeId))
@@ -149,14 +170,25 @@ public class XhibitReferenceDataService {
     }
 
     private CourtLocation createCourtLocation(final JsonObject jsonObject) {
+        final String oucode = jsonObject.getString("oucode", EMPTY);
+        final String crestCourtId = jsonObject.getString("crestCourtId", EMPTY);
+        final String crestCourtSiteId = jsonObject.getString("crestCourtSiteId", EMPTY);
+        final String crestCourtName = jsonObject.getString("crestCourtName", EMPTY);
+        final String crestCourtShortName = jsonObject.getString("crestCourtShortName", EMPTY);
+        final String crestCourtSiteName = jsonObject.getString("crestCourtSiteName", EMPTY);
+        final String crestCourtSiteCode = jsonObject.getString("crestCourtSiteCode", EMPTY);
+        final String courtType = jsonObject.getString("courtType", EMPTY);
+
+        xhibitReferenceDataValidator.validate("crestCourtSiteId", crestCourtSiteId, jsonObject);
+
         return new CourtLocation(
-                jsonObject.getString("oucode"),
-                jsonObject.getString("crestCourtId"),
-                jsonObject.getString("crestCourtSiteId"),
-                jsonObject.getString("crestCourtName"),
-                jsonObject.getString("crestCourtShortName"),
-                jsonObject.getString("crestCourtSiteName"),
-                jsonObject.getString("crestCourtSiteCode"),
-                jsonObject.getString("courtType"));
+                oucode,
+                crestCourtId,
+                crestCourtSiteId,
+                crestCourtName,
+                crestCourtShortName,
+                crestCourtSiteName,
+                crestCourtSiteCode,
+                courtType);
     }
 }

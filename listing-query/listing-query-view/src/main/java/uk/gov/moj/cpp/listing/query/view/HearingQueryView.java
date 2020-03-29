@@ -190,13 +190,13 @@ public class HearingQueryView {
 
         final JsonObject courtListResponsePayload = (queryPayload.containsKey("published") &&
                 queryPayload.getBoolean("published"))
-                ? getPublishedCourtListResponsePayload(queryEnvelope, queryPayload)
+                ? getPublishedCourtListResponsePayload(queryPayload)
                 : getUnpublishedCourtListResponsePayload(queryEnvelope, queryPayload);
 
         return enveloper.withMetadataFrom(queryEnvelope, "listing.courtlist").apply(courtListResponsePayload);
     }
 
-    private JsonObject getPublishedCourtListResponsePayload(final JsonEnvelope envelope, final JsonObject queryPayload) {
+    private JsonObject getPublishedCourtListResponsePayload(final JsonObject queryPayload) {
 
         final UUID courtCentreId = fromString(queryPayload.getString("courtCentreId"));
 
@@ -209,7 +209,7 @@ public class HearingQueryView {
 
         return publishedCourtList != null
                 ? publishedCourtListToJsonConverter.convert(publishedCourtList).getJsonObject("courtListJson")
-                : courtListService.emptyCourtList(envelope, courtCentreId);
+                : courtListService.emptyCourtList(courtCentreId);
     }
 
     private JsonObject getUnpublishedCourtListResponsePayload(final JsonEnvelope query, final JsonObject queryPayload) {

@@ -86,13 +86,13 @@ public class PublishCourtListIT extends AbstractIT {
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
         stubGetReferenceDataCpCourtRooms(hearingsData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
-        stubGetReferenceDataXhibitCourtRoomMappings(courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
         publishCourtListSteps.verifyHearingListedFromAPI(true);
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
-        publishCourtListSteps.verifyCourtListPublishStatus("COURT_LIST_REQUESTED");
+        publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL");
         publishCourtListSteps.waitForPublishedCourtListStored(courtCentreId, publishCourtListType, startDate);
         publishCourtListSteps.waitForCompletedExport(courtCentreId, publishCourtListType, startDate);
         publishCourtListSteps.verifySentPublishedCourtListHearingData();

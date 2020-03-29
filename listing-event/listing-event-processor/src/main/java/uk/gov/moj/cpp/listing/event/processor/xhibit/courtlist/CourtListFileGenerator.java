@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 public class CourtListFileGenerator {
@@ -38,17 +39,14 @@ public class CourtListFileGenerator {
         final CourtListGenerationContext context =
                 new CourtListGenerationContext(envelope, requestParameters, courtListMetadata);
 
-        final String crownCourtCrestId = xhibitReferenceDataService.getCourtDetails(envelope, requestParameters.getCourtCentreId()).getCrestCourtId();
+        final String crownCourtCrestId = xhibitReferenceDataService.getCourtDetails(requestParameters.getCourtCentreId()).getCrestCourtId();
 
         final List<UUID> courtCentreIds = xhibitReferenceDataService.getCourtCentreIdsForCrestId(envelope, crownCourtCrestId);
 
         final List<JsonObject> publishedCourtListsJson = courtCentreIds.stream()
                 .filter(courtCentreId -> !courtCentreId.equals(requestParameters.getCourtCentreId()))
-                .map(courtCentreId -> listingService.getPublishedCourtListForCourtCentre(
-                        envelope,
-                        courtCentreId,
-                        requestParameters.getPublishCourtListType(),
-                        requestParameters.getStartDate()).getJsonArray("courtLists").getValuesAs(JsonObject.class)
+                .map(courtCentreId ->
+                        getCourtLists(envelope, requestParameters, courtCentreId)
                 )
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
@@ -58,6 +56,19 @@ public class CourtListFileGenerator {
         final AbstractCourtListMapper mapper = mapperFactory.createCourtListMapper(context, union(courtCentreCourtLists, publishedCourtListsJson));
 
         return xmlUtils.convertToXml(mapper.generate());
+    }
+
+    private List<JsonObject> getCourtLists(final JsonEnvelope envelope, final PublishCourtListRequestParameters requestParameters, final UUID courtCentreId) {
+
+        final JsonObject publishedCourtListForCourtCentre = listingService.getPublishedCourtListForCourtCentre(
+                envelope,
+                courtCentreId,
+                requestParameters.getPublishCourtListType(),
+                requestParameters.getStartDate());
+
+        final JsonArray courtLists = publishedCourtListForCourtCentre.getJsonArray("courtLists");
+
+        return courtLists.getValuesAs(JsonObject.class);
     }
 
     public void validateXml(final PublishCourtListRequestParameters requestParameters, final String courtListXml) {

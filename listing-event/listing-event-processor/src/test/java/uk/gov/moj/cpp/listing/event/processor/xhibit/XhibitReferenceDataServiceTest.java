@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
-import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
@@ -11,7 +10,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -20,25 +18,20 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
-import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMappingsList;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,9 +40,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.OngoingStubbing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,7 +86,7 @@ public class XhibitReferenceDataServiceTest {
     }
 
     @Test
-    public void shouldGetCourtDetails() throws Exception {
+    public void shouldGetCourtDetails() {
 
         final UUID courtCentreId = randomUUID();
         final String ouCode = "OUCODE";
@@ -125,13 +116,14 @@ public class XhibitReferenceDataServiceTest {
                                                 .add("courtType", courtType).build()))
                                 .build());
 
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+        when(requester.requestAsAdmin(any())).thenReturn(responseEnvelope);
 
-        CourtLocation courtDetails = xhibitReferenceDataService.getCourtDetails(inputEnvelope, courtCentreId);
+        CourtLocation courtDetails = xhibitReferenceDataService.getCourtDetails(courtCentreId);
 
-        verify(requester).request(requestCaptor.capture());
+        ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
 
-        final JsonObject actualRequestParameters = (JsonObject) requestCaptor.getValue().payload();
+        final JsonObject actualRequestParameters = (JsonObject) argumentCaptorForRequestEnvelope.getValue().payloadAsJsonObject();
 
         assertEquals(courtDetails.getOuCode(), ouCode);
         assertEquals(courtDetails.getCrestCourtId(), courtId);
@@ -145,7 +137,7 @@ public class XhibitReferenceDataServiceTest {
     }
 
     @Test
-    public void shouldGetJudiciary() throws Exception {
+    public void shouldGetJudiciary() {
 
         final String titlePrefix = "Mr";
         final String titleJudiciaryPrefix = "Recorder";
@@ -161,12 +153,14 @@ public class XhibitReferenceDataServiceTest {
                                                 .add("titleJudiciaryPrefix", titleJudiciaryPrefix).build()))
                                 .build());
 
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+        when(requester.requestAsAdmin(any())).thenReturn(responseEnvelope);
 
         final UUID judiciaryId = randomUUID();
         JsonObject judiciary = xhibitReferenceDataService.getJudiciary(inputEnvelope, judiciaryId);
 
-        verify(requester).request(requestCaptor.capture());
+        ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
+
         assertThat(judiciary.getString("titlePrefix"), equalTo(titlePrefix));
         assertThat(judiciary.getString("titleJudiciaryPrefix"), equalTo(titleJudiciaryPrefix));
 
@@ -182,11 +176,11 @@ public class XhibitReferenceDataServiceTest {
         final JsonObject courtRoomMappingJson = givenPayload("/xhibit/mock-data/referencedata.query.cp-xhibit-courtroom-mappings.json");
         final CourtRoomMappingsList courtRoomMappingsList = jsonObjectConverter.convert(courtRoomMappingJson, CourtRoomMappingsList.class);
 
-        when(requester.request(any(JsonEnvelope.class), eq(CourtRoomMappingsList.class)).payload()).thenReturn(courtRoomMappingsList);
+        when(requester.requestAsAdmin(any(JsonEnvelope.class), eq(CourtRoomMappingsList.class)).payload()).thenReturn(courtRoomMappingsList);
 
         int actualCourtRoomNumber = xhibitReferenceDataService.getCourtRoomNumber(courtCentreId, courtRoomId);
 
-        verify(requester).request(requestCaptor.capture(), eq(CourtRoomMappingsList.class));
+        verify(requester).requestAsAdmin(requestCaptor.capture(), eq(CourtRoomMappingsList.class));
         assertEquals(actualCourtRoomNumber, expectedCourtRoomNumber);
     }
 
@@ -199,11 +193,11 @@ public class XhibitReferenceDataServiceTest {
         final JsonObject courtRoomMappingJson = givenPayload("/xhibit/mock-data/referencedata.query.cp-xhibit-courtroom-mappings.json");
         final CourtRoomMappingsList courtRoomMappingsList = jsonObjectConverter.convert(courtRoomMappingJson, CourtRoomMappingsList.class);
 
-        when(requester.request(any(JsonEnvelope.class), eq(CourtRoomMappingsList.class)).payload()).thenReturn(courtRoomMappingsList);
+        when(requester.requestAsAdmin(any(JsonEnvelope.class), eq(CourtRoomMappingsList.class)).payload()).thenReturn(courtRoomMappingsList);
 
         int actualCourtRoomNumber = xhibitReferenceDataService.getCourtRoomNumber(courtCentreId, wrongCourtRoomId);
 
-        verify(requester).request(requestCaptor.capture(), eq(CourtRoomMappingsList.class));
+        verify(requester).requestAsAdmin(requestCaptor.capture(), eq(CourtRoomMappingsList.class));
         assertEquals(actualCourtRoomNumber, expectedCourtRoomNumber);
     }
 
@@ -222,12 +216,15 @@ public class XhibitReferenceDataServiceTest {
                                                 .add("id", cppHearingTypeId.toString()).build()))
                                 .build());
 
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+
+        when(requester.requestAsAdmin(any())).thenReturn(responseEnvelope);
 
         final JsonObject xhibitHearingType = xhibitReferenceDataService.getXhibitHearingType(inputEnvelope, cppHearingTypeId);
         LOGGER.info("xhibitHearingType = " + xhibitHearingType);
 
-        verify(requester).request(requestCaptor.capture());
+        ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
+
         assertThat(xhibitHearingType.getString("id"), equalTo(cppHearingTypeId.toString()));
 
     }
@@ -241,7 +238,7 @@ public class XhibitReferenceDataServiceTest {
         final JsonObject courtMapping = Json.createObjectBuilder()
                 .add("oucode", "")
                 .add("crestCourtId", crownCourtCrestId)
-                .add("crestCourtSiteId", "")
+                .add("crestCourtSiteId", "1")
                 .add("crestCourtName", "")
                 .add("crestCourtShortName", "")
                 .add("crestCourtSiteName", "")
@@ -268,7 +265,7 @@ public class XhibitReferenceDataServiceTest {
 
         final JsonEnvelope organisationUnitResponseEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), organisationUnitResponsePayload);
 
-        when(requester.request(any(JsonEnvelope.class))).thenReturn(courtMappingResponseEnvelope, organisationUnitResponseEnvelope);
+        when(requester.requestAsAdmin(any())).thenReturn(courtMappingResponseEnvelope, organisationUnitResponseEnvelope);
 
         final List<UUID> courtCentreIds = xhibitReferenceDataService.getCourtCentreIdsForCrestId(inputEnvelope, crownCourtCrestId);
 

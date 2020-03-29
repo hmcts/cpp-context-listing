@@ -46,9 +46,9 @@ public class CourtListService {
         return rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse.payloadAsJsonObject(), startDate, endDate);
     }
 
-    public JsonObject emptyCourtList(final JsonEnvelope envelope, final UUID courtCentreId) {
+    public JsonObject emptyCourtList(final UUID courtCentreId) {
 
-        final List<JsonObject> courtSites = xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(envelope, courtCentreId);
+        final List<JsonObject> courtSites = xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId);
 
         final JsonArrayBuilder courtListsBuilder = Json.createArrayBuilder();
 

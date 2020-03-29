@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
+import static org.apache.commons.lang3.exception.ExceptionUtils.getMessage;
+
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.XhibitService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListFileGenerator;
@@ -38,7 +40,7 @@ public class CourtListExportService {
     public void exportCourtList(final JsonEnvelope envelope, final PublishCourtListRequestParameters parameters, final JsonObject courtListJson) {
         try {
 
-            final CourtListMetadata courtListMetadata = courtListMetadataGenerator.generate(envelope, parameters);
+            final CourtListMetadata courtListMetadata = courtListMetadataGenerator.generate(parameters);
 
             final String courtListXml = courtListFileGenerator.generateXml(envelope, parameters, courtListMetadata, courtListJson);
 
@@ -52,7 +54,7 @@ public class CourtListExportService {
         } catch (final Exception e) {
             logger.error("Court List export failed", e);
             publishCourtListCommandSender.recordCourtListExportFailed(parameters,
-                    e.getMessage(), "NONE");
+                    getMessage(e), "NONE");
         }
     }
 }

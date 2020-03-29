@@ -3,9 +3,12 @@ package uk.gov.moj.cpp.listing.event.processor.azure.util;
 import static java.lang.String.format;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
 import uk.gov.justice.services.core.annotation.ServiceComponent;
+import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.UUID;
@@ -26,8 +29,11 @@ public class ListingReferenceDataService {
                 .add("id", courtCentreId)
                 .build();
 
-        final JsonEnvelope response = requester.request(envelop(ouCodeQueryParameter).withName(REFERENCE_DATA_GET_COURTROOM).withMetadataFrom(jsonEnvelope));
-        return response;
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(ouCodeQueryParameter)
+                .withName(REFERENCE_DATA_GET_COURTROOM)
+                .withMetadataFrom(jsonEnvelope);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
     }
 
     public int retrieveCourtRoomId(final JsonObject responseForCourtRoom, final UUID roomId, final UUID courtCentreId) {

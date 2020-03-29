@@ -4,7 +4,6 @@ import static java.lang.String.format;
 import static java.util.UUID.randomUUID;
 
 import uk.gov.justice.services.common.util.Clock;
-import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 
 import java.time.ZonedDateTime;
@@ -21,13 +20,13 @@ public class CourtListMetadataGenerator {
     @Inject
     private Clock clock;
 
-    public CourtListMetadata generate(final JsonEnvelope envelope, final PublishCourtListRequestParameters parameters) {
+    public CourtListMetadata generate(final PublishCourtListRequestParameters parameters) {
 
         final ZonedDateTime createdDate = clock.now();
 
         final String filename = format("%s_%s_%s.xml",
                 parameters.getPublishCourtListType().getFilenamePrefix(),
-                getCrownCourtCode(envelope, parameters.getCourtCentreId()),
+                getCrownCourtCode(parameters.getCourtCentreId()),
                 getSendDate(createdDate));
 
         return new CourtListMetadata(filename, getDocumentUniqueId(), createdDate);
@@ -44,7 +43,7 @@ public class CourtListMetadataGenerator {
         return createdDate.format(formatter);
     }
 
-    private String getCrownCourtCode(final JsonEnvelope envelope, final UUID courtCentreId) {
-        return xhibitReferenceDataService.getCourtDetails(envelope, courtCentreId).getCrestCourtId();
+    private String getCrownCourtCode(final UUID courtCentreId) {
+        return xhibitReferenceDataService.getCourtDetails(courtCentreId).getCrestCourtId();
     }
 }

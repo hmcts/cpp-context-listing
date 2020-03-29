@@ -33,6 +33,7 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SolicitorStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.YesNoType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataValidator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
 
@@ -84,6 +85,7 @@ public class CourtServicesMapper {
     private CourtListGenerationContext context;
 
     private XhibitReferenceDataService xhibitReferenceDataService;
+    private XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
 
     public CourtServicesMapper(final CourtListGenerationContext context,
                                final XhibitReferenceDataService xhibitReferenceDataService) {
@@ -118,7 +120,7 @@ public class CourtServicesMapper {
 
     public CourtHouseStructure generateCrownCourtStructure(final UUID courtCentreId) {
 
-        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(context.getEnvelope(), courtCentreId);
+        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(courtCentreId);
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
@@ -131,7 +133,7 @@ public class CourtServicesMapper {
 
     public CourtHouseStructure generateCourtHouseStructure(final UUID courtCentreId) {
 
-        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(context.getEnvelope(), courtCentreId);
+        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(courtCentreId);
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
@@ -146,9 +148,15 @@ public class CourtServicesMapper {
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
-        courtHouseStructure.setCourtHouseType(CourtType.valueOf(crestCourtSite.getString("courtType", EMPTY)));
-        courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(crestCourtSite.getString("crestCourtSiteId", EMPTY)));
-        courtHouseStructure.setCourtHouseName(crestCourtSite.getString("crestCourtSiteName", EMPTY));
+        final String courtType = crestCourtSite.getString("courtType", EMPTY);
+        final String crestCourtSiteId = crestCourtSite.getString("crestCourtSiteId", EMPTY);
+        final String crestCourtSiteName = crestCourtSite.getString("crestCourtSiteName", EMPTY);
+
+        xhibitReferenceDataValidator.validate("crestCourtSiteId", crestCourtSiteId, crestCourtSite);
+
+        courtHouseStructure.setCourtHouseType(CourtType.valueOf(courtType));
+        courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(crestCourtSiteId));
+        courtHouseStructure.setCourtHouseName(crestCourtSiteName);
 
         return courtHouseStructure;
     }
