@@ -4,6 +4,7 @@ import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.UUID.fromString;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.CROWN_PROSECUTION_SERVICE;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.OTHER_PROSECUTOR;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.convertDate;
@@ -53,10 +54,14 @@ import java.util.stream.Collectors;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Map to elements defined in CourtServices.xsd
  */
 public class CourtServicesMapper {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CourtServicesMapper.class);
 
     public static final String MASKED_VALUE = "******";
     public static final String OFFENCES = "offences";
@@ -493,12 +498,20 @@ public class CourtServicesMapper {
 
         final CitizenNameStructure citizenNameStructure = objectFactory.createCitizenNameStructure();
 
-        citizenNameStructure.getCitizenNameForename().add(defendant.getString(FIRST_NAME));
-        citizenNameStructure.setCitizenNameSurname(defendant.getString(LAST_NAME));
-        citizenNameStructure.setCitizenNameRequestedName(
-                buildCitizenRequestedName(
-                        defendant.getString(FIRST_NAME), defendant.getString(LAST_NAME)
-                ));
+        final String firstName = defendant.getString(FIRST_NAME, EMPTY);
+        citizenNameStructure.getCitizenNameForename().add(firstName);
+
+        final String lastName = defendant.getString(LAST_NAME, EMPTY);
+        citizenNameStructure.setCitizenNameSurname(lastName);
+
+        if(isBlank(firstName ) && isBlank(lastName)){
+            LOGGER.info("firstName {} & lastName {} are empty", firstName, lastName);
+        }else{
+            citizenNameStructure.setCitizenNameRequestedName(
+                    buildCitizenRequestedName(
+                            firstName, lastName
+                    ));
+        }
 
         return citizenNameStructure;
     }

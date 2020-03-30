@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cs:DailyList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:p2="http://www.govtalk.gov.uk/people/bs7666" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
+    <cs:DocumentID>
+        <cs:DocumentName>FIRM-FILENAME</cs:DocumentName>
+        <cs:UniqueID>UNIQUEID</cs:UniqueID>
+        <cs:DocumentType>FL</cs:DocumentType>
+    </cs:DocumentID>
+    <cs:ListHeader>
+        <cs:ListCategory>Criminal</cs:ListCategory>
+        <cs:StartDate>2019-11-04</cs:StartDate>
+        <cs:EndDate>2019-11-05</cs:EndDate>
+        <cs:Version>NOT VERSIONED</cs:Version>
+        <cs:PublishedTime>2018-01-02T13:04:05Z</cs:PublishedTime>
+    </cs:ListHeader>
+    <cs:CrownCourt>
+        <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+        <cs:CourtHouseCode CourtHouseShortName="MOCK">000</cs:CourtHouseCode>
+        <cs:CourtHouseName>MOCK_CROWN_COURTNAME</cs:CourtHouseName>
+    </cs:CrownCourt>
+    <cs:CourtLists>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>418</cs:CourtHouseCode>
+                <cs:CourtHouseName>CROYDON</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingSequenceNo>1</cs:SittingSequenceNo>
+                    <cs:SittingAt>10:30:00</cs:SittingAt>
+                    <cs:SittingPriority>T</cs:SittingPriority>
+                    <cs:Judiciary>
+                        <cs:Judge>
+                            <apd:CitizenNameForename>Mark J</apd:CitizenNameForename>
+                            <apd:CitizenNameSurname>Ainsworth-MAGISTRATE</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Mr Mark J Ainsworth-MAGISTRATE judge</apd:CitizenNameRequestedName>
+                        </cs:Judge>
+                    </cs:Judiciary>
+                    <cs:Hearings>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2020-03-16</cs:HearingDate>
+                            </cs:HearingDetails>
+                            <cs:TimeMarkingNote>NOT BEFORE 10:30 AM</cs:TimeMarkingNote>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Elsie</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>ENGEL</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Elsie ENGEL</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>16AR990439</cs:URN>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                    </cs:Hearings>
+                </cs:Sitting>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>0</cs:CourtRoomNumber>
+                    <cs:SittingSequenceNo>1</cs:SittingSequenceNo>
+                    <cs:SittingAt>10:00:00</cs:SittingAt>
+                    <cs:SittingPriority>T</cs:SittingPriority>
+                    <cs:Judiciary>
+                        <cs:Judge>
+                            <apd:CitizenNameForename>Mark J</apd:CitizenNameForename>
+                            <apd:CitizenNameSurname>Ainsworth-MAGISTRATE</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Mr Mark J Ainsworth-MAGISTRATE judge</apd:CitizenNameRequestedName>
+                        </cs:Judge>
+                    </cs:Judiciary>
+                    <cs:Hearings>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2020-03-17</cs:HearingDate>
+                            </cs:HearingDetails>
+                            <cs:TimeMarkingNote>NOT BEFORE 10:00 AM</cs:TimeMarkingNote>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
+                                <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
+                                <cs:ProsecutingOrganisation>
+                                    <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
+                                </cs:ProsecutingOrganisation>
+                            </cs:Prosecution>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename></apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>VIVIANI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>VIVIANI</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>82HS459261</cs:URN>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                    </cs:Hearings>
+                </cs:Sitting>
+                <cs:Sitting>
+                    <cs:CourtRoomNumber>99</cs:CourtRoomNumber>
+                    <cs:SittingSequenceNo>1</cs:SittingSequenceNo>
+                    <cs:SittingAt>08:41:55</cs:SittingAt>
+                    <cs:SittingPriority>F</cs:SittingPriority>
+                    <cs:Judiciary>
+                        <cs:Judge>
+                            <apd:CitizenNameForename>Mark J</apd:CitizenNameForename>
+                            <apd:CitizenNameSurname>Ainsworth-MAGISTRATE</apd:CitizenNameSurname>
+                            <apd:CitizenNameRequestedName>Mr Mark J Ainsworth-MAGISTRATE judge</apd:CitizenNameRequestedName>
+                        </cs:Judge>
+                    </cs:Judiciary>
+                    <cs:Hearings>
+                        <cs:Hearing>
+                            <cs:HearingSequenceNumber>1</cs:HearingSequenceNumber>
+                            <cs:HearingDetails HearingType="XXX">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
+                                <cs:HearingDate>2020-02-16</cs:HearingDate>
+                            </cs:HearingDetails>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
+                                <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
+                                <cs:ProsecutingOrganisation>
+                                    <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
+                                </cs:ProsecutingOrganisation>
+                            </cs:Prosecution>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Herman</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>SHERMAN</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Herman SHERMAN</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>57LH840882</cs:URN>
+                                    <cs:Charges>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                    </cs:Charges>
+                                </cs:Defendant>
+                            </cs:Defendants>
+                        </cs:Hearing>
+                    </cs:Hearings>
+                </cs:Sitting>
+            </cs:Sittings>
+        </cs:CourtList>
+        <cs:CourtList>
+            <cs:CourtHouse>
+                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
+                <cs:CourtHouseCode>418</cs:CourtHouseCode>
+                <cs:CourtHouseName>CROWN COURT SITTING AT BARCLAY ROAD</cs:CourtHouseName>
+            </cs:CourtHouse>
+            <cs:Sittings/>
+        </cs:CourtList>
+    </cs:CourtLists>
+</cs:DailyList>
