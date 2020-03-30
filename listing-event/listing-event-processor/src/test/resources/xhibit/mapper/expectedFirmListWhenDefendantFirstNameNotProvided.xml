@@ -93,7 +93,6 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameForename></apd:CitizenNameForename>
                                             <apd:CitizenNameSurname>VIVIANI</apd:CitizenNameSurname>
                                             <apd:CitizenNameRequestedName>VIVIANI</apd:CitizenNameRequestedName>
                                         </cs:Name>
