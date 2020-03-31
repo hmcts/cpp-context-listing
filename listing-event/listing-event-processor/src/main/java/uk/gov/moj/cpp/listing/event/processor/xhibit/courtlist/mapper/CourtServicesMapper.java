@@ -35,7 +35,7 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SolicitorStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.YesNoType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataValidator;
+import uk.gov.moj.cpp.listing.common.xhibit.XhibitReferenceDataValidator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.InvalidDataException;

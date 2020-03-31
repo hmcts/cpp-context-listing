@@ -1,7 +1,7 @@
-package uk.gov.moj.cpp.listing.event.processor.xhibit;
+package uk.gov.moj.cpp.listing.common.xhibit;
 
 
-import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.InvalidReferenceDataException;
+import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 
 import javax.json.Json;
 import javax.json.JsonObject;

@@ -73,5 +73,37 @@ public class CourtRoomMapping  {
         return crestCourtSiteUUID;
     }
 
+    public static class Builder {
+        private UUID id;
+        private UUID courtRoomUUID;
+        private String crestCourtSiteName;
+        private String oucode;
+        private Integer courtRoomId;
+        private String crestCourtId;
+        private String crestCourtSiteId;
+        private String crestCourtSiteCode;
+        private String crestCourtRoomName;
+        private UUID crestCourtSiteUUID;
+
+        public Builder withId(final UUID id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder withCrestCourtSiteCode(final String crestCourtSiteCode) {
+            this.crestCourtSiteCode = crestCourtSiteCode;
+            return this;
+        }
+
+        public Builder withCrestCourtRoomName(final String crestCourtRoomName) {
+            this.crestCourtRoomName = crestCourtRoomName;
+            return this;
+        }
+
+        public CourtRoomMapping build() {
+            return new CourtRoomMapping(id, courtRoomUUID, crestCourtSiteName, oucode, courtRoomId, crestCourtId, crestCourtSiteId, crestCourtSiteCode, crestCourtRoomName, crestCourtSiteUUID);
+        }
+    }
+
 
 }
