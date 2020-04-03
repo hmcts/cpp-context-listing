@@ -13,6 +13,7 @@ import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonUtils.getJsonFile;
 import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonUtils.prettifyJson;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -87,8 +88,8 @@ public class RangeSearchConverterTest {
         final List<JsonObject> courtSites = Arrays.asList(
                 buildCourtSite("A"), buildCourtSite("B"));
 
-        final Optional<JsonObject> courtRoom1 = courtRoom("A");
-        final Optional<JsonObject> courtRoom2 = courtRoom("B");
+        final Optional<CourtRoomMapping> courtRoom1 = courtRoom("A");
+        final Optional<CourtRoomMapping> courtRoom2 = courtRoom("B");
 
         final LocalDate startDate = LocalDate.parse("2019-12-16");
         final String pEndDate = StringUtils.isNotBlank(endDate) ? endDate : StringUtils.EMPTY;
@@ -110,10 +111,8 @@ public class RangeSearchConverterTest {
         compareJson(generatedCourtList, expectedCourtList);
     }
 
-    private Optional<JsonObject> courtRoom(final String crestCourtSiteCode) {
-        return Optional.of(Json.createObjectBuilder()
-                .add("crestCourtSiteCode", crestCourtSiteCode)
-                .build());
+    private Optional<CourtRoomMapping> courtRoom(final String crestCourtSiteCode) {
+        return Optional.of(new CourtRoomMapping.Builder().withCrestCourtSiteCode(crestCourtSiteCode).build());
     }
 
     private JsonObject buildCourtSite(final String crestCourtSiteCode) {

@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.FlatHearing;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Sitting;
 
@@ -117,10 +118,10 @@ public class CourtListsBuilder {
             return xhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId);
         }
 
-        final Optional<JsonObject> courtRoomJson = xhibitReferenceDataService.getCourtRoom(envelope, courtCentreId,
+        final Optional<CourtRoomMapping> courtRoomMapping = xhibitReferenceDataService.getCourtRoom(envelope, courtCentreId,
                 courtRoomUUID.get());
 
-        return courtRoomJson.isPresent() ? courtRoomJson.get().getString(CREST_COURT_SITE_CODE)
+        return courtRoomMapping.isPresent() ? courtRoomMapping.get().getCrestCourtSiteCode()
                 : xhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId);
     }
 }

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
+import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtHouseStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.DocumentIDstructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ListHeaderStructure;
@@ -16,6 +17,7 @@ import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlTestUtils;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.InvalidDataException;
 
 import javax.json.JsonObject;
 
@@ -79,6 +81,48 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final String generatedXml = xmlUtils.convertToXml(firmListMapper.generate());
 
+        xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FIRM.getSchemaName());
+
         XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingMapperTest.xml");
+    }
+
+    @Test
+    public void shouldGenerateDailyListXmlWhenDefendantFirstNameIsNotProvided() throws Exception {
+
+        final UUID courtCentreId = context.getParameters().getCourtCentreId();
+
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+
+        final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-defendant-firstname-not-provided.json")
+                .getJsonArray("courtLists").getValuesAs(JsonObject.class);
+
+        final DailyListMapper dailyListMapper = new DailyListMapper(context, courtListsForPublishing, courtServicesMapper);
+
+        final String generatedXml = xmlUtils.convertToXml(dailyListMapper.generate());
+
+        xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FINAL.getSchemaName());
+
+        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListWhenDefendantFirstNameNotProvided.xml");
+    }
+
+    @Test(expected = InvalidDataException.class)
+    public void shouldThrowInvalidDataExceptionWhenGenerateDailyListXmlAndSurNameIsNotProvided() throws Exception {
+
+        final UUID courtCentreId = context.getParameters().getCourtCentreId();
+
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+
+        final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-defendant-surname-not-provided.json")
+                .getJsonArray("courtLists").getValuesAs(JsonObject.class);
+
+        final DailyListMapper dailyListMapper = new DailyListMapper(context, courtListsForPublishing, courtServicesMapper);
+
+        final String generatedXml = xmlUtils.convertToXml(dailyListMapper.generate());
+
+        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListWhenDefendantFirstNameNotProvided.xml");
     }
 }

@@ -4,6 +4,8 @@ import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.UUID.fromString;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.CROWN_PROSECUTION_SERVICE;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.OTHER_PROSECUTOR;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.convertDate;
@@ -33,9 +35,10 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SolicitorStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.YesNoType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataValidator;
+import uk.gov.moj.cpp.listing.common.xhibit.XhibitReferenceDataValidator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.InvalidDataException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -493,11 +496,21 @@ public class CourtServicesMapper {
 
         final CitizenNameStructure citizenNameStructure = objectFactory.createCitizenNameStructure();
 
-        citizenNameStructure.getCitizenNameForename().add(defendant.getString(FIRST_NAME));
-        citizenNameStructure.setCitizenNameSurname(defendant.getString(LAST_NAME));
+        final String firstName = defendant.getString(FIRST_NAME, EMPTY);
+        if (isNotBlank(firstName)) {
+            citizenNameStructure.getCitizenNameForename().add(firstName);
+        }
+
+        final String lastName = defendant.getString(LAST_NAME, EMPTY);
+
+        if (isBlank(lastName)) {
+            throw new InvalidDataException(format("Surname = %s is not provided. This is a mandatory field", lastName));
+        }
+        citizenNameStructure.setCitizenNameSurname(lastName);
+
         citizenNameStructure.setCitizenNameRequestedName(
                 buildCitizenRequestedName(
-                        defendant.getString(FIRST_NAME), defendant.getString(LAST_NAME)
+                        firstName, lastName
                 ));
 
         return citizenNameStructure;
@@ -577,7 +590,7 @@ public class CourtServicesMapper {
         for (final JsonObject hearingJson : sittingJson.getJsonArray("hearings").getValuesAs(JsonObject.class)) {
 
             final UUID hearingTypeId = fromString(hearingJson.getJsonObject("hearingType").getString("id"));
-                verifyCaseStructureGeneration(pHearingTypeId, processedHearingTypes, casesStructure, hearingJson, hearingTypeId);
+            verifyCaseStructureGeneration(pHearingTypeId, processedHearingTypes, casesStructure, hearingJson, hearingTypeId);
         }
         return casesStructure;
     }
@@ -586,7 +599,7 @@ public class CourtServicesMapper {
         if (hearingTypeId.equals(pHearingTypeId)) {
             processedHearingTypes.add(hearingTypeId);
 
-            if(!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)){
+            if (!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)) {
                 generateCaseStructureForCaseOrCourtApplication(casesStructure, hearingJson);
             }
         }
@@ -649,7 +662,7 @@ public class CourtServicesMapper {
 
     private void generateAndSetTimeMarkingNote(final JsonObject hearingJson, final HearingStructure hearingStructure) {
         final ZonedDateTime localTime = DateAndTimeUtils.convertUTCToLocalTime(LocalDateTime.parse(hearingJson.getString("startTime")));
-        hearingStructure.setTimeMarkingNote(String.format(TIME_MARKING_NOTE_TEXT, localTime.format(timeFormatter)));
+        hearingStructure.setTimeMarkingNote(format(TIME_MARKING_NOTE_TEXT, localTime.format(timeFormatter)));
     }
 
 }
