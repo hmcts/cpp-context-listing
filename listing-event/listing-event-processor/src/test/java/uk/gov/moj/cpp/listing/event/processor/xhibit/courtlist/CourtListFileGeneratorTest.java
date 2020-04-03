@@ -51,6 +51,8 @@ public class CourtListFileGeneratorTest {
     private static final String RESTRICTED_DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-restricted-daily-list.json";
     private static final String COURT_LIST_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-with-fixed-date-corresponding-hearing-types-list.json";
     private static final String COURT_LIST_2_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist2-with-fixed-date-corresponding-hearing-types-list.json";
+    private static final String COURT_LIST_WITH_CASE_HIDDEN_INPUT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-case-hidden.json";
+
 
     @Parameterized.Parameter(0)
     public PublishCourtListType publishCourtListType;
@@ -89,7 +91,8 @@ public class CourtListFileGeneratorTest {
                 {FIRM, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedFirmList.xml"},
                 {FINAL, RESTRICTED_DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedRestrictedFinalList.xml"},
                 {WARN, COURT_LIST_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithDifferentHearingTypesInCase.xml"},
-                {WARN, COURT_LIST_2_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithMultipleHearingTypesInCase.xml"}
+                {WARN, COURT_LIST_2_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithMultipleHearingTypesInCase.xml"},
+                {WARN, COURT_LIST_WITH_CASE_HIDDEN_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithCaseHidden.xml"}
 
         };
         return asList(data);

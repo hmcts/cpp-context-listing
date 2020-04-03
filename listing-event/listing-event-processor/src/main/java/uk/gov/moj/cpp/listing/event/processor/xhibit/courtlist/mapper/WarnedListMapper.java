@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.FixtureStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.WarnedListStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 
@@ -70,8 +71,11 @@ public class WarnedListMapper extends AbstractCourtListMapper {
                         processedHearingTypes4Fixed.add(hearingTypeId);
                     }
                 } else if (!processedHearingTypes4Fixed.contains(hearingTypeId)) {
-                        courtList.getWithFixedDate().add(generateWithFixedDate(sittingJson, hearingTypeId));
+                    final WarnedListStructure.CourtLists.CourtList.WithFixedDate withFixedDate = generateWithFixedDate(sittingJson, hearingTypeId);
+                    if (withFixedDate != null) {
+                        courtList.getWithFixedDate().add(withFixedDate);
                         processedHearingTypes4Fixed.add(hearingTypeId);
+                    }
                 }
             });
         }
@@ -95,7 +99,11 @@ public class WarnedListMapper extends AbstractCourtListMapper {
         final WarnedListStructure.CourtLists.CourtList.WithFixedDate withFixedDate = objectFactory
                 .createWarnedListStructureCourtListsCourtListWithFixedDate();
 
-        withFixedDate.getFixture().add(courtServicesMapper.generateFixtureStructure(sittingJson, hearingTypeId));
+        final FixtureStructure fixtureStructure = courtServicesMapper.generateFixtureStructure(sittingJson, hearingTypeId);
+        if (fixtureStructure.getCases().getCase().isEmpty()) {
+            return null;
+        }
+        withFixedDate.getFixture().add(fixtureStructure);
         withFixedDate.setHearingType(getXhibitHearingType(sittingJson, hearingTypeId));
 
         return withFixedDate;
