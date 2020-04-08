@@ -20,7 +20,6 @@ import uk.gov.moj.cpp.listing.domain.transformation.domain.Prompt;
 import uk.gov.moj.cpp.listing.domain.transformation.domain.ResultDefinition;
 
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
 
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
