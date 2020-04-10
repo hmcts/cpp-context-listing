@@ -111,6 +111,8 @@ public class DefendantEventListener {
                 .withRestrictFromCourtList(originalDefendant.getRestrictFromCourtList())
                 .withLegalAidStatus("NO_VALUE".equals(legalAidStatus) ? Optional.empty() : Optional.of(legalAidStatus))
                 .withProceedingsConcluded(originalDefendant.getProceedingsConcluded())
+                                               .withMasterDefendantId(originalDefendant.getMasterDefendantId())
+                                               .withCourtProceedingsInitiated(originalDefendant.getCourtProceedingsInitiated())
                 .build();
 
         defendants.replaceAll(defendant -> defendant.getId().equals(newDefendant.getId()) ? newDefendant : defendant);
@@ -147,6 +149,8 @@ public class DefendantEventListener {
                 .withNationalityDescription(updatedDefendant.getNationalityDescription())
                 .withLegalAidStatus(originalDefendant.getLegalAidStatus())
                 .withProceedingsConcluded(originalDefendant.getProceedingsConcluded())
+                .withMasterDefendantId(originalDefendant.getMasterDefendantId())
+                .withCourtProceedingsInitiated(originalDefendant.getCourtProceedingsInitiated())
                 .build();
 
         defendants.replaceAll(defendant -> defendant.getId().equals(newDefendant.getId()) ? newDefendant : defendant);

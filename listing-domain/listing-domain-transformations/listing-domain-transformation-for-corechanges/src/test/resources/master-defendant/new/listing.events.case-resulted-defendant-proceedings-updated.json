@@ -1,0 +1,141 @@
+{
+  "hearingIds": [
+    "f612a5f8-53bc-42ea-9109-77b84ed4e1c2"
+  ],
+  "prosecutionCase": {
+    "caseStatus": "CLOSED",
+    "defendants": [
+      {
+        "id": "2f488539-fc4a-4da4-8980-749cad536d9c",
+        "masterDefendantId": "2f488539-fc4a-4da4-8980-749cad536d9c",
+        "numberOfPreviousConvictionsCited": 99,
+        "offences": [
+          {
+            "allocationDecision": {
+              "allocationDecisionDate": "2020-02-17",
+              "motReasonCode": "b8c37e33-defd-351c-b91e-1e03e51657da",
+              "motReasonDescription": "Summary-only offence",
+              "motReasonId": "b8c37e33-defd-351c-b91e-1e03e51657da",
+              "offenceId": "20bc098a-1426-4a4e-9b8c-5ee909307d4d",
+              "originatingHearingId": "f612a5f8-53bc-42ea-9109-77b84ed4e1c2",
+              "sequenceNumber": 90
+            },
+            "chargeDate": "2018-08-01",
+            "convictionDate": "2020-02-17",
+            "count": 1,
+            "id": "20bc098a-1426-4a4e-9b8c-5ee909307d4d",
+            "judicialResults": [
+              {
+                "category": "FINAL",
+                "cjsCode": "1018",
+                "courtClerk": {
+                  "firstName": "Erica",
+                  "lastName": "Wilson",
+                  "userId": "31ec3a16-8721-498c-8da5-f099390ee254"
+                },
+                "isAdjournmentResult": false,
+                "isAvailableForCourtExtract": true,
+                "isConvictedResult": true,
+                "isDeleted": false,
+                "isFinancialResult": false,
+                "judicialResultId": "444caef7-619c-4e1c-9db6-3bfb749db12f",
+                "judicialResultPrompts": [
+                  {
+                    "isAvailableForCourtExtract": true,
+                    "label": "Period of conditional discharge",
+                    "promptSequence": 100,
+                    "usergroups": [
+                      "Court Clerks",
+                      "Legal Advisers"
+                    ],
+                    "value": "12 Months",
+                    "welshLabel": ""
+                  }
+                ],
+                "label": "Conditional discharge",
+                "lastSharedDateTime": "2020-02-17",
+                "orderedDate": "2020-02-17",
+                "orderedHearingId": "f612a5f8-53bc-42ea-9109-77b84ed4e1c2",
+                "rank": 7400,
+                "usergroups": [],
+                "welshLabel": "Rhyddhad Amodol"
+              }
+            ],
+            "modeOfTrial": "Summary",
+            "notifiedPlea": {
+              "notifiedPleaDate": "2020-01-21",
+              "notifiedPleaValue": "NOTIFIED_GUILTY",
+              "offenceId": "20bc098a-1426-4a4e-9b8c-5ee909307d4d"
+            },
+            "offenceCode": "PS90010",
+            "offenceDefinitionId": "881036a9-bf0a-4733-a67f-54edac3b1eec",
+            "offenceLegislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
+            "offenceLegislationWelsh": "",
+            "offenceTitle": "Public service vehicle - passenger use altered / defaced   ticket",
+            "offenceTitleWelsh": "",
+            "orderIndex": 1,
+            "plea": {
+              "offenceId": "20bc098a-1426-4a4e-9b8c-5ee909307d4d",
+              "originatingHearingId": "f612a5f8-53bc-42ea-9109-77b84ed4e1c2",
+              "pleaDate": "2020-02-17",
+              "pleaValue": "NOT_GUILTY"
+            },
+            "proceedingsConcluded": true,
+            "startDate": "2018-07-02",
+            "verdict": {
+              "jurors": {
+                "numberOfJurors": 12,
+                "numberOfSplitJurors": 0,
+                "unanimous": true
+              },
+              "lesserOrAlternativeOffence": {
+                "offenceCode": "PS90010",
+                "offenceDefinitionId": "881036a9-bf0a-4733-a67f-54edac3b1eec",
+                "offenceLegislation": "Contrary to regulation 7(1)(a) of the Public Service Vehicles (Conduct of Drivers, Inspectors, Conductors and Passengers) Regulations 1990 and section 25 of the Public Passenger Vehicles Act 1981.",
+                "offenceTitle": "Public service vehicle - passenger use altered / defaced   ticket"
+              },
+              "offenceId": "20bc098a-1426-4a4e-9b8c-5ee909307d4d",
+              "originatingHearingId": "f612a5f8-53bc-42ea-9109-77b84ed4e1c2",
+              "verdictDate": "2020-02-17",
+              "verdictType": {
+                "category": "Guilty",
+                "categoryType": "GUILTY_BY_JURY_CONVICTED",
+                "id": "c4ca4238-a0b9-3382-8dcc-509a6f75849b"
+              }
+            },
+            "wording": "On 02/07/2018 at Bond street, being a passenger on a vehicle, namely Volvo B9TL 30x, used for the carriage of passengers at separate fares, used a ticket which had been altered or defaced."
+          }
+        ],
+        "personDefendant": {
+          "personDetails": {
+            "address": {
+              "address1": "Flat 1",
+              "address2": "1 Old Road",
+              "address3": "London",
+              "address4": "Merton",
+              "postcode": "SW99 1AA"
+            },
+            "contact": {},
+            "dateOfBirth": "1965-12-27",
+            "documentationLanguageNeeds": "ENGLISH",
+            "ethnicity": {},
+            "firstName": "Fred",
+            "gender": "MALE",
+            "lastName": "Smith",
+            "title": "MR"
+          }
+        },
+        "proceedingsConcluded": true,
+        "prosecutionCaseId": "a3a2650a-8426-4288-abd9-694d4fbdf50e"
+      }
+    ],
+    "id": "a3a2650a-8426-4288-abd9-694d4fbdf50e",
+    "initiationCode": "J",
+    "prosecutionCaseIdentifier": {
+      "prosecutionAuthorityCode": "TFL",
+      "prosecutionAuthorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+      "prosecutionAuthorityReference": "TFL4409514"
+    },
+    "statementOfFacts": "Prosecution Facts"
+  }
+}

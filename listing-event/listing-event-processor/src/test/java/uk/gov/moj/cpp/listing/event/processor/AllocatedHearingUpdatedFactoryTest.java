@@ -1,12 +1,10 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertNull;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.FUTURE_LOCAL_DATE;
-
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import uk.gov.justice.core.courts.ConfirmedDefendant;
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
@@ -17,9 +15,12 @@ import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingLanguage;
 import uk.gov.justice.listing.events.JudicialRole;
 import uk.gov.justice.listing.events.JurisdictionType;
+import uk.gov.justice.listing.events.OrganisationUnit;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds;
 import uk.gov.justice.listing.events.Type;
+import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
+import uk.gov.moj.cpp.listing.event.processor.service.ReferenceDataService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -30,10 +31,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.runners.MockitoJUnitRunner;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.core.Is.is;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.FUTURE_LOCAL_DATE;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AllocatedHearingUpdatedFactoryTest {
@@ -61,6 +68,8 @@ public class AllocatedHearingUpdatedFactoryTest {
     @InjectMocks
     private AllocatedHearingUpdatedFactory allocatedHearingUpdatedFactory;
 
+    @Mock
+    private ReferenceDataService referenceDataService;
 
     @Test
     public void shouldCreateAllocatedHearingUpdatedWithJudiciary() throws Exception {
@@ -74,9 +83,11 @@ public class AllocatedHearingUpdatedFactoryTest {
                 .withIsDeputy(empty())
                 .build());
         final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = allocatedHearingUpdatedForListing(judiciary);
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
 
         //when
-        final HearingUpdated actual = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing);
+        final HearingUpdated actual = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing, envelope);
 
         //then
         final ConfirmedHearing listedHearing = actual.getUpdatedHearing();
@@ -107,19 +118,21 @@ public class AllocatedHearingUpdatedFactoryTest {
         //given
         final List<JudicialRole> judiciary = Collections.emptyList();
         final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = allocatedHearingUpdatedForListing(judiciary);
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
 
         //when
-        final HearingUpdated actual = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing);
+        final HearingUpdated actual = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing, envelope);
 
         //then
         final ConfirmedHearing listedHearing = actual.getUpdatedHearing();
         assertThat(listedHearing.getId(), is(listedHearing.getId()));
 
-        assertNull(listedHearing.getJudiciary());
+        assertThat(listedHearing.getJudiciary(),is(nullValue()));
 
     }
 
-    private AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing(final List<JudicialRole> judiciary) {
+    private static AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing(final List<JudicialRole> judiciary) {
         final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds = Collections.singletonList(
                 ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                         .withId(CASE_ID)

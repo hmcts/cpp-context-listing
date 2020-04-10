@@ -154,8 +154,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Month;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -235,6 +235,7 @@ public class ListingCommandHandlerTest {
     private static final String OFFENCE_START_DATE = "2018-06-01";
     private static final String OFFENCE_END_DATE = "2018-06-07";
     private static final String NON_SITTING_DAY = "2018-06-02";
+    private static final ZonedDateTime COURT_PROCEEDINGS_INITIATED = ZonedDateTime.of(2019, 1, 1, 0, 0, 0, 0, ZoneId.of("UTC"));
     private static final List<LocalDate> NON_SITTING_DAYS1 = singletonList(LocalDate.parse(NON_SITTING_DAY));
     private static final String NON_DEFAULT_DAY = "2018-06-04T11:00:00Z";
     private static final int INITIAL_ESTIMATE_MINUTES = 640;
@@ -295,7 +296,7 @@ public class ListingCommandHandlerTest {
 
     private static final String HEARING_ID = "hearingId";
     private static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
-    private static final String FIELD_APPLICATION_ID ="applicationId";
+    private static final String FIELD_APPLICATION_ID = "applicationId";
     private static final String REMOVAL_REASON = "removalReason";
 
     @Mock
@@ -1234,7 +1235,7 @@ public class ListingCommandHandlerTest {
                 .build();
 
 
-        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.eject-case",ejectCasePayload);
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.eject-case", ejectCasePayload);
 
         givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
 
@@ -1258,7 +1259,7 @@ public class ListingCommandHandlerTest {
                 .build();
 
 
-        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.eject-application",ejectCasePayload);
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.eject-application", ejectCasePayload);
 
         givenEventStream(HEARING_ID_1, eventStream, hearing, Hearing.class);
 
@@ -1280,11 +1281,11 @@ public class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(COURT_APPLICATION_ID)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Application.class)).thenReturn(anApplication);
-        when(anApplication.ejectApplicationForHearings(eq(Arrays.asList(HEARING_ID_1)), eq(COURT_APPLICATION_ID),eq(Optional.of("SomeReason")))).thenReturn(mock(Stream.class));
+        when(anApplication.ejectApplicationForHearings(eq(Arrays.asList(HEARING_ID_1)), eq(COURT_APPLICATION_ID), eq(Optional.of("SomeReason")))).thenReturn(mock(Stream.class));
 
         listingCommandHandler.ejectCaseOrApplication(commandEnvelope);
 
-        verify(anApplication).ejectApplicationForHearings((Arrays.asList(HEARING_ID_1)), COURT_APPLICATION_ID,Optional.of("SomeReason"));
+        verify(anApplication).ejectApplicationForHearings((Arrays.asList(HEARING_ID_1)), COURT_APPLICATION_ID, Optional.of("SomeReason"));
 
     }
 
@@ -1806,7 +1807,7 @@ public class ListingCommandHandlerTest {
 
     private JsonEnvelope updateCourtApplicationCommandEnvelope() {
         return createEnvelope("listing.command.update-court-application", createObjectBuilder().add("courtApplication",
-                createObjectBuilder().add("id",APPLICATION_ID.toString())
+                createObjectBuilder().add("id", APPLICATION_ID.toString())
                         .add("type", createObjectBuilder().add("ApplicationType", "type"))
                         .add("applicant", createObjectBuilder()
                                 .add("id", randomUUID().toString()))
@@ -2433,8 +2434,11 @@ public class ListingCommandHandlerTest {
                 .withLastName(of("Kane Junior"))
                 .withHearingLanguageNeeds(of(HearingLanguageNeeds.ENGLISH))
                 .withId(DEFENDANT_ID1)
+                .withMasterDefendantId(Optional.of(DEFENDANT_ID1))
+                .withCourtProceedingsInitiated(Optional.of(ZonedDateTimes.fromString("2020-03-05T14:24:03.148Z").withZoneSameInstant(ZoneId.of("UTC"))))
                 .withOrganisationName(Optional.empty())
                 .withSpecificRequirements(of("Screen"))
+                .withIsYouth(empty())
                 .withOffences(Arrays.asList(Offence.offence()
                         .withId(OFFENCE_ID1)
                         .withOffenceCode("AAA")
@@ -2464,16 +2468,21 @@ public class ListingCommandHandlerTest {
                 .withFirstName(of("Harry"))
                 .withLastName(of("Kane Junior"))
                 .withId(DEFENDANT_ID1)
+                .withMasterDefendantId(empty())
+                .withCourtProceedingsInitiated(empty())
                 .withOrganisationName(of("withOrganisationName"))
                 .withSpecificRequirements(of("Screen"))
                 .withOffences(emptyList())
                 .withDefenceOrganisation(of("withOrganisationName"))
+                .withIsYouth(empty())
                 .build();
     }
 
     private Defendant createDomainDefendantForAddDefendantToCourtProceedings() {
         return Defendant.defendant()
                 .withId(DEFENDANT_ID1)
+                .withMasterDefendantId(Optional.of(DEFENDANT_ID1))
+                .withCourtProceedingsInitiated(Optional.of(ZonedDateTimes.fromString("2019-01-01T00:00:00.000Z").withZoneSameInstant(ZoneId.of("UTC"))))
                 .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
                 .withCustodyTimeLimit(of(CUSTODY_TIME_LIMIT))
                 .withDateOfBirth(of(DATE_OF_BIRTH))
@@ -2515,11 +2524,14 @@ public class ListingCommandHandlerTest {
                 .withHearingLanguageNeeds(empty())
                 .withLastName(of("Kane Junior"))
                 .withId(DEFENDANT_ID1)
+                .withMasterDefendantId(Optional.of(DEFENDANT_ID1))
+                .withCourtProceedingsInitiated(Optional.of(COURT_PROCEEDINGS_INITIATED))
                 .withDatesToAvoid(empty())
                 .withOrganisationName(of("withOrganisationName"))
                 .withSpecificRequirements(of("Screen"))
                 .withOffences(emptyList())
                 .withDefenceOrganisation(of("withOrganisationName"))
+                .withIsYouth(empty())
                 .build();
     }
 

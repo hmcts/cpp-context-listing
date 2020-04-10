@@ -88,7 +88,7 @@ public class SlotUpdaterTest {
         final JsonEnvelope event = hearingAllocatedEvent();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
         given(hearingAllocatedForListing.getUpdateSlot()).willReturn(Optional.of(false));
-        given(hearingConfirmedFactory.create(hearingAllocatedForListing)).willReturn(hearingConfirmed);
+        given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
         given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed)).willReturn(TEST_OUTPUT);
 
@@ -111,7 +111,7 @@ public class SlotUpdaterTest {
         final JsonEnvelope event = hearingAllocatedEvent();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
         given(hearingAllocatedForListing.getUpdateSlot()).willReturn(Optional.of(true));
-        given(hearingConfirmedFactory.create(hearingAllocatedForListing)).willReturn(hearingConfirmed);
+        given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
         given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed)).willReturn(TEST_OUTPUT);
 

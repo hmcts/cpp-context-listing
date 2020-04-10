@@ -120,6 +120,8 @@ public class RestrictCourtListEventListener {
                 .withNationalityDescription(originalDefendant.getNationalityDescription())
                 .withProceedingsConcluded(originalDefendant.getProceedingsConcluded())
                 .withLegalAidStatus(originalDefendant.getLegalAidStatus())
+                                               .withMasterDefendantId(originalDefendant.getMasterDefendantId())
+                                               .withCourtProceedingsInitiated(originalDefendant.getCourtProceedingsInitiated())
                 .build();
         defendantList.replaceAll(defendant -> defendant.getId().equals(defendantId) ? newDefendant : defendant);
         return listedCases;

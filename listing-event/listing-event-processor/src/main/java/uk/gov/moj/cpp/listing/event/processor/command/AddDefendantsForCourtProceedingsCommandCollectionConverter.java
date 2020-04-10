@@ -16,37 +16,36 @@ import java.util.Optional;
 public class AddDefendantsForCourtProceedingsCommandCollectionConverter implements Converter<DefendantsToBeAddedForCourtProceedings, List<AddDefendantsForCourtProceedingsCommand>> {
 
     @Override
-    public List<AddDefendantsForCourtProceedingsCommand>  convert(final DefendantsToBeAddedForCourtProceedings event) {
+    public List<AddDefendantsForCourtProceedingsCommand> convert(final DefendantsToBeAddedForCourtProceedings event) {
 
-        final List <Defendant> defendants = convertDefendants(event.getDefendants());
+        final List<Defendant> defendants = convertDefendants(event.getDefendants());
         return event.getHearings().stream().map(hearingId ->
                 new AddDefendantsForCourtProceedingsCommand(event.getCaseId(), defendants, hearingId)).collect(toList());
     }
 
-    private List<Defendant> convertDefendants(List<uk.gov.justice.listing.events.Defendant> defendants) {
+    private List<Defendant> convertDefendants(final List<uk.gov.justice.listing.events.Defendant> defendants) {
         return defendants.stream().map(defendant ->
                 Defendant.defendant()
-                    .withSpecificRequirements(defendant.getSpecificRequirements())
-                    .withOrganisationName(defendant.getOrganisationName())
-                    .withHearingLanguageNeeds(defendant.getHearingLanguageNeeds().map(hearingLanguageNeeds ->
-                            HearingLanguageNeeds.valueOf(hearingLanguageNeeds.toString())))
-                    .withLastName(defendant.getLastName())
-                    .withFirstName(defendant.getFirstName())
-                    .withDefenceOrganisation(defendant.getDefenceOrganisation())
-                    .withDatesToAvoid(defendant.getDatesToAvoid())
-                    .withDateOfBirth(defendant.getDateOfBirth())
-                    .withCustodyTimeLimit(defendant.getCustodyTimeLimit())
-                    .withBailStatus(defendant.getBailStatus().map(bailStatus ->
-                            Optional.of(new BailStatus.Builder().withId(bailStatus.getId()).withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).build())).orElse(Optional.empty()))
-                    .withOffences(defendant.getOffences().stream()
-                            .map(this::buildOffence)
-                            .collect(toList()))
-                    .withId(defendant.getId())
-                    .build())
-                .collect(toList());
+                        .withSpecificRequirements(defendant.getSpecificRequirements())
+                        .withOrganisationName(defendant.getOrganisationName())
+                        .withHearingLanguageNeeds(defendant.getHearingLanguageNeeds().map(hearingLanguageNeeds ->
+                                HearingLanguageNeeds.valueOf(hearingLanguageNeeds.toString())))
+                        .withLastName(defendant.getLastName())
+                        .withFirstName(defendant.getFirstName())
+                        .withDefenceOrganisation(defendant.getDefenceOrganisation())
+                        .withDatesToAvoid(defendant.getDatesToAvoid())
+                        .withDateOfBirth(defendant.getDateOfBirth())
+                        .withCustodyTimeLimit(defendant.getCustodyTimeLimit())
+                        .withBailStatus(defendant.getBailStatus().map(bailStatus ->
+                                Optional.of(new BailStatus.Builder().withId(bailStatus.getId()).withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).build())).orElse(Optional.empty()))
+                        .withOffences(defendant.getOffences().stream().map(this::buildOffence).collect(toList()))
+                        .withId(defendant.getId())
+                        .withMasterDefendantId(defendant.getMasterDefendantId())
+                        .withCourtProceedingsInitiated(defendant.getCourtProceedingsInitiated())
+                        .build()).collect(toList());
     }
 
-    private uk.gov.moj.cpp.listing.domain.Offence buildOffence(uk.gov.justice.listing.events.Offence o) {
+    private uk.gov.moj.cpp.listing.domain.Offence buildOffence(final uk.gov.justice.listing.events.Offence o) {
         return Offence.offence()
                 .withId(o.getId())
                 .withEndDate(o.getEndDate())
@@ -56,6 +55,7 @@ public class AddDefendantsForCourtProceedingsCommandCollectionConverter implemen
                 .withStatementOfOffence(buildStatementOfOffence(o))
                 .build();
     }
+
     private StatementOfOffence buildStatementOfOffence(final uk.gov.justice.listing.events.Offence offence) {
         return StatementOfOffence.statementOfOffence()
                 .withTitle(offence.getStatementOfOffence().getTitle())

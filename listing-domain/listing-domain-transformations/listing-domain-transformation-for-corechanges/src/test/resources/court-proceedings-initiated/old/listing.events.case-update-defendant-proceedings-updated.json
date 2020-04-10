@@ -1,0 +1,204 @@
+{
+  "hearingId": "da217226-3888-4e1d-8068-5aaf31e5de76",
+  "prosecutionCase": {
+    "caseStatus": "SJP_REFERRAL",
+    "defendants": [
+      {
+        "id": "273a7870-fc12-4d45-9201-717752e36e70",
+        "numberOfPreviousConvictionsCited": 2,
+        "offences": [
+          {
+            "allocationDecision": {
+              "allocationDecisionDate": "2020-02-26",
+              "motReasonCode": "b8c37e33-defd-351c-b91e-1e03e51657da",
+              "motReasonDescription": "Summary-only offence",
+              "motReasonId": "b8c37e33-defd-351c-b91e-1e03e51657da",
+              "offenceId": "d61b3222-ca42-4de4-b481-7898b53acc0a",
+              "originatingHearingId": "da217226-3888-4e1d-8068-5aaf31e5de76",
+              "sequenceNumber": 90
+            },
+            "chargeDate": "2020-01-01",
+            "count": 1,
+            "id": "d61b3222-ca42-4de4-b481-7898b53acc0a",
+            "judicialResults": [
+              {
+                "category": "INTERMEDIARY",
+                "courtClerk": {
+                  "firstName": "Erica",
+                  "lastName": "Wilson",
+                  "userId": "31ec3a16-8721-498c-8da5-f099390ee254"
+                },
+                "isAdjournmentResult": false,
+                "isAvailableForCourtExtract": true,
+                "isConvictedResult": false,
+                "isDeleted": false,
+                "isFinancialResult": false,
+                "judicialResultId": "550c60f6-0e55-4d75-824f-d5c46537c2e7",
+                "judicialResultPrompts": [
+                  {
+                    "isAvailableForCourtExtract": true,
+                    "label": "Date of hearing",
+                    "promptReference": "HDATE",
+                    "promptSequence": 1,
+                    "usergroups": [
+                      "Legal Advisers",
+                      "Court Clerks"
+                    ],
+                    "value": "26 Feb 2020",
+                    "welshLabel": ""
+                  },
+                  {
+                    "isAvailableForCourtExtract": true,
+                    "label": "Time of hearing",
+                    "promptReference": "HTIME",
+                    "promptSequence": 2,
+                    "usergroups": [
+                      "Legal Advisers",
+                      "Court Clerks"
+                    ],
+                    "value": "10:00",
+                    "welshLabel": ""
+                  },
+                  {
+                    "isAvailableForCourtExtract": true,
+                    "label": "Courthouse name",
+                    "promptReference": "HCHOUSE",
+                    "promptSequence": 4,
+                    "usergroups": [
+                      "Legal Advisers",
+                      "Court Clerks"
+                    ],
+                    "value": "Basildon Crown Court",
+                    "welshLabel": ""
+                  },
+                  {
+                    "isAvailableForCourtExtract": true,
+                    "label": "Hearing type",
+                    "promptReference": "HTYPE",
+                    "promptSequence": 5,
+                    "usergroups": [
+                      "Legal Advisers",
+                      "Court Clerks"
+                    ],
+                    "value": "Trial",
+                    "welshLabel": ""
+                  },
+                  {
+                    "isAvailableForCourtExtract": true,
+                    "label": "Estimated duration",
+                    "promptReference": "HEST",
+                    "promptSequence": 6,
+                    "usergroups": [
+                      "Legal Advisers",
+                      "Court Clerks"
+                    ],
+                    "value": "1 Hours, 0 Minutes",
+                    "welshLabel": ""
+                  },
+                  {
+                    "isAvailableForCourtExtract": true,
+                    "label": "Remand Status",
+                    "promptSequence": 10,
+                    "usergroups": [
+                      "Legal Advisers",
+                      "Court Clerks"
+                    ],
+                    "value": "Defendant not Present",
+                    "welshLabel": ""
+                  },
+                  {
+                    "isAvailableForCourtExtract": true,
+                    "label": "Courtroom",
+                    "promptReference": "HCROOM",
+                    "promptSequence": 3,
+                    "usergroups": [
+                      "Legal Advisers",
+                      "Court Clerks"
+                    ],
+                    "value": "Courtroom 01",
+                    "welshLabel": ""
+                  }
+                ],
+                "label": "Next hearing in Crown Court",
+                "lastSharedDateTime": "2020-02-26",
+                "orderedDate": "2020-02-26",
+                "orderedHearingId": "da217226-3888-4e1d-8068-5aaf31e5de76",
+                "rank": 399,
+                "usergroups": []
+              }
+            ],
+            "modeOfTrial": "Summary",
+            "notifiedPlea": {
+              "notifiedPleaDate": "2020-02-05",
+              "notifiedPleaValue": "NOTIFIED_GUILTY",
+              "offenceId": "d61b3222-ca42-4de4-b481-7898b53acc0a"
+            },
+            "offenceCode": "CA03010",
+            "offenceDefinitionId": "4023c959-fad1-3e47-b678-ff7f0c0c1f48",
+            "offenceLegislation": "Contrary to section 363(2) and (4) of the    Communications Act 2003.",
+            "offenceLegislationWelsh": "Yn groes i adran 363(2) a (4) Deddf Cyfathrebu 2003.",
+            "offenceTitle": "Use / install a television set without a licence",
+            "offenceTitleWelsh": "Defnyddio set deledu heb drwydded",
+            "orderIndex": 1,
+            "plea": {
+              "offenceId": "d61b3222-ca42-4de4-b481-7898b53acc0a",
+              "originatingHearingId": "da217226-3888-4e1d-8068-5aaf31e5de76",
+              "pleaDate": "2020-02-26",
+              "pleaValue": "NOT_GUILTY"
+            },
+            "proceedingsConcluded": false,
+            "startDate": "2019-12-31",
+            "wording": "On 01/11/2017 at Chelmsford intentionally obstructed a person authorised by the BBC in the exercise of a power conferred by virtue of a search warrant issued under section 366 of the Communications Act 2003 by Chelmsford Magistrates Court on 25/10/2017 ",
+            "wordingWelsh": "On 01/11/2017 at Chelmsford intentionally obstructed a person authorised by the BBC in the exercise of a power conferred by virtue of a search warrant issued under section 366 of the Communications Act 2003 by Chelmsford Magistrates Court on 25/10/2017 "
+          }
+        ],
+        "personDefendant": {
+          "personDetails": {
+            "address": {
+              "address1": "Flat 1, Armageddon House",
+              "address2": "13 Old Road",
+              "address3": "Giggleswick",
+              "address4": "Merton",
+              "address5": "London",
+              "postcode": "CM17 1AB"
+            },
+            "contact": {
+              "home": "02099999999",
+              "mobile": "0754321007",
+              "primaryEmail": "email_primary@ghijkl.com"
+            },
+            "dateOfBirth": "2003-02-09",
+            "documentationLanguageNeeds": "ENGLISH",
+            "ethnicity": {
+              "selfDefinedEthnicityCode": "W1",
+              "selfDefinedEthnicityDescription": "British",
+              "selfDefinedEthnicityId": "c4ca4238-a0b9-3382-8dcc-509a6f75849b"
+            },
+            "firstName": "Alfred Alfred Alfred",
+            "gender": "MALE",
+            "lastName": "Trollope",
+            "nationalInsuranceNumber": "AE123456C",
+            "nationalityCode": "GBR",
+            "nationalityDescription": "British",
+            "nationalityId": "49433158-3542-49c8-a9af-581a0e746152",
+            "occupation": "TA",
+            "occupationCode": "666",
+            "specificRequirements": "no special needs",
+            "title": "MR"
+          }
+        },
+        "proceedingsConcluded": false,
+        "prosecutionCaseId": "7c0fed45-283c-42be-85fb-c0ac38addfbd"
+      }
+    ],
+    "id": "7c0fed45-283c-42be-85fb-c0ac38addfbd",
+    "initiationCode": "J",
+    "prosecutionCaseIdentifier": {
+      "prosecutionAuthorityCode": "TVL",
+      "prosecutionAuthorityId": "6b7b9adc-ccee-4b13-b2c7-499c28e98962",
+      "prosecutionAuthorityReference": "TVL17415PBGE3"
+    },
+    "statementOfFacts": "On 01/11/2017 at Chelmsford, the defendant intentionally obstructed a person authorised by BBC in the exercise of a power conferred by virtue of a search warrant issued under section 366 of the Communications Act 2003 by Chelmsford Magistrates Court on 25/10/2017",
+    "statementOfFactsWelsh": "On 01/11/2017 at Chelmsford, the defendant intentionally obstructed a person authorised by BBC in the exercise of a power conferred by virtue of a search warrant issued under section 366 of the Communications Act 2003 by Chelmsford Magistrates Court on 25/10/2017"
+  }
+}

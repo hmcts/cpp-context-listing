@@ -33,11 +33,11 @@ public class NewDomainToEventConverter {
     private NewDomainToEventConverter() {
     }
 
-    public static uk.gov.justice.listing.events.ListedCase buildListedCase(ListedCase lc) {
+    public static uk.gov.justice.listing.events.ListedCase buildListedCase(final ListedCase lc) {
         return uk.gov.justice.listing.events.ListedCase.listedCase()
                 .withId(lc.getId())
                 .withCaseIdentifier(buildCaseIdentifier(lc))
-                .withMarkers(isNull(lc.getCaseMarkers()) ? emptyList(): lc.getCaseMarkers().stream()
+                .withMarkers(isNull(lc.getCaseMarkers()) ? emptyList() : lc.getCaseMarkers().stream()
                         .map(NewDomainToEventConverter::convertCaseMarkersToMarkers)
                         .collect(toList()))
                 .withDefendants(lc.getDefendants().stream()
@@ -64,6 +64,8 @@ public class NewDomainToEventConverter {
     public static Defendant buildDefendant(uk.gov.moj.cpp.listing.domain.Defendant d) {
         return Defendant.defendant()
                 .withId(d.getId())
+                .withMasterDefendantId(d.getMasterDefendantId())
+                .withCourtProceedingsInitiated(d.getCourtProceedingsInitiated())
                 .withCustodyTimeLimit(d.getCustodyTimeLimit())
                 .withDateOfBirth(d.getDateOfBirth())
                 .withFirstName(d.getFirstName())
@@ -100,7 +102,7 @@ public class NewDomainToEventConverter {
                     .build());
     }
 
-    public static NewBaseDefendant buildNewBaseDefendant(uk.gov.moj.cpp.listing.domain.Defendant d) {
+    public static NewBaseDefendant buildNewBaseDefendant(final uk.gov.moj.cpp.listing.domain.Defendant d) {
         return NewBaseDefendant.newBaseDefendant()
                 .withId(d.getId())
                 .withCustodyTimeLimit(d.getCustodyTimeLimit())
@@ -126,7 +128,7 @@ public class NewDomainToEventConverter {
                 .collect(toList());
     }
 
-    public static List<Offence> buildOffences(List<uk.gov.moj.cpp.listing.domain.Offence> o) {
+    public static List<Offence> buildOffences(final List<uk.gov.moj.cpp.listing.domain.Offence> o) {
         return o.stream().map(NewDomainToEventConverter::buildOffence).collect(toList());
     }
 
@@ -146,14 +148,14 @@ public class NewDomainToEventConverter {
                 .build();
     }
 
-    private static Optional<uk.gov.justice.core.courts.BailStatus> buildBailStatusEvent(Optional<uk.gov.moj.cpp.listing.domain.BailStatus> bailStatus) {
+    private static Optional<uk.gov.justice.core.courts.BailStatus> buildBailStatusEvent(final Optional<uk.gov.moj.cpp.listing.domain.BailStatus> bailStatus) {
         if (bailStatus.isPresent()) {
             return bailStatus.map(bs -> uk.gov.justice.core.courts.BailStatus.bailStatus().withCode(bs.getCode()).withDescription(bs.getDescription()).withId(bs.getId()).build());
         }
         return empty();
     }
 
-    private static StatementOfOffence buildStatementOfOffence(uk.gov.moj.cpp.listing.domain.Offence o) {
+    private static StatementOfOffence buildStatementOfOffence(final uk.gov.moj.cpp.listing.domain.Offence o) {
         return StatementOfOffence.statementOfOffence()
                 .withLegislation(o.getStatementOfOffence().getLegislation())
                 .withTitle(o.getStatementOfOffence().getTitle())
@@ -162,7 +164,7 @@ public class NewDomainToEventConverter {
                 .build();
     }
 
-    private static CaseIdentifier buildCaseIdentifier(ListedCase lc) {
+    private static CaseIdentifier buildCaseIdentifier(final ListedCase lc) {
         return CaseIdentifier.caseIdentifier()
                 .withAuthorityCode(lc.getCaseIdentifier().getAuthorityCode())
                 .withAuthorityId(lc.getCaseIdentifier().getAuthorityId())
@@ -170,7 +172,7 @@ public class NewDomainToEventConverter {
                 .build();
     }
 
-    public static uk.gov.justice.listing.events.JudicialRole buildJudicialRole(JudicialRole domainJudicialRole) {
+    public static uk.gov.justice.listing.events.JudicialRole buildJudicialRole(final JudicialRole domainJudicialRole) {
         return uk.gov.justice.listing.events.JudicialRole.judicialRole()
                 .withJudicialRoleType(JudicialRoleType.judicialRoleType().withJudicialRoleTypeId(domainJudicialRole.getJudicialRoleType().getJudicialRoleTypeId())
                         .withJudiciaryType(domainJudicialRole.getJudicialRoleType().getJudiciaryType())
@@ -188,13 +190,14 @@ public class NewDomainToEventConverter {
                 .withParentApplicationId(courtApplication.getParentApplicationId())
                 .withApplicationType(courtApplication.getApplicationType())
                 .withApplicant(buildApplicantRespondant(courtApplication.getApplicant()))
-                .withRespondents(nonNull(courtApplication.getRespondents()) ? courtApplication.getRespondents().stream().map(NewDomainToEventConverter::buildApplicantRespondant).collect(toList()): null)
+                .withRespondents(nonNull(courtApplication.getRespondents()) ? courtApplication.getRespondents().stream().map(NewDomainToEventConverter::buildApplicantRespondant).collect(toList()) : null)
                 .withApplicationReference(courtApplication.getApplicationReference().isPresent() ? courtApplication.getApplicationReference() : empty())
                 .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
                 .withRestrictCourtApplicationType(Optional.of(Boolean.FALSE))
                 .build();
     }
-    private static uk.gov.justice.listing.events.ApplicantRespondent buildApplicantRespondant(final ApplicantRespondent applicant){
+
+    private static uk.gov.justice.listing.events.ApplicantRespondent buildApplicantRespondant(final ApplicantRespondent applicant) {
         return isNull(applicant) ? null : uk.gov.justice.listing.events.ApplicantRespondent.applicantRespondent()
                 .withId(applicant.getId())
                 .withFirstName(applicant.getFirstName())
@@ -204,12 +207,13 @@ public class NewDomainToEventConverter {
                 .withCourtApplicationPartyType(buildCourtApplicationPartyTypeEvent(applicant.getCourtApplicationPartyType()))
                 .build();
     }
-    private static CourtApplicationPartyType buildCourtApplicationPartyTypeEvent(uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType courtApplicationPartyType) {
+
+    private static CourtApplicationPartyType buildCourtApplicationPartyTypeEvent(final uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType courtApplicationPartyType) {
 
         return CourtApplicationPartyType.valueOf(courtApplicationPartyType.name());
     }
 
-    private static Optional<LaaReference> buildLaaReference(uk.gov.moj.cpp.listing.domain.LaaReference laaReference) {
+    private static Optional<LaaReference> buildLaaReference(final uk.gov.moj.cpp.listing.domain.LaaReference laaReference) {
 
         return Optional.of(LaaReference.laaReference()
                 .withApplicationReference(laaReference.getApplicationReference())

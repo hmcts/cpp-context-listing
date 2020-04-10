@@ -1,0 +1,26 @@
+{
+  "id": "COURT_CENTRE_ID",
+  "name": "Liverpool Crown Court",
+  "courtRooms": [
+    {
+      "id": "47834e9d-0bca-4f26-aa30-270580496e6e",
+      "name": "1"
+    },
+    {
+      "id": "4bb4cd5a-ce2a-467d-8984-76b62ec92072",
+      "name": "2"
+    },
+    {
+      "id": "4bb4cd5a-ce2a-467d-8984-76b62ec92077",
+      "name": "3"
+    },
+    {
+      "id": "8d606e02-da0f-43cb-a5df-da462fd7efaa",
+      "name": "4"
+    },
+    {
+      "id": "2ecbe6c6-1ed5-4ec1-9f44-e170d204df15",
+      "name": "5"
+    }
+  ]
+}

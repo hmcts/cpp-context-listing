@@ -7,6 +7,8 @@
     "defendant": {
       "prosecutionCaseId": "b09d95d7-01a1-40a7-96c3-04c52f2f2a29",
       "id": "c668d5ee-cb38-4f00-bdf0-be82a8bd7606",
+      "masterDefendantId": "c668d5ee-cb38-4f00-bdf0-be82a8bd7606",
+      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
       "legalEntityDefendant": {
         "organisation": {
           "name": "EY",

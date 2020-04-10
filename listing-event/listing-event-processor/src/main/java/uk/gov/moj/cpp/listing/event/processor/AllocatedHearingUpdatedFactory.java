@@ -11,26 +11,27 @@ import uk.gov.justice.listing.courts.HearingUpdated;
 import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.Type;
+import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.List;
 
 public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
 
-    public HearingUpdated create(final AllocatedHearingUpdatedForListing hearingUpdatedForListing) {
+    public HearingUpdated create(final AllocatedHearingUpdatedForListing hearingUpdatedForListing, JsonEnvelope envelope) {
 
         final List<uk.gov.justice.listing.events.JudicialRole> judicialRoles = hearingUpdatedForListing.getJudiciary();
         final Type type = hearingUpdatedForListing.getType();
         return uk.gov.justice.listing.courts.HearingUpdated.hearingUpdated()
-                .withUpdatedHearing(buildConfirmedHearing(hearingUpdatedForListing, judicialRoles, type))
+                .withUpdatedHearing(buildConfirmedHearing(hearingUpdatedForListing, judicialRoles, type, envelope))
                 .build();
 
 
     }
 
-    private ConfirmedHearing buildConfirmedHearing(AllocatedHearingUpdatedForListing hearingUpdatedForListing, List<uk.gov.justice.listing.events.JudicialRole> judicialRoles, Type type) {
+    private ConfirmedHearing buildConfirmedHearing(AllocatedHearingUpdatedForListing hearingUpdatedForListing, List<uk.gov.justice.listing.events.JudicialRole> judicialRoles, Type type, JsonEnvelope envelope) {
         ConfirmedHearing.Builder builder = ConfirmedHearing.confirmedHearing()
                 .withId(hearingUpdatedForListing.getHearingId())
-                .withCourtCentre(buildCourtCentre(hearingUpdatedForListing.getCourtCentreId(), hearingUpdatedForListing.getCourtRoomId()))
+                .withCourtCentre(buildCourtCentre(hearingUpdatedForListing.getCourtCentreId(), hearingUpdatedForListing.getCourtRoomId(), envelope))
                 .withHearingDays(hearingUpdatedForListing.getHearingDays().stream()
                         .map(this::buildHearingDay)
                         .collect(toList()))
@@ -39,7 +40,7 @@ public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
                 .withCourtApplicationIds(hearingUpdatedForListing.getCourtApplicationIds())
                 .withReportingRestrictionReason(hearingUpdatedForListing.getReportingRestrictionReason())
                 .withType(buildType(type));
-        if (hearingUpdatedForListing.getProsecutionCaseDefendantsOffenceIds()!=null) {
+        if (hearingUpdatedForListing.getProsecutionCaseDefendantsOffenceIds() != null) {
             builder.withProsecutionCases(hearingUpdatedForListing.getProsecutionCaseDefendantsOffenceIds().stream()
                     .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
                             .withDefendants(pcdo.getDefendants().stream()

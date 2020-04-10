@@ -48,6 +48,8 @@
       "defendants": [
         {
           "id": "e2b13dc1-de95-11e8-9df5-e56feb0784f6",
+          "masterDefendantId": "e2b13dc1-de95-11e8-9df5-e56feb0784f6",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
           "lastName": "JAMES",
           "offences": [
             {

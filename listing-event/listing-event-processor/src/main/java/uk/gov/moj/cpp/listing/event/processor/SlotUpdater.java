@@ -39,7 +39,7 @@ public class SlotUpdater {
 
     public void updateSlot(final JsonEnvelope envelope) {
         final HearingAllocatedForListing hearingAllocatedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
-        final HearingConfirmed hearingConfirmed = getHearingConfirmed(hearingAllocatedForListing);
+        final HearingConfirmed hearingConfirmed = getHearingConfirmed(hearingAllocatedForListing, envelope);
 
         LOGGER.info("Processing slot for '{}' with payload {}", HEARING_CONFIRMED, hearingConfirmed);
 
@@ -73,7 +73,7 @@ public class SlotUpdater {
         return false;
     }
 
-    private HearingConfirmed getHearingConfirmed(final HearingAllocatedForListing hearingAllocatedForListing) {
-        return hearingConfirmedFactory.create(hearingAllocatedForListing);
+    private HearingConfirmed getHearingConfirmed(final HearingAllocatedForListing hearingAllocatedForListing, final JsonEnvelope envelope) {
+        return hearingConfirmedFactory.create(hearingAllocatedForListing, envelope);
     }
 }

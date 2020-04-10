@@ -1,0 +1,379 @@
+{
+  "hearing": {
+    "allocated": false,
+    "courtApplications": [
+      {
+        "applicant": {
+          "courtApplicationPartyType": "PERSON",
+          "firstName": "rRPquOCNka",
+          "id": "fe1559d9-1981-4654-9b04-dfca82166b3f",
+          "isRespondent": false,
+          "lastName": "EoxtjU5a7j",
+          "restrictFromCourtList": false
+        },
+        "applicationReference": "c1ZZI8RRyM",
+        "applicationType": "Z1XQkfCHMW",
+        "id": "b7b89ad1-db48-49ec-a0a9-37fb5459a36b",
+        "linkedCaseId": "582d2db7-45de-48ae-a990-abb2dbea41a7",
+        "parentApplicationId": "91179f83-45e8-4535-a511-67aa45a9d311",
+        "respondents": [
+          {
+            "courtApplicationPartyType": "PERSON",
+            "firstName": "vmIpUn1SWb",
+            "id": "c89a7716-3e18-41d9-ab44-ab1dae9f193f",
+            "isRespondent": true,
+            "lastName": "lTUKMj62aY",
+            "restrictFromCourtList": false
+          }
+        ],
+        "restrictCourtApplicationType": false,
+        "restrictFromCourtList": false
+      }
+    ],
+    "courtCentreId": "704b4b97-df26-40df-8320-d033ac483b6e",
+    "endDate": "2020-02-27",
+    "estimatedMinutes": 15,
+    "hearingDays": [
+      {
+        "durationMinutes": 15,
+        "endTime": "2020-02-27T15:35:39.785Z",
+        "hearingDate": "2020-02-27",
+        "sequence": 0,
+        "startTime": "2020-02-27T15:20:39.785Z"
+      }
+    ],
+    "hearingLanguage": "ENGLISH",
+    "id": "20f8ea67-e7df-47d9-8818-052c9aa26693",
+    "judiciary": [],
+    "jurisdictionType": "CROWN",
+    "listedCases": [
+      {
+        "caseIdentifier": {
+          "authorityCode": "e7uCKTE7n3",
+          "authorityId": "f0c48f49-4cc2-4099-894d-9741a5a40589",
+          "caseReference": "i6F10S4AxF"
+        },
+        "defendants": [
+          {
+            "bailStatus": {
+              "code": "P",
+              "description": "Custody or remanded into custody",
+              "id": "34443c87-fa6f-34c0-897f-0cce45773df5"
+            },
+            "dateOfBirth": "1999-02-27",
+            "firstName": "cuLouyej1P",
+            "id": "f517c141-f8cd-4418-a078-694266dad091",
+            "isYouth": true,
+            "lastName": "1BXp0aHyWj",
+            "offences": [
+              {
+                "id": "90869993-c353-46e7-bfca-8a8f5958419e",
+                "laaApplnReference": {
+                  "applicationReference": "QTfJZXwmRY",
+                  "statusCode": "GAqY4CK0mg",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "L2nZPv2SBz",
+                  "statusId": "155402e3-81a6-442d-be60-3c462401789d"
+                },
+                "offenceCode": "VJnch2Pffe",
+                "offenceWording": "eo4FRL34xd",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "upOOmgejYS",
+                  "welshTitle": "upOOmgejYS"
+                }
+              },
+              {
+                "id": "f17d23dd-d451-4600-be0b-e8e5c4225763",
+                "laaApplnReference": {
+                  "applicationReference": "UC28k8a3DW",
+                  "statusCode": "2eDBKbOqrv",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "F1WvKaqFKZ",
+                  "statusId": "109bfbca-1ad6-45bc-8e10-026eee5b551a"
+                },
+                "offenceCode": "1GQx9sJ0TK",
+                "offenceWording": "v68Lkl07rt",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "GXksAspKkU",
+                  "welshTitle": "GXksAspKkU"
+                }
+              },
+              {
+                "id": "99ab38ce-e487-4fd4-85ae-2841c9b51e22",
+                "laaApplnReference": {
+                  "applicationReference": "HGbYE2JC82",
+                  "statusCode": "UUsr44Tztq",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "c8Mqi1hFN8",
+                  "statusId": "866a9e84-a095-48e1-a9b9-0d4fc8845093"
+                },
+                "offenceCode": "Uc7zLzPSbo",
+                "offenceWording": "blOtFh36QM",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "qK0cfLFasY",
+                  "welshTitle": "qK0cfLFasY"
+                }
+              }
+            ],
+            "restrictFromCourtList": false
+          },
+          {
+            "bailStatus": {
+              "code": "P",
+              "description": "Custody or remanded into custody",
+              "id": "34443c87-fa6f-34c0-897f-0cce45773df5"
+            },
+            "dateOfBirth": "1999-02-27",
+            "firstName": "aAobsFezgI",
+            "id": "822b735a-abae-4bd2-859b-0e882e9afd0b",
+            "isYouth": true,
+            "lastName": "2Ny443Ysdi",
+            "offences": [
+              {
+                "id": "5265e734-ee5f-493a-8eef-a230249b4513",
+                "laaApplnReference": {
+                  "applicationReference": "Ac7qPpfArg",
+                  "statusCode": "ErTB2fufgl",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "V8YTHfnM8N",
+                  "statusId": "6e898947-3fb1-43b8-bc7c-8e1a1ee7827b"
+                },
+                "offenceCode": "uBwZiAIulA",
+                "offenceWording": "sXuslvYRyp",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "fbvuwa3Dwa",
+                  "welshTitle": "fbvuwa3Dwa"
+                }
+              },
+              {
+                "id": "30f99090-35f7-4ed0-b7da-5f8794d061cb",
+                "laaApplnReference": {
+                  "applicationReference": "T1fX0v4pKV",
+                  "statusCode": "Ddq16TXgwi",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "JFEIDtQ9qr",
+                  "statusId": "4e61d6fb-63e5-4047-b10a-15af136d07c5"
+                },
+                "offenceCode": "l46NW2Ughd",
+                "offenceWording": "XSkakRfjQT",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "cZLAUbZNNV",
+                  "welshTitle": "cZLAUbZNNV"
+                }
+              },
+              {
+                "id": "cba206cd-1c56-45a6-9a81-e4d9a8d4e95a",
+                "laaApplnReference": {
+                  "applicationReference": "ur36mSCYNs",
+                  "statusCode": "GNENCaeZK1",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "2IszfgVeSK",
+                  "statusId": "357ac058-05d5-4949-96c0-13a030fcbd76"
+                },
+                "offenceCode": "78AwBwS9xx",
+                "offenceWording": "XFENWLYQea",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "SDEOzOUW5O",
+                  "welshTitle": "SDEOzOUW5O"
+                }
+              }
+            ],
+            "restrictFromCourtList": false
+          }
+        ],
+        "id": "582d2db7-45de-48ae-a990-abb2dbea41a7",
+        "markers": [
+          {
+            "id": "a1052bef-74aa-42df-a7b5-814257cb8a4e",
+            "markerTypeCode": "C",
+            "markerTypeDescription": "Description",
+            "markerTypeid": "7e4cfc8d-dcc5-4a17-b8a8-633f0ed43353"
+          }
+        ],
+        "restrictFromCourtList": false
+      },
+      {
+        "caseIdentifier": {
+          "authorityCode": "xNIIkbGIVM",
+          "authorityId": "bc712ece-4e56-4a6c-b7c9-9125121ce189",
+          "caseReference": "NZU1etl1DN"
+        },
+        "defendants": [
+          {
+            "bailStatus": {
+              "code": "P",
+              "description": "Custody or remanded into custody",
+              "id": "34443c87-fa6f-34c0-897f-0cce45773df5"
+            },
+            "dateOfBirth": "1999-02-27",
+            "firstName": "ziBelcAJ7F",
+            "id": "86e3ac94-014f-4ff0-b0d9-33257aac4b66",
+            "isYouth": true,
+            "lastName": "OQFAZfVWuz",
+            "offences": [
+              {
+                "id": "4d72b30d-c96e-44c8-9f44-16f0c5fceb37",
+                "laaApplnReference": {
+                  "applicationReference": "9BjUXO9EvP",
+                  "statusCode": "K7TWbdwkHd",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "59oe6XHk6w",
+                  "statusId": "16d838d3-54ae-4119-89a0-17231d5d8a8e"
+                },
+                "offenceCode": "3ATdR0qDYj",
+                "offenceWording": "Pzc7ETk2jM",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "XgdCAC97oV",
+                  "welshTitle": "XgdCAC97oV"
+                }
+              },
+              {
+                "id": "1a3acdc6-c5b4-4c0d-b869-b109d4baa222",
+                "laaApplnReference": {
+                  "applicationReference": "jNOKabB35z",
+                  "statusCode": "EKqLqZHBYX",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "H9eh5i5LFj",
+                  "statusId": "22968c19-9e3d-475d-b0a3-2b1a575c0f88"
+                },
+                "offenceCode": "Cs8hqt6Eno",
+                "offenceWording": "xCR65FEUxr",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "xTesk57oKT",
+                  "welshTitle": "xTesk57oKT"
+                }
+              },
+              {
+                "id": "875bcb6f-3e85-4dd9-9932-3650034d36c2",
+                "laaApplnReference": {
+                  "applicationReference": "QdR5oRJWRS",
+                  "statusCode": "w7EcwkB0Bq",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "0RPX5eiQlQ",
+                  "statusId": "77b09e06-6558-4c4c-b966-df7aec1f5452"
+                },
+                "offenceCode": "byhbExl5OH",
+                "offenceWording": "PnzhYlndym",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "9WI2QbILXn",
+                  "welshTitle": "9WI2QbILXn"
+                }
+              }
+            ],
+            "restrictFromCourtList": false
+          },
+          {
+            "bailStatus": {
+              "code": "P",
+              "description": "Custody or remanded into custody",
+              "id": "34443c87-fa6f-34c0-897f-0cce45773df5"
+            },
+            "dateOfBirth": "1999-02-27",
+            "firstName": "MyWyQTCX8d",
+            "id": "1d89b899-b4f5-4b89-af10-ea44181cf7a8",
+            "isYouth": true,
+            "lastName": "Dkq1wQNXqH",
+            "offences": [
+              {
+                "id": "dce98310-7405-4733-88ea-ce9a91a3ef60",
+                "laaApplnReference": {
+                  "applicationReference": "VQL7XOr6UT",
+                  "statusCode": "KGtnI2Vggr",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "kkSBvt1AnA",
+                  "statusId": "a613247f-6e7f-4a68-8698-b1ec969b8a09"
+                },
+                "offenceCode": "vYmFdf0MbW",
+                "offenceWording": "CE8TwJPbQM",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "JIMfsGTquO",
+                  "welshTitle": "JIMfsGTquO"
+                }
+              },
+              {
+                "id": "0265288f-1027-42a9-8b14-d22f02c0e175",
+                "laaApplnReference": {
+                  "applicationReference": "nwHvcEGISQ",
+                  "statusCode": "tbtsoOaUph",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "7llk7E0wYf",
+                  "statusId": "a307088e-b2fe-4fd5-9fbd-aebb14dc87d0"
+                },
+                "offenceCode": "ceworRgt7l",
+                "offenceWording": "d94kjCK9q5",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "heMiDhtbcc",
+                  "welshTitle": "heMiDhtbcc"
+                }
+              },
+              {
+                "id": "f5a233df-f9d2-4fa5-9a15-afe7efb66d91",
+                "laaApplnReference": {
+                  "applicationReference": "Z9taRPr8X6",
+                  "statusCode": "VW1NVexl6Z",
+                  "statusDate": "2020-02-27",
+                  "statusDescription": "OJgcEMMifU",
+                  "statusId": "c3b9b7bc-20ae-4193-9211-2e35b55d47fa"
+                },
+                "offenceCode": "EH0VRzq9SH",
+                "offenceWording": "jHAZ1QFyYg",
+                "restrictFromCourtList": false,
+                "startDate": "2020-02-27",
+                "statementOfOffence": {
+                  "title": "JyTjJ9uyyr",
+                  "welshTitle": "JyTjJ9uyyr"
+                }
+              }
+            ],
+            "restrictFromCourtList": false
+          }
+        ],
+        "id": "5d23e01b-813a-43ba-9e13-2a7440c0c390",
+        "markers": [
+          {
+            "id": "31d5e960-6173-4835-a297-63e334955537",
+            "markerTypeCode": "C",
+            "markerTypeDescription": "Description",
+            "markerTypeid": "dfb7b22a-8709-4c8b-9c94-5a448a9f6985"
+          }
+        ],
+        "restrictFromCourtList": false
+      }
+    ],
+    "nonDefaultDays": [
+      {
+        "duration": 15,
+        "startTime": "2020-02-27T15:20:39.785Z"
+      }
+    ],
+    "nonSittingDays": [],
+    "reportingRestrictionReason": "lG9CSZBlf3",
+    "startDate": "2020-02-27",
+    "type": {
+      "description": "PTP",
+      "id": "52edf232-3c09-4c74-a6ad-737985c2e662"
+    }
+  }
+}

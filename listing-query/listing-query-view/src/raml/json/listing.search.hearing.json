@@ -35,6 +35,8 @@
       "defendants": [
         {
           "id": "0baecac5-222b-402d-9047-84803679edac",
+          "masterDefendantId": "0baecac5-222b-402d-9047-84803679edac",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
           "datesToAvoid": "Hospital appointment 2018-11-07",
           "hearingLanguageNeeds": "WELSH",
           "specificRequirements": "wheelchair access required",

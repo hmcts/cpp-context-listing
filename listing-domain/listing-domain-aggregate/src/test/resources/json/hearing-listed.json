@@ -70,6 +70,7 @@
               "code":"C",
               "description":"Custody or remanded into custody"
             },
+            "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
             "custodyTimeLimit": "2018-01-30",
             "dateOfBirth": "1995-03-23",
             "datesToAvoid": "Hospital appointment 2018-11-07",
@@ -78,6 +79,7 @@
             "hearingLanguageNeeds": "WELSH",
             "id": "0baecac5-222b-402d-9047-84803679edac",
             "lastName": "Lloyd",
+            "masterDefendantId": "0baecac5-222b-402d-9047-84803679edac",
             "offences": [
               {
                 "endDate": "2017-08-01",

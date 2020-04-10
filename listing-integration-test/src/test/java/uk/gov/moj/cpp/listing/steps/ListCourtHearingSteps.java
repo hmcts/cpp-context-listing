@@ -73,6 +73,7 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -89,7 +90,6 @@ import com.jayway.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListCourtHearingSteps.class);
@@ -109,7 +109,6 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING = "listing.events.hearing-allocated-for-listing";
     private static final String EVENT_SELECTOR_HEARING_DAYS_CHANGED = "listing.events.hearing-days-changed-for-hearing";
 
-
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private static final String ORGANISATION_NAME = "ABC LTD";
@@ -126,15 +125,14 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
     private static final boolean UNALLOCATED = false;
     private HearingsData hearingsData;
+    private final MessageConsumer privateMessageConsumerHearingListed;
+    private final MessageConsumer privateMessageConsumerHearingAllocatedForListing;
+    private final MessageConsumer privateMessageConsumerHearingDaysChanged;
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
-    private MessageConsumer privateMessageConsumerHearingListed;
-    private MessageConsumer privateMessageConsumerHearingAllocatedForListing;
-    private MessageConsumer privateMessageConsumerHearingDaysChanged;
     private String request;
 
-
-    public ListCourtHearingSteps(HearingsData hearingsData) {
+    public ListCourtHearingSteps(final HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
         privateMessageConsumerHearingListed = QueueUtil.privateEvents.createConsumer(EVENT_SELECTOR_HEARING_LISTED);
@@ -152,21 +150,21 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
     }
 
-    private static com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantLastName(HearingData hearing, ListedCaseData listedCase, DefendantData defendant, String expectedLastName) {
-        ListCourtHearingSteps.HearingDefendantFilter hearingDefendantFilter = new ListCourtHearingSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
-        Filter hearingFilter = hearingDefendantFilter.getHearingFilter();
-        Filter listingCaseFilter = hearingDefendantFilter.getListingCaseFilter();
-        Filter defendantFilter = hearingDefendantFilter.getDefendantFilter();
+    private static com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantLastName(final HearingData hearing, final ListedCaseData listedCase, final DefendantData defendant, final String expectedLastName) {
+        final ListCourtHearingSteps.HearingDefendantFilter hearingDefendantFilter = new ListCourtHearingSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
+        final Filter hearingFilter = hearingDefendantFilter.getHearingFilter();
+        final Filter listingCaseFilter = hearingDefendantFilter.getListingCaseFilter();
+        final Filter defendantFilter = hearingDefendantFilter.getDefendantFilter();
         final Filter firstNameFilter = filter(
                 where("lastName").eq(expectedLastName)
         );
         return com.jayway.jsonpath.JsonPath.compile("$.hearings[?].listedCases[?].defendants[?][?]", hearingFilter, listingCaseFilter, defendantFilter, firstNameFilter);
     }
 
-    private static com.jayway.jsonpath.JsonPath getJsonPathQueryForCaseReference(HearingData hearing, ListedCaseData listedCase, DefendantData defendant, String expectedCaseReference) {
-        ListCourtHearingSteps.HearingDefendantFilter hearingDefendantFilter = new ListCourtHearingSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
-        Filter hearingFilter = hearingDefendantFilter.getHearingFilter();
-        Filter listingCaseFilter = hearingDefendantFilter.getListingCaseFilter();
+    private static com.jayway.jsonpath.JsonPath getJsonPathQueryForCaseReference(final HearingData hearing, final ListedCaseData listedCase, final DefendantData defendant, final String expectedCaseReference) {
+        final ListCourtHearingSteps.HearingDefendantFilter hearingDefendantFilter = new ListCourtHearingSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
+        final Filter hearingFilter = hearingDefendantFilter.getHearingFilter();
+        final Filter listingCaseFilter = hearingDefendantFilter.getListingCaseFilter();
         final Filter caseReferenceFilter = filter(
                 where("caseReference").eq(expectedCaseReference)
         );
@@ -183,7 +181,6 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
-
     public void whenCaseIsSubmittedForListingByUnauthorisedUser() {
         final Response response = getResponseCaseSubmittedForListing(false);
         assertThat(response.getStatus(), equalTo(SC_FORBIDDEN));
@@ -194,7 +191,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
-    private Response getResponseCaseSubmittedForListing(boolean isStandaloneApp) {
+    private Response getResponseCaseSubmittedForListing(final boolean isStandaloneApp) {
 
         stubReferenceDataForFirstHearing();
 
@@ -209,7 +206,6 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         }
         final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
 
-
         request = listCourtHearingJsonObject.toString();
         LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING, request, getLoggedInHeader());
 
@@ -222,8 +218,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         hearingsData.getHearingData().stream()
                 .map(HearingData::getCourtCentreId)
                 .forEach(cci -> {
-                    stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, hearingsData.getHearingData().get(0).getCourtRoomId()));
-                    stubGetReferenceDataCourtMappings(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, hearingsData.getHearingData().get(0).getCourtRoomId()));
+                    stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, hearingsData.getHearingData().get(0).getCourtRoomId(), hearingsData.getHearingData().get(0).getName()));
+                    stubGetReferenceDataCourtMappings(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, hearingsData.getHearingData().get(0).getCourtRoomId(),hearingsData.getHearingData().get(0).getName()));
                 });
         hearingsData.getHearingData().stream().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
         hearingsData.getHearingData().stream().filter(hd -> hd.getJudiciary() != null)
@@ -233,12 +229,12 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private Response getResponseCaseSubmittedForListingWithLegalEntity() {
         hearingsData.getHearingData().stream()
                 .map(HearingData::getCourtCentreId)
-                .forEach(cci -> stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null)));
+                .forEach(cci -> stubGetReferenceDataCourtCentre(new CourtCentreData(cci, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null, "Carmarthen Magistrates Court")));
         hearingsData.getHearingData().stream().forEach(hearingData -> stubGetReferenceDataHearingTypes(hearingData.getHearingTypeData().getTypeId()));
         final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
 
-        ListCourtHearing listCourtHearingData = getListCourtHearingDataWithLegalEntity(hearingsData);
+        final ListCourtHearing listCourtHearingData = getListCourtHearingDataWithLegalEntity(hearingsData);
 
         final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
 
@@ -250,10 +246,10 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyHearingListedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
+        final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingListed);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingListed);
         LOGGER.debug("jsonResponse from privateMessageConsumerHearingListed: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("hearing.id"), is(jsRequest.getString("hearings[0].id")));
@@ -263,10 +259,10 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyHearingListedInActiveMQForStandaloneApplication() {
-        JsonPath jsRequest = new JsonPath(request);
+        final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingListed);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingListed);
         LOGGER.debug("jsonResponse from privateMessageConsumerHearingListed: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("hearing.id"), is(jsRequest.getString("hearings[0].id")));
@@ -274,29 +270,27 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyHearingAllocatedForListingInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
+        final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingAllocatedForListing);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingAllocatedForListing);
         LOGGER.debug("jsonResponse from privateMessageConsumerHearingAllocatedForListing: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("hearingId"), is(jsRequest.getString("hearings[0].id")));
     }
 
-    public void verifyHearingListedFromAPI(boolean isAllocated) {
-        HearingData hearingData = hearingsData.getHearingData().get(0);
+    public void verifyHearingListedFromAPI(final boolean isAllocated) {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
 
+        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
 
-        ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
-
-        DefendantData defendant = listedCaseData.getDefendants().get(0);
+        final DefendantData defendant = listedCaseData.getDefendants().get(0);
 
         final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, defendant, defendant.getLastName());
         final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
-
 
         poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
@@ -353,9 +347,9 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
 
-        ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
+        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
 
-        DefendantData defendant = listedCaseData.getDefendants().get(0);
+        final DefendantData defendant = listedCaseData.getDefendants().get(0);
 
         final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
 
@@ -391,8 +385,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                         )));
     }
 
-    public void verifyHearingListedFromAPIForStandaloneApplication(boolean isAllocated) {
-        HearingData hearingData = hearingsData.getHearingData().get(0);
+    public void verifyHearingListedFromAPIForStandaloneApplication(final boolean isAllocated) {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
@@ -470,7 +464,6 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
     }
 
-
     public void verifyNonExistentHearingById() {
 
         final String url = generateUrlForFindingAHearingById("4e6d8d78-fa61-4102-8d14-2042df85faab");
@@ -480,7 +473,6 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                         payload());
 
     }
-
 
     public void verifyHearingByIdWithInvalidId() {
 
@@ -495,18 +487,17 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
     }
 
-    private String generateUrlForFindingAHearingById(String rawId) {
+    private String generateUrlForFindingAHearingById(final String rawId) {
         return String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.hearing"),
                         rawId
                 ));
     }
 
+    private ListCourtHearing getListCourtHearingData(final HearingsData hearingsData) {
 
-    private ListCourtHearing getListCourtHearingData(HearingsData hearingsData) {
-
-        HearingData hearingData = hearingsData.getHearingData().get(0);
-        ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
         //   List<DefendantData> defendantData = listedCaseData.getDefendants();
 
         return ListCourtHearing.listCourtHearing()
@@ -514,6 +505,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 .withHearings(asList(HearingListingNeeds.hearingListingNeeds()
                         .withCourtCentre(CourtCentre.courtCentre()
                                 .withId(hearingData.getCourtCentreId())
+                                .withName(hearingData.getName())
                                 .withRoomId(ofNullable(hearingData.getCourtRoomId()))
                                 .build())
                         .withCourtApplications(asList(CourtApplication.courtApplication()
@@ -582,6 +574,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                 .withMarkerTypeid(randomUUID()).build()))
                                         .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
                                                 .withId(d.getDefendantId())
+                                                .withMasterDefendantId(d.getMasterDefendantId())
+                                                .withCourtProceedingsInitiated(ZonedDateTime.now())
                                                 .withIsYouth(ofNullable(d.getIsYouth()))
                                                 .withPersonDefendant(of(PersonDefendant.personDefendant()
                                                         .withBailStatus(of(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build()))
@@ -665,15 +659,16 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 .build();
     }
 
-    private ListCourtHearing getListCourtHearingDataWithLegalEntity(HearingsData hearingsData) {
+    private ListCourtHearing getListCourtHearingDataWithLegalEntity(final HearingsData hearingsData) {
 
-        HearingData hearingData = hearingsData.getHearingData().get(0);
-        ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
 
         return ListCourtHearing.listCourtHearing()
                 .withHearings(asList(HearingListingNeeds.hearingListingNeeds()
                         .withCourtCentre(CourtCentre.courtCentre()
                                 .withId(hearingData.getCourtCentreId())
+                                .withName(hearingData.getName())
                                 .withRoomId(ofNullable(hearingData.getCourtRoomId()))
                                 .build())
                         .withCourtApplications(asList(CourtApplication.courtApplication()
@@ -706,6 +701,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                         .withOffenceTitle("test-title")
                                                         .build()))
                                                 .withId(randomUUID())
+                                                .withMasterDefendantId(randomUUID())
+                                                .withCourtProceedingsInitiated(ZonedDateTime.now())
                                                 .withProsecutionCaseId(randomUUID())
                                                 .withLegalEntityDefendant(Optional.of(LegalEntityDefendant.legalEntityDefendant()
                                                         .withOrganisation(Organisation.organisation()
@@ -739,6 +736,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                 .build())
                                         .withDefendants(lc.getDefendants().stream().map(d -> Defendant.defendant()
                                                 .withId(d.getDefendantId())
+                                                .withMasterDefendantId(d.getMasterDefendantId())
+                                                .withCourtProceedingsInitiated(ZonedDateTime.now())
                                                 .withLegalEntityDefendant(Optional.of(LegalEntityDefendant.legalEntityDefendant()
                                                         .withOrganisation(Organisation.organisation()
                                                                 .withName(ORGANISATION_NAME).build()).build()))
@@ -787,14 +786,15 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 .build();
     }
 
-    private ListCourtHearing getListCourtHearingDataStandaloneApplication(HearingsData hearingsData) {
+    private ListCourtHearing getListCourtHearingDataStandaloneApplication(final HearingsData hearingsData) {
 
-        HearingData hearingData = hearingsData.getHearingData().get(0);
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
 
         return ListCourtHearing.listCourtHearing()
                 .withHearings(asList(HearingListingNeeds.hearingListingNeeds()
                         .withCourtCentre(CourtCentre.courtCentre()
                                 .withId(hearingData.getCourtCentreId())
+                                .withName(hearingData.getName())
                                 .withRoomId(ofNullable(hearingData.getCourtRoomId()))
                                 .build())
                         .withCourtApplications(asList(CourtApplication.courtApplication()
@@ -856,20 +856,20 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
             privateMessageConsumerHearingAllocatedForListing.close();
             privateMessageConsumerHearingListed.close();
             privateMessageConsumerHearingDaysChanged.close();
-        } catch (JMSException e) {
+        } catch (final JMSException e) {
             LOGGER.error("Error closing privateMessageConsumerHearingListed: {}", e.getMessage());
         }
     }
 
     private static class HearingDefendantFilter {
-        private HearingData hearing;
-        private DefendantData defendant;
-        private ListedCaseData listedCase;
+        private final HearingData hearing;
+        private final DefendantData defendant;
+        private final ListedCaseData listedCase;
         private Filter hearingFilter;
         private Filter defendantFilter;
         private Filter listingCaseFilter;
 
-        public HearingDefendantFilter(HearingData hearing, ListedCaseData listedCase, DefendantData defendant) {
+        public HearingDefendantFilter(final HearingData hearing, final ListedCaseData listedCase, final DefendantData defendant) {
             this.hearing = hearing;
             this.listedCase = listedCase;
             this.defendant = defendant;

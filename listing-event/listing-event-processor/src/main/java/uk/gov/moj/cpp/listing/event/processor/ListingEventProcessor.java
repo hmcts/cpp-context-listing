@@ -61,6 +61,8 @@ public class ListingEventProcessor {
     public static final String COMMAND_PAYLOAD_DEBUG_STRING = "Sending '{}' command with payload {}";
     public static final String EVENT_PAYLOAD_DEBUG_STRING = "Received '{}' event with payload {}";
     public static final String HEARING_IDS = "hearingIds";
+    public static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
+    public static final String REMOVAL_REASON = "removalReason";
     static final String PUBLIC_EVENT_HEARING_LISTED = "public.listing.hearing-listed";
     static final String PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED = "public.progression.defendant-offences-changed";
     static final String PUBLIC_EVENT_PROGRESSION_CASE_DEFENDANT_CHANGED = "public.progression.case-defendant-changed"; //public
@@ -74,7 +76,7 @@ public class ListingEventProcessor {
     static final String PUBLIC_EVENT_PROGRESSION_DEFENDANTS_ADDED_TO_COURT_PROCEEDINGS = "public.progression.defendants-added-to-court-proceedings";
     static final String PUBLIC_EVENT_PROGRESSION_EVENTS_CASE_OR_APPLICATION_EJECTED = "public.progression.events.case-or-application-ejected";
     static final String LISTING_EVENTS_CASE_EJECTED_FOR_HEARINGS = "listing.events.case-ejected-for-hearings";
-    static final String LISTING_EVENTS_APPLICATION_EJECTED_FOR_HEARINGS ="listing.events.application-ejected-for-hearings";
+    static final String LISTING_EVENTS_APPLICATION_EJECTED_FOR_HEARINGS = "listing.events.application-ejected-for-hearings";
     static final String PRIVATE_EVENT_HEARING_LISTED = "listing.events.hearing-listed";
     static final String PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING = "listing.events.allocated-hearing-updated-for-listing";
     static final String PRIVATE_EVENT_COURT_APPLICATION_ADDED_FOR_LISTED_HEARING = "listing.events.court-application-added-for-hearing";
@@ -105,9 +107,8 @@ public class ListingEventProcessor {
     static final String COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING = "listing.command.add-court-application-for-hearing";
     static final String COMMAND_CASE_OR_APPLICATION_EJECTED = "listing.command.eject-case-or-application";
     static final String COMMAND_CASE_UPDATE_DEFENDANT_PROCEEDINGS_UPDATED = "listing.command.case-update-defendant-proceedings-updated";
-    static final String COMMAND_CASE_EJECTED = "listing.command.eject-case" ;
-    static final String COMMAND_APPLICATION_EJECTED = "listing.command.eject-application" ;
-
+    static final String COMMAND_CASE_EJECTED = "listing.command.eject-case";
+    static final String COMMAND_APPLICATION_EJECTED = "listing.command.eject-application";
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
     private static final String APPLICATION_ID = "applicationId";
     private static final String HEARING_ID = "hearingId";
@@ -120,9 +121,6 @@ public class ListingEventProcessor {
     private static final String DEFENDANT_ID = "defendantId";
     private static final String CASE_ID = "caseId";
     private static final String PROSECUTION_CASE = "prosecutionCase";
-    public static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
-    public static final String REMOVAL_REASON = "removalReason";
-
     @Inject
     private Sender sender;
 
@@ -354,10 +352,10 @@ public class ListingEventProcessor {
                         .build();
                 sender.send(enveloper.withMetadataFrom(envelope, COMMAND_CASE_EJECTED).apply(caseEjectedCommandPayload));
             });
-        } else  {
-            if(LOGGER.isInfoEnabled()) {
+        } else {
+            if (LOGGER.isInfoEnabled()) {
                 LOGGER.info("The Payload for event " + LISTING_EVENTS_CASE_EJECTED_FOR_HEARINGS
-                        + "has been ignored as it does not contains hearing ids  : {}" ,  envelope.toObfuscatedDebugString());
+                        + "has been ignored as it does not contains hearing ids  : {}", envelope.toObfuscatedDebugString());
             }
         }
 
@@ -381,10 +379,10 @@ public class ListingEventProcessor {
                 sender.send(enveloper.withMetadataFrom(envelope, COMMAND_APPLICATION_EJECTED).apply(applicationEjectedCommandPayload));
 
             });
-        } else  {
-            if(LOGGER.isInfoEnabled()) {
+        } else {
+            if (LOGGER.isInfoEnabled()) {
                 LOGGER.info("The Payload for event " + LISTING_EVENTS_APPLICATION_EJECTED_FOR_HEARINGS
-                        + "has been ignored as it does not contains hearing ids : {}" ,  envelope.toObfuscatedDebugString());
+                        + "has been ignored as it does not contains hearing ids : {}", envelope.toObfuscatedDebugString());
             }
         }
 
@@ -494,6 +492,7 @@ public class ListingEventProcessor {
     }
 
     /*
+     *
      * For each hearingId in the 'defendants-to-be-updated' event, extract it
      * and send each one through as a separate 'update-defendants-for-Hearing' command.
      */
@@ -575,11 +574,11 @@ public class ListingEventProcessor {
 
     private HearingConfirmed getHearingConfirmed(final JsonEnvelope envelope) {
         final HearingAllocatedForListing hearingAllocatedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
-        return getHearingConfirmed(hearingAllocatedForListing);
+        return getHearingConfirmed(hearingAllocatedForListing, envelope);
     }
 
-    private HearingConfirmed getHearingConfirmed(final HearingAllocatedForListing hearingAllocatedForListing) {
-        return hearingConfirmedFactory.create(hearingAllocatedForListing);
+    private HearingConfirmed getHearingConfirmed(final HearingAllocatedForListing hearingAllocatedForListing, final JsonEnvelope envelope) {
+        return hearingConfirmedFactory.create(hearingAllocatedForListing, envelope);
     }
 
     /*
@@ -588,7 +587,7 @@ public class ListingEventProcessor {
     private void publishHearingUpdatedPublicEvent(final JsonEnvelope envelope) {
         final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing =
                 jsonObjectConverter.convert(envelope.payloadAsJsonObject(), AllocatedHearingUpdatedForListing.class);
-        final HearingUpdated hearingUpdated = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing);
+        final HearingUpdated hearingUpdated = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing, envelope);
 
         LOGGER.info("Publishing '{}' public event with payload {}", PUBLIC_EVENT_HEARING_UPDATED, hearingUpdated);
         sender.send(enveloper.withMetadataFrom(envelope, PUBLIC_EVENT_HEARING_UPDATED).apply(hearingUpdated));

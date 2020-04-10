@@ -6,6 +6,15 @@
     "id": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
+    "masterDefendantId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid",
+      "description": "Technical identifier that uniquely identifies the defendant on CPP i.e. across prosecution cases.  Case defendants that are the same person will be matched and provided the same defendantMasterId"
+    },
+    "courtProceedingsInitiated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The date time that court proceedings for this defendant were initiated.  Optional for PCF but needs to be set when initiateCourtProceedings or referCasesToCourt progression commands are executed and in that sense is mandatory for the end to end court journey.  Required for hearing to understand the most recent defendant information, latest details must be rendered for initiated hearings so that the defendant is always arraigned against the latest known details."
+    },
     "datesToAvoid": {
       "type": "string"
     },

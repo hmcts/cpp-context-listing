@@ -12,5 +12,6 @@
     <modules>
         <module>listing-domain-transformation-anonymise</module>
         <module>listing-domain-transformation-spiresults</module>
+        <module>listing-domain-transformation-for-corechanges</module>
     </modules>
 </project>

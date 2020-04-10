@@ -5,6 +5,8 @@
       "name": "withOrganisationName"
     },
     "id": "DEFENDANT_ID1",
+    "masterDefendantId": "DEFENDANT_ID1",
+    "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
     "legalEntityDefendant": {
       "organisation": {
         "id": "d14d0c52-2e2d-4497-a5f2-0040c0ccd16a",

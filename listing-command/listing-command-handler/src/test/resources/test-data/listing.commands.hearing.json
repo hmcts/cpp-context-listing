@@ -92,6 +92,8 @@
       "defendants": [
         {
           "id": "e1d32d9d-29ec-4934-a932-22a50f223966",
+          "masterDefendantId": "e1d32d9d-29ec-4934-a932-22a50f223966",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
           "prosecutionCaseId": "2279b2c3-b0d3-4889-ae8e-1ecc20c39e27",
           "numberOfPreviousConvictionsCited": 5,
           "prosecutionAuthorityReference": "TFL12345-ABC",
@@ -260,6 +262,8 @@
         },
         {
           "id": "f23e4d9d-29ec-4934-a932-22a50f223944",
+          "masterDefendantId": "f23e4d9d-29ec-4934-a932-22a50f223944",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
           "prosecutionCaseId": "2279b2c3-b0d3-4889-ae8e-1ecc20c39e27",
           "numberOfPreviousConvictionsCited": 1,
           "prosecutionAuthorityReference": "TFL12345-ABC",

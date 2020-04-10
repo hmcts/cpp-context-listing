@@ -13,6 +13,8 @@
       "firstName": "Harry",
       "id": "DEFENDANT_ID",
       "lastName": "Kane Junior",
+      "masterDefendantId":"DEFENDANT_ID",
+      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
       "offences": [],
       "organisationName": "withOrganisationName",
       "specificRequirements": "Screen"

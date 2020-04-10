@@ -11,21 +11,19 @@ public class HearingData {
 
     private final UUID id;
     private final UUID courtCentreId;
+    private final String name;
     private final HearingTypeData hearingTypeData;
-    private LocalDate hearingStartDate;
-    private LocalDate hearingEndDate;
     private final int hearingEstimateMinutes;
-
     private final UUID courtRoomId;
-    private ZonedDateTime hearingStartTime;
     private final List<ListedCaseData> listedCases;
     private final List<JudicialRoleData> judiciary;
     private final String reportingRestrictionReason;
-
     private final String jurisdictionType;
     private final List<CourtApplicationData> courtApplications;
     private final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds;
-
+    private LocalDate hearingStartDate;
+    private LocalDate hearingEndDate;
+    private ZonedDateTime hearingStartTime;
     private LocalDate weekCommencingStartDate;
     private LocalDate weekCommencingEndDate;
     private int weekCommencingDuration;
@@ -37,10 +35,11 @@ public class HearingData {
                        final List<JudicialRoleData> judiciary, final String jurisdictionType,
                        final String reportingRestrictionReason,
                        final List<CourtApplicationData> courtApplications,
-                       final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds) {
+                       final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds, final String name) {
 
         this.id = id;
         this.courtCentreId = courtCentreId;
+        this.name = name;
         this.hearingEstimateMinutes = hearingEstimateMinutes;
         this.hearingStartDate = hearingStartDate;
         this.hearingEndDate = hearingEndDate;
@@ -55,7 +54,7 @@ public class HearingData {
         this.courtApplicationPartyNeeds = courtApplicationPartyNeeds;
     }
 
-    public HearingData(final UUID id, final UUID courtCentreId, final HearingTypeData hearingTypeData,
+    public HearingData(final UUID id, final UUID courtCentreId, final String name, final HearingTypeData hearingTypeData,
                        final LocalDate hearingStartDate, final LocalDate hearingEndDate,
                        final int hearingEstimateMinutes, final UUID courtRoomId,
                        final ZonedDateTime hearingStartTime, final List<ListedCaseData> listedCases,
@@ -67,6 +66,7 @@ public class HearingData {
 
         this.id = id;
         this.courtCentreId = courtCentreId;
+        this.name = name;
         this.hearingEstimateMinutes = hearingEstimateMinutes;
         this.hearingStartDate = hearingStartDate;
         this.hearingEndDate = hearingEndDate;
@@ -84,15 +84,29 @@ public class HearingData {
         this.weekCommencingDuration = weekCommencingDuration;
     }
 
-    public UUID getId() { return id; }
+    public UUID getId() {
+        return id;
+    }
 
-    public UUID getCourtCentreId() { return courtCentreId; }
+    public String getName() {
+        return name;
+    }
 
-    public HearingTypeData getHearingTypeData() { return hearingTypeData; }
+    public UUID getCourtCentreId() {
+        return courtCentreId;
+    }
 
-    public LocalDate getHearingStartDate() { return hearingStartDate; }
+    public HearingTypeData getHearingTypeData() {
+        return hearingTypeData;
+    }
 
-    public int getHearingEstimateMinutes() { return hearingEstimateMinutes; }
+    public LocalDate getHearingStartDate() {
+        return hearingStartDate;
+    }
+
+    public int getHearingEstimateMinutes() {
+        return hearingEstimateMinutes;
+    }
 
     public UUID getCourtRoomId() {
         return courtRoomId;

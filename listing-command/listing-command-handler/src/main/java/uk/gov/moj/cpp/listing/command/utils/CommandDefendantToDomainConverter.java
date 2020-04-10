@@ -16,7 +16,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@SuppressWarnings({"squid:S3655","squid:S1067"})
+
+@SuppressWarnings({"squid:S3655", "squid:S1067"})
 public class CommandDefendantToDomainConverter implements Converter<List<Defendant>, List<uk.gov.moj.cpp.listing.domain.Defendant>> {
 
     @Override
@@ -24,9 +25,11 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
         return commandDefendants.stream().map(this::buildDefendants).collect(Collectors.toList());
     }
 
-    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(Defendant d) {
+    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final Defendant d) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
+                .withMasterDefendantId(d.getMasterDefendantId())
+                .withCourtProceedingsInitiated(d.getCourtProceedingsInitiated())
                 .withBailStatus(d.getBailStatus().map(bailStatus -> new BailStatus.Builder().withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).withId(bailStatus.getId()).build()))
                 .withCustodyTimeLimit(d.getCustodyTimeLimit())
                 .withDateOfBirth(d.getDateOfBirth())
@@ -42,14 +45,15 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
                         .collect(toList()))
                 .withIsYouth(d.getIsYouth())
                 .withAddress(nonNull(d.getAddress()) && d.getAddress().isPresent() ? buildAddress(d.getAddress()) : empty())
-                .withNationalityDescription(nonNull(d.getNationalityDescription()) && d.getNationalityDescription().isPresent()  ?  d.getNationalityDescription() : empty())
+                .withNationalityDescription(nonNull(d.getNationalityDescription()) && d.getNationalityDescription().isPresent() ? d.getNationalityDescription() : empty())
 
                 .build();
     }
+
     private Optional<uk.gov.moj.cpp.listing.domain.Address> buildAddress(Optional<uk.gov.justice.core.courts.Address> a) {
 
-        return  Optional.of(uk.gov.moj.cpp.listing.domain.Address.address().
-                withAddress1(a.get().getAddress1() )
+        return Optional.of(uk.gov.moj.cpp.listing.domain.Address.address().
+                withAddress1(a.get().getAddress1())
                 .withAddress2(a.get().getAddress2().isPresent() ? a.get().getAddress2() : empty())
                 .withAddress3(a.get().getAddress3().isPresent() ? a.get().getAddress3() : empty())
                 .withAddress4(a.get().getAddress4().isPresent() ? a.get().getAddress4() : empty())
@@ -58,6 +62,7 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
                 .build());
 
     }
+
     private uk.gov.moj.cpp.listing.domain.Offence buildOffence(final Offence o) {
         final Optional<uk.gov.justice.listing.events.LaaReference> laaApplnReference =
                 o.getLaaApplnReference();

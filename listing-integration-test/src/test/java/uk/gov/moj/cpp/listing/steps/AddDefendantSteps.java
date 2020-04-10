@@ -12,11 +12,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
@@ -42,6 +42,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -57,10 +58,8 @@ import com.jayway.restassured.path.json.JsonPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(AddDefendantSteps.class);
-
 
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS = "public.progression.defendants-added-to-court-proceedings";
     private static final String EVENT_SELECTOR_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS = "listing.events.defendants-to-be-added-for-court-proceedings";
@@ -69,22 +68,23 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
     final UUID DEFENDANT_ID = UUID.randomUUID();
+    final UUID MASTER_DEFENDANT_ID = UUID.randomUUID();
+
     private final HearingData hearingData;
     private final ListedCaseData listedCaseData;
     private final UUID caseId;
-    ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
-    ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
     private final MessageProducer publicEventDefendantAdded;
     private final MessageConsumer publicEventMessageConsumerDefendantAdded;
     private final MessageConsumer privateEventMessageDefendantsToBeAdded;
     private final MessageConsumer privateEventsMessageDefendantDetailsAdded;
+    ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+    ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
     private String request;
 
     public AddDefendantSteps(final UUID caseId, final HearingData hearingData) {
         this.caseId = caseId;
         this.hearingData = hearingData;
         this.listedCaseData = hearingData.getListedCases().get(0);
-
 
         publicEventDefendantAdded = QueueUtil.publicEvents.createProducer();
         publicEventMessageConsumerDefendantAdded = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS);
@@ -107,7 +107,6 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         request = addDefendantDetailsForCourtProceedingsObject.toString();
         LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTOR_PROGRESSION_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS, request, getLoggedInHeader());
     }
-
 
     public void verifyEventDefendantAddedInActiveMQ() {
         final JsonPath jsRequest = new JsonPath(request);
@@ -162,12 +161,11 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendant.organisationName"), is(jsRequest.getString("defendants[0].legalEntityDefendant.organisation.name")));
     }
 
-
-    public void verifyHearingListedFromAPI(boolean isAllocated) {
+    public void verifyHearingListedFromAPI(final boolean isAllocated) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
 
-        AddDefendantForCourtProceedingsData addDefendantForCourtProceedingsData = getAddDefendantDetails(caseId);
+        final AddDefendantForCourtProceedingsData addDefendantForCourtProceedingsData = getAddDefendantDetails(caseId);
         final Defendant defendant = addDefendantForCourtProceedingsData.getDefendants().get(0);
         final Person personDetails = defendant.getPersonDefendant().get().getPersonDetails();
 
@@ -194,6 +192,8 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
 
         final List<uk.gov.justice.core.courts.Defendant> defendant = Arrays.asList(Defendant.defendant()
                 .withId(DEFENDANT_ID)
+                .withMasterDefendantId(MASTER_DEFENDANT_ID)
+                .withCourtProceedingsInitiated(ZonedDateTime.now())
                 .withLegalEntityDefendant(of(LegalEntityDefendant.legalEntityDefendant()
                         .withOrganisation(Organisation.organisation()
                                 .withName("withOrganisationName")
@@ -238,6 +238,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         return ListHearingRequest.listHearingRequest()
                 .withCourtCentre(CourtCentre.courtCentre()
                         .withId(UUID.randomUUID())
+                        .withName("Carmarthen Magistrates Court")
                         .withRoomId(of(UUID.randomUUID()))
                         .build())
                 .withHearingType(HearingType.hearingType()

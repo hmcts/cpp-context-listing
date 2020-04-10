@@ -1,15 +1,17 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
-
 import uk.gov.justice.core.courts.BailStatus;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
 public class DefendantData {
 
     private final UUID defendantId;
+    private final UUID masterDefendantId;
+    private final ZonedDateTime courtProceedingsInitiated;
     private final String firstName;
     private final String lastName;
     private final List<OffenceData> offences;
@@ -25,7 +27,9 @@ public class DefendantData {
     public DefendantData(final UUID defendantId, final String firstName,
                          final String lastName, final LocalDate dateOfBirth,
                          final LocalDate custodyTimeLimit, final BailStatus bailStatus,
-                         final String defenceOrganisation, final List<OffenceData> offences, LegalEntityDefendantData legalEntityDefendant, final Boolean restrictFromCourtList, final Boolean isYouth, final Boolean proceedingsConcluded) {
+                         final String defenceOrganisation, final List<OffenceData> offences, final LegalEntityDefendantData legalEntityDefendant,
+                         final Boolean restrictFromCourtList, final Boolean isYouth, final Boolean proceedingsConcluded
+            , final UUID masterDefendantId, final ZonedDateTime courtProceedingsInitiated) {
         this.defendantId = defendantId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -38,6 +42,8 @@ public class DefendantData {
         this.restrictFromCourtList = restrictFromCourtList;
         this.isYouth = isYouth;
         this.proceedingsConcluded = proceedingsConcluded;
+        this.masterDefendantId = masterDefendantId;
+        this.courtProceedingsInitiated = courtProceedingsInitiated;
     }
 
     public UUID getDefendantId() {
@@ -94,5 +100,13 @@ public class DefendantData {
 
     public Boolean getProceedingsConcluded() {
         return proceedingsConcluded;
+    }
+
+    public UUID getMasterDefendantId() {
+        return masterDefendantId;
+    }
+
+    public ZonedDateTime getCourtProceedingsInitiated() {
+        return courtProceedingsInitiated;
     }
 }

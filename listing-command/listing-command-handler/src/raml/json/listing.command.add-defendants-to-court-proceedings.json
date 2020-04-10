@@ -13,6 +13,8 @@
         }
       ],
       "id": "DEFENDANT_ID1",
+      "masterDefendantId": "DEFENDANT_ID1",
+      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
       "personDefendant": {
         "bailStatus": {
           "id":"34443c87-fa6f-34c0-897f-0cce45773df5",
@@ -44,6 +46,8 @@
         }
       ],
       "id": "DEFENDANT_ID2",
+      "masterDefendantId": "DEFENDANT_ID2",
+      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
       "personDefendant": {
         "bailStatus": {
           "id":"34443c87-fa6f-34c0-897f-0cce45773df5",

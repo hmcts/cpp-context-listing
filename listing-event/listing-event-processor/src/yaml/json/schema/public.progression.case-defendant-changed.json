@@ -19,6 +19,7 @@
 				 "id": {
 					 "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
 				},
+
 				 "prosecutionCaseId": {
 					 "description": "The prosecution case technical identifier",
 					 "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"

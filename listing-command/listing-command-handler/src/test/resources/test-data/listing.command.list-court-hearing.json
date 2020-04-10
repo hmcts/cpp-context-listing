@@ -104,6 +104,8 @@
             "defendants": [
               {
                 "id": "DEFENDANT_ID",
+                "masterDefendantId": "DEFENDANT_ID",
+                "courtProceedingsInitiated":"2020-03-05T14:24:03.148Z",
                 "prosecutionCaseId": "CASE_ID",
                 "numberOfPreviousConvictionsCited": 5,
                 "prosecutionAuthorityReference": "TFL12345-ABC",

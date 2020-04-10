@@ -21,9 +21,11 @@ public class CourtsDefendantToDomainConverter implements Converter<uk.gov.justic
         return buildDefendants(courtsDefendant);
     }
 
-    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(Defendant d) {
+    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final Defendant d) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
+                .withMasterDefendantId(empty())
+                .withCourtProceedingsInitiated(empty())
                 .withHearingLanguageNeeds(empty())
                 .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())
                 .withLastName(d.getPersonDefendant().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getLastName()) : empty())
@@ -34,9 +36,9 @@ public class CourtsDefendantToDomainConverter implements Converter<uk.gov.justic
                 .withDateOfBirth(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getDateOfBirth() : empty())
                 .withCustodyTimeLimit(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getCustodyTimeLimit() : empty())
                 .withOffences(emptyList())
-                .withIsYouth(d.getIsYouth().isPresent() ? d.getIsYouth():empty())
+                .withIsYouth(d.getIsYouth().isPresent() ? d.getIsYouth() : empty())
                 .withAddress(buildAddress(d))
-                .withNationalityDescription(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getNationalityDescription().isPresent() ?  d.getPersonDefendant().get().getPersonDetails().getNationalityDescription() : empty())
+                .withNationalityDescription(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getNationalityDescription().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getNationalityDescription() : empty())
                 .build();
     }
 
@@ -61,8 +63,8 @@ public class CourtsDefendantToDomainConverter implements Converter<uk.gov.justic
 
     }
 
-    private Optional<BailStatus> mapBailStatus(Defendant defendant){
-        if(defendant.getPersonDefendant().isPresent()) {
+    private Optional<BailStatus> mapBailStatus(final Defendant defendant) {
+        if (defendant.getPersonDefendant().isPresent()) {
             final Optional<uk.gov.justice.core.courts.BailStatus> optBailStatus = defendant.getPersonDefendant().map(PersonDefendant::getBailStatus).orElse(Optional.empty());
             return optBailStatus.map(bailStatus -> new BailStatus.Builder().withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).withId(bailStatus.getId()).build());
         }

@@ -78,6 +78,8 @@
                   "defendants": [
                     {
                       "id": "6d98fd20-e994-477f-bc75-bb68ca3b29ca",
+                      "masterDefendantId": "6d98fd20-e994-477f-bc75-bb68ca3b29ca",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                       "lastName": "Yost",
                       "offences": [
                         {

@@ -42,6 +42,8 @@
                     "defendants": [
                       {
                         "id": "788e242e-fcfd-41ba-b06a-b1156d37e191",
+                        "masterDefendantId": "788e242e-fcfd-41ba-b06a-b1156d37e191",
+                        "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                         "lastName": "LAST_NAME",
                         "offences": [
                           {

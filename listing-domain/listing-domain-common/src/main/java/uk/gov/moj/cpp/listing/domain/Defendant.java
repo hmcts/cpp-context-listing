@@ -2,11 +2,13 @@ package uk.gov.moj.cpp.listing.domain;
 
 import static java.util.Collections.emptyList;
 
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067","squid:S2065"})
+@SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067", "squid:S2065"})
 public class Defendant {
     private final Optional<BailStatus> bailStatus;
 
@@ -24,6 +26,10 @@ public class Defendant {
 
     private final UUID id;
 
+    private final Optional<UUID> masterDefendantId;
+
+    private final Optional<ZonedDateTime> courtProceedingsInitiated;
+
     private final Optional<String> lastName;
 
     private final UUID prosecutionCaseId;
@@ -34,7 +40,7 @@ public class Defendant {
 
     private final Optional<String> specificRequirements;
 
-  private final Optional<Boolean> isYouth;
+    private final Optional<Boolean> isYouth;
 
 
     private final transient Optional<String> nationalityDescription;
@@ -42,25 +48,29 @@ public class Defendant {
     private final transient Optional<Address> address;
 
     @SuppressWarnings({"squid:S00107", "squid:S1067"})
-    public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<String> lastName, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final UUID prosecutionCaseId, final Optional<Boolean> isYouth, final Optional<String> nationalityDescription,  final Optional<Address> address) {
+    public Defendant(final Optional<BailStatus> bailStatus, final Optional<String> custodyTimeLimit, final Optional<String> dateOfBirth, final Optional<String> datesToAvoid, final Optional<String> defenceOrganisation, final Optional<String> firstName, final Optional<HearingLanguageNeeds> hearingLanguageNeeds, final UUID id, final Optional<UUID> masterDefendantId, final Optional<ZonedDateTime> courtProceedingsInitiated, final Optional<String> lastName, final UUID prosecutionCaseId, final List<Offence> offences, final Optional<String> organisationName, final Optional<String> specificRequirements, final Optional<Boolean> isYouth, final Optional<String> nationalityDescription, final Optional<Address> address) {
+        this.bailStatus = bailStatus;
+        this.custodyTimeLimit = custodyTimeLimit;
+        this.dateOfBirth = dateOfBirth;
+        this.datesToAvoid = datesToAvoid;
+        this.defenceOrganisation = defenceOrganisation;
+        this.firstName = firstName;
+        this.hearingLanguageNeeds = hearingLanguageNeeds;
+        this.id = id;
+        this.masterDefendantId = masterDefendantId;
+        this.courtProceedingsInitiated = courtProceedingsInitiated;
+        this.lastName = lastName;
+        this.prosecutionCaseId = prosecutionCaseId;
+        this.offences = offences == null ? emptyList() : offences;
+        this.organisationName = organisationName;
+        this.specificRequirements = specificRequirements;
+        this.isYouth = isYouth;
+        this.nationalityDescription = nationalityDescription;
+        this.address = address;
+    }
 
-    this.bailStatus = bailStatus;
-    this.custodyTimeLimit = custodyTimeLimit;
-    this.dateOfBirth = dateOfBirth;
-    this.datesToAvoid = datesToAvoid;
-    this.defenceOrganisation = defenceOrganisation;
-    this.firstName = firstName;
-    this.hearingLanguageNeeds = hearingLanguageNeeds;
-    this.id = id;
-    this.lastName = lastName;
-    this.prosecutionCaseId = prosecutionCaseId;
-    this.offences = offences == null ? emptyList() : offences;
-    this.organisationName = organisationName;
-    this.specificRequirements = specificRequirements;
-    this.isYouth = isYouth;
-    this.nationalityDescription = nationalityDescription;
-    this.address = address;
-
+    public static Builder defendant() {
+        return new Defendant.Builder();
     }
 
     public Optional<BailStatus> getBailStatus() {
@@ -95,6 +105,14 @@ public class Defendant {
         return id;
     }
 
+    public Optional<UUID> getMasterDefendantId() {
+        return masterDefendantId;
+    }
+
+    public Optional<ZonedDateTime> getCourtProceedingsInitiated() {
+        return courtProceedingsInitiated;
+    }
+
     public Optional<String> getLastName() {
         return lastName;
     }
@@ -115,105 +133,73 @@ public class Defendant {
         return prosecutionCaseId;
     }
 
-  public Optional<Boolean> getIsYouth() { return isYouth;  }
+    public Optional<Boolean> getIsYouth() {
+        return isYouth;
+    }
 
+    public Optional<String> getNationalityDescription() {
+        return nationalityDescription;
+    }
 
-    public Optional<String> getNationalityDescription() { return nationalityDescription; }
-
-    public Optional<Address> getAddress() { return address; }
-
-  public static Builder defendant() {
-    return new Defendant.Builder();
-  }
+    public Optional<Address> getAddress() {
+        return address;
+    }
 
     @Override
-    @SuppressWarnings({"squid:S00107", "squid:S1067"})
-    public boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        final Defendant that = (Defendant) obj;
-
-        return java.util.Objects.equals(this.bailStatus, that.bailStatus) &&
-                java.util.Objects.equals(this.custodyTimeLimit, that.custodyTimeLimit) &&
-                java.util.Objects.equals(this.dateOfBirth, that.dateOfBirth) &&
-                java.util.Objects.equals(this.datesToAvoid, that.datesToAvoid) &&
-                java.util.Objects.equals(this.defenceOrganisation, that.defenceOrganisation) &&
-                java.util.Objects.equals(this.firstName, that.firstName) &&
-                java.util.Objects.equals(this.hearingLanguageNeeds, that.hearingLanguageNeeds) &&
-                java.util.Objects.equals(this.id, that.id) &&
-                java.util.Objects.equals(this.lastName, that.lastName) &&
-                java.util.Objects.equals(this.offences, that.offences) &&
-                java.util.Objects.equals(this.organisationName, that.organisationName) &&
-                java.util.Objects.equals(this.specificRequirements, that.specificRequirements) &&
-                java.util.Objects.equals(this.prosecutionCaseId, that.prosecutionCaseId);
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Defendant)) return false;
+        final Defendant defendant = (Defendant) o;
+        return Objects.equals(bailStatus, defendant.bailStatus) &&
+                Objects.equals(custodyTimeLimit, defendant.custodyTimeLimit) &&
+                Objects.equals(dateOfBirth, defendant.dateOfBirth) &&
+                Objects.equals(datesToAvoid, defendant.datesToAvoid) &&
+                Objects.equals(defenceOrganisation, defendant.defenceOrganisation) &&
+                Objects.equals(firstName, defendant.firstName) &&
+                Objects.equals(hearingLanguageNeeds, defendant.hearingLanguageNeeds) &&
+                Objects.equals(id, defendant.id) &&
+                Objects.equals(masterDefendantId, defendant.masterDefendantId) &&
+                Objects.equals(courtProceedingsInitiated, defendant.courtProceedingsInitiated) &&
+                Objects.equals(lastName, defendant.lastName) &&
+                Objects.equals(prosecutionCaseId, defendant.prosecutionCaseId) &&
+                Objects.equals(offences, defendant.offences) &&
+                Objects.equals(organisationName, defendant.organisationName) &&
+                Objects.equals(specificRequirements, defendant.specificRequirements) &&
+                Objects.equals(isYouth, defendant.isYouth);
     }
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements, prosecutionCaseId);
+        return Objects.hash(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, masterDefendantId, courtProceedingsInitiated, lastName, prosecutionCaseId, offences, organisationName, specificRequirements, isYouth);
     }
 
-    @Override
-    public String toString() {
-        return "Defendant{" +
-                "bailStatus='" + bailStatus + "'," +
-                "custodyTimeLimit='" + custodyTimeLimit + "'," +
-                "dateOfBirth='" + dateOfBirth + "'," +
-                "datesToAvoid='" + datesToAvoid + "'," +
-                "defenceOrganisation='" + defenceOrganisation + "'," +
-                "firstName='" + firstName + "'," +
-                "hearingLanguageNeeds='" + hearingLanguageNeeds + "'," +
-                "id='" + id + "'," +
-                "lastName='" + lastName + "'," +
-                "offences='" + offences + "'," +
-                "organisationName='" + organisationName + "'," +
-                "specificRequirements='" + specificRequirements + "'," +
-                "prosecutionCaseId='" + prosecutionCaseId + "'" +
-                "}";
-    }
-
-    @SuppressWarnings({"pmd:BeanMembersShouldSerialize"})
-    public static class Builder {
+    public static final class Builder {
         private Optional<BailStatus> bailStatus;
-
         private Optional<String> custodyTimeLimit;
-
         private Optional<String> dateOfBirth;
-
         private Optional<String> datesToAvoid;
-
         private Optional<String> defenceOrganisation;
-
         private Optional<String> firstName;
-
         private Optional<HearingLanguageNeeds> hearingLanguageNeeds;
-
         private UUID id;
-
+        private Optional<UUID> masterDefendantId;
+        private Optional<ZonedDateTime> courtProceedingsInitiated;
         private Optional<String> lastName;
-
-        private List<Offence> offences;
-
-        private Optional<String> organisationName;
-
-        private Optional<String> specificRequirements;
-
         private UUID prosecutionCaseId;
-
-    private Optional<Boolean> isYouth;
-
+        private List<Offence> offences;
+        private Optional<String> organisationName;
+        private Optional<String> specificRequirements;
+        private Optional<Boolean> isYouth;
         private transient Optional<String> nationalityDescription;
-
         private transient Optional<Address> address;
 
-    public Builder withBailStatus(final Optional<BailStatus> bailStatus) {
-      this.bailStatus = bailStatus;
-      return this;
-    }
+        private Builder() {
+        }
+
+        public Builder withBailStatus(final Optional<BailStatus> bailStatus) {
+            this.bailStatus = bailStatus;
+            return this;
+        }
 
         public Builder withCustodyTimeLimit(final Optional<String> custodyTimeLimit) {
             this.custodyTimeLimit = custodyTimeLimit;
@@ -250,8 +236,23 @@ public class Defendant {
             return this;
         }
 
+        public Builder withMasterDefendantId(final Optional<UUID> masterDefendantId) {
+            this.masterDefendantId = masterDefendantId;
+            return this;
+        }
+
+        public Builder withCourtProceedingsInitiated(final Optional<ZonedDateTime> courtProceedingsInitiated) {
+            this.courtProceedingsInitiated = courtProceedingsInitiated;
+            return this;
+        }
+
         public Builder withLastName(final Optional<String> lastName) {
             this.lastName = lastName;
+            return this;
+        }
+
+        public Builder withProsecutionCaseId(final UUID prosecutionCaseId) {
+            this.prosecutionCaseId = prosecutionCaseId;
             return this;
         }
 
@@ -270,28 +271,25 @@ public class Defendant {
             return this;
         }
 
-        public Builder withProsecutionCaseId(final UUID prosecutionCaseId) {
-            this.prosecutionCaseId = prosecutionCaseId;
+        public Builder withIsYouth(final Optional<Boolean> isYouth) {
+            this.isYouth = isYouth;
             return this;
         }
 
-    public Builder withIsYouth(final Optional<Boolean> isYouth) {
-      this.isYouth = isYouth;
-      return this;
-    }
 
-    public Builder withNationalityDescription(Optional<String> nationalityDescription) {
-        this.nationalityDescription = nationalityDescription;
-        return this;
-    }
+        public Builder withNationalityDescription(Optional<String> nationalityDescription) {
+            this.nationalityDescription = nationalityDescription;
+            return this;
+        }
 
 
-    public Builder withAddress(Optional<Address> address) {
-        this.address = address;
-        return this;
+        public Builder withAddress(Optional<Address> address) {
+            this.address = address;
+            return this;
+        }
+
+        public Defendant build() {
+            return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, masterDefendantId, courtProceedingsInitiated, lastName, prosecutionCaseId, offences, organisationName, specificRequirements, isYouth, nationalityDescription, address);
+        }
     }
-    public Defendant build() {
-      return new Defendant(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, lastName, offences, organisationName, specificRequirements, prosecutionCaseId, isYouth, nationalityDescription, address);
-    }
-  }
 }

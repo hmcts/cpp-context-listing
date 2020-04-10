@@ -3,6 +3,8 @@
   "defendants": [
     {
       "id": "0baecac5-222b-402d-9047-84803679edac",
+      "masterDefendantId": "0baecac5-222b-402d-9047-84803679edac",
+      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
       "personId": "32f2ce4e-4b4f-4ac0-8071-610e2813e3f8",
       "firstName": "David",
       "lastName": "LLOYD",

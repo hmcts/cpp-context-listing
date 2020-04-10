@@ -10,12 +10,16 @@ public class CourtCentreData {
     private final LocalTime defaultStartTime;
 
     private final UUID courtCentreId;
+    private final String name;
+
     private final UUID courtRoomId;
-    public CourtCentreData(UUID courtCentreId, LocalTime defaultStartTime, String defaultDurationHoursMins, final UUID courtRoomId) {
+
+    public CourtCentreData(final UUID courtCentreId, final LocalTime defaultStartTime, final String defaultDurationHoursMins, final UUID courtRoomId, final String name) {
         this.defaultDurationHoursMins = defaultDurationHoursMins;
         this.defaultStartTime = defaultStartTime;
         this.courtCentreId = courtCentreId;
         this.courtRoomId = courtRoomId;
+        this.name = name;
     }
 
     public String getDefaultDurationHoursMins() {
@@ -32,5 +36,9 @@ public class CourtCentreData {
 
     public UUID getCourtRoomId() {
         return courtRoomId;
+    }
+
+    public String getName() {
+        return name;
     }
 }

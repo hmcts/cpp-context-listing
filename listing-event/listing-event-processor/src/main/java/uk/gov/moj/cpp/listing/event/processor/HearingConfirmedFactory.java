@@ -12,27 +12,28 @@ import uk.gov.justice.listing.courts.HearingLanguage;
 import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.Type;
+import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.List;
 
 
 public class HearingConfirmedFactory extends PublicHearingFactory {
 
-    public HearingConfirmed create(final HearingAllocatedForListing hearingAllocated) {
+    public HearingConfirmed create(final HearingAllocatedForListing hearingAllocated, JsonEnvelope envelope) {
 
         final List<uk.gov.justice.listing.events.JudicialRole> judicialRoles = hearingAllocated.getJudiciary();
         final Type type = hearingAllocated.getType();
         return uk.gov.justice.listing.courts.HearingConfirmed.hearingConfirmed()
-                .withConfirmedHearing(buildConfirmedHearing(hearingAllocated, judicialRoles, type))
+                .withConfirmedHearing(buildConfirmedHearing(hearingAllocated, judicialRoles, type, envelope))
                 .build();
 
 
     }
 
-    private ConfirmedHearing buildConfirmedHearing(HearingAllocatedForListing hearingAllocated, List<uk.gov.justice.listing.events.JudicialRole> judicialRoles, Type type) {
+    private ConfirmedHearing buildConfirmedHearing(HearingAllocatedForListing hearingAllocated, List<uk.gov.justice.listing.events.JudicialRole> judicialRoles, Type type, JsonEnvelope envelope) {
         ConfirmedHearing.Builder builder = ConfirmedHearing.confirmedHearing()
                 .withId(hearingAllocated.getHearingId())
-                .withCourtCentre(buildCourtCentre(hearingAllocated.getCourtCentreId(), hearingAllocated.getCourtRoomId()))
+                .withCourtCentre(buildCourtCentre(hearingAllocated.getCourtCentreId(), hearingAllocated.getCourtRoomId(), envelope))
                 .withHearingDays(hearingAllocated.getHearingDays().stream()
                         .map(this::buildHearingDay)
                         .collect(toList()))
@@ -53,7 +54,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
                         .collect(toList()))
                 .withReportingRestrictionReason(hearingAllocated.getReportingRestrictionReason())
                 .withType(buildType(type));
-        if(!judicialRoles.isEmpty()){
+        if (!judicialRoles.isEmpty()) {
             builder.withJudiciary(judicialRoles.stream()
                     .map(this::buildJudicialRole)
                     .collect(toList()));

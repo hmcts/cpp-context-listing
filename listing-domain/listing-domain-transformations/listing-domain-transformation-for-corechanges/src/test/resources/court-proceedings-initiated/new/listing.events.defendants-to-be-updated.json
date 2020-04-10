@@ -1,0 +1,27 @@
+{
+  "caseId": "e88152c4-a2e7-44fa-9938-75b9f152bd12",
+  "defendants": [
+    {
+      "bailStatus": {
+        "code": "C",
+        "description": "Custody or remanded into custody",
+        "id": "12e69486-4d01-3403-a50a-7419ca040635"
+      },
+      "custodyTimeLimit": "2018-10-10",
+      "dateOfBirth": "1975-01-01",
+      "defenceOrganisation": "someOrganisationName",
+      "firstName": "John",
+      "id": "1c21a6f1-7518-4c85-b9bd-f783ed08b233",
+      "isYouth": true,
+      "lastName": "Doe",
+      "offences": [],
+      "organisationName": "someOtherOrganisationName",
+      "restrictFromCourtList": false,
+      "specificRequirements": "someSpecificRequirements",
+      "courtProceedingsInitiated": "2020-02-21T11:49:18.116Z"
+    }
+  ],
+  "hearings": [
+    "257224b0-4ced-4972-ba9d-3c49464f40bc"
+  ]
+}

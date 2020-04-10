@@ -25,7 +25,9 @@ public class ReferenceDataStub {
     private static final String REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/cp-xhibit-courtroom-mappings";
     private static final String REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.query.cp-xhibit-courtroom-mappings+json";
     private static final String REFERENCE_DATA_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms/.*";
-    private static final String REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE = "application/vnd.referencedata.ou-courtroom+json";
+    private static final String REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE = "application/vnd.referencedata.courtroom+json";
+    private static final String REFERENCE_DATA_ORGANISATION_UNIT_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/organisation-units/%s";
+    private static final String REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE = "application/vnd.referencedata.query.organisation-unit+json";
     private static final String REFERENCE_DATA_ALL_CROWN_COURT_CENTRE_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms";
     private static final String REFERENCE_DATA_JUDICIARIES_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/judiciaries";
     private static final String REFERENCE_DATA_JUDICIARIES_MEDIA_TYPE = "application/vnd.referencedata.judiciaries+json";
@@ -117,6 +119,24 @@ public class ReferenceDataStub {
         final String confirmationUrl = REFERENCE_DATA_ALL_CROWN_COURT_CENTRE_QUERY_URL + "?oucodeL1Code=C";
 
         waitForStubToBeReady(confirmationUrl, REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
+    }
+
+
+    public static void stubGetReferenceDataCourtCentreById(UUID courtCentreId) {
+        InternalEndpointMockUtils.stubPingFor("referencedata-service");
+
+        final String urlPath = String.format(REFERENCE_DATA_ORGANISATION_UNIT_QUERY_URL, courtCentreId.toString());
+
+        String payload = getPayload("stub-data/referencedata.query.organisation-unit.json")
+                .replace("COURT_CENTRE_ID", courtCentreId.toString());
+
+        stubFor(get(urlPathMatching(urlPath))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader("Content-Type", REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE)
+                        .withBody(payload)));
+
+        waitForStubToBeReady(urlPath, REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataJudiciaries(final UUID judiciaryId) {

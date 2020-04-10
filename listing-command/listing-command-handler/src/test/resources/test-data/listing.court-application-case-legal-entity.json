@@ -13,6 +13,8 @@
             "defendant":{
               "prosecutionCaseId": "75cab9a4-cc8c-4a98-ad23-324ecb956e1d",
               "id": "827b96e6-daae-47c3-829f-95f35fd6c759",
+              "masterDefendantId": "827b96e6-daae-47c3-829f-95f35fd6c759",
+              "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
               "legalEntityDefendant": {
                 "organisation": {
                   "name": "ABC LTD",
@@ -95,6 +97,8 @@
           "defendants": [
             {
               "id": "827b96e6-daae-47c3-829f-95f35fd6c759",
+              "masterDefendantId": "827b96e6-daae-47c3-829f-95f35fd6c759",
+              "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
               "offences": [
                 {
                   "count": 483538278,

@@ -6,6 +6,8 @@
       "defenceOrganisation": "defenceOrganisation",
       "legalEntityDefendant": {},
       "id": "2d1d2d8a-860c-479b-aa68-c4ad37850839",
+      "masterDefendantId": "2d1d2d8a-860c-479b-aa68-c4ad37850839",
+      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
       "prosecutionCaseId": "0baecac5-222b-402d-9047-84803679edae",
       "personDefendant": {
         "personDetails": {

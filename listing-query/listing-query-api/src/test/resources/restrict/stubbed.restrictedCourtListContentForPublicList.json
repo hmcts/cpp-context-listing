@@ -56,6 +56,8 @@
                     "defendants": [
                       {
                         "id": "788e242e-fcfd-41ba-b06a-b1156d37e191",
+                        "masterDefendantId": "788e242e-fcfd-41ba-b06a-b1156d37e191",
+                        "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                         "lastName": "LAST_NAME",
                         "offences": [
                           {
@@ -69,11 +71,7 @@
                           }
                         ],
                         "firstName": "FIRST_NAME",
-                        "bailStatus": {
-                          "id": "dd4073b6-22be-3875-9d63-5da286bb3ece",
-                          "code": "B",
-                          "description": "Conditional Bail"
-                        }
+                        "bailStatus": "CONDITIONAL"
                       }
                     ],
                     "caseIdentifier": {
@@ -140,6 +138,8 @@
                     "defendants": [
                       {
                         "id": "788e242e-fcfd-41ba-b06a-b1156d37e191",
+                        "masterDefendantId": "788e242e-fcfd-41ba-b06a-b1156d37e191",
+                        "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                         "lastName": "LAST_NAME",
                         "offences": [
                           {
@@ -162,6 +162,8 @@
                       },
                       {
                         "id": "788e242e-fcfd-41bc-b06a-b1156d37e191",
+                        "masterDefendantId": "788e242e-fcfd-41bc-b06a-b1156d37e191",
+                        "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                         "lastName": "LAST_NAME",
                         "offences": [
                           {

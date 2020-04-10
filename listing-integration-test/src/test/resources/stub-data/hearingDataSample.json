@@ -32,6 +32,8 @@
                 }
               ],
               "id": "f0c2154b-b474-498f-9a0b-38bdd06ad5e5",
+              "masterDefendantId": "f0c2154b-b474-498f-9a0b-38bdd06ad5e5",
+              "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
               "offences": [
                 {
                   "count": 2117757961,

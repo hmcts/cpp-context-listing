@@ -172,7 +172,8 @@ public class ListingEventProcessorTest {
     private static final String HEARING_IDS = "hearingIds";
     private static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
     private static final String REMOVAL_REASON = "removalReason";
-
+    @Spy
+    ObjectToJsonObjectConverter objectToJsonObjectConverter;
     @Mock
     private Sender sender;
     @Mock
@@ -193,10 +194,8 @@ public class ListingEventProcessorTest {
     private DefendantsToBeUpdated defendantsToBeUpdated;
     @Mock
     private DefendantsToBeAddedForCourtProceedings defendantsToBeAddedForCourtProceedings;
-
     @Mock
     private CaseOrApplicationEjected caseOrApplicationEjected;
-
     @Mock
     private OffencesToBeUpdated offencesToBeUpdated;
     @Mock
@@ -249,25 +248,16 @@ public class ListingEventProcessorTest {
     private HearingConfirmedFactory hearingConfirmedFactory;
     @Mock
     private AllocatedHearingUpdatedFactory allocatedHearingUpdatedFactory;
-
     @Mock
     private SlotUpdater slotUpdater;
-
     @Captor
     private ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor;
-
     @Captor
     private ArgumentCaptor<String> stringArgumentCaptor;
-
     @Spy
     private Enveloper enveloper = createEnveloper();
-
     @InjectMocks
     private ListingEventProcessor listingEventProcessor;
-
-    @Spy
-    ObjectToJsonObjectConverter objectToJsonObjectConverter;
-
 
     @Test
     public void shouldHandleHearingListedEventMessage() throws Exception {
@@ -422,7 +412,7 @@ public class ListingEventProcessorTest {
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed();
-        given(hearingConfirmedFactory.create(hearingAllocatedForListing)).willReturn(hearingConfirmed);
+        given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
         //when
         listingEventProcessor.handleHearingAllocatedForListingMessage(event);
@@ -451,7 +441,7 @@ public class ListingEventProcessorTest {
                 AllocatedHearingUpdatedForListing.class)).willReturn(allocatedHearingUpdatedForListing);
 
         final HearingUpdated hearingUpdated = hearingUpdated();
-        given(allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing))
+        given(allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing, event))
                 .willReturn(hearingUpdated);
 
 

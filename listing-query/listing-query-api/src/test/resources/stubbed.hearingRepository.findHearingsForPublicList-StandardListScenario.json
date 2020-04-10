@@ -78,6 +78,8 @@
                   "defendants": [
                     {
                       "id": "6d98fd20-e994-477f-bc75-bb68ca3b29ca",
+                      "masterDefendantId": "6d98fd20-e994-477f-bc75-bb68ca3b29ca",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                       "lastName": "Yost",
                       "offences": [
                         {
@@ -290,6 +292,8 @@
                     },
                     {
                       "id": "62f5ef7d-a2f6-4590-afb0-9ebee70672ba",
+                      "masterDefendantId": "62f5ef7d-a2f6-4590-afb0-9ebee70672ba",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                       "lastName": "Orn",
                       "offences": [
                         {
@@ -416,6 +420,8 @@
                   "defendants": [
                     {
                       "id": "630fc9f7-e2fb-4503-bff7-d92f41785dfd",
+                      "masterDefendantId": "630fc9f7-e2fb-4503-bff7-d92f41785dfd",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                       "lastName": "Zulauf",
                       "offences": [
                         {
@@ -456,6 +462,8 @@
                     },
                     {
                       "id": "323c2b18-3d73-43e6-ba3b-683d572076c5",
+                      "masterDefendantId": "323c2b18-3d73-43e6-ba3b-683d572076c5",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                       "lastName": "Marvin",
                       "offences": [
                         {
@@ -590,6 +598,8 @@
                   "defendants": [
                     {
                       "id": "9bc4e646-e422-433b-ab69-6a706540f346",
+                      "masterDefendantId": "9bc4e646-e422-433b-ab69-6a706540f346",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                       "lastName": "Fadel",
                       "offences": [
                         {
@@ -630,6 +640,8 @@
                     },
                     {
                       "id": "2e6dda9d-de3d-40df-9065-65606385e493",
+                      "masterDefendantId": "2e6dda9d-de3d-40df-9065-65606385e493",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                       "lastName": "Cummings",
                       "offences": [
                         {

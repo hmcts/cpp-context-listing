@@ -157,6 +157,8 @@ public class HearingEventListener {
                         .withIsYouth(originalDefendant.getIsYouth())
                         .withAddress(nonNull(originalDefendant.getAddress()) && originalDefendant.getAddress().isPresent()  ? buildAddress(originalDefendant.getAddress()) : empty())
                         .withNationalityDescription(nonNull(originalDefendant.getNationalityDescription()) && originalDefendant.getNationalityDescription().isPresent()  ?  originalDefendant.getNationalityDescription() : empty())
+                       .withMasterDefendantId(originalDefendant.getMasterDefendantId())
+                       .withCourtProceedingsInitiated(originalDefendant.getCourtProceedingsInitiated())
                         .build();
     }
 

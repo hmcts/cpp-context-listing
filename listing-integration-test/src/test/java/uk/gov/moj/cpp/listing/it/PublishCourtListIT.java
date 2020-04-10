@@ -5,6 +5,7 @@ import static javax.json.Json.createObjectBuilder;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCourtListCommandPayload;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
@@ -37,6 +38,8 @@ public class PublishCourtListIT extends AbstractIT {
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     private static final UUID DEFAULT_COURT_ROOM_ID = null;
+    private static final String DEFAULT_COURT_CENTRE_NAME = STRING.next();
+
 
     private static final String LISTING_COMMAND_PUBLISH_LISTS_FOR_ALL_CROWN_COURTS = "listing.command.publish-court-lists-for-crown-courts";
     private static final String MEDIA_TYPE_LISTING_COMMAND_PUBLISH_LISTS_FOR_ALL_CROWN_COURTS = "application/vnd.listing.command.publish-court-lists-for-crown-courts+json";
@@ -53,7 +56,7 @@ public class PublishCourtListIT extends AbstractIT {
                 publishCourtListType,
                 startDate);
 
-        stubGetReferenceDataCourtMappings(new CourtCentreData(UUID.randomUUID(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID));
+        stubGetReferenceDataCourtMappings(new CourtCentreData(UUID.randomUUID(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
         stubOrganisationUnit(courtCentreId);
         stubIdMapperReturningExistingAssociation(courtListId);
 

@@ -39,6 +39,8 @@
       "defendants": [
         {
           "id": "6b0ba25b-7eb2-444c-b350-89ecf255a3cf",
+          "masterDefendantId": "6b0ba25b-7eb2-444c-b350-89ecf255a3cf",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
           "lastName": "kPHQzsJTEF",
           "offences": [
             {
@@ -86,6 +88,8 @@
         },
         {
           "id": "f871ad14-3b3e-47b1-b2b5-9a5036e1ed7d",
+          "masterDefendantId": "f871ad14-3b3e-47b1-b2b5-9a5036e1ed7d",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
           "lastName": "yhmxMaoKTh",
           "offences": [
             {
@@ -144,6 +148,8 @@
       "defendants": [
         {
           "id": "c27d15c4-90c8-4337-9c2b-fed5bd905879",
+          "masterDefendantId": "c27d15c4-90c8-4337-9c2b-fed5bd905879",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
           "lastName": "AxqHnyQ5X8",
           "offences": [
             {
@@ -191,6 +197,8 @@
         },
         {
           "id": "b48122a6-ca36-4255-83cf-cccc6550e711",
+          "masterDefendantId": "b48122a6-ca36-4255-83cf-cccc6550e711",
+          "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
           "lastName": "tjSfV5dsub",
           "offences": [
             {

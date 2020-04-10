@@ -1,27 +1,10 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import static com.jayway.jsonpath.Criteria.where;
-import static com.jayway.jsonpath.Filter.filter;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.text.MessageFormat.format;
-import static java.util.Optional.of;
-import static java.util.UUID.randomUUID;
-import static javax.ws.rs.core.Response.Status.OK;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static uk.gov.justice.core.courts.Organisation.organisation;
-import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
-import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
-import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
-import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
-import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
-import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.Filter;
+import com.jayway.restassured.path.json.JsonPath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.LegalEntityDefendant;
@@ -38,18 +21,34 @@ import uk.gov.moj.cpp.listing.steps.data.UpdateCaseDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
-import java.util.UUID;
-
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.json.JsonObject;
+import java.time.ZonedDateTime;
+import java.util.UUID;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.jayway.jsonpath.Criteria.where;
+import static com.jayway.jsonpath.Filter.filter;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.text.MessageFormat.format;
+import static java.util.Optional.of;
+import static java.util.UUID.randomUUID;
+import static javax.ws.rs.core.Response.Status.OK;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static uk.gov.justice.core.courts.Organisation.organisation;
+import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
 
 public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
@@ -68,10 +67,10 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
             ".search.hearings+json";
 
 
-    private MessageProducer publicEventDefendantUpdated;
-    private MessageConsumer publicEventMessageConsumerDefendantUpdated;
-    private MessageConsumer privateEventMessageDefendantsToBeUpdated;
-    private MessageConsumer privateEventsMessageDefendantDetailsUpdated;
+    private final MessageProducer publicEventDefendantUpdated;
+    private final MessageConsumer publicEventMessageConsumerDefendantUpdated;
+    private final MessageConsumer privateEventMessageDefendantsToBeUpdated;
+    private final MessageConsumer privateEventsMessageDefendantDetailsUpdated;
 
 
     private String request;
@@ -87,7 +86,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
 
 
-    public UpdateDefendantSteps(UUID caseId, HearingData hearingData, UpdatedDefendantData defendantData) {
+    public UpdateDefendantSteps(final UUID caseId, final HearingData hearingData, final UpdatedDefendantData defendantData) {
         this.caseId = caseId;
         this.hearingData = hearingData;
         this.listedCaseData = hearingData.getListedCases().get(0);
@@ -103,7 +102,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void whenCaseDefendantsUpdatedPublicEventIsPublished() {
-        UpdateCaseDefendantData updateCaseDefendantDetails = getUpdateCaseDefendantDetails(caseId, updatedDefendantData);
+        final UpdateCaseDefendantData updateCaseDefendantDetails = getUpdateCaseDefendantDetails(caseId, updatedDefendantData);
         final JsonObject updateCaseDefendantDetailsObject = (JsonObject) objectToJsonValueConverter.convert(updateCaseDefendantDetails);
 
         QueueUtil.sendMessage(
@@ -118,10 +117,10 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
 
 
     public void verifyEventDefendantUpdatedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
+        final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventMessageConsumerDefendantUpdated);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventMessageConsumerDefendantUpdated);
         LOGGER.debug("jsonResponse from publicEventMessageConsumerDefendantUpdated: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("defendant.id"), is(jsRequest.getString("defendant.id")));
@@ -144,10 +143,10 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyEventDefendantsToBeUpdateInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
+        final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageDefendantsToBeUpdated);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageDefendantsToBeUpdated);
         LOGGER.debug("jsonResponse from privateEventMessageDefendantsToBeUpdated: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("defendants[0].id"), is(jsRequest.getString("defendant.id")));
@@ -163,10 +162,10 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyEventDefendantDetailsUpdatedInActiveMQ() {
-        JsonPath jsRequest = new JsonPath(request);
+        final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventsMessageDefendantDetailsUpdated);
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventsMessageDefendantDetailsUpdated);
         LOGGER.debug("jsonResponse from privateEventsMessageDefendantDetailsUpdated: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("defendant.id"), is(jsRequest.getString("defendant.id")));
@@ -180,7 +179,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendant.isYouth"), is(jsRequest.getBoolean("defendant.isYouth")));
     }
 
-    public void verifyHearingListedFromAPI(boolean isAllocated) {
+    public void verifyHearingListedFromAPI(final boolean isAllocated) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
 
@@ -231,21 +230,21 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     }
 
 
-    private static com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantLastName(HearingData hearing, ListedCaseData listedCase, UpdatedDefendantData defendant, String expectedLastName) {
-        UpdateDefendantSteps.HearingDefendantFilter hearingDefendantFilter = new UpdateDefendantSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
-        Filter hearingFilter = hearingDefendantFilter.getHearingFilter();
-        Filter listingCaseFilter = hearingDefendantFilter.getListingCaseFilter();
-        Filter defendantFilter = hearingDefendantFilter.getDefendantFilter();
+    private static com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantLastName(final HearingData hearing, final ListedCaseData listedCase, final UpdatedDefendantData defendant, final String expectedLastName) {
+        final UpdateDefendantSteps.HearingDefendantFilter hearingDefendantFilter = new UpdateDefendantSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
+        final Filter hearingFilter = hearingDefendantFilter.getHearingFilter();
+        final Filter listingCaseFilter = hearingDefendantFilter.getListingCaseFilter();
+        final Filter defendantFilter = hearingDefendantFilter.getDefendantFilter();
         final Filter firstNameFilter = filter(
                 where("lastName").eq(expectedLastName)
         );
         return com.jayway.jsonpath.JsonPath.compile("$.hearings[?].listedCases[?].defendants[?][?]", hearingFilter, listingCaseFilter, defendantFilter, firstNameFilter);
     }
 
-    private static com.jayway.jsonpath.JsonPath getJsonPathQueryForCaseReference(HearingData hearing, ListedCaseData listedCase, UpdatedDefendantData defendant, String expectedCaseReference) {
-        UpdateDefendantSteps.HearingDefendantFilter hearingDefendantFilter = new UpdateDefendantSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
-        Filter hearingFilter = hearingDefendantFilter.getHearingFilter();
-        Filter listingCaseFilter = hearingDefendantFilter.getListingCaseFilter();
+    private static com.jayway.jsonpath.JsonPath getJsonPathQueryForCaseReference(final HearingData hearing, final ListedCaseData listedCase, final UpdatedDefendantData defendant, final String expectedCaseReference) {
+        final UpdateDefendantSteps.HearingDefendantFilter hearingDefendantFilter = new UpdateDefendantSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
+        final Filter hearingFilter = hearingDefendantFilter.getHearingFilter();
+        final Filter listingCaseFilter = hearingDefendantFilter.getListingCaseFilter();
         final Filter caseReferenceFilter = filter(
                 where("caseReference").eq(expectedCaseReference)
         );
@@ -253,7 +252,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     }
 
 
-    private UpdateCaseDefendantData getUpdateCaseDefendantDetails(UUID caseId, UpdatedDefendantData defendantData) {
+    private UpdateCaseDefendantData getUpdateCaseDefendantDetails(final UUID caseId, final UpdatedDefendantData defendantData) {
 
         return UpdateCaseDefendantData.updateCaseDefendantDetails()
                 .withDefendant(Defendant.defendant()
@@ -289,14 +288,14 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     }
 
     private static class HearingDefendantFilter {
-        private HearingData hearing;
-        private UpdatedDefendantData defendant;
-        private ListedCaseData listedCase;
+        private final HearingData hearing;
+        private final UpdatedDefendantData defendant;
+        private final ListedCaseData listedCase;
         private Filter hearingFilter;
         private Filter defendantFilter;
         private Filter listingCaseFilter;
 
-        public HearingDefendantFilter(HearingData hearing, ListedCaseData listedCase, UpdatedDefendantData defendant) {
+        public HearingDefendantFilter(final HearingData hearing, final ListedCaseData listedCase, final UpdatedDefendantData defendant) {
             this.hearing = hearing;
             this.listedCase = listedCase;
             this.defendant = defendant;
@@ -328,7 +327,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
             publicEventDefendantUpdated.close();
             privateEventMessageDefendantsToBeUpdated.close();
             privateEventsMessageDefendantDetailsUpdated.close();
-        } catch (JMSException e) {
+        } catch (final JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);
         }

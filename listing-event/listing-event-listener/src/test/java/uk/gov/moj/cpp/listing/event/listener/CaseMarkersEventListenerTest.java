@@ -28,6 +28,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -315,6 +316,8 @@ public class CaseMarkersEventListenerTest {
                 .withFirstName(of("FirstName"))
                 .withDatesToAvoid(of("Dates to avoid"))
                 .withId(DEFENDANT_ID)
+                .withMasterDefendantId(java.util.Optional.of(DEFENDANT_ID))
+                .withCourtProceedingsInitiated(java.util.Optional.of(ZonedDateTime.now()))
                 .withBailStatus(of(new BailStatus.Builder().withCode("C").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).withDescription("Custody or remanded into custody").build()))
                 .withOffences(singletonList(Offence.offence()
                         .withId(OFFENCE_ID)

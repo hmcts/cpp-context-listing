@@ -12,6 +12,8 @@
       "defenceOrganisation": "withOrganisationName",
       "firstName": "Harry",
       "id": "DEFENDANT_ID",
+      "masterDefendantId": "DEFENDANT_ID",
+      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
       "lastName": "Kane Junior",
       "offences": [],
       "organisationName": "withOrganisationName",

@@ -78,6 +78,8 @@
                   "defendants": [
                     {
                       "id": "6d98fd20-e994-477f-bc75-bb68ca3b29ca",
+                      "masterDefendantId": "6d98fd20-e994-477f-bc75-bb68ca3b29ca",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                       "lastName": "Yost",
                       "offences": [
                         {
@@ -121,6 +123,8 @@
                     },
                     {
                       "id": "86c38cef-cdbb-46d8-96a5-9b31845e95cc",
+                      "masterDefendantId": "86c38cef-cdbb-46d8-96a5-9b31845e95cc",
+                      "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
                       "lastName": "Mertz",
                       "offences": [
                         {
