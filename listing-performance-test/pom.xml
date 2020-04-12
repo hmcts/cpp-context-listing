@@ -5,7 +5,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.listing</groupId>
         <artifactId>listing-parent</artifactId>
-        <version>6.4.17-SNAPSHOT</version>
+        <version>6.4.18-SNAPSHOT</version>
     </parent>
 
     <artifactId>listing-performance-test</artifactId>
