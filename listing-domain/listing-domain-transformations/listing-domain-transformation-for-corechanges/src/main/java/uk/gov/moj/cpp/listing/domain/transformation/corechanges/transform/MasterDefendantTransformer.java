@@ -29,7 +29,7 @@ import static uk.gov.moj.cpp.listing.domain.transformation.corechanges.ListingEv
 
 public class MasterDefendantTransformer implements ListingEventTransformer {
 
-    private static final Map<String, Pattern> eventAndJsonPaths = Collections.unmodifiableMap(
+    protected static final Map<String, Pattern> eventAndJsonPaths = Collections.unmodifiableMap(
             Stream.of(new String[][]{
                     {EVENT_DEFENDANTS_TO_BE_UPDATED, "defendants\\.\\d"},
                     {EVENT_HEARING_LISTED, "hearing\\.listedCases\\.\\d\\.defendants\\.\\d"},
@@ -40,7 +40,7 @@ public class MasterDefendantTransformer implements ListingEventTransformer {
 
     private static final Logger LOGGER = getLogger(MasterDefendantTransformer.class);
 
-    static Map<String, Pattern> getEventAndJsonPaths() {
+    public static Map<String, Pattern> getEventAndJsonPaths() {
         return eventAndJsonPaths;
     }
 
@@ -62,7 +62,7 @@ public class MasterDefendantTransformer implements ListingEventTransformer {
         return transformedPayloadObjectBuilder.build();
     }
 
-    private static Object masterDefendantIdTransform(final JsonObject jsonObject) {
+    private Object masterDefendantIdTransform(final JsonObject jsonObject) {
 
         final JsonObjectBuilder result = createObjectBuilder();
         for (final Map.Entry<String, JsonValue> property : jsonObject.entrySet()) {
@@ -80,7 +80,7 @@ public class MasterDefendantTransformer implements ListingEventTransformer {
         return result;
     }
 
-    private static boolean match(final Pattern jsonPath, final Deque<String> path) {
+    public boolean match(final Pattern jsonPath, final Deque<String> path) {
         final String pathMerged = StreamSupport
                 .stream(Spliterators.spliteratorUnknownSize(path.descendingIterator(), 0),
                         false)

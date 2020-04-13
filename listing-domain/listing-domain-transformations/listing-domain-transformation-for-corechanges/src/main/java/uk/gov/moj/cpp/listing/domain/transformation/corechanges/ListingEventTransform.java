@@ -41,7 +41,7 @@ public class ListingEventTransform implements EventTransformation {
                                                                                          ".case-update-defendant" +
                                                                                          "-proceedings-updated";
 
-    ListingEventTransform() {
+    public ListingEventTransform() {
         transformFactory = new TransformFactory();
     }
 

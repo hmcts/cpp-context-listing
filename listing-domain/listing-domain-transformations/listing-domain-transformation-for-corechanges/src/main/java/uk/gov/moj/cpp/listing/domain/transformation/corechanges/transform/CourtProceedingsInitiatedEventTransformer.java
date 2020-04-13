@@ -39,7 +39,7 @@ public class CourtProceedingsInitiatedEventTransformer implements ListingEventTr
                     {EVENT_CASE_UPDATE_DEFENDANT_PROCEEDINGS_UPDATED, "prosecutionCase\\.defendants\\.\\d"},
             }).collect(Collectors.toMap(data -> data[0], data -> Pattern.compile(data[1]))));
 
-    static Map<String, Pattern> getEventAndJsonPaths() {
+    public static Map<String, Pattern> getEventAndJsonPaths() {
         return eventAndJsonPaths;
     }
 
@@ -62,7 +62,7 @@ public class CourtProceedingsInitiatedEventTransformer implements ListingEventTr
         return transformedPayloadObjectBuilder.build();
     }
 
-    private static boolean match(final Pattern jsonPath, final Deque<String> path) {
+    public boolean match(final Pattern jsonPath, final Deque<String> path) {
         final String pathMerged = StreamSupport
                 .stream(Spliterators.spliteratorUnknownSize(path.descendingIterator(), 0),
                         false)
@@ -71,7 +71,7 @@ public class CourtProceedingsInitiatedEventTransformer implements ListingEventTr
     }
 
 
-    private static Object defendantTransform(final JsonObject jsonObject, final ZonedDateTime courtProceedingsInitiated) {
+    private Object defendantTransform(final JsonObject jsonObject, final ZonedDateTime courtProceedingsInitiated) {
         final JsonObjectBuilder result = createObjectBuilder();
         jsonObject.forEach(result::add);
         result.add(COURT_PROCEEDINGS_INITIATED, ZonedDateTimes.toString(courtProceedingsInitiated));
