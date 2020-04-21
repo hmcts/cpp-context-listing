@@ -35,7 +35,7 @@ public class SlotsToJsonStringConverter {
     @Inject
     private ListingReferenceDataService listingReferenceDataService;
 
-    public String getSlotDetailFromHearingConfirmed(final JsonEnvelope jsonEnvelope, final HearingConfirmed hearingConfirmed) {
+    public String getSlotDetailFromHearingConfirmed(final JsonEnvelope jsonEnvelope, final HearingConfirmed hearingConfirmed, final boolean isForAdjournmentHearing) {
 
         final CourtCentre courtCentre = hearingConfirmed.getConfirmedHearing().getCourtCentre();
 
@@ -56,7 +56,7 @@ public class SlotsToJsonStringConverter {
 
         final String ouCode = payLoadForCourtRoom.payloadAsJsonObject().getString("oucode");
 
-        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(hearingConfirmed.getConfirmedHearing().getHearingDays());
+        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(hearingConfirmed.getConfirmedHearing().getHearingDays(), isForAdjournmentHearing);
 
         if(hearingDayDetails.isEmpty()){
             return StringUtils.EMPTY;

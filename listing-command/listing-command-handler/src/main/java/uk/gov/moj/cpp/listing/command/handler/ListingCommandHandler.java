@@ -215,6 +215,7 @@ public class ListingCommandHandler {
         for (final HearingListingNeeds commandHearing : listCourtHearing.getHearings()) {
 
             final uk.gov.moj.cpp.listing.domain.Hearing domainHearing = commandToDomainConverter.convert(commandHearing);
+
             final CourtCentreDetails courtCentre = courtCentres.get(domainHearing.getCourtCentreId());
 
             final CourtCentreDefaults courtCentreDefaults = CourtCentreDefaults.courtCentreDefaults()

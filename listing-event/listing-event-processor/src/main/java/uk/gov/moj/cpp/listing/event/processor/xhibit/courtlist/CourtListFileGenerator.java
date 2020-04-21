@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 import static org.apache.commons.collections.ListUtils.union;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.AbstractCourtListMapper;
 
 import java.util.Collection;
@@ -29,7 +29,7 @@ public class CourtListFileGenerator {
     private MapperFactory mapperFactory;
 
     @Inject
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
     public String generateXml(final JsonEnvelope envelope,
                               final PublishCourtListRequestParameters requestParameters,
@@ -39,9 +39,9 @@ public class CourtListFileGenerator {
         final CourtListGenerationContext context =
                 new CourtListGenerationContext(envelope, requestParameters, courtListMetadata);
 
-        final String crownCourtCrestId = xhibitReferenceDataService.getCourtDetails(requestParameters.getCourtCentreId()).getCrestCourtId();
+        final String crownCourtCrestId = commonXhibitReferenceDataService.getCourtDetails(requestParameters.getCourtCentreId()).getCrestCourtId();
 
-        final List<UUID> courtCentreIds = xhibitReferenceDataService.getCourtCentreIdsForCrestId(envelope, crownCourtCrestId);
+        final List<UUID> courtCentreIds = commonXhibitReferenceDataService.getCourtCentreIdsForCrestId(crownCourtCrestId);
 
         final List<JsonObject> publishedCourtListsJson = courtCentreIds.stream()
                 .filter(courtCentreId -> !courtCentreId.equals(requestParameters.getCourtCentreId()))

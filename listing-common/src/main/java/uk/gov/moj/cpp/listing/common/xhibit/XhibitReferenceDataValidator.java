@@ -18,6 +18,12 @@ public class XhibitReferenceDataValidator {
         }
     }
 
+    public void validate(final String propertyName, final String propertyValue) {
+        if (isBlank(propertyValue)) {
+            throw new InvalidReferenceDataException(format("Invalid value '%s' for '%s'", propertyValue, propertyName));
+        }
+    }
+
     public void validateJsonArray(final String propertyName, final JsonArray jsonArray) {
         if (CollectionUtils.isEmpty(jsonArray)) {
             throw new InvalidReferenceDataException(format("Invalid object '%s' for '%s'", propertyName, jsonArray));

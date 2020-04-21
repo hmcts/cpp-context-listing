@@ -20,6 +20,4 @@
             <version>${stream-transformation-tool.version}</version>
         </dependency>
     </dependencies>
-
-
 </project>

@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
-import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.FlatHearing;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Sitting;
@@ -25,26 +25,23 @@ public class CourtListsBuilder {
     private final Map<String, List<FlatHearing>> crestCourtSiteCodeHearingsMap = new HashMap<>();
     private final Map<String, List<Sitting>> crestCourtSiteCodeSittingsMap = new HashMap<>();
 
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
     private UUID courtCentreId;
-    private Envelope envelope;
 
-    private CourtListsBuilder(final UUID courtCentreId, final XhibitReferenceDataService xhibitReferenceDataService, final Envelope envelope) {
+    private CourtListsBuilder(final UUID courtCentreId, final CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
         this.courtCentreId = courtCentreId;
-        this.xhibitReferenceDataService = xhibitReferenceDataService;
-        this.envelope = envelope;
+        this.commonXhibitReferenceDataService = commonXhibitReferenceDataService;
     }
 
     public static CourtListsBuilder forCourtCentre(final UUID courtCentreId,
-                                                   final XhibitReferenceDataService xhibitReferenceDataService,
-                                                   final Envelope envelope) {
+                                                   final CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
 
-        return new CourtListsBuilder(courtCentreId, xhibitReferenceDataService, envelope);
+        return new CourtListsBuilder(courtCentreId, commonXhibitReferenceDataService);
     }
 
     public CourtListsBuilder prepareEmptyCourtSiteHearings() {
 
-        xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)
+        commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)
                 .forEach(courtSite -> crestCourtSiteCodeHearingsMap.put(courtSite.getString(CREST_COURT_SITE_CODE),
                         new ArrayList<>()));
 
@@ -98,7 +95,7 @@ public class CourtListsBuilder {
 
     private JsonObject getCrestCourtSiteJson(final String crestCourtSiteCode) {
 
-        return xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)
+        return commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)
                 .stream().filter(courtSite -> crestCourtSiteCode.equals(courtSite.getString(CREST_COURT_SITE_CODE)))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Cannot find site"));
@@ -115,13 +112,13 @@ public class CourtListsBuilder {
     private String getCrestCourtSiteCodeForCourtRoom(final Optional<UUID> courtRoomUUID) {
 
         if (!courtRoomUUID.isPresent()) {
-            return xhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId);
+            return commonXhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId);
         }
 
-        final Optional<CourtRoomMapping> courtRoomMapping = xhibitReferenceDataService.getCourtRoom(envelope, courtCentreId,
+        final Optional<CourtRoomMapping> courtRoomMapping = commonXhibitReferenceDataService.getCourtRoom(courtCentreId,
                 courtRoomUUID.get());
 
         return courtRoomMapping.isPresent() ? courtRoomMapping.get().getCrestCourtSiteCode()
-                : xhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId);
+                : commonXhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId);
     }
 }

@@ -40,11 +40,12 @@ public class SlotUpdater {
     public void updateSlot(final JsonEnvelope envelope) {
         final HearingAllocatedForListing hearingAllocatedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
         final HearingConfirmed hearingConfirmed = getHearingConfirmed(hearingAllocatedForListing, envelope);
+        final boolean isForAdjournmentHearing = hearingAllocatedForListing.getHasAdjournmentDate().isPresent();
 
-        LOGGER.info("Processing slot for '{}' with payload {}", HEARING_CONFIRMED, hearingConfirmed);
+        LOGGER.info("Processing slot for '{}' with payload {} and isForAdjournmentHearing {}", HEARING_CONFIRMED, hearingConfirmed, isForAdjournmentHearing);
 
         if (isMagistratesAndSlotNotAlreadyUpdated(hearingAllocatedForListing, hearingConfirmed)) {
-            final String updateSlotsPayload = jsonStringConverter.getSlotDetailFromHearingConfirmed(envelope, hearingConfirmed);
+            final String updateSlotsPayload = jsonStringConverter.getSlotDetailFromHearingConfirmed(envelope, hearingConfirmed, isForAdjournmentHearing);
 
             if (isNotEmpty(updateSlotsPayload)) {
                 hearingSlotsService.update(updateSlotsPayload);

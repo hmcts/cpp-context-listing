@@ -12,7 +12,7 @@ import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonUtils.compareJson;
 import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonUtils.getJsonFile;
 import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonUtils.prettifyJson;
 
-import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
 
 import java.io.IOException;
@@ -53,9 +53,7 @@ public class RangeSearchConverterTest {
     public String endDate;
 
     @Mock
-    private JsonEnvelope envelope;
-    @Mock
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
     @InjectMocks
     private RangeSearchConverter rangeSearchConverter;
 
@@ -94,13 +92,13 @@ public class RangeSearchConverterTest {
         final LocalDate startDate = LocalDate.parse("2019-12-16");
         final String pEndDate = StringUtils.isNotBlank(endDate) ? endDate : StringUtils.EMPTY;
 
-        when(xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)).thenReturn(courtSites);
-        when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID))).thenReturn(courtRoom1);
-        when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(COURT_SITE_B_COURT_ROOM_ID))).thenReturn(courtRoom2);
-        when(xhibitReferenceDataService.getCourtRoom(eq(envelope), eq(courtCentreId), eq(UNKNOWN_COURT_SITE_COURT_ROOM_ID))).thenReturn(Optional.empty());
-        when(xhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId)).thenReturn("A");
+        when(commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)).thenReturn(courtSites);
+        when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID))).thenReturn(courtRoom1);
+        when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(COURT_SITE_B_COURT_ROOM_ID))).thenReturn(courtRoom2);
+        when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(UNKNOWN_COURT_SITE_COURT_ROOM_ID))).thenReturn(Optional.empty());
+        when(commonXhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId)).thenReturn("A");
 
-        final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse, startDate, pEndDate);
+        final JsonObject generatedCourtList = rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, rangeSearchResponse, startDate, pEndDate);
 
         final JsonObject expectedCourtList = getJsonFile(expectedCourtListFilename);
 

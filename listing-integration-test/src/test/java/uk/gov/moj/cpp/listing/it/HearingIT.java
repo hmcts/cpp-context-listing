@@ -58,6 +58,15 @@ public class HearingIT extends AbstractIT {
     }
 
     @Test
+    public void shouldRaisePublicHearingConfirmedPublicEventAndReturnSlotDetailsFoAdjournmentHearing(){
+        HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate();
+        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+    }
+
+    @Test
     public void updateHearingResultsInAllocatedListingAndRaisesPublicHearingConfirmedPublicEventWithNoJudiciary() {
         HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {

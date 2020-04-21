@@ -136,6 +136,7 @@ public class Hearing implements Aggregate {
     private LocalDate weekCommencingEndDate;
     private Integer weekCommencingDurationInWeeks;
     private boolean updateSlot;
+    private boolean hasAdjournmentDate;
 
     @Override
     public Object apply(final Object event) {
@@ -671,8 +672,8 @@ public class Hearing implements Aggregate {
 
     }
 
-    public Stream<Object> ejectCase(final UUID hearingIdOfEjectCase, final UUID caseId, final String removalReason){
-        if(Objects.nonNull(hearingIdOfEjectCase)){
+    public Stream<Object> ejectCase(final UUID hearingIdOfEjectCase, final UUID caseId, final String removalReason) {
+        if (Objects.nonNull(hearingIdOfEjectCase)) {
             return apply(Stream.of(CaseEjected.caseEjected()
                     .withProsecutionCaseId(caseId)
                     .withHearingId(hearingIdOfEjectCase)
@@ -683,8 +684,8 @@ public class Hearing implements Aggregate {
         return Stream.empty();
     }
 
-    public Stream<Object> ejectApplication(UUID hearingIdForApplicationToBeEjected, final UUID applicationId, final String removalReason){
-        if(Objects.nonNull(hearingIdForApplicationToBeEjected)){
+    public Stream<Object> ejectApplication(UUID hearingIdForApplicationToBeEjected, final UUID applicationId, final String removalReason) {
+        if (Objects.nonNull(hearingIdForApplicationToBeEjected)) {
             return apply(Stream.of(ApplicationEjected.applicationEjected()
                     .withApplicationId(applicationId)
                     .withHearingId(hearingIdForApplicationToBeEjected)
@@ -801,6 +802,7 @@ public class Hearing implements Aggregate {
                         ).collect(toList()))
                 .withCourtApplicationIds(this.confirmedCourtApplicationIds.isEmpty() ? null : this.confirmedCourtApplicationIds)
                 .withUpdateSlot(of(this.updateSlot))
+                .withHasAdjournmentDate(Optional.of(this.hasAdjournmentDate))
                 .build();
     }
 
@@ -930,7 +932,7 @@ public class Hearing implements Aggregate {
 
     @SuppressWarnings({"squid:S3655"})
     private Optional<DefendantOffenceIds> getDefendantOffenceIds(final UUID caseId, final UUID defendantId) {
-        if(isNull(this.prosecutionCaseDefendantOffenceIds)){
+        if (isNull(this.prosecutionCaseDefendantOffenceIds)) {
             return Optional.empty();
         }
         final Optional<ProsecutionCaseDefendantOffenceIds> caseDefendants = this.prosecutionCaseDefendantOffenceIds.stream()
@@ -1001,7 +1003,7 @@ public class Hearing implements Aggregate {
         this.reportingRestrictionReason = hearing.getReportingRestrictionReason().orElse(null);
         this.jurisdictionType = JurisdictionType.valueFor(hearing.getJurisdictionType().name()).orElse(null);
         // Standalone CourtApplication will not have any associated case
-        if(nonNull(hearing.getListedCases())) {
+        if (nonNull(hearing.getListedCases())) {
             this.prosecutionCaseDefendantOffenceIds = hearing.getListedCases().stream()
                     .map(lc -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                             .withId(lc.getId())
@@ -1014,10 +1016,12 @@ public class Hearing implements Aggregate {
         this.hearingDays = convertHearingDaysToDomain(hearing.getHearingDays());
         this.allocated = Boolean.FALSE;
 
-        if(hearing.getCourtApplications() != null) {
+        if (hearing.getCourtApplications() != null) {
             this.confirmedCourtApplicationIds = hearing.getCourtApplications().stream()
                     .map(uk.gov.justice.listing.events.CourtApplication::getId).collect(toList());
         }
+
+        this.hasAdjournmentDate = hearing.getAdjournedFromDate().isPresent();
     }
 
     private List<uk.gov.justice.listing.events.HearingDay> mergeHearingDaySequences(List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, Map<ZonedDateTime, HearingDay> existingHearingDays) {
@@ -1283,7 +1287,7 @@ public class Hearing implements Aggregate {
                 v -> v.getHearingLanguageNeeds().isPresent()).map(v -> v.getHearingLanguageNeeds().get()).collect(toList());
     }
 
-    private void onCaseEjected(){
+    private void onCaseEjected() {
         // Do nothing
     }
 

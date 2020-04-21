@@ -16,9 +16,10 @@ import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlTestUti
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.domain.referencedata.HearingType;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -69,7 +70,7 @@ public class CourtListFileGeneratorTest {
     @Spy
     private XmlUtils xmlUtils;
     @Mock
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
     @Mock
     private ListingService listingService;
     @Mock
@@ -107,7 +108,7 @@ public class CourtListFileGeneratorTest {
     public void wireBeans() {
         xmlUtils.setLogger(logger);
         xmlUtils.postConstruct();
-        mapperFactory.setXhibitReferenceDataService(xhibitReferenceDataService);
+        mapperFactory.setCommonXhibitReferenceDataService(commonXhibitReferenceDataService);
     }
 
     @Before
@@ -121,45 +122,45 @@ public class CourtListFileGeneratorTest {
 
         final List<UUID> courtCentreIds = Arrays.asList(courtCentreId1, courtCentreId2);
 
-        when(xhibitReferenceDataService.getCourtDetails(courtCentreId1)).thenReturn(courtLocation1);
-        when(xhibitReferenceDataService.getCourtDetails(courtCentreId2)).thenReturn(courtLocation2);
-        when(xhibitReferenceDataService.getCourtCentreIdsForCrestId(envelope, crestCourtId)).thenReturn(courtCentreIds);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(10);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d"))).thenReturn(20);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("64b0f4cf-2dde-310b-b7da-cab57b285b6f"))).thenReturn(4);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("28813316-35dc-30b7-a94f-07aeec664d9f"))).thenReturn(3);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("1f9630dc-e4ba-3378-8880-2369883394b2"))).thenReturn(1);
+        when(commonXhibitReferenceDataService.getCourtDetails(courtCentreId1)).thenReturn(courtLocation1);
+        when(commonXhibitReferenceDataService.getCourtDetails(courtCentreId2)).thenReturn(courtLocation2);
+        when(commonXhibitReferenceDataService.getCourtCentreIdsForCrestId(crestCourtId)).thenReturn(courtCentreIds);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("64b0f4cf-2dde-310b-b7da-cab57b285b6f"))).thenReturn(4);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("28813316-35dc-30b7-a94f-07aeec664d9f"))).thenReturn(3);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("1f9630dc-e4ba-3378-8880-2369883394b2"))).thenReturn(1);
 
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.json");
-        when(xhibitReferenceDataService.getJudiciary(any(), any())).thenReturn(judiciary);
+        when(commonXhibitReferenceDataService.getJudiciary(any())).thenReturn(judiciary);
 
-        final JsonObject hearingType = Json.createObjectBuilder()
-                .add("exhibitHearingCode", "TRL")
-                .add("exhibitHearingDescription", "XHIBIT_HEARING_DESCRIPTION-TRL")
+        final HearingType hearingType = new HearingType.Builder()
+                .withExhibitHearingCode("TRL")
+                .withExhibitHearingDescription("XHIBIT_HEARING_DESCRIPTION-TRL")
                 .build();
 
-        final JsonObject hearingType1 = Json.createObjectBuilder()
-                .add("exhibitHearingCode", "PTP")
-                .add("exhibitHearingDescription", "XHIBIT_HEARING_DESCRIPTION-PTP")
+        final HearingType hearingType1 = new HearingType.Builder()
+                .withExhibitHearingCode("PTP")
+                .withExhibitHearingDescription("XHIBIT_HEARING_DESCRIPTION-PTP")
                 .build();
 
-        final JsonObject hearingType2 = Json.createObjectBuilder()
-                .add("exhibitHearingCode", "SBT")
-                .add("exhibitHearingDescription", "XHIBIT_HEARING_DESCRIPTION-PTP")
+        final HearingType hearingType2 = new HearingType.Builder()
+                .withExhibitHearingCode("SBT")
+                .withExhibitHearingDescription("XHIBIT_HEARING_DESCRIPTION-PTP")
                 .build();
 
         final UUID hearingTypeId = UUID.fromString("bf8155e1-90b9-4080-b133-bfbad895d6e4");
-        when(xhibitReferenceDataService.getXhibitHearingType(any(), any())).thenReturn(hearingType);
+        when(commonXhibitReferenceDataService.getXhibitHearingType(any())).thenReturn(hearingType);
 
-        when(xhibitReferenceDataService.getXhibitHearingType(any(), eq(hearingTypeId))).thenReturn(hearingType);
+        when(commonXhibitReferenceDataService.getXhibitHearingType(eq(hearingTypeId))).thenReturn(hearingType);
 
         final UUID hearingTypeId1 = UUID.fromString("06b0c2bf-3f98-46ed-ab7e-56efaf9ecced");
 
-        when(xhibitReferenceDataService.getXhibitHearingType(any(), eq(hearingTypeId1))).thenReturn(hearingType1);
+        when(commonXhibitReferenceDataService.getXhibitHearingType(eq(hearingTypeId1))).thenReturn(hearingType1);
 
         final UUID hearingTypeId2 = UUID.fromString("c6b0c2bf-3f98-46ed-ab7e-56efaf9ecceb");
 
-        when(xhibitReferenceDataService.getXhibitHearingType(any(), eq(hearingTypeId2))).thenReturn(hearingType2);
+        when(commonXhibitReferenceDataService.getXhibitHearingType(eq(hearingTypeId2))).thenReturn(hearingType2);
 
         courtListJson = givenPayload(courtListJsonFile);
 
@@ -204,7 +205,6 @@ public class CourtListFileGeneratorTest {
 
     @Test
     public void shouldGenerateXml() throws Exception {
-
         final PublishCourtListRequestParameters requestParameters = withDefaults()
                 .withCourtCentreId(courtCentreId1)
                 .publishCourtListType(publishCourtListType)

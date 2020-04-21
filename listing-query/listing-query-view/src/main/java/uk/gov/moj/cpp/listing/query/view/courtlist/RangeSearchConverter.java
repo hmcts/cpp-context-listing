@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.query.view.courtlist;
 
 import static javax.json.Json.createObjectBuilder;
 
-import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.FlatHearing;
 
 import java.time.LocalDate;
@@ -16,13 +16,13 @@ import javax.json.JsonObject;
 public class RangeSearchConverter {
 
     @Inject
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
-    public JsonObject generateCourtListQueryPayload(final JsonEnvelope envelope, final UUID courtCentreId, final JsonObject rangeSearchResponsePayload, final LocalDate startDate, final String endDate) {
+    public JsonObject generateCourtListQueryPayload(final UUID courtCentreId, final JsonObject rangeSearchResponsePayload, final LocalDate startDate, final String endDate) {
 
         final List<FlatHearing> flatHearings = FlatHearingsConverter.generateFlatHearingList(rangeSearchResponsePayload.getJsonArray("hearings"));
 
-        final JsonArray courtLists = CourtListsBuilder.forCourtCentre(courtCentreId, xhibitReferenceDataService, envelope)
+        final JsonArray courtLists = CourtListsBuilder.forCourtCentre(courtCentreId, commonXhibitReferenceDataService)
                 .prepareEmptyCourtSiteHearings()
                 .assignHearingsToCourtSitesUsingCourtRoom(flatHearings)
                 .groupFlatHearingsIntoSittings(startDate, endDate)

@@ -11,6 +11,7 @@ import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory
 
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.query.view.RangeSearchQuery;
 
@@ -46,7 +47,7 @@ public class CourtListServiceTest {
     private RangeSearchQuery rangeSearchQuery;
 
     @Mock
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
     @InjectMocks
     private CourtListService courtListService;
@@ -69,7 +70,7 @@ public class CourtListServiceTest {
         when(rangeSearchQueryRequestFactory.buildRangeSearchQueryEnvelope(courtCentreId, publishCourtListType, startDate, queryEnvelope)).thenReturn(rangeSearchQueryEnvelope);
         when(rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope)).thenReturn(rangeSearchResponse);
         when(rangeSearchResponse.payloadAsJsonObject()).thenReturn(rangeSearchResponsePayload);
-        when(rangeSearchConverter.generateCourtListQueryPayload(queryEnvelope, courtCentreId, rangeSearchResponsePayload, startDate, endDate)).thenReturn(courtListResponse);
+        when(rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, rangeSearchResponsePayload, startDate, endDate)).thenReturn(courtListResponse);
 
         final JsonObject response = courtListService.retrieveUnPublishedCourtList(courtCentreId, publishCourtListType, startDate, endDate, queryEnvelope);
 
@@ -84,7 +85,7 @@ public class CourtListServiceTest {
 
         final JsonObject courtSite1 = mock(JsonObject.class);
         final List<JsonObject> crestCourtSitesJson = Collections.singletonList(courtSite1);
-        when(xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)).thenReturn(crestCourtSitesJson);
+        when(commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)).thenReturn(crestCourtSitesJson);
 
         final JsonObject courtList = courtListService.emptyCourtList(courtCentreId);
 

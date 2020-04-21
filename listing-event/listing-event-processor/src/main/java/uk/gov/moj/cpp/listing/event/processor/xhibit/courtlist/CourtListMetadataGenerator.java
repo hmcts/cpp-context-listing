@@ -4,7 +4,7 @@ import static java.lang.String.format;
 import static java.util.UUID.randomUUID;
 
 import uk.gov.justice.services.common.util.Clock;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -15,7 +15,7 @@ import javax.inject.Inject;
 public class CourtListMetadataGenerator {
 
     @Inject
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
     @Inject
     private Clock clock;
@@ -44,6 +44,6 @@ public class CourtListMetadataGenerator {
     }
 
     private String getCrownCourtCode(final UUID courtCentreId) {
-        return xhibitReferenceDataService.getCourtDetails(courtCentreId).getCrestCourtId();
+        return commonXhibitReferenceDataService.getCourtDetails(courtCentreId).getCrestCourtId();
     }
 }

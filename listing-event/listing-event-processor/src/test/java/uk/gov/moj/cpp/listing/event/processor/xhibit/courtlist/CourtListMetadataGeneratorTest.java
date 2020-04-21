@@ -7,9 +7,9 @@ import static org.mockito.Mockito.when;
 
 import uk.gov.justice.services.common.util.Clock;
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 
 import java.util.UUID;
 
@@ -27,7 +27,7 @@ public class CourtListMetadataGeneratorTest {
     private CourtListMetadataGenerator courtListMetadataGenerator;
 
     @Mock
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
     @Spy
     private Clock clock = new StoppedClock(parse("2018-01-02T13:04:05+00:00[Europe/London]"));
@@ -47,7 +47,7 @@ public class CourtListMetadataGeneratorTest {
                 null,
                 "CROWN_COURT");
 
-        when(xhibitReferenceDataService.getCourtDetails(courtCentreId)).thenReturn(courtLocation);
+        when(commonXhibitReferenceDataService.getCourtDetails(courtCentreId)).thenReturn(courtLocation);
 
         final PublishCourtListRequestParameters requestParameters = PublishCourtListRequestParametersBuilder
                 .withDefaults()

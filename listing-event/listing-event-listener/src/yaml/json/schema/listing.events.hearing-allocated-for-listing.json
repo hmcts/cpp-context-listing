@@ -58,6 +58,9 @@
     },
     "updateSlot":{
       "type" : "boolean"
+    },
+    "hasAdjournmentDate":{
+      "type" : "boolean"
     }
   },
   "required": [

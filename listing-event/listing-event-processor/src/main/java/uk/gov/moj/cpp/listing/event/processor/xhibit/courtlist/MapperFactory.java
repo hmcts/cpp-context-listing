@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
-import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.AbstractCourtListMapper;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.CourtServicesMapper;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.DailyListMapper;
@@ -18,7 +18,7 @@ import com.google.common.annotations.VisibleForTesting;
 public class MapperFactory {
 
     @Inject
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
     public AbstractCourtListMapper createCourtListMapper(final CourtListGenerationContext context, final List<JsonObject> courtListsJson) {
         switch (context.getParameters().getPublishCourtListType()) {
@@ -35,11 +35,11 @@ public class MapperFactory {
     }
 
     private CourtServicesMapper createCourtServicesMapper(final CourtListGenerationContext context) {
-        return new CourtServicesMapper(context, xhibitReferenceDataService);
+        return new CourtServicesMapper(context, commonXhibitReferenceDataService);
     }
 
     @VisibleForTesting
-    public void setXhibitReferenceDataService(XhibitReferenceDataService xhibitReferenceDataService) {
-        this.xhibitReferenceDataService = xhibitReferenceDataService;
+    public void setCommonXhibitReferenceDataService(CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
+        this.commonXhibitReferenceDataService = commonXhibitReferenceDataService;
     }
 }

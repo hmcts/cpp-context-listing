@@ -10,6 +10,9 @@ import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorit
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.OTHER_PROSECUTOR;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.convertDate;
 
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.common.xhibit.XhibitReferenceDataValidator;
+import uk.gov.moj.cpp.listing.domain.referencedata.HearingType;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CasesStructure;
@@ -34,8 +37,6 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutionStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SolicitorStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.YesNoType;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
-import uk.gov.moj.cpp.listing.common.xhibit.XhibitReferenceDataValidator;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.InvalidDataException;
@@ -87,13 +88,13 @@ public class CourtServicesMapper {
     private static final String TIME_MARKING_NOTE_TEXT = "NOT BEFORE %s";
     private CourtListGenerationContext context;
 
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
     private XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
 
     public CourtServicesMapper(final CourtListGenerationContext context,
-                               final XhibitReferenceDataService xhibitReferenceDataService) {
+                               final CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
         this.context = context;
-        this.xhibitReferenceDataService = xhibitReferenceDataService;
+        this.commonXhibitReferenceDataService = commonXhibitReferenceDataService;
     }
 
     public DocumentIDstructure generateDocumentID() {
@@ -123,7 +124,7 @@ public class CourtServicesMapper {
 
     public CourtHouseStructure generateCrownCourtStructure(final UUID courtCentreId) {
 
-        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(courtCentreId);
+        final CourtLocation courtLocation = commonXhibitReferenceDataService.getCourtDetails(courtCentreId);
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
@@ -136,7 +137,7 @@ public class CourtServicesMapper {
 
     public CourtHouseStructure generateCourtHouseStructure(final UUID courtCentreId) {
 
-        final CourtLocation courtLocation = xhibitReferenceDataService.getCourtDetails(courtCentreId);
+        final CourtLocation courtLocation = commonXhibitReferenceDataService.getCourtDetails(courtCentreId);
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
@@ -189,7 +190,7 @@ public class CourtServicesMapper {
             final UUID courtRoomId = fromString(sittingJson.getString("courtRoomId"));
             final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-            sittingStructure.setCourtRoomNumber(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId, courtRoomId));
+            sittingStructure.setCourtRoomNumber(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, courtRoomId));
             sittingStructure.setSittingPriority("T");
         } else {
             sittingStructure.setCourtRoomNumber(UNMAPPED_COURT_ROOM);
@@ -253,7 +254,7 @@ public class CourtServicesMapper {
 
     private JudiciaryStructure.Judge generateJudgeStructure(final UUID judiciaryId) {
 
-        final JsonObject judiciary = xhibitReferenceDataService.getJudiciary(context.getEnvelope(), judiciaryId);
+        final JsonObject judiciary = commonXhibitReferenceDataService.getJudiciary(judiciaryId);
 
         final JudiciaryStructure.Judge judgeStructure = objectFactory.createJudiciaryStructureJudge();
 
@@ -269,7 +270,7 @@ public class CourtServicesMapper {
 
     private JudiciaryStructure.Justice generateJusticeStructure(final UUID judiciaryId) {
 
-        final JsonObject judiciary = xhibitReferenceDataService.getJudiciary(context.getEnvelope(), judiciaryId);
+        final JsonObject judiciary = commonXhibitReferenceDataService.getJudiciary(judiciaryId);
 
         final JudiciaryStructure.Justice justice = objectFactory.createJudiciaryStructureJustice();
 
@@ -358,10 +359,10 @@ public class CourtServicesMapper {
 
         final HearingTypeStructure hearingTypeStructure = objectFactory.createHearingTypeStructure();
 
-        final JsonObject xhibitHearingType = xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(),
+        final HearingType xhibitHearingType = commonXhibitReferenceDataService.getXhibitHearingType(
                 fromString(hearing.getJsonObject("hearingType").getString("id")));
 
-        hearingTypeStructure.setHearingDescription(xhibitHearingType.getString("exhibitHearingDescription"));
+        hearingTypeStructure.setHearingDescription(xhibitHearingType.getExhibitHearingDescription());
 
         if (hearing.containsKey("startTime")) {
             hearingTypeStructure.setHearingDate(LocalDateTime.parse(hearing.getString("startTime")).toLocalDate());
@@ -565,7 +566,7 @@ public class CourtServicesMapper {
             return null;
         }
 
-        return xhibitReferenceDataService.getXhibitHearingType(context.getEnvelope(), cppHearingId).getString("exhibitHearingCode");
+        return commonXhibitReferenceDataService.getXhibitHearingType(cppHearingId).getExhibitHearingCode();
     }
 
     public FixtureStructure generateFixtureStructure(final JsonObject sittingJson, final UUID hearingTypeId) {

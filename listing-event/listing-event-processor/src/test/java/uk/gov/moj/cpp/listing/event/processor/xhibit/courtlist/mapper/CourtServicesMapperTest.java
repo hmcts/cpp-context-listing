@@ -28,7 +28,7 @@ public class CourtServicesMapperTest extends BaseMapperTest {
     @Before
     public void before() {
 
-        courtServicesMapper = new CourtServicesMapper(context, xhibitReferenceDataService);
+        courtServicesMapper = new CourtServicesMapper(context, commonXhibitReferenceDataService);
     }
 
     @Test
@@ -70,9 +70,9 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -91,9 +91,9 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-defendant-firstname-not-provided.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -112,9 +112,9 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
-        when(xhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-defendant-surname-not-provided.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);

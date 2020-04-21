@@ -90,8 +90,9 @@ public class SlotsToJsonStringConverterTest {
         given(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).willReturn(courtRoomId);
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
+        final boolean isForAdjournmentHearing = false;
 
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed);
+        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed, isForAdjournmentHearing);
 
         assertNotNull(slotDetailFromHearingConfirmed);
         with(slotDetailFromHearingConfirmed)
@@ -104,11 +105,36 @@ public class SlotsToJsonStringConverterTest {
     }
 
     @Test
-    public void shouldReturnEmptyStringFromGetSlotDetailFromHearingConfirmed() {
+    public void shouldGetSlotDetailFromHearingConfirmedWhenAllDayAndIsAdjournmentHearing() {
         final JsonEnvelope event = hearingAllocatedEvent();
         final String ouCode = "B01LY00";
         final int courtRoomId = 2;
-        final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T19:11:30-05:00");
+        final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME_1);
+        final String expectedZoneDateTime = HearingDayDetailConverter.getMeridian(START_DATE_TIME_1);
+
+        final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
+
+        given(listingReferenceDataService.getPayLoadForCourtRoom(event, COURT_CENTRE_ID.toString())).willReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject));
+
+        given(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).willReturn(courtRoomId);
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
+        final boolean isForAdjournmentHearing = true;
+
+        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed, isForAdjournmentHearing);
+
+        with(slotDetailFromHearingConfirmed)
+                .assertThat("$[0].courtRoomId", equalTo(courtRoomId))
+                .assertThat("$[0].ouCode", equalTo(ouCode))
+                .assertThat("$[0].sessionDate", equalTo(START_DATE.toString()))
+                .assertThat("$[0].session", equalTo(expectedZoneDateTime))
+                .assertThat("$[0].duration", equalTo(10));
+    }
+
+    @Test
+    public void shouldReturnEmptyStringFromGetSlotDetailFromHearingConfirmed() {
+        final JsonEnvelope event = hearingAllocatedEvent();
+        final int courtRoomId = 2;
         final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME_1);
 
         final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
@@ -118,8 +144,9 @@ public class SlotsToJsonStringConverterTest {
         given(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).willReturn(courtRoomId);
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
+        final boolean isForAdjournmentHearing = false;
 
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed);
+        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed, isForAdjournmentHearing);
 
         assertNotNull(slotDetailFromHearingConfirmed);
         assertThat(slotDetailFromHearingConfirmed.isEmpty(), equalTo(true));

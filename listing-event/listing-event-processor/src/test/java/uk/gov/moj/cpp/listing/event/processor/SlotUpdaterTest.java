@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
+import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static javax.json.Json.createObjectBuilder;
 import static org.mockito.BDDMockito.given;
@@ -81,16 +82,18 @@ public class SlotUpdaterTest {
     private SlotUpdater slotUpdater;
 
     @Test
-    public void shouldUpdateSlotsInAzureAfterHearingAllocatedForListingMessage() throws Exception {
+    public void shouldUpdateSlotsInAzureAfterHearingAllocatedForListingMessage() {
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed(true);
+        final boolean isForAdjournmentHearing = false;
 
         final JsonEnvelope event = hearingAllocatedEvent();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
+        given(hearingAllocatedForListing.getHasAdjournmentDate()).willReturn(empty());
         given(hearingAllocatedForListing.getUpdateSlot()).willReturn(Optional.of(false));
         given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed)).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed, isForAdjournmentHearing)).willReturn(TEST_OUTPUT);
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
@@ -104,16 +107,18 @@ public class SlotUpdaterTest {
     }
 
     @Test
-    public void shouldNotUpdateSlotsInAzureAfterHearingAllocatedForListingMessage() throws Exception {
+    public void shouldNotUpdateSlotsInAzureAfterHearingAllocatedForListingMessage() {
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed(true);
+        final boolean isForAdjournmentHearing = false;
 
         final JsonEnvelope event = hearingAllocatedEvent();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
+        given(hearingAllocatedForListing.getHasAdjournmentDate()).willReturn(empty());
         given(hearingAllocatedForListing.getUpdateSlot()).willReturn(Optional.of(true));
         given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed)).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed, isForAdjournmentHearing)).willReturn(TEST_OUTPUT);
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
@@ -172,7 +177,7 @@ public class SlotUpdaterTest {
                         .withJudicialRoleType(
                                 uk.gov.justice.core.courts.JudicialRoleType.judicialRoleType()
                                         .withJudiciaryType(CIRCUIT_JUDGE)
-                                        .withJudicialRoleTypeId(Optional.empty())
+                                        .withJudicialRoleTypeId(empty())
                                         .build())
                         .build()))
                 .withProsecutionCases(Arrays.asList(uk.gov.justice.core.courts.ConfirmedProsecutionCase.confirmedProsecutionCase()

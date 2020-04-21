@@ -26,11 +26,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
-            <groupId>uk.gov.moj.cpp.system.id-mapper</groupId>
-            <artifactId>id-mapper-client</artifactId>
-        </dependency>
-
         <!-- Listing Dependencies -->
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>

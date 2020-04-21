@@ -10,7 +10,9 @@
     <artifactId>listing-domain-transformations</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>listing-domain-transformation-anonymise</module>
+        <module>listing-domain-transformations-cleanup-and-archive</module>
+        <module>listing-domain-transformations-delete-all-events</module>
+        <module>listing-domain-anonymization-events</module>
         <module>listing-domain-transformation-spiresults</module>
         <module>listing-domain-transformation-for-corechanges</module>
     </modules>

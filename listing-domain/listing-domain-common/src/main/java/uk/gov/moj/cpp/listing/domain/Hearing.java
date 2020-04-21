@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.domain;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -50,8 +51,10 @@ public class Hearing {
 
   private final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds;
 
+  private Optional<Boolean> hasAdjournmentDate;
+
   public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, final List<HearingDay> hearingDays, final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections, final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final ZonedDateTime startDateTime,
-                 final Type type, final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds) {
+                 final Type type, final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds, final Optional<Boolean> hasAdjournmentDate){
     this.allocated = allocated;
     this.courtCentreId = courtCentreId;
     this.courtRoomId = courtRoomId;
@@ -73,6 +76,7 @@ public class Hearing {
     this.type = type;
     this.courtApplications = courtApplications;
     this.courtApplicationPartyListingNeeds = courtApplicationPartyListingNeeds;
+    this.hasAdjournmentDate = hasAdjournmentDate;
   }
 
   public Boolean getAllocated() {
@@ -157,72 +161,74 @@ public class Hearing {
     return courtApplicationPartyListingNeeds;
   }
 
+  public Optional<Boolean> getHasAdjournmentDate() {
+    return hasAdjournmentDate;
+  }
+
   public static Builder hearing() {
     return new Hearing.Builder();
   }
 
   @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-    final Hearing that = (Hearing) obj;
-
-    return java.util.Objects.equals(this.allocated, that.allocated) &&
-    java.util.Objects.equals(this.courtCentreId, that.courtCentreId) &&
-    java.util.Objects.equals(this.courtRoomId, that.courtRoomId) &&
-    java.util.Objects.equals(this.endDate, that.endDate) &&
-    java.util.Objects.equals(this.estimatedMinutes, that.estimatedMinutes) &&
-    java.util.Objects.equals(this.hearingDays, that.hearingDays) &&
-    java.util.Objects.equals(this.hearingLanguage, that.hearingLanguage) &&
-    java.util.Objects.equals(this.id, that.id) &&
-    java.util.Objects.equals(this.judiciary, that.judiciary) &&
-    java.util.Objects.equals(this.jurisdictionType, that.jurisdictionType) &&
-    java.util.Objects.equals(this.listedCases, that.listedCases) &&
-    java.util.Objects.equals(this.listingDirections, that.listingDirections) &&
-    java.util.Objects.equals(this.nonDefaultDays, that.nonDefaultDays) &&
-    java.util.Objects.equals(this.nonSittingDays, that.nonSittingDays) &&
-    java.util.Objects.equals(this.prosecutorDatesToAvoid, that.prosecutorDatesToAvoid) &&
-    java.util.Objects.equals(this.reportingRestrictionReason, that.reportingRestrictionReason) &&
-    java.util.Objects.equals(this.sequence, that.sequence) &&
-    java.util.Objects.equals(this.startDateTime, that.startDateTime) &&
-    java.util.Objects.equals(this.type, that.type) &&
-    java.util.Objects.equals(this.courtApplications, that.courtApplications) &&
-    java.util.Objects.equals(this.courtApplicationPartyListingNeeds, that.courtApplicationPartyListingNeeds);
+  public boolean equals(final Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    final Hearing hearing = (Hearing) o;
+    return Objects.equals(allocated, hearing.allocated) &&
+            Objects.equals(courtCentreId, hearing.courtCentreId) &&
+            Objects.equals(courtRoomId, hearing.courtRoomId) &&
+            Objects.equals(endDate, hearing.endDate) &&
+            Objects.equals(estimatedMinutes, hearing.estimatedMinutes) &&
+            Objects.equals(hearingDays, hearing.hearingDays) &&
+            Objects.equals(hearingLanguage, hearing.hearingLanguage) &&
+            Objects.equals(id, hearing.id) &&
+            Objects.equals(judiciary, hearing.judiciary) &&
+            jurisdictionType == hearing.jurisdictionType &&
+            Objects.equals(listedCases, hearing.listedCases) &&
+            Objects.equals(listingDirections, hearing.listingDirections) &&
+            Objects.equals(nonDefaultDays, hearing.nonDefaultDays) &&
+            Objects.equals(nonSittingDays, hearing.nonSittingDays) &&
+            Objects.equals(prosecutorDatesToAvoid, hearing.prosecutorDatesToAvoid) &&
+            Objects.equals(reportingRestrictionReason, hearing.reportingRestrictionReason) &&
+            Objects.equals(sequence, hearing.sequence) &&
+            Objects.equals(startDateTime, hearing.startDateTime) &&
+            Objects.equals(type, hearing.type) &&
+            Objects.equals(courtApplications, hearing.courtApplications) &&
+            Objects.equals(courtApplicationPartyListingNeeds, hearing.courtApplicationPartyListingNeeds) &&
+            Objects.equals(hasAdjournmentDate, hearing.hasAdjournmentDate);
   }
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds);}
+    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate);
+  }
 
   @Override
   public String toString() {
     return "Hearing{" +
-    	"allocated='" + allocated + "'," +
-    	"courtCentreId='" + courtCentreId + "'," +
-    	"courtRoomId='" + courtRoomId + "'," +
-    	"endDate='" + endDate + "'," +
-    	"estimatedMinutes='" + estimatedMinutes + "'," +
-    	"hearingDays='" + hearingDays + "'," +
-    	"hearingLanguage='" + hearingLanguage + "'," +
-    	"id='" + id + "'," +
-    	"judiciary='" + judiciary + "'," +
-    	"jurisdictionType='" + jurisdictionType + "'," +
-    	"listedCases='" + listedCases + "'," +
-    	"listingDirections='" + listingDirections + "'," +
-    	"nonDefaultDays='" + nonDefaultDays + "'," +
-    	"nonSittingDays='" + nonSittingDays + "'," +
-    	"prosecutorDatesToAvoid='" + prosecutorDatesToAvoid + "'," +
-    	"reportingRestrictionReason='" + reportingRestrictionReason + "'," +
-    	"sequence='" + sequence + "'," +
-    	"startDateTime='" + startDateTime + "'," +
-    	"type='" + type + "'," +
-        "courtApplications='" + courtApplications + "'" +
-            "courtApplicationPartyNeeds='" + courtApplicationPartyListingNeeds + "'" +
-    "}";
+            "allocated=" + allocated +
+            ", courtCentreId=" + courtCentreId +
+            ", courtRoomId=" + courtRoomId +
+            ", endDate=" + endDate +
+            ", estimatedMinutes=" + estimatedMinutes +
+            ", hearingDays=" + hearingDays +
+            ", hearingLanguage=" + hearingLanguage +
+            ", id=" + id +
+            ", judiciary=" + judiciary +
+            ", jurisdictionType=" + jurisdictionType +
+            ", listedCases=" + listedCases +
+            ", listingDirections=" + listingDirections +
+            ", nonDefaultDays=" + nonDefaultDays +
+            ", nonSittingDays=" + nonSittingDays +
+            ", prosecutorDatesToAvoid=" + prosecutorDatesToAvoid +
+            ", reportingRestrictionReason=" + reportingRestrictionReason +
+            ", sequence=" + sequence +
+            ", startDateTime=" + startDateTime +
+            ", type=" + type +
+            ", courtApplications=" + courtApplications +
+            ", courtApplicationPartyListingNeeds=" + courtApplicationPartyListingNeeds +
+            ", hasAdjournmentDate=" + hasAdjournmentDate +
+            '}';
   }
 
   public static class Builder {
@@ -267,6 +273,8 @@ public class Hearing {
     private List<CourtApplication> courtApplications;
 
     private List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds;
+
+    private Optional<Boolean> hasAdjournmentDate;
 
     public Builder withAllocated(final Boolean allocated) {
       this.allocated = allocated;
@@ -371,8 +379,12 @@ public class Hearing {
       this.courtApplicationPartyListingNeeds = courtApplicationPartyListingNeeds;
       return this;
     }
+    public Builder withAdjournedFromDate(final Optional<Boolean> hasAdjournmentDate) {
+      this.hasAdjournmentDate = hasAdjournmentDate;
+      return this;
+    }
     public Hearing build() {
-      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds);
+      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate);
     }
   }
 }

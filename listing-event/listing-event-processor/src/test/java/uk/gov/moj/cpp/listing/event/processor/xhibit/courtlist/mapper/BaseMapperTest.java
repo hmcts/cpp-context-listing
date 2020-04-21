@@ -7,14 +7,14 @@ import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCou
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.domain.referencedata.HearingType;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
-import uk.gov.moj.cpp.listing.event.processor.xhibit.XhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
 
-import javax.json.Json;
 import javax.json.JsonObject;
 
 import org.junit.Before;
@@ -29,7 +29,7 @@ public abstract class BaseMapperTest {
     protected XmlUtils xmlUtils;
 
     @Mock
-    protected XhibitReferenceDataService xhibitReferenceDataService;
+    protected CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
     @Mock
     protected JsonEnvelope envelope;
@@ -60,16 +60,16 @@ public abstract class BaseMapperTest {
                 "MOCKSITECODE",
                 "CROWN_COURT");
 
-        when(xhibitReferenceDataService.getCourtDetails(any())).thenReturn(courtLocation);
+        when(commonXhibitReferenceDataService.getCourtDetails(any())).thenReturn(courtLocation);
 
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.json");
-        when(xhibitReferenceDataService.getJudiciary(any(), any())).thenReturn(judiciary);
+        when(commonXhibitReferenceDataService.getJudiciary(any())).thenReturn(judiciary);
 
-        final JsonObject hearingType = Json.createObjectBuilder()
-                .add("exhibitHearingCode", "XXX")
-                .add("exhibitHearingDescription", "XHIBIT_HEARING_DESCRIPTION")
+        final HearingType hearingType = new HearingType.Builder()
+                .withExhibitHearingCode("XXX")
+                .withExhibitHearingDescription("XHIBIT_HEARING_DESCRIPTION")
                 .build();
-        when(xhibitReferenceDataService.getXhibitHearingType(any(), any())).thenReturn(hearingType);
+        when(commonXhibitReferenceDataService.getXhibitHearingType(any())).thenReturn(hearingType);
 
         requestParameters = withDefaults()
                 .build();

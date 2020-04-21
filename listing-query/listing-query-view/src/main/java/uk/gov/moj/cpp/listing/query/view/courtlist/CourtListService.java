@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.query.view.RangeSearchQuery;
 
@@ -27,7 +28,7 @@ public class CourtListService {
     private RangeSearchQuery rangeSearchQuery;
 
     @Inject
-    private XhibitReferenceDataService xhibitReferenceDataService;
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
 
     public JsonObject retrieveUnPublishedCourtList(final UUID courtCentreId,
                                                    final PublishCourtListType publishCourtListType,
@@ -43,12 +44,12 @@ public class CourtListService {
 
         final JsonEnvelope rangeSearchResponse = rangeSearchQuery.rangeSearchHearings(rangeSearchQueryEnvelope);
 
-        return rangeSearchConverter.generateCourtListQueryPayload(envelope, courtCentreId, rangeSearchResponse.payloadAsJsonObject(), startDate, endDate);
+        return rangeSearchConverter.generateCourtListQueryPayload(courtCentreId, rangeSearchResponse.payloadAsJsonObject(), startDate, endDate);
     }
 
     public JsonObject emptyCourtList(final UUID courtCentreId) {
 
-        final List<JsonObject> courtSites = xhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId);
+        final List<JsonObject> courtSites = commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId);
 
         final JsonArrayBuilder courtListsBuilder = Json.createArrayBuilder();
 

@@ -5,11 +5,11 @@ public enum Meridian {
     TEN_AM("10"),
     ELEVEN_AM("11"),
     TWELVE_PM("12"),
-    ONE_PM("01"),
-    TWO_PM("02"),
-    THREE_PM("03"),
-    FOUR_PM("04"),
-    FIVE_PM("05");
+    ONE_PM("13"),
+    TWO_PM("14"),
+    THREE_PM("15"),
+    FOUR_PM("16"),
+    FIVE_PM("17");
 
     private String value;
 

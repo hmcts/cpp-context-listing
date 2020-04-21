@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
@@ -11,8 +12,10 @@ import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingData
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetAllCrownCourtCentres;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCpCourtRooms;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataXhibitCourtRoomMappings;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 import static uk.gov.moj.cpp.listing.utils.SystemIdMapperStub.stubIdMapperReturningExistingAssociation;
@@ -30,7 +33,6 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class PublishCourtListIT extends AbstractIT {
@@ -47,7 +49,8 @@ public class PublishCourtListIT extends AbstractIT {
     @Test
     public void shouldPublishCourtListWithNoHearings() throws Exception {
 
-        final UUID courtCentreId = randomUUID();
+        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID hearingTypeId = fromString("52edf232-3c09-4c74-a6ad-737985c2e662");
         final UUID courtListId = randomUUID();
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
@@ -56,8 +59,10 @@ public class PublishCourtListIT extends AbstractIT {
                 publishCourtListType,
                 startDate);
 
-        stubGetReferenceDataCourtMappings(new CourtCentreData(UUID.randomUUID(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataXhibitCourtRoomMappings(randomUUID());
         stubOrganisationUnit(courtCentreId);
+        stubGetReferenceDataHearingTypes(hearingTypeId);
         stubIdMapperReturningExistingAssociation(courtListId);
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(null, publishCourtListCommandPayload);
@@ -71,7 +76,6 @@ public class PublishCourtListIT extends AbstractIT {
 
     @Test
     public void shouldPublishCourtListWithHearings() throws Exception {
-
         final UUID courtCentreId = randomUUID();
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
@@ -83,10 +87,13 @@ public class PublishCourtListIT extends AbstractIT {
                 publishCourtListType,
                 startDate);
 
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId);
 
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(randomUUID(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
         stubGetReferenceDataCpCourtRooms(hearingsData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
         stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
 
@@ -108,6 +115,8 @@ public class PublishCourtListIT extends AbstractIT {
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
         stubGetAllCrownCourtCentres(courtCentreIdOne, courtCentreIdTwo);
+        stubGetReferenceDataCourtCentreById(courtCentreIdOne);
+        stubGetReferenceDataCourtCentreById(courtCentreIdTwo);
         final JsonObject commandAsJson = createObjectBuilder().build();
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreIdOne)
                 .combine(loadHearingDataWithJudiciary(courtCentreIdTwo));
