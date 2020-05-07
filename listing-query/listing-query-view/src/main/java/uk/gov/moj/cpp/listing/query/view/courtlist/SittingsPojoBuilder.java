@@ -62,21 +62,21 @@ public class SittingsPojoBuilder {
     }
 
     private static void logParamsForSittingCreation(final LocalDate startDate, final String endDate, final FlatHearing flatHearing) {
-        LOGGER.info("hearing date = {}", flatHearing.getHearingDate());
-        LOGGER.info("is week commencing = {}", flatHearing.isWeekCommencing());
-        LOGGER.info("startDate = {}", startDate);
-        LOGGER.info("endDate = {}", endDate);
+        LOGGER.debug("hearing date = {}", flatHearing.getHearingDate());
+        LOGGER.debug("is week commencing = {}", flatHearing.isWeekCommencing());
+        LOGGER.debug("startDate = {}", startDate);
+        LOGGER.debug("endDate = {}", endDate);
     }
 
     private static void buildNewSitting(final LocalDate startDate, final String endDate, final List<Sitting> sittings, final FlatHearing flatHearing) {
         if(flatHearing.getHearingDate().equals(startDate) || flatHearing.isWeekCommencing() || isForMultiDay(flatHearing.getHearingDate(), startDate, endDate)){
-            LOGGER.info("Creating new sitting for FlatHearing with {}", flatHearing.getHearingDate());
+            LOGGER.debug("Creating new sitting for FlatHearing with {}", flatHearing.getHearingDate());
             sittings.add(createNewSitting(flatHearing, startDate));
         }
     }
 
     private static boolean isForMultiDay(final LocalDate hearingDate, final LocalDate startDate, final String endDate) {
-        LOGGER.info("isForMultiDay params {}, {}, {}", hearingDate, startDate, endDate);
+        LOGGER.debug("isForMultiDay params {}, {}, {}", hearingDate, startDate, endDate);
         return StringUtils.isNotBlank(endDate) && isHearingDateValidForMultiDay(hearingDate, startDate, LocalDate.parse(endDate));
     }
 

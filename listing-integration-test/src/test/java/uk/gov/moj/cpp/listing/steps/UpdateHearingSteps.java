@@ -442,6 +442,16 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
     }
 
+    public void verifyHearingUpdatedResultsForSlotUpdateInMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        verifyCourtRoomChangedEvent();
+        verifyJudiciaryChangedEvent();
+        verifyHearingDaysChangedEventForOneDayOnly();
+        verifyAllocatedHearingUpdatedForListing();
+    }
+
     public void verifyHearingConfirmedInPublicMQ() {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());

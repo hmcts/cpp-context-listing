@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.print.DocFlavor;
-
 
 public class UpdatedHearingData {
 
@@ -32,6 +30,7 @@ public class UpdatedHearingData {
     private static final String SESSION = "AM";
     private static final int DURATION = 120;
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    private static final String NO_DEFAULT_DAYS_DATE = "2020-04-23";
     private static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm");
     private final UUID hearingId;
     private final UUID courtCentreId;
@@ -85,6 +84,11 @@ public class UpdatedHearingData {
         return updatedHearingDataForAllocation(hearingId, judiciary);
     }
 
+    public static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDays(final UUID hearingId) {
+        List<JudicialRoleData> judiciary = Collections.singletonList(new JudicialRoleData(of(true), of(true), UUID.randomUUID(), new JudicialRoleTypeData(Optional.empty(), "MAGISTRATE")));
+        return updatedHearingDataForAllocationWithNonDefaultDays(hearingId, judiciary);
+    }
+
     public static UpdatedHearingData updatedHearingDataForAllocationWithoutJudiciary(final UUID hearingId) {
         List<JudicialRoleData> judiciary = Collections.emptyList();
         return updatedHearingDataForAllocation(hearingId, judiciary);
@@ -106,6 +110,21 @@ public class UpdatedHearingData {
         String endDate = startDate.plusDays(2).toString();
 
         return new UpdatedHearingData(hearingId, randomUUID(), RandomGenerator.STRING.next(), randomUUID(), SENTENCE_HEARING_TYPE,
+                startDate.toString(), endDate, nonDefaultDays,
+                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null);
+    }
+
+    private static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDays(final UUID hearingId, final List<JudicialRoleData> judiciary) {
+        final String endDate = "2020-04-23";
+        final LocalDate startDate = LocalDate.parse(endDate);
+        final ZonedDateTime startTimeWithZone = ZonedDateTime.parse("2020-04-23T11:32:41.587Z");
+        final List<String> nonSittingDays = asList(startDate.plusDays(1).toString());
+
+
+
+        List<NonDefaultDayData> nonDefaultDays = asList(new NonDefaultDayData(startTimeWithZone.toString(), of(15)));
+
+        return new UpdatedHearingData(hearingId, randomUUID(), "Carmarthen Magistrates Court", randomUUID(), SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
                 nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null);
     }

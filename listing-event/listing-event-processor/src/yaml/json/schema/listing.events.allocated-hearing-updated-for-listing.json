@@ -55,6 +55,9 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/hearingDay.json"
       }
+    },
+    "updateSlot":{
+      "type" : "boolean"
     }
   },
   "required": [

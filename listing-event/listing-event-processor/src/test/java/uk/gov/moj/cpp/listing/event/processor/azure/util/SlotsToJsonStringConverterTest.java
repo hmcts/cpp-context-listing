@@ -92,7 +92,7 @@ public class SlotsToJsonStringConverterTest {
         final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
         final boolean isForAdjournmentHearing = false;
 
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed, isForAdjournmentHearing);
+        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing);
 
         assertNotNull(slotDetailFromHearingConfirmed);
         with(slotDetailFromHearingConfirmed)
@@ -121,7 +121,7 @@ public class SlotsToJsonStringConverterTest {
         final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
         final boolean isForAdjournmentHearing = true;
 
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed, isForAdjournmentHearing);
+        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing);
 
         with(slotDetailFromHearingConfirmed)
                 .assertThat("$[0].courtRoomId", equalTo(courtRoomId))
@@ -146,7 +146,7 @@ public class SlotsToJsonStringConverterTest {
         final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
         final boolean isForAdjournmentHearing = false;
 
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed, isForAdjournmentHearing);
+        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing);
 
         assertNotNull(slotDetailFromHearingConfirmed);
         assertThat(slotDetailFromHearingConfirmed.isEmpty(), equalTo(true));

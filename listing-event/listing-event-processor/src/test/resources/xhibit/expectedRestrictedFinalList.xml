@@ -34,7 +34,7 @@
                         <cs:Judge>
                             <apd:CitizenNameForename>Mark J</apd:CitizenNameForename>
                             <apd:CitizenNameSurname>Ainsworth-MAGISTRATE</apd:CitizenNameSurname>
-                            <apd:CitizenNameRequestedName>Mr Mark J Ainsworth-MAGISTRATE judge</apd:CitizenNameRequestedName>
+                            <apd:CitizenNameRequestedName>Recorder Mark J Ainsworth-MAGISTRATE judge</apd:CitizenNameRequestedName>
                         </cs:Judge>
                     </cs:Judiciary>
                     <cs:Hearings>

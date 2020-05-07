@@ -13,7 +13,7 @@ import static javax.ws.rs.core.Response.Status.OK;
 
 public class AzureScheduleServiceStub {
 
-    private static final String ROTA_SL_ENDPOINT_URL = "https://api-ste-ccm-scs.azure-api.net/fa-ste-ccm-scsl/hearingSlots";
+    private static final String ROTA_SL_ENDPOINT_URL = "https://api-ste-ccm-scsl.azure-api.net/fa-ste-ccm-scsl/hearingSlots";
     private static final String HOST = System.getProperty("INTEGRATION_HOST_KEY", "localhost");
 
     static {

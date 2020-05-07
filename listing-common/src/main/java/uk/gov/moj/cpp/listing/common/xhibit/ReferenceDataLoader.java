@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.common.xhibit;
 
-import static java.util.UUID.randomUUID;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
@@ -19,6 +19,7 @@ import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMappingsList;
 import uk.gov.moj.cpp.listing.domain.referencedata.HearingTypesList;
 import uk.gov.moj.cpp.listing.domain.referencedata.JudiciariesList;
 import uk.gov.moj.cpp.listing.domain.referencedata.Judiciary;
+import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnitList;
 
 import java.util.List;
@@ -30,6 +31,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+
+import org.apache.commons.collections.CollectionUtils;
 
 @ApplicationScoped
 public class ReferenceDataLoader {
@@ -47,7 +50,7 @@ public class ReferenceDataLoader {
     @Inject
     private Requester requester;
 
-    public Optional<OrganisationUnitList> getOrganisationUnitListByOuCode(final String ouCode) {
+    public Optional<OrganisationUnit> getOrganisationUnitByOuCode(final String ouCode) {
         final JsonObject queryParameters = createObjectBuilder().add("oucode", ouCode).build();
 
         final JsonEnvelope requestEnvelope = envelopeFrom(
@@ -59,7 +62,25 @@ public class ReferenceDataLoader {
 
         final Envelope<OrganisationUnitList> response = requester.requestAsAdmin(requestEnvelope, OrganisationUnitList.class);
 
-        return Objects.isNull(response) ? empty() : of(response.payload());
+        return Objects.isNull(response) ? empty() : of(response.payload().getOrganisationunits().get(0));
+    }
+
+    public Optional<OrganisationUnitList> getOrganisationUnitList() {
+
+        final JsonEnvelope requestEnvelope = envelopeFrom(
+                metadataBuilder()
+                        .withName(REFERENCEDATA_QUERY_ORGANISATION_UNITS)
+                        .withId(randomUUID())
+                        .build(),
+                createObjectBuilder().build());
+
+        final Envelope<OrganisationUnitList> response = requester.requestAsAdmin(requestEnvelope, OrganisationUnitList.class);
+
+        if (Objects.isNull(response) || Objects.isNull(response.payload()) || CollectionUtils.isEmpty(response.payload().getOrganisationunits())) {
+            throw new InvalidReferenceDataException("Cannot find organisationunits");
+        }
+
+        return of(response.payload());
     }
 
     public Optional<CourtMappingsList> getXhibitCourtMappings(final UUID courtCentreId) {

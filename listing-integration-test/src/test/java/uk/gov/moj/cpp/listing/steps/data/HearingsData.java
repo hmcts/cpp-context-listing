@@ -35,6 +35,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary());
     }
 
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final String jurisdictionType) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(jurisdictionType));
+    }
+
     public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate() {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate());
     }
@@ -45,6 +49,10 @@ public class HearingsData {
 
     public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final UUID courtCentreId, final String judiciaryType) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(courtCentreId, judiciaryType));
+    }
+
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(final UUID courtCentreId, final String judiciaryType) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, judiciaryType));
     }
 
     public static HearingsData hearingsDataStandaloneApplication() {

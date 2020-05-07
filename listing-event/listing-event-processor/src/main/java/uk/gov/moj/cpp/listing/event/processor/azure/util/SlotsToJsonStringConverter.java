@@ -5,8 +5,8 @@ import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.HearingDayDetailConverter.getHearingDayDetails;
 
+import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.CourtCentre;
-import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
@@ -35,9 +35,10 @@ public class SlotsToJsonStringConverter {
     @Inject
     private ListingReferenceDataService listingReferenceDataService;
 
-    public String getSlotDetailFromHearingConfirmed(final JsonEnvelope jsonEnvelope, final HearingConfirmed hearingConfirmed, final boolean isForAdjournmentHearing) {
+    public String getSlotDetailFromHearingConfirmed(final JsonEnvelope jsonEnvelope, final ConfirmedHearing confirmedHearing, final boolean isForAdjournmentHearing) {
 
-        final CourtCentre courtCentre = hearingConfirmed.getConfirmedHearing().getCourtCentre();
+        final CourtCentre courtCentre = confirmedHearing.getCourtCentre();
+
 
         final UUID roomId;
         if (courtCentre.getRoomId().isPresent()) {
@@ -56,13 +57,13 @@ public class SlotsToJsonStringConverter {
 
         final String ouCode = payLoadForCourtRoom.payloadAsJsonObject().getString("oucode");
 
-        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(hearingConfirmed.getConfirmedHearing().getHearingDays(), isForAdjournmentHearing);
+        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(confirmedHearing.getHearingDays(), isForAdjournmentHearing);
 
         if(hearingDayDetails.isEmpty()){
             return StringUtils.EMPTY;
         }
 
-        final String hearingId = hearingConfirmed.getConfirmedHearing().getId().toString();
+        final String hearingId = confirmedHearing.getId().toString();
         final Optional<String> courtScheduleId = empty();
 
         return toJSONString(hearingDayDetails.stream()

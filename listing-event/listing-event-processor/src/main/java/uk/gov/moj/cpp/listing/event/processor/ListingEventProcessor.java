@@ -109,6 +109,7 @@ public class ListingEventProcessor {
     static final String COMMAND_CASE_UPDATE_DEFENDANT_PROCEEDINGS_UPDATED = "listing.command.case-update-defendant-proceedings-updated";
     static final String COMMAND_CASE_EJECTED = "listing.command.eject-case";
     static final String COMMAND_APPLICATION_EJECTED = "listing.command.eject-application";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
     private static final String APPLICATION_ID = "applicationId";
     private static final String HEARING_ID = "hearingId";
@@ -239,7 +240,14 @@ public class ListingEventProcessor {
 
         publishHearingConfirmedPublicEvent(envelope);
 
-        slotUpdater.updateSlot(envelope);
+        final HearingConfirmed hearingConfirmed = getHearingConfirmed(envelope);
+        final HearingAllocatedForListing hearingAllocatedForListing = getHearingAllocatedForListing(envelope);
+        final boolean isSlotUpdated = hearingAllocatedForListing.getUpdateSlot().orElse(false);
+        final boolean isForAdjournmentHearing = hearingAllocatedForListing.getHasAdjournmentDate().orElse(false);
+
+        LOGGER.debug("HearingConfirmed confirmedHearing used for slot update: {}", hearingConfirmed.getConfirmedHearing());
+
+        slotUpdater.updateSlot(envelope, hearingConfirmed.getConfirmedHearing(), isSlotUpdated, isForAdjournmentHearing);
     }
 
     @Handles(PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING)
@@ -249,6 +257,13 @@ public class ListingEventProcessor {
         }
 
         publishHearingUpdatedPublicEvent(envelope);
+
+        final HearingUpdated hearingUpdated = getHearingUpdated(envelope);
+        final boolean isSlotUpdated = getAllocatedHearingUpdatedForListing(envelope).getUpdateSlot().orElse(false);
+
+        LOGGER.debug("HearingUpdated confirmedHearing used for slot update: {}", hearingUpdated.getUpdatedHearing());
+
+        slotUpdater.updateSlot(envelope, hearingUpdated.getUpdatedHearing(), isSlotUpdated, false);
     }
 
     @Handles(PRIVATE_EVENT_RESTRICT_COURT_LIST)
@@ -573,8 +588,12 @@ public class ListingEventProcessor {
     }
 
     private HearingConfirmed getHearingConfirmed(final JsonEnvelope envelope) {
-        final HearingAllocatedForListing hearingAllocatedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
+        final HearingAllocatedForListing hearingAllocatedForListing = getHearingAllocatedForListing(envelope);
         return getHearingConfirmed(hearingAllocatedForListing, envelope);
+    }
+
+    private HearingAllocatedForListing getHearingAllocatedForListing(final JsonEnvelope envelope) {
+        return jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
     }
 
     private HearingConfirmed getHearingConfirmed(final HearingAllocatedForListing hearingAllocatedForListing, final JsonEnvelope envelope) {
@@ -585,12 +604,20 @@ public class ListingEventProcessor {
      * Publish a public event to notify that the hearing has been updated.
      */
     private void publishHearingUpdatedPublicEvent(final JsonEnvelope envelope) {
-        final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing =
-                jsonObjectConverter.convert(envelope.payloadAsJsonObject(), AllocatedHearingUpdatedForListing.class);
-        final HearingUpdated hearingUpdated = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing, envelope);
+        final HearingUpdated hearingUpdated = getHearingUpdated(envelope);
 
         LOGGER.info("Publishing '{}' public event with payload {}", PUBLIC_EVENT_HEARING_UPDATED, hearingUpdated);
         sender.send(enveloper.withMetadataFrom(envelope, PUBLIC_EVENT_HEARING_UPDATED).apply(hearingUpdated));
+    }
+
+    private HearingUpdated getHearingUpdated(final JsonEnvelope envelope) {
+        final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = getAllocatedHearingUpdatedForListing(envelope);
+
+        return allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing, envelope);
+    }
+
+    private AllocatedHearingUpdatedForListing getAllocatedHearingUpdatedForListing(final JsonEnvelope envelope) {
+        return jsonObjectConverter.convert(envelope.payloadAsJsonObject(), AllocatedHearingUpdatedForListing.class);
     }
 
     /*

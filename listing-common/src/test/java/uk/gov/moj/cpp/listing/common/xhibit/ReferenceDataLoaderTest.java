@@ -16,6 +16,7 @@ import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.requester.Requester;
+import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMapping;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMappingsList;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMappingsList;
@@ -67,6 +68,25 @@ public class ReferenceDataLoaderTest {
     }
 
     @Test
+    public void shouldGetOrganisationUnitByOuCode() {
+        final UUID ouId = randomUUID();
+        final String ouCode = "B01LY00";
+
+        final OrganisationUnit organisationUnit = new OrganisationUnit.Builder()
+                .withId(ouId)
+                .withOucode(ouCode)
+                .build();
+
+        when(requester.requestAsAdmin(any(), eq(OrganisationUnitList.class)).payload()).thenReturn(new OrganisationUnitList(Arrays.asList(organisationUnit)));
+
+        final Optional<OrganisationUnit> actualOrganisationUnit = referenceDataLoader.getOrganisationUnitByOuCode(ouCode);
+
+
+        assertThat(true, equalTo(actualOrganisationUnit.isPresent()));
+        assertThat(ouId, is(actualOrganisationUnit.get().getId()));
+    }
+
+    @Test
     public void shouldGetOrganisationUnitList() {
         final UUID ouId = randomUUID();
         final String ouCode = "B01LY00";
@@ -78,12 +98,26 @@ public class ReferenceDataLoaderTest {
 
         when(requester.requestAsAdmin(any(), eq(OrganisationUnitList.class)).payload()).thenReturn(new OrganisationUnitList(Arrays.asList(organisationUnit)));
 
-        final Optional<OrganisationUnitList> organisationUnitList = referenceDataLoader.getOrganisationUnitListByOuCode(ouCode);
+        final Optional<OrganisationUnitList> actualOrganisationUnit = referenceDataLoader.getOrganisationUnitList();
 
 
-        assertThat(true, equalTo(organisationUnitList.isPresent()));
-        assertThat(1, is(equalTo(organisationUnitList.get().getOrganisationunits().size())));
-        assertThat(ouId, is(organisationUnitList.get().getOrganisationunits().get(0).getId()));
+        assertThat(true, equalTo(actualOrganisationUnit.isPresent()));
+        assertThat(ouId, is(actualOrganisationUnit.get().getOrganisationunits().get(0).getId()));
+        assertThat(ouCode, is(actualOrganisationUnit.get().getOrganisationunits().get(0).getOucode()));
+    }
+
+    @Test(expected = InvalidReferenceDataException.class)
+    public void shouldThrowInvalidReferenceDataExceptionIfPayloadIsNullWhenGetOrganisationUnitList() {
+        when(requester.requestAsAdmin(any(), eq(OrganisationUnitList.class)).payload()).thenReturn(null);
+
+        referenceDataLoader.getOrganisationUnitList();
+    }
+
+    @Test(expected = InvalidReferenceDataException.class)
+    public void shouldThrowInvalidReferenceDataExceptionIfEnvelopeIsNullWhenGetOrganisationUnitList() {
+        when(requester.requestAsAdmin(any(), eq(OrganisationUnitList.class))).thenReturn(null);
+
+        referenceDataLoader.getOrganisationUnitList();
     }
 
     @Test

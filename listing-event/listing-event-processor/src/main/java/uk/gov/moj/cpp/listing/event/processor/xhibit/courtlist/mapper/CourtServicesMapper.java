@@ -65,6 +65,7 @@ public class CourtServicesMapper {
     public static final String MASKED_VALUE = "******";
     public static final String OFFENCES = "offences";
     public static final String TITLE_PREFIX = "titlePrefix";
+    public static final String TITLE_JUDICIAL_PREFIX = "titleJudicialPrefix";
     public static final String TITLE_SUFFIX = "titleSuffix";
     public static final String FIRST_NAME = "firstName";
     public static final String LAST_NAME = "lastName";
@@ -260,7 +261,10 @@ public class CourtServicesMapper {
 
         judgeStructure.setCitizenNameRequestedName(
                 buildCitizenRequestedName(
-                        judiciary.getString(TITLE_PREFIX, ""), judiciary.getString(FORENAMES), judiciary.getString(SURNAME), judiciary.getString(TITLE_SUFFIX, "")
+                        judiciary.getString(TITLE_JUDICIAL_PREFIX, judiciary.getString(TITLE_PREFIX, EMPTY)),
+                        judiciary.getString(FORENAMES),
+                        judiciary.getString(SURNAME),
+                        judiciary.getString(TITLE_SUFFIX, EMPTY)
                 ));
         judgeStructure.getCitizenNameForename().add(judiciary.getString(FORENAMES));
         judgeStructure.setCitizenNameSurname(judiciary.getString(SURNAME));
@@ -276,7 +280,7 @@ public class CourtServicesMapper {
 
         justice.setCitizenNameRequestedName(
                 buildCitizenRequestedName(
-                        judiciary.getString(TITLE_PREFIX, ""), judiciary.getString(FORENAMES), judiciary.getString(SURNAME), judiciary.getString(TITLE_SUFFIX, "")
+                        judiciary.getString(TITLE_PREFIX, EMPTY), judiciary.getString(FORENAMES), judiciary.getString(SURNAME), judiciary.getString(TITLE_SUFFIX, EMPTY)
                 ));
         justice.getCitizenNameForename().add(judiciary.getString(FORENAMES));
         justice.setCitizenNameSurname(judiciary.getString(SURNAME));
@@ -654,7 +658,7 @@ public class CourtServicesMapper {
     }
 
     private String buildCitizenRequestedName(final String forenames, final String surname) {
-        return buildCitizenRequestedName("", forenames, surname, "");
+        return buildCitizenRequestedName(EMPTY, forenames, surname, EMPTY);
     }
 
     private String buildCitizenRequestedName(final String titlePrefix, final String forenames, final String surname, final String titleSuffix) {

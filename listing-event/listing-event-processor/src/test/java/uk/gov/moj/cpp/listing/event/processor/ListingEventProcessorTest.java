@@ -19,6 +19,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
@@ -406,22 +407,23 @@ public class ListingEventProcessorTest {
 
 
     @Test
-    public void shouldHandleHearingAllocatedForListingMessage() throws Exception {
+    public void shouldHandleHearingAllocatedForListingMessage() {
         //given
         final JsonEnvelope event = hearingAllocatedEvent();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed();
         given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
-
+        when(hearingAllocatedForListing.getUpdateSlot()).thenReturn(Optional.of(false));
+        when(hearingAllocatedForListing.getHasAdjournmentDate()).thenReturn(Optional.of(false));
         //when
         listingEventProcessor.handleHearingAllocatedForListingMessage(event);
 
         //then
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
 
-        verify(slotUpdater).updateSlot(event);
-        verify(slotUpdater, times(1)).updateSlot(event);
+        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false);
+        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false);
 
         assertThat(senderJsonEnvelopeCaptor.getValue(), is(jsonEnvelope(
                 withMetadataEnvelopedFrom(event)
@@ -431,7 +433,6 @@ public class ListingEventProcessorTest {
                 )))
         ));
     }
-
 
     @Test
     public void shouldHandleAllocatedHearingUpdatedForListingMessage() throws Exception {
@@ -444,12 +445,16 @@ public class ListingEventProcessorTest {
         given(allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing, event))
                 .willReturn(hearingUpdated);
 
-
+        when(allocatedHearingUpdatedForListing.getUpdateSlot()).thenReturn(Optional.of(false));
         //when
         listingEventProcessor.handleAllocatedHearingUpdatedForListingMessage(event);
 
         //then
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
+
+        verify(slotUpdater).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false);
+        verify(slotUpdater, times(1)).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false);
+
         assertThat(senderJsonEnvelopeCaptor.getValue(), is(jsonEnvelope(
                 withMetadataEnvelopedFrom(event)
                         .withName(PUBLIC_EVENT_HEARING_UPDATED),

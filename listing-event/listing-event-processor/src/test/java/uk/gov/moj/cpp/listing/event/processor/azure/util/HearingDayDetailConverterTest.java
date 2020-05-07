@@ -78,6 +78,24 @@ public class HearingDayDetailConverterTest {
     }
 
     @Test
+    public void shouldGetAmMeridianAt9am() {
+        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T09:15:30-05:00");
+
+        final String meridian = getMeridian(zonedDateTime);
+
+        assertThat(meridian, is("AM"));
+    }
+
+    @Test
+    public void shouldGetPmMeridianAt2pm() {
+        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T14:00:30-05:00");
+
+        final String meridian = getMeridian(zonedDateTime);
+
+        assertThat(meridian, is("PM"));
+    }
+
+    @Test
     public void shouldGetPmMeridian() {
         final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T14:15:30-05:00");
 
@@ -87,8 +105,26 @@ public class HearingDayDetailConverterTest {
     }
 
     @Test
-    public void shouldGetAdMeridianForAfterAm() {
+    public void shouldGetPmMeridianBetween1PmAnd2Pm() {
+        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T13:15:30-05:00");
+
+        final String meridian = getMeridian(zonedDateTime);
+
+        assertThat(meridian, is("PM"));
+    }
+
+    @Test
+    public void shouldGetAdMeridianForBeforeAm() {
         final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T19:15:30-05:00");
+
+        final String meridian = getMeridian(zonedDateTime);
+
+        assertThat(meridian, is("AD"));
+    }
+
+    @Test
+    public void shouldGetAdMeridianWhenMeridianBefore9am() {
+        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T08:15:30-05:00");
 
         final String meridian = getMeridian(zonedDateTime);
 

@@ -76,7 +76,7 @@ public class PublishCourtListIT extends AbstractIT {
 
     @Test
     public void shouldPublishCourtListWithHearings() throws Exception {
-        final UUID courtCentreId = randomUUID();
+        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;

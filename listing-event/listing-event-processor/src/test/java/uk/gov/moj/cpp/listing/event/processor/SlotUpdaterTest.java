@@ -18,9 +18,8 @@ import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingLanguage;
+import uk.gov.justice.listing.courts.HearingUpdated;
 import uk.gov.justice.listing.courts.JurisdictionType;
-import uk.gov.justice.listing.events.HearingAllocatedForListing;
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
@@ -32,7 +31,6 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.JsonObjectBuilder;
@@ -62,18 +60,10 @@ public class SlotUpdaterTest {
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final String CIRCUIT_JUDGE = "CIRCUIT_JUDGE";
     private static final String TEST_OUTPUT = "sample";
-
-    @Mock
-    private JsonObjectToObjectConverter jsonObjectConverter;
-
-    @Mock
-    private HearingConfirmedFactory hearingConfirmedFactory;
+    private String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
     @Mock
     private SlotsToJsonStringConverter slotsToJsonStringConverter;
-
-    @Mock
-    private HearingAllocatedForListing hearingAllocatedForListing;
 
     @Mock
     private HearingSlotsService hearingSlotsService;
@@ -85,15 +75,10 @@ public class SlotUpdaterTest {
     public void shouldUpdateSlotsInAzureAfterHearingAllocatedForListingMessage() {
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed(true);
-        final boolean isForAdjournmentHearing = false;
 
         final JsonEnvelope event = hearingAllocatedEvent();
-        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
-        given(hearingAllocatedForListing.getHasAdjournmentDate()).willReturn(empty());
-        given(hearingAllocatedForListing.getUpdateSlot()).willReturn(Optional.of(false));
-        given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed, isForAdjournmentHearing)).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false)).willReturn(TEST_OUTPUT);
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
@@ -101,24 +86,19 @@ public class SlotUpdaterTest {
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
-        slotUpdater.updateSlot(event);
+        slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false);
 
         verify(hearingSlotsService).update(TEST_OUTPUT);
     }
 
     @Test
-    public void shouldNotUpdateSlotsInAzureAfterHearingAllocatedForListingMessage() {
+    public void shouldNotUpdateSlotsInAzureAfterHearingAllocatedForListingMessageAndIsSlotUpdatedTrue() {
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed(true);
-        final boolean isForAdjournmentHearing = false;
 
         final JsonEnvelope event = hearingAllocatedEvent();
-        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
-        given(hearingAllocatedForListing.getHasAdjournmentDate()).willReturn(empty());
-        given(hearingAllocatedForListing.getUpdateSlot()).willReturn(Optional.of(true));
-        given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed, isForAdjournmentHearing)).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false)).willReturn(TEST_OUTPUT);
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
@@ -126,10 +106,91 @@ public class SlotUpdaterTest {
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
-        slotUpdater.updateSlot(event);
+        slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), true, false);
 
         verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
     }
+
+    @Test
+    public void shouldNotUpdateSlotsInAzureAfterHearingAllocatedForListingMessageAndJurisdictionTypeNotMagistrates() {
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(false);
+
+        final JsonEnvelope event = hearingAllocatedEvent();
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false)).willReturn(TEST_OUTPUT);
+
+        final Response response = mock(Response.class);
+        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+
+        final String resp = "sample1";
+        when(response.readEntity(String.class)).thenReturn(resp);
+
+        slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false);
+
+        verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
+    }
+
+    @Test
+    public void shouldUpdateSlotsInAzureAfterAllocatedHearingUpdatedForListingMessage() {
+
+        final HearingUpdated hearingUpdated = hearingUpdated(true);
+
+        final JsonEnvelope event = hearingAllocatedEvent();
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false)).willReturn(TEST_OUTPUT);
+
+        final Response response = mock(Response.class);
+        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+
+        final String resp = "sample1";
+        when(response.readEntity(String.class)).thenReturn(resp);
+
+        slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false);
+
+        verify(hearingSlotsService).update(TEST_OUTPUT);
+    }
+
+    @Test
+    public void shouldNotUpdateSlotsInAzureAfterAllocatedHearingUpdatedForListingAndIsSlotUpdatedTrue() {
+
+        final HearingUpdated hearingUpdated = hearingUpdated(true);
+
+        final JsonEnvelope event = hearingAllocatedEvent();
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), true)).willReturn(TEST_OUTPUT);
+
+        final Response response = mock(Response.class);
+        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+
+        final String resp = "sample1";
+        when(response.readEntity(String.class)).thenReturn(resp);
+
+        slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), true, false);
+
+        verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
+    }
+
+    @Test
+    public void shouldNotUpdateSlotsInAzureAfterAllocatedHearingUpdatedForListingAndAndJurisdictionTypeNotMagistrates() {
+
+        final HearingUpdated hearingUpdated = hearingUpdated(false);
+
+        final JsonEnvelope event = hearingAllocatedEvent();
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false)).willReturn(TEST_OUTPUT);
+
+        final Response response = mock(Response.class);
+        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+
+        final String resp = "sample1";
+        when(response.readEntity(String.class)).thenReturn(resp);
+
+        slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false);
+
+        verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
+    }
+
 
     private JsonEnvelope hearingAllocatedEvent() {
 
@@ -149,8 +210,6 @@ public class SlotUpdaterTest {
     }
 
     private HearingConfirmed hearingConfirmed(final boolean isMagistrates) {
-
-        String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
         return HearingConfirmed.hearingConfirmed()
                 .withConfirmedHearing(buildHearing(formattedDateTime, isMagistrates))
@@ -187,6 +246,13 @@ public class SlotUpdaterTest {
                                 .withOffences(Arrays.asList(uk.gov.justice.core.courts.ConfirmedOffence.confirmedOffence().withId(OFFENCE_ID).build()))
                                 .build()))
                         .build()))
+                .build();
+    }
+
+    private HearingUpdated hearingUpdated(final boolean isMagistrates) {
+
+        return HearingUpdated.hearingUpdated()
+                .withUpdatedHearing(buildHearing(formattedDateTime, isMagistrates))
                 .build();
     }
 }

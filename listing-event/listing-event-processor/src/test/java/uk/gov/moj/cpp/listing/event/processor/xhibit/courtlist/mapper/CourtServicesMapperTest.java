@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
@@ -84,6 +85,29 @@ public class CourtServicesMapperTest extends BaseMapperTest {
         xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FIRM.getSchemaName());
 
         XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingMapperTest.xml");
+    }
+
+    @Test
+    public void generateSortedByCourtRoomIDWhenJudgeTitleJudicialPrefixIsNotPresent() throws Exception {
+
+        final UUID courtCentreId = context.getParameters().getCourtCentreId();
+
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.titleJudicialPrefixNotThere.json");
+        when(commonXhibitReferenceDataService.getJudiciary(any())).thenReturn(judiciary);
+
+        final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings.json")
+                .getJsonArray("courtLists").getValuesAs(JsonObject.class);
+
+        final FirmListMapper firmListMapper = new FirmListMapper(context, courtListsForPublishing, courtServicesMapper);
+
+        final String generatedXml = xmlUtils.convertToXml(firmListMapper.generate());
+
+        xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FIRM.getSchemaName());
+
+        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingJudgeTitleJudicialEmptyMapperTest.xml");
     }
 
     @Test

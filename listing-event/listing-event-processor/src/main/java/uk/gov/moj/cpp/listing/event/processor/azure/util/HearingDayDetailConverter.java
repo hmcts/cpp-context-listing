@@ -7,7 +7,7 @@ import static org.apache.commons.lang3.BooleanUtils.isFalse;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.FIVE_PM;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.ONE_PM;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.TWELVE_AM;
-import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.TWO_PM;
+import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.TWELVE_PM;
 
 import uk.gov.justice.core.courts.HearingDay;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.HearingDayDetail;
@@ -25,8 +25,8 @@ import org.slf4j.LoggerFactory;
 
 public class HearingDayDetailConverter {
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingDayDetailConverter.class);
-    private static final EnumSet<Meridian> amMeridian = range(TWELVE_AM, ONE_PM);
-    private static final EnumSet<Meridian> pmMeridian = range(TWO_PM, FIVE_PM);
+    private static final EnumSet<Meridian> amMeridian = range(TWELVE_AM, TWELVE_PM);
+    private static final EnumSet<Meridian> pmMeridian = range(ONE_PM, FIVE_PM);
 
     private HearingDayDetailConverter() {
     }

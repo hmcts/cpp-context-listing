@@ -18,8 +18,13 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @ServiceComponent(EVENT_PROCESSOR)
 public class AzureListingEventProcessor {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AzureListingEventProcessor.class);
 
     private static final String PRIVATE_EVENT_NON_DEFAULT_DAYS_ASSIGNED = "listing.events.non-default-days-assigned-to-hearing";
     private static final String PRIVATE_EVENT_NON_DEFAULT_DAYS_CHANGED = "listing.events.non-default-days-changed-for-hearing";
@@ -50,6 +55,7 @@ public class AzureListingEventProcessor {
         if (!magsNonDefaultDays.isEmpty()) {
             final String updateSlotsPayload = jsonStringConverter.convertNonDefaultDaysToJson(hearingId, magsNonDefaultDays);
 
+            LOGGER.info("Calling hearingSlotsService.update for NonDefaultDays (Mags) with payload {}", updateSlotsPayload);
             hearingSlotsService.update(updateSlotsPayload);
         }
     }
