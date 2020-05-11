@@ -1,13 +1,16 @@
 package uk.gov.moj.cpp.listing.common.xhibit;
 
+import static java.util.Arrays.asList;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.getValueOfField;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 
@@ -24,8 +27,8 @@ import uk.gov.moj.cpp.listing.domain.referencedata.Judiciary;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnitList;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -165,7 +168,7 @@ public class ReferenceDataCacheTest {
 
     @Test
     public void shouldPopulateCourtMappingsMapCache() {
-        final List<CourtMapping> expectedCourtMappingList = Arrays.asList(getCourtMapping());
+        final List<CourtMapping> expectedCourtMappingList = asList(getCourtMapping());
 
         final Optional<List<CourtMapping>> actualCourtMappingList = referenceDataCache.getCourtMappingsMapCache(courtCentreId);
 
@@ -217,6 +220,28 @@ public class ReferenceDataCacheTest {
         assertEquals(courtRoomList.get(0).get(COURT_ROOM_NAME_FIELD), actualCpCourtRoom.get(0).get(COURT_ROOM_NAME_FIELD));
     }
 
+    @Test
+    public void shouldInitHearingTypesRemovingDuplicates() {
+        final HearingTypesList hearingTypeWithDuplicates = new HearingTypesList(asList(getHearingType(), getHearingType()));
+        when(referenceDataLoader.getHearingTypesList()).thenReturn(Optional.of(hearingTypeWithDuplicates));
+
+        referenceDataCache.initHearingTypes();
+
+        Map<UUID, HearingType> actualCachedValues = getValueOfField(referenceDataCache, "hearingTypesMapCache", Map.class);
+        assertThat(actualCachedValues.keySet(), hasSize(1));
+    }
+
+    @Test
+    public void shouldInitOrganisationUnitsRemovingDuplicates() {
+        final OrganisationUnitList orgUnitsWithDuplicates = new OrganisationUnitList(asList(getOrganisationUnit(), getOrganisationUnit()));
+        when(referenceDataLoader.getOrganisationUnitList()).thenReturn(Optional.of(orgUnitsWithDuplicates));
+
+        referenceDataCache.initOrganisationUnitList();
+
+        Map<UUID, OrganisationUnit> actualCachedValues = getValueOfField(referenceDataCache, "organisationUnitMapByIdCache", Map.class);
+        assertThat(actualCachedValues.keySet(), hasSize(1));
+    }
+
     private void initializeTestData() {
         hearingTypesListTestData();
         courtMappingsListTestData();
@@ -224,7 +249,7 @@ public class ReferenceDataCacheTest {
     }
 
     private void organisationUnitListTestData() {
-        organisationUnitList =Optional.of(new OrganisationUnitList(Arrays.asList(getOrganisationUnit())));
+        organisationUnitList = Optional.of(new OrganisationUnitList(asList(getOrganisationUnit())));
     }
 
     private OrganisationUnit getOrganisationUnit() {
@@ -235,7 +260,7 @@ public class ReferenceDataCacheTest {
     }
 
     private void hearingTypesListTestData() {
-        hearingTypesList = Optional.of(new HearingTypesList(Arrays.asList(getHearingType())));
+        hearingTypesList = Optional.of(new HearingTypesList(asList(getHearingType())));
     }
 
     private HearingType getHearingType() {
@@ -247,7 +272,7 @@ public class ReferenceDataCacheTest {
     }
 
     private void courtMappingsListTestData() {
-        courtMappingsList = Optional.of(new CourtMappingsList(Arrays.asList(getCourtMapping())));
+        courtMappingsList = Optional.of(new CourtMappingsList(asList(getCourtMapping())));
     }
 
     private CourtMapping getCourtMapping() {
