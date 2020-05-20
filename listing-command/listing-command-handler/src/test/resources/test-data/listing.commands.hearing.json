@@ -371,5 +371,9 @@
       "referralReason": "for Trial",
       "hearingLanguageNeeds": "WELSH"
     }
-  ]
+  ],
+  "weekCommencingDate": {
+    "startDate": "2012-12-12",
+    "duration": 1
+  }
 }

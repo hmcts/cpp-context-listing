@@ -13,6 +13,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
@@ -43,12 +44,14 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterE
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -90,6 +93,9 @@ public class HearingQueryViewTest {
     private static final String HEARING_TYPE_QUERY_PARAMETER = "hearingTypeId";
     private static final String JURISDICTION_TYPE_QUERY_PARAMETER = "jurisdictionType";
     private static final String LIST_ID_QUERY_PARAMETER = "listId";
+    private static final String CASE_URN_QUERY_PARAMETER = "caseUrn";
+    private static final String HEARING_ID_QUERY_PARAMETER = "hearingId";
+    private static final String SEARCH_CRITERIA_QUERY_PARAMETER = "searchCriteria";
     private static final String ID_PARAMETER = "id";
     private static final String AUTHORITY_ID = "efa4e01b-1dc5-48c5-80b5-c3858a7622d6";
     private static final String AUTHORITY_ID_SEARCH = String.format(HearingRepository.AUTHORITY_ID_SEARCH, AUTHORITY_ID);
@@ -238,6 +244,64 @@ public class HearingQueryViewTest {
                 ))
         ));
 
+    }
+
+    @Test
+    public void searchAvailableHearingsWithWithAllParametersProvided() throws Exception {
+
+        final List<Hearing> hearingsJson = hearingsJson();
+        final JsonArray hearingsJsonArray = hearingsJsonArray();
+
+        final Set<String> MASTER_DEFENDANT_IDS = new HashSet<>();
+        MASTER_DEFENDANT_IDS.add("d676f354-ba50-462e-bd55-4e8842d29ebd");
+
+        final Set<String> CASE_URN_SET = new HashSet<>();
+        CASE_URN_SET.add("CCC333");
+        CASE_URN_SET.add("DDD444");
+        CASE_URN_SET.add("EEE555");
+
+        final Set<String> LINKED_CASE_SET = new HashSet<>();
+        LINKED_CASE_SET.add("URN1");
+        LINKED_CASE_SET.add("URN2");
+
+        final String SEARCH_CRITERIA = "CASE_IN_HEARING,MATCHED_DEFENDANTS";
+        final Hearing returnedHearing = getHearingById();
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
+
+        when(hearingRepository.findBy(ID)).thenReturn(returnedHearing);
+
+        when(hearingRepository.findHearings(
+                ALLOCATED,
+                jurisdictionTypeSet,
+                SEARCH_DATE.toString(),
+                ID.toString(),
+                CASE_URN_SET,
+                MASTER_DEFENDANT_IDS,
+                LINKED_CASE_SET))
+                .thenReturn(hearingsJson);
+
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(hearingsJsonArray);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(HEARING_ID_QUERY_PARAMETER, ID.toString())
+                        .add(CASE_URN_QUERY_PARAMETER, CASE_URN_SET.stream().collect(Collectors.joining(",")))
+                        .add(SEARCH_CRITERIA_QUERY_PARAMETER, SEARCH_CRITERIA)
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.searchAvailableHearings(query);
+
+        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
+                payloadIsJson(
+                        withJsonPath("$.hearings[0].hello", equalTo("world"))
+                ))
+        ));
     }
 
     @Test
@@ -566,5 +630,12 @@ public class HearingQueryViewTest {
         final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
 
+    }
+
+    private Hearing getHearingById() {
+        final String testJsonHearing = "{\"id\":\"b7b136da-7156-4391-ab0e-24e90c2bc599\",\"endDate\":\"END_DATE\",\"allocated\":false,\"startDate\":\"2020-03-17\",\"listedCases\":[{\"id\":\"523b6826-3e56-48d0-bb1b-a0209e7b9c70\",\"defendants\":[{\"id\":\"367f1f6d-f300-4e35-9a8b-92f0c81a28b5\",\"masterDefendantId\":\"d676f354-ba50-462e-bd55-4e8842d29ebd\"}],\"caseIdentifier\":{\"caseReference\":\"EEE555\"},\"restrictFromCourtList\":false,\"linkedCases\":[{\"caseId\":\"367f1f6d-f300-4e35-9a8b-92f0c81a298e\",\"caseUrn\":\"URN1\"},{\"caseId\":\"367f1f6d-f300-4e35-9a8b-92f0c81a246g\",\"caseUrn\":\"URN2\"}]}]}";
+        String testJson = testJsonHearing.replace("END_DATE", LocalDate.now().toString());
+        final Hearing hearing = new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJson));
+        return hearing;
     }
 }

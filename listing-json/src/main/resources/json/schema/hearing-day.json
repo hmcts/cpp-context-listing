@@ -20,6 +20,9 @@
     },
     "sequence": {
       "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/positiveInteger"
+    },
+    "courtScheduleId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
     }
   },
   "required": [

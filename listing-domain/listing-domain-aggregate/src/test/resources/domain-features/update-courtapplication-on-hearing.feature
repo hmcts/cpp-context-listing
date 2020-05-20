@@ -23,4 +23,4 @@ Feature: Update court application on future hearing following public event from 
 
     Given hearing listed with application
     When you update to a Application with a court application
-    Then no hearing found for court application
+    Then raises no hearing found for court application

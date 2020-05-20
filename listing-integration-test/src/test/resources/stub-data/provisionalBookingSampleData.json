@@ -1,0 +1,24 @@
+{
+  "provisionalSlots": [
+    {
+      "courtScheduleId": "00004e11-298c-47e8-b972-2f24789c8317",
+      "listingProfileId": "CS2387852",
+      "ouCode": "B01CN00",
+      "courtRoomId": "7437f68e-8051-3d15-804c-be5ac8b5d558",
+      "courtRoomNumber": 450,
+      "courtHouseName": "Bromley Magistrates' Court",
+      "courtRoomName": "Courtroom 08",
+      "operationalUnit": "1",
+      "businessType": "TRL",
+      "panel": "ADULT",
+      "courtSession": "AD",
+      "sessionDate": "2020-04-24",
+      "maxSlots": 10,
+      "maxDuration": 0,
+      "availableSlots": 5,
+      "availableDuration": 0,
+      "judiciaries": [],
+      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37"
+    }
+  ]
+}

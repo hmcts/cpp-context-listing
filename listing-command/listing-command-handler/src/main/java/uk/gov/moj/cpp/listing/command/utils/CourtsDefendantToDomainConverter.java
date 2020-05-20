@@ -11,6 +11,7 @@ import uk.gov.justice.listing.courts.Defendant;
 import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @SuppressWarnings({"squid:S3655", "squid:S1067", "squid:MethodCyclomaticComplexity"})
@@ -21,10 +22,10 @@ public class CourtsDefendantToDomainConverter implements Converter<uk.gov.justic
         return buildDefendants(courtsDefendant);
     }
 
-    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final Defendant d) {
+    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final uk.gov.justice.listing.courts.Defendant d) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
-                .withMasterDefendantId(empty())
+                .withMasterDefendantId(Objects.nonNull(d.getMasterDefendantId().isPresent()) ? d.getMasterDefendantId() : empty())
                 .withCourtProceedingsInitiated(empty())
                 .withHearingLanguageNeeds(empty())
                 .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())

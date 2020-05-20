@@ -147,4 +147,13 @@ subscriptions_descriptor:
         - name: listing.events.adjourned-hearing-date-added
           schema_uri: http://justice.gov.uk/listing/events/listing.events.adjourned-hearing-date-added.json
 
+        - name: listing.event.added-cases-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.event.added-cases-for-hearing.json
+
+        - name: listing.events.hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-deleted.json
+
+        - name: listing.events.linked-cases-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.linked-cases-updated.json
+
       event_source_name: listing

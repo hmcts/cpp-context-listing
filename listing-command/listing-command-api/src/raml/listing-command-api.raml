@@ -67,6 +67,9 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.command.add-offences-for-hearing+json
         name: listing.command.add-offences-for-hearing
+      (mapping):
+        requestType: application/vnd.listing.command.extend-hearing-for-hearing+json
+        name: listing.command.extend-hearing-for-hearing
       ...
     body:
       application/vnd.listing.command.update-hearing-for-listing+json:
@@ -84,6 +87,9 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.update-offences-for-hearing+json:
         example: !include json/listing.command.update-offences-for-hearing.json
         schema: !include json/schema/listing.command.update-offences-for-hearing.json
+      application/vnd.listing.command.extend-hearing-for-hearing+json:
+        example: !include json/listing.command.extend-hearing-for-hearing.json
+        schema: !include json/schema/listing.command.extend-hearing-for-hearing.json
     responses:
       202:
         description: Request accepted

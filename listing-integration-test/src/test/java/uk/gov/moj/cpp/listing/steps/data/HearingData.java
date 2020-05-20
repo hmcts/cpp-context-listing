@@ -13,20 +13,17 @@ public class HearingData {
     private final UUID courtCentreId;
     private final String name;
     private final HearingTypeData hearingTypeData;
-    private LocalDate hearingStartDate;
-    private LocalDate hearingEndDate;
     private final int hearingEstimateMinutes;
-
     private final UUID courtRoomId;
-    private ZonedDateTime hearingStartTime;
     private final List<ListedCaseData> listedCases;
     private final List<JudicialRoleData> judiciary;
     private final String reportingRestrictionReason;
-
     private final String jurisdictionType;
     private final List<CourtApplicationData> courtApplications;
     private final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds;
-
+    private LocalDate hearingStartDate;
+    private LocalDate hearingEndDate;
+    private ZonedDateTime hearingStartTime;
     private LocalDate weekCommencingStartDate;
     private LocalDate weekCommencingEndDate;
     private int weekCommencingDuration;
@@ -124,13 +121,21 @@ public class HearingData {
         return name;
     }
 
-    public UUID getCourtCentreId() { return courtCentreId; }
+    public UUID getCourtCentreId() {
+        return courtCentreId;
+    }
 
-    public HearingTypeData getHearingTypeData() { return hearingTypeData; }
+    public HearingTypeData getHearingTypeData() {
+        return hearingTypeData;
+    }
 
-    public LocalDate getHearingStartDate() { return hearingStartDate; }
+    public LocalDate getHearingStartDate() {
+        return hearingStartDate;
+    }
 
-    public int getHearingEstimateMinutes() { return hearingEstimateMinutes; }
+    public int getHearingEstimateMinutes() {
+        return hearingEstimateMinutes;
+    }
 
     public UUID getCourtRoomId() {
         return courtRoomId;

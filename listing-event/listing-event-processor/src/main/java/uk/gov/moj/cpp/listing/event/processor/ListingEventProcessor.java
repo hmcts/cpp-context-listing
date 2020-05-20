@@ -2,13 +2,20 @@ package uk.gov.moj.cpp.listing.event.processor;
 
 
 import static javax.json.Json.createObjectBuilder;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 
+import uk.gov.justice.core.courts.ConfirmedHearing;
+import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
+import uk.gov.justice.listing.commands.LinkedToCases;
+import uk.gov.justice.listing.commands.UpdateLinkedCaseInHearing;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingUpdated;
+import uk.gov.justice.listing.courts.UpdateHearingToCaseCommand;
+import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.CaseMarkersToBeUpdated;
 import uk.gov.justice.listing.events.CaseResultedDefendantProceedingsConcluded;
@@ -18,9 +25,11 @@ import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
+import uk.gov.justice.progression.courts.HearingExtended;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -37,6 +46,7 @@ import uk.gov.moj.cpp.listing.event.processor.command.AddOffencesForHearingComma
 import uk.gov.moj.cpp.listing.event.processor.command.AddOffencesForHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.DeleteOffencesForHearingCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.DeleteOffencesForHearingCommandCollectionConverter;
+import uk.gov.moj.cpp.listing.event.processor.command.ExtendHearingToListedCaseCommandConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateCaseMarkersForHearingCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateCaseMarkersForHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearingCommand;
@@ -45,16 +55,20 @@ import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCo
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommandCollectionConverter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("squid:S2629")
 @ServiceComponent(EVENT_PROCESSOR)
 public class ListingEventProcessor {
 
@@ -75,6 +89,7 @@ public class ListingEventProcessor {
     static final String PUBLIC_EVENT_PROGRESSION_EXTEND_LISTED_HEARING_FOR_COURT_APPLICATION = "public.progression.events.hearing-extended";
     static final String PUBLIC_EVENT_PROGRESSION_DEFENDANTS_ADDED_TO_COURT_PROCEEDINGS = "public.progression.defendants-added-to-court-proceedings";
     static final String PUBLIC_EVENT_PROGRESSION_EVENTS_CASE_OR_APPLICATION_EJECTED = "public.progression.events.case-or-application-ejected";
+    static final String PUBLIC_EVENT_PROGRESSION_CASE_LINKED = "public.progression.case-linked";
     static final String LISTING_EVENTS_CASE_EJECTED_FOR_HEARINGS = "listing.events.case-ejected-for-hearings";
     static final String LISTING_EVENTS_APPLICATION_EJECTED_FOR_HEARINGS = "listing.events.application-ejected-for-hearings";
     static final String PRIVATE_EVENT_HEARING_LISTED = "listing.events.hearing-listed";
@@ -89,6 +104,7 @@ public class ListingEventProcessor {
     static final String PRIVATE_EVENT_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS = "listing.events.defendants-to-be-added-for-court-proceedings";
     static final String PRIVATE_EVENT_RESTRICT_COURT_LIST = "listing.events.court-list-restricted";
     static final String PRIVATE_EVENT_CASE_MARKERS_TO_BE_UPDATED = "listing.events.case-markers-to-be-updated";
+    static final String PRIVATE_EVENT_LINKED_CASES_TO_BE_UPDATED = "listing.events.linked-cases-to-be-updated";
     static final String LISTING_EVENTS_CASE_RESULTED_DEFENDANT_PROCEEDINGS_UPDATED = "listing.events.case-resulted-defendant-proceedings-updated";
     static final String COMMAND_ADD_HEARING_TO_CASE = "listing.command.add-hearing-to-case";
     static final String COMMAND_ADD_COURT_APPLICATION_TO_HEARING = "listing.command.add-court-application-to-hearing";
@@ -109,7 +125,9 @@ public class ListingEventProcessor {
     static final String COMMAND_CASE_UPDATE_DEFENDANT_PROCEEDINGS_UPDATED = "listing.command.case-update-defendant-proceedings-updated";
     static final String COMMAND_CASE_EJECTED = "listing.command.eject-case";
     static final String COMMAND_APPLICATION_EJECTED = "listing.command.eject-application";
-
+    static final String COMMAND_UPDATE_LINKED_CASES = "listing.command.update-linked-cases";
+    static final String COMMAND_UPDATE_LINKED_CASE_IN_HEARING = "listing.command.update-linked-case-in-hearing";
+    static final String COMMAND_UPDATE_HEARING_TO_CASE = "listing.command.update-hearing-to-case";
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
     private static final String APPLICATION_ID = "applicationId";
     private static final String HEARING_ID = "hearingId";
@@ -118,6 +136,8 @@ public class ListingEventProcessor {
     private static final String COMMAND_UPDATE_DEFENDANT_LEGALAID_STATUS_FOR_HEARING = "listing.command.update-defendant-legalaid-status-for-hearing";
     private static final String LISTING_EVENTS_DEFENDANT_LEGALAID_STATUS_UPDATED = "listing.events.defendant-legalaid-status-updated";
     private static final String COMMAND_UPDATE_CASE_RESULTED_DEFENDANT_PROCEEDINGS_CONCLUDED = "listing.command.update-case-resulted-defendant-proceedings-concluded";
+    private static final String PRIVATE_COMMAND_ADD_CASES_FOR_HEARING = "listing.command.add-cases-for-hearing";
+    private static final String PRIVATE_EVENT_ALLOCATED_HEARING_EXTENDED_FOR_HEARING = "listing.events.allocated-hearing-extended-for-listing";
     private static final String LEGAL_AID_STATUS = "legalAidStatus";
     private static final String DEFENDANT_ID = "defendantId";
     private static final String CASE_ID = "caseId";
@@ -132,10 +152,16 @@ public class ListingEventProcessor {
     private AllocatedHearingUpdatedFactory allocatedHearingUpdatedFactory;
 
     @Inject
+    private AllocatedHearingExtendedFactory allocatedHearingExtendedFactory;
+
+    @Inject
     private HearingConfirmedFactory hearingConfirmedFactory;
 
     @Inject
     private AddHearingToCaseCommandCollectionConverter listHearingCommandConverter;
+
+    @Inject
+    private ExtendHearingToListedCaseCommandConverter extendHearingToListedCaseCommandConverter;
 
     @Inject
     private UpdateDefendantsForHearingCommandCollectionConverter updateDefendantsForHearingCommandCollectionConverter;
@@ -331,7 +357,17 @@ public class ListingEventProcessor {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PUBLIC_EVENT_PROGRESSION_EXTEND_LISTED_HEARING_FOR_COURT_APPLICATION, envelope.toObfuscatedDebugString());
         }
-        sender.send(enveloper.withMetadataFrom(envelope, COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING).apply(envelope.payloadAsJsonObject()));
+
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        final HearingExtended hearingExtended = jsonObjectConverter.convert(payload, HearingExtended.class);
+
+        if (isNotEmpty(hearingExtended.getProsecutionCases())) {
+            sender.send(enveloper.withMetadataFrom(envelope, PRIVATE_COMMAND_ADD_CASES_FOR_HEARING).apply(envelope.payloadAsJsonObject()));
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_COMMAND_ADD_CASES_FOR_HEARING, envelope.toObfuscatedDebugString());
+        } else {
+            sender.send(enveloper.withMetadataFrom(envelope, COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING).apply(envelope.payloadAsJsonObject()));
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING, envelope.toObfuscatedDebugString());
+        }
     }
 
     @Handles(PUBLIC_EVENT_PROGRESSION_DEFENDANTS_ADDED_TO_COURT_PROCEEDINGS)
@@ -457,6 +493,33 @@ public class ListingEventProcessor {
             this.sender.send(this.enveloper.withMetadataFrom(envelope, COMMAND_CASE_UPDATE_DEFENDANT_PROCEEDINGS_UPDATED).apply(commandPayload));
 
         });
+    }
+
+    @Handles(PUBLIC_EVENT_PROGRESSION_CASE_LINKED)
+    public void handleCaseLinkedPublicEvent(final JsonEnvelope envelope) {
+        LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PUBLIC_EVENT_PROGRESSION_CASE_LINKED, envelope.toObfuscatedDebugString());
+        sender.send(Enveloper.envelop(envelope.payloadAsJsonObject()).withName(COMMAND_UPDATE_LINKED_CASES).withMetadataFrom(envelope));
+    }
+
+    @Handles(PRIVATE_EVENT_LINKED_CASES_TO_BE_UPDATED)
+    public void handleCaseLinkedPrivateEvent(final JsonEnvelope envelope) {
+        LOGGER.info("listing.events.cases-linked {}", envelope.toObfuscatedDebugString());
+        final LinkedCasesToBeUpdated linkedCasesToBeUpdated = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), LinkedCasesToBeUpdated.class);
+        for (final UUID hearingId : linkedCasesToBeUpdated.getHearingIds()) {
+            final UpdateLinkedCaseInHearing command = UpdateLinkedCaseInHearing.updateLinkedCaseInHearing()
+                    .withLinkActionType(linkedCasesToBeUpdated.getLinkActionType())
+                    .withCaseId(linkedCasesToBeUpdated.getCaseId())
+                    .withCaseUrn(linkedCasesToBeUpdated.getCaseUrn())
+                    .withHearingId(hearingId)
+                    .withLinkedToCases(linkedCasesToBeUpdated.getLinkedToCases().stream()
+                            .map(linkedToCases -> LinkedToCases.linkedToCases()
+                                    .withCaseId(linkedToCases.getCaseId())
+                                    .withCaseUrn(linkedToCases.getCaseUrn())
+                                    .build())
+                            .collect(Collectors.toList()))
+                    .build();
+            sender.send(Enveloper.envelop(objectToJsonObjectConverter.convert(command)).withName(COMMAND_UPDATE_LINKED_CASE_IN_HEARING).withMetadataFrom(envelope));
+        }
     }
 
     /*
@@ -656,6 +719,50 @@ public class ListingEventProcessor {
 
     private CaseMarkersToBeUpdated getCaseMarkerEvent(final JsonEnvelope envelope) {
         return jsonObjectConverter.convert(envelope.payloadAsJsonObject(), CaseMarkersToBeUpdated.class);
+    }
+
+    @Handles(PRIVATE_EVENT_ALLOCATED_HEARING_EXTENDED_FOR_HEARING)
+    public void handleAllocatedHearingExtendedForListingMessage(final JsonEnvelope envelope) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENT_ALLOCATED_HEARING_EXTENDED_FOR_HEARING, envelope.toObfuscatedDebugString());
+        }
+
+        publishHearingConfirmedPublicEventForExtendHearing(envelope);
+    }
+
+    private void  publishHearingConfirmedPublicEventForExtendHearing(final JsonEnvelope envelope) {
+        final AllocatedHearingExtendedForListing hearingExtendedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), AllocatedHearingExtendedForListing.class);
+        final HearingConfirmed hearingConfirmed = allocatedHearingExtendedFactory.create(hearingExtendedForListing, envelope);
+
+        updateHearingToCase(envelope, hearingConfirmed);
+
+        LOGGER.info("Publishing '{}' public event for extend hearing with payload {}", PUBLIC_EVENT_HEARING_CONFIRMED, hearingConfirmed);
+        final JsonValue payload = objectToJsonValueConverter.convert(hearingConfirmed);
+        sender.send(Enveloper.envelop(payload)
+                .withName(PUBLIC_EVENT_HEARING_CONFIRMED)
+                .withMetadataFrom(envelope));
+    }
+
+    private void updateHearingToCase(JsonEnvelope envelope, HearingConfirmed hearingConfirmed) {
+
+        final ConfirmedHearing confirmedHearing = hearingConfirmed.getConfirmedHearing();
+
+        for (final ConfirmedProsecutionCase prosecutionCase : confirmedHearing.getProsecutionCases()) {
+
+            final Optional<UUID> allocatedHearingIdOpt = confirmedHearing.getExistingHearingId();
+            if(allocatedHearingIdOpt.isPresent()) {
+
+                final UUID allocatedHearingId = allocatedHearingIdOpt.get();
+
+                final UpdateHearingToCaseCommand updateHearingToCaseCommand =
+                        new UpdateHearingToCaseCommand(prosecutionCase.getId(), allocatedHearingId, confirmedHearing.getId());
+                LOGGER.debug(COMMAND_PAYLOAD_DEBUG_STRING, COMMAND_UPDATE_HEARING_TO_CASE, updateHearingToCaseCommand);
+
+                sender.send(Enveloper.envelop(objectToJsonValueConverter.convert(updateHearingToCaseCommand))
+                        .withName(COMMAND_UPDATE_HEARING_TO_CASE)
+                        .withMetadataFrom(envelope));
+            }
+        }
     }
 
 }

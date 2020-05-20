@@ -123,7 +123,13 @@
         "authorityId": "AUTHORITY_ID_FIELD",
         "authorityCode": "CPS",
         "caseReference": "45DI277164"
-      }
+      },
+      "linkedCases": [
+        {
+          "caseId": "27109e4a-8727-4527-9f42-6452c3adf6fe",
+          "caseUrn": "45DI277164"
+        }
+      ]
     }
   ],
   "courtCentreId": "COURT_CENTRE_ID_FIELD",

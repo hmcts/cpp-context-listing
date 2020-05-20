@@ -276,7 +276,11 @@
             "referralReason": "for Trial",
             "hearingLanguageNeeds": "ENGLISH"
           }
-        ]
+        ],
+        "weekCommencingDate": {
+          "startDate": "WEEK_COMMENCING_START_DATE",
+          "duration": "WEEK_COMMENCING_DURATION"
+        }
       }
     ]
   },

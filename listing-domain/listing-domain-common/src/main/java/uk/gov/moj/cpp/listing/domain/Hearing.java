@@ -53,8 +53,15 @@ public class Hearing {
 
   private Optional<Boolean> hasAdjournmentDate;
 
+  private final Optional<LocalDate> weekCommencingStartDate;
+
+  private final Optional<LocalDate> weekCommencingEndDate;
+
+  private final Optional<Integer> weekCommencingDurationInWeeks;
+
   public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, final List<HearingDay> hearingDays, final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections, final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final ZonedDateTime startDateTime,
-                 final Type type, final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds, final Optional<Boolean> hasAdjournmentDate){
+                 final Type type, final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds, final Optional<Boolean> hasAdjournmentDate,
+                 final Optional<LocalDate> weekCommencingStartDate, final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks){
     this.allocated = allocated;
     this.courtCentreId = courtCentreId;
     this.courtRoomId = courtRoomId;
@@ -77,6 +84,9 @@ public class Hearing {
     this.courtApplications = courtApplications;
     this.courtApplicationPartyListingNeeds = courtApplicationPartyListingNeeds;
     this.hasAdjournmentDate = hasAdjournmentDate;
+    this.weekCommencingStartDate = weekCommencingStartDate;
+    this.weekCommencingEndDate = weekCommencingEndDate;
+    this.weekCommencingDurationInWeeks = weekCommencingDurationInWeeks;
   }
 
   public Boolean getAllocated() {
@@ -165,6 +175,18 @@ public class Hearing {
     return hasAdjournmentDate;
   }
 
+  public Optional<LocalDate> getWeekCommencingStartDate() {
+    return weekCommencingStartDate;
+  }
+
+  public Optional<LocalDate> getWeekCommencingEndDate() {
+    return weekCommencingEndDate;
+  }
+
+  public Optional<Integer> getWeekCommencingDurationInWeeks() {
+    return weekCommencingDurationInWeeks;
+  }
+
   public static Builder hearing() {
     return new Hearing.Builder();
   }
@@ -195,7 +217,10 @@ public class Hearing {
             Objects.equals(type, hearing.type) &&
             Objects.equals(courtApplications, hearing.courtApplications) &&
             Objects.equals(courtApplicationPartyListingNeeds, hearing.courtApplicationPartyListingNeeds) &&
-            Objects.equals(hasAdjournmentDate, hearing.hasAdjournmentDate);
+            Objects.equals(hasAdjournmentDate, hearing.hasAdjournmentDate) &&
+            Objects.equals(weekCommencingStartDate, hearing.weekCommencingStartDate) &&
+            Objects.equals(weekCommencingEndDate, hearing.weekCommencingEndDate) &&
+            Objects.equals(weekCommencingDurationInWeeks, hearing.weekCommencingDurationInWeeks);
   }
 
   @Override
@@ -228,6 +253,9 @@ public class Hearing {
             ", courtApplications=" + courtApplications +
             ", courtApplicationPartyListingNeeds=" + courtApplicationPartyListingNeeds +
             ", hasAdjournmentDate=" + hasAdjournmentDate +
+            ", weekCommencingStartDate=" + weekCommencingStartDate +
+            ", weekCommencingEndDate=" + weekCommencingEndDate +
+            ", weekCommencingDurationInWeeks=" + weekCommencingDurationInWeeks +
             '}';
   }
 
@@ -275,6 +303,12 @@ public class Hearing {
     private List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds;
 
     private Optional<Boolean> hasAdjournmentDate;
+
+    private Optional<LocalDate> weekCommencingStartDate;
+
+    private Optional<LocalDate> weekCommencingEndDate;
+
+    private Optional<Integer> weekCommencingDurationInWeeks;
 
     public Builder withAllocated(final Boolean allocated) {
       this.allocated = allocated;
@@ -383,8 +417,24 @@ public class Hearing {
       this.hasAdjournmentDate = hasAdjournmentDate;
       return this;
     }
+
+    public Builder withWeekCommencingStartDate(final Optional<LocalDate> weekCommencingStartDate) {
+      this.weekCommencingStartDate = weekCommencingStartDate;
+      return this;
+    }
+
+    public Builder withWeekCommencingEndDate(final Optional<LocalDate> weekCommencingEndDate) {
+      this.weekCommencingEndDate = weekCommencingEndDate;
+      return this;
+    }
+
+    public Builder withWeekCommencingDurationInWeeks(final Optional<Integer> weekCommencingDurationInWeeks) {
+      this.weekCommencingDurationInWeeks = weekCommencingDurationInWeeks;
+      return this;
+    }
+
     public Hearing build() {
-      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate);
+      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks);
     }
   }
 }

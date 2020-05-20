@@ -12,6 +12,7 @@ import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.HearingLanguageNeeds;
 import uk.gov.justice.listing.events.JudicialRoleType;
 import uk.gov.justice.listing.events.LaaReference;
+import uk.gov.justice.listing.events.LinkedToCases;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NewBaseDefendant;
 import uk.gov.justice.listing.events.Offence;
@@ -105,6 +106,7 @@ public class NewDomainToEventConverter {
     public static NewBaseDefendant buildNewBaseDefendant(final uk.gov.moj.cpp.listing.domain.Defendant d) {
         return NewBaseDefendant.newBaseDefendant()
                 .withId(d.getId())
+                .withMasterDefendantId(d.getMasterDefendantId())
                 .withCustodyTimeLimit(d.getCustodyTimeLimit())
                 .withDateOfBirth(d.getDateOfBirth())
                 .withFirstName(d.getFirstName())
@@ -130,6 +132,19 @@ public class NewDomainToEventConverter {
 
     public static List<Offence> buildOffences(final List<uk.gov.moj.cpp.listing.domain.Offence> o) {
         return o.stream().map(NewDomainToEventConverter::buildOffence).collect(toList());
+    }
+
+    public static List<LinkedToCases> convertDomainToLinkedToCasesEvent(List<uk.gov.moj.cpp.listing.domain.LinkedToCases> linkedToCases) {
+        return linkedToCases.stream()
+                .map(NewDomainToEventConverter::buildLinkedToCases)
+                .collect(toList());
+    }
+
+    private static LinkedToCases buildLinkedToCases(uk.gov.moj.cpp.listing.domain.LinkedToCases linkedToCases) {
+        return LinkedToCases.linkedToCases()
+                .withCaseId(linkedToCases.getCaseId())
+                .withCaseUrn(linkedToCases.getCaseUrn())
+                .build();
     }
 
     @SuppressWarnings({"squid:S3655"})

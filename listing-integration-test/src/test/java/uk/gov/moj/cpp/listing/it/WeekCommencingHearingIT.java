@@ -10,13 +10,15 @@ import uk.gov.moj.cpp.listing.steps.WeekCommencingHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
+import java.time.LocalDate;
+
 import org.junit.Test;
 
 public class WeekCommencingHearingIT extends AbstractIT {
 
     @Test
     public void shouldUpdateHearingWithWeekCommencingDatesAndKeepItUnallocated() {
-        final HearingsData hearingsData = HearingsData.hearingsDataForWeekCommencing();
+        final HearingsData hearingsData = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 1);
 
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -36,7 +38,7 @@ public class WeekCommencingHearingIT extends AbstractIT {
 
     @Test
     public void shouldUpdateUpdateHearingWithWeekCommencingDatesToFixedDatesAndAllocateHearing() {
-        final HearingsData hearingsData = HearingsData.hearingsDataForWeekCommencing();
+        final HearingsData hearingsData = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 1);
 
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();

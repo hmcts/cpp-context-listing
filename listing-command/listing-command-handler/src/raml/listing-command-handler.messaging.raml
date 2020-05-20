@@ -37,6 +37,10 @@ baseUri: message://command/handler/message/listing
         schema: !include json/schema/listing.command.add-hearing-to-case.json
         example: !include json/listing.command.add-hearing-to-case.json
 
+      application/vnd.listing.command.update-hearing-to-case+json:
+        schema: !include json/schema/listing.command.update-hearing-to-case.json
+        example: !include json/listing.command.add-hearing-to-case.json
+
       application/vnd.listing.command.add-offences-for-hearing+json:
         schema: !include json/schema/listing.command.add-offences-for-hearing.json
         example: !include json/listing.command.add-offences-for-hearing.json
@@ -142,3 +146,21 @@ baseUri: message://command/handler/message/listing
       application/vnd.listing.command.court-list-request-export+json:
           schema: !include json/schema/listing.command.court-list-request-export.json
           example: !include json/listing.command.court-list-request-export.json
+
+      application/vnd.listing.command.extend-hearing-for-hearing-enriched+json:
+        example: !include json/listing.command.extend-hearing-for-hearing-enriched.json
+        schema:  !include json/schema/listing.command.extend-hearing-for-hearing-enriched.json
+
+      application/vnd.listing.command.add-cases-for-hearing+json:
+        example: !include json/listing.command.add-cases-for-hearing.json
+        schema:  !include json/schema/listing.command.add-cases-for-hearing.json
+
+
+      application/vnd.listing.command.update-linked-cases+json:
+        example: !include json/listing.command.update-linked-cases.json
+        schema:  !include json/schema/listing.command.update-linked-cases.json
+
+      application/vnd.listing.command.update-linked-case-in-hearing+json:
+        example: !include json/listing.command.update-linked-case-in-hearing.json
+        schema:  !include json/schema/listing.command.update-linked-case-in-hearing.json
+

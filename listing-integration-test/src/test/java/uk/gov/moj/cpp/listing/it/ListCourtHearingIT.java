@@ -7,6 +7,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import org.junit.Before;
 import org.junit.Test;
 
+@SuppressWarnings("squid:S1607")
 public class ListCourtHearingIT extends AbstractIT {
 
     static final boolean UNALLOCATED = false;
@@ -26,7 +27,7 @@ public class ListCourtHearingIT extends AbstractIT {
 
     @Test
     public void listHearingWithUnallocatedData() {
-        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsData())) {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsData())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
@@ -34,8 +35,17 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
-    public void listHearingWithAllocatedData() {
-        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary())) {
+    public void shouldListHearingWithAdjournedDate() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+    }
+
+    @Test
+    public void shouldListHearingWithAllocatedData() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
@@ -44,8 +54,8 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
-    public void listHearingWithUnallocatedDataForStandaloneApplication() {
-        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataStandaloneApplication())) {
+    public void shouldListHearingWithUnallocatedDataForStandaloneApplication() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataStandaloneApplication())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListingStandaloneApplication();
             listCourtHearingSteps.verifyHearingListedInActiveMQForStandaloneApplication();
             listCourtHearingSteps.verifyHearingListedFromAPIForStandaloneApplication(UNALLOCATED);
@@ -53,8 +63,8 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
-    public void listHearingWithLegalEntity() {
-        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithLegalEntity())) {
+    public void shouldListHearingWithLegalEntity() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithLegalEntity())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListingWithLegalEntity();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedWithLegalEntity(UNALLOCATED);
@@ -62,16 +72,16 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
-    public void listHearingByIdWhenItExists() {
-        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
+    public void shouldListHearingByIdWhenItExists() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyExistingHearingById();
         }
     }
 
     @Test
-    public void listHearingByIdWhenItDoesntExist() {
-        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
+    public void shouldListHearingByIdWhenItDoesntExist() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyNonExistentHearingById();
         }
@@ -79,8 +89,8 @@ public class ListCourtHearingIT extends AbstractIT {
 
 
     @Test
-    public void listHearingByIdWhenIdIsInvalid() {
-        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
+    public void shouldListHearingByIdWhenIdIsInvalid() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingByIdWithInvalidId();
         }

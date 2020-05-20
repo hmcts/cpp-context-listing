@@ -1,16 +1,19 @@
 package uk.gov.moj.cpp.listing.event.processor.azure.data;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public class HearingDayDetail {
     private String date;
     private String time;
     private int duration;
+    private Optional<String> courtScheduleId;
 
-    public HearingDayDetail(final String date, final String time, final int duration) {
+    public HearingDayDetail(final String date, final String time, final int duration, final Optional<String> courtScheduleId) {
         this.date = date;
         this.time = time;
         this.duration = duration;
+        this.courtScheduleId = courtScheduleId;
     }
 
     public String getDate() {
@@ -35,6 +38,14 @@ public class HearingDayDetail {
 
     public void setDuration(final int duration) {
         this.duration = duration;
+    }
+
+    public Optional<String> getCourtScheduleId() {
+        return courtScheduleId;
+    }
+
+    public void setCourtScheduleId(final Optional<String> courtScheduleId) {
+        this.courtScheduleId = courtScheduleId;
     }
 
     @Override

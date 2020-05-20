@@ -16,12 +16,15 @@ import uk.gov.justice.listing.events.CaseEjectedForHearings;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.HearingAddedToCase;
+import uk.gov.justice.listing.events.HearingUpdatedToCase;
+import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
+import uk.gov.moj.cpp.listing.domain.Cases;
 import uk.gov.moj.cpp.listing.domain.Defendant;
 
 import java.util.ArrayList;
@@ -44,6 +47,7 @@ public class Case implements Aggregate {
     public Object apply(final Object event) {
         return match(event).with(
                 when(HearingAddedToCase.class).apply(this::onHearingAddedToCase),
+                when(HearingUpdatedToCase.class).apply(this::onHearingUpdatedToCase),
                 when(DefendantsToBeUpdated.class).apply(e -> onDefendantsToBeUpdated()),
                 when(OffencesToBeAdded.class).apply(e -> onOffencesToBeAdded()),
                 when(OffencesToBeDeleted.class).apply(e -> onOffencesToBeDeleted()),
@@ -58,6 +62,13 @@ public class Case implements Aggregate {
     public Stream<Object> addHearing(final UUID caseId, final UUID hearingId) {
 
         return apply(Stream.of(new HearingAddedToCase(caseId, hearingId)));
+    }
+
+    public Stream<Object> updateHearing(final UUID caseId, final UUID allocatedHearingId, final UUID unAllocatedHearingId) {
+
+        return apply(Stream.of(new HearingUpdatedToCase(caseId, allocatedHearingId, unAllocatedHearingId)));
+
+
     }
 
     public Stream<Object> updateDefendant(UUID caseId, Defendant defendant) {
@@ -94,6 +105,19 @@ public class Case implements Aggregate {
                 .withCaseId(caseId)
                 .withDefendants(singletonList(NewDomainToEventConverter.buildDefendant(defendant)))
                 .withHearings(hearingIds)
+                .build()));
+    }
+
+    public Stream<Object> linkCases(final String linkActionType, final UUID caseId, final String caseUrn, final Cases cases) {
+        if (hearingIds.isEmpty()) {
+            return Stream.empty();
+        }
+        return apply(Stream.of(LinkedCasesToBeUpdated.linkedCasesToBeUpdated()
+                .withLinkActionType(linkActionType)
+                .withCaseId(caseId)
+                .withCaseUrn(caseUrn)
+                .withHearingIds(hearingIds)
+                .withLinkedToCases(NewDomainToEventConverter.convertDomainToLinkedToCasesEvent(cases.getLinkedToCases()))
                 .build()));
     }
 
@@ -176,6 +200,11 @@ public class Case implements Aggregate {
         this.hearingIds.add(event.getHearingId());
     }
 
+    private void onHearingUpdatedToCase(HearingUpdatedToCase event) {
+        this.hearingIds.remove(event.getId());
+        this.hearingIds.add(event.getExistingHearingId());
+    }
+
     private void onDefendantsToBeUpdated() {
         // Do nothing
     }
@@ -206,5 +235,6 @@ public class Case implements Aggregate {
     private void onCaseResultedDefendantProceedingsUpdated() {
         // Do Nothing
     }
+
 
 }

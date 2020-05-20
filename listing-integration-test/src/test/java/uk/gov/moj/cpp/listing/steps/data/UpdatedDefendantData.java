@@ -6,6 +6,7 @@ import static java.util.UUID.randomUUID;
 import java.util.Arrays;
 import java.util.List;
 import static java.util.Optional.of;
+import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 
 import uk.gov.justice.core.courts.DefendantAlias;
 import uk.gov.justice.core.courts.BailStatus;
@@ -25,6 +26,7 @@ public class UpdatedDefendantData {
     private final String dateOfBirth;
     private final String firstName;
     private final UUID defendantId;
+    private final UUID masterDefendantId;
     private final String lastName;
     private final String legalEntityName;
     private final UUID legalEntityId;
@@ -44,6 +46,7 @@ public class UpdatedDefendantData {
                 .withCustodyTimeLimit("2018-10-10")
                 .withDateOfBirth("1975-01-01")
                 .withDefendantId(defendantData.getDefendantId())
+                .withMasterDefendantId(fromString("12345678-1234-1234-abcd-1234567abcde"))
                 .withFirstName("First Name")
                 .withLastName("Last Name")
                 .withOrganisationName("withOrganisationName")
@@ -63,10 +66,10 @@ public class UpdatedDefendantData {
                                 .withLaaContractNumber("LAACONTRACT")
                                 .build())
                         .build())
-                .withAliases(Arrays.asList(DefendantAlias.defendantAlias()
-                										.withFirstName(of("Alias First Name"))
-                										.withLastName(of("Alias Last Name"))
-                										.build()))
+                .withAliases(asList(DefendantAlias.defendantAlias()
+                        .withFirstName(of("Alias First Name"))
+                        .withLastName(of("Alias Last Name"))
+                        .build()))
                 .build();
     }
 
@@ -75,6 +78,7 @@ public class UpdatedDefendantData {
                                 final String dateOfBirth,
                                 final String firstName,
                                 final UUID defendantId,
+                                final UUID masterDefendantId,
                                 final String lastName,
                                 final String organisationName,
                                 final String legalEntityName,
@@ -91,6 +95,7 @@ public class UpdatedDefendantData {
         this.dateOfBirth = dateOfBirth;
         this.firstName = firstName;
         this.defendantId = defendantId;
+        this.masterDefendantId = masterDefendantId;
         this.lastName = lastName;
         this.organisationName = organisationName;
         this.legalEntityName = legalEntityName;
@@ -121,6 +126,10 @@ public class UpdatedDefendantData {
     }
 
 	public UUID getDefendantId() { return defendantId; }
+
+    public UUID getMasterDefendantId() {
+        return masterDefendantId;
+    }
 
     public String getLastName() { return lastName; }
 
@@ -166,6 +175,7 @@ public class UpdatedDefendantData {
         private String dateOfBirth;
         private String firstName;
         private UUID defendantId;
+        private UUID masterDefendantId;
         private String lastName;
         private String legalEntityName;
         private UUID legalEntityId;
@@ -204,6 +214,11 @@ public class UpdatedDefendantData {
 
         public Builder withDefendantId(final UUID defendantId) {
             this.defendantId = defendantId;
+            return this;
+        }
+
+        public Builder withMasterDefendantId(final UUID masterDefendantId) {
+            this.masterDefendantId = masterDefendantId;
             return this;
         }
 
@@ -264,7 +279,7 @@ public class UpdatedDefendantData {
         }
 
         public UpdatedDefendantData build() {
-            return new UpdatedDefendantData(bailStatus, custodyTimeLimit, dateOfBirth, firstName, defendantId, lastName, organisationName,
+            return new UpdatedDefendantData(bailStatus, custodyTimeLimit, dateOfBirth, firstName, defendantId, masterDefendantId, lastName, organisationName,
             								legalEntityName, legalEntityId, specificRequirements, courtCentreId, pncId, aliases, restrictFromCourtList, isYouth,associatedDefenceOrganisation);
         }
     }

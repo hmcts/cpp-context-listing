@@ -17,6 +17,15 @@ rule "Query - API - listing.search.hearings"
     $outcome.setSuccess(true);
 end
 
+rule "Query - API - listing.available.search.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.available.search.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE));
+  then
+    $outcome.setSuccess(true);
+end
+
 rule "Query - API - listing.range.search.hearings"
   when
     $outcome: Outcome();

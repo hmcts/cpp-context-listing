@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.command.api.nondefaultday;
+package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.time.LocalDate.now;
 import static java.util.Optional.empty;
@@ -18,6 +18,7 @@ import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,7 +37,7 @@ public class NonDefaultDayDurationBuilderTest {
 
     private static final ZonedDateTime NDD2_START_TIME = ZonedDateTime.now().plusDays(1);
 
-    private NonDefaultDayDurationBuilder builder = new NonDefaultDayDurationBuilder();
+    private final NonDefaultDayDurationBuilder builder = new NonDefaultDayDurationBuilder();
 
     @Test
     public void shouldTestHearingWithAllDaySessionBooking() {
@@ -44,7 +45,18 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(asList(allDaySession));
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.updateNonDefaultDayWithNewDuration(updateHearingForListing);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, Arrays.asList(allDaySession), false);
+
+        assertThat(updateHearingForListing, equalTo(newUpdateHearingForListing));
+    }
+
+    @Test
+    public void shouldTestHearingWithCountBasedSessionBooking() {
+        final NonDefaultDay countBasedSession = getCountBasedSingleSession();
+
+        final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(asList(countBasedSession));
+
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, Arrays.asList(countBasedSession), false);
 
         assertThat(updateHearingForListing, equalTo(newUpdateHearingForListing));
     }
@@ -55,7 +67,7 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.updateNonDefaultDayWithNewDuration(updateHearingForListing);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays, false);
 
         assertHearingContentMatchesOldHearing(updateHearingForListing, newUpdateHearingForListing);
 
@@ -70,7 +82,7 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.updateNonDefaultDayWithNewDuration(updateHearingForListing);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays, false);
 
         assertHearingContentMatchesOldHearing(updateHearingForListing, newUpdateHearingForListing);
 
@@ -85,7 +97,7 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.updateNonDefaultDayWithNewDuration(updateHearingForListing);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays, false);
 
         assertHearingContentMatchesOldHearing(updateHearingForListing, newUpdateHearingForListing);
 
@@ -100,7 +112,7 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.updateNonDefaultDayWithNewDuration(updateHearingForListing);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays, false);
 
         assertHearingContentMatchesOldHearing(updateHearingForListing, newUpdateHearingForListing);
 
@@ -215,6 +227,16 @@ public class NonDefaultDayDurationBuilderTest {
                 .withCourtScheduleId(of("1111"))
                 .withCourtRoomId(of(1245)).build();
 
+    }
+
+    private NonDefaultDay getCountBasedSingleSession() {
+        return NonDefaultDay.nonDefaultDay()
+                .withDuration(of(1))
+                .withStartTime(NDD1_START_TIME)
+                .withSession(of("AM"))
+                .withOucode(of(OUCODE))
+                .withCourtScheduleId(of("1111"))
+                .withCourtRoomId(of(1245)).build();
     }
 
     private Optional<LocalDate> getNewStartDate(final List<NonDefaultDay> nonDefaultDays) {

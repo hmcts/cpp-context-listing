@@ -4,7 +4,7 @@ Feature: List a hearing
 
     Given no previous events
     When you list to a Hearing using a new hearing details
-    Then hearing listed
+    Then new hearing listed
 
   Scenario: A request to list a hearing with no end date results in an unallocated hearing
             being listed with end date equal to start date

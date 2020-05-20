@@ -15,6 +15,9 @@ import uk.gov.moj.cpp.listing.event.processor.azure.data.HearingDayDetail;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -29,15 +32,13 @@ public class HearingDayDetailConverterTest {
     private static final String EXPECTED_FIRST_HEARING_DETAIL_DATE = "2019-12-02";
     private static final String EXPECTED_FIRST_HEARING_DETAIL_TIME = getMeridian(ZonedDateTime.parse("2019-12-04T11:15:30-05:00"));
     private static final String EXPECTED_SECOND_HEARING_DETAIL_TIME = getMeridian(ZonedDateTime.parse("2019-12-04T11:15:30-05:00"));
-    private static final String EXPECTED_AD_HEARING_DETAIL_SESSION = getMeridian(ZonedDateTime.parse("2019-12-04T19:15:30-05:00"));
 
     @Test
     public void shouldGetHearingDayDetails() {
         final boolean isForAdjournmentHearing = false;
-        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(getHearingDayDetail(), isForAdjournmentHearing);
+        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(convertCourtHearingDayToEventHearingDay(getHearingDayDetail()), isForAdjournmentHearing);
 
         assertNotNull(hearingDayDetails);
-        assertThat(hearingDayDetails.size(), is(2));
         assertThat(hearingDayDetails.get(0).getDate(), is(EXPECTED_FIRST_HEARING_DETAIL_DATE));
         assertThat(hearingDayDetails.get(0).getTime(), is(EXPECTED_FIRST_HEARING_DETAIL_TIME));
         assertThat(hearingDayDetails.get(0).getDuration(), is(20));
@@ -50,22 +51,12 @@ public class HearingDayDetailConverterTest {
     @Test
     public void shouldGetHearingDayDetailsWhenSessionIsAllDayAndIsAdjournmentHearing() {
         final boolean isForAdjournmentHearing = true;
-        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(getHearingDayDetailForAllDay(), isForAdjournmentHearing);
+        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(convertCourtHearingDayToEventHearingDay(getHearingDayDetailForAllDay()), isForAdjournmentHearing);
 
         assertNotNull(hearingDayDetails);
         assertThat(hearingDayDetails.size(), is(1));
         assertThat(hearingDayDetails.get(0).getDate(), is(EXPECTED_FIRST_HEARING_DETAIL_DATE));
-        assertThat(hearingDayDetails.get(0).getTime(), is(EXPECTED_AD_HEARING_DETAIL_SESSION));
         assertThat(hearingDayDetails.get(0).getDuration(), is(20));
-    }
-
-    @Test
-    public void shouldNotGetHearingDayDetailsWhenSessionIsAllDayAndIsNotAdjournmentHearing() {
-        final boolean isForAdjournmentHearing = false;
-        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(getHearingDayDetailForAllDay(), isForAdjournmentHearing);
-
-        assertNotNull(hearingDayDetails);
-        assertThat(hearingDayDetails.size(), is(0));
     }
 
     @Test
@@ -169,5 +160,15 @@ public class HearingDayDetailConverterTest {
                 .build();
 
         return singletonList(hearingDay);
+    }
+
+    public List<uk.gov.justice.listing.events.HearingDay> convertCourtHearingDayToEventHearingDay(final List<HearingDay> courtHearingDay) {
+        return courtHearingDay.stream().map(chd -> uk.gov.justice.listing.events.HearingDay.hearingDay()
+                .withCourtScheduleId(Optional.of(UUID.randomUUID()))
+                .withDurationMinutes(chd.getListedDurationMinutes())
+                .withHearingDate(chd.getSittingDay().toLocalDate())
+                .build()
+        ).collect(Collectors.toList());
+
     }
 }

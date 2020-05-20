@@ -9,20 +9,24 @@ import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toSet;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
+import static org.apache.commons.lang3.StringUtils.contains;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
+import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.LocalDates;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
@@ -30,16 +34,24 @@ import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtLis
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
+import uk.gov.moj.cpp.listing.query.view.dto.LinkedCase;
+import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
+import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
@@ -48,6 +60,9 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.NotFoundException;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -77,7 +92,11 @@ public class HearingQueryView {
     private static final String LIST_ID = "listId";
     private static final String HEARINGS = "hearings";
     private static final String ID = "id";
+    private static final String CASE_URN = "caseUrn";
+    private static final String HEARING_ID = "hearingId";
+    private static final String SEARCH_CRITERIA = "searchCriteria";
     private static final String NAME_LISTING_SEARCH_HEARING = "listing.search.hearing";
+    private static final String EMPTY_STRING = "";  // It is needed as jsonb query cannot handle null as per our query condition
 
     @Inject
     private HearingRepository repository;
@@ -147,6 +166,64 @@ public class HearingQueryView {
         );
     }
 
+    @Handles("listing.available.search.hearings")
+    public JsonEnvelope searchAvailableHearings(final JsonEnvelope query) throws IOException {
+        final String hearingId = query.payloadAsJsonObject().getString(HEARING_ID, null);
+        final String caseUrnsQueryParam = query.payloadAsJsonObject().getString(CASE_URN, null);
+        final String searchCriteriaQueryParam = query.payloadAsJsonObject().getString(SEARCH_CRITERIA, null);
+        final String jurisdictionType = query.payloadAsJsonObject().getString(JURISDICTION_TYPE, null);
+        final boolean allocated = true;
+
+        // search hearing by incoming hearing id
+        final Hearing hearing = repository.findBy(UUID.fromString(hearingId));
+        final JsonNode listedCasesJsonNode = hearing.getProperties().findPath("listedCases");
+        final String endDate = hearing.getProperties().get("endDate").asText();
+        final List<ListedCase> listedCases = extractListedCases(listedCasesJsonNode);
+        final Set<String> masterDefendantSet = new HashSet<>();
+        final Set<String> caseUrnSet = new HashSet<>();
+        final Set<String> linkedCaseUrnSet = new HashSet<>();
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+
+        if (Objects.nonNull(caseUrnsQueryParam)) {
+            caseUrnSet.addAll(Stream.of(caseUrnsQueryParam.split(","))
+                    .map(String::trim)
+                    .map(String::toUpperCase)
+                    .collect(Collectors.toSet()));
+        }
+
+        extractCaseUrn(searchCriteriaQueryParam, listedCases, caseUrnSet);
+        extractMasterDefendantId(searchCriteriaQueryParam, listedCases, masterDefendantSet);
+        extractJurisdictionType(jurisdictionType, jurisdictionTypeSet);
+        extractLinkedCaseUrn(searchCriteriaQueryParam, listedCases, linkedCaseUrnSet);
+
+        LOGGER.info("\n Query params -  " +
+                        "allocated: {}, " +
+                        "jurisdictionTypeSet : {}, " +
+                        "endDate : {}, " +
+                        "hearingId : {}, " +
+                        "caseUrns : {}, " +
+                        "masterDefendantIds : {}, " +
+                        "linkedCaseUrn : {}",
+                allocated, jurisdictionTypeSet, endDate, hearingId, caseUrnSet, masterDefendantSet, linkedCaseUrnSet);
+
+        final List<Hearing> hearings = repository.findHearings(
+                allocated,
+                jurisdictionTypeSet,
+                endDate,
+                hearingId,
+                caseUrnSet,
+                masterDefendantSet,
+                linkedCaseUrnSet
+                );
+
+        return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
+                createObjectBuilder()
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
+                        .build()
+        );
+    }
+
+
     @Handles("listing.range.search.hearings")
     public JsonEnvelope rangeSearchHearings(final JsonEnvelope query) {
         return rangeSearchQuery.rangeSearchHearings(query);
@@ -213,7 +290,7 @@ public class HearingQueryView {
     }
 
     private JsonObject getUnpublishedCourtListResponsePayload(final JsonEnvelope query, final JsonObject queryPayload) {
-        if(LOGGER.isInfoEnabled()){
+        if (LOGGER.isInfoEnabled()) {
             LOGGER.info(format("getUnpublishedCourtListResponsePayload payLoad = %s", queryPayload));
         }
         final String endDate = trimToEmpty(queryPayload.getString("endDate", ""));
@@ -221,7 +298,7 @@ public class HearingQueryView {
                 fromString(queryPayload.getString("courtCentreId")),
                 uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.valueOf(queryPayload.getString("publishCourtListType")),
                 parse(queryPayload.getString("startDate")),
-                StringUtils.isNotBlank(endDate)? endDate: StringUtils.EMPTY,
+                StringUtils.isNotBlank(endDate) ? endDate : StringUtils.EMPTY,
                 query
         );
     }
@@ -344,5 +421,65 @@ public class HearingQueryView {
         } else {
             return ALL_AUTHORITY_CODES_SEARCH;
         }
+    }
+
+    private void extractMasterDefendantId(String searchCriteria, List<ListedCase> listedCases, Set<String> masterDefendants) {
+        if (Objects.nonNull(searchCriteria) && searchCriteria.contains(MATCHED_DEFENDANTS.name())) {
+            masterDefendants.addAll(listedCases.stream()
+                    .flatMap(l -> l.getDefendants().stream())
+                    .map(d -> d.getMasterDefendantId().get().toString())
+                    .collect(Collectors.toSet()));
+        } else {
+            masterDefendants.add(EMPTY_STRING);
+        }
+    }
+
+    private void extractCaseUrn(String searchCriteria, List<ListedCase> listedCases, Set<String> caseUrns) {
+        if (Objects.nonNull(searchCriteria) && searchCriteria.contains(SearchCriteria.CASE_IN_HEARING.name())) {
+            caseUrns.addAll(listedCases.stream()
+                    .map(l -> l.getCaseIdentifier().getCaseReference().toUpperCase())
+                    .collect(Collectors.toSet()));
+        }
+        if (caseUrns.isEmpty()) {
+            caseUrns.add(EMPTY_STRING);
+        }
+    }
+
+    private void extractLinkedCaseUrn(final String searchCriteriaQueryParam, final List<ListedCase> listedCases, final Set<String> linkedCaseUrnSet) {
+        if (contains(searchCriteriaQueryParam, MATCHED_DEFENDANTS.name())) {
+            linkedCaseUrnSet.addAll(listedCases.stream()
+                    .map(ListedCase::getLinkedCases)
+                    .filter(Objects::nonNull)
+                    .flatMap(Collection::stream)
+                    .map(LinkedCase::getCaseUrn)
+                    .map(String::toUpperCase)
+                    .collect(Collectors.toSet()));
+        }
+
+        if(linkedCaseUrnSet.isEmpty()){
+            linkedCaseUrnSet.add(EMPTY_STRING);
+        }
+    }
+
+    private void extractJurisdictionType(String jurisdictionType, Set<String> jurisdictionTypeSet) {
+        if (Objects.nonNull(jurisdictionType)) {
+            jurisdictionTypeSet.add(jurisdictionType);
+        } else {
+            jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
+            jurisdictionTypeSet.add(JurisdictionType.MAGISTRATES.name());
+        }
+    }
+
+    private List<ListedCase> extractListedCases(JsonNode listedCasesJsonNode) throws IOException {
+        final ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
+        final List<ListedCase> listedCases = new ArrayList<>();
+        if (listedCasesJsonNode != null && !listedCasesJsonNode.isMissingNode()) {
+            final ArrayNode arrayNode = (ArrayNode) listedCasesJsonNode;
+            for (int index = 0; index < arrayNode.size(); index++) {
+                final JsonNode listedCase = arrayNode.get(index);
+                listedCases.add(mapper.treeToValue(listedCase, ListedCase.class));
+            }
+        }
+        return listedCases;
     }
 }

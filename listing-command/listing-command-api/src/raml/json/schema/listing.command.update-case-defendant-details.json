@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/courts/listing.update-case-defendant-details.json",
+  "id": "http://justice.gov.uk/listing/command/listing.update-case-defendant-details.json",
   "type": "object",
   "additionalProperties": false,
   "properties": {

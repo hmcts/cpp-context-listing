@@ -149,7 +149,7 @@ public class DefendantEventListener {
                 .withNationalityDescription(updatedDefendant.getNationalityDescription())
                 .withLegalAidStatus(originalDefendant.getLegalAidStatus())
                 .withProceedingsConcluded(originalDefendant.getProceedingsConcluded())
-                .withMasterDefendantId(originalDefendant.getMasterDefendantId())
+                .withMasterDefendantId(updatedDefendant.getMasterDefendantId())
                 .withCourtProceedingsInitiated(originalDefendant.getCourtProceedingsInitiated())
                 .build();
 

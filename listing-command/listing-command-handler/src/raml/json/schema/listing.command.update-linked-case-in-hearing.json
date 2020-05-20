@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/update-linked-case-in-hearing.json",
+  "type": "object",
+  "properties": {
+    "linkActionType": {
+      "type": "string"
+    },
+    "caseId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "caseUrn": {
+      "type": "string"
+    },
+    "hearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "linkedToCases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "caseId": {
+            "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+          },
+          "caseUrn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "caseId",
+          "caseUrn"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "linkActionType",
+    "caseId",
+    "caseUrn",
+    "hearingId",
+    "linkedToCases"
+  ],
+  "additionalProperties": false
+}

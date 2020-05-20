@@ -1,13 +1,17 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static java.util.UUID.randomUUID;
+import static java.util.stream.Collectors.joining;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.moj.cpp.listing.utils.AuthorisationServiceStub.stubEnableAllCapabilities;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlots;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 
 import uk.gov.justice.services.test.utils.core.rest.RestClient;
 
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.ws.rs.core.MultivaluedHashMap;
@@ -40,6 +44,7 @@ public class AbstractIT {
     public void setUp() {
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubEnableAllCapabilities();
+        stubGetProvisionalBookedSlots();
     }
 
     protected static void setLoggedInUser(final UUID userId) {
@@ -54,5 +59,23 @@ public class AbstractIT {
         final MultivaluedMap<String, Object> header = new MultivaluedHashMap<>();
         header.add(USER_ID, getLoggedInUser().toString());
         return header;
+    }
+
+    public String getQueryString(final Map<String, String> params) {
+        return params.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(joining("&"));
+    }
+
+    public Map<String, String> getParams() {
+        final Map<String, String> params = new HashMap<>();
+        params.put("panel", "ADULT");
+        params.put("oucodeL2Code", "Z01KR05");
+        params.put("sessionStartDate", "2017-10-11");
+        params.put("sessionEndDate", "2020-10-11");
+        params.put("pageSize", "20");
+        params.put("pageNumber", "1");
+
+        return params;
     }
 }

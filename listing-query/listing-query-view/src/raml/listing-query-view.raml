@@ -57,6 +57,39 @@ protocols: [ HTTP, HTTPS ]
                     example:  !include json/listing.search.hearings.json
                     schema:  !include  json/schema/listing.search.hearings.json
 
+/hearings/available-search:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.available.search.hearings
+        ...
+      queryParameters:
+        hearingId:
+          description: hearing id
+          type: string
+          required: true
+        caseUrn:
+          description: Comma seperated specific case urns
+          type: string
+          required: false
+        searchCriteria:
+          description: comma seperated list of search criteria. Must be at least one/both of the following values CASE_IN_HEARING, MATCHED_DEFENDANTS
+          type: string
+          required: false
+        jurisdictionType:
+           description: it one of type of jurisdictionType i.e. CROWN, MAGISTRATES
+           type: string
+           required: false
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+
 /hearings/range-search:
    get:
       description: |

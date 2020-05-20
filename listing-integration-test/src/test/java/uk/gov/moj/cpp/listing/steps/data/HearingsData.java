@@ -13,8 +13,12 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
-    public static HearingsData hearingsDataForWeekCommencing() {
-        return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing());
+    public static HearingsData hearingsData(final UUID hearingId) {
+        return new HearingsData(HearingsDataFactory.hearingsData(hearingId));
+    }
+
+    public static HearingsData hearingsDataForWeekCommencing(final LocalDate startDate, final Integer duration) {
+        return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing(startDate, duration));
     }
 
     public static HearingsData hearingsDataWithLegalEntity() {
@@ -43,6 +47,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate());
     }
 
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(final Integer numberOfHearings) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(numberOfHearings));
+    }
+
     public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final UUID courtCentreId) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(courtCentreId));
     }
@@ -55,19 +63,23 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, judiciaryType));
     }
 
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData));
+    }
+
     public static HearingsData hearingsDataStandaloneApplication() {
         return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplication());
     }
 
 
-    public HearingsData combine(HearingsData moreHearingsData) {
+    public HearingsData combine(final HearingsData moreHearingsData) {
         final List<HearingData> combinedHearingsData = new ArrayList<>();
         combinedHearingsData.addAll(this.getHearingData());
         combinedHearingsData.addAll(moreHearingsData.getHearingData());
         return new HearingsData(combinedHearingsData);
     }
 
-    private HearingsData(List<HearingData> hearingData) {
+    private HearingsData(final List<HearingData> hearingData) {
         this.hearingData = hearingData;
     }
 

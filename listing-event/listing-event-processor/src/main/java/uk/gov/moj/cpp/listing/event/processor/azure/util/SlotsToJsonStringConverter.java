@@ -7,7 +7,10 @@ import static uk.gov.moj.cpp.listing.event.processor.azure.util.HearingDayDetail
 
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.justice.listing.events.HearingAllocatedForListing;
+import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.NonDefaultDay;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.HearingDayDetail;
@@ -35,6 +38,9 @@ public class SlotsToJsonStringConverter {
     @Inject
     private ListingReferenceDataService listingReferenceDataService;
 
+    @Inject
+    private JsonObjectToObjectConverter jsonObjectConverter;
+
     public String getSlotDetailFromHearingConfirmed(final JsonEnvelope jsonEnvelope, final ConfirmedHearing confirmedHearing, final boolean isForAdjournmentHearing) {
 
         final CourtCentre courtCentre = confirmedHearing.getCourtCentre();
@@ -57,17 +63,20 @@ public class SlotsToJsonStringConverter {
 
         final String ouCode = payLoadForCourtRoom.payloadAsJsonObject().getString("oucode");
 
-        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(confirmedHearing.getHearingDays(), isForAdjournmentHearing);
+        final HearingAllocatedForListing allocatedForListing = jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
+        final List<HearingDay> hearingDays = allocatedForListing.getHearingDays();
 
-        if(hearingDayDetails.isEmpty()){
+        final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(hearingDays, isForAdjournmentHearing);
+
+        if (hearingDayDetails.isEmpty()) {
             return StringUtils.EMPTY;
         }
 
         final String hearingId = confirmedHearing.getId().toString();
-        final Optional<String> courtScheduleId = empty();
+        final Optional<String> bookingId = jsonEnvelope.payloadAsJsonObject().keySet().contains("bookingId") ? Optional.of(jsonEnvelope.payloadAsJsonObject().getString("bookingId")) : empty();
 
         return toJSONString(hearingDayDetails.stream()
-                .map(hearingDayDetail -> retrieveSlotDetail(hearingDayDetail, ouCode, courtRoomId, hearingId, courtScheduleId))
+                .map(hearingDayDetail -> retrieveSlotDetail(hearingDayDetail, ouCode, courtRoomId, hearingId, bookingId))
                 .collect(toList()));
     }
 
@@ -84,7 +93,7 @@ public class SlotsToJsonStringConverter {
                                                  final String ouCode,
                                                  final int courtRoomId,
                                                  final String hearingId,
-                                                 final Optional<String> courtScheduleId) {
+                                                 final Optional<String> bookingId) {
 
         final SlotDetailBuilder slotDetailBuilder = SlotDetailBuilder.slotDetail()
                 .withOuCode(ouCode)
@@ -94,7 +103,8 @@ public class SlotsToJsonStringConverter {
                 .withSession(hearingDayDetail.getTime())
                 .withDuration(hearingDayDetail.getDuration());
 
-        courtScheduleId.ifPresent(slotDetailBuilder::withCourtScheduleId);
+        bookingId.ifPresent(slotDetailBuilder::withBookingId);
+        hearingDayDetail.getCourtScheduleId().ifPresent(slotDetailBuilder::withCourtScheduleId);
 
         return slotDetailBuilder.build();
     }

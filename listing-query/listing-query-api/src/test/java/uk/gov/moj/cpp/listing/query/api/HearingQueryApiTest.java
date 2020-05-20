@@ -50,6 +50,7 @@ public class HearingQueryApiTest {
     private static final String LISTING_RANGE_SEARCH = "listing.range";
     private static final String LISTING_COURT_LIST_PUBLISH_STATUS = "listing.court.list.publish.status";
     private static final String HEARING_SLOTS = "listing.search.hearing.slots";
+    private static final String LISTING_AVAILABLE_HEARING_SEARCH = "listing.available";
 
     private static final List<String> METHODS_WHICH_ARE_NOT_MERELY_PASS_THROUGH = ImmutableList.of("searchForHearingById", "searchHearingSlots");
 
@@ -77,7 +78,7 @@ public class HearingQueryApiTest {
                 .filter(action -> !action.isEmpty())
                 .filter(line -> line.contains(NAME))
                 .filter(line -> !line.contains(HEARING_SLOTS))
-                .filter(line -> line.contains(LISTING_SEARCH) || line.contains(LISTING_RANGE_SEARCH) || line.contains(LISTING_COURT_LIST_PUBLISH_STATUS) || line.contains(LISTING_SEARCH_HEARING))
+                .filter(line -> line.contains(LISTING_SEARCH) || line.contains(LISTING_AVAILABLE_HEARING_SEARCH) || line.contains(LISTING_RANGE_SEARCH) || line.contains(LISTING_COURT_LIST_PUBLISH_STATUS) || line.contains(LISTING_SEARCH_HEARING))
                 .map(line -> line.replaceAll(NAME, "").trim())
                 .collect(toList());
 

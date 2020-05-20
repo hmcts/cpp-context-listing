@@ -13,8 +13,11 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 
 public class HearingDaysCalculator {
 
@@ -25,10 +28,10 @@ public class HearingDaysCalculator {
     }
 
 
-    public static List<HearingDay> calculate(LocalDate startDate, LocalDate endDate, List<LocalDate> nonSittingDays,
-                                       List<NonDefaultDay> nonDefaultDays,
-                                       LocalTime defaultStartTime,
-                                       Integer defaultDuration) {
+    public static List<HearingDay> calculate(final LocalDate startDate, final LocalDate endDate, final List<LocalDate> nonSittingDays,
+                                             final List<NonDefaultDay> nonDefaultDays,
+                                             final LocalTime defaultStartTime,
+                                             final Integer defaultDuration) {
 
         if (startDate == null || endDate == null) {
             return emptyList();
@@ -49,10 +52,11 @@ public class HearingDaysCalculator {
 
     }
 
-    private static HearingDay buildDefaultHearingDay(LocalTime defaultStartTime, Integer defaultDuration, LocalDate date) {
+    private static HearingDay buildDefaultHearingDay(final LocalTime defaultStartTime, final Integer defaultDuration, final LocalDate date) {
         final LocalTime endTime = defaultStartTime.plusMinutes(defaultDuration);
 
         return HearingDay.hearingDay()
+                .withCourtScheduleId(Optional.empty())
                 .withHearingDate(date)
                 .withStartTime(ZonedDateTime.of(date, defaultStartTime, BST)
                         .withZoneSameInstant(UTC))
@@ -62,18 +66,22 @@ public class HearingDaysCalculator {
                 .build();
     }
 
-    private static HearingDay buildNonDefaultHearingDay(Map<LocalDate, NonDefaultDay> startTimesMap, LocalDate localDate, Integer defaultDuration) {
+    @SuppressWarnings("squid:S3655")
+    private static HearingDay buildNonDefaultHearingDay(final Map<LocalDate, NonDefaultDay> startTimesMap, final LocalDate localDate, final Integer defaultDuration) {
         final NonDefaultDay nonDefaultDay = startTimesMap.get(localDate);
         final Integer durationMinutes = nonDefaultDay.getDuration().orElse(defaultDuration);
         final ZonedDateTime endDateTime = nonDefaultDay.getStartTime().plusMinutes(durationMinutes);
 
-        return HearingDay.hearingDay()
+        final HearingDay.Builder builder = HearingDay.hearingDay()
                 .withHearingDate(nonDefaultDay.getStartTime().toLocalDate())
                 .withStartTime(nonDefaultDay.getStartTime())
                 .withDurationMinutes(durationMinutes)
                 .withSequence(0)
-                .withEndTime(endDateTime)
-                .build();
+                .withEndTime(endDateTime);
+        if (nonDefaultDay.getCourtScheduleId().isPresent()) {
+            builder.withCourtScheduleId(Optional.of(UUID.fromString(nonDefaultDay.getCourtScheduleId().get())));
+        }
+        return builder.build();
     }
 
 }

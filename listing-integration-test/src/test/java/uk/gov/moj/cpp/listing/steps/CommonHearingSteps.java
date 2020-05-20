@@ -28,9 +28,9 @@ public class CommonHearingSteps extends AbstractIT {
         this.hearingsData = hearingsData;
     }
 
-    public void verifyHearingListedFromAPI(boolean isAllocated) {
+    public void verifyHearingListedFromAPI(final boolean isAllocated) {
 
-        HearingData hearingData = hearingsData.getHearingData().get(0);
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
@@ -45,8 +45,7 @@ public class CommonHearingSteps extends AbstractIT {
                                         equalTo(hearingData.getCourtApplications().get(0).getId().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].id",
                                         equalTo(hearingData.getListedCases().get(0).getCaseId().toString())),
-                                withJsonPath("$.hearings[0].listedCases[1" +
-                                                "].id",
+                                withJsonPath("$.hearings[0].listedCases[1].id",
                                         equalTo(hearingData.getListedCases().get(1).getCaseId().toString()))
                         )));
     }

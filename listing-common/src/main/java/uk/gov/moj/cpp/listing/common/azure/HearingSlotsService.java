@@ -1,7 +1,5 @@
 package uk.gov.moj.cpp.listing.common.azure;
 
-import uk.gov.justice.services.common.configuration.Value;
-
 import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -17,17 +15,14 @@ public class HearingSlotsService {
 
     private static final String SERVICE = "hearingSlots";
 
-    private static final String SUBSCRIPTION_KEY = "rotasl.hearing-slots.subscription.key";
+    @Inject
+    private RotaslAzureConfig rotaslAzureConfig;
 
     @Inject
-    @Value(key = SUBSCRIPTION_KEY, defaultValue = "75e6ff1510914801b91d176bcbeef0dc")
-    private String subscriptionKey;
-
-    @Inject
-    private DeafultRotaslAzureService rotaslAzureService;
+    private DefaultRotaslAzureService rotaslAzureService;
 
     public Response search(final Map<String, String> params) {
-        return rotaslAzureService.get(SERVICE, subscriptionKey, params);
+        return rotaslAzureService.get(SERVICE, rotaslAzureConfig.getSubscriptionKey(), params);
     }
 
     public Response update(final Object payload) {
@@ -35,6 +30,6 @@ public class HearingSlotsService {
             LOGGER.info("Update slots in Azure S & L with slot details '{}'", payload);
         }
 
-        return rotaslAzureService.put(SERVICE, subscriptionKey, payload);
+        return rotaslAzureService.put(SERVICE, rotaslAzureConfig.getSubscriptionKey(), payload);
     }
 }

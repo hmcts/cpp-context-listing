@@ -22,14 +22,13 @@ public class CaseMarkerUpdateIT extends AbstractIT {
     private static final String PUBLIC_EVENT_CASE_SENT_FOR_LISTING = "public.progression.case-markers-updated";
     private static final String TOPIC_NAME = "public.event";
 
-    private MessageConsumerClient publicMessageConsumer = new MessageConsumerClient();
+    private final MessageConsumerClient publicMessageConsumer = new MessageConsumerClient();
 
-    private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
-    private ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
+    private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+    private final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
 
     @Before
     public void setup() {
-
         publicMessageConsumer.startConsumer(PUBLIC_EVENT_CASE_SENT_FOR_LISTING, TOPIC_NAME);
     }
 
@@ -57,7 +56,7 @@ public class CaseMarkerUpdateIT extends AbstractIT {
     }
 
     private HearingsData listCourtHearing() {
-        HearingsData hearingsData = HearingsData.hearingsData();
+        final HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();

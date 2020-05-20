@@ -5,6 +5,7 @@ import static java.time.LocalDate.now;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
@@ -27,7 +28,9 @@ import uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -46,6 +49,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final Boolean UNALLOCATED = false;
     private static final UUID HEARING_ID = UUID.randomUUID();
     private static final UUID OTHER_HEARING_ID = UUID.randomUUID();
+    private static final UUID OTHER_HEARING_ID2 = UUID.randomUUID();
     private static final UUID COURT_ROOM_ID = UUID.randomUUID();
     private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
     private static final UUID OTHER_COURT_CENTRE_ID = UUID.randomUUID();
@@ -90,6 +94,9 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final String END_TIME_FIELD = "END_TIME_FIELD";
     private static final String HEARING_DATE_FIELD = "HEARING_DATE_FIELD";
     private static final String CASE_REFERENCE = "45DI277164";
+    private static final String MASTER_DEFENDANT_ID = "e2b13dc1-de95-11e8-9df5-e56feb0784f6";
+    private static final String LINKED_CASE_URN = "45DI277164";
+    private static final String EMPTY_STRING = "";
     private static final String TEST_DATA_SAMPLE_HEARING_JSON = "test-data/sample-hearing.json";
 
     @Inject
@@ -789,6 +796,252 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 WEEK_COMMENCING_END,
                 "test-data/sample-hearing-for-week-commencing.json"
         );
+    }
+
+    @Test
+    public void shouldSaveAndFindAvailableHearingByCaseUrn() {
+        //given
+        givenAvailableHearings();
+        final Set<String> caseUrnSet = new HashSet<>();
+        caseUrnSet.add(CASE_REFERENCE);
+
+        final Set<String> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(EMPTY_STRING);
+
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
+
+        final Set<String> linkedCaseUrn = new HashSet<>();
+        linkedCaseUrn.add(EMPTY_STRING);
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(
+                ALLOCATED,
+                jurisdictionTypeSet,
+                END_SEARCH_DATE.toString(),
+                HEARING_ID.toString(),
+                caseUrnSet,
+                masterDefendantIdSet,
+                linkedCaseUrn);
+
+        //then
+        assertThat(actualHearings.size(), is(1));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", not(HEARING_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.endDate", equalTo(to(END_DATE))));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(ALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.caseReference", equalTo(CASE_REFERENCE)));
+    }
+
+    @Test
+    public void shouldSaveAndFindAvailableHearingByMasterDefendantId() {
+        //given
+        givenAvailableHearings();
+        final Set<String> caseUrnSet = new HashSet<>();
+        caseUrnSet.add(EMPTY_STRING);
+
+        final Set<String> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(MASTER_DEFENDANT_ID);
+
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
+
+        final Set<String> linkedCaseUrn = new HashSet<>();
+        linkedCaseUrn.add(EMPTY_STRING);
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(
+                ALLOCATED,
+                jurisdictionTypeSet,
+                END_SEARCH_DATE.toString(),
+                HEARING_ID.toString(),
+                caseUrnSet,
+                masterDefendantIdSet,
+                linkedCaseUrn);
+
+        //then
+        assertThat(actualHearings.size(), is(1));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", not(HEARING_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.endDate", equalTo(to(END_DATE))));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(ALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].defendants[0].masterDefendantId", equalTo(MASTER_DEFENDANT_ID)));
+    }
+
+    @Test
+    public void shouldSaveAndFindAvailableHearingByCaseUrnForCrownAndMags() {
+        //given
+        givenAvailableHearingsForCrownAndMags();
+        final Set<String> caseUrnSet = new HashSet<>();
+        caseUrnSet.add(CASE_REFERENCE);
+
+        final Set<String> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(EMPTY_STRING);
+
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
+        jurisdictionTypeSet.add(JurisdictionType.MAGISTRATES.name());
+
+        final Set<String> linkedCaseUrn = new HashSet<>();
+        linkedCaseUrn.add(EMPTY_STRING);
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(
+                ALLOCATED,
+                jurisdictionTypeSet,
+                END_SEARCH_DATE.toString(),
+                HEARING_ID.toString(),
+                caseUrnSet,
+                masterDefendantIdSet,
+                linkedCaseUrn);
+
+        //then
+        assertThat(actualHearings.size(), is(2));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(OTHER_HEARING_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.endDate", equalTo(to(END_DATE))));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(ALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JurisdictionType.CROWN.name())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.caseReference", equalTo(CASE_REFERENCE)));
+
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.id", equalTo(OTHER_HEARING_ID2.toString())));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.endDate", equalTo(to(END_DATE))));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.allocated", equalTo(ALLOCATED)));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JurisdictionType.MAGISTRATES.name())));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.caseReference", equalTo(CASE_REFERENCE)));
+
+    }
+
+    @Test
+    public void shouldSaveAndFindAvailableHearingByLinkedCase() {
+        //given
+        givenAvailableHearings();
+        final Set<String> caseUrnSet = new HashSet<>();
+        caseUrnSet.add(EMPTY_STRING);
+
+        final Set<String> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(EMPTY_STRING);
+
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
+
+        final Set<String> linkedCaseUrn = new HashSet<>();
+        linkedCaseUrn.add(LINKED_CASE_URN);
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(
+                ALLOCATED,
+                jurisdictionTypeSet,
+                END_SEARCH_DATE.toString(),
+                HEARING_ID.toString(),
+                caseUrnSet,
+                masterDefendantIdSet,
+                linkedCaseUrn);
+
+        //then
+        assertThat(actualHearings.size(), is(1));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", not(HEARING_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.endDate", equalTo(to(END_DATE))));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(ALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].linkedCases[0].caseUrn", equalTo(LINKED_CASE_URN)));
+    }
+
+
+    private void givenAvailableHearings() {
+        saveHearingJson(
+                HEARING_ID,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                ALLOCATED,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_HEARING_JSON);
+        saveHearingJson(
+                OTHER_HEARING_ID,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                ALLOCATED,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_HEARING_JSON);
+    }
+
+    private void givenAvailableHearingsForCrownAndMags() {
+        saveHearingJson(
+                HEARING_ID,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                ALLOCATED,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_HEARING_JSON);
+        saveHearingJson(
+                OTHER_HEARING_ID,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                ALLOCATED,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_HEARING_JSON);
+        saveHearingJson(
+                OTHER_HEARING_ID2,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                ALLOCATED,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                OTHER_JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_HEARING_JSON);
+
     }
 
     private Hearing saveHearingJson(final UUID hearingId,

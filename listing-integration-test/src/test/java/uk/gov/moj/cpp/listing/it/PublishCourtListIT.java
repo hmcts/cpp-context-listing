@@ -22,6 +22,7 @@ import static uk.gov.moj.cpp.listing.utils.SystemIdMapperStub.stubIdMapperReturn
 
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
+import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -33,6 +34,7 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
+import org.junit.Before;
 import org.junit.Test;
 
 public class PublishCourtListIT extends AbstractIT {
@@ -45,6 +47,13 @@ public class PublishCourtListIT extends AbstractIT {
 
     private static final String LISTING_COMMAND_PUBLISH_LISTS_FOR_ALL_CROWN_COURTS = "listing.command.publish-court-lists-for-crown-courts";
     private static final String MEDIA_TYPE_LISTING_COMMAND_PUBLISH_LISTS_FOR_ALL_CROWN_COURTS = "application/vnd.listing.command.publish-court-lists-for-crown-courts+json";
+
+    private static final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
+
+    @Before
+    public void cleanTables() {
+        viewStoreCleaner.cleanViewStoreTables();
+    }
 
     @Test
     public void shouldPublishCourtListWithNoHearings() throws Exception {

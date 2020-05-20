@@ -124,6 +124,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("jsonResponse from publicEventMessageConsumerDefendantUpdated: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("defendant.id"), is(jsRequest.getString("defendant.id")));
+        assertThat(jsonResponse.get("defendant.masterDefendantId"), is(jsRequest.getString("defendant.masterDefendantId")));
         assertThat(jsonResponse.get("defendant.personDefendant.custodyTimeLimit"), is(jsRequest.getString("defendant.personDefendant.custodyTimeLimit")));
         assertThat(jsonResponse.get("defendant.personDefendant.personDetails.dateOfBirth"), is(jsRequest.getString("defendant.personDefendant.personDetails.dateOfBirth")));
         assertThat(jsonResponse.get("defendant.defenceOrganisation.name"), is(jsRequest.getString("defendant.defenceOrganisation.name")));
@@ -150,6 +151,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("jsonResponse from privateEventMessageDefendantsToBeUpdated: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("defendants[0].id"), is(jsRequest.getString("defendant.id")));
+        assertThat(jsonResponse.get("defendants[0].masterDefendantId"), is(jsRequest.getString("defendant.masterDefendantId")));
         assertThat(jsonResponse.get("defendants[0].custodyTimeLimit"), is(jsRequest.getString("defendant.personDefendant.custodyTimeLimit")));
         assertThat(jsonResponse.get("defendants[0].dateOfBirth"), is(jsRequest.getString("defendant.personDefendant.personDetails.dateOfBirth")));
         assertThat(jsonResponse.get("defendants[0].defenceOrganisation"), is(jsRequest.getString("defendant.defenceOrganisation.name")));
@@ -169,6 +171,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("jsonResponse from privateEventsMessageDefendantDetailsUpdated: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("defendant.id"), is(jsRequest.getString("defendant.id")));
+        assertThat(jsonResponse.get("defendant.masterDefendantId"), is(jsRequest.getString("defendant.masterDefendantId")));
         assertThat(jsonResponse.get("defendant.custodyTimeLimit"), is(jsRequest.getString("defendant.personDefendant.custodyTimeLimit")));
         assertThat(jsonResponse.get("defendant.dateOfBirth"), is(jsRequest.getString("defendant.personDefendant.personDetails.dateOfBirth")));
         assertThat(jsonResponse.get("defendant.defenceOrganisation"), is(jsRequest.getString("defendant.defenceOrganisation.name")));
@@ -207,6 +210,8 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(hearingData.getHearingStartDate().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].id",
                                         equalTo(updatedDefendantData.getDefendantId().toString())),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
+                                        equalTo(updatedDefendantData.getMasterDefendantId().toString())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].custodyTimeLimit",
                                         equalTo(updatedDefendantData.getCustodyTimeLimit())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].dateOfBirth",
@@ -255,32 +260,33 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     private UpdateCaseDefendantData getUpdateCaseDefendantDetails(final UUID caseId, final UpdatedDefendantData defendantData) {
 
         return UpdateCaseDefendantData.updateCaseDefendantDetails()
-                .withDefendant(Defendant.defendant()
-                        .withId(defendantData.getDefendantId())
-                        .withLegalEntityDefendant(of(LegalEntityDefendant.legalEntityDefendant()
-                                .withOrganisation(Organisation.organisation()
-                                        .withName(defendantData.getLegalEntityName())
-                                        .build())
-                                .build()))
-                        .withPersonDefendant(of(PersonDefendant.personDefendant()
-                                .withPersonDetails(Person.person()
-                                        .withLastName(defendantData.getLastName())
-                                        .withFirstName(of(defendantData.getFirstName()))
-                                        .withDateOfBirth(of(defendantData.getDateOfBirth()))
-                                        .withSpecificRequirements(of(defendantData.getSpecificRequirements()))
-                                        .withGender(Gender.FEMALE)
-                                        .build()
-                                )
-                                .withBailStatus(of(new BailStatus.Builder().withCode(defendantData.getBailStatus().getCode()).withDescription(defendantData.getBailStatus().getDescription()).withId(defendantData.getBailStatus().getId()).build()))
-                                .withCustodyTimeLimit(of(defendantData.getCustodyTimeLimit()))
+            .withDefendant(Defendant.defendant()
+                    .withId(defendantData.getDefendantId())
+                    .withMasterDefendantId(defendantData.getMasterDefendantId())
+                .withLegalEntityDefendant(of(LegalEntityDefendant.legalEntityDefendant()
+                        .withOrganisation(Organisation.organisation()
+                                .withName(defendantData.getLegalEntityName())
                                 .build())
-                        )
-                        .withProsecutionCaseId(caseId)
-                        .withDefenceOrganisation(of(organisation()
-                                .withName(defendantData.getOrganisationName())
-                                .build()))
-                        .withPncId(of(defendantData.getPncId()))
-                        .withIsYouth(defendantData.getYouth())
+                        .build()))
+                .withPersonDefendant(of(PersonDefendant.personDefendant()
+                    .withPersonDetails(Person.person()
+                            .withLastName(defendantData.getLastName())
+                            .withFirstName(of(defendantData.getFirstName()))
+                            .withDateOfBirth(of(defendantData.getDateOfBirth()))
+                            .withSpecificRequirements(of(defendantData.getSpecificRequirements()))
+                            .withGender(Gender.FEMALE)
+                        .build()
+                    )
+                    .withBailStatus(of(new BailStatus.Builder().withCode(defendantData.getBailStatus().getCode()).withDescription(defendantData.getBailStatus().getDescription()).withId(defendantData.getBailStatus().getId()).build()))
+                    .withCustodyTimeLimit(of(defendantData.getCustodyTimeLimit()))
+                    .build())
+                )
+                .withProsecutionCaseId(caseId)
+                .withDefenceOrganisation(of(organisation()
+                        .withName(defendantData.getOrganisationName())
+                        .build()))
+                .withPncId(of(defendantData.getPncId()))
+                .withIsYouth(defendantData.getYouth())
                 .withAliases(defendantData.getAliases())
                     .withAssociatedDefenceOrganisation(of(defendantData.getAssociatedDefenceOrganisation()))
                 .build()

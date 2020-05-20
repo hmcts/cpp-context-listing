@@ -1,16 +1,17 @@
 package uk.gov.moj.cpp.listing.it;
 
-import org.junit.Ignore;
-import org.junit.Test;
 import uk.gov.moj.cpp.listing.steps.CourtApplicationSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+
+import org.junit.Test;
 
 public class AddCourtApplicationIT extends AbstractIT {
 
     @Test
     public void shouldAddCourtApplicationForHearingId() {
-        HearingsData hearingsData = HearingsData.hearingsData();
+
+        final HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();

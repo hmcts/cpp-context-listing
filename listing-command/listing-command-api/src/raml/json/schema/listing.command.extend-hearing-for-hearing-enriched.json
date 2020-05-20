@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/courts/extend-hearing-for-hearing-enriched.json",
+  "type": "object",
+  "properties": {
+    "allocatedHearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "unAllocatedHearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "allocatedHearingId",
+    "unAllocatedHearingId"
+  ]
+}
+

@@ -224,9 +224,9 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         return Json.createArrayBuilder();
     }
 
-    private static JsonObjectBuilder prepareJudicialRoleType(JudicialRoleTypeData judicialRoleType) {
+    private static JsonObjectBuilder prepareJudicialRoleType(final JudicialRoleTypeData judicialRoleType) {
         if (judicialRoleType != null) {
-            JsonObjectBuilder builder = createObjectBuilder()
+            final JsonObjectBuilder builder = createObjectBuilder()
                     .add(FIELD_JUDICIARY_TYPE, judicialRoleType.getJudiciaryType());
             addNullableUUIDField(builder, FIELD_JUDICIAL_ROLE_TYPE_ID, judicialRoleType.getJudicialRoleTypeId());
             return builder;
@@ -234,7 +234,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         return null;
     }
 
-    private static JsonObjectBuilder prepareJsonHearingType(HearingTypeData hearingType) {
+    private static JsonObjectBuilder prepareJsonHearingType(final HearingTypeData hearingType) {
         if (hearingType != null) {
             return createObjectBuilder()
                     .add(FIELD_HEARING_TYPE_ID, hearingType.getTypeId().toString())

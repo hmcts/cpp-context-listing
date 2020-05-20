@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.command.api.nondefaultday;
+package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
@@ -18,19 +18,19 @@ public class NonDefaultDayDurationBuilder {
     private static final int HALF_DAY_MINUTES = 180;
     private static final int FULL_DAY_MINUTES = 360;
 
-    public UpdateHearingForListing updateNonDefaultDayWithNewDuration(final UpdateHearingForListing hearing) {
-        final int totalDuration = getDuration(hearing);
-
-        if (isAllDaySessionBooking(hearing.getNonDefaultDays(), totalDuration)) {
-            return hearing;
+    public List<NonDefaultDay> updateNonDefaultDayWithNewDuration(final List<NonDefaultDay> ndd, final Boolean isCountBasedSlots) {
+        if (isCountBasedSlots) {
+            return ndd;
         }
-
-        final List<NonDefaultDay> nonDefaultDays = buildNewNonDefaultDays(hearing.getNonDefaultDays(), totalDuration);
-
-        return buildNewUpdateHearingForListingWithNewNonDefaultDays(hearing, nonDefaultDays);
+        final int totalDuration = getDuration(ndd);
+        //single day selection as all day session
+        if (isAllDaySessionBooking(ndd, totalDuration)) {
+            return ndd;
+        }
+        return buildNewNonDefaultDays(ndd, totalDuration);
     }
 
-    private UpdateHearingForListing buildNewUpdateHearingForListingWithNewNonDefaultDays(final UpdateHearingForListing hearing, final List<NonDefaultDay> nonDefaultDays) {
+    public UpdateHearingForListing buildNewUpdateHearingForListingWithNewNonDefaultDays(final UpdateHearingForListing hearing, final List<NonDefaultDay> nonDefaultDays, final Boolean isCountBasedSlots) {
         return new UpdateHearingForListing.Builder()
                 .withCourtCentreId(hearing.getCourtCentreId())
                 .withCourtRoomId(hearing.getCourtRoomId())
@@ -39,7 +39,7 @@ public class NonDefaultDayDurationBuilder {
                 .withHearingLanguage(hearing.getHearingLanguage())
                 .withJudiciary(hearing.getJudiciary())
                 .withJurisdictionType(hearing.getJurisdictionType())
-                .withNonDefaultDays(nonDefaultDays)
+                .withNonDefaultDays(updateNonDefaultDayWithNewDuration(hearing.getNonDefaultDays(), isCountBasedSlots))
                 .withNonSittingDays(hearing.getNonSittingDays())
                 .withStartDate(getNewStartDate(nonDefaultDays))
                 .withType(hearing.getType())
@@ -102,10 +102,8 @@ public class NonDefaultDayDurationBuilder {
         return duration % HALF_DAY_MINUTES == 0;
     }
 
-    private int getDuration(final UpdateHearingForListing updateHearingForListing) {
-        return updateHearingForListing.getNonDefaultDays()
-                .stream()
-                .map(NonDefaultDay::getDuration)
+    private int getDuration(final List<NonDefaultDay> nonDefaultDays) {
+        return nonDefaultDays.stream().map(NonDefaultDay::getDuration)
                 .findFirst().orElse(of(1)).orElse(1);
     }
 }

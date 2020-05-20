@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
-import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 
 import java.time.LocalDate;
@@ -52,39 +51,39 @@ public class JsonEntityFinderTest {
     private static final List<String> TEST_LIST = Arrays.asList("UpdatedItem1", "UpdatedItem2");
     private static final String TEST_JSON_WITH_PATH =
             "{ \"path\": { " +
-                    "\"" + ARRAY_FIELD +"\": " + TEST_ARRAY + "," +
-                    "\"" + LOCAL_DATE_FIELD +"\": \"" + TEST_LOCAL_DATE + "\"," +
-                    "\"" + UUID_FIELD +"\": \"" + TEST_UUID + "\"," +
-                    "\"" + STRING_FIELD +"\": \"" + TEST_STRING + "\"," +
-                    "\"" + BOOLEAN_FIELD +"\": " + TEST_BOOLEAN + ","  +
-                    "\"" + REMOVE_FIELD +"\": \"" + TEST_REMOVE_VALUE + "\"" +
+                    "\"" + ARRAY_FIELD + "\": " + TEST_ARRAY + "," +
+                    "\"" + LOCAL_DATE_FIELD + "\": \"" + TEST_LOCAL_DATE + "\"," +
+                    "\"" + UUID_FIELD + "\": \"" + TEST_UUID + "\"," +
+                    "\"" + STRING_FIELD + "\": \"" + TEST_STRING + "\"," +
+                    "\"" + BOOLEAN_FIELD + "\": " + TEST_BOOLEAN + "," +
+                    "\"" + REMOVE_FIELD + "\": \"" + TEST_REMOVE_VALUE + "\"" +
                     "} " +
                     "}";
     private static final String EXPECTED_JSON_WITH_PATH =
             "{ \"path\": { " +
                     "\"" + ARRAY_FIELD + "\": " + EXPECTED_ARRAY + "," +
-                    "\"" + LOCAL_DATE_FIELD +"\": \"" + EXPECTED_LOCAL_DATE + "\"," +
-                    "\"" + UUID_FIELD +"\": \"" + EXPECTED_UUID + "\"," +
-                    "\"" + STRING_FIELD +"\": \"" + EXPECTED_STRING + "\"," +
-                    "\"" + BOOLEAN_FIELD +"\": " + EXPECTED_BOOLEAN  +
+                    "\"" + LOCAL_DATE_FIELD + "\": \"" + EXPECTED_LOCAL_DATE + "\"," +
+                    "\"" + UUID_FIELD + "\": \"" + EXPECTED_UUID + "\"," +
+                    "\"" + STRING_FIELD + "\": \"" + EXPECTED_STRING + "\"," +
+                    "\"" + BOOLEAN_FIELD + "\": " + EXPECTED_BOOLEAN +
                     "} " +
                     "}";
     private static final String TEST_JSON_WITHOUT_PATH =
             "{ " +
-                    "\"" + ARRAY_FIELD +"\": " + TEST_ARRAY + "," +
-                    "\"" + LOCAL_DATE_FIELD +"\": \"" + TEST_LOCAL_DATE + "\"," +
-                    "\"" + UUID_FIELD +"\": \"" + TEST_UUID + "\"," +
-                    "\"" + STRING_FIELD +"\": \"" + EXPECTED_STRING + "\"," +
-                    "\"" + BOOLEAN_FIELD +"\": " + TEST_BOOLEAN + ","  +
-                    "\"" + REMOVE_FIELD +"\": \"" + TEST_REMOVE_VALUE + "\"" +
+                    "\"" + ARRAY_FIELD + "\": " + TEST_ARRAY + "," +
+                    "\"" + LOCAL_DATE_FIELD + "\": \"" + TEST_LOCAL_DATE + "\"," +
+                    "\"" + UUID_FIELD + "\": \"" + TEST_UUID + "\"," +
+                    "\"" + STRING_FIELD + "\": \"" + EXPECTED_STRING + "\"," +
+                    "\"" + BOOLEAN_FIELD + "\": " + TEST_BOOLEAN + "," +
+                    "\"" + REMOVE_FIELD + "\": \"" + TEST_REMOVE_VALUE + "\"" +
                     "} ";
     private static final String EXPECTED_JSON_WITHOUT_PATH =
             "{ " +
                     "\"" + ARRAY_FIELD + "\": " + EXPECTED_ARRAY + "," +
-                    "\"" + LOCAL_DATE_FIELD +"\": \"" + EXPECTED_LOCAL_DATE + "\"," +
-                    "\"" + UUID_FIELD +"\": \"" + EXPECTED_UUID + "\"," +
-                    "\"" + STRING_FIELD +"\": \"" + EXPECTED_STRING + "\"," +
-                    "\"" + BOOLEAN_FIELD +"\": " + EXPECTED_BOOLEAN  +
+                    "\"" + LOCAL_DATE_FIELD + "\": \"" + EXPECTED_LOCAL_DATE + "\"," +
+                    "\"" + UUID_FIELD + "\": \"" + EXPECTED_UUID + "\"," +
+                    "\"" + STRING_FIELD + "\": \"" + EXPECTED_STRING + "\"," +
+                    "\"" + BOOLEAN_FIELD + "\": " + EXPECTED_BOOLEAN +
                     "} ";
     private static final ObjectNode EXPECTED_JSON_NODE_WITH_PATH = (ObjectNode) JacksonUtil.toJsonNode(EXPECTED_JSON_WITH_PATH);
     private static final ObjectNode EXPECTED_JSON_NODE_WITHOUT_PATH = (ObjectNode) JacksonUtil.toJsonNode(EXPECTED_JSON_WITHOUT_PATH);
@@ -101,7 +100,8 @@ public class JsonEntityFinderTest {
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(hearingProperties);
 
-        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {};
+        final TypeReference<List<String>> typeRef = new TypeReference<List<String>>() {
+        };
 
         using(hearingRepository)
                 .find(HEARING_ID, JSON_PATH)
@@ -128,7 +128,8 @@ public class JsonEntityFinderTest {
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(hearingProperties);
 
-        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {};
+        final TypeReference<List<String>> typeRef = new TypeReference<List<String>>() {
+        };
 
         using(hearingRepository)
                 .find(HEARING_ID)

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static java.util.Optional.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
@@ -13,6 +14,7 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 
+import java.time.LocalDate;
 import java.util.Collections;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,6 +68,8 @@ public class CommandToDomainConverterTest {
         assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().get().toString())));
         assertThat(actual.getEndDate(), is(commandHearing.getEndDate()));
         assertThat(actual.getReportingRestrictionReason(), is(commandHearing.getReportingRestrictionReason()));
+        assertThat(actual.getWeekCommencingStartDate(), is(of(LocalDate.parse(commandHearing.getWeekCommencingDate().get().getStartDate()))));
+        assertThat(actual.getWeekCommencingDurationInWeeks(), is(commandHearing.getWeekCommencingDate().get().getDuration()));
 
     }
 

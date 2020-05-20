@@ -4,7 +4,10 @@
   "type": "object",
   "properties": {
     "hearingId": {
-      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "bookingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
     },
     "jurisdictionType": {
       "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/jurisdictionType"

@@ -41,8 +41,7 @@ public class UpdateDefendantsForHearingCommandCollectionConverter implements Con
     }
 
     private List<Defendant> convertDefendants(final List<uk.gov.justice.listing.events.Defendant> defendants) {
-        return defendants.stream().map(defendant ->
-                Defendant.defendant()
+        return defendants.stream().map(defendant -> Defendant.defendant()
                         .withSpecificRequirements(defendant.getSpecificRequirements())
                         .withOrganisationName(defendant.getOrganisationName())
                         .withHearingLanguageNeeds(defendant.getHearingLanguageNeeds().map(hearingLanguageNeeds ->
@@ -55,18 +54,12 @@ public class UpdateDefendantsForHearingCommandCollectionConverter implements Con
                         .withCustodyTimeLimit(defendant.getCustodyTimeLimit())
                         .withBailStatus(defendant.getBailStatus().map(bailStatus ->
                                 Optional.of(new BailStatus.Builder().withId(bailStatus.getId()).withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).build())).orElse(Optional.empty()))
-                        .withOffences(convertOffences())
+                        .withOffences(emptyList())
                         .withId(defendant.getId())
+                        .withMasterDefendantId(defendant.getMasterDefendantId())
                         .withIsYouth(defendant.getIsYouth())
                         .withAddress(nonNull(defendant.getAddress()) && defendant.getAddress().isPresent() ? buildAddress(defendant.getAddress()) : empty())
                         .withNationalityDescription(defendant.getNationalityDescription())
-                        .build())
-                .collect(toList());
-    }
-
-    private List<uk.gov.moj.cpp.listing.domain.Offence> convertOffences() {
-        // Offences are not being updated as part of this event flow originating from
-        // event public.progression.events.defendant-updated
-        return emptyList();
+                        .build()).collect(toList());
     }
 }

@@ -12,11 +12,14 @@ import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerClassMatcher.isHandlerClass;
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
+import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED;
 import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED;
 import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED;
 
 import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
+import uk.gov.justice.listing.courts.ExtendHearingForHearing;
+import uk.gov.justice.listing.courts.ExtendHearingForHearingEnriched;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -25,9 +28,9 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
-import uk.gov.moj.cpp.listing.command.api.nondefaultday.NonDefaultDayDurationBuilder;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Function;
 
 import javax.json.JsonObject;
@@ -77,10 +80,10 @@ public class ListingCommandApiTest {
     private ListingCommandApi listingCommandApi;
 
     @Spy
-    private Enveloper enveloper = createEnveloper();
+    private final Enveloper enveloper = createEnveloper();
 
     @Mock
-    private NonDefaultDayDurationBuilder nonDefaultDayDurationBuilder;
+    private ExtendHearingForHearing extendHearingForHearing;
 
     @Test
     public void testIfMethodsArePassThrough() throws Exception {
@@ -165,7 +168,6 @@ public class ListingCommandApiTest {
         given(updateHearingForListing.getJurisdictionType()).willReturn(MAGISTRATES);
         given(updateHearingForListing.getNonDefaultDays()).willReturn(getNonDefaultDays());
 
-        given(nonDefaultDayDurationBuilder.updateNonDefaultDayWithNewDuration(updateHearingForListing)).willReturn(updateHearingForListing);
         given(enveloper.withMetadataFrom(envelope, LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED)).willReturn
                 (enveloperFunction);
         given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
@@ -174,12 +176,37 @@ public class ListingCommandApiTest {
 
         listingCommandApi.updateHearingForListing(envelope);
 
-        verify(nonDefaultDayDurationBuilder).updateNonDefaultDayWithNewDuration(updateHearingForListing);
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
     }
 
     private List<NonDefaultDay> getNonDefaultDays() {
         return asList(new NonDefaultDay.Builder().withCourtScheduleId(of("134452")).build());
     }
+
+    @Test
+    public void listingCommandHandlerShouldExtendCourtHearing() throws Exception {
+
+        //given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(payload.getString("hearingId", null))
+                .willReturn(UUID.randomUUID().toString());
+        given(jsonObjectConverter.convert(payload, ExtendHearingForHearing.class))
+                .willReturn(extendHearingForHearing);
+        given(enveloper.withMetadataFrom(envelope, LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED))
+                .willReturn(enveloperFunction);
+
+        given(enveloperFunction.apply(any(ExtendHearingForHearingEnriched.class))).willReturn(finalEnvelope);
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
+                ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        //when
+        listingCommandApi.extendHearingForHearing(envelope);
+
+        //then
+        verify(jsonObjectConverter, times(1)).convert(payload, ExtendHearingForHearing.class);
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+    }
+
 }
 

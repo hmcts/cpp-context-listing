@@ -4,9 +4,11 @@
   },
   "courtApplication": {
     "applicant": {
+      "courtApplicationPartyType": "PERSON",
       "firstName": "App First",
       "isRespondent": false,
-      "lastName": "App Last"
+      "lastName": "App Last",
+      "restrictFromCourtList": false
     },
     "applicationType": "APP Type",
     "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
@@ -14,10 +16,14 @@
     "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
     "respondents": [
       {
+        "courtApplicationPartyType": "PERSON",
         "firstName": "Resp first",
         "isRespondent": true,
-        "lastName": "Resp Last"
+        "lastName": "Resp Last",
+        "restrictFromCourtList": false
       }
-    ]
+    ],
+    "restrictCourtApplicationType": false,
+    "restrictFromCourtList": false
   }
 }

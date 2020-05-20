@@ -3,74 +3,73 @@ package uk.gov.moj.cpp.listing.utils;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.lang.String.format;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
+
+import java.util.Map;
 
 public class AzureScheduleServiceStub {
 
-    private static final String ROTA_SL_ENDPOINT_URL = "https://api-ste-ccm-scsl.azure-api.net/fa-ste-ccm-scsl/hearingSlots";
+    private static final String ROTA_SL_ENDPOINT_URL = "/fa-ste-ccm-scsl";
     private static final String HOST = System.getProperty("INTEGRATION_HOST_KEY", "localhost");
+
+    private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
+    private static final String HEARING_SLOTS = "/hearingSlots";
+
+    public static final String LISTING_SEARCH_HEARING_SLOTS_JSON = "stub-data/listing.search.hearing.slots.json";
+    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_JSON = "stub-data/provisionalBookingSampleData.json";
 
     static {
         configureFor(HOST, 8080);
-        reset();
     }
 
     public static void stubUpdateAvailableHearingSlotsService() {
         stubFor(put(urlPathMatching(ROTA_SL_ENDPOINT_URL))
-                .willReturn(aResponse().withStatus(OK.getStatusCode())));
+                .willReturn(aResponse().withStatus(NO_CONTENT.getStatusCode())));
     }
 
-    public static void stubGetAvailableHearingSlots(final String queryString) {
-        stubFor(get(urlPathMatching(format("%s?%s", ROTA_SL_ENDPOINT_URL, queryString)))
+    public static void stubGetAvailableHearingSlots() {
+        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching("2017-10-11"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT"))
+                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
+                .withQueryParam("sessionEndDate", matching("2020-10-11"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withHeader("Content-Type", "application/json")
                 ));
     }
 
-    public static void stubSessionStartDateEmptyRequest(final String queryString) {
-        stubFor(get(urlPathMatching(format("%s?%s", ROTA_SL_ENDPOINT_URL, queryString)))
-                .willReturn(aResponse().withStatus(BAD_REQUEST.getStatusCode())
-                        .withBody("Mandatory Search Criteria sessionStartDate cannot be null")
+    public static void stubGetProvisionalBookedSlots() {
+        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
+                .withQueryParam("bookingIds", notMatching("null"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_JSON))
+                        .withHeader("Content-Type", "application/json")
                 ));
     }
 
-    public static void stubSessionEndDateEmptyRequest(final String queryString) {
-        stubFor(get(urlPathMatching(format("%s?%s", ROTA_SL_ENDPOINT_URL, queryString)))
+    public static void stubSessionEndDateEmptyRequest() {
+        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching("2017-10-11"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("pageSize", matching("20"))
+                .withQueryParam("panel", matching("ADULT"))
+                .withQueryParam("oucodeL2Code", matching("Z01KR05"))
                 .willReturn(aResponse().withStatus(BAD_REQUEST.getStatusCode())
                         .withBody("Mandatory Search Criteria sessionEndDate cannot be null")
                 ));
     }
 
-    public static void stubOuCodeAndL2CodeEmptyRequest(final String queryString) {
-        stubFor(get(urlPathMatching(format("%s?%s", ROTA_SL_ENDPOINT_URL, queryString)))
-                .willReturn(aResponse().withStatus(BAD_REQUEST.getStatusCode())
-                        .withBody("Either oucodeL2Code or ouCode should be entered")
-                ));
-    }
-
-    public static void stubPanelEmptyRequest(final String queryString) {
-        stubFor(get(urlPathMatching(format("%s?%s", ROTA_SL_ENDPOINT_URL, queryString)))
-                .willReturn(aResponse().withStatus(BAD_REQUEST.getStatusCode())
-                        .withBody("Mandatory Search Criteria panel cannot  be null")
-                ));
-    }
-
-    public static void stubPageNumberEmptyRequest(final String queryString) {
-        stubFor(get(urlPathMatching(format("%s?%s", ROTA_SL_ENDPOINT_URL, queryString)))
-                .willReturn(aResponse().withStatus(BAD_REQUEST.getStatusCode())
-                        .withBody("Mandatory Search Criteria pageNumber cannot  be null")
-                ));
-    }
-
-    public static void stubPageSizeEmptyRequest(final String queryString) {
-        stubFor(get(urlPathMatching(format("%s?%s", ROTA_SL_ENDPOINT_URL, queryString)))
-                .willReturn(aResponse().withStatus(BAD_REQUEST.getStatusCode())
-                        .withBody("Mandatory Search Criteria pageSize cannot be null")
-                ));
-    }
 }

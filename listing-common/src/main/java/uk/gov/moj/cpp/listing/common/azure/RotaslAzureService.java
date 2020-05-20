@@ -9,4 +9,6 @@ public interface RotaslAzureService {
     Response get(final String endpoint, final String subscription, final Map<String, String> params);
 
     Response put(final String endpoint, final String subscription, final Object payload);
+
+    Response post(final String endpoint, final String subscription, final Object payload);
 }

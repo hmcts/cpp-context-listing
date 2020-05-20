@@ -1,0 +1,59 @@
+package uk.gov.moj.cpp.listing.command.service;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import uk.gov.justice.services.core.enveloper.Enveloper;
+import uk.gov.justice.services.core.requester.Requester;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+
+import java.util.UUID;
+
+import static javax.json.Json.createObjectBuilder;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
+import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
+
+@RunWith(MockitoJUnitRunner.class)
+public class HearingServiceTest {
+
+    private Enveloper enveloper = createEnveloper();
+
+    @Mock
+    private Requester requester;
+
+    @InjectMocks
+    private HearingService hearingService;
+
+    @Before
+    public void setup() {
+        hearingService.setEnveloper(enveloper);
+    }
+
+    private static final String HEARING_QUERY_BY_HEARING_ID = "listing.search.hearing";
+
+    @Test
+    public void getHearingById() {
+        final UUID HEARING_ID = UUID.randomUUID();
+        final JsonEnvelope eventEnvelope = generateEmptyEnvelope();
+        final JsonEnvelope returnedResponseEnvelope = generateEmptyEnvelope();
+        when(requester.request(eventEnvelope)).thenReturn(returnedResponseEnvelope);
+        final ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        hearingService.getHearingById(HEARING_ID, eventEnvelope);
+
+        verify(requester).request(argumentCaptorForRequestEnvelope.capture());
+        final JsonEnvelope requestEnvelope = argumentCaptorForRequestEnvelope.getValue();
+        assertThat(requestEnvelope.metadata().name(), is(HEARING_QUERY_BY_HEARING_ID));
+    }
+    private JsonEnvelope generateEmptyEnvelope() {
+        return createEnvelope(".", createObjectBuilder().build());
+    }
+}

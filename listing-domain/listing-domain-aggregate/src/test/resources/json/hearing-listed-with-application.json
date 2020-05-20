@@ -69,6 +69,8 @@
             "hearingLanguageNeeds": "WELSH",
             "id": "0baecac5-222b-402d-9047-84803679edac",
             "lastName": "Lloyd",
+            "masterDefendantId": "0baecac5-222b-402d-9047-84803679edac",
+            "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
             "offences": [
               {
                 "endDate": "2017-08-01",

@@ -31,6 +31,9 @@ public class HearingQueryApi {
         return requester.request(query);
     }
 
+    @Handles("listing.available.search.hearings")
+    public JsonEnvelope searchAvailableHearings(final JsonEnvelope query) { return requester.request(query); }
+
     @Handles("listing.range.search.hearings")
     public JsonEnvelope rangeSsearchHearings(final JsonEnvelope query) {
         return requester.request(query);
