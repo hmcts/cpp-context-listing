@@ -116,7 +116,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTED_PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
     private static final String EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED = "listing.events.week-commencing-date-removed-for-hearing";
     private static final String FIELD_HEARINGS = "hearings";
-    private static final int DEFAULT_DURATION_MINS = (6 * 60) + 30;
+    private static final int DEFAULT_DURATION_MINS = 120;
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final ZoneId BST = ZoneId.of("Europe/London");
     private static final String LISTING_COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
@@ -211,7 +211,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         if (roleData != null && !roleData.isEmpty()) {
             return roleData.stream()
                     .map(ndd -> {
-                        JsonObjectBuilder builder = createObjectBuilder()
+                        final JsonObjectBuilder builder = createObjectBuilder()
                                 .add(FIELD_JUDICIAL_ID, ndd.getJudicialId().toString())
                                 .add(FIELD_JUDICIAL_ROLE_TYPE, prepareJudicialRoleType(ndd.getJudicialRoleType()));
                         addOptionalBooleanField(builder, FIELD_IS_DEPUTY, ndd.getIsDeputy());
@@ -246,7 +246,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private static JsonArrayBuilder prepareJsonNonDefaultDays(final List<NonDefaultDayData> nonDefaultDays) {
         return nonDefaultDays.stream()
                 .map(ndd -> {
-                    JsonObjectBuilder nonDefaultDayBuilder = createObjectBuilder().add(FIELD_START_TIME, ndd.getStartTime());
+                    final JsonObjectBuilder nonDefaultDayBuilder = createObjectBuilder().add(FIELD_START_TIME, ndd.getStartTime());
                     addNullableIntegerField(nonDefaultDayBuilder, FIELD_DURATION, ndd.getDuration());
                     addNullableStringField(nonDefaultDayBuilder, FIELD_COURT_SCHEDULE_ID, ndd.getCourtScheduleId());
                     addNullableIntegerFieldIfNotNull(nonDefaultDayBuilder, FIELD_COURT_ROOM_ID, ndd.getCourtRoomId());
@@ -266,13 +266,13 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         }
     }
 
-    private static void addNullableStringField(JsonObjectBuilder builder, String fieldName, Optional<String> value) {
+    private static void addNullableStringField(final JsonObjectBuilder builder, final String fieldName, final Optional<String> value) {
         if (value.isPresent()) {
             builder.add(fieldName, value.get());
         }
     }
 
-    private static void addNullableIntegerFieldIfNotNull(JsonObjectBuilder builder, String fieldName, Optional<Integer> value) {
+    private static void addNullableIntegerFieldIfNotNull(final JsonObjectBuilder builder, final String fieldName, final Optional<Integer> value) {
         if (value.isPresent()) {
             builder.add(fieldName, value.get());
         }
@@ -496,7 +496,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         verifyHearingPublicDetails(jsonResponse, "updatedHearing");
     }
 
-    private void verifyHearingPublicDetails(JsonPath jsonResponse, String publicEventType) {
+    private void verifyHearingPublicDetails(final JsonPath jsonResponse, final String publicEventType) {
         assertThat(jsonResponse.get(publicEventType + ".id"), is(updatedHearingData.getHearingId().toString()));
         assertThat(jsonResponse.get(publicEventType + ".courtCentre.roomId"), is(updatedHearingData.getCourtRoomId().toString()));
         assertThat(jsonResponse.get(publicEventType + ".courtCentre.id"), is(updatedHearingData.getCourtCentreId().toString()));
@@ -823,8 +823,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.start-date.end-date"),
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId(),
-                        hearingData.getHearingStartDate(),
-                        hearingData.getHearingEndDate()));
+                        updatedHearingData.getStartDate(),
+                        updatedHearingData.getEndDate()));
 
         verifyHearingFound(searchHearingUrl);
     }
@@ -835,7 +835,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.search-date"),
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId(),
-                        hearingData.getHearingStartDate()));
+                        updatedHearingData.getStartDate()));
 
         verifyHearingFound(searchHearingUrl);
     }
@@ -879,7 +879,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId(),
                         hearingData.getListedCases().get(0).getAuthorityId(),
-                        hearingData.getHearingTypeData().getTypeId()));
+                        updatedHearingData.getHearingTypData().getTypeId()));
 
         verifyHearingFound(searchHearingUrl);
     }
@@ -891,7 +891,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                         ALLOCATED,
                         updatedHearingData.getCourtCentreId(),
                         hearingData.getListedCases().get(0).getAuthorityId(),
-                        hearingData.getHearingTypeData().getTypeId(),
+                        updatedHearingData.getHearingTypData().getTypeId(),
                         updatedHearingData.getJurisdictionType()));
 
         verifyHearingFound(searchHearingUrl);
@@ -910,7 +910,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyHearingUpdatedWhenWeekCommencingDateRemovedResultsInMQ() {
-        JsonPath jsRequest = new JsonPath(request);
+        final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
         verifyStartDateChangedEvent();

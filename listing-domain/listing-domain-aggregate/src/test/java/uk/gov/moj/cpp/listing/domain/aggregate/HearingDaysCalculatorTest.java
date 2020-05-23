@@ -90,7 +90,7 @@ public class HearingDaysCalculatorTest {
         final LocalDate endDate = startDate.plusDays(totalHearingDays - 1L);
 
         //when
-        final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, endDate, new ArrayList<>(), new ArrayList<>(),  DEFAULT_TIME, DEFAULT_DURATION);
+        final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, endDate, new ArrayList<>(), new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION);
 
         //then
         assertThat(actual.size(), is(totalHearingDays));
@@ -152,7 +152,7 @@ public class HearingDaysCalculatorTest {
                 endDate,
                 new ArrayList<>(), Collections.singletonList(NonDefaultDay.nonDefaultDay()
                         .withStartTime(ZonedDateTime.of(START_DATE, startTime, UTC))
-                        .withDuration(Optional.empty())
+                        .withDuration(Optional.of(DEFAULT_DURATION))
                         .build()),
                 DEFAULT_TIME,
                 DEFAULT_DURATION);
@@ -175,15 +175,17 @@ public class HearingDaysCalculatorTest {
         final List<LocalDate> nonSittingDays = Arrays.asList(endDate.minusDays(2), endDate.minusDays(1));
 
         final ZonedDateTime startTime1 = ZonedDateTime.of(startDate, LocalTime.of(14, 0), UTC);
-        final ZonedDateTime startTime2 = ZonedDateTime.of(startDate.plusDays(1), LocalTime.of(15, 30),UTC);
-        final ZonedDateTime startTime3 = ZonedDateTime.of(endDate, LocalTime.of(9, 0), UTC);
+        final ZonedDateTime startTime2 = ZonedDateTime.of(startDate.plusDays(1), LocalTime.of(15, 30), UTC);
+        final ZonedDateTime startTime3 = ZonedDateTime.of(startDate.plusDays(2), LocalTime.of(9, 0), UTC);
+        final ZonedDateTime startTime4 = ZonedDateTime.of(endDate, LocalTime.of(9, 0), UTC);
 
-        final Integer[] durations = {45,60,120};
+        final Integer[] durations = {45, 60, 120, 180};
 
         final List<NonDefaultDay> startTimes = Arrays.asList(
                 NonDefaultDay.nonDefaultDay().withStartTime(startTime1).withDuration(of(durations[0])).build(),
                 NonDefaultDay.nonDefaultDay().withStartTime(startTime2).withDuration(of(durations[1])).build(),
-                NonDefaultDay.nonDefaultDay().withStartTime(startTime3).withDuration(of(durations[2])).build());
+                NonDefaultDay.nonDefaultDay().withStartTime(startTime3).withDuration(of(durations[2])).build(),
+                NonDefaultDay.nonDefaultDay().withStartTime(startTime4).withDuration(of(durations[3])).build());
 
         //when
         final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, endDate, nonSittingDays, startTimes, DEFAULT_TIME, DEFAULT_DURATION);
@@ -193,11 +195,10 @@ public class HearingDaysCalculatorTest {
     }
 
 
-
     private List<HearingDay> expectedHearingDaysWithDefaultStartTimeAndDuration(final LocalDate startDate, final int totalDays, final LocalTime defaultTime, final int defaultDuration) {
         return IntStream.iterate(0, i -> i + 1)
                 .limit(totalDays)
-                .mapToObj(i -> ZonedDateTime.of(startDate.plusDays(i), defaultTime , BST).withZoneSameInstant(UTC))
+                .mapToObj(i -> ZonedDateTime.of(startDate.plusDays(i), defaultTime, BST).withZoneSameInstant(UTC))
                 .map(zdt -> buildHearingDay(zdt, defaultDuration))
                 .collect(Collectors.toList());
     }

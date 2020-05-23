@@ -34,9 +34,9 @@
           "lastName": "Lloyd",
           "dateOfBirth": "1995-03-23",
           "bailStatus": {
-            "id":"12e69486-4d01-3403-a50a-7419ca040635",
-            "code":"C",
-            "description":"Custody or remanded into custody"
+            "id": "12e69486-4d01-3403-a50a-7419ca040635",
+            "code": "C",
+            "description": "Custody or remanded into custody"
           },
           "custodyTimeLimit": "2018-01-30",
           "defenceOrganisation": "Flynch and Fleece Solicitors",
@@ -51,15 +51,14 @@
                 "welshTitle": "Colli â bwriad",
                 "legislation": "Offences against the Person Act 1861",
                 "welshLegislation": "Deddf Troseddau yn erbyn y Person 1861",
-                "restrictFromCourtList":false
+                "restrictFromCourtList": false
               }
             }
           ],
-          "restrictFromCourtList":false
+          "restrictFromCourtList": false
         }
       ],
-      "restrictFromCourtList":false
-
+      "restrictFromCourtList": false
     }
   ],
   "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
@@ -71,35 +70,35 @@
   "reportingRestrictionReason": "aReason",
   "startDate": "2018-06-01T10:30:00.000Z",
   "endDate": "2018-06-05",
-  "courtApplications":[
+  "courtApplications": [
     {
-      "applicant":{
-        "firstName":"5o5NzB5ewT",
-        "isRespondent":false,
-        "lastName":"nYhjupYT63",
+      "applicant": {
+        "firstName": "5o5NzB5ewT",
+        "isRespondent": false,
+        "lastName": "nYhjupYT63",
         "courtApplicationPartyType": "PERSON"
       },
-      "applicationType":"9vBchM49Go",
-      "id":"26b856a8-ae01-4aad-814c-7cdff8db19bf",
-      "parentApplicationId":"9d9a431a-0f12-4386-878a-2bf6c4a0877e",
-      "linkedCaseId":"19e9d562-6abb-4871-bfb3-2d777aa90371",
+      "applicationType": "9vBchM49Go",
+      "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+      "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+      "linkedCaseId": "19e9d562-6abb-4871-bfb3-2d777aa90371",
       "applicationReference": "REF-1",
-      "respondents":[
+      "respondents": [
         {
-          "firstName":"ijgX3B9Vy7",
-          "isRespondent":true,
-          "lastName":"pGk5CoFbDb",
+          "firstName": "ijgX3B9Vy7",
+          "isRespondent": true,
+          "lastName": "pGk5CoFbDb",
           "courtApplicationPartyType": "PERSON"
         }
       ]
     }
   ],
   "courtApplicationPartyListingNeeds": [
-    ],
-  "courtCentreDefaults" : {
+  ],
+  "courtCentreDefaults": {
     "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
     "defaultDuration": "30",
-    "defaultStartTime" : "10:30"
+    "defaultStartTime": "10:30"
   },
   "hearingTypeDuration": 30,
   "weekCommencingEndDate": null,
@@ -107,7 +106,30 @@
   "weekCommencingDurationInWeeks": null,
   "nonDefaultDays": [
     {
-      "startTime": "2018-06-01T10:00:00.000Z"
+      "duration": 15,
+      "endTime": "2018-06-01T10:45:00.000Z",
+      "startTime": "2018-06-01T10:30:00.000Z"
+    },
+    {
+      "duration": 30,
+      "endTime": "2018-06-02T10:00:00.000Z",
+      "startTime": "2018-06-02T09:30:00.000Z"
+    },
+    {
+      "duration": 30,
+      "endTime": "2018-06-03T10:00:00.000Z",
+      "startTime": "2018-06-03T09:30:00.000Z"
+    },
+    {
+      "duration": 30,
+      "endTime": "2018-06-04T10:00:00.000Z",
+      "startTime": "2018-06-04T09:30:00.000Z"
+    },
+    {
+      "duration": 30,
+      "endTime": "2018-06-05T10:00:00.000Z",
+      "startTime": "2018-06-05T09:30:00.000Z"
     }
-  ]
+  ],
+  "isCountBasedSlotSelected": false
 }

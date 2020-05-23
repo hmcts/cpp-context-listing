@@ -9,8 +9,6 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOOLEAN;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.doubleValue;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.integer;
 
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
@@ -46,7 +44,7 @@ import java.util.stream.IntStream;
 public class HearingsDataFactory {
 
     public static final String JURISDICTION_TYPE = "CROWN";
-    private static final int HEARING_ESTIMATE_MINUTES = doubleValue(0d, 1d, 1).next() > 0.5d ? integer(15, 360).next() : 1;
+    private static final int HEARING_ESTIMATE_MINUTES = 30;
     private static final HearingTypeData PTP_HEARING_TYPE = new HearingTypeData(UUID.fromString("52edf232-3c09-4c74-a6ad-737985c2e662"), "PTP");
     private static final BailStatus BAIL_CONDITIONAL = new BailStatus.Builder().withId(fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).withCode("P").withDescription("Custody or remanded into custody").build();
     public static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm");

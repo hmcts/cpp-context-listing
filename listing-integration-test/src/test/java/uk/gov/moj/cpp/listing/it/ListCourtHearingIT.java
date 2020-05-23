@@ -1,5 +1,9 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
+
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -26,7 +30,7 @@ public class ListCourtHearingIT extends AbstractIT {
 
 
     @Test
-    public void listHearingWithUnallocatedData() {
+    public void shouldListHearingWithUnallocatedData() {
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsData())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
@@ -35,7 +39,43 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
-    public void shouldListHearingWithAdjournedDate() {
+    public void shouldListHearingWithAdjournedDateSingleCountBasedSlot() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+    }
+
+    @Test
+    public void shouldListHearingWithAdjournedDateMultipleCountBasedSlots() {
+
+        stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased();
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+    }
+
+    @Test
+    public void shouldListHearingWithAdjournedDateSingleDurationBasedSlot() {
+
+        stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased();
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+    }
+
+    @Test
+    public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlots() {
+
+        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased();
+
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();

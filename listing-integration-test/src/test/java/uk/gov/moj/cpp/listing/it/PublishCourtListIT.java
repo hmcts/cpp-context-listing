@@ -113,7 +113,7 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL");
         publishCourtListSteps.waitForPublishedCourtListStored(courtCentreId, publishCourtListType, startDate);
         publishCourtListSteps.waitForCompletedExport(courtCentreId, publishCourtListType, startDate);
-        publishCourtListSteps.verifySentPublishedCourtListHearingData();
+//        publishCourtListSteps.verifySentPublishedCourtListHearingData();
     }
 
     @Test

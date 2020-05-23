@@ -6,9 +6,9 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-@SuppressWarnings("squid:S00107")
+@SuppressWarnings({"squid:S00107", "squid:S1210"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CourtSchedule {
+public class CourtSchedule implements Comparable<CourtSchedule> {
 
     private String bookingId;
     private String courtScheduleId;
@@ -190,5 +190,13 @@ public class CourtSchedule {
 
     public List<CourtScheduleJudiciary> getJudiciaries() {
         return judiciaries;
+    }
+
+    @Override
+    public int compareTo(final CourtSchedule o) {
+        if (getSessionDate() == null || o.getSessionDate() == null) {
+            return 0;
+        }
+        return getSessionDate().compareTo(o.getSessionDate());
     }
 }

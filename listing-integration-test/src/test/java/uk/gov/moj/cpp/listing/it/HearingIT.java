@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static java.util.UUID.randomUUID;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAvailableHearingSlotsService;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
@@ -58,6 +59,7 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void shouldRaisePublicHearingConfirmedPublicEventAndNotUpdateSlotDetails() {
+
         final HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -67,13 +69,14 @@ public class HearingIT extends AbstractIT {
 
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
 
+        stubGetReferenceDataCourtRoom(updatedHearingDataForAllocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingDataForAllocation.getCourtRoomId());
+
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingUpdatedResultsInAllocationInMQ();
             updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
         }
-        stubGetReferenceDataCourtRoom(updatedHearingDataForAllocation.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingDataForAllocation.getCourtRoomId());
 
     }
 
@@ -177,6 +180,9 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void hearingCanBeSearchedForUsingDifferentCombinationsOfParameters() {
+
+        stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased();
+
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -185,6 +191,7 @@ public class HearingIT extends AbstractIT {
 
         final UpdatedHearingData updatedHearingDataForUnallocation = UpdatedHearingData.updatedHearingData(hearingsData.getHearingData().get(0));
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForUnallocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingFoundByAllocatedFromAPI();
             updateHearingSteps.verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDate();
             updateHearingSteps.verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndSearchDate();

@@ -47,6 +47,8 @@ public class SlotUpdater {
         if (isMagistrates(confirmedHearing)) {
             final String updateSlotsPayload = jsonStringConverter.getSlotDetailFromHearingConfirmed(envelope, confirmedHearing, isForAdjournmentHearing);
 
+            LOGGER.info("Calling Azure update slot service with following request {}", updateSlotsPayload);
+
             if (isNotEmpty(updateSlotsPayload)) {
                 hearingSlotsService.update(updateSlotsPayload);
             }

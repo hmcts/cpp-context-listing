@@ -18,15 +18,15 @@ public class NonDefaultDayDurationBuilder {
     private static final int HALF_DAY_MINUTES = 180;
     private static final int FULL_DAY_MINUTES = 360;
 
-    public List<NonDefaultDay> updateNonDefaultDayWithNewDuration(final List<NonDefaultDay> ndd, final Boolean isCountBasedSlots) {
+    public List<NonDefaultDay> updateNonDefaultDayWithNewDuration(final List<NonDefaultDay> ndd, final Boolean isCountBasedSlots, final Integer totalDuration) {
         if (isCountBasedSlots) {
             return ndd;
         }
-        final int totalDuration = getDuration(ndd);
         //single day selection as all day session
         if (isAllDaySessionBooking(ndd, totalDuration)) {
             return ndd;
         }
+
         return buildNewNonDefaultDays(ndd, totalDuration);
     }
 
@@ -39,7 +39,7 @@ public class NonDefaultDayDurationBuilder {
                 .withHearingLanguage(hearing.getHearingLanguage())
                 .withJudiciary(hearing.getJudiciary())
                 .withJurisdictionType(hearing.getJurisdictionType())
-                .withNonDefaultDays(updateNonDefaultDayWithNewDuration(hearing.getNonDefaultDays(), isCountBasedSlots))
+                .withNonDefaultDays(updateNonDefaultDayWithNewDuration(hearing.getNonDefaultDays(), isCountBasedSlots, getDuration(hearing.getNonDefaultDays())))
                 .withNonSittingDays(hearing.getNonSittingDays())
                 .withStartDate(getNewStartDate(nonDefaultDays))
                 .withType(hearing.getType())
@@ -99,7 +99,7 @@ public class NonDefaultDayDurationBuilder {
 
     private boolean isHalfDaySession(final int duration) {
 
-        return duration % HALF_DAY_MINUTES == 0;
+        return duration == HALF_DAY_MINUTES;
     }
 
     private int getDuration(final List<NonDefaultDay> nonDefaultDays) {

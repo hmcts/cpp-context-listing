@@ -6,7 +6,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
-import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.lang.String.format;
@@ -14,8 +13,6 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
-
-import java.util.Map;
 
 public class AzureScheduleServiceStub {
 
@@ -26,7 +23,10 @@ public class AzureScheduleServiceStub {
     private static final String HEARING_SLOTS = "/hearingSlots";
 
     public static final String LISTING_SEARCH_HEARING_SLOTS_JSON = "stub-data/listing.search.hearing.slots.json";
-    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_JSON = "stub-data/provisionalBookingSampleData.json";
+    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleCountBased.json";
+    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON = "stub-data/provisionalBookingSampleDataMultipleCourtSchedulesCountBased.json";
+    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleDurationBased.json";
+    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON = "stub-data/provisionalBookingSampleDataMultipleCourtSchedulesDurationBased.json";
 
     static {
         configureFor(HOST, 8080);
@@ -51,11 +51,38 @@ public class AzureScheduleServiceStub {
                 ));
     }
 
-    public static void stubGetProvisionalBookedSlots() {
+    public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased() {
         stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", notMatching("null"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_JSON))
+                        .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON))
+                        .withHeader("Content-Type", "application/json")
+                ));
+    }
+
+    public static void stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased() {
+        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
+                .withQueryParam("bookingIds", notMatching("null"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON))
+                        .withHeader("Content-Type", "application/json")
+                ));
+    }
+
+    public static void stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased() {
+        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
+                .withQueryParam("bookingIds", notMatching("null"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON))
+                        .withHeader("Content-Type", "application/json")
+                ));
+    }
+
+    public static void stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased() {
+        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
+                .withQueryParam("bookingIds", notMatching("null"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON))
                         .withHeader("Content-Type", "application/json")
                 ));
     }

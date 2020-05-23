@@ -4,7 +4,7 @@ import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.moj.cpp.listing.utils.AuthorisationServiceStub.stubEnableAllCapabilities;
-import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlots;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 
 import uk.gov.justice.services.test.utils.core.rest.RestClient;
@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("WeakerAccess")
 public class AbstractIT {
-        public static final UUID USER_ID_VALUE = randomUUID();
+    public static final UUID USER_ID_VALUE = randomUUID();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractIT.class);
     protected static final Header CPP_UID_HEADER = new Header(USER_ID, USER_ID_VALUE.toString());
@@ -44,7 +44,7 @@ public class AbstractIT {
     public void setUp() {
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubEnableAllCapabilities();
-        stubGetProvisionalBookedSlots();
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
     }
 
     protected static void setLoggedInUser(final UUID userId) {
