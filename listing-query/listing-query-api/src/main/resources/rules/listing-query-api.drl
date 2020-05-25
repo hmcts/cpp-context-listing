@@ -30,7 +30,7 @@ rule "Query - API - listing.range.search.hearings"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.range.search.hearings");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE, RuleConstants.GROUP_POLICE_ADMIN, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN));
   then
     $outcome.setSuccess(true);
 end

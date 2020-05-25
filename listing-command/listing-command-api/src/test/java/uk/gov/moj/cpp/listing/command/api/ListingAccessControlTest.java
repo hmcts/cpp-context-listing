@@ -6,6 +6,8 @@ import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ASSOCIATE;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_CLERKS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.CPS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.CROWN_COURT_ADMIN;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.GROUP_POLICE_ADMIN;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LEGAL_ADVISERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LISTING_OFFICERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.NPS;
@@ -84,7 +86,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldAllowAuthorisedUserToSequenceHearings() {
         final Action action = createActionFor(ACTION_SEQUENCE_HEARINGS);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS, CPS, YOTS, NPS, COURT_ASSOCIATE))
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS, CPS, YOTS, NPS, COURT_ASSOCIATE, GROUP_POLICE_ADMIN, GROUP_VICTIMS_WITNESS_CARE_ADMIN))
                 .willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);

@@ -12,6 +12,8 @@ public class RuleConstants {
     public static final String CPS = "CPS";
     public static final String NPS = "Probation Admin";
     public static final String COURT_ASSOCIATE = "Court Associate";
+    public static final String GROUP_POLICE_ADMIN = "Police Admin";
+    public static final String GROUP_VICTIMS_WITNESS_CARE_ADMIN = "Victims & Witness Care Admin";
 
     private RuleConstants () {
     }
