@@ -16,5 +16,6 @@
         <module>listing-domain-anonymization-events</module>
         <module>listing-domain-transformation-spiresults</module>
         <module>listing-domain-transformation-for-corechanges</module>
+        <module>listing-domain-transformations-pilotdata</module>
     </modules>
 </project>
