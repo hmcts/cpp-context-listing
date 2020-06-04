@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.command.api;
 
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
+import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
@@ -31,12 +33,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ServiceComponent(COMMAND_API)
+@SuppressWarnings("squid:S2629")
 public class ListingCommandApi {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
     static final String LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED = "listing.command.list-court-hearing-enriched";
     static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
+    static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
 
     @Inject
     private Sender sender;
@@ -72,8 +76,8 @@ public class ListingCommandApi {
                 .withAdjournedFromDate(listCourtHearing.getAdjournedFromDate())
                 .build();
 
-        sender.send(enveloper.withMetadataFrom(envelope, LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED)
-                .apply(objectToJsonValueConverter.convert(listCourtHearingEnriched)));
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED),
+                objectToJsonValueConverter.convert(listCourtHearingEnriched)));
     }
 
     @Handles("listing.command.update-hearing-for-listing")
@@ -91,8 +95,18 @@ public class ListingCommandApi {
                 .withUpdateHearingForListing(updateHearingForListing)
                 .build();
 
-        sender.send(enveloper.withMetadataFrom(envelope, LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED)
-                .apply(objectToJsonValueConverter.convert(updateHearingForListingEnriched)));
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED),
+                objectToJsonValueConverter.convert(updateHearingForListingEnriched)));
+
+    }
+
+    @Handles("listing.command.vacate-trial")
+    public void vacateTrial(final JsonEnvelope envelope) {
+
+        LOGGER.info("'listing.command.vacate-trial' received with payload {}", envelope.toObfuscatedDebugString());
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_VACATE_TRIAL),
+                envelope.payload()));
     }
 
     @Handles("listing.command.extend-hearing-for-hearing")
@@ -115,8 +129,8 @@ public class ListingCommandApi {
                 .withUnAllocatedHearingId(UUID.fromString(unAllocatedHearingId))
                 .build();
 
-        sender.send(enveloper.withMetadataFrom(envelope, LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED)
-                .apply(objectToJsonValueConverter.convert(extendHearingForHearingEnriched)));
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED),
+                objectToJsonValueConverter.convert(extendHearingForHearingEnriched)));
     }
 
     @Handles("listing.command.change-judiciary-for-hearings")

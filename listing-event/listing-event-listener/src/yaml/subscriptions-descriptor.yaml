@@ -62,6 +62,12 @@ subscriptions_descriptor:
         - name: listing.events.hearing-unallocated-for-listing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-unallocated-for-listing.json
 
+        - name: listing.events.trial-vacated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.trial-vacated.json
+
+        - name: listing.events.hearing-trial-vacated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-trial-vacated.json
+
         - name: listing.events.hearing-language-changed-for-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-language-changed-for-hearing.json
 
@@ -155,5 +161,8 @@ subscriptions_descriptor:
 
         - name: listing.events.linked-cases-updated
           schema_uri: http://justice.gov.uk/listing/events/listing.events.linked-cases-updated.json
+
+        - name: listing.events.hearing-rescheduled
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-rescheduled.json
 
       event_source_name: listing

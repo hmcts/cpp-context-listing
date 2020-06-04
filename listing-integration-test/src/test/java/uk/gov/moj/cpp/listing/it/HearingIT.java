@@ -9,6 +9,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.SequenceHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
+import uk.gov.moj.cpp.listing.steps.VacatingTrialSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.SequenceHearingData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
@@ -120,6 +121,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingUpdatedResultsInMQ();
             updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
+            updateHearingSteps.verifyVacatedTrialUpdatedInPublicMQ(ALLOCATED, false);
             updateHearingSteps.verifyHearingUpdatedInPublicMQ();
         }
     }
@@ -255,4 +257,19 @@ public class HearingIT extends AbstractIT {
         }
 
     }
+
+    @Test
+    public void shouldVacateTrial() throws Exception {
+        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+        final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
+        vacatingTrialSteps.whenPublicEventHearingTrialVacatedIsPublished();
+        vacatingTrialSteps.verifyHearingVacatingTrialEvent();
+        vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
+    }
+
 }

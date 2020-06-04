@@ -70,6 +70,9 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.command.extend-hearing-for-hearing+json
         name: listing.command.extend-hearing-for-hearing
+      (mapping):
+        requestType: application/vnd.listing.command.vacate-trial+json
+        name: listing.command.vacate-trial
       ...
     body:
       application/vnd.listing.command.update-hearing-for-listing+json:
@@ -90,6 +93,9 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.extend-hearing-for-hearing+json:
         example: !include json/listing.command.extend-hearing-for-hearing.json
         schema: !include json/schema/listing.command.extend-hearing-for-hearing.json
+      application/vnd.listing.command.vacate-trial+json:
+        example: !include json/listing.command.vacate-trial.json
+        schema: !include json/schema/listing.command.vacate-trial.json
     responses:
       202:
         description: Request accepted

@@ -15,7 +15,10 @@ import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.HearingRescheduled;
+import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
+import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
@@ -43,6 +46,7 @@ public class HearingEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
     private static final String LISTED_CASES = "listedCases";
+    private static final UUID VACATE_TRIAL_REASON = randomUUID();
 
     @Mock
     private HearingRepository hearingRepository;
@@ -73,6 +77,16 @@ public class HearingEventListenerTest {
 
     @Mock
     private JsonNode jsonNode;
+
+    @Mock
+    private TrialVacated trialVacated;
+
+    @Mock
+    private HearingTrialVacated hearingTrialVacated;
+
+    @Mock
+    private HearingRescheduled hearingRescheduled;
+
 
 
     @InjectMocks
@@ -159,6 +173,64 @@ public class HearingEventListenerTest {
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
     }
+
+
+    @Test
+    public void shouldTrialVacated() {
+        final Envelope<TrialVacated> envelope = (Envelope<TrialVacated>) mock(Envelope.class);
+
+        given(envelope.payload()).willReturn(trialVacated);
+        given(trialVacated.getHearingId()).willReturn(HEARING_ID);
+        given(trialVacated.getVacatedTrialReasonId()).willReturn(VACATE_TRIAL_REASON);
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
+        hearingEventListener.trialVacated(envelope);
+
+        verify(properties).put(eq("isVacatedTrial"), eq(true));
+        verify(properties).put(eq("vacatedTrialReasonId"), eq(VACATE_TRIAL_REASON.toString()));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldHearingTrialVacated() {
+        final Envelope<HearingTrialVacated> envelope = (Envelope<HearingTrialVacated>) mock(Envelope.class);
+
+        given(envelope.payload()).willReturn(hearingTrialVacated);
+        given(hearingTrialVacated.getHearingId()).willReturn(HEARING_ID);
+        given(hearingTrialVacated.getVacatedTrialReasonId()).willReturn(VACATE_TRIAL_REASON);
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
+        hearingEventListener.hearingTrialVacated(envelope);
+
+        verify(properties).put(eq("isVacatedTrial"), eq(true));
+        verify(properties).put(eq("vacatedTrialReasonId"), eq(VACATE_TRIAL_REASON.toString()));
+        verify(hearingRepository).save(hearing);
+    }
+
+
+
+    @Test
+    public void shouldHearingRescheduled() {
+        final Envelope<HearingRescheduled> envelope = (Envelope<HearingRescheduled>) mock(Envelope.class);
+
+        given(envelope.payload()).willReturn(hearingRescheduled);
+        given(hearingRescheduled.getHearingId()).willReturn(HEARING_ID);
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
+        hearingEventListener.hearingRescheduled(envelope);
+
+        verify(properties).put(eq("isVacatedTrial"), eq(false));
+        verify(properties).put(eq("vacatedTrialReasonId"), eq(""));
+        verify(hearingRepository).save(hearing);
+    }
+
+
 
     private String getStringFromResource(final String path) throws IOException {
         return Resources.toString(getResource(path), defaultCharset());

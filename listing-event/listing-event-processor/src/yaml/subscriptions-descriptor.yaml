@@ -14,6 +14,9 @@ subscriptions_descriptor:
         - name: listing.events.allocated-hearing-updated-for-listing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.allocated-hearing-updated-for-listing.json
 
+        - name: listing.events.trial-vacated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.trial-vacated.json
+
         - name: listing.events.defendants-to-be-updated
           schema_uri: http://justice.gov.uk/listing/events/listing.events.defendants-to-be-updated.json
 
@@ -77,6 +80,9 @@ subscriptions_descriptor:
         - name: listing.events.linked-cases-to-be-updated
           schema_uri: http://justice.gov.uk/listing/events/listing.events.linked-cases-to-be-updated.json
 
+        - name: listing.events.hearing-rescheduled
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-rescheduled.json
+
       event_source_name: listing
 
     - name: public event subscription
@@ -107,6 +113,9 @@ subscriptions_descriptor:
 
         - name: public.progression.defendant-legalaid-status-updated
           schema_uri: http://justice.gov.uk/core/courts/defendant-legalaid-status-updated.json
+
+        - name: public.hearing.trial-vacated
+          schema_uri: http://justice.gov.uk/core/courts/public.hearing.trial-vacated.json
 
         - name: public.progression.case-linked
           schema_uri: http://justice.gov.uk/progression/courts/case-linked.json

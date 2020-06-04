@@ -14,4 +14,8 @@ subscriptions_descriptor:
         - name: public.listing.court-list-restricted
           schema_uri: http://justice.gov.uk/listing/courts/court-list-restricted.json
 
+        - name: public.listing.vacated-trial-updated
+          schema_uri: http://justice.gov.uk/listing/courts/vacated-trial-updated.json
+
+
       event_source_name: public.event.source

@@ -95,6 +95,12 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/courtApplication.json"
       }
+    },
+    "vacatedTrialReasonId": {
+      "type": "string"
+    },
+    "isVacated": {
+      "type": "boolean"
     }
   },
   "definitions": {

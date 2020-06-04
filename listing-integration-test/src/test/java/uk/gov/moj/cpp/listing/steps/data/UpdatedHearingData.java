@@ -6,6 +6,7 @@ import static java.util.UUID.randomUUID;
 
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -20,6 +21,7 @@ import java.util.UUID;
 
 public class UpdatedHearingData {
 
+    protected static final LocalTime DEFAULT_START_TIME = LocalTime.of(9, 30);
     private static final HearingTypeData SENTENCE_HEARING_TYPE = new HearingTypeData(randomUUID(), "Sentence");
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final String HEARING_LANGUAGE_WELSH = "WELSH";
@@ -29,7 +31,6 @@ public class UpdatedHearingData {
     private static final String OUCODE = "BKROOL";
     private static final String SESSION = "AM";
     private static final int DURATION = 120;
-    protected static final LocalTime DEFAULT_START_TIME = LocalTime.of(9, 30);
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final String NO_DEFAULT_DAYS_DATE = "2020-04-23";
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm");
@@ -97,7 +98,7 @@ public class UpdatedHearingData {
 
     private static UpdatedHearingData updatedHearingDataForAllocation(final UUID hearingId, final List<JudicialRoleData> judiciary) {
 
-        final LocalDate startDate = LocalDate.now();
+        final LocalDate startDate = nextOrSameWorkingDay(LocalDate.now());
         final LocalTime startTime = DEFAULT_START_TIME;
         final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, LocalTime.parse(startTime.format(dtf)), UTC);
 
@@ -114,6 +115,23 @@ public class UpdatedHearingData {
                 startDate.toString(), endDate, nonDefaultDays,
                 nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null);
     }
+
+    private static LocalDate nextOrSameWorkingDay(LocalDate date) {
+        return isWeekEnd(date) ? nextWorkingDay(date) : date;
+    }
+
+    private static LocalDate nextWorkingDay(LocalDate date) {
+        do {
+            date = date.plusDays(1);
+        } while (isWeekEnd(date));
+        return date;
+    }
+
+    private static boolean isWeekEnd(LocalDate date) {
+        DayOfWeek day = date.getDayOfWeek();
+        return day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY;
+    }
+
 
     private static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDays(final UUID hearingId, final List<JudicialRoleData> judiciary) {
         final String endDate = "2020-04-23";

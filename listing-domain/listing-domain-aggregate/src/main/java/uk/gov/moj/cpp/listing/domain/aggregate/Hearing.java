@@ -54,6 +54,8 @@ import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.HearingLanguageChangedForHearing;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingListedCaseUpdated;
+import uk.gov.justice.listing.events.HearingRescheduled;
+import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.JudicialRoleType;
 import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
@@ -75,6 +77,7 @@ import uk.gov.justice.listing.events.OffenceUpdated;
 import uk.gov.justice.listing.events.SequencesResetOnHearingDays;
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
 import uk.gov.justice.listing.events.StartDateRemovedForHearing;
+import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.listing.events.TypeChangedForHearing;
 import uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing;
 import uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing;
@@ -122,7 +125,7 @@ public class Hearing implements Aggregate {
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
     private static final long serialVersionUID = 101L;
-
+    private final List<uk.gov.justice.listing.events.ListedCase> unAllocatedListedCases = new ArrayList();
     private UUID hearingId;
     private boolean allocated;
     private Type type;
@@ -145,7 +148,6 @@ public class Hearing implements Aggregate {
     private Integer weekCommencingDurationInWeeks;
     private boolean updateSlot;
     private boolean hasAdjournmentDate;
-    private final List<uk.gov.justice.listing.events.ListedCase> unAllocatedListedCases = new ArrayList();
     private UUID unAllocatedHearingIdToBeDeleted;
 
     @Override
@@ -607,6 +609,41 @@ public class Hearing implements Aggregate {
                     .build()));
         }
         return Stream.empty();
+    }
+
+    public Stream<Object> vacateTrial(final UUID hearingId, final UUID vacatingTrialReasonId) {
+        return apply(Stream.of(TrialVacated.trialVacated()
+                .withHearingId(this.hearingId)
+                .withVacatedTrialReasonId(vacatingTrialReasonId)
+                .withAllocated(this.allocated)
+                .build()));
+    }
+
+    public Stream<Object> hearingVacateTrial(final UUID vacatingTrialReasonId) {
+        return apply(Stream.of(HearingTrialVacated.hearingTrialVacated()
+                .withHearingId(this.hearingId)
+                .withVacatedTrialReasonId(vacatingTrialReasonId)
+                .build()));
+    }
+
+    public Stream<Object> applyRescheduledCheck(final List<Object> occuredEventList) {
+
+        if(isReschedulingEvent(occuredEventList)){
+            return apply(Stream.of(HearingRescheduled.hearingRescheduled()
+                    .withHearingId(this.hearingId)
+                    .withAllocated(this.allocated)
+                    .build()));
+        }
+
+        return Stream.empty();
+
+    }
+
+    private boolean isReschedulingEvent(final List<Object> occuredEventList) {
+        return occuredEventList.stream()
+                .anyMatch(
+                        o -> o instanceof StartDateChangedForHearing);
+
     }
 
     private NewCaseMarkerUpdated caseMarkerUpdateEvent(final UUID caseId, final List<CaseMarker> cm) {

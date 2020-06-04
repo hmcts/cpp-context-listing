@@ -98,6 +98,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTOR_HEARING_JURISDICTION_CHANGED = "listing.events.jurisdiction-changed-for-hearing";
     private static final String EVENT_SELECTOR_HEARING_LANGUAGE_CHANGED = "listing.events.hearing-language-changed-for-hearing";
     private static final String EVENT_SELECTOR_HEARING_START_DATE_CHANGED = "listing.events.start-date-changed-for-hearing";
+    private static final String EVENT_SELECTOR_HEARING_RESCHEDULED = "listing.events.hearing-rescheduled";
     private static final String EVENT_SELECTOR_NON_DEFAULT_DAYS_ASSIGNED = "listing.events.non-default-days-assigned-to-hearing";
     private static final String EVENT_SELECTOR_NON_DEFAULT_DAYS_CHANGED = "listing.events.non-default-days-changed-for-hearing";
     private static final String EVENT_SELECTOR_NON_SITTING_DAYS_ASSIGNED = "listing.events.non-sitting-days-assigned-to-hearing";
@@ -114,6 +115,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTOR_HEARING_DAYS_CHANGED = "listing.events.hearing-days-changed-for-hearing";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
+    private static final String EVENT_SELECTED_PUBLIC_VACATED_TRIAL_UPDATED = "public.listing.vacated-trial-updated";
     private static final String EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED = "listing.events.week-commencing-date-removed-for-hearing";
     private static final String FIELD_HEARINGS = "hearings";
     private static final int DEFAULT_DURATION_MINS = 120;
@@ -131,6 +133,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private MessageConsumer privateMessageConsumerJurisdictionChanged;
     private MessageConsumer privateMessageConsumerHearingLanguageChanged;
     private MessageConsumer privateMessageConsumerStartDateChanged;
+    private MessageConsumer privateMessageConsumerHearingRescheduled;
     private MessageConsumer privateMessageConsumerNonDefaultDaysAssigned;
     private MessageConsumer privateMessageConsumerNonDefaultDaysChanged;
     private MessageConsumer privateMessageConsumerNonSittingDaysAssigned;
@@ -147,6 +150,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private MessageConsumer privateMessageConsumerHearingDaysChanged;
     private MessageConsumer publicMessageConsumerHearingConfirmed;
     private MessageConsumer publicMessageConsumerHearingUpdated;
+    private MessageConsumer publicMessageConsumerVacatedTrialUpdated;
     private MessageConsumer privateMessageConsumerWeekCommencingDatesRemoved;
 
     private String request;
@@ -306,6 +310,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerJurisdictionChanged = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_JURISDICTION_CHANGED);
         privateMessageConsumerHearingLanguageChanged = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_LANGUAGE_CHANGED);
         privateMessageConsumerStartDateChanged = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_START_DATE_CHANGED);
+        privateMessageConsumerHearingRescheduled = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_RESCHEDULED);
         privateMessageConsumerNonDefaultDaysAssigned = privateEvents.createConsumer(EVENT_SELECTOR_NON_DEFAULT_DAYS_ASSIGNED);
         privateMessageConsumerNonDefaultDaysChanged = privateEvents.createConsumer(EVENT_SELECTOR_NON_DEFAULT_DAYS_CHANGED);
         privateMessageConsumerNonSittingDaysAssigned = privateEvents.createConsumer(EVENT_SELECTOR_NON_SITTING_DAYS_ASSIGNED);
@@ -322,6 +327,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerHearingDaysChanged = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_DAYS_CHANGED);
         publicMessageConsumerHearingConfirmed = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_HEARING_CONFIRMED);
         publicMessageConsumerHearingUpdated = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_HEARING_UPDATED);
+        publicMessageConsumerVacatedTrialUpdated = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_VACATED_TRIAL_UPDATED);
         privateMessageConsumerWeekCommencingDatesRemoved = privateEvents.createConsumer(EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED);
     }
 
@@ -434,6 +440,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
         verifyStartDateChangedEvent();
+        verifyHearingRescheduledEvent();
         verifyCourtRoomChangedEvent();
         verifyEndDateChangedEvent();
         verifyJudiciaryChangedEvent();
@@ -480,6 +487,13 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         verifyHearingUpdatedEvent();
     }
 
+    public void verifyVacatedTrialUpdatedInPublicMQ(final boolean allocated, final boolean isVacated) {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        verifyVacatedTrialUpdatedPunlicEvent(allocated, isVacated);
+    }
+
     private void verifyHearingConfirmedEvent() {
 
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingConfirmed);
@@ -494,6 +508,15 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
 
         verifyHearingPublicDetails(jsonResponse, "updatedHearing");
+    }
+
+    private void verifyVacatedTrialUpdatedPunlicEvent(final boolean allocated, final boolean isVacated) {
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerVacatedTrialUpdated);
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
+        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
+        assertThat(jsonResponse.get("allocated"), is(allocated));
+        assertThat(jsonResponse.get("isVacated"), is(isVacated));
     }
 
     private void verifyHearingPublicDetails(final JsonPath jsonResponse, final String publicEventType) {
@@ -601,6 +624,14 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
         assertThat(jsonResponse.get("startDate"), is(updatedHearingData.getStartDate()));
     }
+
+    private void verifyHearingRescheduledEvent() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingRescheduled);
+        LOGGER.info("jsonResponse from privateMessageConsumerHearingRescheduled: {}", jsonResponse.prettify());
+        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
+    }
+
+
 
     private void verifyTypeChangedEvent() {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerTypeChanged);
@@ -981,6 +1012,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerJurisdictionChanged.close();
         privateMessageConsumerHearingLanguageChanged.close();
         privateMessageConsumerStartDateChanged.close();
+        privateMessageConsumerHearingRescheduled.close();
         privateMessageConsumerNonDefaultDaysAssigned.close();
         privateMessageConsumerNonDefaultDaysChanged.close();
         privateMessageConsumerNonSittingDaysAssigned.close();
@@ -998,6 +1030,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerHearingDaysChanged.close();
         publicMessageConsumerHearingConfirmed.close();
         publicMessageConsumerHearingUpdated.close();
+        publicMessageConsumerVacatedTrialUpdated.close();
         privateMessageConsumerWeekCommencingDatesRemoved.close();
     }
 

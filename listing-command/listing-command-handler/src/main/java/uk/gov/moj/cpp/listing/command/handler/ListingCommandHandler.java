@@ -48,6 +48,7 @@ import uk.gov.justice.listing.courts.ChangeJudiciaryForHearings;
 import uk.gov.justice.listing.courts.DeleteOffencesForHearing;
 import uk.gov.justice.listing.courts.DeletedOffences;
 import uk.gov.justice.listing.courts.ExtendHearingForHearingEnriched;
+import uk.gov.justice.listing.courts.HearingVacateTrial;
 import uk.gov.justice.listing.courts.LinkedToCases;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
@@ -64,6 +65,7 @@ import uk.gov.justice.listing.courts.UpdateLinkedCaseInHearing;
 import uk.gov.justice.listing.courts.UpdateLinkedCases;
 import uk.gov.justice.listing.courts.UpdateOffencesForHearing;
 import uk.gov.justice.listing.courts.UpdatedOffences;
+import uk.gov.justice.listing.courts.VacateTrialEnriched;
 import uk.gov.justice.listing.event.CourtListExportRequested;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
@@ -145,7 +147,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ServiceComponent(COMMAND_HANDLER)
-@SuppressWarnings({"squid:S1188", "squid:CallToDeprecatedMethod"})
+@SuppressWarnings({"squid:S1188", "squid:CallToDeprecatedMethod", "squid:S2629"})
 public class ListingCommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandHandler.class);
@@ -334,12 +336,36 @@ public class ListingCommandHandler {
         return jsonObjectConverter.convert(envelope.payloadAsJsonObject(), UpdateCaseMarkersCommand.class);
     }
 
+    @Handles("listing.command.vacate-trial-enriched")
+    public void vacateTrial(final JsonEnvelope command) throws EventStreamException {
+
+        LOGGER.info("'listing.command.vacate-trial-enriched' received with payload {}", command.toObfuscatedDebugString());
+
+        final VacateTrialEnriched vacateTrialEnriched = jsonObjectConverter.convert(command.payloadAsJsonObject(), VacateTrialEnriched.class);
+
+        updateHearingEventStream(command, vacateTrialEnriched.getHearingId(), (Hearing hearing) ->
+                hearing.vacateTrial(vacateTrialEnriched.getHearingId(), vacateTrialEnriched.getVacatedTrialReasonId()));
+
+    }
+
+    @Handles("listing.command.hearing-vacate-trial")
+    public void hearingVacateTrial(final JsonEnvelope command) throws EventStreamException {
+
+        LOGGER.info("'listing.command.hearing-vacate-trial' received with payload {}", command.toObfuscatedDebugString());
+
+        final HearingVacateTrial hearingVacateTrial = jsonObjectConverter.convert(command.payloadAsJsonObject(), HearingVacateTrial.class);
+
+        updateHearingEventStream(command, hearingVacateTrial.getHearingId(), (Hearing hearing) ->
+                hearing.hearingVacateTrial(hearingVacateTrial.getVacatedTrialReasonId()));
+
+    }
+
     @Handles("listing.command.update-hearing-for-listing-enriched")
     public void updateHearingForListing(final JsonEnvelope command) throws EventStreamException {
 
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("'listing.command.handler.update-hearing-for-listing-enriched' received with payload {}", command.toObfuscatedDebugString());
-        }
+
+        LOGGER.info("'listing.command.handler.update-hearing-for-listing-enriched' received with payload {}", command.toObfuscatedDebugString());
+
         final UpdateHearingForListingEnriched updateHearingForListingEnriched = jsonObjectConverter.convert(command.payloadAsJsonObject(), UpdateHearingForListingEnriched.class);
         UpdateHearingForListing updateHearingForListing = updateHearingForListingEnriched.getUpdateHearingForListing();
 
@@ -407,8 +433,13 @@ public class ListingCommandHandler {
                     hearing.changeWeekCommencingDate(weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingId) : hearing.removeWeekCommencingDates(hearingId);
 
             final Stream<Object> allocationEvents = hearing.applyAllocationRules();
-            return Stream.of(typeEvents, jurisdictionTypeEvents, hearingLanguageEvents, startDateEvents, nonDefaultDaysEvents, endDateEvents,
-                    nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents).flatMap(i -> i);
+
+            final List<Object> startDateEventList = startDateEvents.collect(Collectors.toList());
+
+            final Stream<Object> rescheduledEvents = hearing.applyRescheduledCheck(startDateEventList);
+
+            return Stream.of(typeEvents, jurisdictionTypeEvents, hearingLanguageEvents, startDateEventList.stream(), nonDefaultDaysEvents, endDateEvents,
+                    nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, rescheduledEvents).flatMap(i -> i);
         });
     }
 

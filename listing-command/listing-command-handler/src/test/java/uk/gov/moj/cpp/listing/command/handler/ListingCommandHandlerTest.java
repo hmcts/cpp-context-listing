@@ -78,6 +78,7 @@ import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
 import uk.gov.justice.listing.events.HearingDaysSequenced;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.JudiciaryAssignedToHearing;
 import uk.gov.justice.listing.events.JudiciaryChangedForHearing;
@@ -94,6 +95,7 @@ import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
+import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.listing.events.TypeChangedForHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -301,12 +303,14 @@ public class ListingCommandHandlerTest {
     private static final String COURT_APPLICATION_TYPE = STRING.next();
     private static final UUID COURT_CENTRE_ID_ONE = UUID.fromString("89592405-c29b-3706-b1d3-b1dd3a08b227");
     private static final UUID COURT_CENTRE_ID_TWO = UUID.fromString("44497da7-ec8d-3137-94ad-ff7c0c57827a");
+    private static final UUID REASON = randomUUID();
 
     private static final String HEARING_ID = "hearingId";
     private static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
     private static final String FIELD_APPLICATION_ID = "applicationId";
     private static final String REMOVAL_REASON = "removalReason";
     public static final String LINK_ACTION_TYPE = "LINK";
+
 
     @Mock
     CaseOffences caseOffences;
@@ -429,7 +433,7 @@ public class ListingCommandHandlerTest {
                 OffenceDeleted.class, SequenceHearings.class, UpdateCourtApplicationForHearings.class, AddCourtApplicationForHearing.class,
                 CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class,
                 PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class, RecordCourtListProduced.class,
-                PublishedCourtListStored.class);
+                PublishedCourtListStored.class, TrialVacated.class, HearingRescheduled.class);
     }
 
     @Test
@@ -561,13 +565,14 @@ public class ListingCommandHandlerTest {
         when(hearing.assignNonDefaultDays(nonDefaultDays, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeEndDate(LocalDate.parse(END_DATE), HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignJudiciary(judicialRoles, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), Integer.valueOf(DEFAULT_DURATION)));
         when(hearing.removeWeekCommencingDates(HEARING_ID_1)).thenReturn(mock(Stream.class));
 
@@ -584,6 +589,7 @@ public class ListingCommandHandlerTest {
         verify(hearing).changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1);
         verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1);
         verify(hearing).assignJudiciary(judicialRoles, HEARING_ID_1);
+        verify(hearing).applyRescheduledCheck(any());
         verify(hearing).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1);
         verify(hearing).removeWeekCommencingDates(HEARING_ID_1);
@@ -622,7 +628,7 @@ public class ListingCommandHandlerTest {
         when(hearing.assignNonDefaultDays(nonDefaultDays, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeEndDate(LocalDate.parse(END_DATE), HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.removeStartDate(HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.removeStartDate(HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.removeEndDate(HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
@@ -643,7 +649,6 @@ public class ListingCommandHandlerTest {
         verify(hearing).assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1);
         verify(hearing).removeEndDate(HEARING_ID_1);
         verify(hearing).removeStartDate(HEARING_ID_1);
-        verify(hearing).removeEndDate(HEARING_ID_1);
         verify(hearing).changeType(HEARING_TYPE, HEARING_ID_1);
         verify(hearing).changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1);
         verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1);
@@ -1736,6 +1741,34 @@ public class ListingCommandHandlerTest {
     }
 
     @Test
+    public void listingCommandHandlerShouldVacateTrial() throws Exception {
+        final JsonEnvelope commandEnvelope = getEnvelopeForVacateTrial(REASON);
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.vacateTrial(HEARING_ID_1,REASON )).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.vacateTrial(commandEnvelope);
+
+        verify(hearing, times(1)).vacateTrial(HEARING_ID_1, REASON);
+    }
+
+    @Test
+    public void listingCommandHandlerShouldHearingVacateTrial() throws Exception {
+        final JsonEnvelope commandEnvelope = getEnvelopeForHearingVacateTrial(REASON);
+
+        when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.hearingVacateTrial(REASON)).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.hearingVacateTrial(commandEnvelope);
+
+        verify(hearing, times(1)).hearingVacateTrial(REASON);
+    }
+
+
+
+    @Test
     public void handleAddCasesForHearing() throws Exception {
         final JsonEnvelope commandEnvelope = getJsonEnvelopeForAddCaseForHearing();
 
@@ -1786,6 +1819,18 @@ public class ListingCommandHandlerTest {
         final String requestBody = "{\"allocatedHearingId\":\"bed2d8e5-9fe2-4003-a40b-cee8d1f235d8\",\"unAllocatedHearingId\":\"26b856a8-ae01-4aad-814c-7cdff8db19bf\"}";
         final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.extend-hearing-for-hearing-enriched", jsonReader.readObject());
+    }
+
+    private JsonEnvelope getEnvelopeForVacateTrial(UUID reason) {
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 +"\",\"vacatedTrialReasonId\":\""+reason+"\"}";
+        final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
+        return createEnvelope("listing.command.vacate-trial-enriched", jsonReader.readObject());
+    }
+
+    private JsonEnvelope getEnvelopeForHearingVacateTrial(UUID reason) {
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 +"\",\"vacatedTrialReasonId\":\""+reason+"\"}";
+        final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
+        return createEnvelope("listing.command.hearing-vacate-trial", jsonReader.readObject());
     }
 
     private UUID getUUID() {

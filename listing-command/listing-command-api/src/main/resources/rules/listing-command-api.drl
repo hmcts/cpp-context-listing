@@ -27,6 +27,15 @@ rule "Command - API - Action - listing.command.update-hearing-for-listing"
     $outcome.setSuccess(true);
 end
 
+rule "Command - API - Action - listing.command.vacate-trial"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.command.vacate-trial");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS));
+  then
+    $outcome.setSuccess(true);
+end
+
 rule "Command - API - Action - listing.command.extend-hearing-for-hearing"
   when
     $outcome: Outcome();

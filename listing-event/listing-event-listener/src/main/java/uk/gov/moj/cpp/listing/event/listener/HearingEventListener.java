@@ -9,8 +9,11 @@ import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.HearingRescheduled;
+import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.ListedCase;
+import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -33,16 +36,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-@SuppressWarnings({"squid:S3655","squid:S1067"})
+
+@SuppressWarnings({"squid:S3655", "squid:S1067"})
 @ServiceComponent(Component.EVENT_LISTENER)
 public class HearingEventListener {
 
     private static final boolean ALLOCATED = true;
+    private static final boolean VACATED = true;
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingEventListener.class);
     private static final String LISTED_CASES_FIELD = "listedCases";
-    private JsonEntityFinder jsonEntityFinder;
-    private HearingRepository hearingRepository;
-    private ObjectMapper mapper;
+    private static final String FIELD_VACATE_TRIAL_REASON = "vacatedTrialReasonId";
+    private static final String FIELD_IS_VACATED_TRIAL = "isVacatedTrial";
+    private final JsonEntityFinder jsonEntityFinder;
+    private final HearingRepository hearingRepository;
+    private final ObjectMapper mapper;
 
     @Inject
     public HearingEventListener(final HearingRepository hearingRepository,
@@ -76,6 +83,47 @@ public class HearingEventListener {
         final UUID hearingId = hearingUnallocatedForListing.getHearingId();
         LOGGER.info("'listing.events.hearing-unallocated-for-listing' received hearingId {}", hearingId);
         jsonEntityFinder.find(hearingId).put("allocated", !ALLOCATED).save();
+
+    }
+
+    @Handles("listing.events.trial-vacated")
+    public void trialVacated(final Envelope<TrialVacated> event) {
+        final TrialVacated trialVacated = event.payload();
+        final UUID hearingId = trialVacated.getHearingId();
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("'listing.events.trial-vacated' received hearingId {}", hearingId);
+        }
+        jsonEntityFinder.find(hearingId).put(FIELD_IS_VACATED_TRIAL, VACATED)
+                .put(FIELD_VACATE_TRIAL_REASON, trialVacated.getVacatedTrialReasonId())
+                .save();
+
+    }
+
+    @Handles("listing.events.hearing-trial-vacated")
+    public void hearingTrialVacated(final Envelope<HearingTrialVacated> event) {
+        final HearingTrialVacated hearingTrialVacated = event.payload();
+        final UUID hearingId = hearingTrialVacated.getHearingId();
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("'listing.events.hearing-trial-vacated' received hearingId {}", hearingId);
+        }
+        jsonEntityFinder.find(hearingId)
+                .put(FIELD_IS_VACATED_TRIAL, VACATED)
+                .put(FIELD_VACATE_TRIAL_REASON, hearingTrialVacated.getVacatedTrialReasonId())
+                .save();
+
+    }
+
+    @Handles("listing.events.hearing-rescheduled")
+    public void hearingRescheduled(final Envelope<HearingRescheduled> event) {
+        final HearingRescheduled hearingRescheduled = event.payload();
+        final UUID hearingId = hearingRescheduled.getHearingId();
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("'listing.events.hearing-rescheduled' received hearingId {}", hearingId);
+        }
+        jsonEntityFinder.find(hearingId)
+                .put(FIELD_IS_VACATED_TRIAL, !VACATED)
+                .put(FIELD_VACATE_TRIAL_REASON, "")
+                .save();
 
     }
 
@@ -139,41 +187,42 @@ public class HearingEventListener {
 
     private uk.gov.justice.listing.events.Defendant getDefendant(final Defendant defendant, final uk.gov.justice.listing.events.Defendant originalDefendant) {
         return uk.gov.justice.listing.events.Defendant.defendant()
-                        .withBailStatus(originalDefendant.getBailStatus())
-                        .withCustodyTimeLimit(originalDefendant.getCustodyTimeLimit())
-                        .withId(originalDefendant.getId())
-                        .withOffences(originalDefendant.getOffences())
-                        .withDateOfBirth(originalDefendant.getDateOfBirth())
-                        .withDefenceOrganisation(originalDefendant.getDefenceOrganisation())
-                        .withFirstName(originalDefendant.getFirstName())
-                        .withLastName(originalDefendant.getLastName())
-                        .withOrganisationName(originalDefendant.getOrganisationName())
-                        .withSpecificRequirements(originalDefendant.getSpecificRequirements())
-                        .withDatesToAvoid(originalDefendant.getDatesToAvoid())
-                        .withHearingLanguageNeeds(originalDefendant.getHearingLanguageNeeds())
-                        .withRestrictFromCourtList(originalDefendant.getRestrictFromCourtList())
-                        .withLegalAidStatus(originalDefendant.getLegalAidStatus())
-                        .withProceedingsConcluded(defendant.getProceedingsConcluded())
-                        .withIsYouth(originalDefendant.getIsYouth())
-                        .withAddress(nonNull(originalDefendant.getAddress()) && originalDefendant.getAddress().isPresent()  ? buildAddress(originalDefendant.getAddress()) : empty())
-                        .withNationalityDescription(nonNull(originalDefendant.getNationalityDescription()) && originalDefendant.getNationalityDescription().isPresent()  ?  originalDefendant.getNationalityDescription() : empty())
-                       .withMasterDefendantId(originalDefendant.getMasterDefendantId())
-                       .withCourtProceedingsInitiated(originalDefendant.getCourtProceedingsInitiated())
-                        .build();
+                .withBailStatus(originalDefendant.getBailStatus())
+                .withCustodyTimeLimit(originalDefendant.getCustodyTimeLimit())
+                .withId(originalDefendant.getId())
+                .withOffences(originalDefendant.getOffences())
+                .withDateOfBirth(originalDefendant.getDateOfBirth())
+                .withDefenceOrganisation(originalDefendant.getDefenceOrganisation())
+                .withFirstName(originalDefendant.getFirstName())
+                .withLastName(originalDefendant.getLastName())
+                .withOrganisationName(originalDefendant.getOrganisationName())
+                .withSpecificRequirements(originalDefendant.getSpecificRequirements())
+                .withDatesToAvoid(originalDefendant.getDatesToAvoid())
+                .withHearingLanguageNeeds(originalDefendant.getHearingLanguageNeeds())
+                .withRestrictFromCourtList(originalDefendant.getRestrictFromCourtList())
+                .withLegalAidStatus(originalDefendant.getLegalAidStatus())
+                .withProceedingsConcluded(defendant.getProceedingsConcluded())
+                .withIsYouth(originalDefendant.getIsYouth())
+                .withAddress(nonNull(originalDefendant.getAddress()) && originalDefendant.getAddress().isPresent() ? buildAddress(originalDefendant.getAddress()) : empty())
+                .withNationalityDescription(nonNull(originalDefendant.getNationalityDescription()) && originalDefendant.getNationalityDescription().isPresent() ? originalDefendant.getNationalityDescription() : empty())
+                .withMasterDefendantId(originalDefendant.getMasterDefendantId())
+                .withCourtProceedingsInitiated(originalDefendant.getCourtProceedingsInitiated())
+                .build();
     }
 
     private Optional<uk.gov.justice.core.courts.Address> buildAddress(Optional<uk.gov.justice.core.courts.Address> a) {
 
-        return          Optional.of(uk.gov.justice.core.courts.Address.address().
-                        withAddress1(a.get().getAddress1() )
-                        .withAddress2(a.get().getAddress2().isPresent() ? a.get().getAddress2() : empty())
-                        .withAddress3(a.get().getAddress3().isPresent() ? a.get().getAddress3() : empty())
-                        .withAddress4(a.get().getAddress4().isPresent() ? a.get().getAddress4() : empty())
-                        .withAddress5(a.get().getAddress5().isPresent() ? a.get().getAddress5() : empty())
-                        .withPostcode(a.get().getPostcode().isPresent() ? a.get().getPostcode() : empty())
-                        .build());
+        return Optional.of(uk.gov.justice.core.courts.Address.address().
+                withAddress1(a.get().getAddress1())
+                .withAddress2(a.get().getAddress2().isPresent() ? a.get().getAddress2() : empty())
+                .withAddress3(a.get().getAddress3().isPresent() ? a.get().getAddress3() : empty())
+                .withAddress4(a.get().getAddress4().isPresent() ? a.get().getAddress4() : empty())
+                .withAddress5(a.get().getAddress5().isPresent() ? a.get().getAddress5() : empty())
+                .withPostcode(a.get().getPostcode().isPresent() ? a.get().getPostcode() : empty())
+                .build());
 
     }
+
     private JsonNode convertToJsonNode(Object source) {
         return mapper.valueToTree(source);
     }
