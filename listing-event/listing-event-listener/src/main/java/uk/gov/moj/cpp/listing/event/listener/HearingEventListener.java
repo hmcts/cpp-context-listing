@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
@@ -43,6 +44,7 @@ public class HearingEventListener {
 
     private static final boolean ALLOCATED = true;
     private static final boolean VACATED = true;
+    private static final boolean NON_VACATED = false;
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingEventListener.class);
     private static final String LISTED_CASES_FIELD = "listedCases";
     private static final String FIELD_VACATE_TRIAL_REASON = "vacatedTrialReasonId";
@@ -107,8 +109,8 @@ public class HearingEventListener {
             LOGGER.info("'listing.events.hearing-trial-vacated' received hearingId {}", hearingId);
         }
         jsonEntityFinder.find(hearingId)
-                .put(FIELD_IS_VACATED_TRIAL, VACATED)
-                .put(FIELD_VACATE_TRIAL_REASON, hearingTrialVacated.getVacatedTrialReasonId())
+                .put(FIELD_IS_VACATED_TRIAL, isNull(hearingTrialVacated.getVacatedTrialReasonId()) ? NON_VACATED : VACATED)
+                .put(FIELD_VACATE_TRIAL_REASON, hearingTrialVacated.getVacatedTrialReasonId().orElse(null) == null ? "" : hearingTrialVacated.getVacatedTrialReasonId().get().toString())
                 .save();
 
     }

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/courts/listing.command.vacate-trial-enriched.json",
+  "id": "http://justice.gov.uk/hearing/courts/vacate-trial-enriched.json",
   "type": "object",
   "properties": {
     "hearingId": {
@@ -11,8 +11,7 @@
     }
   },
   "required": [
-    "hearingId",
-    "vacatedTrialReasonId"
+    "hearingId"
   ],
   "additionalProperties": false
 }

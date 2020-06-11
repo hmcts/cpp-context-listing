@@ -619,7 +619,7 @@ public class Hearing implements Aggregate {
                 .build()));
     }
 
-    public Stream<Object> hearingVacateTrial(final UUID vacatingTrialReasonId) {
+    public Stream<Object> hearingVacateTrial(final Optional<UUID> vacatingTrialReasonId) {
         return apply(Stream.of(HearingTrialVacated.hearingTrialVacated()
                 .withHearingId(this.hearingId)
                 .withVacatedTrialReasonId(vacatingTrialReasonId)

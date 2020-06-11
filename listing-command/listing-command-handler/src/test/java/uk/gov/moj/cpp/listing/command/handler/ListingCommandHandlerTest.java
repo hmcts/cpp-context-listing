@@ -1759,11 +1759,11 @@ public class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-        when(hearing.hearingVacateTrial(REASON)).thenReturn(mock(Stream.class));
+        when(hearing.hearingVacateTrial(of(REASON))).thenReturn(mock(Stream.class));
 
         listingCommandHandler.hearingVacateTrial(commandEnvelope);
 
-        verify(hearing, times(1)).hearingVacateTrial(REASON);
+        verify(hearing, times(1)).hearingVacateTrial(of(REASON));
     }
 
 

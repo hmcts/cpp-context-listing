@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.listener;
 import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Collections.singletonList;
+import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyObject;
@@ -157,7 +158,7 @@ public class HearingEventListenerTest {
                         .withId(CASE_ID)
                         .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
                                 .withId(DEFENDANT_ID)
-                                .withProceedingsConcluded(Optional.of(Boolean.TRUE))
+                                .withProceedingsConcluded(of(Boolean.TRUE))
                                 .build()))
                         .build())
                 .build();
@@ -199,7 +200,7 @@ public class HearingEventListenerTest {
 
         given(envelope.payload()).willReturn(hearingTrialVacated);
         given(hearingTrialVacated.getHearingId()).willReturn(HEARING_ID);
-        given(hearingTrialVacated.getVacatedTrialReasonId()).willReturn(VACATE_TRIAL_REASON);
+        given(hearingTrialVacated.getVacatedTrialReasonId()).willReturn(of(VACATE_TRIAL_REASON));
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
