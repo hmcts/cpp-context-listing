@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>listing-domain</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
@@ -13,9 +15,7 @@
         <module>listing-domain-transformation-anonymise</module>
         <module>listing-domain-transformations-cleanup-and-archive</module>
         <module>listing-domain-transformations-delete-all-events</module>
-        <module>listing-domain-anonymization-events</module>
         <module>listing-domain-transformation-spiresults</module>
-        <module>listing-domain-transformation-for-corechanges</module>
         <module>listing-domain-transformations-pilotdata</module>
     </modules>
 </project>
