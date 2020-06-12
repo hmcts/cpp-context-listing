@@ -109,7 +109,7 @@ public class HearingEventListener {
             LOGGER.info("'listing.events.hearing-trial-vacated' received hearingId {}", hearingId);
         }
         jsonEntityFinder.find(hearingId)
-                .put(FIELD_IS_VACATED_TRIAL, isNull(hearingTrialVacated.getVacatedTrialReasonId()) ? NON_VACATED : VACATED)
+                .put(FIELD_IS_VACATED_TRIAL, hearingTrialVacated.getVacatedTrialReasonId().isPresent() ? VACATED : NON_VACATED)
                 .put(FIELD_VACATE_TRIAL_REASON, hearingTrialVacated.getVacatedTrialReasonId().orElse(null) == null ? "" : hearingTrialVacated.getVacatedTrialReasonId().get().toString())
                 .save();
 

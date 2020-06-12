@@ -272,4 +272,19 @@ public class HearingIT extends AbstractIT {
         vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
     }
 
+    @Test
+    public void shouldVacateTrialWithEmptyReasonId() throws Exception {
+        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+        final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
+        vacatingTrialSteps.whenPublicEventHearingTrialVacatedIsPublishedWithEmptyVacatedTrialReasonId();
+        vacatingTrialSteps.verifyHearingVacatingTrialEventForEmptyReasonId();
+        vacatingTrialSteps.verifyVacatedTrialWtihEmptyReasonIdWhenQueryingFromAPI();
+    }
+
+
 }

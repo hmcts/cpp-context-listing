@@ -8,6 +8,7 @@ import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -88,10 +89,33 @@ public class VacatingTrialSteps extends AbstractIT implements AutoCloseable {
 
     }
 
+    public void whenPublicEventHearingTrialVacatedIsPublishedWithEmptyVacatedTrialReasonId() throws IOException {
+        final String eventPayloadString = getStringFromResource("public.hearing.trial-vacated_empty-reasonid.json")
+                .replaceAll("HEARING_ID", hearingId);
+        final JsonObject jsonObject = new StringToJsonObjectConverter().convert(eventPayloadString);
+
+        QueueUtil.sendMessage(publicEventHearingTrialVacated,
+                PUBLIC_HEARING_TRIAL_VACATED,
+                jsonObject,
+                metadataOf(randomUUID(), PUBLIC_HEARING_TRIAL_VACATED)
+                        .withUserId(USER_ID_VALUE.toString())
+                        .build());
+        this.request = jsonObject.toString();
+        LOGGER.info("Event published:\n\t \n\tPayload = {}\n\n loggedHeader {}", request, getLoggedInHeader());
+
+    }
+
     public void verifyHearingVacatingTrialEvent() {
         JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingVacateTrial);
         LOGGER.info("jsonResponse from privateMessageConsumerHearingVacateTrial: {}", jsonResponse.prettify());
         assertThat(jsonResponse.get(FIELD_VACATE_TRIAL_REASON), is(reasonId.toString()));
+        assertThat(jsonResponse.get(FIELD_HEARING_ID), is(hearingId));
+    }
+
+    public void verifyHearingVacatingTrialEventForEmptyReasonId() {
+        JsonPath jsonResponse = retrieveMessage(privateMessageConsumerHearingVacateTrial);
+        LOGGER.info("jsonResponse from privateMessageConsumerHearingVacateTrial: {}", jsonResponse.prettify());
+        assertThat(jsonResponse.get(FIELD_VACATE_TRIAL_REASON), nullValue());
         assertThat(jsonResponse.get(FIELD_HEARING_ID), is(hearingId));
     }
 
@@ -121,6 +145,26 @@ public class VacatingTrialSteps extends AbstractIT implements AutoCloseable {
                                         is(isVacated)),
                                 withJsonPath("$.vacatedTrialReasonId",
                                         is(reasonId.toString()))
+
+                        )));
+    }
+
+    public void verifyVacatedTrialWtihEmptyReasonIdWhenQueryingFromAPI() {
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
+
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.id",
+                                        is(hearingId)),
+                                withJsonPath("$.isVacatedTrial",
+                                        is(false)),
+                                withJsonPath("$.vacatedTrialReasonId",
+                                        is(""))
 
                         )));
     }
