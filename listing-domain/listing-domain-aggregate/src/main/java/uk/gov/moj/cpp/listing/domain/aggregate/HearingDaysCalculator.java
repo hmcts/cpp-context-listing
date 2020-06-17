@@ -13,6 +13,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,8 @@ public class HearingDaysCalculator {
         if (nonDefaultDays.isEmpty()) {
             return buildSequentialHearingDays(startDate, endDate, nonSittingDays, nonDefaultDayMap, defaultStartTime, defaultDuration, isCountBasedSlotSelected);
         }
-        Collections.reverse(hearingDayList);
+        Collections.sort(hearingDayList, Comparator.comparing(HearingDay::getHearingDate)
+        );
         return hearingDayList;
 
     }
@@ -77,7 +79,7 @@ public class HearingDaysCalculator {
                                                                final Integer defaultDuration, final Boolean isCountBasedSlotSelected) {
 
         final long noOfDaysBetween = ChronoUnit.DAYS.between(startDate, endDate);
-        
+
         return IntStream.rangeClosed(0, (int) noOfDaysBetween)
                 .mapToObj(i -> startDate.plusDays(i))
                 .filter(d -> !nonSittingDays.contains(d))

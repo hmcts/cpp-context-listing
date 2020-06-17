@@ -6,5 +6,5 @@ Feature: Allocate an updated hearing
     Given hearing listed with changed data for allocation
     And hearing days changed for hearing
     And hearing allocated for listing with is update slot false
-    And you applyAllocationRules to a Hearing using a no-args
+    And you applyAllocationRules to a Hearing using a defendants offences
     Then allocated hearing updated for listing

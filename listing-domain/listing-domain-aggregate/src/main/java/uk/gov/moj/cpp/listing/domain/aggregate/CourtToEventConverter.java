@@ -47,7 +47,7 @@ public class CourtToEventConverter {
         return CaseIdentifier.caseIdentifier()
                 .withAuthorityCode(pc.getProsecutionCaseIdentifier().getProsecutionAuthorityCode())
                 .withAuthorityId(pc.getProsecutionCaseIdentifier().getProsecutionAuthorityId())
-                .withCaseReference(pc.getProsecutionCaseIdentifier().getCaseURN())
+                .withCaseReference(pc.getProsecutionCaseIdentifier().getCaseURN() != null ? pc.getProsecutionCaseIdentifier().getCaseURN() : pc.getProsecutionCaseIdentifier().getProsecutionAuthorityReference())
                 .build();
     }
 

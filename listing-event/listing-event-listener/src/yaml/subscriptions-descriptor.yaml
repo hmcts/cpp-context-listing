@@ -159,6 +159,9 @@ subscriptions_descriptor:
         - name: listing.events.hearing-deleted
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-deleted.json
 
+        - name: listing.events.hearing-partially-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-partially-updated.json
+
         - name: listing.events.linked-cases-updated
           schema_uri: http://justice.gov.uk/listing/events/listing.events.linked-cases-updated.json
 

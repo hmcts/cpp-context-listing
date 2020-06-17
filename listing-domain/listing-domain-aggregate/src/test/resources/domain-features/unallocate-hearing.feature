@@ -6,6 +6,6 @@ Feature: Unallocate a hearing
 
     Given hearing allocated for listing with mandatory data
       And court room removed from hearing
-    When you applyAllocationRules to a Hearing using a no args
+    When you applyAllocationRules to a Hearing using a defendants offences
     Then hearing unallocated for listing
 

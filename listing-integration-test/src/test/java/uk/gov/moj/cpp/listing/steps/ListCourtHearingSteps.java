@@ -135,6 +135,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTED_ADDED_CASE_FOR_HEARING = "listing.event.added-cases-for-hearing";
     private static final String EVENT_SELECTED_HEARING_UPDATED_TO_CASE = "listing.events.hearing-updated-to-case";
     private static final String EVENT_SELECTED_HEARING_DELETED = "listing.events.hearing-deleted";
+    private static final String EVENT_SELECTED_HEARING_PARTIALLY_UPDATED = "listing.events.hearing-partially-updated";
     private static final String PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED = "public.progression.events.hearing-extended";
 
@@ -159,6 +160,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private final MessageConsumer privateMessageConsumerAddedCaseForHearing;
     private final MessageConsumer privateMessageConsumerHearingUpdatedToCase;
     private final MessageConsumer privateMessageConsumerHearingDeleted;
+    private final MessageConsumer privateMessageConsumerHearingPartiallyUpdated;
     private final MessageConsumer privateMessageConsumerHearingDaysChanged;
     private final MessageConsumer publicMessageConsumerHearingConfirmedForExtendHearing;
     private final MessageConsumer publicMessageConsumerHearingExtend;
@@ -178,6 +180,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerAddedCaseForHearing = privateEvents.createConsumer(EVENT_SELECTED_ADDED_CASE_FOR_HEARING);
         privateMessageConsumerHearingUpdatedToCase = privateEvents.createConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
         privateMessageConsumerHearingDeleted = privateEvents.createConsumer(EVENT_SELECTED_HEARING_DELETED);
+        privateMessageConsumerHearingPartiallyUpdated = privateEvents.createConsumer(EVENT_SELECTED_HEARING_PARTIALLY_UPDATED);
         publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
         publicMessageConsumerHearingExtend = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED);
 
@@ -193,6 +196,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerAddedCaseForHearing = privateEvents.createConsumer(EVENT_SELECTED_ADDED_CASE_FOR_HEARING);
         privateMessageConsumerHearingUpdatedToCase = privateEvents.createConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
         privateMessageConsumerHearingDeleted = privateEvents.createConsumer(EVENT_SELECTED_HEARING_DELETED);
+        privateMessageConsumerHearingPartiallyUpdated = privateEvents.createConsumer(EVENT_SELECTED_HEARING_PARTIALLY_UPDATED);
         publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
         publicMessageConsumerHearingExtend = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED);
 
@@ -1025,6 +1029,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
             privateMessageConsumerHearingDaysChanged.close();
             privateMessageConsumerAddedCaseForHearing.close();
             privateMessageConsumerHearingDeleted.close();
+            privateMessageConsumerHearingPartiallyUpdated.close();
             publicMessageConsumerHearingConfirmedForExtendHearing.close();
             publicMessageConsumerHearingExtend.close();
 
@@ -1076,6 +1081,44 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
         final String requestString = "{\n" + "  \"allocatedHearingId\": \"ALLOCATED_HEARING_ID\"\n" + "}";
         final String requestBody = requestString.replace("ALLOCATED_HEARING_ID", allocatedHearingId.toString());
+
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", extendHearingForHearingUrl, MEDIA_TYPE_LIST_EXTEND_HEARING_FOR_HEARING, requestBody, getLoggedInHeader());
+
+        restClient.postCommand(extendHearingForHearingUrl, MEDIA_TYPE_LIST_EXTEND_HEARING_FOR_HEARING,
+                requestBody, getLoggedInHeader());
+    }
+
+    public void extendHearingPartially(final UUID unAllocatedHearingId, final UUID allocatedHearingId, final ListedCaseData listedCaseData) throws IOException {
+        final String extendHearingForHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING), unAllocatedHearingId));
+
+        final String requestBody = getStringFromResource("stub-data/listing.command.extend.hearing-for-hearing-partial.json")
+                .replace("HEARING_ID1", allocatedHearingId.toString())
+                .replace("CASE_ID1", listedCaseData.getCaseId().toString())
+                .replace("DEFENDANT_ID1", listedCaseData.getDefendants().get(0).getDefendantId().toString())
+                .replace("OFFENCE_ID1", listedCaseData.getDefendants().get(0).getOffences().get(0).getOffenceId().toString());
+
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", extendHearingForHearingUrl, MEDIA_TYPE_LIST_EXTEND_HEARING_FOR_HEARING, requestBody, getLoggedInHeader());
+
+        restClient.postCommand(extendHearingForHearingUrl, MEDIA_TYPE_LIST_EXTEND_HEARING_FOR_HEARING,
+                requestBody, getLoggedInHeader());
+    }
+
+    public void extendWholeHearing(final UUID unAllocatedHearingId, final UUID allocatedHearingId, final List<ListedCaseData> listedCaseData) throws IOException {
+        final String extendHearingForHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING), unAllocatedHearingId));
+
+        final ListedCaseData case1 = listedCaseData.get(0);
+        final ListedCaseData case2 = listedCaseData.get(1);
+
+        final String requestBody = getStringFromResource("stub-data/listing.command.extend.hearing-for-hearing-whole.json")
+                .replace("HEARING_ID1", allocatedHearingId.toString())
+                .replace("CASE_ID1", case1.getCaseId().toString())
+                .replace("DEFENDANT_ID1", case1.getDefendants().get(0).getDefendantId().toString())
+                .replace("OFFENCE_ID1", case1.getDefendants().get(0).getOffences().get(0).getOffenceId().toString())
+                .replace("CASE_ID2", case2.getCaseId().toString())
+                .replace("DEFENDANT_ID2", case2.getDefendants().get(0).getDefendantId().toString())
+                .replace("OFFENCE_ID2", case2.getDefendants().get(0).getOffences().get(0).getOffenceId().toString());
 
         LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", extendHearingForHearingUrl, MEDIA_TYPE_LIST_EXTEND_HEARING_FOR_HEARING, requestBody, getLoggedInHeader());
 
@@ -1147,6 +1190,48 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED, request, getLoggedInHeader());
     }
 
+    public void verifyHearingConfirmedEventForExtendPartialHearingPublicMQ(final UUID allocatedHearingId, final UUID unAllocatedHearingId) throws IOException {
+        final JsonPath jsRequest = new JsonPath(request);
+        final List<String> newCaseIds = new ArrayList<>();
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
+        LOGGER.debug("jsonResponse from publicMessageConsumerHearingExtended: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("confirmedHearing.id"), is(allocatedHearingId.toString()));
+        assertThat(jsonResponse.get("confirmedHearing.prosecutionCases.size()"), is(1));
+        final String allocatedHearingCaseId = jsonResponse.get("confirmedHearing.prosecutionCases[0].id");
+
+        final JsonPath jsonResponse1 = QueueUtil.retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
+        LOGGER.debug("jsonResponse from publicMessageConsumerHearingExtended: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse1.get("confirmedHearing.id"), is(unAllocatedHearingId.toString()));
+        assertThat(jsonResponse1.get("confirmedHearing.prosecutionCases.size()"), is(1));
+        newCaseIds.add(jsonResponse1.get("confirmedHearing.prosecutionCases[0].id"));
+        Assert.assertFalse(newCaseIds.contains(allocatedHearingCaseId));
+
+        // mock public event from progression
+        final String defendant1 = jsonResponse1.get("confirmedHearing.prosecutionCases[0].defendants[0].id");
+        final String offence1 = jsonResponse1.get("confirmedHearing.prosecutionCases[0].defendants[0].offences[0].id");
+
+        final String eventPayloadString = getStringFromResource("prosecution-case-partial-allocation.json")
+                .replaceAll("HEARING_ID", allocatedHearingId.toString())
+                .replaceAll("CASE_ID_1", newCaseIds.get(0))
+                .replaceAll("DEFENDANT_ID_1", defendant1)
+                .replaceAll("OFFENCE_ID_1", offence1);
+
+        final JsonObject hearingExtendedDataObject = new StringToJsonObjectConverter().convert(eventPayloadString);
+
+        LOGGER.info("mocked public event : " + hearingExtendedDataObject.toString());
+
+        QueueUtil.sendMessage(
+                publicMessageProducerProgressionHearingExtendedEvent,
+                PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED,
+                hearingExtendedDataObject,
+                metadataOf(randomUUID(), PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
+        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED, request, getLoggedInHeader());
+    }
+
     public void verifyAddedCaseForHearingInActiveMQ(final UUID hearingId) {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
@@ -1177,6 +1262,16 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("jsonResponse from privateMessageConsumerHearingDeleted: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("hearingIdToBeDeleted"), is(hearingId.toString()));
+    }
+
+    public void verifyHearingUpdatedPartiallyInActiveMQ(final UUID hearingId) {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingPartiallyUpdated);
+        LOGGER.debug("jsonResponse from privateMessageConsumerHearingPartiallyUpdated: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("hearingIdToBeUpdated"), is(hearingId.toString()));
     }
 
     private static String getStringFromResource(final String path) throws IOException {

@@ -76,7 +76,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .withType(buildHearingType(commandHearing.getType()))
                 .withHearingLanguage(empty())
                 .withEstimatedMinutes(commandHearing.getEstimatedMinutes())
-                .withStartDateTime(ZonedDateTimes.fromString(getStartDateTime(commandHearing).toString()))
+                .withStartDateTime(nonNull(getStartDateTime(commandHearing)) ? ZonedDateTimes.fromString(getStartDateTime(commandHearing).toString()) : null)
                 .withCourtCentreId(commandHearing.getCourtCentre().getId())
                 .withCourtRoomId(commandHearing.getCourtCentre().getRoomId())
                 .withListingDirections(commandHearing.getListingDirections())

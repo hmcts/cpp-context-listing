@@ -1,6 +1,5 @@
 {
-  "unAllocatedHearingId": "ceab7362-8fd1-45c8-bbc4-4ce9ac5bba5d",
-  "allocatedHearingId": "e0e04581-8f66-4bbf-b5b4-2d41fcc2ae7c",
+  "hearingIdToBeUpdated": "e0e04581-8f66-4bbf-b5b4-2d41fcc2ae7c",
   "prosecutionCases": [
     {
       "caseId": "7883a169-3b16-4303-ad3e-7d5c29b00948",

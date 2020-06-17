@@ -52,6 +52,7 @@ import uk.gov.justice.listing.courts.HearingVacateTrial;
 import uk.gov.justice.listing.courts.LinkedToCases;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
+import uk.gov.justice.listing.courts.ProsecutionCases;
 import uk.gov.justice.listing.courts.RestrictCourtList;
 import uk.gov.justice.listing.courts.SequenceHearings;
 import uk.gov.justice.listing.courts.UpdateCaseDefendantDetails;
@@ -101,6 +102,9 @@ import uk.gov.moj.cpp.listing.command.utils.CourtsDeletedOffenceToDomainCaseSimp
 import uk.gov.moj.cpp.listing.command.utils.CourtsOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsUpdatedOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.NonDefaultDayDurationBuilder;
+import uk.gov.moj.cpp.listing.command.utils.ProsecutionCaseDefendantOffenceIdsBuilder;
+import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
+import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
 import uk.gov.moj.cpp.listing.common.azure.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
@@ -113,6 +117,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
+import uk.gov.moj.cpp.listing.domain.ProsecutionCaseDefendantOffenceIds;
 import uk.gov.moj.cpp.listing.domain.Type;
 import uk.gov.moj.cpp.listing.domain.aggregate.Application;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
@@ -204,6 +209,15 @@ public class ListingCommandHandler {
 
     @Inject
     private CasesToDomainConverter casesToDomainConverter;
+
+    @Inject
+    private ProsecutionCasesBuilder prosecutionCasesBuilder;
+
+    @Inject
+    private ExtendHearingUtils extendHearingUtils;
+
+    @Inject
+    private ProsecutionCaseDefendantOffenceIdsBuilder prosecutionCaseDefendantOffenceIdsBuilder;
 
     @Inject
     private HearingTypeFactory hearingTypeFactory;
@@ -402,6 +416,9 @@ public class ListingCommandHandler {
 
         final JsonEnvelope jsonEnvelope = JsonEnvelope.envelopeFrom(command.metadata(), JsonValue.NULL);
 
+        final uk.gov.justice.listing.events.Hearing storedHearing = hearingFactory.getHearingById(hearingId, command);
+
+
         updateHearingEventStream(jsonEnvelope, hearingId, (Hearing hearing) -> {
             final Stream<Object> typeEvents = hearing.changeType(type, hearingId);
             final Stream<Object> jurisdictionTypeEvents = hearing.changeJurisdictionType(jurisdictionType, hearingId);
@@ -432,14 +449,16 @@ public class ListingCommandHandler {
             final Stream<Object> weekCommencingDateEvents = weekCommencingStartDate != null && weekCommencingEndDate != null ?
                     hearing.changeWeekCommencingDate(weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingId) : hearing.removeWeekCommencingDates(hearingId);
 
-            final Stream<Object> allocationEvents = hearing.applyAllocationRules();
+            final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds = prosecutionCaseDefendantOffenceIdsBuilder.buildFromProsecutionCases(updateHearingForListingEnriched.getProsecutionCases());
+            final Stream<Object> allocationEvents = hearing.applyAllocationRules(prosecutionCaseDefendantOffenceIds);
+            final Stream<Object> hearingPartiallyEvents = extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing, hearingId, updateHearingForListingEnriched.getProsecutionCases(), storedHearing);
 
             final List<Object> startDateEventList = startDateEvents.collect(Collectors.toList());
 
             final Stream<Object> rescheduledEvents = hearing.applyRescheduledCheck(startDateEventList);
 
             return Stream.of(typeEvents, jurisdictionTypeEvents, hearingLanguageEvents, startDateEventList.stream(), nonDefaultDaysEvents, endDateEvents,
-                    nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, rescheduledEvents).flatMap(i -> i);
+                    nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, hearingPartiallyEvents, rescheduledEvents).flatMap(i -> i);
         });
     }
 
@@ -451,23 +470,53 @@ public class ListingCommandHandler {
         }
 
         final ExtendHearingForHearingEnriched extendHearingForHearingEnriched = jsonObjectConverter.convert(payload, ExtendHearingForHearingEnriched.class);
+
         final UUID allocatedHearingId = extendHearingForHearingEnriched.getAllocatedHearingId();
         final UUID unAllocatedHearingId = extendHearingForHearingEnriched.getUnAllocatedHearingId();
         final uk.gov.justice.listing.events.Hearing allocatedHearing = hearingFactory.getHearingById(allocatedHearingId, command);
-        final uk.gov.justice.listing.events.Hearing unAllocatedHearing = hearingFactory.getHearingById(unAllocatedHearingId, command);
-        final List<UUID> allocatedHearingCasesId = extractListCasesId(allocatedHearing);
-        final List<UUID> unAllocatedHearingCasesId = extractListCasesId(unAllocatedHearing);
+        final uk.gov.justice.listing.events.Hearing unAllocatedHearingPersisted = hearingFactory.getHearingById(unAllocatedHearingId, command);
 
-        final boolean canListCaseUpdated = canListCaseUpdated(allocatedHearingCasesId, unAllocatedHearingCasesId, unAllocatedHearing.getAllocated());
+        boolean partialExtension = false;
+        final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap = new HashMap<>();
+        final List<ProsecutionCases> prosecutionCases = extendHearingForHearingEnriched.getProsecutionCases();
 
-        if (canListCaseUpdated) {
+        if (prosecutionCases != null && !prosecutionCases.isEmpty()) {
+            partialExtension = comparePersistedAndRequestedCaseMaps(unallocatedHearingRequestCaseMap, unAllocatedHearingPersisted, prosecutionCases, extendHearingForHearingEnriched);
+        }
+
+        if (partialExtension) {
+
+            final List<ListedCase> casesToMove = extractListedCasesToAllocate(unAllocatedHearingPersisted, unallocatedHearingRequestCaseMap);
+
+            //remove the cases/defendants/offences given in the request, from persisted hearing
+            final uk.gov.justice.listing.events.Hearing unallocatedHearingPersisted = extendHearingUtils.updateUnallocatedHearing(unAllocatedHearingPersisted, unallocatedHearingRequestCaseMap);
+
+            final List<uk.gov.justice.listing.events.ProsecutionCases> prosecutionCasesToBeRemovedFromHearing = prosecutionCasesBuilder.buildEventProsecutionCase(unallocatedHearingRequestCaseMap);
+
             updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
-                final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing);
-                final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearing);
-                return Stream.of(updatedHearing, allocationEvents).flatMap(i -> i);
+                final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unallocatedHearingPersisted, casesToMove);
+                final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unallocatedHearingPersisted);
+                final Stream<Object> hearingPartiallyUpdated = hearing.updateUnallocatedHearingPartially(unAllocatedHearingId, prosecutionCasesToBeRemovedFromHearing);
+                return Stream.of(updatedHearing, allocationEvents, hearingPartiallyUpdated).flatMap(i -> i);
             });
+
         } else {
-            LOGGER.info("incoming list cases : {} cannot be added in allocated hearing as same case id : {} ", unAllocatedHearingCasesId, allocatedHearingCasesId);
+            //do the whole extension as in before GPE-13108
+            final List<UUID> allocatedHearingCasesId = extractListCasesId(allocatedHearing);
+            final List<UUID> unAllocatedHearingCasesId = extractListCasesId(unAllocatedHearingPersisted);
+
+            final boolean canUpdateCase = canUpdateCase(allocatedHearingCasesId, unAllocatedHearingCasesId, unAllocatedHearingPersisted.getAllocated());
+
+            if (canUpdateCase) {
+                updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
+                    final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unAllocatedHearingPersisted, unAllocatedHearingPersisted.getListedCases());
+                    final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted);
+                    final Stream<Object> deleteUnAllocatedHearing = hearing.deleteUnAllocatedHearing(unAllocatedHearingId);
+                    return Stream.of(updatedHearing, allocationEvents, deleteUnAllocatedHearing).flatMap(i -> i);
+                });
+            } else {
+                LOGGER.info("incoming list cases : {} cannot be added in allocated hearing as same case id : {} ", unAllocatedHearingCasesId, allocatedHearingCasesId);
+            }
         }
     }
 
@@ -483,8 +532,7 @@ public class ListingCommandHandler {
 
         updateHearingEventStream(command, addCasesForHearing.getHearingId(), (Hearing hearing) -> {
             final Stream<Object> addedCases = hearing.addCasesForHearing(addCasesForHearing.getProsecutionCases());
-            final Stream<Object> hearingDeleted = hearing.deleteUnAllocatedHearing();
-            return Stream.of(addedCases, hearingDeleted).flatMap(i -> i);
+            return Stream.of(addedCases).flatMap(i -> i);
         });
     }
 
@@ -626,7 +674,7 @@ public class ListingCommandHandler {
         for (final UUID hearingId : hearingIds) {
             updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
                 final Stream<Object> judicialEvents = hearing.assignJudiciary(judicialRoles, hearingId);
-                final Stream<Object> allocationEvents = hearing.applyAllocationRules();
+                final Stream<Object> allocationEvents = hearing.applyAllocationRules(Collections.emptyList());
 
                 return Stream.of(allocationEvents, judicialEvents).flatMap(i -> i);
             });
@@ -1295,10 +1343,11 @@ public class ListingCommandHandler {
     }
 
 
-    private boolean canListCaseUpdated(final List<UUID> allocatedHearingCasesId,
-                                       final List<UUID> unAllocatedHearingCasesId,
-                                       final boolean unAllocated) {
-        return !unAllocated && !allocatedHearingCasesId.containsAll(unAllocatedHearingCasesId);
+    private boolean canUpdateCase(final List<UUID> allocatedHearingCasesId,
+                                  final List<UUID> unAllocatedHearingCasesId,
+                                  final boolean allocated) {
+
+        return !allocated && !allocatedHearingCasesId.containsAll(unAllocatedHearingCasesId);
     }
 
     private List<CourtSchedule> getCourtSchedules(final String bookingId) {
@@ -1341,4 +1390,26 @@ public class ListingCommandHandler {
                 && !nonDefaultDays.isEmpty()
                 && nonDefaultDays.stream().anyMatch(ndd -> ndd.getCourtScheduleId().isPresent());
     }
+
+    private boolean comparePersistedAndRequestedCaseMaps(final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap,
+                                                         final uk.gov.justice.listing.events.Hearing unAllocatedHearingPersisted,
+                                                         final List<ProsecutionCases> prosecutionCases,
+                                                         final ExtendHearingForHearingEnriched extendHearingForHearingEnriched
+    ) {
+        //build <case, <defendant, <offences>>> map of the persisted unallocated hearing
+        final Map<UUID, Map<UUID, List<UUID>>> persistedUnallocatedHearingCasesMap = extendHearingUtils.buildPersistedCaseDefendantOffenceMap(unAllocatedHearingPersisted);
+
+        //build <case, <defendant, <offences>>> map of the unallocated hearing in request
+        unallocatedHearingRequestCaseMap.putAll(extendHearingUtils.buildRequestedCaseDefendantOffenceMap(prosecutionCases, extendHearingForHearingEnriched.getUnAllocatedHearingId()));
+
+        //compare if all cases from the persisted hearing are in the request
+        return !persistedUnallocatedHearingCasesMap.equals(unallocatedHearingRequestCaseMap);
+    }
+
+    private List<ListedCase> extractListedCasesToAllocate(final uk.gov.justice.listing.events.Hearing unAllocatedHearingPersisted, final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap) {
+        //prepare a deep copy of unallocated hearing's cases, so we can extract offences to allocate into allocatedHearing
+        final List<ListedCase> listedCasesDeepCopy = jsonObjectConverter.convert(objectToJsonObjectConverter.convert(unAllocatedHearingPersisted), uk.gov.justice.listing.events.Hearing.class).getListedCases();
+        return extendHearingUtils.extractCasesToMove(listedCasesDeepCopy, unallocatedHearingRequestCaseMap);
+    }
+
 }

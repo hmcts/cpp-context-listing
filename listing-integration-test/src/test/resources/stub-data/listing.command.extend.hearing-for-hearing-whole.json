@@ -1,0 +1,31 @@
+{
+  "allocatedHearingId": "HEARING_ID1",
+  "prosecutionCases": [
+    {
+      "caseId": "CASE_ID1",
+      "defendants": [
+        {
+          "defendantId": "DEFENDANT_ID1",
+          "offences": [
+            {
+              "offenceId": "OFFENCE_ID1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "CASE_ID2",
+      "defendants": [
+        {
+          "defendantId": "DEFENDANT_ID2",
+          "offences": [
+            {
+              "offenceId": "OFFENCE_ID2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

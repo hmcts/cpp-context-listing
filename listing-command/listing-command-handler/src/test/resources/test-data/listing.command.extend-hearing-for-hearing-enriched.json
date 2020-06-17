@@ -1,0 +1,43 @@
+{
+  "allocatedHearingId": "HEARING_ID1",
+  "unAllocatedHearingId": "HEARING_ID2",
+  "prosecutionCases": [
+    {
+      "caseId": "CASE_ID1",
+      "defendants": [
+        {
+          "defendantId": "DEF_ID1",
+          "offences": [
+            {
+              "offenceId": "OFF_ID1"
+            }
+          ]
+        },
+        {
+          "defendantId": "DEF_ID2",
+          "offences": [
+            {
+              "offenceId": "OFF_ID2"
+            },
+            {
+              "offenceId": "OFF_ID3"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "CASE_ID2",
+      "defendants": [
+        {
+          "defendantId": "DEF_ID3",
+          "offences": [
+            {
+              "offenceId": "OFF_ID4"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

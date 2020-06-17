@@ -5,6 +5,8 @@ import static java.util.Optional.of;
 import static org.codehaus.groovy.runtime.DefaultGroovyMethods.any;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
@@ -19,6 +21,7 @@ import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearingEnriched;
 import uk.gov.justice.listing.courts.ListCourtHearing;
+import uk.gov.justice.listing.courts.ProsecutionCases;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -31,12 +34,15 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
+import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -52,6 +58,9 @@ public class ListingCommandApiTest {
     private JsonEnvelope envelope;
     @Mock
     private JsonObject payload;
+    @Mock
+    private JsonArray prosecutionCasesPayload;
+
     @Mock
     private JsonObjectToObjectConverter jsonObjectConverter;
     @Mock
@@ -83,7 +92,7 @@ public class ListingCommandApiTest {
 
 
     @Test
-    public void listingCommandHandlerShouldUpdateHearingForListing() throws Exception {
+    public void shouldUpdateHearingForListingWithProsecutionCases() {
 
         //given
         given(envelope.payloadAsJsonObject()).willReturn(payload);
@@ -95,15 +104,47 @@ public class ListingCommandApiTest {
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        final UUID caseId = UUID.randomUUID();
+        final JsonObject prosecutionCases = Json.createObjectBuilder().add("caseId", caseId.toString()).build();
+        final JsonArray prosecutionCasesArray = Json.createArrayBuilder().add(prosecutionCases).build();
+        given(payload.getJsonArray("prosecutionCases")).willReturn(prosecutionCasesArray);
+        given(jsonObjectConverter.convert(prosecutionCases, ProsecutionCases.class)).willReturn(ProsecutionCases.prosecutionCases().build());
+
         //when
         listingCommandApi.updateHearingForListing(envelope);
 
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+        verify(jsonObjectConverter).convert(prosecutionCases, ProsecutionCases.class);
     }
 
     @Test
-    public void listingCommandHandlerShouldVacateTheTrial() throws Exception {
+    public void shouldUpdateHearingForListing() {
+
+        //given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+
+        given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
+                ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        final JsonArray prosecutionCasesArray = Json.createArrayBuilder().build();
+        given(payload.getJsonArray("prosecutionCases")).willReturn(prosecutionCasesArray);
+
+        //when
+        listingCommandApi.updateHearingForListing(envelope);
+
+        //then
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+        verify(jsonObjectConverter, never()).convert(Matchers.any(), eq(ProsecutionCases.class));
+    }
+
+    @Test
+    public void shouldVacateTheTrial() throws Exception {
 
         //given
         given(envelope.payloadAsJsonObject()).willReturn(payload);
@@ -119,7 +160,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void listingCommandHandlerShouldListCourtHearing() throws Exception {
+    public void shouldListCourtHearing() throws Exception {
 
         //given
         given(envelope.payloadAsJsonObject()).willReturn(payload);
@@ -138,7 +179,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void listingCommandPublishCourtList() {
+    public void shouldPublishCourtList() {
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
 
@@ -147,14 +188,16 @@ public class ListingCommandApiTest {
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
     }
 
-    public void publishCourtListForCrownCourtsForwardsAsExpected() {
+    @Test
+    public void shouldPublishCourtListForCrownCourtsForwardsAsExpected() {
 
         listingCommandApi.publishCourtListForCrownCourts(envelope);
 
         verify(sender).send(envelope);
     }
 
-    public void courtListRequestExportAsExpected() {
+    @Test
+    public void shouldCourtListRequestExportAsExpected() {
 
         listingCommandApi.courtListRequestExport(envelope);
 
@@ -162,7 +205,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void listingCommandApiShouldCallNonDefaultDayDurationBuilder() {
+    public void shouldCallNonDefaultDayDurationBuilder() {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(updateHearingForListing.getJurisdictionType()).willReturn(MAGISTRATES);
@@ -186,7 +229,7 @@ public class ListingCommandApiTest {
     }
 
     @Test
-    public void listingCommandHandlerShouldExtendCourtHearing() throws Exception {
+    public void shouldExtendCourtHearing() {
 
         //given
         given(envelope.payloadAsJsonObject()).willReturn(payload);

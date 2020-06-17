@@ -1,7 +1,5 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import static com.google.common.io.Resources.getResource;
-import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
@@ -11,6 +9,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.getStringFromResource;
 
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
@@ -24,8 +23,6 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
-import java.io.IOException;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -34,7 +31,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.io.Resources;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -231,9 +227,4 @@ public class HearingEventListenerTest {
         verify(hearingRepository).save(hearing);
     }
 
-
-
-    private String getStringFromResource(final String path) throws IOException {
-        return Resources.toString(getResource(path), defaultCharset());
-    }
 }

@@ -4,7 +4,7 @@ Feature: Allocate a hearing
             which is mandatory for allocation. Applying allocation rules does not result in any change.
 
     Given hearing listed
-    When you applyAllocationRules to a Hearing
+    When you applyAllocationRules to a Hearing using a defendants offences
     Then no events occurred
 
 
@@ -15,7 +15,7 @@ Feature: Allocate a hearing
       And court room assigned to hearing
       And non default days assigned to hearing
       And hearing days changed for hearing
-    When you applyAllocationRules to a Hearing using a no-args
+    When you applyAllocationRules to a Hearing using a defendants offences
     Then hearing allocated for listing
 
   Scenario: An unallocated hearing has been listed and a courtroom has been assigned which is a mandatory
@@ -26,7 +26,7 @@ Feature: Allocate a hearing
       And court room assigned to hearing
       And court room removed from hearing
       And hearing days changed for hearing
-    When you applyAllocationRules to a Hearing using a no-args
+    When you applyAllocationRules to a Hearing using a defendants offences
     Then no events occurred
 
 
@@ -34,5 +34,5 @@ Feature: Allocate a hearing
 
     Given hearing listed with data for allocation
     And hearing days changed for hearing
-    When you applyAllocationRules to a Hearing using a no-args
+    When you applyAllocationRules to a Hearing using a defendants offences
     Then hearing allocated for listing with is update slot false

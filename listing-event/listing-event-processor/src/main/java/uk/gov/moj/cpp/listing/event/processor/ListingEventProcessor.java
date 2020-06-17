@@ -10,6 +10,9 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
+import org.apache.commons.collections.CollectionUtils;
+import uk.gov.justice.core.courts.ConfirmedHearing;
+import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.commands.LinkedToCases;

@@ -1,12 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/courts/listing.command.extend-hearing-for-hearing-enriched.json",
+  "id": "http://justice.gov.uk/listing/events/listing.events.hearing-partially-updated.json",
   "type": "object",
   "properties": {
-    "allocatedHearingId": {
-      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
-    },
-    "unAllocatedHearingId": {
+    "hearingIdToBeUpdated": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
     },
     "prosecutionCases": {
@@ -58,19 +55,11 @@
         ],
         "additionalProperties": false
       }
-    },
-    "courtApplications": {
-      "description": "The collection of applications to be associated with allocated hearing",
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "$ref": "http://justice.gov.uk/core/courts/courtApplication.json"
-      }
     }
   },
   "required": [
-    "allocatedHearingId",
-    "unAllocatedHearingId"
+    "hearingIdToBeUpdated",
+    "prosecutionCases"
   ],
   "additionalProperties": false
 }

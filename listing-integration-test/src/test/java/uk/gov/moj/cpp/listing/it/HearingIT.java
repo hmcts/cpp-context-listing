@@ -45,6 +45,29 @@ public class HearingIT extends AbstractIT {
     }
 
     @Test
+    public void shouldUpdateHearingResultsInPartialAllocatedListing() {
+        HearingsData hearingsData = HearingsData.hearingsData();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+        final UUID removedOffenceId = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0).getOffences().get(1).getOffenceId();
+        hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0).getOffences().remove(1);
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListingWithProsecutionCases();
+            updateHearingSteps.verifyHearingConfirmedInPublicMQ();
+            updateHearingSteps.verifyHearingAllocatedEventNotExistsRemovedOffence(removedOffenceId);
+            updateHearingSteps.verifyHearingPartiallyEvent(removedOffenceId);
+
+        }
+
+    }
+
+    @Test
     public void shouldRaisePublicHearingConfirmedPublicEventAndUpdateSlotDetails() {
         final UUID courtCentreId = randomUUID();
         stubGetReferenceDataCourtCentreById(courtCentreId);

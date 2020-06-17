@@ -29,6 +29,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.singleHearingData());
     }
 
+    public static HearingsData singleHearingDataMultipleCasesWithSingleOffence() {
+        return new HearingsData(HearingsDataFactory.singleHearingDataSingleOffence());
+    }
+
     public static HearingsData hearingsDataForWeekCommencing(final UUID hearingId, final LocalDate hearingEndDate,
                                                              final UUID courtRoomId, final LocalDate weekCommencingStartDate,
                                                              final LocalDate weekCommencingEndDate, final LocalDate startDate) {

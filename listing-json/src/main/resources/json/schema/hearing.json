@@ -118,10 +118,7 @@
     "courtCentreId",
     "judiciary",
     "estimatedMinutes",
-    "startDate",
-    "endDate",
     "hearingDays",
-    "nonDefaultDays",
     "nonSittingDays",
     "courtApplications"
   ],

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api;
 
+import static java.util.Objects.nonNull;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
@@ -11,6 +12,7 @@ import uk.gov.justice.listing.courts.ExtendHearingForHearing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearingEnriched;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
+import uk.gov.justice.listing.courts.ProsecutionCases;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -25,8 +27,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 import org.slf4j.Logger;
@@ -40,6 +44,7 @@ public class ListingCommandApi {
     static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
     static final String LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED = "listing.command.list-court-hearing-enriched";
     static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
+    private static final String PROSECUTION_CASES = "prosecutionCases";
     static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
 
     @Inject
@@ -89,10 +94,15 @@ public class ListingCommandApi {
 
         final UpdateHearingForListing updateHearingForListing = jsonObjectConverter.convert(payload, UpdateHearingForListing.class);
 
+        final JsonArray prosecutionCases = payload.getJsonArray(PROSECUTION_CASES);
+
         final CourtCentreDetails courtCentre = courtCentreFactory.getCourtCentre(updateHearingForListing.getCourtCentreId(), envelope);
         final UpdateHearingForListingEnriched updateHearingForListingEnriched = UpdateHearingForListingEnriched.updateHearingForListingEnriched()
                 .withCourtCentreDetails(courtCentre)
                 .withUpdateHearingForListing(updateHearingForListing)
+                .withProsecutionCases(nonNull(prosecutionCases) ? prosecutionCases.stream()
+                        .map(p -> jsonObjectConverter.convert((JsonObject) p, ProsecutionCases.class))
+                        .collect(Collectors.toList()) : null)
                 .build();
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED),
@@ -124,9 +134,15 @@ public class ListingCommandApi {
 
         final UUID allocatedHearingId = extendHearingForHearing.getAllocatedHearingId();
 
-        final ExtendHearingForHearingEnriched extendHearingForHearingEnriched = ExtendHearingForHearingEnriched
+        final ExtendHearingForHearingEnriched.Builder builder = ExtendHearingForHearingEnriched
                 .extendHearingForHearingEnriched().withAllocatedHearingId(allocatedHearingId)
-                .withUnAllocatedHearingId(UUID.fromString(unAllocatedHearingId))
+                .withUnAllocatedHearingId(UUID.fromString(unAllocatedHearingId));
+
+        if (extendHearingForHearing.getProsecutionCases() != null) {
+            builder.withProsecutionCases(extendHearingForHearing.getProsecutionCases());
+        }
+
+        final ExtendHearingForHearingEnriched extendHearingForHearingEnriched = builder
                 .build();
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED),
