@@ -10,7 +10,9 @@ import static javax.ws.rs.core.Response.status;
 import static uk.gov.justice.services.core.interceptor.InterceptorContext.interceptorContextWithInput;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.ALPHABETICAL;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.STANDARD;
 
 import uk.gov.justice.services.core.annotation.Adapter;
 import uk.gov.justice.services.core.annotation.Component;
@@ -125,10 +127,10 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
 
     private Optional<JsonObject> buildCourtListData(JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final boolean restricted) {
         LOGGER.info("Received request for listType {}", courtListType);
-        if (CourtListType.ALPHABETICAL.equals(courtListType)) {
+        if (ALPHABETICAL.equals(courtListType)) {
             return alpbhabeticalCourtListService.buildAlphabeticalCourtListData(queryResponse, courtCentreId);
         }
-        else if(CourtListType.STANDARD.equals(courtListType) || PUBLIC.equals(courtListType)) {
+        else if(STANDARD.equals(courtListType) || PUBLIC.equals(courtListType)) {
             return standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, restricted);
         }
         return Optional.empty();
@@ -136,7 +138,7 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
 
     private String getTemplateName(final CourtListType courtListType, boolean welsh){
         LOGGER.info("getTemplateName() :: isWelsh {}", welsh);
-        if( CourtListType.ALPHABETICAL.equals(courtListType) && welsh){
+        if( ALPHABETICAL.equals(courtListType) && welsh){
             return courtListType.getWelshTemplateName();
         }
         return courtListType.getTemplateName();

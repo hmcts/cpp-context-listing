@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
+import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.listing.events.ApplicantRespondent;
 import uk.gov.justice.listing.events.CourtApplication;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
@@ -53,6 +54,25 @@ public class CourtApplicationEventListenerTest {
     private static final String LAST_NAME = "B";
     private static final String UPDATED_FIRST_NAME = STRING.next();
     private static final String UPDATED_LAST_NAME = STRING.next();
+    private static final String APPLICATION_PARTICULARS = STRING.next();
+    private static final Address APPLICANT_ADDRESS = Address
+            .address()
+            .withAddress1(STRING.next())
+            .withAddress2(of(STRING.next()))
+            .withAddress3(of(STRING.next()))
+            .withAddress4(of(STRING.next()))
+            .withAddress5(of(STRING.next()))
+            .withPostcode(of(STRING.next()))
+            .build();
+    private static final Address RESPONDENT_ADDRESS = Address
+            .address()
+            .withAddress1(STRING.next())
+            .withAddress2(of(STRING.next()))
+            .withAddress3(of(STRING.next()))
+            .withAddress4(of(STRING.next()))
+            .withAddress5(of(STRING.next()))
+            .withPostcode(of(STRING.next()))
+            .build();
 
     @Spy
     private ObjectMapper mapper =  new ObjectMapperProducer().objectMapper();
@@ -93,15 +113,18 @@ public class CourtApplicationEventListenerTest {
                         .withParentApplicationId(of(LINKED_APPLICATION_ID))
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
+                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
                         .withApplicant(ApplicantRespondent.applicantRespondent()
                                 .withFirstName(of(UPDATED_FIRST_NAME))
                                 .withLastName(UPDATED_LAST_NAME)
                                 .withIsRespondent(false)
+                                .withAddress(of(APPLICANT_ADDRESS))
                                 .build())
-                        .withRespondents(Arrays.asList(ApplicantRespondent.applicantRespondent()
+                        .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
                                 .withFirstName(of(FIRST_NAME))
                                 .withLastName(LAST_NAME)
                                 .withIsRespondent(true)
+                                .withAddress(of(RESPONDENT_ADDRESS))
                                 .build()))
                         .build())
                 .build();
@@ -119,10 +142,10 @@ public class CourtApplicationEventListenerTest {
         courtApplicationEventListener.courtApplicationUpdated(courtApplicationUpdatedForHearingEnvelope);
 
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
-        assertThat(objectNodeCaptor.getValue().get(0).get("applicant").get("firstName").toString(), equalTo("\"" + UPDATED_FIRST_NAME + "\""));
-        assertThat(objectNodeCaptor.getValue().get(0).get("applicant").get("lastName").toString(), equalTo("\"" + UPDATED_LAST_NAME + "\""));
+        validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
     }
+
     @Test
     public void shouldAddCourtApplicationForHearing() throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -137,15 +160,18 @@ public class CourtApplicationEventListenerTest {
                         .withParentApplicationId(of(LINKED_APPLICATION_ID))
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
+                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
                         .withApplicant(ApplicantRespondent.applicantRespondent()
                                 .withFirstName(of(UPDATED_FIRST_NAME))
                                 .withLastName(UPDATED_LAST_NAME)
                                 .withIsRespondent(false)
+                                .withAddress(of(APPLICANT_ADDRESS))
                                 .build())
-                        .withRespondents(Arrays.asList(ApplicantRespondent.applicantRespondent()
+                        .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
                                 .withFirstName(of(FIRST_NAME))
                                 .withLastName(LAST_NAME)
                                 .withIsRespondent(true)
+                                .withAddress(of(RESPONDENT_ADDRESS))
                                 .build()))
                         .build())
                 .build();
@@ -163,8 +189,7 @@ public class CourtApplicationEventListenerTest {
         courtApplicationEventListener.courtApplicationAdded(envelope);
 
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
-        assertThat(objectNodeCaptor.getValue().get(0).get("applicant").get("firstName").toString(), equalTo("\"" + FIRST_NAME + "\""));
-        assertThat(objectNodeCaptor.getValue().get(0).get("applicant").get("lastName").toString(), equalTo("\"" + LAST_NAME + "\""));
+        validateApplicantAndRespondents(objectNodeCaptor, FIRST_NAME, LAST_NAME);
         verify(hearingRepository).save(hearing);
     }
 
@@ -178,15 +203,18 @@ public class CourtApplicationEventListenerTest {
                         .withParentApplicationId(of(LINKED_APPLICATION_ID))
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
+                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
                         .withApplicant(ApplicantRespondent.applicantRespondent()
                                 .withFirstName(of(UPDATED_FIRST_NAME))
                                 .withLastName(UPDATED_LAST_NAME)
                                 .withIsRespondent(false)
+                                .withAddress(of(APPLICANT_ADDRESS))
                                 .build())
-                        .withRespondents(Arrays.asList(ApplicantRespondent.applicantRespondent()
+                        .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
                                 .withFirstName(of(FIRST_NAME))
                                 .withLastName(LAST_NAME)
                                 .withIsRespondent(true)
+                                .withAddress(of(RESPONDENT_ADDRESS))
                                 .build()))
                         .build())
                 .build();
@@ -204,12 +232,9 @@ public class CourtApplicationEventListenerTest {
         courtApplicationEventListener.courtApplicationAdded(envelope);
 
         verify(properties).set(anyString(), objectNodeCaptor.capture());
-        assertThat(objectNodeCaptor.getValue().get(0).get("applicant").get("firstName").toString(), equalTo("\"" + UPDATED_FIRST_NAME + "\""));
-        assertThat(objectNodeCaptor.getValue().get(0).get("applicant").get("lastName").toString(), equalTo("\"" + UPDATED_LAST_NAME + "\""));
+        validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
     }
-
-
 
     private List<CourtApplication> createCourtApplications() {
         return singletonList(CourtApplication.courtApplication()
@@ -217,16 +242,39 @@ public class CourtApplicationEventListenerTest {
                 .withParentApplicationId(of(LINKED_APPLICATION_ID))
                 .withId(ID)
                 .withApplicationType(APPLICATION_TYPE)
+                .withApplicationParticulars(of(APPLICATION_PARTICULARS))
                 .withApplicant(ApplicantRespondent.applicantRespondent()
                         .withFirstName(of(FIRST_NAME))
                         .withLastName(LAST_NAME)
                         .withIsRespondent(false)
+                        .withAddress(of(APPLICANT_ADDRESS))
                         .build())
                 .withRespondents(Arrays.asList(ApplicantRespondent.applicantRespondent()
                         .withFirstName(of(FIRST_NAME))
                         .withLastName(LAST_NAME)
                         .withIsRespondent(true)
+                        .withAddress(of(RESPONDENT_ADDRESS))
                         .build()))
                 .build());
+    }
+
+    private void validateApplicantAndRespondents(final ArgumentCaptor<ArrayNode> objectNodeCaptor, final String firstName, final String lastName) {
+        final JsonNode applicant = objectNodeCaptor.getValue().get(0).get("applicant");
+        final JsonNode applicantAddress = applicant.get("address");
+        final JsonNode respondentAddress = objectNodeCaptor.getValue().get(0).get("respondents").get(0).get("address");
+        assertThat(applicant.get("firstName").asText(), equalTo(firstName));
+        assertThat(applicant.get("lastName").asText(), equalTo(lastName));
+        assertThat(objectNodeCaptor.getValue().get(0).get("applicationParticulars").asText(), equalTo(APPLICATION_PARTICULARS));
+        validateAddress(applicantAddress, APPLICANT_ADDRESS);
+        validateAddress(respondentAddress, RESPONDENT_ADDRESS);
+    }
+
+    private void validateAddress(final JsonNode actualAddress, final Address expectedAddress) {
+        assertThat(actualAddress.get("address1").asText(), equalTo(expectedAddress.getAddress1()));
+        assertThat(actualAddress.get("address2").asText(), equalTo(expectedAddress.getAddress2().get()));
+        assertThat(actualAddress.get("address3").asText(), equalTo(expectedAddress.getAddress3().get()));
+        assertThat(actualAddress.get("address4").asText(), equalTo(expectedAddress.getAddress4().get()));
+        assertThat(actualAddress.get("address5").asText(), equalTo(expectedAddress.getAddress5().get()));
+        assertThat(actualAddress.get("postcode").asText(), equalTo(expectedAddress.getPostcode().get()));
     }
 }

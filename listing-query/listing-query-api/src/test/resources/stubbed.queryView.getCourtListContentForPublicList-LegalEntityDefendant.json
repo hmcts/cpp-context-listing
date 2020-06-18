@@ -83,7 +83,8 @@
                 "type": {
                   "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
                   "description": "HEARING_TYPE"
-                }
+                },
+                "courtApplications": []
               }
             }
           ]
@@ -167,7 +168,8 @@
                 "type": {
                   "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
                   "description": "HEARING_TYPE"
-                }
+                },
+                "courtApplications": []
               }
             }
           ]

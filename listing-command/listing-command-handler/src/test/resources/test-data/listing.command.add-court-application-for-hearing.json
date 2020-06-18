@@ -7,12 +7,21 @@
       "personDetails": {
         "firstName": "David",
         "gender": "MALE",
-        "lastName": "Dell"
+        "lastName": "Dell",
+        "address": {
+          "address1": "Address1",
+          "address2": "Address2",
+          "address3": "Address3",
+          "address4": "Address4",
+          "address5": "Address5",
+          "postCode": "SW13 0AA"
+        }
       },
       "courtApplicationPartyType": "PERSON"
     },
     "applicationReceivedDate": "2019-03-04",
     "applicationReference": "REF-1",
+    "applicationParticulars": "Application particulars",
     "applicationStatus": "LISTED",
     "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
     "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
@@ -24,7 +33,15 @@
           "personDetails": {
             "firstName": "Luise",
             "gender": "FEMALE",
-            "lastName": "Miller"
+            "lastName": "Miller",
+            "address": {
+              "address1": "Address1",
+              "address2": "Address2",
+              "address3": "Address3",
+              "address4": "Address4",
+              "address5": "Address5",
+              "postCode": "SW13 0AA"
+            }
           }
         },
         "courtApplicationPartyType": "PERSON"

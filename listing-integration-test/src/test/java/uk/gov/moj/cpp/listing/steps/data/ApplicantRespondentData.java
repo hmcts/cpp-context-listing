@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
+import uk.gov.moj.cpp.listing.domain.Address;
+
 import java.util.UUID;
 
 public class ApplicantRespondentData {
@@ -16,13 +18,16 @@ public class ApplicantRespondentData {
 
     private final LegalEntityDefendantData legalEntityDefendant;
 
-    public ApplicantRespondentData(final UUID id, String firstName, Boolean respondent, String lastName, final CourtApplicationPartyType courtApplicationPartyType, final LegalEntityDefendantData legalEntityDefendant) {
+    private final Address address;
+
+    public ApplicantRespondentData(final UUID id, String firstName, Boolean respondent, String lastName, final CourtApplicationPartyType courtApplicationPartyType, final LegalEntityDefendantData legalEntityDefendant, final Address address) {
         this.id = id;
         this.firstName = firstName;
         this.respondent = respondent;
         this.lastName = lastName;
         this.courtApplicationPartyType = courtApplicationPartyType;
         this.legalEntityDefendant = legalEntityDefendant;
+        this.address = address;
     }
 
     public String getFirstName() {
@@ -47,5 +52,9 @@ public class ApplicantRespondentData {
 
     public LegalEntityDefendantData getLegalEntityDefendant() {
         return legalEntityDefendant;
+    }
+
+    public Address getAddress() {
+        return address;
     }
 }

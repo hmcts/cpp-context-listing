@@ -59,6 +59,9 @@
                 "PROSECUTING_AUTHORITY",
                 "PERSON_DEFENDANT"
               ]
+            },
+            "address": {
+              "$ref": "http://justice.gov.uk/core/courts/address.json"
             }
           },
           "required": [
@@ -72,6 +75,9 @@
           "type": "string"
         },
         "applicationReference": {
+          "type": "string"
+        },
+        "applicationParticulars": {
           "type": "string"
         },
         "respondents": {
@@ -104,6 +110,9 @@
                   "PROSECUTING_AUTHORITY",
                   "PERSON_DEFENDANT"
                 ]
+              },
+              "address": {
+                "$ref": "http://justice.gov.uk/core/courts/address.json"
               }
             },
             "required": [

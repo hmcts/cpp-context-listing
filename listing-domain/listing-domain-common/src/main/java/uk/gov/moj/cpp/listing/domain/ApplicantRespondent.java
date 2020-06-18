@@ -16,12 +16,17 @@ public class ApplicantRespondent {
 
   private final CourtApplicationPartyType courtApplicationPartyType;
 
-  public ApplicantRespondent(final UUID id, final String firstName, final Boolean isRespondent, final String lastName, final CourtApplicationPartyType courtApplicationPartyType) {
+  private final Address address;
+
+  public ApplicantRespondent(final UUID id, final String firstName, final Boolean isRespondent,
+                             final String lastName, final CourtApplicationPartyType courtApplicationPartyType,
+                             final Address address) {
     this.id = id;
     this.firstName = firstName;
     this.isRespondent = isRespondent;
     this.lastName = lastName;
     this.courtApplicationPartyType = courtApplicationPartyType;
+    this.address = address;
   }
 
   public Optional<String> getFirstName() {
@@ -38,6 +43,10 @@ public class ApplicantRespondent {
 
   public UUID getId() {
     return id;
+  }
+
+  public Address getAddress() {
+    return address;
   }
 
   public static Builder applicantRespondent() {
@@ -78,6 +87,7 @@ public class ApplicantRespondent {
     	"isRespondent='" + isRespondent + "'," +
     	"lastName='" + lastName + "'," +
         "courtApplicationPartyType='" + courtApplicationPartyType + "'" +
+        "address=" + address +
     "}";
   }
 
@@ -92,6 +102,8 @@ public class ApplicantRespondent {
     private String lastName;
 
     private CourtApplicationPartyType courtApplicationPartyType;
+
+    private Address address;
 
     public Builder withId(final UUID id) {
       this.id = id;
@@ -118,8 +130,13 @@ public class ApplicantRespondent {
       return this;
     }
 
+    public Builder withAddress(final Address address) {
+      this.address = address;
+      return this;
+    }
+
     public ApplicantRespondent build() {
-      return new ApplicantRespondent(id, firstName, isRespondent, lastName, courtApplicationPartyType);
+      return new ApplicantRespondent(id, firstName, isRespondent, lastName, courtApplicationPartyType, address);
     }
   }
 }

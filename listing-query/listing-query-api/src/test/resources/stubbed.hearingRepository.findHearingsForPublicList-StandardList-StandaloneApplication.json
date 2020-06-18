@@ -165,7 +165,8 @@
               ],
               "hearingLanguage": "ENGLISH",
               "estimatedMinutes": 30,
-              "jurisdictionType": "CROWN"
+              "jurisdictionType": "CROWN",
+              "courtApplications": []
             }
           },
           {
@@ -190,10 +191,10 @@
                   "durationMinutes": 120
                 },
                 {
-                  "endTime": "2018-11-22T14:37:00.000Z",
+                  "endTime": "2019-01-29T14:37:00.000Z",
                   "sequence": 1,
-                  "startTime": "2018-11-22T10:30:00.000Z",
-                  "hearingDate": "2018-11-22",
+                  "startTime": "2019-01-29T10:30:00.000Z",
+                  "hearingDate": "2019-01-29",
                   "durationMinutes": 120
                 }
               ],
@@ -204,19 +205,25 @@
                   "applicant": {
                     "lastName": "PORTER",
                     "firstName": "Edward",
-                    "isRespondent": false
+                    "isRespondent": false,
+                    "courtApplicationPartyType": "PERSON"
                   },
                   "respondents": [
                     {
                       "lastName": "COLEMAN",
                       "firstName": "Hattie",
-                      "isRespondent": true
+                      "isRespondent": true,
+                      "courtApplicationPartyType": "PERSON"
                     }
                   ],
                   "applicationType": "Application type",
                   "applicationReference": "46VZ909483"
                 }
-              ]
+              ],
+              "type": {
+                "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+                "description": "Application"
+              }
             }
           }
         ]

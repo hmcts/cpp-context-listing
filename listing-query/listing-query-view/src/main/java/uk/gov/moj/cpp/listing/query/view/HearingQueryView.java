@@ -388,7 +388,7 @@ public class HearingQueryView {
     private JsonEnvelope createAlphabeticalListJsonEnvelope(final JsonEnvelope query, final List<Hearing> matchedHearings) {
         return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertHearingResultForAlphbeticalList(matchedHearings))
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertHearingResultForAlphabeticalList(matchedHearings))
                         .build()
         );
     }

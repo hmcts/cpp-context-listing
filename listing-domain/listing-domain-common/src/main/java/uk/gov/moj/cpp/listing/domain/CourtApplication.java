@@ -24,8 +24,11 @@ public class CourtApplication {
 
   private final Optional<String> applicationReference;
 
+  private final Optional<String> applicationParticulars;
+
   public CourtApplication(final UUID id, final UUID linkedCaseId, final UUID parentApplicationId, final ApplicantRespondent applicant,
-                          final String applicationType, final List<ApplicantRespondent> respondents, Boolean requiresResponse, Optional<String> applicationReference) {
+                          final String applicationType, final List<ApplicantRespondent> respondents, final Boolean requiresResponse,
+                          final Optional<String> applicationReference, final Optional<String> applicationParticulars) {
     this.id = id;
     this.linkedCaseId = linkedCaseId;
     this.parentApplicationId = parentApplicationId;
@@ -34,6 +37,7 @@ public class CourtApplication {
     this.respondents = respondents;
     this.requiresResponse = requiresResponse;
     this.applicationReference = applicationReference;
+    this.applicationParticulars = applicationParticulars;
   }
 
   public ApplicantRespondent getApplicant() {
@@ -68,6 +72,10 @@ public class CourtApplication {
     return applicationReference;
   }
 
+  public Optional<String> getApplicationParticulars() {
+    return applicationParticulars;
+  }
+
   public static Builder courtApplication() {
     return new CourtApplication.Builder();
   }
@@ -89,12 +97,13 @@ public class CourtApplication {
     java.util.Objects.equals(this.linkedCaseId, that.linkedCaseId) &&
     java.util.Objects.equals(this.parentApplicationId, that.parentApplicationId)&&
     java.util.Objects.equals(this.requiresResponse, that.requiresResponse) &&
-    java.util.Objects.equals(this.applicationReference, that.applicationReference);
+    java.util.Objects.equals(this.applicationReference, that.applicationReference) &&
+    java.util.Objects.equals(this.applicationParticulars, that.applicationParticulars);
   }
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(applicant, applicationType, id, respondents, linkedCaseId, parentApplicationId, requiresResponse, applicationReference);
+    return java.util.Objects.hash(applicant, applicationType, id, respondents, linkedCaseId, parentApplicationId, requiresResponse, applicationReference, applicationParticulars);
   }
 
   @Override
@@ -103,11 +112,12 @@ public class CourtApplication {
     	"applicant='" + applicant + "'," +
     	"applicationType='" + applicationType + "'," +
     	"id='" + id + "'," +
-    	"respondants='" + respondents + "'" +
+    	"respondents='" + respondents + "'" +
         "linkedCaseId='" + linkedCaseId + "'" +
         "parentApplicationId='" + parentApplicationId + "'" +
         "requiresResponse='" + requiresResponse + "'" +
         "applicationReference='" + applicationReference + "'" +
+        "applicationParticulars='" + applicationParticulars + "'" +
     "}";
   }
 
@@ -127,6 +137,8 @@ public class CourtApplication {
     private Boolean requiresResponse;
 
     private Optional<String> applicationReference;
+
+    private Optional<String> applicationParticulars;
 
     public Builder withApplicant(final ApplicantRespondent applicant) {
       this.applicant = applicant;
@@ -167,8 +179,13 @@ public class CourtApplication {
       return this;
     }
 
+    public Builder withApplicationParticulars(final Optional<String> applicationParticulars) {
+      this.applicationParticulars = applicationParticulars;
+      return this;
+    }
+
     public CourtApplication build() {
-      return new CourtApplication(id, linkedCaseId, parentApplicationId,  applicant, applicationType,  respondents, requiresResponse, applicationReference);
+      return new CourtApplication(id, linkedCaseId, parentApplicationId,  applicant, applicationType,  respondents, requiresResponse, applicationReference, applicationParticulars);
     }
   }
 }

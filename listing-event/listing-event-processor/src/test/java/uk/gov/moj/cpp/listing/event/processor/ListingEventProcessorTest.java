@@ -726,6 +726,7 @@ public class ListingEventProcessorTest {
         final CourtApplication courtApplication = courtApplicationBuilder
                 .withId(randomUUID())
                 .withApplicationReference(Optional.of(STRING.next()))
+                .withApplicationParticulars(of(STRING.next()))
                 .withApplicant(courtApplicationPartyBuilder
                         .withId(randomUUID())
                         .withPersonDetails(empty())
@@ -1089,6 +1090,7 @@ public class ListingEventProcessorTest {
         final CourtApplication courtApplication = courtApplicationBuilder
                 .withId(randomUUID())
                 .withApplicationReference(Optional.of(STRING.next()))
+                .withApplicationParticulars(of(STRING.next()))
                 .withApplicant(courtApplicationPartyBuilder
                         .withId(randomUUID())
                         .withPersonDetails(empty())

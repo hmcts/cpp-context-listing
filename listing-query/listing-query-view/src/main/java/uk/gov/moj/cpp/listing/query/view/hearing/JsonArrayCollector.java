@@ -35,7 +35,7 @@ public class JsonArrayCollector implements Collector<JsonObject, JsonArrayBuilde
 
     @Override
     public Function<JsonArrayBuilder, JsonArray> finisher() {
-        return accumulator -> accumulator.build();
+        return JsonArrayBuilder::build;
     }
 
     @Override

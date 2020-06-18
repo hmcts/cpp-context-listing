@@ -112,7 +112,7 @@ public class StandardCourtListTemplateAssemblerTest {
 
 
     @Before
-    public void setup() throws IllegalAccessException {
+    public void setup() {
         setField(this.jsonObjectToObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
     }
@@ -211,7 +211,7 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForStandardCourtListTemplateWhenThereIsNoJudiciary() throws Exception {
+    public void shouldAssembleDataForStandardCourtListTemplateWhenThereIsNoJudiciary() {
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
 
@@ -233,7 +233,7 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForStandardCourtListTemplateWithApplication() throws Exception {
+    public void shouldAssembleDataForStandardCourtListTemplateWithApplication() {
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
 
@@ -249,9 +249,8 @@ public class StandardCourtListTemplateAssemblerTest {
         CourtRoom actualCourtRoom = actualHearingDate.getCourtRooms().get(0);
         assertThat(actualCourtRoom.getTimeslots().size(), is(1));
 
-
         Timeslot actualTimeslot = actualCourtRoom.getTimeslots().get(0);
-        assertThat(actualTimeslot.getHearings().size(), is(1));
+        assertThat(actualTimeslot.getHearings().size(), is(2));
     }
 
     @Test
@@ -409,7 +408,7 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForStandardCourtListTemplateWithLegalEntityDefendant() throws Exception {
+    public void shouldAssembleDataForStandardCourtListTemplateWithLegalEntityDefendant() {
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
 

@@ -60,7 +60,7 @@
                           "id": "788e242e-fcfd-41ba-b06a-b1156d37e191",
                           "masterDefendantId": "788e242e-fcfd-41ba-b06a-b1156d37e191",
                           "courtProceedingsInitiated": "2019-01-01T00:00:00.000Z",
-                          "lastName": "LAST_NAME",
+                          "lastName": "LAST_NAME1",
                           "offences": [
                             {
                               "id": "785c2a46-175c-4032-ad26-4c79642048ad",
@@ -72,7 +72,7 @@
                               }
                             }
                           ],
-                          "firstName": "FIRST_NAME",
+                          "firstName": "FIRST_NAME1",
                           "bailStatus": {
                             "id":"34443c87-fa6f-34c0-897f-0cce45773df5",
                             "code":"P",
@@ -89,8 +89,9 @@
                   ],
                   "type": {
                     "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
-                    "description": "HEARING_TYPE"
-                  }
+                    "description": "HEARING_TYPE1"
+                  },
+                  "courtApplications": []
                 }
 
             }
@@ -177,8 +178,9 @@
                 ],
                 "type": {
                   "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
-                  "description": "HEARING_TYPE"
-                }
+                  "description": "HEARING_TYPE1"
+                },
+                "courtApplications": []
               }
 
             }

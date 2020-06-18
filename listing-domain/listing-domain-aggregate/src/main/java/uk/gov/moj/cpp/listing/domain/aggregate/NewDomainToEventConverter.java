@@ -1,9 +1,12 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
+import static java.lang.Boolean.FALSE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.events.CaseIdentifier;
@@ -44,13 +47,13 @@ public class NewDomainToEventConverter {
                 .withDefendants(lc.getDefendants().stream()
                         .map(NewDomainToEventConverter::buildDefendant)
                         .collect(toList()))
-                .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+                .withRestrictFromCourtList(of(FALSE))
 
                 .build();
     }
 
     public static List<Marker> convertCaseMarkersListToMarkers(final List<CaseMarker> caseMarkers) {
-        return caseMarkers.stream().map(cm -> convertCaseMarkersToMarkers(cm)).collect(toList());
+        return caseMarkers.stream().map(NewDomainToEventConverter::convertCaseMarkersToMarkers).collect(toList());
     }
 
     public static Marker convertCaseMarkersToMarkers(final CaseMarker caseMarker) {
@@ -82,24 +85,24 @@ public class NewDomainToEventConverter {
                         .collect(toList()))
                 .withDefenceOrganisation(d.getDefenceOrganisation())
                 .withBailStatus(buildBailStatusEvent(d.getBailStatus()))
-                .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+                .withRestrictFromCourtList(of(FALSE))
                 .withIsYouth(d.getIsYouth())
-                .withAddress( nonNull(d.getAddress()) && d.getAddress().isPresent() ? buildAddress( d.getAddress() ) : empty())
+                .withAddress(nonNull(d.getAddress()) && d.getAddress().isPresent() ? buildAddress(d.getAddress().get()) : empty())
                 .withNationalityDescription(d.getNationalityDescription())
                 .build();
     }
 
 
     @SuppressWarnings({"squid:S3655", "squid:S1067"})
-    public static  Optional<uk.gov.justice.core.courts.Address> buildAddress(Optional<uk.gov.moj.cpp.listing.domain.Address> address) {
+    private static  Optional<uk.gov.justice.core.courts.Address> buildAddress(uk.gov.moj.cpp.listing.domain.Address address) {
 
-            return Optional.of(uk.gov.justice.core.courts.Address.address().
-                    withAddress1( nonNull(address.get().getAddress1())? address.get().getAddress1() : "")
-                    .withAddress2( address.get().getAddress2().isPresent() ? address.get().getAddress2() : empty())
-                    .withAddress3(address.get().getAddress3().isPresent() ? address.get().getAddress3() : empty())
-                    .withAddress4(address.get().getAddress4().isPresent() ? address.get().getAddress4() : empty())
-                    .withAddress5( address.get().getAddress5().isPresent() ? address.get().getAddress5() : empty())
-                    .withPostcode(address.get().getPostcode().isPresent() ? address.get().getPostcode() : empty())
+            return of(uk.gov.justice.core.courts.Address.address()
+                    .withAddress1(ofNullable(address.getAddress1()).orElse(""))
+                    .withAddress2(ofNullable(address.getAddress2()).orElse(empty()))
+                    .withAddress3(ofNullable(address.getAddress3()).orElse(empty()))
+                    .withAddress4(ofNullable(address.getAddress4()).orElse(empty()))
+                    .withAddress5(ofNullable(address.getAddress5()).orElse(empty()))
+                    .withPostcode(ofNullable(address.getPostcode()).orElse(empty()))
                     .build());
     }
 
@@ -116,7 +119,7 @@ public class NewDomainToEventConverter {
                 .withDefenceOrganisation(d.getDefenceOrganisation())
                 .withBailStatus(buildBailStatusEvent(d.getBailStatus()))
                 .withIsYouth(d.getIsYouth())
-                .withAddress(nonNull(d.getAddress()) && d.getAddress().isPresent() ? buildAddress(d.getAddress()) : empty())
+                .withAddress(nonNull(d.getAddress()) && d.getAddress().isPresent() ? buildAddress(d.getAddress().get()) : empty())
                 .withNationalityDescription(nonNull(d.getNationalityDescription()) && d.getNationalityDescription().isPresent()  ?  d.getNationalityDescription() : empty())
                 .build();
     }
@@ -157,7 +160,7 @@ public class NewDomainToEventConverter {
                 .withOffenceWording(o.getOffenceWording())
                 .withStatementOfOffence(buildStatementOfOffence(o))
                 .withOffenceWording(o.getOffenceWording())
-                .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+                .withRestrictFromCourtList(of(FALSE))
                 .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference(o.getLaaApplnReference().get()) : empty())
                 .withLaidDate(o.getLaidDate())
                 .build();
@@ -204,22 +207,29 @@ public class NewDomainToEventConverter {
                 .withLinkedCaseId(courtApplication.getLinkedCaseId())
                 .withParentApplicationId(courtApplication.getParentApplicationId())
                 .withApplicationType(courtApplication.getApplicationType())
-                .withApplicant(buildApplicantRespondant(courtApplication.getApplicant()))
-                .withRespondents(nonNull(courtApplication.getRespondents()) ? courtApplication.getRespondents().stream().map(NewDomainToEventConverter::buildApplicantRespondant).collect(toList()) : null)
-                .withApplicationReference(courtApplication.getApplicationReference().isPresent() ? courtApplication.getApplicationReference() : empty())
-                .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
-                .withRestrictCourtApplicationType(Optional.of(Boolean.FALSE))
+                .withApplicant(buildApplicantRespondent(courtApplication.getApplicant()))
+                .withRespondents(ofNullable(courtApplication.getRespondents())
+                        .map(respondents -> respondents
+                                .stream()
+                                .map(NewDomainToEventConverter::buildApplicantRespondent)
+                                .collect(toList()))
+                        .orElse(null))
+                .withApplicationReference(ofNullable(courtApplication.getApplicationReference()).orElse(empty()))
+                .withApplicationParticulars(ofNullable(courtApplication.getApplicationParticulars()).orElse(empty()))
+                .withRestrictFromCourtList(of(FALSE))
+                .withRestrictCourtApplicationType(of(FALSE))
                 .build();
     }
 
-    private static uk.gov.justice.listing.events.ApplicantRespondent buildApplicantRespondant(final ApplicantRespondent applicant) {
+    private static uk.gov.justice.listing.events.ApplicantRespondent buildApplicantRespondent(final ApplicantRespondent applicant) {
         return isNull(applicant) ? null : uk.gov.justice.listing.events.ApplicantRespondent.applicantRespondent()
                 .withId(applicant.getId())
                 .withFirstName(applicant.getFirstName())
                 .withLastName(applicant.getLastName())
                 .withIsRespondent(applicant.getIsRespondent())
-                .withRestrictFromCourtList(Optional.of(Boolean.FALSE))
+                .withRestrictFromCourtList(of(FALSE))
                 .withCourtApplicationPartyType(buildCourtApplicationPartyTypeEvent(applicant.getCourtApplicationPartyType()))
+                .withAddress(ofNullable(applicant.getAddress()).flatMap(NewDomainToEventConverter::buildAddress))
                 .build();
     }
 
@@ -230,7 +240,7 @@ public class NewDomainToEventConverter {
 
     private static Optional<LaaReference> buildLaaReference(final uk.gov.moj.cpp.listing.domain.LaaReference laaReference) {
 
-        return Optional.of(LaaReference.laaReference()
+        return of(LaaReference.laaReference()
                 .withApplicationReference(laaReference.getApplicationReference())
                 .withEffectiveEndDate((laaReference.getEffectiveEndDate()))
                 .withEffectiveStartDate(laaReference.getEffectiveStartDate())
@@ -239,8 +249,5 @@ public class NewDomainToEventConverter {
                 .withStatusDate(laaReference.getStatusDate())
                 .withStatusId(laaReference.getStatusId())
                 .build());
-
-
     }
-
 }

@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface ListOfJsontoJsonArrayConverter extends Converter<List<Hearing>, JsonArray> {
 
-     JsonArray convertHearingResultForAlphbeticalList(final List<Hearing> hearings);
+     JsonArray convertHearingResultForAlphabeticalList(final List<Hearing> hearings);
 
      JsonArray convertHearingResultForPublicList(Hearing hearing);
 

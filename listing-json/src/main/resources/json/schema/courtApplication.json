@@ -28,6 +28,9 @@
     "applicationReference": {
       "type": "string"
     },
+    "applicationParticulars": {
+      "type": "string"
+    },
     "restrictFromCourtList": {
       "type":"boolean"
     },

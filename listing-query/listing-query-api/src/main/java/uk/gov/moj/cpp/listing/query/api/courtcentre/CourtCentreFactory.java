@@ -1,5 +1,9 @@
 package uk.gov.moj.cpp.listing.query.api.courtcentre;
 
+import static java.util.UUID.fromString;
+import static uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtCentreDetails.courtCentreDetails;
+import static uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtRoomDetails.courtRoomDetails;
+
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtCentreDetails;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtRoomDetails;
@@ -39,7 +43,7 @@ public class CourtCentreFactory {
     @Inject
     private ReferenceDataService referenceDataService;
 
-    public CourtCentreDetails getCourtCentre(UUID courtCentreId, JsonEnvelope envelope) {
+    public CourtCentreDetails getCourtCentre(final UUID courtCentreId, final JsonEnvelope envelope) {
         final JsonEnvelope courtCentreEnvelope = referenceDataService.getCourtCentreById(courtCentreId, envelope);
         final JsonObject jsonObject = courtCentreEnvelope.payloadAsJsonObject();
         LOGGER.info("courtCentreEnvelope response: {}", jsonObject);
@@ -62,14 +66,14 @@ public class CourtCentreFactory {
                 .map(courtRoomJsonObject -> {
                     final String courtroomName = courtRoomJsonObject.getString(COURTROOM_NAME);
                     final String welshCourtroomName = courtRoomJsonObject.getString(WELSH_COURTROOM_NAME, courtroomName);
-                    return CourtRoomDetails.courtRoomDetails()
-                            .withId(UUID.fromString(courtRoomJsonObject.getString(ID)))
+                    return courtRoomDetails()
+                            .withId(fromString(courtRoomJsonObject.getString(ID)))
                             .withCourtRoomName(courtroomName)
                             .withWelshCourtRoomName(welshCourtroomName)
                             .build();
                 }).collect(Collectors.toMap(CourtRoomDetails::getId, cc -> cc));
 
-        return CourtCentreDetails.courtCentreDetails()
+        return courtCentreDetails()
                 .withId(courtCentreId)
                 .withCourtCentreName(courtCentreName)
                 .withWelshCourtCentreName(courtCentreNameWelsh)

@@ -2,12 +2,21 @@
   "type": {
     "applicationType": "Failing to comply"
   },
+  "applicationParticulars": "Application particulars",
   "applicant": {
     "id": "22b1078b-9430-4cef-ba46-eea40a129ca8",
     "personDetails": {
       "firstName": "David",
       "gender": "MALE",
-      "lastName": "Dell"
+      "lastName": "Dell",
+      "address": {
+        "address1": "22",
+        "address2": "Acacia Avenue",
+        "address3": "Acacia Town",
+        "address4": "Acacia City",
+        "address5": "Acacia Country",
+        "postcode": "GIR 0AA"
+      }
     },
     "courtApplicationPartyType": "PERSON"
   },
@@ -22,7 +31,15 @@
         "personDetails": {
           "firstName": "Luise",
           "gender": "FEMALE",
-          "lastName": "Miller"
+          "lastName": "Miller",
+          "address": {
+            "address1": "Disney Road",
+            "address2": "Disney Town",
+            "address3": "Disney District",
+            "address4": "Paris",
+            "address5": "France",
+            "postcode": "DI5 9EY"
+          }
         }
       },
       "courtApplicationPartyType": "PERSON"
@@ -32,7 +49,14 @@
         "id": "49ddbd0a-31db-4814-b052-aa3ba9afb800",
         "prosecutingAuthority":{
           "prosecutionAuthorityId":"31af405e-7b60-4dd8-a244-c24c2d3fa595",
-          "prosecutionAuthorityCode":"TFL"
+          "prosecutionAuthorityCode":"TFL",
+          "address": {
+            "address1": "14 Tottenham Court Road",
+            "address2": "London",
+            "address3": "England",
+            "address4": "UK",
+            "postCode": "W1T 1JY"
+          }
         }
       },
       "courtApplicationPartyType": "PERSON"
@@ -41,10 +65,18 @@
       "partyDetails": {
         "id": "50ddbd0a-31db-4814-b052-aa3ba9afb800",
         "organisation":{
-          "name":"Defence"
+          "name":"Defence",
+          "address": {
+            "address1": "defenceOrganisation",
+            "address2": "225",
+            "address3": "FuseRoad",
+            "address4": "East Croydon",
+            "address5": "SouthLondon",
+            "postcode": "LN72 9NG"
+          }
         }
       },
-      "courtApplicationPartyType": "PERSON"
+      "courtApplicationPartyType": "ORGANISATION"
     },
     {
       "partyDetails": {
@@ -54,13 +86,20 @@
             "personDetails": {
               "firstName": "Jack",
               "gender": "MALE",
-              "lastName": "Hill"
+              "lastName": "Hill",
+              "address": {
+                "address1": "33",
+                "address2": "Daisy Avenue",
+                "address3": "Daisy Town",
+                "address4": "Daisy City",
+                "address5": "Daisy Country",
+                "postcode": "SW13 0AA"
+              }
             }
           }
         },
         "courtApplicationPartyType": "PERSON"
       }
     }
-
   ]
 }

@@ -113,7 +113,7 @@ public class PersistenceTestSuite {
 
     private static ICommandLinePostProcessor runWithoutPrivileges() {
         return (distribution, args) -> {
-            return args.size() > 0 && ((String) args.get(0)).endsWith("postgres.exe") ? asList("runas", "/trustlevel:0x20000", String.format("\"%s\"", String.join(" ", args))) : args;
+            return args.size() > 0 && args.get(0).endsWith("postgres.exe") ? asList("runas", "/trustlevel:0x20000", String.format("\"%s\"", String.join(" ", args))) : args;
         };
     }
 

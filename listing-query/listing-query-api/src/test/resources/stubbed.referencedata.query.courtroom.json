@@ -47,6 +47,30 @@
       "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
       "courtroomName": "Courtroom 01",
       "welshCourtroomName": "Ystafell y Llys 01"
+    },
+    {
+      "id": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "venueName": "LAVENDER HILL MAGISTRATES' COURT",
+      "courtroomId": 2330,
+      "courtroomName": "Courtroom 01"
+    },
+    {
+      "id": "b4562684-9209-3ec4-a544-7f80dabd94d8",
+      "venueName": "LAVENDER HILL MAGISTRATES' COURT",
+      "courtroomId": 2331,
+      "courtroomName": "Courtroom 02"
+    },
+    {
+      "id": "f1ead1d2-4b26-3230-b781-508d6aaafd26",
+      "venueName": "LAVENDER HILL MAGISTRATES' COURT",
+      "courtroomId": 2332,
+      "courtroomName": "Courtroom 03"
+    },
+    {
+      "id": "b6cc0e08-6227-3786-8ebe-36febddec7ff",
+      "venueName": "LAVENDER HILL MAGISTRATES' COURT",
+      "courtroomId": 2333,
+      "courtroomName": "Courtroom 04"
     }
   ]
 }

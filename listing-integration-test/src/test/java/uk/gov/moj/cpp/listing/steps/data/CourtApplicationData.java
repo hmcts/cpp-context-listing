@@ -13,8 +13,10 @@ public class CourtApplicationData {
     private final Boolean restrictCourtApplicationType;
     private final Boolean restrictFromCourtList;
     private final Boolean isEjected;
+    private final String applicationParticulars;
 
-    public CourtApplicationData(UUID id, UUID linkedCaseId, UUID parentApplicationId, ApplicantRespondentData applicant, ApplicantRespondentData respondent, String type, Boolean requiresResponse, final Boolean restrictCourtApplicationType, final Boolean restrictFromCourtList, final Boolean isEjected) {
+    public CourtApplicationData(UUID id, UUID linkedCaseId, UUID parentApplicationId, ApplicantRespondentData applicant, ApplicantRespondentData respondent, String type, Boolean requiresResponse,
+                                final Boolean restrictCourtApplicationType, final Boolean restrictFromCourtList, final Boolean isEjected, final String applicationParticulars) {
         this.id = id;
         this.linkedCaseId = linkedCaseId;
         this.parentApplicationId = parentApplicationId;
@@ -25,6 +27,7 @@ public class CourtApplicationData {
         this.restrictCourtApplicationType = restrictCourtApplicationType;
         this.restrictFromCourtList = restrictFromCourtList;
         this.isEjected = isEjected;
+        this.applicationParticulars = applicationParticulars;
     }
 
     public UUID getId() {
@@ -65,5 +68,9 @@ public class CourtApplicationData {
 
     public Boolean getRequiresResponse() {
         return requiresResponse;
+    }
+
+    public String getApplicationParticulars() {
+        return applicationParticulars;
     }
 }

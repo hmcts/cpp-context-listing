@@ -21,6 +21,7 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
+import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtApplicationParty;
 import uk.gov.justice.core.courts.CourtApplicationRespondent;
@@ -73,7 +74,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private static final String PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "listing.events.court-application-added-for-hearing";
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED = "public.progression.court-application-changed";
     private static final String PRIVATE_EVENT_APPLICATION_UPDATED_FOR_HEARING = "listing.events.court-application-updated-for-hearing";
-
+    private static final String POSTCODE = "CR1 4BX";
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
 
@@ -114,7 +115,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                 courtApplicationUpdateDataObject,
                 metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
         request = courtApplicationUpdateDataObject.toString();
-        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED, request, getLoggedInHeader());
+        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n, \n\tHeader = {}", PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED, request, getLoggedInHeader());
     }
 
     public void whenCaseCourtApplicationUpdatedPublicEventIsPublished() {
@@ -128,7 +129,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                 metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED).withUserId(randomUUID().toString()).build());
 
         request = courtApplicationUpdateDataObject.toString();
-        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED, request, getLoggedInHeader());
+        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n, \n\tHeader = {}", PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED, request, getLoggedInHeader());
     }
 
     public void verifyCourtApplicationUpdatedInPrivateMessage() {
@@ -302,6 +303,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                                 .withFirstName(of(APPLICANT_FIRST_NAME))
                                 .withLastName(APPLICANT_LAST_NAME)
                                 .withGender(Gender.FEMALE)
+                                .withAddress(buildAddress())
                                 .build()))
                         .withId(APPLICANT_ID)
                         .build())
@@ -311,6 +313,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                                         .withFirstName(of(RESPONDENT_FIRST_NAME))
                                         .withLastName(RESPONDENT_LAST_NAME)
                                         .withGender(Gender.MALE)
+                                        .withAddress(buildAddress())
                                         .build()))
                                 .withId(RESPONDENT_ID)
                                 .build())
@@ -331,7 +334,19 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                 .withApplicationStatus(ApplicationStatus.LISTED)
                 .withApplicationReceivedDate(LocalDate.now().toString())
                 .withApplicationReference(Optional.of(STRING.next()))
+                .withApplicationParticulars(of(STRING.next()))
                 .build();
+    }
+
+    private Optional<Address> buildAddress() {
+        return of(Address.address()
+                .withAddress1(STRING.next())
+                .withAddress2(of(STRING.next()))
+                .withAddress3(of(STRING.next()))
+                .withAddress4(of(STRING.next()))
+                .withAddress5(of(STRING.next()))
+                .withPostcode(of(POSTCODE))
+                .build());
     }
 
     @Override

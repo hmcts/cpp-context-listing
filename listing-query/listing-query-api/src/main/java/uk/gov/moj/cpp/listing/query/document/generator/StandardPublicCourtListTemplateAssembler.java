@@ -2,23 +2,30 @@ package uk.gov.moj.cpp.listing.query.document.generator;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.time.LocalDate.parse;
 import static java.util.Collections.emptyList;
+import static java.util.Comparator.comparing;
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
-
-import org.apache.commons.lang3.StringUtils;
+import static org.apache.commons.lang3.StringUtils.upperCase;
+import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.ORGANISATION;
+import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
+import static uk.gov.moj.cpp.listing.domain.utils.ZonedDateTimeFormatter.adjustDateTime;
+import static uk.gov.moj.cpp.listing.query.document.generator.courtlist.Offence.offence;
+import static uk.gov.moj.cpp.listing.query.document.generator.courtlist.Timeslot.timeslot;
 
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.WelshMonth;
-import uk.gov.moj.cpp.listing.domain.utils.ZonedDateTimeFormatter;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtCentreDetails;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtRoomDetails;
@@ -28,7 +35,6 @@ import uk.gov.moj.cpp.listing.query.document.generator.courtlist.CourtRoom;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Defendant;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Hearing;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.HearingDate;
-import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Offence;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.StandardCourtList;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Timeslot;
 
@@ -48,11 +54,14 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.json.JsonObject;
+import javax.validation.constraints.NotNull;
 
+import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +93,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String TITLE_JUDICIARY_PREFIX = "titleJudiciaryPrefix";
     private static final String TITLE_SUFFIX = "titleSuffix";
     private static final String DATE_OF_BIRTH = "dateOfBirth";
-    private static final String NATIONALITY_DESCRIPTION =  "nationalityDescription";
+    private static final String NATIONALITY_DESCRIPTION = "nationalityDescription";
     private static final String AUTHORITY_CODE = "authorityCode";
     private static final String OFFENCE_WORDING = "offenceWording";
     private static final String TITLE = "title";
@@ -110,6 +119,14 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String HEARING_STRING = "Hearing";
     private static final String ADJOURNED_HEARING_DATE = "adjournedFromDate";
     private static final String ADDRESS = "address";
+    private static final String COURT_APPLICATIONS = "courtApplications";
+    private static final String APPLICATION_REFERENCE = "applicationReference";
+    private static final String APPLICANT = "applicant";
+    private static final String COURT_APPLICATION_PARTY_TYPE = "courtApplicationPartyType";
+    private static final String RESTRICT_COURT_APPLICATION_TYPE = "restrictCourtApplicationType";
+    private static final String APPLICATION_TYPE = "applicationType";
+    private static final String RESPONDENTS = "respondents";
+    private static final String APPLICATION_PARTICULARS = "applicationParticulars";
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
@@ -131,32 +148,29 @@ public class StandardPublicCourtListTemplateAssembler {
         if (!payload.getJsonArray(HEARINGS).isEmpty()) {
             LOGGER.info(" found hearings {}", payload);
 
-
             final CourtCentreDetails courtCentreDetails = courtCentreFactory.getCourtCentre(UUID.fromString(courtCentreId), envelope);
 
             final boolean restrictedListRequired = CourtListType.STANDARD.equals(courtListType) ? restricted : TRUE;
             final String listType = courtListType.toString().toLowerCase();
 
-            final Comparator<HearingDate> hearingDateComparator = (h1, h2) -> LocalDate.parse(h1.getHearingDate()).compareTo(LocalDate.parse(h2.getHearingDate()));
+            final Comparator<HearingDate> hearingDateComparator = comparing(h -> parse(h.getHearingDate()));
 
             final Optional<JsonObject> courtListTemplateData = payload.getJsonArray(HEARINGS).getValuesAs(JsonObject.class).stream()
-                    .filter(hearingsByCourtCentre -> hearingsByCourtCentre.getJsonArray(HEARINGS_BY_COURT_CENTRE_ID) != null)
-                    .map(hearingsByCourtCentre -> {
-                        return hearingsByCourtCentre.getJsonArray(HEARINGS_BY_COURT_CENTRE_ID).getValuesAs(JsonObject.class).stream()
-                                .map(hearingByCourtCentreId -> {
-                                    final LocalDate hearingDate = LocalDates.from(hearingByCourtCentreId.getString(HEARING_DATE));
-                                    final Optional<JsonObject> referenceDataJudiciariesJsonObject = retrieveReferenceDataForJudiciary(hearingsByCourtCentre, envelope);
-                                    final List<CourtRoom> courtRooms = createCourtRoomsList(courtCentreDetails, courtRoomId, hearingByCourtCentreId, referenceDataJudiciariesJsonObject, restrictedListRequired);
-                                    return courtRooms.isEmpty() ? null : HearingDate.hearingDate()
-                                            .withHearingDate(hearingDate.toString())
-                                            .withHearingDateWelsh(createWelshHearingDate(hearingDate))
-                                            .withCourtRooms(courtRooms)
-                                            .build();
-                                })
-                                .filter(Objects::nonNull)
-                                .sorted(hearingDateComparator)
-                                .collect(toList());
-                    })
+                    .filter(hearingsByCourtCentre -> nonNull(hearingsByCourtCentre.getJsonArray(HEARINGS_BY_COURT_CENTRE_ID)))
+                    .map(hearingsByCourtCentre -> hearingsByCourtCentre.getJsonArray(HEARINGS_BY_COURT_CENTRE_ID).getValuesAs(JsonObject.class).stream()
+                            .map(hearingByCourtCentreId -> {
+                                final LocalDate hearingDate = LocalDates.from(hearingByCourtCentreId.getString(HEARING_DATE));
+                                final Optional<JsonObject> referenceDataJudiciariesJsonObject = retrieveReferenceDataForJudiciary(hearingsByCourtCentre, envelope);
+                                final List<CourtRoom> courtRooms = createCourtRoomsList(courtCentreDetails, courtRoomId, hearingByCourtCentreId, referenceDataJudiciariesJsonObject.orElse(null), restrictedListRequired);
+                                return courtRooms.isEmpty() ? null : HearingDate.hearingDate()
+                                        .withHearingDate(hearingDate.toString())
+                                        .withHearingDateWelsh(createWelshHearingDate(hearingDate))
+                                        .withCourtRooms(courtRooms)
+                                        .build();
+                            })
+                            .filter(Objects::nonNull)
+                            .sorted(hearingDateComparator)
+                            .collect(toList()))
                     .map(hearingDates -> objectToJsonObjectConverter.convert(createStandardCourtList(courtCentreDetails, hearingDates, listType)))
                     .findFirst();
 
@@ -181,7 +195,7 @@ public class StandardPublicCourtListTemplateAssembler {
 
     private Optional<JsonObject> retrieveReferenceDataForJudiciary(JsonObject hearingsByCourtCentre, JsonEnvelope envelope) {
         final List<UUID> judiciaryIdList = hearingsByCourtCentre.getJsonArray(JUDICIARY).getValuesAs(JsonObject.class).stream()
-                .map(judciary -> UUID.fromString(judciary.getString(JUDICIAL_ID)))
+                .map(judiciary -> UUID.fromString(judiciary.getString(JUDICIAL_ID)))
                 .collect(toList());
 
         if (!judiciaryIdList.isEmpty()) {
@@ -193,81 +207,61 @@ public class StandardPublicCourtListTemplateAssembler {
 
 
     private List<CourtRoom> createCourtRoomsList(final CourtCentreDetails courtCentre, final String selectedCourtRoomId, final JsonObject hearingByCourtCentreId,
-                                                 final Optional<JsonObject> referenceDataJudiciariesJo, final boolean restrictedListRequired) {
+                                                 @Nullable final JsonObject referenceDataJudiciariesJo, final boolean restrictedListRequired) {
 
         final LocalDate hearingDate = LocalDates.from(hearingByCourtCentreId.getString(HEARING_DATE));
 
-        final Map<String, List<JsonObject>> hearingsByCourtRoomIdMap = new HashMap();
+        final Map<String, List<JsonObject>> hearingsByCourtRoomIdMap = new HashMap<>();
 
         hearingByCourtCentreId.getJsonArray(HEARINGS_BY_HEARING_DATE).getValuesAs(JsonObject.class).stream()
-                .filter(hearingByDate -> hearingByDate != null && hearingByDate.size() > 0)
+                .filter(hearingByDate -> nonNull(hearingByDate) && hearingByDate.size() > 0)
                 .map(hearingByDate -> hearingByDate.getJsonObject(HEARING))
-                .filter(hearing -> hearing.getJsonArray(LISTED_CASES) != null)
+                .filter(hearing -> (hearing.containsKey(LISTED_CASES) && !hearing.getJsonArray(LISTED_CASES).isEmpty()) || !hearing.getJsonArray(COURT_APPLICATIONS).isEmpty())
                 .forEach(hearing ->
-                {
-                    hearingsByCourtRoomIdMap.computeIfAbsent(hearing.getString(COURT_ROOM_ID), k -> new ArrayList<>()).add(hearing);
-                });
-
+                        hearingsByCourtRoomIdMap.computeIfAbsent(hearing.getString(COURT_ROOM_ID), k -> new ArrayList<>()).add(hearing));
 
         return hearingsByCourtRoomIdMap.keySet().stream()
                 .filter(courtRoomId -> selectedCourtRoomId == null || selectedCourtRoomId.equals(courtRoomId))
                 .map(courtRoomId -> createCourtRoom(hearingsByCourtRoomIdMap.get(courtRoomId), courtCentre.getCourtRooms().get(UUID.fromString(courtRoomId)), referenceDataJudiciariesJo, hearingDate, restrictedListRequired))
-                .sorted(Comparator.comparing(CourtRoom::getCourtRoomName))
+                .sorted(comparing(CourtRoom::getCourtRoomName))
                 .collect(toList());
     }
 
-    private CourtRoom createCourtRoom(final List<JsonObject> hearingsByCourtRoom, final CourtRoomDetails courtRoomDetails, final Optional<JsonObject> referenceDataJudiciariesJoOpt, final LocalDate hearingDate,
-                                      final boolean restrictedListRequired) {
-        final Map<LocalTime, List<Hearing>> unsortedListMultimap = new HashMap();
+    private CourtRoom createCourtRoom(final List<JsonObject> hearingsByCourtRoom, final CourtRoomDetails courtRoomDetails, @Nullable final JsonObject referenceDataJudiciariesJo,
+                                      final LocalDate hearingDate, final boolean restrictedListRequired) {
+        final Map<LocalTime, List<Hearing>> unsortedListMultimap = new HashMap<>();
 
+        final String judiciaryNamesWithCommas = nonNull(referenceDataJudiciariesJo) ? createJudiciaryNames(hearingsByCourtRoom, referenceDataJudiciariesJo) : BLANK_STRING;
 
-        final String judiciaryNamesWithCommas = referenceDataJudiciariesJoOpt.isPresent()
-                ? createJudiciaryNames(hearingsByCourtRoom, referenceDataJudiciariesJoOpt.get())
-                : BLANK_STRING;
+        final String judiciaryNamesWelshWithCommas = nonNull(referenceDataJudiciariesJo) ? createJudiciaryNamesWelsh(hearingsByCourtRoom, referenceDataJudiciariesJo) : BLANK_STRING;
 
-        final String judiciaryNamesWelshWithCommas = referenceDataJudiciariesJoOpt.isPresent()
-                ? createJudiciaryNamesWelsh(hearingsByCourtRoom, referenceDataJudiciariesJoOpt.get())
-                : BLANK_STRING;
+        hearingsByCourtRoom.forEach(hearingJson -> {
+            final JsonObject hearingDay = hearingJson.getJsonArray(HEARING_DAYS).getValuesAs(JsonObject.class).stream()
+                    .filter(hd -> hearingDate.equals(ZonedDateTime.parse(hd.getString(START_TIME)).toLocalDate()))
+                    .findFirst()
+                    .orElseThrow(IllegalArgumentException::new);
 
+            final ZonedDateTime startTimestamp = adjustDateTime(ZonedDateTimes.fromString(hearingDay.getString(START_TIME)));
+            final Integer sequence = hearingDay.getInt(SEQUENCE);
 
-        hearingsByCourtRoom.stream()
-                .forEach(hearingJson ->
-                {
+            final String hearingStartTime = START_TIME_FORMAT.format(startTimestamp.getHour()) + COLON + START_TIME_FORMAT.format(startTimestamp.getMinute());
 
-                    final JsonObject hearingDay = hearingJson.getJsonArray(HEARING_DAYS).getValuesAs(JsonObject.class).stream()
-                            .filter(hd -> hearingDate.equals(ZonedDateTime.parse(hd.getString(START_TIME)).toLocalDate()))
-                            .findFirst()
-                            .orElseThrow(IllegalArgumentException::new);
-
-                    final ZonedDateTime startTime = ZonedDateTimeFormatter.adjustDateTime(ZonedDateTimes.fromString(hearingDay.getString(START_TIME)));
-                    final Integer sequence = hearingDay.getInt(SEQUENCE);
-
-                    final String hearingStartTime = START_TIME_FORMAT.format(startTime.getHour()) + COLON + START_TIME_FORMAT.format(startTime.getMinute());
-
-
-                    final List<Hearing> hearings = hearingJson.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class).stream()
-                            .map(listedCase -> createHearing(hearingJson, hearingStartTime, sequence, listedCase, restrictedListRequired))
-                            .collect(toList());
-
-                    unsortedListMultimap.computeIfAbsent(startTime.toLocalTime(), k -> new ArrayList<>()).addAll(hearings);
-                });
-
+            arrangeHearingsByStartTime(unsortedListMultimap, hearingJson, startTimestamp, hearingStartTime, sequence, restrictedListRequired);
+        });
 
         final Map<LocalTime, List<Hearing>> sortedListMultimap = new TreeMap<>();
 
-        unsortedListMultimap.entrySet()
-                .forEach(e -> {
-                    final List<Hearing> hearingsRow = e.getValue().stream()
-                            .sorted(Comparator.comparing(Hearing::getSequence))
-                            .collect(toList());
-                    sortedListMultimap.put(e.getKey(), hearingsRow);
-                });
+        unsortedListMultimap.forEach((key, value) -> {
+            final List<Hearing> hearingsRow = value.stream()
+                    .sorted(comparing(Hearing::getSequence))
+                    .collect(toList());
+            sortedListMultimap.put(key, hearingsRow);
+        });
 
-
-        final List<Timeslot> timeslots = sortedListMultimap.keySet().stream().map(key -> Timeslot.timeslot()
+        final List<Timeslot> timeslots = sortedListMultimap.keySet().stream().map(key -> timeslot()
                 .withHearings(sortedListMultimap.get(key))
                 .build())
-                .collect(Collectors.toList());
+                .collect(toList());
 
         return CourtRoom.courtRoom()
                 .withCourtRoomName(courtRoomDetails.getCourtRoomName())
@@ -278,23 +272,36 @@ public class StandardPublicCourtListTemplateAssembler {
                 .build();
     }
 
-    private String createJudiciaryNamesWelsh(List<JsonObject> hearingsByCourtRoom, JsonObject judiciariesJsonObject) {
+    private void arrangeHearingsByStartTime(final Map<LocalTime, List<Hearing>> unsortedListMultimap, final JsonObject hearingJson, final ZonedDateTime startTimestamp, final String hearingStartTime, final Integer sequence, final boolean restrictedListRequired) {
+        if (hearingJson.containsKey(LISTED_CASES)) {
+            final List<Hearing> hearings = hearingJson.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class).stream()
+                    .map(listedCase -> createHearingFromListedCase(hearingJson, hearingStartTime, sequence, listedCase, restrictedListRequired))
+                    .collect(toList());
+            unsortedListMultimap.computeIfAbsent(startTimestamp.toLocalTime(), k -> new ArrayList<>()).addAll(hearings);
+        }
+        if (hearingJson.containsKey(COURT_APPLICATIONS) && !hearingJson.getJsonArray(COURT_APPLICATIONS).isEmpty()) {
+            final List<Hearing> hearings = hearingJson.getJsonArray(COURT_APPLICATIONS).getValuesAs(JsonObject.class).stream()
+                    .map(courtApplication -> createHearingFromCourtApplication(hearingJson, hearingStartTime, sequence, courtApplication, restrictedListRequired))
+                    .collect(toList());
+            unsortedListMultimap.computeIfAbsent(startTimestamp.toLocalTime(), k -> new ArrayList<>()).addAll(hearings);
+        }
+    }
+
+    private String createJudiciaryNamesWelsh(final List<JsonObject> hearingsByCourtRoom, final JsonObject judiciariesJsonObject) {
         final List<String> courtRoomJudiciaryIds = getJudicialIds(hearingsByCourtRoom);
         final List<String> judiciaryNames = judiciariesJsonObject.getJsonArray(JUDICIARIES).getValuesAs(JsonObject.class).stream()
                 .filter(j -> courtRoomJudiciaryIds.contains(j.getString(ID)))
-                .sorted(Comparator.comparing(jo -> jo.getString(SURNAME)))
+                .sorted(comparing(jo -> jo.getString(SURNAME)))
                 .map(j -> j.getString(TITLE_PREFIX_WELSH, BLANK_STRING) + SPACE + j.getString(TITLE_JUDICIARY_PREFIX_WELSH, BLANK_STRING) + SPACE + j.getString(SURNAME, BLANK_STRING) + (j.getString(TITLE_SUFFIX_WELSH, BLANK_STRING).equals(BLANK_STRING) ? BLANK_STRING : SPACE + j.getString(TITLE_SUFFIX_WELSH)))
                 .collect(toList());
         return String.join(", ", judiciaryNames);
     }
 
-
-    private String createJudiciaryNames(List<JsonObject> hearingsByCourtRoom, JsonObject judiciariesJsonObject) {
+    private String createJudiciaryNames(final List<JsonObject> hearingsByCourtRoom, final JsonObject judiciariesJsonObject) {
         final List<String> courtRoomJudiciaryIds = getJudicialIds(hearingsByCourtRoom);
-
         final List<String> judiciaryNames = judiciariesJsonObject.getJsonArray(JUDICIARIES).getValuesAs(JsonObject.class).stream()
                 .filter(j -> courtRoomJudiciaryIds.contains(j.getString(ID)))
-                .sorted(Comparator.comparing(jo -> jo.getString(SURNAME)))
+                .sorted(comparing(jo -> jo.getString(SURNAME)))
                 .map(j -> j.getString(TITLE_PREFIX, BLANK_STRING) + SPACE + j.getString(TITLE_JUDICIARY_PREFIX, BLANK_STRING) + SPACE + j.getString(SURNAME, BLANK_STRING) + (j.getString(TITLE_SUFFIX, BLANK_STRING).equals(BLANK_STRING) ? BLANK_STRING : SPACE + j.getString(TITLE_SUFFIX)))
                 .collect(toList());
         return String.join(", ", judiciaryNames);
@@ -324,17 +331,16 @@ public class StandardPublicCourtListTemplateAssembler {
     }
 
     private String blankStringIfNull(String stringToCheck) {
-        return stringToCheck != null ? stringToCheck : BLANK_STRING;
+        return nonNull(stringToCheck) ? stringToCheck : BLANK_STRING;
     }
 
-
-    private Hearing createHearing(final JsonObject hearingJson, final String hearingStartTime, final Integer sequence, final JsonObject listedCase, final boolean restrictedListRequired) {
+    private Hearing createHearingFromListedCase(final JsonObject hearingJson, final String hearingStartTime, final Integer sequence,
+                                                final JsonObject listedCase, final boolean restrictedListRequired) {
         final String hearingType = hearingJson.getJsonObject(TYPE).getString(DESCRIPTION);
         final String reportingRestrictionReason = hearingJson.getString(REPORTING_RESTRICTION_REASON, BLANK_STRING);
         final String welshReportingRestrictionReason = hearingJson.getString(WELSH_REPORTING_RESTRICTION_REASON, BLANK_STRING);
-        final long restrictedDefendantCount = listedCase.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class).stream()
-                .filter(defendant -> defendant.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE)).count();
-        final boolean caseRestricted = listedCase.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE) && restrictedListRequired;
+        final boolean restrictedByCase = listedCase.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE);
+        final boolean caseRestricted = restrictedByCase && restrictedListRequired;
         final String adjournedHearingDate = hearingJson.getString(ADJOURNED_HEARING_DATE, BLANK_STRING);
         return Hearing.hearing()
                 .withCaseNumber(caseRestricted ? EMPTY : listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE))
@@ -344,32 +350,78 @@ public class StandardPublicCourtListTemplateAssembler {
                 .withSequence(sequence)
                 .withReportingRestrictionReason(caseRestricted ? EMPTY : reportingRestrictionReason)
                 .withWelshReportingRestrictionReason(caseRestricted ? EMPTY : welshReportingRestrictionReason)
-                .withDefendants(caseRestricted ? emptyList() : createDefendants(listedCase, restrictedDefendantCount, restrictedListRequired))
+                .withDefendants(caseRestricted ? emptyList() : createDefendantsFromListedCase(listedCase, restrictedListRequired))
                 .withStartTime(hearingStartTime)
                 .withAdjournedHearingDate(adjournedHearingDate)
                 .build();
     }
 
-    private List<Defendant> createDefendants(final JsonObject listedCase, final long restrictedDefendantCount, final boolean restrictedListRequired) {
-        final AtomicInteger atomicInteger = new AtomicInteger(1);
+    private Hearing createHearingFromCourtApplication(final JsonObject hearingJson, final String hearingStartTime, final Integer sequence,
+                                                      final JsonObject courtApplication, final boolean restrictedListRequired) {
+        final String hearingType = hearingJson.getJsonObject(TYPE).getString(DESCRIPTION);
+        final String reportingRestrictionReason = hearingJson.getString(REPORTING_RESTRICTION_REASON, BLANK_STRING);
+        final String welshReportingRestrictionReason = hearingJson.getString(WELSH_REPORTING_RESTRICTION_REASON, BLANK_STRING);
+        final boolean restrictedByCase = courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE);
+        final boolean caseRestricted = restrictedByCase && restrictedListRequired;
+        final String adjournedHearingDate = hearingJson.getString(ADJOURNED_HEARING_DATE, BLANK_STRING);
+        return Hearing.hearing()
+                .withCaseNumber(caseRestricted ? EMPTY : courtApplication.getString(APPLICATION_REFERENCE))
+                .withHearingType(caseRestricted ? HEARING_STRING : hearingType)
+                .withWelshHearingType(caseRestricted ? HEARING_STRING : hearingType)
+                .withProsecutorType(caseRestricted ? EMPTY : createProsecutorNameFromCourtApplication(courtApplication))
+                .withSequence(sequence)
+                .withReportingRestrictionReason(caseRestricted ? EMPTY : reportingRestrictionReason)
+                .withWelshReportingRestrictionReason(caseRestricted ? EMPTY : welshReportingRestrictionReason)
+                .withDefendants(caseRestricted ? emptyList() : createDefendantsEquivalentFromCourtApplication(courtApplication, restrictedListRequired))
+                .withStartTime(hearingStartTime)
+                .withAdjournedHearingDate(adjournedHearingDate)
+                .build();
+    }
+
+    private List<Defendant> createDefendantsFromListedCase(final JsonObject listedCase, final boolean restrictedListRequired) {
+        final AtomicInteger namePositionOnRestricted = new AtomicInteger(1);
+        final long restrictedDefendantCount = listedCase.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class).stream()
+                .filter(defendant -> defendant.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE)).count();
+
         return listedCase.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class).stream()
-                .map(d -> {
-                    final String dateOfBirth = d.getString(DATE_OF_BIRTH, null);
-                    final boolean restricted = d.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE) && restrictedListRequired;
-                    return createDefendant(d, dateOfBirth, restricted,
-                            restricted ? getDefendantSuffixForRestrictedCase(restrictedDefendantCount, atomicInteger) : EMPTY, restrictedListRequired);
+                .map(defendant -> {
+                    final String dateOfBirth = defendant.getString(DATE_OF_BIRTH, null);
+                    final boolean defendantRestricted = defendant.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE) && restrictedListRequired;
+                    return createDefendant(defendant, dateOfBirth, defendantRestricted,
+                            defendantRestricted ? getNameSuffixForRestrictedCase(restrictedDefendantCount, namePositionOnRestricted) : EMPTY, restrictedListRequired);
                 })
                 .collect(toList());
     }
 
-    private String getDefendantSuffixForRestrictedCase(final long restrictedDefendantCount, final AtomicInteger atomicInteger) {
-        return restrictedDefendantCount > 1 ? valueOf(atomicInteger.getAndIncrement()) : EMPTY;
+    private String getNameSuffixForRestrictedCase(final long restrictedCount, final AtomicInteger namePositionOnRestricted) {
+        return restrictedCount > 1 ? valueOf(namePositionOnRestricted.getAndIncrement()) : EMPTY;
     }
 
-    private Defendant createDefendant(final JsonObject d, final String dateOfBirth,  final boolean restricted, final String defendantSuffix, final boolean restrictedListRequired) {
+    private List<Defendant> createDefendantsEquivalentFromCourtApplication(final JsonObject courtApplication, final boolean restrictedListRequired) {
+        if (courtApplication.containsKey(RESPONDENTS) && !courtApplication.getJsonArray(RESPONDENTS).isEmpty() &&
+                courtApplication.getJsonArray(RESPONDENTS).getValuesAs(JsonObject.class).stream()
+                        .anyMatch(respondent -> CourtApplicationPartyType.valueOf(respondent.getString(COURT_APPLICATION_PARTY_TYPE)) == PERSON)) {
+            final AtomicInteger namePositionOnRestricted = new AtomicInteger(1);
+            final long restrictedRespondentCount = courtApplication.getJsonArray(RESPONDENTS).getValuesAs(JsonObject.class).stream()
+                    .filter(respondent -> respondent.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE)).count();
+
+            return courtApplication.getJsonArray(RESPONDENTS).getValuesAs(JsonObject.class).stream()
+                    .map(respondent -> {
+                        final boolean respondentRestricted = respondent.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE) && restrictedListRequired;
+                        return createDefendantEquivalentFromCourtApplication(courtApplication, respondent, respondentRestricted,
+                                respondentRestricted ? getNameSuffixForRestrictedCase(restrictedRespondentCount, namePositionOnRestricted) : EMPTY, restrictedListRequired);
+                    })
+                    .collect(toList());
+        }
+        final JsonObject applicant = courtApplication.getJsonObject(APPLICANT);
+        final boolean applicantRestricted = applicant.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE) && restrictedListRequired;
+        return ImmutableList.of(createDefendantEquivalentFromCourtApplication(courtApplication, applicant, applicantRestricted, EMPTY, restrictedListRequired));
+    }
+
+    private Defendant createDefendant(final JsonObject defendant, final String dateOfBirth, final boolean defendantRestricted, final String defendantSuffix, final boolean restrictedListRequired) {
         final Defendant.Builder builder = Defendant.defendant();
-        final String legalEntityDefendant = d.getString(ORGANISATION_NAME, BLANK_STRING);
-        if (restricted) {
+        final String legalEntityDefendant = defendant.getString(ORGANISATION_NAME, BLANK_STRING);
+        if (defendantRestricted) {
             if (!StringUtils.isBlank(legalEntityDefendant)) {
                 builder.withOrganisationName((DEFENDANT + SPACE + defendantSuffix).trim());
             } else {
@@ -379,38 +431,87 @@ public class StandardPublicCourtListTemplateAssembler {
                 builder.withAge(EMPTY);
             }
         } else {
-            builder.withFirstName(d.getString(FIRST_NAME, BLANK_STRING))
-                    .withSurname(d.getString(LAST_NAME, BLANK_STRING))
-                    .withOrganisationName(d.getString(ORGANISATION_NAME, BLANK_STRING));
-            if (dateOfBirth != null) {
+            builder.withFirstName(defendant.getString(FIRST_NAME, BLANK_STRING))
+                    .withSurname(defendant.getString(LAST_NAME, BLANK_STRING))
+                    .withOrganisationName(defendant.getString(ORGANISATION_NAME, BLANK_STRING));
+            if (nonNull(dateOfBirth)) {
                 builder.withDateOfBirth(parse(dateOfBirth).format(DOB_FORMATTER));
                 builder.withAge(valueOf(Period.between(parse(dateOfBirth), LocalDate.now()).getYears()));
             }
-            builder.withNationality(d.getString(NATIONALITY_DESCRIPTION, BLANK_STRING));
-            if (d.getJsonObject(ADDRESS) != null ){
-                builder.withAddress(buildAddress(d.getJsonObject(ADDRESS)));
+            builder.withNationality(defendant.getString(NATIONALITY_DESCRIPTION, BLANK_STRING));
+            if (nonNull(defendant.getJsonObject(ADDRESS))) {
+                builder.withAddress(buildAddress(defendant.getJsonObject(ADDRESS)));
             }
         }
-        builder.withOffences(d.getJsonArray(OFFENCES).getValuesAs(JsonObject.class).stream()
+        builder.withOffences(defendant.getJsonArray(OFFENCES).getValuesAs(JsonObject.class).stream()
                 .filter(offence -> restrictedListRequired ? !offence.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE) : TRUE)
-                .map(o -> Offence.offence()
-                        .withOffenceTitle(o.getJsonObject(STATEMENT_OF_OFFENCE).getString(TITLE))
-                        .withWelshOffenceTitle(o.getJsonObject(STATEMENT_OF_OFFENCE).getString(WELSH_TITLE, BLANK_STRING))
-                        .withOffenceWording(o.getString(OFFENCE_WORDING, BLANK_STRING))
+                .map(offence -> offence()
+                        .withOffenceTitle(offence.getJsonObject(STATEMENT_OF_OFFENCE).getString(TITLE))
+                        .withWelshOffenceTitle(offence.getJsonObject(STATEMENT_OF_OFFENCE).getString(WELSH_TITLE, BLANK_STRING))
+                        .withOffenceWording(offence.getString(OFFENCE_WORDING, BLANK_STRING))
                         .build())
                 .collect(toList()));
 
         return builder.build();
     }
 
-    private Address buildAddress(JsonObject address) {
+    private Defendant createDefendantEquivalentFromCourtApplication(final JsonObject courtApplication, @NotNull final JsonObject defendantEquivalent, final boolean nameRestricted, final String namePositionOnRestricted, final boolean restrictedListRequired) {
+        final Defendant.Builder builder = Defendant.defendant();
+        final boolean applicationTypeRestricted = courtApplication.getBoolean(RESTRICT_COURT_APPLICATION_TYPE, FALSE) && restrictedListRequired;
+
+        populateWithNameAndAddressFromCourtApplication(builder, defendantEquivalent, namePositionOnRestricted, nameRestricted);
+
+        builder.withOffences(applicationTypeRestricted ? emptyList() :
+                ImmutableList.of(offence()
+                        .withOffenceTitle(courtApplication.getString(APPLICATION_TYPE))
+                        .withOffenceWording(courtApplication.getString(APPLICATION_PARTICULARS, EMPTY))
+                        .build()));
+
+        return builder.build();
+    }
+
+    private String createProsecutorNameFromCourtApplication(final JsonObject courtApplication) {
+        if (courtApplication.containsKey(RESPONDENTS) && !courtApplication.getJsonArray(RESPONDENTS).isEmpty()) {
+            if (courtApplication.getJsonArray(RESPONDENTS).getValuesAs(JsonObject.class).stream()
+                    .anyMatch(respondent -> CourtApplicationPartyType.valueOf(respondent.getString(COURT_APPLICATION_PARTY_TYPE)) == PERSON)) {
+                final JsonObject applicant = courtApplication.getJsonObject(APPLICANT);
+                return createProsecutorName(applicant);
+            }
+            final JsonObject respondent = courtApplication.getJsonArray(RESPONDENTS).getValuesAs(JsonObject.class).stream().findFirst().orElse(null);
+            if (nonNull(respondent)) {
+                return createProsecutorName(respondent);
+            }
+        }
+        return EMPTY;
+    }
+
+    private String createProsecutorName(final JsonObject defendantEquivalent) {
+        if (CourtApplicationPartyType.valueOf(defendantEquivalent.getString(COURT_APPLICATION_PARTY_TYPE)) == PERSON) {
+            return format("%s, %s", upperCase(defendantEquivalent.getString(LAST_NAME)), defendantEquivalent.getString(FIRST_NAME));
+        }
+        return defendantEquivalent.getString(LAST_NAME);
+    }
+
+    private void populateWithNameAndAddressFromCourtApplication(final Defendant.Builder builder, @NotNull final JsonObject defendantEquivalent, final String nameSuffix, final boolean nameRestricted) {
+        if (CourtApplicationPartyType.valueOf(defendantEquivalent.getString(COURT_APPLICATION_PARTY_TYPE)) == PERSON) {
+            builder.withFirstName(nameRestricted ? EMPTY : defendantEquivalent.getString(FIRST_NAME, EMPTY))
+                    .withSurname(nameRestricted ? (DEFENDANT + SPACE + nameSuffix).trim() : defendantEquivalent.getString(LAST_NAME));
+        } else if (CourtApplicationPartyType.valueOf(defendantEquivalent.getString(COURT_APPLICATION_PARTY_TYPE)) == ORGANISATION) {
+            builder.withOrganisationName(nameRestricted ? (DEFENDANT + SPACE + nameSuffix).trim() : defendantEquivalent.getString(LAST_NAME));
+        }
+        if (!nameRestricted && defendantEquivalent.containsKey(ADDRESS)) {
+            builder.withAddress(buildAddress(defendantEquivalent.getJsonObject(ADDRESS)));
+        }
+    }
+
+    private Address buildAddress(final JsonObject address) {
         return Address.address()
                 .withAddress1(address.getString("address1"))
-                .withAddress2(address.containsKey("address2")? Optional.of(address.getString("address2")):Optional.empty())
-                .withAddress3(address.containsKey("address3")? Optional.of(address.getString("address3")):Optional.empty())
-                .withAddress4(address.containsKey("address4")? Optional.of(address.getString("address4")):Optional.empty())
-                .withAddress5(address.containsKey("address5")? Optional.of(address.getString("address5")):Optional.empty())
-                .withPostcode(address.containsKey("postcode")? Optional.of(address.getString("postcode")):Optional.empty())
+                .withAddress2(address.containsKey("address2") ? Optional.of(address.getString("address2")) : Optional.empty())
+                .withAddress3(address.containsKey("address3") ? Optional.of(address.getString("address3")) : Optional.empty())
+                .withAddress4(address.containsKey("address4") ? Optional.of(address.getString("address4")) : Optional.empty())
+                .withAddress5(address.containsKey("address5") ? Optional.of(address.getString("address5")) : Optional.empty())
+                .withPostcode(address.containsKey("postcode") ? Optional.of(address.getString("postcode")) : Optional.empty())
                 .build();
 
     }

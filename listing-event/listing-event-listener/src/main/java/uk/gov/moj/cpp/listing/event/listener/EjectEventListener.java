@@ -119,6 +119,7 @@ public class EjectEventListener {
                 .withRestrictFromCourtList((courtApplication.getRestrictFromCourtList()))
                 .withRestrictCourtApplicationType(courtApplication.getRestrictCourtApplicationType())
                 .withApplicationReference(courtApplication.getApplicationReference())
+                .withApplicationParticulars(courtApplication.getApplicationParticulars())
                 .withApplicationType(courtApplication.getApplicationType())
                 .withIsEjected(of(Boolean.TRUE))
                 .build();

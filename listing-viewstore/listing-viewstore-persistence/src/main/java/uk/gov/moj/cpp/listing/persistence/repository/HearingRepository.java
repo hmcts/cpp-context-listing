@@ -245,7 +245,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             final boolean allocated);
 
     /**
-     * Find {@link Hearing}s based on the query parameters.  This query will be used by the 'Public List'
+     * Find {@link Hearing}s based on the query parameters.  This query will be used by the 'Public List' and the 'Standard List'
      *
      * @param allocated     property to search for - mandatory.
      * @param courtCentreId to search for or <code>null</code> for any courtCentreId - mandatory.
@@ -321,7 +321,14 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                                               final String startDate,
                                               final String endDate);
 
-
+    /**
+     * Find {@link Hearing}s based on the query parameters. This query will be used by the 'Alphabetical List'
+     *
+     * @param allocated     property to search for - mandatory.
+     * @param courtCentreId to search for or <code>null</code> for any courtCentreId - mandatory.
+     * @param hearingDate   to search for - mandatory.
+     * @return Hearings.
+     */
     @Query(value =
             "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id, " +
                     "(  " +
@@ -332,12 +339,11 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                     "        (  " +
                     "            select jsonb_agg(hearings) \"hearingsByHearingDate\" " +
                     "            from (  " +
-                    "                select hearingDays -> 'startTime' \"startTime\", listedCases -> 'defendants' defendants,  listedCases -> 'caseIdentifier' \"caseIdentifier\", properties -> 'courtCentreId' \"courtCentreId\" , properties -> 'courtRoomId' \"courtRoomId\" " +
-                    "                from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays, jsonb_array_elements(properties -> 'listedCases') listedCases  " +
+                    "                select properties as hearing " +
+                    "                from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays " +
                     "                where properties -> 'hearingDays' @> cast(concat('[{\"hearingDate\": \"', hrngByHearingDate.hearingDate, '\"}]') as jsonb) " +
-                    "                and cast(properties ->> 'allocated' as boolean) = ?1 " +
-                    "                and (listedCases->>'isEjected' is null or cast(listedCases->>'isEjected' as boolean) = false) " +
                     "                and properties ->> 'courtCentreId' = cast(?2 as text) " +
+                    "                and cast(properties ->> 'allocated' as boolean) = ?1 " +
                     "                and hearingDays ->> 'hearingDate' = hrngByHearingDate.hearingDate " +
                     "            ) hearings  " +
                     "        )  " +

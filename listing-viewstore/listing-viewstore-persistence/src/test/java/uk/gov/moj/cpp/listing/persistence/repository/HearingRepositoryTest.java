@@ -709,21 +709,22 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     }
 
     @Test
-    public void shouldSaveAndfindAlphabeticalCourtList() {
+    public void shouldSaveAndFindAlphabeticalCourtList() {
         givenHearings();
 
         final List<Hearing> foundHearings = hearingRepository.findHearingsForAlphabeticalList(UNALLOCATED, COURT_CENTRE_ID.toString(), to(HEARING_DATE));
+
         assertThat(foundHearings.size(), is(1));
         assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$.size()", equalTo(1)));
         assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingDate", equalTo(to(HEARING_DATE))));
-        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].defendants[0].lastName", equalTo("JAMES")));
-        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].defendants[0].firstName", equalTo("Lina")));
-        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].courtRoomId", equalTo(COURT_ROOM_ID.toString())));
-        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].caseIdentifier.caseReference", equalTo(CASE_REFERENCE)));
-        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].defendants[1].lastName", equalTo("PALMER")));
-        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].defendants[1].firstName", equalTo("Virgie")));
-        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].startTime", equalTo(START_TIME.toString())));
+        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases[0].defendants[0].lastName", equalTo("JAMES")));
+        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases[0].defendants[0].firstName", equalTo("Lina")));
+        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].hearing.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].hearing.courtRoomId", equalTo(COURT_ROOM_ID.toString())));
+        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases[0].caseIdentifier.caseReference", equalTo(CASE_REFERENCE)));
+        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases[0].defendants[1].lastName", equalTo("PALMER")));
+        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases[0].defendants[1].firstName", equalTo("Virgie")));
+        assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$[0].hearingsByHearingDate[0].hearing.hearingDays[0].startTime", equalTo(START_TIME.toString())));
     }
 
     @Test

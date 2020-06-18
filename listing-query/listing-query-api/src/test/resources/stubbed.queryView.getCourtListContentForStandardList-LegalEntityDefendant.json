@@ -163,7 +163,8 @@
               ],
               "hearingLanguage": "ENGLISH",
               "estimatedMinutes": 30,
-              "jurisdictionType": "CROWN"
+              "jurisdictionType": "CROWN",
+              "courtApplications": []
             }
           },
           {
@@ -195,7 +196,8 @@
                   "durationMinutes": 120
                 }
               ],
-              "courtCentreId": "COURT_CENTRE_ID"
+              "courtCentreId": "COURT_CENTRE_ID",
+              "courtApplications": []
             }
           }
         ]

@@ -92,7 +92,7 @@ public class SearchAvailableHearingIT extends AbstractIT {
         }
         try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData2))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyAvailableHearingListedForCaseInHearingAndMatchedDefendant(caseAndDefendantData, masterDefendantId);
+            listCourtHearingSteps.verifyAvailableHearingListedForCaseInHearingAndMatchedDefendant(caseAndDefendantData);
        }
     }
 }

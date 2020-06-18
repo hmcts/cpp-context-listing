@@ -148,6 +148,7 @@ import uk.gov.moj.cpp.listing.command.utils.FileUtil;
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCaseDefendantOffenceIdsBuilder;
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
+import uk.gov.moj.cpp.listing.domain.Address;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
@@ -246,7 +247,7 @@ public class ListingCommandHandlerTest {
     private static final UUID APPLICATION_ID = randomUUID();
     private static final UUID ADDED_OFFENCE_CASE_ID = randomUUID();
     private static final UUID UPDATED_OFFENCE_CASE_ID = randomUUID();
-    private static final UUID DELETED_OFEENCE_CASE_ID = randomUUID();
+    private static final UUID DELETED_OFFENCE_CASE_ID = randomUUID();
     private static final UUID COURT_CENTRE_ID = randomUUID();
     private static final String FIRST_NAME = "Test Recipe";
     private static final String LAST_NAME = "Last Name";
@@ -444,6 +445,7 @@ public class ListingCommandHandlerTest {
     private final static LocalDate FRIDAY_30TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 30);
     private final static LocalDate SATURDAY_1ST_DECEMBER_2018 = LocalDate.of(2018, Month.DECEMBER, 1);
     private final static LocalDate MONDAY_3rd_DECEMBER_2018 = LocalDate.of(2018, Month.DECEMBER, 3);
+    private final static Optional<String> APPLICATION_PARTICULARS = of("Application particulars");
 
     @Before
     public void setup() {
@@ -475,7 +477,7 @@ public class ListingCommandHandlerTest {
         final LocalDate endDate = null;
 
         final List<ListedCase> listedCases = Arrays.asList(createdListedCase());
-        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicalRoles = createJudicalRoles();
+        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = createJudicalRoles();
 
         final CourtCentreDefaults courtCentreDefaults = CourtCentreDefaults.courtCentreDefaults()
                 .withDefaultDuration(Integer.valueOf(DEFAULT_DURATION))
@@ -495,14 +497,14 @@ public class ListingCommandHandlerTest {
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
-        when(hearing.list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicalRoles),
+        when(hearing.list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(Optional.empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(NON_DEFAULT_DAYS), eq(false))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
-        verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicalRoles),
+        verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(Optional.empty()),
                 eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(NON_DEFAULT_DAYS), eq(false));
@@ -521,6 +523,7 @@ public class ListingCommandHandlerTest {
                         .withFirstName("Fred")
                         .withLastName("Perry")
                         .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
+                        .withAddress(getAddress())
                         .build())
                 .withRespondents(Collections.singletonList(ApplicantRespondent.applicantRespondent()
                         .withIsRespondent(true)
@@ -528,8 +531,22 @@ public class ListingCommandHandlerTest {
                         .withFirstName("Dan")
                         .withLastName("Brown")
                         .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
+                        .withAddress(getAddress())
                         .build()))
                 .withApplicationReference(Optional.of("REF-1"))
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
+                .build();
+    }
+
+    private Address getAddress() {
+        return Address
+                .address()
+                .withAddress1("Address1")
+                .withAddress2(of("Address1"))
+                .withAddress3(of("Address1"))
+                .withAddress4(of("Address1"))
+                .withAddress5(of("Address1"))
+                .withPostcode(of("SW13 0AA"))
                 .build();
     }
 
@@ -2501,7 +2518,7 @@ public class ListingCommandHandlerTest {
 
     private JsonArray createDeletedCaseDefendantOffences() {
         final JsonObject deletedCase = createObjectBuilder()
-                .add("caseId", DELETED_OFEENCE_CASE_ID.toString())
+                .add("caseId", DELETED_OFFENCE_CASE_ID.toString())
                 .add("defendantId", DEFENDANT_ID1.toString())
                 .add("offences", createDeletedOffences())
                 .build();
@@ -2900,6 +2917,7 @@ public class ListingCommandHandlerTest {
                         .withFirstName("David")
                         .withLastName("Dell")
                         .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
+                        .withAddress(getAddress())
                         .build())
                 .withRespondents(Collections.singletonList(ApplicantRespondent.applicantRespondent()
                         .withIsRespondent(true)
@@ -2907,8 +2925,10 @@ public class ListingCommandHandlerTest {
                         .withLastName("Miller")
                         .withId(fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
                         .withCourtApplicationPartyType(CourtApplicationPartyType.PERSON)
+                        .withAddress(getAddress())
                         .build()))
                 .withApplicationReference(Optional.of("REF-1"))
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
                 .build();
     }
 
