@@ -1,0 +1,201 @@
+{
+  "hearings": [
+    {
+      "id": "HEARING_ID",
+      "type": {
+        "id": "6e1bef55-7e13-4615-b3ba-8663f4438e16",
+        "description": "Trial"
+      },
+      "typeOfList": {
+        "id": "0b1e1e98-a5b2-460a-a851-17dd6f47c1a7",
+        "description": "Warrant for arrest without bail"
+      },
+      "jurisdictionType": "JURISDICTION_TYPE",
+      "courtCentre": {
+        "id": "COURT_CENTRE_ID",
+        "name": "Carmarthen Magistrates' Court",
+        "welshName": "Llys Ynadon Caernarfon",
+        "roomId": "COURT_ROOM_ID",
+        "roomName": "Room 1",
+        "welshRoomName": "Ystafell 1"
+      },
+      "courtApplications": [
+        {
+          "applicant": {
+            "id": "9f85ccfb-e57d-4339-adb2-4764f5cd1e5f",
+            "personDetails": {
+              "address": {
+                "address1": "9 Beverley Heights",
+                "address2": "Elise Forge",
+                "address3": "London",
+                "postcode": "SA7 0AN"
+              },
+              "firstName": "Katelynn",
+              "gender": "NOT_SPECIFIED",
+              "lastName": "Nienow",
+              "middleName": "Test"
+            }
+          },
+          "applicationOutcome": {
+            "applicationId": "bf5e2df3-0c37-490e-8b92-f2ebdd5f6723",
+            "applicationOutcomeDate": "2020-06-24",
+            "applicationOutcomeType": {
+              "description": "Granted",
+              "id": "c322f934-6b70-3fdd-b196-8628d5ee68db",
+              "sequence": 10
+            },
+            "originatingHearingId": "5075f973-0ec3-491c-91ad-b8a1d75dded3"
+          },
+          "applicationReceivedDate": "2020-06-22",
+          "applicationReference": "QCIUATYHQN",
+          "applicationStatus": "FINALISED",
+          "id": "bf5e2df3-0c37-490e-8b92-f2ebdd5f6723",
+          "judicialResults": [
+            {
+              "alwaysPublished": false,
+              "category": "INTERMEDIARY",
+              "cjsCode": "4576",
+              "courtClerk": {
+                "firstName": "Robert",
+                "lastName": "Barnes",
+                "userId": "8959b8b5-92bd-4ada-96f4-7ac9d482671a"
+              },
+              "d20": false,
+              "delegatedPowers": {
+                "firstName": "Robert",
+                "lastName": "Barnes",
+                "userId": "8959b8b5-92bd-4ada-96f4-7ac9d482671a"
+              },
+              "excludedFromResults": false,
+              "isAdjournmentResult": false,
+              "isAvailableForCourtExtract": true,
+              "isConvictedResult": false,
+              "isDeleted": false,
+              "isFinancialResult": false,
+              "isUnscheduled": true,
+              "judicialResultId": "7b1a9865-50a8-4254-a0e6-86d58232b8bf",
+              "judicialResultPrompts": [
+                {
+                  "courtExtract": "Y",
+                  "isFinancialImposition": false,
+                  "judicialResultPromptTypeId": "4630968a-0e3f-42a6-bde0-55a0c4f2e92e",
+                  "label": "Grounds for warrant",
+                  "promptSequence": 100,
+                  "type": "FIXL",
+                  "usergroups": [
+                    "Court Clerks",
+                    "Legal Advisers"
+                  ],
+                  "value": "new evidence is available (serious offence retrial provisions)",
+                  "welshLabel": ""
+                },
+                {
+                  "courtExtract": "Y",
+                  "isFinancialImposition": false,
+                  "judicialResultPromptTypeId": "4c8bd45c-e0c7-456c-8104-d1ce3ac0419e",
+                  "label": "Process server name",
+                  "promptSequence": 300,
+                  "type": "TXT",
+                  "usergroups": [
+                    "Court Clerks",
+                    "Legal Advisers"
+                  ],
+                  "value": "Testing",
+                  "welshLabel": ""
+                }
+              ],
+              "judicialResultTypeId": "c98cb51f-8639-49c1-91f0-a7e820c34355",
+              "label": "Warrant for arrest without bail",
+              "lastSharedDateTime": "2020-06-24",
+              "lifeDuration": false,
+              "orderedDate": "2020-06-24",
+              "orderedHearingId": "5075f973-0ec3-491c-91ad-b8a1d75dded3",
+              "postHearingCustodyStatus": "A",
+              "publishedAsAPrompt": false,
+              "rank": 37100,
+              "resultDefinitionGroup": "Warrants of arrest",
+              "resultText": "Warrant for arrest without bail\nGrounds for warrant new evidence is available (serious offence retrial provisions)\nProcess server name Testing",
+              "terminatesOffenceProceedings": false,
+              "urgent": true,
+              "usergroups": []
+            }
+          ],
+          "respondents": [
+            {
+              "partyDetails": {
+                "id": "2ada34cf-5fbf-4526-974e-feb073b032bf",
+                "personDetails": {
+                  "address": {
+                    "address1": "56 Gottlieb Court",
+                    "address2": "Welch Islands",
+                    "address3": "Bristol",
+                    "postcode": "BA9 2AS"
+                  },
+                  "firstName": "Renna",
+                  "gender": "NOT_SPECIFIED",
+                  "lastName": "Jaskolski",
+                  "middleName": "Ruecker"
+                }
+              }
+            }
+          ],
+          "type": {
+            "applicantSynonym": "Applicant",
+            "applicationCategory": "VP",
+            "applicationCode": "SX03531",
+            "applicationJurisdictionType": "MAGISTRATES",
+            "applicationLegislation": "In accordance with section 104(5) of the Sexual Offences Act 2003.",
+            "applicationType": "Application for a sexual offences prevention order",
+            "id": "0826fc90-6c49-3a1f-9fc6-b0547679f348",
+            "isAppealApplication": false,
+            "isBreachApplication": false,
+            "linkType": "STANDALONE",
+            "respondentSynonym": "Respondent"
+          }
+        }
+      ],
+      "courtApplicationPartyListingNeeds": [
+        {
+          "courtApplicationId": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
+          "courtApplicationPartyId": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+          "hearingLanguageNeeds": "ENGLISH"
+        }
+      ],
+      "earliestStartDateTime": "EARLIEST_START_TIME",
+      "estimatedMinutes": 640,
+      "prosecutorDatesToAvoid": "PROSECUTOR_DATES_TO_AVOID",
+      "listingDirections": "LISTING_DIRECTIONS",
+      "reportingRestrictionReason": "Automatic anonymity under the Sexual Offences (Amendment) Act 1992",
+      "judiciary": [
+        {
+          "judicialId": "JUDICIAL_ID",
+          "judicialRoleType": {
+            "judiciaryType": "MAGISTRATE"
+          },
+          "isDeputy": false,
+          "isBenchChairman": true
+        }
+      ],
+      "defendantListingNeeds": [
+        {
+          "prosecutionCaseId": "CASE_ID",
+          "defendantId": "DEFENDANT_ID",
+          "datesToAvoid": "wednesdays",
+          "referralReason": "for Trial",
+          "hearingLanguageNeeds": "ENGLISH"
+        }
+      ],
+      "weekCommencingDate": {
+        "startDate": "WEEK_COMMENCING_START_DATE",
+        "duration": "WEEK_COMMENCING_DURATION"
+      }
+    }
+  ],
+  "courtCentresDetails": [
+    {
+      "id": "COURT_CENTRE_ID",
+      "defaultDuration": "DEFAULT_DURATION",
+      "defaultStartTime": "DEFAULT_START_TIME"
+    }
+  ]
+}

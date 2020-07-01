@@ -115,7 +115,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String MEDIA_TYPE_LIST_COURT_HEARING = "application/vnd.listing" +
             ".command.list-court-hearing+json";
 
-    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
+    protected static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
 
     private static final String MEDIA_TYPE_SEARCH_HEARING_JSON = "application/vnd.listing" +
@@ -138,13 +138,20 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED = "public.progression.events.hearing-extended";
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    protected static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private static final String ORGANISATION_NAME = "ABC LTD";
-    private static final String PERSON_TITLE = "Baroness";
-    private static final String PERSON_NATIONALITY_DESCRIPTION = "British";
+    protected static final String PERSON_TITLE = "Baroness";
+    protected static final String PERSON_NATIONALITY_DESCRIPTION = "British";
     private static final String POSTCODE = "CR1 4BX";
+
+    protected static final String PERSON_ADDRESS_1 = "address1";
+    protected static final String PERSON_ADDRESS_2 = "address2";
+    protected static final String PERSON_ADDRESS_3 = "address3";
+    protected static final String PERSON_ADDRESS_4 = "address4";
+    protected static final String PERSON_ADDRESS_5 = "address5";
+    protected static final String PERSON_POSTCODE = "CR1 4BX";
 
 
     private HearingsData hearingsData;
@@ -162,7 +169,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
-    private String request;
+    protected String request;
 
     public ListCourtHearingSteps(final HearingsData hearingsData) {
         this.hearingsData = hearingsData;
@@ -198,7 +205,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
     }
 
-    private static com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantLastName(final HearingData hearing, final ListedCaseData listedCase, final DefendantData defendant, final String expectedLastName) {
+    protected static com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantLastName(final HearingData hearing, final ListedCaseData listedCase, final DefendantData defendant, final String expectedLastName) {
         final ListCourtHearingSteps.HearingDefendantFilter hearingDefendantFilter = new ListCourtHearingSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
         final Filter hearingFilter = hearingDefendantFilter.getHearingFilter();
         final Filter listingCaseFilter = hearingDefendantFilter.getListingCaseFilter();
@@ -209,7 +216,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         return com.jayway.jsonpath.JsonPath.compile("$.hearings[?].listedCases[?].defendants[?][?]", hearingFilter, listingCaseFilter, defendantFilter, firstNameFilter);
     }
 
-    private static com.jayway.jsonpath.JsonPath getJsonPathQueryForCaseReference(final HearingData hearing, final ListedCaseData listedCase, final DefendantData defendant, final String expectedCaseReference) {
+    protected static com.jayway.jsonpath.JsonPath getJsonPathQueryForCaseReference(final HearingData hearing, final ListedCaseData listedCase, final DefendantData defendant, final String expectedCaseReference) {
         final ListCourtHearingSteps.HearingDefendantFilter hearingDefendantFilter = new ListCourtHearingSteps.HearingDefendantFilter(hearing, listedCase, defendant).invoke();
         final Filter hearingFilter = hearingDefendantFilter.getHearingFilter();
         final Filter listingCaseFilter = hearingDefendantFilter.getListingCaseFilter();
@@ -261,7 +268,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 request, getLoggedInHeader());
     }
 
-    private void stubReferenceDataForFirstHearing() {
+    protected void stubReferenceDataForFirstHearing() {
 
         hearingsData.getHearingData().stream()
                 .map(HearingData::getCourtCentreId)

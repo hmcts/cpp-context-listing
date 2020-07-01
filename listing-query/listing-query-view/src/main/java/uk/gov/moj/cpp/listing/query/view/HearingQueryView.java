@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.query.view;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
 import static java.time.LocalDate.parse;
 import static java.time.LocalTime.MAX;
@@ -24,6 +25,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
@@ -44,6 +46,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -63,7 +66,6 @@ import javax.ws.rs.NotFoundException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,6 +96,8 @@ public class HearingQueryView {
     private static final String ID = "id";
     private static final String CASE_URN = "caseUrn";
     private static final String HEARING_ID = "hearingId";
+    private static final String TYPE_OF_LIST = "typeOfList";
+    private static final String COURT_CENTRE_IDS = "courtCentreIds";
     private static final String SEARCH_CRITERIA = "searchCriteria";
     private static final String NAME_LISTING_SEARCH_HEARING = "listing.search.hearing";
     private static final String EMPTY_STRING = "";  // It is needed as jsonb query cannot handle null as per our query condition
@@ -166,6 +170,32 @@ public class HearingQueryView {
         );
     }
 
+    @Handles("listing.unscheduled.search.hearings")
+    public Envelope<JsonObject> searchUnscheduledHearings(final JsonEnvelope query) {
+        final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN, null);
+        final String typeOfListQueryParam = query.payloadAsJsonObject().getString(TYPE_OF_LIST, null);
+        final String courtCentreIdQueryParam = query.payloadAsJsonObject().getString(COURT_CENTRE_IDS, null);
+
+        LOGGER.info("listing.unscheduled.search.hearings Query params -  " +
+                        "caseUrn: {}, " +
+                        "typeOfList: {}, " +
+                        "courtCentreId: {}, ",
+                caseUrnQueryParam, typeOfListQueryParam, courtCentreIdQueryParam);
+
+        final List<Hearing> hearings;
+        if (!isNullOrEmpty(courtCentreIdQueryParam)) {
+            final Set<String> courtCentreIds = Arrays.stream(courtCentreIdQueryParam.split(",")).collect(toSet());
+            hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, courtCentreIds);
+        } else {
+            hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam);
+        }
+
+        return Enveloper.envelop(createObjectBuilder()
+                .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
+                .build()).withName("listing.unscheduled.search.hearings").withMetadataFrom(query);
+
+    }
+
     @Handles("listing.available.search.hearings")
     public JsonEnvelope searchAvailableHearings(final JsonEnvelope query) throws IOException {
         final String hearingId = query.payloadAsJsonObject().getString(HEARING_ID, null);
@@ -177,7 +207,8 @@ public class HearingQueryView {
         // search hearing by incoming hearing id
         final Hearing hearing = repository.findBy(UUID.fromString(hearingId));
         final JsonNode listedCasesJsonNode = hearing.getProperties().findPath("listedCases");
-        final String endDate = hearing.getProperties().get("endDate").asText();
+        final JsonNode endDateJson = hearing.getProperties().get("endDate");
+        final String endDate = endDateJson != null ? endDateJson.asText() : null;
         final List<ListedCase> listedCases = extractListedCases(listedCasesJsonNode);
         final Set<String> masterDefendantSet = new HashSet<>();
         final Set<String> caseUrnSet = new HashSet<>();
@@ -214,7 +245,7 @@ public class HearingQueryView {
                 caseUrnSet,
                 masterDefendantSet,
                 linkedCaseUrnSet
-                );
+        );
 
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
                 createObjectBuilder()
@@ -409,7 +440,7 @@ public class HearingQueryView {
     }
 
     private String getDateTimeAsString(final String date, final String time, final String defaultTime) {
-        final String copyTime = Strings.isNullOrEmpty(time) ? defaultTime : time;
+        final String copyTime = isNullOrEmpty(time) ? defaultTime : time;
         final LocalDate localDate = parse(date);
         final LocalTime localTime = LocalTime.parse(copyTime);
         return localDate.atTime(localTime).toString();
@@ -456,7 +487,7 @@ public class HearingQueryView {
                     .collect(Collectors.toSet()));
         }
 
-        if(linkedCaseUrnSet.isEmpty()){
+        if (linkedCaseUrnSet.isEmpty()) {
             linkedCaseUrnSet.add(EMPTY_STRING);
         }
     }

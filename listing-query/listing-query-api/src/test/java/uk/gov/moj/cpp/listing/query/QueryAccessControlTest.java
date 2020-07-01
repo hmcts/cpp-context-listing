@@ -29,6 +29,7 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
 
     private static final String ACTION_QUERY_RANGE_SEARCH = "listing.range.search.hearings";
     private static final String ACTION_QUERY_SEARCH = "listing.search.hearings";
+    private static final String ACTION_QUERY_UNSCHEDULED_SEARCH = "listing.unscheduled.search.hearings";
     private static final String RANDOM_GROUP = "Random group";
 
     @Mock
@@ -66,9 +67,27 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
         assertSuccessfulOutcome(results);
     }
 
+
     @Test
     public void shouldNotAllowAuthorisedUserToSearchHearing() {
         final Action action = createActionFor(ACTION_QUERY_SEARCH);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertFailureOutcome(results);
+    }
+    @Test
+    public void shouldAllowAuthorisedUserToSearchUnscheduledHearing() {
+        final Action action = createActionFor(ACTION_QUERY_UNSCHEDULED_SEARCH);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, YOTS, CPS, NPS, COURT_ASSOCIATE)).willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowAuthorisedUserToSearchUnscheduledHearing() {
+        final Action action = createActionFor(ACTION_QUERY_UNSCHEDULED_SEARCH);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);

@@ -65,6 +65,21 @@ public class ReferenceDataLoader {
         return Objects.isNull(response) ? empty() : of(response.payload().getOrganisationunits().get(0));
     }
 
+    public List<OrganisationUnit> fetchOrganisationUnitsByOucodeL2Code(final String oucodeL2Code) {
+        final JsonObject queryParameters = createObjectBuilder().add("oucodeL2Code", oucodeL2Code).build();
+
+        final JsonEnvelope requestEnvelope = envelopeFrom(
+                metadataBuilder()
+                        .withName(REFERENCEDATA_QUERY_ORGANISATION_UNITS)
+                        .withId(randomUUID())
+                        .build(),
+                queryParameters);
+
+        final Envelope<OrganisationUnitList> response = requester.requestAsAdmin(requestEnvelope, OrganisationUnitList.class);
+
+        return response.payload().getOrganisationunits();
+    }
+
     public Optional<OrganisationUnitList> getOrganisationUnitList() {
 
         final JsonEnvelope requestEnvelope = envelopeFrom(

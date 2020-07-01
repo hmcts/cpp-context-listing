@@ -2,16 +2,20 @@ package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Objects.nonNull;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
+import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
 import uk.gov.justice.core.courts.HearingListingNeeds;
+import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearingEnriched;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
+import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
+import uk.gov.justice.listing.courts.ListUnscheduledCourtHearingEnriched;
 import uk.gov.justice.listing.courts.ProsecutionCases;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -40,12 +44,14 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("squid:S2629")
 public class ListingCommandApi {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
     static final String LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED = "listing.command.list-court-hearing-enriched";
+    static final String LISTING_COMMAND_LIST_UNSCHEDULED_COURT_HEARING_ENRICHED = "listing.command.list-unscheduled-court-hearing-enriched";
     static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
-    private static final String PROSECUTION_CASES = "prosecutionCases";
     static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
+    private static final String PROSECUTION_CASES = "prosecutionCases";
 
     @Inject
     private Sender sender;
@@ -63,7 +69,7 @@ public class ListingCommandApi {
     private ObjectToJsonValueConverter objectToJsonValueConverter;
 
     @Handles("listing.command.list-court-hearing")
-    public void listCourtHearing(final JsonEnvelope envelope) {
+    public void handleListCourtHearing(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
 
         LOGGER.info("'listing.command.list-court-hearing' received with payload {}", envelope);
@@ -85,8 +91,31 @@ public class ListingCommandApi {
                 objectToJsonValueConverter.convert(listCourtHearingEnriched)));
     }
 
+    @Handles("listing.command.list-unscheduled-court-hearing")
+    public void handleListUnscheduledCourtHearing(final JsonEnvelope envelope) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+
+        LOGGER.info("'listing.command.list-unscheduled-court-hearing' received with payload {}", envelope.toObfuscatedDebugString());
+
+        final ListUnscheduledCourtHearing listCourtHearing = jsonObjectConverter.convert(payload, ListUnscheduledCourtHearing.class);
+        LOGGER.info("'listing.command.list-unscheduled-court-hearing' listCourtHearing: {}", listCourtHearing);
+
+        final Set<CourtCentreDetails> courtCentres = new HashSet<>();
+
+        for (final HearingUnscheduledListingNeeds commandHearing : listCourtHearing.getHearings()) {
+            courtCentres.add(courtCentreFactory.getCourtCentre(commandHearing.getCourtCentre().getId(), envelope));
+        }
+        final ListUnscheduledCourtHearingEnriched listCourtHearingEnriched = ListUnscheduledCourtHearingEnriched.listUnscheduledCourtHearingEnriched()
+                .withCourtCentresDetails(new ArrayList<>(courtCentres))
+                .withHearings(listCourtHearing.getHearings())
+                .build();
+
+        sender.send(envelop(objectToJsonValueConverter.convert(listCourtHearingEnriched)).withName(LISTING_COMMAND_LIST_UNSCHEDULED_COURT_HEARING_ENRICHED)
+                .withMetadataFrom(envelope));
+    }
+
     @Handles("listing.command.update-hearing-for-listing")
-    public void updateHearingForListing(final JsonEnvelope envelope) {
+    public void handleUpdateHearingForListing(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("'listing.command.update-hearing-for-listing' received with payload {}", envelope.toObfuscatedDebugString());
@@ -111,7 +140,7 @@ public class ListingCommandApi {
     }
 
     @Handles("listing.command.vacate-trial")
-    public void vacateTrial(final JsonEnvelope envelope) {
+    public void handleVacateTrial(final JsonEnvelope envelope) {
 
         LOGGER.info("'listing.command.vacate-trial' received with payload {}", envelope.toObfuscatedDebugString());
 
@@ -120,7 +149,7 @@ public class ListingCommandApi {
     }
 
     @Handles("listing.command.extend-hearing-for-hearing")
-    public void extendHearingForHearing(final JsonEnvelope envelope) {
+    public void handleExtendHearingForHearing(final JsonEnvelope envelope) {
 
         final JsonObject payload = envelope.payloadAsJsonObject();
         final String unAllocatedHearingId = payload.getString("hearingId", null);
@@ -150,33 +179,33 @@ public class ListingCommandApi {
     }
 
     @Handles("listing.command.change-judiciary-for-hearings")
-    public void changeJudiciaryForHeraings(final JsonEnvelope envelope) {
+    public void handleChangeJudiciaryForHearings(final JsonEnvelope envelope) {
         sender.send(envelope);
     }
 
     @Handles("listing.command.sequence-hearings")
-    public void sequenceHearings(final JsonEnvelope envelope) {
+    public void handleSequenceHearings(final JsonEnvelope envelope) {
         sender.send(envelope);
     }
 
     @Handles("listing.command.restrict-court-list")
-    public void restrictCourtList(final JsonEnvelope jsonEnvelope) {
+    public void handleRestrictCourtList(final JsonEnvelope jsonEnvelope) {
         sender.send(jsonEnvelope);
     }
 
     @Handles("listing.command.publish-court-list")
-    public void publishCourtList(final JsonEnvelope jsonEnvelope) {
+    public void handlePublishCourtList(final JsonEnvelope jsonEnvelope) {
         sender.send(jsonEnvelope);
     }
 
     @Handles("listing.command.publish-court-lists-for-crown-courts")
     @SuppressWarnings("WeakerAccess") // Must be public for the framework
-    public void publishCourtListForCrownCourts(final JsonEnvelope jsonEnvelope) {
+    public void handlePublishCourtListForCrownCourts(final JsonEnvelope jsonEnvelope) {
         sender.send(jsonEnvelope);
     }
 
     @Handles("listing.command.court-list-request-export")
-    public void courtListRequestExport(final JsonEnvelope jsonEnvelope) {
+    public void handleCourtListRequestExport(final JsonEnvelope jsonEnvelope) {
         sender.send(jsonEnvelope);
     }
 

@@ -30,6 +30,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePaylo
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.core.enveloper.Enveloper;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
@@ -47,6 +48,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -86,6 +88,9 @@ public class HearingQueryViewTest {
     private static final String PUBLISH_COURT_LIST_TYPES_QUERY_PARAMETER = "publishCourtListTypes";
     private static final String PUBLISH_DATE_QUERY_PARAMETER = "publishDate";
     private static final String WEEK_COMMENCING_QUERY_PARAMETER = "weekCommencing";
+    private static final String CASE_URN = "caseUrn";
+    private static final String TYPE_OF_LIST = "typeOfList";
+    private static final String COURT_CENTRE_IDS = "courtCentreIds";
 
     private static final String COURT_ROOM_QUERY_PARAMETER = "courtRoomId";
     private static final String AUTHORITY_ID_QUERY_PARAMETER = "authorityId";
@@ -103,37 +108,26 @@ public class HearingQueryViewTest {
     private static final LocalDate SEARCH_DATE = LocalDate.now();
     private static final LocalTime START_TIME = LocalTime.now();
     private static final LocalTime END_TIME = LocalTime.now();
-
+    private static final String PUBLISH_DATE = "2012-12-11";
+    private static final String PUBLISH_DATE_WEEK_COMMENCING = "2012-12-13";
     @Spy
     private Enveloper enveloper = createEnveloper();
-
     @Mock
     private HearingRepository hearingRepository;
-
     @Mock
     private CourtListPublishStatusJdbcRepository courtListRepository;
-
     @Mock
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
-
     @Mock
     private RangeSearchQuery rangeSearchQuery;
-
     @Mock
     private CourtListService courtListService;
-
     @Mock
     private PublishedCourtListRepository publishedCourtListRepository;
-
     @Mock
     private PublishedCourtListToJsonConverter publishedCourtListToJsonConverter;
-
     @InjectMocks
     private HearingQueryView hearingsQueryView;
-
-    private static final String PUBLISH_DATE = "2012-12-11";
-
-    private static final String PUBLISH_DATE_WEEK_COMMENCING = "2012-12-13";
 
     @Test
     public void shouldReturnCorrectPublishCourtListStatusForWeekCommencing() {
@@ -242,7 +236,16 @@ public class HearingQueryViewTest {
     }
 
     @Test
-    public void searchAvailableHearingsWithWithAllParametersProvided() throws Exception {
+    public void shouldSearchAvailableHearingsWithWithAllParametersProvided() throws Exception {
+        searchAvailableHearingsWithWithAllParametersProvided(getHearingById(), SEARCH_DATE);
+    }
+
+    @Test
+    public void shouldSearchAvailableHearingsWithWithAllParametersProvidedForUnscheduledHearing() throws Exception {
+        searchAvailableHearingsWithWithAllParametersProvided(getUnscheduledHearingById(), null);
+    }
+
+    public void searchAvailableHearingsWithWithAllParametersProvided(final Hearing returnedHearing, final LocalDate endDate) throws Exception {
 
         final List<Hearing> hearingsJson = hearingsJson();
         final JsonArray hearingsJsonArray = hearingsJsonArray();
@@ -260,16 +263,16 @@ public class HearingQueryViewTest {
         LINKED_CASE_SET.add("URN2");
 
         final String SEARCH_CRITERIA = "CASE_IN_HEARING,MATCHED_DEFENDANTS";
-        final Hearing returnedHearing = getHearingById();
         final Set<String> jurisdictionTypeSet = new HashSet<>();
         jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
 
         when(hearingRepository.findBy(ID)).thenReturn(returnedHearing);
 
+        final String endDateString = endDate != null ? endDate.toString() : null;
         when(hearingRepository.findHearings(
                 ALLOCATED,
                 jurisdictionTypeSet,
-                SEARCH_DATE.toString(),
+                endDateString,
                 ID.toString(),
                 CASE_URN_SET,
                 MASTER_DEFENDANT_IDS,
@@ -298,8 +301,70 @@ public class HearingQueryViewTest {
                 ))
         ));
         verify(hearingRepository).findBy(eq(ID));
-        verify(hearingRepository).findHearings(eq(ALLOCATED), eq(jurisdictionTypeSet), eq(SEARCH_DATE.toString()),
+        verify(hearingRepository).findHearings(eq(ALLOCATED), eq(jurisdictionTypeSet), eq(endDateString),
                 eq(ID.toString()), eq(CASE_URN_SET), eq(MASTER_DEFENDANT_IDS), eq(LINKED_CASE_SET));
+        verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
+    }
+
+    @Test
+    public void shouldSearchUnscheduledHearingsWithoutCourtCentreIds() {
+
+        final List<Hearing> hearingsJson = hearingsJson();
+        final JsonArray hearingsJsonArray = hearingsJsonArray();
+
+        when(hearingRepository.findHearings(
+                "caseUrnValue", "typeOfListValue"))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(hearingsJsonArray);
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(CASE_URN, "caseUrnValue")
+                        .add(TYPE_OF_LIST, "typeOfListValue")
+                        .build());
+
+        final Envelope<JsonObject> results = hearingsQueryView.searchUnscheduledHearings(query);
+
+        assertThat(JsonEnvelope.envelopeFrom(results.metadata(), results.payload()),
+                is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.unscheduled.search.hearings"),
+                        payloadIsJson(
+                                withJsonPath("$.hearings[0].hello", equalTo("world"))
+                        ))
+                ));
+        verify(hearingRepository).findHearings(eq("caseUrnValue"), eq("typeOfListValue"));
+        verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
+    }
+
+    @Test
+    public void shouldSearchUnscheduledHearingsWithCourtCentreIds() {
+
+        final List<Hearing> hearingsJson = hearingsJson();
+        final JsonArray hearingsJsonArray = hearingsJsonArray();
+
+        final HashSet<String> courtCentreIds = new HashSet<>(Arrays.asList("courtCentreId1", "courtCentreId2"));
+        when(hearingRepository.findHearings(
+                "caseUrnValue", "typeOfListValue", courtCentreIds))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(hearingsJsonArray);
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(CASE_URN, "caseUrnValue")
+                        .add(TYPE_OF_LIST, "typeOfListValue")
+                        .add(COURT_CENTRE_IDS, "courtCentreId1,courtCentreId2")
+                        .build());
+
+        final Envelope<JsonObject> results = hearingsQueryView.searchUnscheduledHearings(query);
+
+        assertThat(JsonEnvelope.envelopeFrom(results.metadata(), results.payload()),
+                is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.unscheduled.search.hearings"),
+                        payloadIsJson(
+                                withJsonPath("$.hearings[0].hello", equalTo("world"))
+                        ))
+                ));
+        verify(hearingRepository).findHearings(eq("caseUrnValue"), eq("typeOfListValue"), eq(courtCentreIds));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
     }
 
@@ -653,5 +718,10 @@ public class HearingQueryViewTest {
         final String testJsonHearing = "{\"id\":\"b7b136da-7156-4391-ab0e-24e90c2bc599\",\"endDate\":\"END_DATE\",\"allocated\":false,\"startDate\":\"2020-03-17\",\"listedCases\":[{\"id\":\"523b6826-3e56-48d0-bb1b-a0209e7b9c70\",\"defendants\":[{\"id\":\"367f1f6d-f300-4e35-9a8b-92f0c81a28b5\",\"masterDefendantId\":\"d676f354-ba50-462e-bd55-4e8842d29ebd\"}],\"caseIdentifier\":{\"caseReference\":\"EEE555\"},\"restrictFromCourtList\":false,\"linkedCases\":[{\"caseId\":\"367f1f6d-f300-4e35-9a8b-92f0c81a298e\",\"caseUrn\":\"URN1\"},{\"caseId\":\"367f1f6d-f300-4e35-9a8b-92f0c81a246g\",\"caseUrn\":\"URN2\"}]}]}";
         String testJson = testJsonHearing.replace("END_DATE", LocalDate.now().toString());
         return new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJson));
+    }
+
+    private Hearing getUnscheduledHearingById() {
+        final String testJsonHearing = "{\"id\":\"b7b136da-7156-4391-ab0e-24e90c2bc599\",\"allocated\":false,\"unscheduled:\":true,\"startDate\":\"2020-03-17\",\"listedCases\":[{\"id\":\"523b6826-3e56-48d0-bb1b-a0209e7b9c70\",\"defendants\":[{\"id\":\"367f1f6d-f300-4e35-9a8b-92f0c81a28b5\",\"masterDefendantId\":\"d676f354-ba50-462e-bd55-4e8842d29ebd\"}],\"caseIdentifier\":{\"caseReference\":\"EEE555\"},\"restrictFromCourtList\":false,\"linkedCases\":[{\"caseId\":\"367f1f6d-f300-4e35-9a8b-92f0c81a298e\",\"caseUrn\":\"URN1\"},{\"caseId\":\"367f1f6d-f300-4e35-9a8b-92f0c81a246g\",\"caseUrn\":\"URN2\"}]}]}";
+        return new Hearing(UUID.randomUUID(), JacksonUtil.toJsonNode(testJsonHearing));
     }
 }

@@ -298,3 +298,33 @@ protocols: [ HTTP, HTTPS ]
                 application/vnd.listing.search.hearing.slots+json:
                   example:  !include json/listing.search.hearing.slots.json
                   schema:  !include  json/schema/listing.search.hearing.slots.json
+
+/hearings/unscheduled:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.unscheduled.search.hearings
+        ...
+      queryParameters:
+        caseUrn:
+          type: string
+          required: false
+        typeOfList:
+          type: string
+          required: false
+        oucodeL2Code:
+          type: string
+          required: false
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: false
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json

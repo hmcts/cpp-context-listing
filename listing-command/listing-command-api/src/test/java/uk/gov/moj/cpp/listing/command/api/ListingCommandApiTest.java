@@ -3,12 +3,17 @@ package uk.gov.moj.cpp.listing.command.api;
 import static java.util.Arrays.asList;
 import static java.util.Optional.of;
 import static org.codehaus.groovy.runtime.DefaultGroovyMethods.any;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
@@ -16,11 +21,16 @@ import static uk.gov.justice.services.test.utils.core.matchers.HandlerClassMatch
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
 
+import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearingEnriched;
 import uk.gov.justice.listing.courts.ListCourtHearing;
+import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
+import uk.gov.justice.listing.courts.ListUnscheduledCourtHearingEnriched;
 import uk.gov.justice.listing.courts.ProsecutionCases;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -30,6 +40,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -37,6 +48,7 @@ import java.util.function.Function;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,9 +71,6 @@ public class ListingCommandApiTest {
     @Mock
     private JsonObject payload;
     @Mock
-    private JsonArray prosecutionCasesPayload;
-
-    @Mock
     private JsonObjectToObjectConverter jsonObjectConverter;
     @Mock
     private ObjectToJsonValueConverter objectToJsonValueConverter;
@@ -81,12 +90,12 @@ public class ListingCommandApiTest {
     private ExtendHearingForHearing extendHearingForHearing;
 
     @Test
-    public void testIfMethodsArePassThrough() throws Exception {
+    public void testIfMethodsArePassThrough() {
 
         assertThat(ListingCommandApi.class, isHandlerClass(COMMAND_API)
-                .with(method("changeJudiciaryForHeraings")
+                .with(method("handleChangeJudiciaryForHearings")
                         .thatHandles("listing.command.change-judiciary-for-hearings"))
-                .with(method("sequenceHearings")
+                .with(method("handleSequenceHearings")
                         .thatHandles("listing.command.sequence-hearings")));
     }
 
@@ -112,7 +121,7 @@ public class ListingCommandApiTest {
         given(jsonObjectConverter.convert(prosecutionCases, ProsecutionCases.class)).willReturn(ProsecutionCases.prosecutionCases().build());
 
         //when
-        listingCommandApi.updateHearingForListing(envelope);
+        listingCommandApi.handleUpdateHearingForListing(envelope);
 
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
@@ -136,7 +145,7 @@ public class ListingCommandApiTest {
         given(payload.getJsonArray("prosecutionCases")).willReturn(prosecutionCasesArray);
 
         //when
-        listingCommandApi.updateHearingForListing(envelope);
+        listingCommandApi.handleUpdateHearingForListing(envelope);
 
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
@@ -153,7 +162,7 @@ public class ListingCommandApiTest {
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
                 ArgumentCaptor.forClass(JsonEnvelope.class);
         //when
-        listingCommandApi.vacateTrial(envelope);
+        listingCommandApi.handleVacateTrial(envelope);
 
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
@@ -172,7 +181,7 @@ public class ListingCommandApiTest {
                 ArgumentCaptor.forClass(JsonEnvelope.class);
 
         //when
-        listingCommandApi.listCourtHearing(envelope);
+        listingCommandApi.handleListCourtHearing(envelope);
 
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
@@ -183,7 +192,7 @@ public class ListingCommandApiTest {
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
 
-        listingCommandApi.publishCourtList(envelope);
+        listingCommandApi.handlePublishCourtList(envelope);
 
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
     }
@@ -191,7 +200,7 @@ public class ListingCommandApiTest {
     @Test
     public void shouldPublishCourtListForCrownCourtsForwardsAsExpected() {
 
-        listingCommandApi.publishCourtListForCrownCourts(envelope);
+        listingCommandApi.handlePublishCourtListForCrownCourts(envelope);
 
         verify(sender).send(envelope);
     }
@@ -199,9 +208,58 @@ public class ListingCommandApiTest {
     @Test
     public void shouldCourtListRequestExportAsExpected() {
 
-        listingCommandApi.courtListRequestExport(envelope);
+        listingCommandApi.handleCourtListRequestExport(envelope);
 
         verify(sender).send(envelope);
+    }
+
+    @Test
+    public void shouldListUnscheduledCourtHearingAsExcepted() {
+
+        final ListUnscheduledCourtHearing listUnscheduledCourtHearing = mock(ListUnscheduledCourtHearing.class);
+        final ArgumentCaptor<ListUnscheduledCourtHearingEnriched> payloadCaptor = ArgumentCaptor.forClass(ListUnscheduledCourtHearingEnriched.class);
+        final UUID hearingId1 = UUID.randomUUID();
+        final UUID hearingId2 = UUID.randomUUID();
+
+        when(envelope.payloadAsJsonObject()).thenReturn(payload);
+        when(envelope.metadata()).thenReturn(metadataWithRandomUUIDAndName().build());
+
+
+        when(jsonObjectConverter.convert(payload, ListUnscheduledCourtHearing.class)).thenReturn(listUnscheduledCourtHearing);
+
+
+        when(listUnscheduledCourtHearing.getHearings()).thenReturn(createUnscheduledListingNeeds(hearingId1, hearingId2));
+        when(courtCentreFactory.getCourtCentre(Matchers.any(), eq(envelope))).thenReturn(
+                CourtCentreDetails.courtCentreDetails().withDefaultDuration(10).build(),
+                CourtCentreDetails.courtCentreDetails().withDefaultDuration(20).build());
+
+        final JsonValue finalPayload = mock(JsonValue.class);
+        when(objectToJsonValueConverter.convert(payloadCaptor.capture())).thenReturn(finalPayload);
+
+        // run
+        listingCommandApi.handleListUnscheduledCourtHearing(envelope);
+
+        // verify
+        final ListUnscheduledCourtHearingEnriched value = payloadCaptor.getValue();
+        assertThat(value, notNullValue(ListUnscheduledCourtHearingEnriched.class));
+        assertThat(value.getCourtCentresDetails().size(), is(2));
+        assertThat(value.getCourtCentresDetails().get(0).getDefaultDuration(), anyOf(is(10), is(20)));
+        assertThat(value.getHearings().size(), is(2));
+        assertThat(value.getHearings().get(0).getId(), is(hearingId1));
+        assertThat(value.getHearings().get(1).getId(), is(hearingId2));
+
+    }
+
+    public List<HearingUnscheduledListingNeeds> createUnscheduledListingNeeds(final UUID hearingId1, final UUID hearingId2) {
+        return Arrays.asList(
+                HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
+                        .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).build())
+                        .withId(hearingId1)
+                        .build(),
+                HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
+                        .withCourtCentre(CourtCentre.courtCentre().withId(UUID.randomUUID()).build())
+                        .withId(hearingId2)
+                        .build());
     }
 
     @Test
@@ -219,7 +277,7 @@ public class ListingCommandApiTest {
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
 
-        listingCommandApi.updateHearingForListing(envelope);
+        listingCommandApi.handleUpdateHearingForListing(envelope);
 
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
     }
@@ -246,7 +304,7 @@ public class ListingCommandApiTest {
                 ArgumentCaptor.forClass(JsonEnvelope.class);
 
         //when
-        listingCommandApi.extendHearingForHearing(envelope);
+        listingCommandApi.handleExtendHearingForHearing(envelope);
 
         //then
         verify(jsonObjectConverter, times(1)).convert(payload, ExtendHearingForHearing.class);

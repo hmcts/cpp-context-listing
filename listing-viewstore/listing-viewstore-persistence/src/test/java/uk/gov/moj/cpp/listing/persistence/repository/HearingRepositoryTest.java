@@ -3,11 +3,13 @@ package uk.gov.moj.cpp.listing.persistence.repository;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
 import static java.time.LocalDate.now;
 import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOOLEAN;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.CROWN;
@@ -28,13 +30,18 @@ import uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Predicate;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
@@ -98,6 +105,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final String LINKED_CASE_URN = "45DI277164";
     private static final String EMPTY_STRING = "";
     private static final String TEST_DATA_SAMPLE_HEARING_JSON = "test-data/sample-hearing.json";
+    private static final String TEST_DATA_SAMPLE_UNSCHEDULED_HEARING_JSON = "test-data/sample-unscheduled-hearing.json";
+    private static final String TEST_DATA_SAMPLE_UNSCHEDULED_WITHOUT_CASE_HEARING_JSON = "test-data/sample-unscheduled-hearing-without-case.json";
 
     @Inject
     private HearingRepository hearingRepository;
@@ -1170,4 +1179,220 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                         .replaceAll(WEEK_COMMENCING_END_FIELD, to(weekCommencingEndDate));
 
     }
+
+    @Test
+    public void shouldFindUnscheduledHearingsWithoutParameters() {
+
+        //given
+        givenUnscheduledHearings();
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(null, null);
+
+        //then
+        assertThat(actualHearings.size(), is(3));
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(HEARING_ID.toString(), OTHER_HEARING_ID.toString(), OTHER_HEARING_ID2.toString()));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", anyOf(equalTo(COURT_CENTRE_ID.toString()), equalTo(OTHER_COURT_CENTRE_ID.toString()))));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", anyOf(equalTo(JURISDICTION_TYPE.toString()), equalTo(OTHER_JURISDICTION_TYPE.toString()))));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
+    }
+
+    @Test
+    public void shouldFindUnscheduledHearingsWithCaseUrn() {
+
+        //given
+        givenUnscheduledHearings();
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings("45DI277164", null);
+
+        //then
+        assertThat(actualHearings.size(), is(2));
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(HEARING_ID.toString(), OTHER_HEARING_ID.toString()));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", anyOf(equalTo(COURT_CENTRE_ID.toString()), equalTo(OTHER_COURT_CENTRE_ID.toString()))));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", anyOf(equalTo(JURISDICTION_TYPE.toString()), equalTo(OTHER_JURISDICTION_TYPE.toString()))));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
+    }
+    @Test
+    public void shouldFindUnscheduledHearingsWithApplicationCaseReference() {
+
+        //given
+        givenUnscheduledHearings();
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings("TFL7328425-1", null);
+
+        //then
+        assertThat(actualHearings.size(), is(1));
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(OTHER_HEARING_ID2.toString()));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+    }
+
+    @Test
+    public void shouldFindUnscheduledHearingsWithTypeOfListing() {
+
+        //given
+        givenUnscheduledHearings();
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(null, "0b1e1e98-a5b2-460a-a851-17dd6f47c1a7");
+
+        //then
+        assertThat(actualHearings.size(), is(2));
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(HEARING_ID.toString(), OTHER_HEARING_ID.toString()));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", anyOf(equalTo(COURT_CENTRE_ID.toString()), equalTo(OTHER_COURT_CENTRE_ID.toString()))));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", anyOf(equalTo(JURISDICTION_TYPE.toString()), equalTo(OTHER_JURISDICTION_TYPE.toString()))));
+        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
+    }
+
+    @Test
+    public void shouldFindUnscheduledHearingsWithCourtCentreIds() {
+
+        //given
+        givenUnscheduledHearings();
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(null, null, Collections.singleton(COURT_CENTRE_ID.toString()));
+
+        //then
+        assertThat(actualHearings.size(), is(2));
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(HEARING_ID.toString(), OTHER_HEARING_ID2.toString()));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+    }
+
+    public List<String> extractFields(final List<Hearing> actualHearings, final String fieldPath) {
+        final JsonPath jsonPath = JsonPath.compile(fieldPath, new Predicate[0]);
+        return actualHearings.stream()
+                .map(hearing -> jsonPath.read(hearing.getProperties().toString()))
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .collect(Collectors.toList());
+    }
+
+    @Test
+    public void shouldFindUnscheduledHearingsWithAllFields() {
+
+        //given
+        givenUnscheduledHearings();
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings("45DI277164", "0b1e1e98-a5b2-460a-a851-17dd6f47c1a7", Collections.singleton(COURT_CENTRE_ID.toString()));
+
+        //then
+        assertThat(actualHearings.size(), is(1));
+
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(HEARING_ID.toString()));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+    }
+
+
+    private void givenUnscheduledHearings() {
+        saveHearingJson(
+                HEARING_ID,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                UNALLOCATED,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_UNSCHEDULED_HEARING_JSON);
+
+        saveHearingJson(
+                OTHER_HEARING_ID,
+                OTHER_COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                true,
+                OTHER_AUTHORITY_ID,
+                OTHER_HEARING_TYPE,
+                OTHER_JURISDICTION_TYPE,
+                OTHER_JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_UNSCHEDULED_HEARING_JSON);
+
+        saveHearingJson(
+                OTHER_HEARING_ID2,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                UNALLOCATED,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_UNSCHEDULED_WITHOUT_CASE_HEARING_JSON);
+
+        saveHearingJson(
+                UUID.randomUUID(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                false,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_HEARING_JSON);
+
+        saveHearingJson(
+                UUID.randomUUID(),
+                OTHER_COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                false,
+                OTHER_AUTHORITY_ID,
+                OTHER_HEARING_TYPE,
+                OTHER_JURISDICTION_TYPE,
+                OTHER_JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_HEARING_JSON);
+    }
+
+
 }

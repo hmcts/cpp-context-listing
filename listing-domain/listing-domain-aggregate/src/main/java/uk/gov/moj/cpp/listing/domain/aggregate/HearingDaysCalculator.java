@@ -81,7 +81,7 @@ public class HearingDaysCalculator {
         final long noOfDaysBetween = ChronoUnit.DAYS.between(startDate, endDate);
 
         return IntStream.rangeClosed(0, (int) noOfDaysBetween)
-                .mapToObj(i -> startDate.plusDays(i))
+                .mapToObj(startDate::plusDays)
                 .filter(d -> !nonSittingDays.contains(d))
                 .map(date ->
                         nonDefaultDayMap.containsKey(date)
@@ -124,4 +124,12 @@ public class HearingDaysCalculator {
         return builder.build();
     }
 
+    public static List<uk.gov.justice.listing.events.NonDefaultDay> calculateNewNonDefaultDaysForUnscheduled(final Integer hearingTypeDuration, final ZonedDateTime startDate, final LocalTime defaultStartTime) {
+        return Collections.singletonList(uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay()
+                .withCourtScheduleId(Optional.empty())
+                .withDuration(Optional.of(hearingTypeDuration))
+                .withStartTime(ZonedDateTime.of(startDate.toLocalDate(), defaultStartTime, BST)
+                        .withZoneSameInstant(UTC))
+                .build());
+    }
 }

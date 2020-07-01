@@ -76,7 +76,7 @@ public class HearingEventListener {
         final HearingAllocatedForListing hearingAllocatedForListing = event.payload();
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
         LOGGER.info("'listing.events.hearing-allocated-for-listing' received hearingId {}", hearingId);
-        jsonEntityFinder.find(hearingId).put("allocated", ALLOCATED).save();
+        jsonEntityFinder.find(hearingId).put("allocated", ALLOCATED).remove("unscheduled").save();
     }
 
     @Handles("listing.events.hearing-unallocated-for-listing")

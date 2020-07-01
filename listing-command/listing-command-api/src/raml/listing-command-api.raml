@@ -11,11 +11,17 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.command.list-court-hearing+json
         name: listing.command.list-court-hearing
+      (mapping):
+        requestType: application/vnd.listing.command.list-unscheduled-court-hearing+json
+        name: listing.command.list-unscheduled-court-hearing
       ...
     body:
       application/vnd.listing.command.list-court-hearing+json:
         example: !include json/listing.command.list-court-hearing.json
         schema: !include json/schema/listing.command.list-court-hearing.json
+      application/vnd.listing.command.list-unscheduled-court-hearing+json:
+        example: !include json/listing.command.list-unscheduled-court-hearing.json
+        schema: !include json/schema/listing.command.list-unscheduled-court-hearing.json
 
     responses:
       202:

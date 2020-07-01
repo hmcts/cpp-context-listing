@@ -15,7 +15,6 @@
         <module>listing-domain-event</module>
         <module>listing-domain-aggregate</module>
         <module>listing-domain-transformations</module>
-        <module>listing-domain-transform-pojo</module>
         <module>listing-domain-xhibit</module>
     </modules>
 

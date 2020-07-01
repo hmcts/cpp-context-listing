@@ -28,6 +28,7 @@ import org.mockito.Mock;
 public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
 
     private static final String ACTION_LIST_COURT_HEARING = "listing.command.list-court-hearing";
+    private static final String ACTION_LIST_UNSCHEDULED_COURT_HEARING = "listing.command.list-unscheduled-court-hearing";
     private static final String ACTION_UPDATE_HEARING_FOR_LISTING = "listing.command.update-hearing-for-listing";
     private static final String ACTION_CHANGE_JUDICIARY_FOR_HEARING = "listing.command.change-judiciary-for-hearings";
     private static final String ACTION_SEQUENCE_HEARINGS = "listing.command.sequence-hearings";
@@ -55,6 +56,26 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowUnauthorisedUserToListCourtHearing() {
         final Action action = createActionFor(ACTION_LIST_COURT_HEARING);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToListUnscheduledCourtHearing() {
+        final Action action = createActionFor(ACTION_LIST_UNSCHEDULED_COURT_HEARING);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS, SYSTEM_USERS ))
+                .willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowUnauthorisedUserToListUnscheduledCourtHearing() {
+        final Action action = createActionFor(ACTION_LIST_UNSCHEDULED_COURT_HEARING);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);

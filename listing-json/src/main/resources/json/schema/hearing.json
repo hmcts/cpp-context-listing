@@ -26,7 +26,7 @@
     },
     "judiciary": {
       "type": "array",
-       "items": {
+      "items": {
         "$ref": "http://justice.gov.uk/listing/events/judicialRole.json"
       }
     },
@@ -58,7 +58,7 @@
     "endDate": {
       "$ref": "listing-definitions.json#/definitions/localDate"
     },
-    "adjournedFromDate" : {
+    "adjournedFromDate": {
       "description": "Adjournment date",
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
     },
@@ -101,6 +101,28 @@
     },
     "isVacated": {
       "type": "boolean"
+    },
+    "unscheduled": {
+      "description": "Unscheduled Listing flag",
+      "type": "boolean"
+    },
+    "typeOfList": {
+      "description": "Type of Unscheduled Listing Reason (Bench Warrant etc)",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Id of Unscheduled Listing Reason",
+          "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+        },
+        "description": {
+          "description": "Type of Unscheduled Listing Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ]
     }
   },
   "definitions": {

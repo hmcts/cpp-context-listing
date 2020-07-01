@@ -302,3 +302,31 @@ protocols: [ HTTP, HTTPS ]
           application/vnd.listing.court.list.publish.status+json:
             example:  !include json/listing.court.list.publish.status.json
             schema:  !include  json/schema/listing.court.list.publish.status.json
+
+/hearings/unscheduled:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.unscheduled.search.hearings
+        ...
+      queryParameters:
+        caseUrn:
+          type: string
+          required: false
+        typeOfList:
+          type: string
+          required: false
+        courtCentreIds:
+          description: reference data id for the court centre
+          type: string
+          required: false
+          example: 1020d264-3b12-45e8-b288-48f5a3aaadfd,95563770-4d9c-4159-b435-3e44ab844be9
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json

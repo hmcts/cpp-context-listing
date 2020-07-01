@@ -83,6 +83,7 @@ import uk.gov.justice.listing.events.StartDateChangedForHearing;
 import uk.gov.justice.listing.events.StartDateRemovedForHearing;
 import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.listing.events.TypeChangedForHearing;
+import uk.gov.justice.listing.events.TypeOfList;
 import uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing;
 import uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
@@ -267,6 +268,76 @@ public class Hearing implements Aggregate {
             LOGGER.error("Cannot list hearing with id {} as it has already been listed", hearingId);
             return Stream.empty();
         }
+    }
+
+    @SuppressWarnings({"squid:S00107"})
+    public Stream<Object> listUnscheduled(final UUID hearingId,
+                                          final Type type,
+                                          final List<ListedCase> listedCases,
+                                          final UUID courtCentreId,
+                                          final List<JudicialRole> judiciary,
+                                          final UUID courtRoomId,
+                                          final String listingDirections,
+                                          final JurisdictionType jurisdictionType,
+                                          final String prosecutorDatesToAvoid,
+                                          final String reportingRestrictionReason,
+                                          final ZonedDateTime startDate,
+                                          final LocalDate endDate,
+                                          final CourtCentreDefaults courtCentreDefaults,
+                                          final List<CourtApplication> courtApplications,
+                                          final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds,
+                                          final Integer hearingTypeDuration,
+                                          final Optional<LocalDate> weekCommencingStartDate,
+                                          final Optional<LocalDate> weekCommencingEndDate,
+                                          final Optional<Integer> weekCommencingDurationInWeeks,
+                                          final TypeOfList typeOfList) {
+
+        final ZonedDateTime newStartDate = startDate != null ? startDate : ZonedDateTime.now();
+
+        final LocalDate localStartDate = newStartDate.toLocalDate();
+
+        final List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = HearingDaysCalculator.calculateNewNonDefaultDaysForUnscheduled(
+                hearingTypeDuration, newStartDate, courtCentreDefaults.getDefaultStartTime());
+
+
+        return apply(Stream.of(hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type()
+                                .withId(type.getId())
+                                .withDescription(type.getDescription())
+                                .build())
+                        .withAllocated(false)
+                        .withUnscheduled(of(true))
+                        .withEstimatedMinutes(hearingTypeDuration)
+                        .withTypeOfList(of(typeOfList))
+                        .withAdjournedFromDate(empty())
+                        .withJudiciary(judiciary.stream()
+                                .map(NewDomainToEventConverter::buildJudicialRole)
+                                .collect(toList()))
+                        .withListedCases(listedCases.isEmpty() ? null : listedCases.stream()
+                                .map(NewDomainToEventConverter::buildListedCase)
+                                .collect(toList()))
+                        .withListingDirections(ofNullable(listingDirections))
+                        .withHearingLanguage(HearingLanguageRule.apply(listedCases, getHearingLanguageNeedsForAllApplicants(courtApplicationPartyListingNeeds)))
+                        .withReportingRestrictionReason(ofNullable(reportingRestrictionReason))
+                        .withCourtRoomId(ofNullable(courtRoomId))
+                        .withCourtCentreId(courtCentreId)
+                        .withProsecutorDatesToAvoid(ofNullable(prosecutorDatesToAvoid))
+                        .withJurisdictionType(valueFor(jurisdictionType.name()).orElse(null))
+                        .withStartDate(Optional.ofNullable(startDate != null ? startDate.toLocalDate() : null))
+                        .withEndDate(Optional.ofNullable(endDate))
+                        .withNonDefaultDays(newNonDefaultDays)
+                        .withNonSittingDays(emptyList())
+                        .withHearingDays(HearingDaysCalculator.calculate(localStartDate, endDate, emptyList(), convertEventToDomain(newNonDefaultDays), courtCentreDefaults.getDefaultStartTime(), hearingTypeDuration, false))
+                        .withCourtApplications(courtApplications.stream()
+                                .map(NewDomainToEventConverter::buildCourtApplications)
+                                .collect((toList())))
+                        .withWeekCommencingDurationInWeeks(weekCommencingDurationInWeeks)
+                        .withWeekCommencingStartDate(weekCommencingStartDate)
+                        .withWeekCommencingEndDate(weekCommencingEndDate)
+                        .build())
+                .build()));
     }
 
     @SuppressWarnings("squid:S3358")
@@ -643,7 +714,7 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> applyRescheduledCheck(final List<Object> occuredEventList) {
 
-        if(isReschedulingEvent(occuredEventList)){
+        if (isReschedulingEvent(occuredEventList)) {
             return apply(Stream.of(HearingRescheduled.hearingRescheduled()
                     .withHearingId(this.hearingId)
                     .withAllocated(this.allocated)

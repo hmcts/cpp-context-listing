@@ -129,12 +129,12 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private static final ZoneId BST = ZoneId.of("Europe/London");
     private static final String LISTING_COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
     private static final String MEDIA_TYPE_CHANGE_JUDICIARY_FOR_HEARINGS = "application/vnd.listing.command.change-judiciary-for-hearings+json";
-    private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHearingSteps.class);
-    private final UpdatedHearingData updatedHearingData;
-    private final HearingData hearingData;
+    protected static final Logger LOGGER = LoggerFactory.getLogger(UpdateHearingSteps.class);
+    protected final UpdatedHearingData updatedHearingData;
+    protected final HearingData hearingData;
     private List<ListedCaseData> listedCaseDatas;
     private MessageConsumer privateMessageConsumerAllocatedHearingUpdatedForListing;
-    private MessageConsumer privateMessageConsumerHearingAllocatedForListing;
+    protected MessageConsumer privateMessageConsumerHearingAllocatedForListing;
     private MessageConsumer privateMessageConsumerHearingUnallocatedForListing;
     private MessageConsumer privateMessageConsumerTypeChanged;
     private MessageConsumer privateMessageConsumerJurisdictionChanged;
@@ -755,7 +755,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("courtRoomId"), is(updatedHearingData.getCourtRoomId().toString()));
     }
 
-    private void verifyHearingAllocatedEvent() {
+    protected void verifyHearingAllocatedEvent() {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingAllocatedForListing);
         LOGGER.info("jsonResponse from privateMessageConsumerHearingAllocatedForListing: {}", jsonResponse.prettify());
 
