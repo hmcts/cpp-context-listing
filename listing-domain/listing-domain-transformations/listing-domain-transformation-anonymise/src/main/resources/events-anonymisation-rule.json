@@ -1,0 +1,51 @@
+{
+  "globalAttributes": [
+    "judicialResults[*].category",
+    "judicialResults[*].label",
+    "judicialResults[*].judicialResultPrompts[*].label",
+    "notifiedPlea.notifiedPleaValue",
+    "indicatedPlea.indicatedPleaValue",
+    "indicatedPlea.source",
+    "plea.pleaValue",
+    "bailStatus.code",
+    "bailStatus.description",
+    "offenceFacts.vehicleCode",
+    "type.linkType",
+    "type.applicationJurisdictionType",
+    "type.applicationSummonsRecipientType",
+    "personDefendant.driverLicenceCode",
+    "applicationSummonsTemplateType",
+    "documentationLanguageNeeds",
+    "documentationLanguage",
+    "initiationCode",
+    "gender",
+    "applicationStatus",
+    "hearingLanguage",
+    "jurisdictionType",
+    "position",
+    "title",
+    "noteType",
+    "fundingType",
+    "courtApplicationPartyType"
+  ],
+  "events": [
+    {
+      "eventName": "listing.events.hearing-listed",
+      "fieldsToBeIgnored": [
+        "$.hearing.listedCases[*].defendants[*].hearingLanguageNeeds"
+      ]
+    },
+    {
+      "eventName": "listing.events.defendant-legalaid-status-updated",
+      "fieldsToBeIgnored": [
+        "$.legalAidStatus"
+      ]
+    },
+    {
+      "eventName": "listing.events.defendant-legalaid-status-updated-for-hearing",
+      "fieldsToBeIgnored": [
+        "$.legalAidStatus"
+      ]
+    }
+  ]
+}
