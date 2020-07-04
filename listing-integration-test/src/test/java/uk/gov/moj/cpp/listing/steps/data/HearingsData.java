@@ -21,6 +21,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing(startDate, duration));
     }
 
+    public static HearingsData hearingsDataForBookedSlot() {
+        return new HearingsData(HearingsDataFactory.hearingsDataForBookedSlot());
+    }
+
     public static HearingsData hearingsDataWithLegalEntity() {
         return new HearingsData(HearingsDataFactory.hearingsDataWithLegalEntity());
     }

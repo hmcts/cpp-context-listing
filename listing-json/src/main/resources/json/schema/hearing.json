@@ -102,6 +102,12 @@
     "isVacated": {
       "type": "boolean"
     },
+    "isSlotsBooked": {
+      "type": "boolean"
+    },
+    "courtCentreDetails": {
+      "$ref": "http://justice.gov.uk/listing/events/court-centre-details.json"
+    },
     "unscheduled": {
       "description": "Unscheduled Listing flag",
       "type": "boolean"

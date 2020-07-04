@@ -42,6 +42,7 @@ import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
 import uk.gov.justice.listing.events.CourtCentreChangedForHearing;
+import uk.gov.justice.listing.events.CourtCentreDetails;
 import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
 import uk.gov.justice.listing.events.CourtRoomChangedForHearing;
@@ -130,7 +131,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = -9039179514523240080L;
+    private static final long serialVersionUID = -9149179514523240080L;
 
     private final List<uk.gov.justice.listing.events.ListedCase> unAllocatedListedCases = new ArrayList();
     private UUID hearingId;
@@ -211,7 +212,7 @@ public class Hearing implements Aggregate {
                                final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds,
                                final Integer hearingTypeDuration, final Optional<String> adjournedFromDate, final Optional<LocalDate> weekCommencingStartDate,
                                final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks, final List<NonDefaultDay> nonDefaultDays,
-                               final Boolean isCountBasedSlotSelected) {
+                               final Boolean isCountBasedSlotSelected, final Boolean isSlotsBooked) {
 
         if (notCurrentlyListed()) {
 
@@ -237,7 +238,13 @@ public class Hearing implements Aggregate {
                     .withEstimatedMinutes(estimateMinutes)
                     .withProsecutorDatesToAvoid(ofNullable(prosecutorDatesToAvoid))
                     .withJurisdictionType(valueFor(jurisdictionType.name()).orElse(null))
-                    .withEndDate(nonNull(endDate) ? Optional.of(endDate) : empty());
+                    .withEndDate(nonNull(endDate) ? Optional.of(endDate) : empty())
+                    .withIsSlotsBooked(of(isSlotsBooked))
+                    .withCourtCentreDetails(nonNull(courtCentreDefaults) ? of(CourtCentreDetails.courtCentreDetails()
+                            .withDefaultDuration(courtCentreDefaults.getDefaultDuration())
+                            .withId(courtCentreDefaults.getCourtCentreId())
+                            .withDefaultStartTime(courtCentreDefaults.getDefaultStartTime())
+                            .build()) : empty());
 
             if (nonNull(startDate)) {
                 builder.withStartDate(of(startDate.toLocalDate()));
@@ -245,8 +252,9 @@ public class Hearing implements Aggregate {
                 builder.withEndDate(hearingEndDate);
 
                 final List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = generateNewNonDefaultDays(estimateMinutes, startDate, hearingTypeDuration, nonDefaultDays, isCountBasedSlotSelected);
-                builder.withHearingDays(HearingDaysCalculator.calculate(startDate.toLocalDate(), hearingEndDate.get(), emptyList(), convertEventToDomain(newNonDefaultDays), courtCentreDefaults.getDefaultStartTime(), hearingTypeDuration));
-                builder.withNonDefaultDays(newNonDefaultDays);  // why compare with defaults ?
+                final LocalTime defaultStartTime = nonNull(courtCentreDefaults) ? courtCentreDefaults.getDefaultStartTime() : null;
+                builder.withHearingDays(HearingDaysCalculator.calculate(startDate.toLocalDate(), hearingEndDate.get(), emptyList(), convertEventToDomain(newNonDefaultDays),defaultStartTime, hearingTypeDuration));
+                builder.withNonDefaultDays(newNonDefaultDays);
             } else {
                 builder.withHearingDays(emptyList());
                 builder.withStartDate(empty());
@@ -881,7 +889,7 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> ejectCase(final UUID hearingIdOfEjectCase, final UUID caseId, final String removalReason) {
-        if (Objects.nonNull(hearingIdOfEjectCase)) {
+        if (nonNull(hearingIdOfEjectCase)) {
             return apply(Stream.of(CaseEjected.caseEjected()
                     .withProsecutionCaseId(caseId)
                     .withHearingId(hearingIdOfEjectCase)
@@ -893,7 +901,7 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> ejectApplication(final UUID hearingIdForApplicationToBeEjected, final UUID applicationId, final String removalReason) {
-        if (Objects.nonNull(hearingIdForApplicationToBeEjected)) {
+        if (nonNull(hearingIdForApplicationToBeEjected)) {
             return apply(Stream.of(ApplicationEjected.applicationEjected()
                     .withApplicationId(applicationId)
                     .withHearingId(hearingIdForApplicationToBeEjected)

@@ -18,7 +18,12 @@ public class CaseAndDefendantData {
 
     final String jurisdictionType;
 
-    public CaseAndDefendantData(UUID hearingId, String caseUrnQueryParam, String caseUrn, UUID masterDefendantId, String searchCriteria, String jurisdictionTypeQueryParam, String jurisdictionType) {
+    final String caseUrnForLinkedCasesQueryParam;
+
+    final String caseUrnForLinkedCases;
+
+    public CaseAndDefendantData(UUID hearingId, String caseUrnQueryParam, String caseUrn, UUID masterDefendantId, String searchCriteria, String jurisdictionTypeQueryParam, String jurisdictionType,
+        String caseUrnForLinkedCasesQueryParam, String caseUrnForLinkedCases) {
         this.hearingId = hearingId;
         this.caseUrnQueryParam = caseUrnQueryParam;
         this.caseUrn = caseUrn;
@@ -26,6 +31,8 @@ public class CaseAndDefendantData {
         this.searchCriteria = searchCriteria;
         this.jurisdictionTypeQueryParam = jurisdictionTypeQueryParam;
         this.jurisdictionType = jurisdictionType;
+        this.caseUrnForLinkedCasesQueryParam = caseUrnForLinkedCasesQueryParam;
+        this.caseUrnForLinkedCases = caseUrnForLinkedCases;
     }
 
     public UUID getHearingId() {
@@ -54,5 +61,13 @@ public class CaseAndDefendantData {
 
     public String getJurisdictionType() {
         return jurisdictionType;
+    }
+
+    public String getCaseUrnForLinkedCasesQueryParam() {
+        return caseUrnForLinkedCasesQueryParam;
+    }
+
+    public String getCaseUrnForLinkedCases() {
+        return caseUrnForLinkedCases;
     }
 }

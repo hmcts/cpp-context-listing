@@ -828,11 +828,11 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 ALLOCATED,
                 jurisdictionTypeSet,
-                END_SEARCH_DATE.toString(),
                 HEARING_ID.toString(),
                 caseUrnSet,
                 masterDefendantIdSet,
-                linkedCaseUrn);
+                linkedCaseUrn,
+                null);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -842,6 +842,81 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.caseReference", equalTo(CASE_REFERENCE)));
+    }
+
+    @Test
+    public void shouldSaveAndFindAvailableHearingByHearingIdAndMasterDefendantId() {
+        //given
+        givenAvailableHearings();
+        final Set<String> caseUrnSet = new HashSet<>();
+        caseUrnSet.add(EMPTY_STRING);
+
+        final Set<String> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(MASTER_DEFENDANT_ID);
+
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(JurisdictionType.CROWN.name());
+
+        final Set<String> linkedCaseUrn = new HashSet<>();
+        linkedCaseUrn.add(EMPTY_STRING);
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(
+                ALLOCATED,
+                jurisdictionTypeSet,
+                HEARING_ID.toString(),
+                caseUrnSet,
+                masterDefendantIdSet,
+                linkedCaseUrn,
+                null);
+
+        //then
+        assertThat(actualHearings.size(), is(1));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", not(HEARING_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.endDate", equalTo(to(END_DATE))));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(ALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].defendants[0].masterDefendantId", equalTo(MASTER_DEFENDANT_ID)));
+    }
+
+    @Test
+    public void shouldSaveAndFindAvailableHearingByCaseUrnForLinkedCases() {
+        //given
+        givenAvailableHearings();
+
+        final Set<String> caseUrnSet = new HashSet<>();
+        caseUrnSet.add(EMPTY_STRING);
+
+        final Set<String> masterDefendantIdSet = new HashSet<>();
+        masterDefendantIdSet.add(EMPTY_STRING);
+
+        final Set<String> jurisdictionTypeSet = new HashSet<>();
+        jurisdictionTypeSet.add(CROWN.name());
+
+        final Set<String> linkedCaseUrn = new HashSet<>();
+        linkedCaseUrn.add(EMPTY_STRING);
+
+        final String caseUrnForLinkedCases = "45DI277164";
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearings(
+                ALLOCATED,
+                jurisdictionTypeSet,
+                null,
+                caseUrnSet,
+                masterDefendantIdSet,
+                linkedCaseUrn,
+                caseUrnForLinkedCases);
+
+        //then
+        assertThat(actualHearings.size(), is(2));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", not(OTHER_HEARING_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.endDate", equalTo(to(END_DATE))));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(ALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].defendants[0].masterDefendantId", equalTo(MASTER_DEFENDANT_ID)));
     }
 
     @Test
@@ -864,15 +939,15 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 ALLOCATED,
                 jurisdictionTypeSet,
-                END_SEARCH_DATE.toString(),
-                HEARING_ID.toString(),
+                null,
                 caseUrnSet,
                 masterDefendantIdSet,
-                linkedCaseUrn);
+                linkedCaseUrn,
+                null);
 
         //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", not(HEARING_ID.toString())));
+        assertThat(actualHearings.size(), is(2));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", not(OTHER_HEARING_ID.toString())));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.endDate", equalTo(to(END_DATE))));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(ALLOCATED)));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
@@ -901,11 +976,11 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 ALLOCATED,
                 jurisdictionTypeSet,
-                END_SEARCH_DATE.toString(),
                 HEARING_ID.toString(),
                 caseUrnSet,
                 masterDefendantIdSet,
-                linkedCaseUrn);
+                linkedCaseUrn,
+                null);
 
         //then
         assertThat(actualHearings.size(), is(2));
@@ -945,11 +1020,11 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 ALLOCATED,
                 jurisdictionTypeSet,
-                END_SEARCH_DATE.toString(),
                 HEARING_ID.toString(),
                 caseUrnSet,
                 masterDefendantIdSet,
-                linkedCaseUrn);
+                linkedCaseUrn,
+                null);
 
         //then
         assertThat(actualHearings.size(), is(1));

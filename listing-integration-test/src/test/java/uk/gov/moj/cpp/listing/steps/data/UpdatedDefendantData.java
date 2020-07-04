@@ -63,7 +63,7 @@ public class UpdatedDefendantData {
                                 .withOrganisation(Organisation.organisation()
                                         .withName("withOrganisationName")
                                         .build())
-                                .withLaaContractNumber("LAACONTRACT")
+                                .withLaaContractNumber(of("LAACONTRACT"))
                                 .build())
                         .build())
                 .withAliases(asList(DefendantAlias.defendantAlias()

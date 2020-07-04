@@ -6,6 +6,7 @@ import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds.valueFor;
 
@@ -21,6 +22,7 @@ import uk.gov.justice.core.courts.ListHearingRequest;
 import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.courts.TypeOfList;
 import uk.gov.justice.services.common.converter.Converter;
@@ -43,6 +45,7 @@ import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -67,10 +70,15 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
         return listedStartDateTime.orElseGet(() -> (earliestStartDateTime.orElse(null)));
     }
 
+
     @SuppressWarnings({"squid:S3655"})
     @Override
     public uk.gov.moj.cpp.listing.domain.Hearing convert(final uk.gov.justice.core.courts.HearingListingNeeds commandHearing) {
-        return convert(commandHearing, emptyList());
+        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
+        if(isNotEmpty(commandHearing.getBookedSlots())){
+            commandHearing.getBookedSlots().forEach(rotaSlot -> nonDefaultDays.add(convertNonDefaultDay(rotaSlot)));
+        }
+        return convert(commandHearing, nonDefaultDays);
     }
 
     public uk.gov.moj.cpp.listing.domain.Hearing convert(final uk.gov.justice.core.courts.HearingListingNeeds commandHearing, final List<NonDefaultDay> nonDefaultDays) {
@@ -81,7 +89,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                     .collect(toList());
         }
 
-        final List<ListedCase> domainListedCases = listStandAloneApplications(commandHearing) ? emptyList() : commandHearing.getProsecutionCases().stream()
+        final List<ListedCase> domainListedCases = listStandAloneApplicationsOrBookedSlots(commandHearing) ? emptyList() : commandHearing.getProsecutionCases().stream()
                 .map(prosecutionCase -> buildListedCases(commandHearing, prosecutionCase))
                 .collect(toList());
 
@@ -155,6 +163,14 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
         return builder.build();
     }
 
+    @SuppressWarnings({"squid:S3655"})
+    public static ZonedDateTime getStartDateTime(final HearingListingNeeds commandHearing) {
+        final ZonedDateTime listedStartDateTime = commandHearing.getListedStartDateTime().isPresent() ? commandHearing.getListedStartDateTime().get() : null;
+        final ZonedDateTime earliestStartDateTime = commandHearing.getEarliestStartDateTime().isPresent() ? commandHearing.getEarliestStartDateTime().get() : null;
+
+        return Optional.ofNullable(listedStartDateTime).orElseGet(() -> earliestStartDateTime);
+    }
+
     public Type buildHearingType(final HearingType type) {
         return Type.type()
                 .withId(type.getId())
@@ -162,9 +178,9 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .build();
     }
 
-    private boolean listStandAloneApplications(final HearingListingNeeds hearingListingNeeds) {
+    private boolean listStandAloneApplicationsOrBookedSlots(final HearingListingNeeds hearingListingNeeds) {
         if (isNull(hearingListingNeeds.getProsecutionCases())) {
-            if (linkedCourtApplications(hearingListingNeeds)) {
+            if (linkedCourtApplications(hearingListingNeeds) && isEmpty(hearingListingNeeds.getBookedSlots())) {
                 throw new DataValidationException("List of prosecution cases must be supplied for a linked case application");
             }
             return true;
@@ -435,6 +451,17 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .withStatusDescription(laaReference.getStatusDescription())
                 .withStatusId(laaReference.getStatusId())
                 .build());
+    }
+
+    private NonDefaultDay convertNonDefaultDay(final RotaSlot rotaSlot) {
+        return NonDefaultDay.nonDefaultDay()
+                .withSession(rotaSlot.getSession())
+                .withOucode(rotaSlot.getOucode())
+                .withCourtRoomId(rotaSlot.getCourtRoomId())
+                .withDuration(rotaSlot.getDuration())
+                .withStartTime(rotaSlot.getStartTime())
+                .withCourtScheduleId(rotaSlot.getCourtScheduleId())
+                .build();
     }
 
     public uk.gov.justice.listing.events.TypeOfList convertTypeOfList(final TypeOfList typeOfList) {

@@ -122,5 +122,6 @@
       "startTime": "2018-06-05T09:30:00.000Z"
     }
   ],
-  "isCountBasedSlotSelected": false
+  "isCountBasedSlotSelected": false,
+  "isSlotsBooked": false
 }

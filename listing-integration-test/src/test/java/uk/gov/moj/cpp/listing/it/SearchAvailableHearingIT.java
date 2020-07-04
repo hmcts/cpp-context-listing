@@ -39,9 +39,12 @@ public class SearchAvailableHearingIT extends AbstractIT {
         final UUID masterDefendantId2 = UUID.randomUUID();
         final String caseUrn = STRING.next();
         final String jurisdictionType = JurisdictionType.CROWN.name();
+        final String caseUrnForLinkedCases = STRING.next();
 
-        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, caseUrn, caseUrn, masterDefendantId, CASE_IN_HEARING, jurisdictionType, jurisdictionType);
-        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, null,caseUrn, masterDefendantId2, null, null, jurisdictionType);
+        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, caseUrn, caseUrn, masterDefendantId, CASE_IN_HEARING, jurisdictionType, jurisdictionType,
+                null, null);
+        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, null,caseUrn, masterDefendantId2, null, null, jurisdictionType,
+                null, null);
 
         try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -62,8 +65,10 @@ public class SearchAvailableHearingIT extends AbstractIT {
         final String caseUrn2 = STRING.next();
         final String jurisdictionType = JurisdictionType.CROWN.name();
 
-        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, null, caseUrn, masterDefendantId, MATCHED_DEFENDANTS, jurisdictionType, jurisdictionType);
-        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, null, caseUrn2, masterDefendantId, null, null, jurisdictionType);
+        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, null, caseUrn, masterDefendantId, MATCHED_DEFENDANTS, jurisdictionType, jurisdictionType,
+                null, null);
+        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, null, caseUrn2, masterDefendantId, null, null, jurisdictionType,
+                null, null);
 
         try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -84,8 +89,10 @@ public class SearchAvailableHearingIT extends AbstractIT {
         final String caseUrn = STRING.next();
         final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
 
-        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId,  null, caseUrn, masterDefendantId, CASE_AND_MATCHED_DEFENDANTS, jurisdictionTypeCrown, jurisdictionTypeCrown);
-        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, null, caseUrn, masterDefendantId2, null, null, jurisdictionTypeCrown);
+        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId,  null, caseUrn, masterDefendantId, CASE_AND_MATCHED_DEFENDANTS, jurisdictionTypeCrown, jurisdictionTypeCrown,
+                null, null);
+        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, null, caseUrn, masterDefendantId2, null, null, jurisdictionTypeCrown,
+                null, null);
 
         try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -94,5 +101,44 @@ public class SearchAvailableHearingIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyAvailableHearingListedForCaseInHearingAndMatchedDefendant(caseAndDefendantData);
        }
+    }
+
+    @Test
+    public void shouldListAvailableHearingsWithMatchedDefendant() {
+        final UUID hearingId1 = UUID.randomUUID();
+        final UUID masterDefendantId1 = UUID.randomUUID();
+        final String caseUrn = STRING.next();
+        final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
+
+        final CaseAndDefendantData caseAndDefendantData1 = new CaseAndDefendantData(hearingId1, null, caseUrn, masterDefendantId1, CASE_AND_MATCHED_DEFENDANTS, null, jurisdictionTypeCrown,
+                null, null);
+        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(null, null, caseUrn, masterDefendantId1, null, null, jurisdictionTypeCrown,
+                null, null);
+
+        try (ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1));
+             ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData2))) {
+            listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps2.verifyAvailableHearing(caseAndDefendantData1, masterDefendantId1);
+        }
+    }
+
+    @Test
+    public void shouldListAvailableHearingsWithCaseUrnForLinkedCases() {
+        final UUID hearingId1 = UUID.randomUUID();
+        final UUID masterDefendantId1 = UUID.randomUUID();
+        final String caseUrn = STRING.next();
+        final String caseUrnForLinkedCases = STRING.next();
+        final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
+
+        final CaseAndDefendantData caseAndDefendantData1 = new CaseAndDefendantData(hearingId1, null, caseUrn, masterDefendantId1, CASE_AND_MATCHED_DEFENDANTS, null, jurisdictionTypeCrown,
+                caseUrnForLinkedCases, caseUrnForLinkedCases);
+        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(null, null, null, null, MATCHED_DEFENDANTS, null, jurisdictionTypeCrown,
+                caseUrnForLinkedCases, caseUrnForLinkedCases);
+
+        try (ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1));
+             ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData2))) {
+            listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps2.verifyAvailableHearing(caseAndDefendantData1, masterDefendantId1);
+        }
     }
 }

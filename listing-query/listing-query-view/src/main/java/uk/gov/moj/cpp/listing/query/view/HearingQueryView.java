@@ -6,6 +6,8 @@ import static java.time.LocalDate.parse;
 import static java.time.LocalTime.MAX;
 import static java.time.LocalTime.MIN;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toSet;
 import static javax.json.Json.createArrayBuilder;
@@ -101,6 +103,8 @@ public class HearingQueryView {
     private static final String SEARCH_CRITERIA = "searchCriteria";
     private static final String NAME_LISTING_SEARCH_HEARING = "listing.search.hearing";
     private static final String EMPTY_STRING = "";  // It is needed as jsonb query cannot handle null as per our query condition
+    private static final String MATCHED_DEFENDANT_IDS = "matchedDefendantIds";
+    private static final String CASE_URN_FOR_LINKED_CASES = "caseUrnForLinkedCases";
 
     @Inject
     private HearingRepository repository;
@@ -163,6 +167,7 @@ public class HearingQueryView {
                 endTime
         );
 
+
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
                 createObjectBuilder()
                         .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
@@ -202,50 +207,64 @@ public class HearingQueryView {
         final String caseUrnsQueryParam = query.payloadAsJsonObject().getString(CASE_URN, null);
         final String searchCriteriaQueryParam = query.payloadAsJsonObject().getString(SEARCH_CRITERIA, null);
         final String jurisdictionType = query.payloadAsJsonObject().getString(JURISDICTION_TYPE, null);
+        final String matchingDefendantIdsParam = query.payloadAsJsonObject().getString(MATCHED_DEFENDANT_IDS, null);
+        final String caseUrnForLinkedCases = query.payloadAsJsonObject().getString(CASE_URN_FOR_LINKED_CASES, null);
         final boolean allocated = true;
 
-        // search hearing by incoming hearing id
-        final Hearing hearing = repository.findBy(UUID.fromString(hearingId));
-        final JsonNode listedCasesJsonNode = hearing.getProperties().findPath("listedCases");
-        final JsonNode endDateJson = hearing.getProperties().get("endDate");
-        final String endDate = endDateJson != null ? endDateJson.asText() : null;
-        final List<ListedCase> listedCases = extractListedCases(listedCasesJsonNode);
         final Set<String> masterDefendantSet = new HashSet<>();
         final Set<String> caseUrnSet = new HashSet<>();
         final Set<String> linkedCaseUrnSet = new HashSet<>();
         final Set<String> jurisdictionTypeSet = new HashSet<>();
 
-        if (Objects.nonNull(caseUrnsQueryParam)) {
+        if (nonNull(caseUrnsQueryParam)) {
             caseUrnSet.addAll(Stream.of(caseUrnsQueryParam.split(","))
                     .map(String::trim)
                     .map(String::toUpperCase)
                     .collect(Collectors.toSet()));
         }
 
+        if (nonNull(matchingDefendantIdsParam)) {
+            masterDefendantSet.addAll(Stream.of(matchingDefendantIdsParam.split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toSet()));
+        }
+
+        final List<ListedCase> listedCases = new ArrayList<>();
+
+        if (nonNull(hearingId)) {
+            // search hearing by incoming hearing id
+            final Hearing hearing = repository.findBy(UUID.fromString(hearingId));
+
+            if (nonNull(hearing)) {
+                final JsonNode listedCasesJsonNode = hearing.getProperties().findPath("listedCases");
+                listedCases.addAll(extractListedCases(listedCasesJsonNode));
+            }
+        }
+
         extractCaseUrn(searchCriteriaQueryParam, listedCases, caseUrnSet);
         extractMasterDefendantId(searchCriteriaQueryParam, listedCases, masterDefendantSet);
-        extractJurisdictionType(jurisdictionType, jurisdictionTypeSet);
         extractLinkedCaseUrn(searchCriteriaQueryParam, listedCases, linkedCaseUrnSet);
+        extractJurisdictionType(jurisdictionType, jurisdictionTypeSet);
 
         LOGGER.info("\n Query params -  " +
                         "allocated: {}, " +
                         "jurisdictionTypeSet : {}, " +
-                        "endDate : {}, " +
                         "hearingId : {}, " +
                         "caseUrns : {}, " +
                         "masterDefendantIds : {}, " +
-                        "linkedCaseUrn : {}",
-                allocated, jurisdictionTypeSet, endDate, hearingId, caseUrnSet, masterDefendantSet, linkedCaseUrnSet);
+                        "linkedCaseUrn : {}, " +
+                        "caseUrnForLinkedCases: {}",
+                allocated, jurisdictionTypeSet, hearingId, caseUrnSet, masterDefendantSet, linkedCaseUrnSet, caseUrnForLinkedCases);
 
         final List<Hearing> hearings = repository.findHearings(
                 allocated,
                 jurisdictionTypeSet,
-                endDate,
                 hearingId,
                 caseUrnSet,
                 masterDefendantSet,
-                linkedCaseUrnSet
-        );
+                linkedCaseUrnSet,
+                caseUrnForLinkedCases
+                );
 
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
                 createObjectBuilder()
@@ -455,18 +474,20 @@ public class HearingQueryView {
     }
 
     private void extractMasterDefendantId(String searchCriteria, List<ListedCase> listedCases, Set<String> masterDefendants) {
-        if (Objects.nonNull(searchCriteria) && searchCriteria.contains(MATCHED_DEFENDANTS.name())) {
+        if (nonNull(searchCriteria) && searchCriteria.contains(MATCHED_DEFENDANTS.name())) {
             masterDefendants.addAll(listedCases.stream()
                     .flatMap(l -> l.getDefendants().stream())
                     .map(d -> d.getMasterDefendantId().get().toString())
                     .collect(Collectors.toSet()));
-        } else {
+        }
+
+        if (masterDefendants.isEmpty()) {
             masterDefendants.add(EMPTY_STRING);
         }
     }
 
     private void extractCaseUrn(String searchCriteria, List<ListedCase> listedCases, Set<String> caseUrns) {
-        if (Objects.nonNull(searchCriteria) && searchCriteria.contains(SearchCriteria.CASE_IN_HEARING.name())) {
+        if (nonNull(searchCriteria) && searchCriteria.contains(SearchCriteria.CASE_IN_HEARING.name())) {
             caseUrns.addAll(listedCases.stream()
                     .map(l -> l.getCaseIdentifier().getCaseReference().toUpperCase())
                     .collect(Collectors.toSet()));
@@ -493,7 +514,7 @@ public class HearingQueryView {
     }
 
     private void extractJurisdictionType(String jurisdictionType, Set<String> jurisdictionTypeSet) {
-        if (Objects.nonNull(jurisdictionType)) {
+        if (nonNull(jurisdictionType)) {
             jurisdictionTypeSet.add(jurisdictionType);
         } else {
             jurisdictionTypeSet.add(JurisdictionType.CROWN.name());

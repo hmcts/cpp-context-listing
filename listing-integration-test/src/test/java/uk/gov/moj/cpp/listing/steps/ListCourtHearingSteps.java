@@ -60,6 +60,7 @@ import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
+import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.courts.ApplicationJurisdictionType;
 import uk.gov.justice.listing.courts.ApplicationStatus;
 import uk.gov.justice.listing.courts.Gender;
@@ -231,6 +232,11 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
+    public void whenCaseIsSubmittedForListingWithBookedSlot() {
+        final Response response = getResponseCaseSubmittedForListingBookedSlot();
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
     public void whenCaseIsSubmittedForListingWithLegalEntity() {
         final Response response = getResponseCaseSubmittedForListingWithLegalEntity();
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
@@ -259,6 +265,24 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         } else {
             listCourtHearingData = getListCourtHearingData(hearingsData);
         }
+        final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
+
+        request = listCourtHearingJsonObject.toString();
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\tHeader = {}\n\n", listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING, request, getLoggedInHeader());
+
+        return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING,
+                request, getLoggedInHeader());
+    }
+
+    private Response getResponseCaseSubmittedForListingBookedSlot() {
+
+        stubReferenceDataForFirstHearing();
+
+        final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
+
+        ListCourtHearing listCourtHearingData = createListCourtHearingBookedSlotData(hearingsData);
+
         final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
 
         request = listCourtHearingJsonObject.toString();
@@ -312,6 +336,24 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("hearing.hearingLanguage"), is("ENGLISH"));
         assertThat(jsonResponse.get("hearing.listedCases[0].id"), is(jsRequest.getString("hearings[0].prosecutionCases[0].id")));
         assertThat(jsonResponse.get("hearing.listedCases[0].defendants[0].id"), is(jsRequest.getString("hearings[0].prosecutionCases[0].defendants[0].id")));
+    }
+
+    public void verifyHearingListedWithBookedSlotsInActiveMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingListed);
+        LOGGER.debug("jsonResponse from privateMessageConsumerHearingListed: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("hearing.id"), is(jsRequest.getString("hearings[0].id")));
+        assertThat(jsonResponse.get("hearing.hearingLanguage"), is("ENGLISH"));
+
+        final RotaSlot rotaSlot = hearingsData.getHearingData().get(0).getBookedSlots().get(0);
+        assertThat(jsonResponse.get("hearing.nonDefaultDays[0].courtRoomId"), is(rotaSlot.getCourtRoomId().get()));
+        assertThat(jsonResponse.get("hearing.nonDefaultDays[0].duration"), is(rotaSlot.getDuration().get()));
+        assertThat(jsonResponse.get("hearing.nonDefaultDays[0].oucode"), is(rotaSlot.getOucode().get()));
+        assertThat(jsonResponse.get("hearing.nonDefaultDays[0].session"), is(rotaSlot.getSession().get()));
+        assertThat(jsonResponse.get("hearing.nonDefaultDays[0].courtScheduleId"), is(rotaSlot.getCourtScheduleId().get()));
     }
 
     public void verifyHearingListedInActiveMQForStandaloneApplication() {
@@ -410,6 +452,75 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
                                         equalTo(true))
+                        )));
+    }
+
+    public void verifyHearingListedFromAPIAllocatedForBookSlots() {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), true));
+
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[0].id",
+                                        equalTo(hearingData.getId().toString())),
+                                withJsonPath("$.hearings[0].jurisdictionType",
+                                        equalTo(hearingData.getJurisdictionType())),
+                                withJsonPath("$.hearings[0].courtCentreId",
+                                        equalTo(hearingData.getCourtCentreId().toString())),
+                                withJsonPath("$.hearings[0].type.id",
+                                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
+                                withJsonPath("$.hearings[0].type.description",
+                                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
+                                withJsonPath("$.hearings[0].startDate",
+                                        equalTo(hearingData.getHearingStartDate().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicationType",
+                                        equalTo(hearingData.getCourtApplications().get(0).getType())),
+                                withJsonPath("$.hearings[0].courtApplications[0].id",
+                                        equalTo(hearingData.getCourtApplications().get(0).getId().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].linkedCaseId",
+                                        equalTo(hearingData.getCourtApplications().get(0).getLinkedCaseId().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
+                                        equalTo(hearingData.getCourtApplications().get(0).getParentApplicationId().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicationParticulars",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicationParticulars())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.lastName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getLastName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address1",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress1())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address2",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress2().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address3",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress3().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address4",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress4().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address5",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress5().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.postcode",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getPostcode().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.firstName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getFirstName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].lastName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getLastName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address1",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress1())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address2",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress2().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address3",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress3().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address4",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress4().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address5",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress5().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.postcode",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get()))
+
                         )));
     }
 
@@ -690,6 +801,30 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
     }
 
+    public void verifyAvailableHearing(final CaseAndDefendantData caseAndDefendantData, final UUID masterDefendantId) {
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.available.search.hearings-defendant.ids"),
+                        masterDefendantId.toString()));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[0].id",
+                                        equalTo(caseAndDefendantData.getHearingId().toString())),
+                                withJsonPath("$.hearings[0].jurisdictionType",
+                                        equalTo(JurisdictionType.CROWN.name())),
+                                withJsonPath("$.hearings[0].allocated",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].endDate",
+                                        equalTo(LocalDate.now().plusDays(1).toString())),
+                                withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
+                                        equalTo(caseAndDefendantData.getCaseUrn())),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
+                                        equalTo(caseAndDefendantData.getMasterDefendantId().toString()))
+                        )));
+    }
+
     public void verifyNonExistentHearingById() {
 
         final String url = generateUrlForFindingAHearingById("4e6d8d78-fa61-4102-8d14-2042df85faab");
@@ -718,6 +853,87 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 format(readConfig().getProperty("listing.search.hearing"),
                         rawId
                 ));
+    }
+
+    private ListCourtHearing createListCourtHearingBookedSlotData(final HearingsData hearingsData) {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+
+        return ListCourtHearing.listCourtHearing()
+                .withAdjournedFromDate(Optional.of(LocalDate.now().toString()))
+                .withHearings(singletonList(HearingListingNeeds.hearingListingNeeds()
+                        .withBookedSlots(hearingData.getBookedSlots())
+                        .withCourtCentre(CourtCentre.courtCentre()
+                                .withId(hearingData.getCourtCentreId())
+                                .withName(hearingData.getName())
+                                .withRoomId(ofNullable(hearingData.getCourtRoomId()))
+                                .build())
+                        .withBookingReference(Optional.of(randomUUID()))
+                        .withCourtApplications(singletonList(CourtApplication.courtApplication()
+                                .withId(hearingData.getCourtApplications().get(0).getId())
+                                .withLinkedCaseId(of(hearingData.getCourtApplications().get(0).getLinkedCaseId()))
+                                .withParentApplicationId(of(hearingData.getCourtApplications().get(0).getParentApplicationId()))
+                                .withType(CourtApplicationType.courtApplicationType()
+                                        .withId(randomUUID())
+                                        .withApplicationCode(of(STRING.next()))
+                                        .withApplicationType(hearingData.getCourtApplications().get(0).getType())
+                                        .withApplicationLegislation(of(STRING.next()))
+                                        .withApplicationCategory(STRING.next())
+                                        .withLinkType(LinkType.EITHER)
+                                        .withApplicationJurisdictionType(ApplicationJurisdictionType.CROWN)
+                                        .build())
+                                .withApplicationReceivedDate(LocalDate.now().toString())
+                                .withApplicationReference(of(STRING.next()))
+                                .withApplicationParticulars(of(hearingData.getCourtApplications().get(0).getApplicationParticulars()))
+                                .withApplicationStatus(ApplicationStatus.LISTED)
+                                .withApplicant(CourtApplicationParty.courtApplicationParty()
+                                        .withId(hearingData.getCourtApplications().get(0).getApplicant().getId())
+                                        .withPersonDetails(of(Person.person().withLastName(hearingData.getCourtApplications().get(0).getApplicant().getLastName())
+                                                .withFirstName(of(hearingData.getCourtApplications().get(0).getApplicant().getFirstName()))
+                                                .withGender(Gender.FEMALE)
+                                                .withAddress(getAddress(hearingData.getCourtApplications().get(0).getApplicant().getAddress()))
+                                                .build()))
+                                        .build())
+                                .withRespondents(singletonList(
+                                        CourtApplicationRespondent.courtApplicationRespondent()
+                                                .withPartyDetails(CourtApplicationParty.courtApplicationParty()
+                                                        .withId(hearingData.getCourtApplications().get(0).getRespondent().getId())
+                                                        .withPersonDetails(of(Person.person().withLastName(hearingData.getCourtApplications().get(0).getRespondent().getLastName())
+                                                                .withFirstName(of(hearingData.getCourtApplications().get(0).getRespondent().getFirstName()))
+                                                                .withGender(Gender.FEMALE)
+                                                                .withAddress(getAddress(hearingData.getCourtApplications().get(0).getRespondent().getAddress()))
+                                                                .build()))
+                                                        .build())
+                                                .build()))
+                                .build()))
+                        .withCourtApplicationPartyListingNeeds(hearingData.getCourtApplicationPartyNeeds())
+                        .withId(hearingData.getId())
+                        .withEarliestStartDateTime(hearingData.getHearingStartTime() != null ? of(hearingData.getHearingStartTime()) : Optional.empty())
+                        .withEndDate(hearingData.getHearingEndDate() != null ? of(hearingData.getHearingEndDate().toString()) : Optional.empty())
+                        .withEstimatedMinutes(hearingData.getHearingEstimateMinutes())
+                        .withJudiciary(hearingData.getJudiciary() != null
+                                ? singletonList(JudicialRole.judicialRole()
+                                .withJudicialId(hearingData.getJudiciary().get(0).getJudicialId())
+                                .withJudicialRoleType(JudicialRoleType.judicialRoleType()
+                                        .withJudiciaryType(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())
+                                        .withJudicialRoleTypeId(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudicialRoleTypeId())
+                                        .build())
+                                .withIsDeputy(hearingData.getJudiciary().get(0).getIsDeputy())
+                                .withIsBenchChairman(hearingData.getJudiciary().get(0).getIsBenchChairman())
+                                .build())
+                                : null)
+                        .withJurisdictionType(hearingData.getJurisdictionType() != null ? JurisdictionType.valueFor(hearingData.getJurisdictionType()).get() : null)
+                        .withWeekCommencingDate(hearingData.getWeekCommencingStartDate() == null ? Optional.empty() :
+                                of(WeekCommencingDate.weekCommencingDate()
+                                        .withStartDate(FORMATTER.format(hearingData.getWeekCommencingStartDate()))
+                                        .withDuration(Optional.of(hearingData.getWeekCommencingDuration()))
+                                        .build()))
+                        .withType(HearingType.hearingType()
+                                .withDescription(hearingData.getHearingTypeData().getTypeDescription())
+                                .withId(hearingData.getHearingTypeData().getTypeId())
+                                .build())
+                        .withReportingRestrictionReason(of(hearingData.getReportingRestrictionReason()))
+                        .build()))
+                .build();
     }
 
     private ListCourtHearing getListCourtHearingData(final HearingsData hearingsData) {
@@ -1365,6 +1581,30 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("jsonResponse from privateMessageConsumerHearingPartiallyUpdated: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("hearingIdToBeUpdated"), is(hearingId.toString()));
+    }
+
+    public void verifyHearingConfirmedInPublicMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        verifyHearingConfirmedEvent();
+    }
+
+    private void verifyHearingConfirmedEvent() {
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingConfirmed: {}", jsonResponse.prettify());
+
+        verifyHearingPublicDetails(jsonResponse, "confirmedHearing");
+    }
+
+    private void verifyHearingPublicDetails(final JsonPath jsonResponse, final String publicEventType) {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        Assert.assertThat(jsonResponse.get(publicEventType + ".id"), is(hearingData.getId().toString()));
+        Assert.assertThat(jsonResponse.get(publicEventType + ".courtCentre.roomId"), is(hearingData.getCourtRoomId().toString()));
+        Assert.assertThat(jsonResponse.get(publicEventType + ".courtCentre.id"), is(hearingData.getCourtCentreId().toString()));
+        Assert.assertThat(jsonResponse.get(publicEventType + ".courtCentre.name"), is("Liverpool Crown Court"));
+        Assert.assertThat(jsonResponse.get(publicEventType + ".courtApplicationIds[0]"), is(hearingData.getCourtApplications().get(0).getId().toString()));
     }
 
     private static String getStringFromResource(final String path) throws IOException {

@@ -13,6 +13,7 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
 import uk.gov.justice.core.courts.CustodyTimeLimit;
+import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.courts.HearingLanguageNeeds;
 import uk.gov.justice.services.test.utils.core.random.BigDecimalGenerator;
 import uk.gov.justice.services.test.utils.core.random.StringGenerator;
@@ -35,6 +36,7 @@ import uk.gov.moj.cpp.listing.steps.data.OrganisationData;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,6 +49,13 @@ public class HearingsDataFactory {
     private static final HearingTypeData PTP_HEARING_TYPE = new HearingTypeData(UUID.fromString("52edf232-3c09-4c74-a6ad-737985c2e662"), "PTP");
     private static final BailStatus BAIL_CONDITIONAL = new BailStatus.Builder().withId(fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).withCode("P").withDescription("Custody or remanded into custody").build();
 
+    public static final ZonedDateTime SLOT_START_TIME = ZonedDateTime.now();
+    public static final Integer SLOT_DURATION = 25;
+    public static final String SLOT_SCHEDULE_ID = randomUUID().toString();
+    public static final String SLOT_SESSION = "AM";
+    public static final String SLOT_OUCODE = "121RTY";
+    public static final Integer SLOT_COURT_ROOM_ID = 123498;
+
     public static List<HearingData> hearingsData() {
         return manyRandomHearings(2);
     }
@@ -56,7 +65,11 @@ public class HearingsDataFactory {
     }
 
     public static List<HearingData> hearingsDataForWeekCommencing(final LocalDate weekCommencingStartDate, final Integer weekCommencingDuration) {
-        return manyRandomHearingsWithWeekCommencing(1, weekCommencingStartDate, weekCommencingDuration);
+        return createRandomHearingWithWeekCommencing(1, weekCommencingStartDate, weekCommencingDuration);
+    }
+
+    public static List<HearingData> hearingsDataForBookedSlot() {
+        return createRandomHearingsWitBookedSlots(1);
     }
 
     public static List<HearingData> hearingsDataWithLegalEntity() {
@@ -172,9 +185,15 @@ public class HearingsDataFactory {
         return singletonList(randomHearingWithSingleDefendantSingleOffence());
     }
 
-    private static List<HearingData> manyRandomHearingsWithWeekCommencing(final Integer numberOfHearings, final LocalDate weekCommencingStartDate, final Integer weekCommencingDuration) {
+    private static List<HearingData> createRandomHearingWithWeekCommencing(final Integer numberOfHearings, final LocalDate weekCommencingStartDate, final Integer weekCommencingDuration) {
         return IntStream.range(0, numberOfHearings)
                 .mapToObj((int i) -> randomHearingWithWeekCommencingDates(null, null, null, weekCommencingStartDate, weekCommencingDuration))
+                .collect(toList());
+    }
+
+    private static List<HearingData> createRandomHearingsWitBookedSlots(final Integer numberOfHearings) {
+        return IntStream.range(0, numberOfHearings)
+                .mapToObj((int i) -> createRandomHearingWithBookedSlot(null, randomUUID(), null))
                 .collect(toList());
     }
 
@@ -391,6 +410,26 @@ public class HearingsDataFactory {
                 singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
                 singletonList(randomCourtApplicationPartyNeed()),
                 weekCommencingStartDate, null, weekCommencingDuration);
+    }
+
+    private static HearingData createRandomHearingWithBookedSlot(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
+        final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
+        final List<RotaSlot> bookedSlots = Arrays.asList(RotaSlot.rotaSlot()
+                .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
+                .withDuration(of(SLOT_DURATION))
+                .withCourtScheduleId(of(SLOT_SCHEDULE_ID))
+                .withOucode(of(SLOT_OUCODE))
+                .withSession(of(SLOT_SESSION))
+                .withStartTime(SLOT_START_TIME)
+                .build());
+
+        return new HearingData(randomUUID(), randomUUID(), STRING.next(), PTP_HEARING_TYPE, LocalDate.now(),
+                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                courtRoomId, ZonedDateTime.now(), listedCaseData,
+                judicialRoles, JURISDICTION_TYPE, STRING.next(),
+                singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()),
+                bookedSlots);
     }
 
     private static HearingData randomHearingWithAdjournmentFromDate(final UUID courtCentreId, final List<JudicialRoleData> judicialRoles) {

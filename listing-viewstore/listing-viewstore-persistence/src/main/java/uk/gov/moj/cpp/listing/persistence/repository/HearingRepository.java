@@ -104,11 +104,11 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
      *
      * @param allocated            property to search for - mandatory.
      * @param jurisdictionTypes    to search for or <code>null</code> for any jurisdictionTypes.
-     * @param endDate              to search for hearing date today and future.
      * @param hearingId            property to search for - mandatory.
      * @param caseUrnSet           to search for or <code>empty string</code> for any case urn.
      * @param masterDefendantIdSet to search for or <code>empty string</code> for any master defendant id.
      * @param linkedCaseUrn        to search for or <code>empty string</code> for any linked case urn.
+     * @param caseUrnForLinkedCases to search for or <code>empty string</code> for any linked case urn.
      * @return Hearings.
      */
     @Query(value = "select id, properties  " +
@@ -117,16 +117,29 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "(cast(properties ->> 'allocated' as boolean) = ?1  " +
             "and (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)" +
             "and (properties ->> 'jurisdictionType' in (?2))  " +
-            "and (?3 is null or cast(properties ->> 'endDate' as date) >= CURRENT_DATE)  " +
-            "and (?4 is null or properties ->> 'id' != cast(?4 as text)))  " +
+            "and (properties ->> 'endDate' is null or cast(properties ->> 'endDate' as date) >= CURRENT_DATE)  " +
+            "and (?3 is null or properties ->> 'id' != cast(?3 as text)))  " +
             "AND " +
-            "((properties ->> 'id' != cast(?4 as text) and (id in ( select distinct(b.id) from " +
+            "(id in ( select distinct(b.id) from " +
             " (select id, properties, jsonb_array_elements(properties->'listedCases') ->> 'id' as allCaseId from hearing ) as b " +
             "where  allCaseId in (select cases ->> 'id' as caseId from " +
             "  ( select jsonb_array_elements(properties -> 'listedCases') as cases from hearing ) " +
-            " as a where ?5 is null or UPPER(cases ->'caseIdentifier' ->> 'caseReference') in (?5))))) " +
+            " as a where UPPER(cases ->'caseIdentifier' ->> 'caseReference') in (?4)) " +
+            " and (?3 is null or properties ->> 'id' != cast(?3 as text))) " +
+            "OR " +
+            "(id in (SELECT distinct(id) " +
+            "   FROM ( " +
+            "   SELECT id FROM ( " +
+            "   SELECT id, JSONB_ARRAY_ELEMENTS(properties -> 'listedCases') -> 'caseIdentifier' AS linkedCaseIdentifier FROM hearing) a " +
+            "   WHERE UPPER(linkedCaseIdentifier ->> 'caseReference') IN ( " +
+            "   SELECT linkedCaseUrn FROM ( " +
+            "   SELECT id, properties, JSONB_ARRAY_ELEMENTS(JSONB_ARRAY_ELEMENTS(properties -> 'listedCases') -> 'linkedCases') ->> 'caseUrn' AS linkedCaseUrn " +
+            "   FROM (SELECT id, properties, JSONB_ARRAY_ELEMENTS(properties -> 'listedCases') -> 'caseIdentifier' AS linkedCaseIdentifier FROM hearing) allLinkedCaseIdentifier " +
+            "   WHERE UPPER(linkedCaseIdentifier ->> 'caseReference') = CAST(?7 as text) " +
+            "   ) AS allLinkedCaseReference " +
+            "   )) linkedCaseHearing)) " +
             "OR" +
-            " (properties ->> 'id' != cast(?4 as text) and id in ( select distinct(b.id) from " +
+            " (id in ( select distinct(b.id) from " +
             "(select id, properties, jsonb_array_elements(properties->'listedCases') ->> 'id' as matchingCaseId from hearing )as b where " +
             "matchingCaseId in ((select listedCases ->> 'id' from " +
             "(select jsonb_array_elements(listedCases -> 'defendants') as defendants, listedCases from " +
@@ -135,23 +148,25 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "( select defendants ->> 'masterDefendantId' as masterDefendantIds from " +
             "(select jsonb_array_elements(listedCases -> 'defendants') as defendants from " +
             "(select jsonb_array_elements(properties -> 'listedCases') as listedCases from hearing)as defendants) as masterDefendantIds " +
-            " where ?6 is null or defendants ->> 'masterDefendantId' in (?6))))) " +
+            " where defendants ->> 'masterDefendantId' in (?5)))) " +
+            " and (?3 is null or properties ->> 'id' != cast(?3 as text))) " +
             "OR " +
-            "(properties ->> 'id' != cast(?4 as text) and id in (select distinct( id ) from (" +
+            "(id in (select distinct( id ) from (" +
             "SELECT id FROM ( " +
             "SELECT id, Jsonb_array_elements(  properties -> 'listedCases')  -> 'caseIdentifier' AS linkedCaseIdentifier FROM   hearing) allLinkedCaseIdentifier " +
-            "WHERE  UPPER(linkedCaseIdentifier ->> 'caseReference') IN ( ?7 )) allLinkedCaseReference)"+
+            "WHERE UPPER(linkedCaseIdentifier ->> 'caseReference') IN (?6) " +
+            "and (?3 is null or properties ->> 'id' != cast(?3 as text))) allLinkedCaseReference) " +
             "))) "
             , isNative = true)
 
 
     List<Hearing> findHearings(final boolean allocated,
                                final Set<String> jurisdictionTypes,
-                               final String endDate,
                                final String hearingId,
                                final Set<String> caseUrnSet,
                                final Set<String> masterDefendantIdSet,
-                               final Set<String> linkedCaseUrn);
+                               final Set<String> linkedCaseUrn,
+                               final String caseUrnForLinkedCases);
 
 
     /**

@@ -69,6 +69,7 @@ import uk.gov.justice.listing.courts.HearingLanguage;
 import uk.gov.justice.listing.courts.HearingUpdated;
 import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.courts.OffencesForDefendantUpdated;
+import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdatedOffences;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
@@ -120,6 +121,7 @@ import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearing
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommandCollectionConverter;
+import uk.gov.moj.cpp.listing.event.processor.util.HearingListedToUpdateHearingForListingCommand;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -173,6 +175,9 @@ public class ListingEventProcessorTest {
     private static final String HEARING_IDS = "hearingIds";
     private static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
     private static final String REMOVAL_REASON = "removalReason";
+
+    private static final String COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
+
     @Spy
     private final Enveloper enveloper = createEnveloper();
     @Spy
@@ -271,6 +276,8 @@ public class ListingEventProcessorTest {
     private AllocatedHearingExtendedFactory allocatedHearingExtendedFactory;
     @Mock
     private HearingExtended hearingExtended;
+    @Mock
+    private HearingListedToUpdateHearingForListingCommand hearingListedToUpdateHearingForListingCommand;
 
     @InjectMocks
     private ListingEventProcessor listingEventProcessor;
@@ -285,6 +292,7 @@ public class ListingEventProcessorTest {
         given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
 
         given(hearingListed.getHearing()).willReturn(hearing);
+        given(hearing.getIsSlotsBooked()).willReturn(empty());
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).
                 willReturn(singletonList(addApplicationToHearingCommand));
@@ -296,6 +304,31 @@ public class ListingEventProcessorTest {
 
         //then
         verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+    }
+
+    @Test
+    public void shouldHandleHearingListedEventMessageAndRaiseCommandUpdateHearingWhenBookedSlot() throws Exception {
+        //Given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(enveloperFunction.apply(any(HearingListed.class))).willReturn(finalEnvelope);
+        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
+
+        given(hearingListed.getHearing()).willReturn(hearing);
+        given(hearing.getIsSlotsBooked()).willReturn(of(true));
+        given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addHearingToCaseCommand));
+        given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)). willReturn(singletonList(addApplicationToHearingCommand));
+        given(hearingListedToUpdateHearingForListingCommand.convert(hearing)).willReturn(UpdateHearingForListingEnriched.updateHearingForListingEnriched().build());
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
+                ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        //when
+        listingEventProcessor.handleHearingListedMessage(envelope);
+
+        //then
+        verify(sender, times(3)).send(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED));
     }
 
     @Test
@@ -1335,7 +1368,7 @@ public class ListingEventProcessorTest {
                         .withJudicialRoleType(
                                 uk.gov.justice.core.courts.JudicialRoleType.judicialRoleType()
                                         .withJudiciaryType(CIRCUIT_JUDGE)
-                                        .withJudicialRoleTypeId(Optional.empty())
+                                        .withJudicialRoleTypeId(empty())
                                         .build())
                         .build()))
                 .withProsecutionCases(Arrays.asList(uk.gov.justice.core.courts.ConfirmedProsecutionCase.confirmedProsecutionCase()
@@ -1360,7 +1393,7 @@ public class ListingEventProcessorTest {
                 .withDefendants(defendants)
                 .withId(randomUUID())
                 .withCaseMarkers(Collections.EMPTY_LIST)
-                .withOriginatingOrganisation(Optional.empty())
+                .withOriginatingOrganisation(empty())
                 .build();
     }
 

@@ -30,7 +30,8 @@ public class ExtendHearingIT extends AbstractIT {
     @Test
     public void shouldExtendHearingForCase() throws IOException {
 
-        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, UUID.randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE);
+        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, UUID.randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE,
+                null, null);
 
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -52,7 +53,8 @@ public class ExtendHearingIT extends AbstractIT {
     @Test
     public void shouldExtendHearingPartially() throws IOException {
 
-        final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, UUID.randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE);
+        final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, UUID.randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE,
+                null ,null);
 
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(allocatedHearingCaseAndDefendantData))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -80,7 +82,7 @@ public class ExtendHearingIT extends AbstractIT {
     @Test
     public void shouldExtendHearingWhole() throws IOException {
 
-        final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, UUID.randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE);
+        final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, UUID.randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE, null, null);
 
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(allocatedHearingCaseAndDefendantData))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();

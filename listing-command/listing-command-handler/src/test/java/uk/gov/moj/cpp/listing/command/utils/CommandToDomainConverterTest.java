@@ -8,6 +8,7 @@ import static org.hamcrest.core.IsNot.not;
 import uk.gov.justice.core.courts.DefendantListingNeeds;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.moj.cpp.listing.domain.*;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -72,6 +73,43 @@ public class CommandToDomainConverterTest {
         assertThat(actual.getWeekCommencingDurationInWeeks(), is(commandHearing.getWeekCommencingDate().get().getDuration()));
 
     }
+
+    @Test
+    public void shouldConvertHearingCommandToHearingDomainForBookedSlots() {
+
+        //given
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingForBookedSlots();
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing);
+
+        //then
+        assertThat(actual.getId(), is(commandHearing.getId()));
+        assertThat(actual.getJurisdictionType().name(), is(commandHearing.getJurisdictionType().name()));
+        assertJudicialRole(commandHearing, actual);
+        assertCourtApplications(commandHearing, actual);
+
+        assertThat(actual.getProsecutorDatesToAvoid(), is(commandHearing.getProsecutorDatesToAvoid()));
+        final RotaSlot rotaSlot = commandHearing.getBookedSlots().get(0);
+        final NonDefaultDay nonDefaultDay = actual.getNonDefaultDays().get(0);
+        assertThat(nonDefaultDay.getCourtRoomId(), is(rotaSlot.getCourtRoomId()));
+        assertThat(nonDefaultDay.getCourtScheduleId(), is(rotaSlot.getCourtScheduleId()));
+        assertThat(nonDefaultDay.getDuration(), is(rotaSlot.getDuration()));
+        assertThat(nonDefaultDay.getOucode(), is(rotaSlot.getOucode()));
+        assertThat(nonDefaultDay.getSession(), is(rotaSlot.getSession()));
+        assertThat(nonDefaultDay.getStartTime(), is(rotaSlot.getStartTime()));
+
+        assertThat(actual.getListingDirections(), is(commandHearing.getListingDirections()));
+        assertThat(actual.getType().getId(), is(commandHearing.getType().getId()));
+        assertThat(actual.getType().getDescription(), is(commandHearing.getType().getDescription()));
+        assertThat(actual.getCourtRoomId(), is(commandHearing.getCourtCentre().getRoomId()));
+        assertThat(actual.getCourtCentreId(), is(commandHearing.getCourtCentre().getId()));
+        assertThat(actual.getEstimatedMinutes(), is(commandHearing.getEstimatedMinutes()));
+        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().get().toString())));
+        assertThat(actual.getEndDate(), is(commandHearing.getEndDate()));
+        assertThat(actual.getReportingRestrictionReason(), is(commandHearing.getReportingRestrictionReason()));
+    }
+
 
     @Test
     public void shouldConvertHearingCommandToHearingDomainForStandaloneApplication() {

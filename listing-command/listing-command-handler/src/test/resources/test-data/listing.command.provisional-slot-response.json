@@ -1,0 +1,13 @@
+{
+  "provisionalSlots": [
+    {
+      "courtScheduleId": "PROVISIONAL_SCHEDULE_ID",
+      "ouCode": "PROVISIONAL_OUCODE",
+      "courtSession": "PROVISIONAL_SESSION",
+      "duration":0,
+      "courtRoomNumber": "PROVISIONAL_COURT_ROOM",
+      "startTime": "PROVISIONAL_START_TIME",
+      "maxSlots": 0
+    }
+  ]
+}

@@ -29,6 +29,11 @@ public class CommandBuilder {
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
     }
 
+    public HearingListingNeeds buildCommandHearingForBookedSlots() {
+        JsonObject hearingJsonObject = FileUtil.givenPayload("/test-data/listing.commands.hearing-booked-slots.json");
+        return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
+    }
+
     public HearingListingNeeds buildCommandHearingStandalone() {
         JsonObject hearingJsonObject = FileUtil.givenPayload("/test-data/listing.commands.hearing-standalone.json");
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);

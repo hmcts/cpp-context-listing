@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
 import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
+import uk.gov.justice.core.courts.RotaSlot;
+import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -29,6 +31,7 @@ public class HearingData {
     private int weekCommencingDuration;
 
     private String adjournmentDate;
+    private List<RotaSlot> bookedSlots;
 
     public HearingData(final UUID id, final UUID courtCentreId, final HearingTypeData hearingTypeData,
                        final LocalDate hearingStartDate, final LocalDate hearingEndDate,
@@ -84,6 +87,34 @@ public class HearingData {
         this.weekCommencingStartDate = weekCommencingStartDate;
         this.weekCommencingEndDate = weekCommencingEndDate;
         this.weekCommencingDuration = weekCommencingDuration;
+    }
+
+    public HearingData(final UUID id, final UUID courtCentreId, final String name, final HearingTypeData hearingTypeData,
+                       final LocalDate hearingStartDate, final LocalDate hearingEndDate,
+                       final int hearingEstimateMinutes, final UUID courtRoomId,
+                       final ZonedDateTime hearingStartTime, final List<ListedCaseData> listedCases,
+                       final List<JudicialRoleData> judiciary, final String jurisdictionType,
+                       final String reportingRestrictionReason,
+                       final List<CourtApplicationData> courtApplications,
+                       final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds,
+                       final List<RotaSlot> bookedSlots) {
+
+        this.id = id;
+        this.courtCentreId = courtCentreId;
+        this.name = name;
+        this.hearingEstimateMinutes = hearingEstimateMinutes;
+        this.hearingStartDate = hearingStartDate;
+        this.hearingEndDate = hearingEndDate;
+        this.hearingTypeData = hearingTypeData;
+        this.courtRoomId = courtRoomId;
+        this.hearingStartTime = hearingStartTime;
+        this.listedCases = listedCases;
+        this.judiciary = judiciary;
+        this.jurisdictionType = jurisdictionType;
+        this.reportingRestrictionReason = reportingRestrictionReason;
+        this.courtApplications = courtApplications;
+        this.courtApplicationPartyNeeds = courtApplicationPartyNeeds;
+        this.bookedSlots = bookedSlots;
     }
 
     public HearingData(final UUID id, final UUID courtCentreId, final HearingTypeData hearingTypeData,
@@ -187,5 +218,9 @@ public class HearingData {
 
     public String getAdjournmentDate() {
         return adjournmentDate;
+    }
+
+    public List<RotaSlot> getBookedSlots() {
+        return bookedSlots;
     }
 }

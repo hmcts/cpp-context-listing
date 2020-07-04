@@ -10,15 +10,13 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
-import org.apache.commons.collections.CollectionUtils;
-import uk.gov.justice.core.courts.ConfirmedHearing;
-import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.commands.LinkedToCases;
 import uk.gov.justice.listing.commands.UpdateLinkedCaseInHearing;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingUpdated;
+import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdateHearingToCaseCommand;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
@@ -60,6 +58,7 @@ import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearing
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommandCollectionConverter;
+import uk.gov.moj.cpp.listing.event.processor.util.HearingListedToUpdateHearingForListingCommand;
 
 import java.util.List;
 import java.util.Optional;
@@ -139,6 +138,7 @@ public class ListingEventProcessor {
     static final String COMMAND_UPDATE_LINKED_CASES = "listing.command.update-linked-cases";
     static final String COMMAND_UPDATE_LINKED_CASE_IN_HEARING = "listing.command.update-linked-case-in-hearing";
     static final String COMMAND_UPDATE_HEARING_TO_CASE = "listing.command.update-hearing-to-case";
+    static final String COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
     static final String PRIVATE_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
     static final String PRIVATE_COMMAND_HEARING_VACATE_TRIAL = "listing.command.hearing-vacate-trial";
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
@@ -202,6 +202,9 @@ public class ListingEventProcessor {
     private UpdateCaseMarkersForHearingCommandCollectionConverter updateCaseMarkersForHearingCommandCollectionConverter;
 
     @Inject
+    private HearingListedToUpdateHearingForListingCommand hearingListedToUpdateHearingForListingCommand;
+
+    @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
 
     @Inject
@@ -221,6 +224,7 @@ public class ListingEventProcessor {
 
         sendCommandAddHearingToCase(envelope);
         sendCommandAddApplicationToHearing(envelope);
+        sendCommandUpdateHearingForListing(envelope);
     }
 
     @Handles(PRIVATE_EVENT_TRIAL_VACATED)
@@ -638,6 +642,18 @@ public class ListingEventProcessor {
                     objectToJsonValueConverter.convert(addApplicationToHearingCommand)));
 
         });
+    }
+
+    private void sendCommandUpdateHearingForListing(JsonEnvelope envelope) {
+        final HearingListed event = getHearingListedEvent(envelope);
+        final Optional<Boolean> isSlotsBooked = event.getHearing().getIsSlotsBooked();
+
+        if(isSlotsBooked.isPresent() && isSlotsBooked.get()){
+            final UpdateHearingForListingEnriched updateHearingForListingEnriched = hearingListedToUpdateHearingForListingCommand.convert(event.getHearing());
+            sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED),
+                    objectToJsonValueConverter.convert(updateHearingForListingEnriched)));
+        }
+
     }
 
     private void sendCommandAddApplicationToListedHearing(JsonEnvelope envelope) {

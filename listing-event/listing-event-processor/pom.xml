@@ -149,6 +149,11 @@
                                         <type>reference</type>
                                         <implementation>java.time.LocalDate</implementation>
                                     </typeMapping>
+                                    <typeMapping>
+                                        <name>localTime</name>
+                                        <type>reference</type>
+                                        <implementation>java.time.LocalTime</implementation>
+                                    </typeMapping>
                                 </typeMappings>
                             </generatorProperties>
                         </configuration>

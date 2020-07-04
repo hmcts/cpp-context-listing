@@ -6,6 +6,7 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static javax.json.JsonValue.NULL;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
@@ -104,6 +105,7 @@ import uk.gov.moj.cpp.listing.command.utils.CourtsUpdatedOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.NonDefaultDayDurationBuilder;
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCaseDefendantOffenceIdsBuilder;
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
+import uk.gov.moj.cpp.listing.command.utils.RotaSlotToNonDefaultDayConverter;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
 import uk.gov.moj.cpp.listing.common.azure.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
@@ -127,7 +129,6 @@ import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -231,6 +232,9 @@ public class ListingCommandHandler {
     @Inject
     private NonDefaultDayDurationBuilder nonDefaultDayDurationBuilder;
 
+    @Inject
+    private RotaSlotToNonDefaultDayConverter rotaSlotToNonDefaultDayConverter;
+
     private static final String DEFENDANT_ID = "defendantId";
     private static final String CASE_ID = "caseId";
     private static final String LEGAL_AID_STATUS = "legalAidStatus";
@@ -268,20 +272,28 @@ public class ListingCommandHandler {
 
             List<uk.gov.justice.listing.commands.NonDefaultDay> nonDefaultDaysList = new ArrayList<>();
             Optional<UUID> bookingReference = Optional.empty();
-
             final AtomicBoolean countBasedSlots = new AtomicBoolean(false);
-            if (listCourtHearing.getAdjournedFromDate().isPresent() && commandHearing.getBookingReference().isPresent()) {
-                bookingReference = commandHearing.getBookingReference();
-                final List<CourtSchedule> courtScheduleList = getCourtSchedules(bookingReference.get().toString());
-                Collections.sort(courtScheduleList);
-                countBasedSlots.set(!courtScheduleList.get(0).getMaxSlots().equals(0));
+            final boolean isSlotsBooked = isNotEmpty(commandHearing.getBookedSlots());
 
-                generateNonDefaultDays(nonDefaultDaysList, courtScheduleList, countBasedSlots.get());
+            if (isSlotsBooked) {
+                final List<uk.gov.justice.listing.commands.NonDefaultDay> finalNonDefaultDaysList = nonDefaultDaysList;
+                commandHearing.getBookedSlots()
+                        .forEach(b-> finalNonDefaultDaysList.add(rotaSlotToNonDefaultDayConverter.convert(b)));
+                nonDefaultDaysList = finalNonDefaultDaysList;
+            } else {
+                if (listCourtHearing.getAdjournedFromDate().isPresent() && commandHearing.getBookingReference().isPresent()) {
+                    bookingReference = commandHearing.getBookingReference();
+                    final List<CourtSchedule> courtScheduleList = getCourtSchedules(bookingReference.get().toString());
+                    Collections.sort(courtScheduleList);
+                    countBasedSlots.set(!courtScheduleList.get(0).getMaxSlots().equals(0));
+                    generateNonDefaultDays(nonDefaultDaysList, courtScheduleList, countBasedSlots.get(), commandHearing);
+                }
+
+                if (isSchedulingAndListingUpdateRequired(commandHearing.getJurisdictionType(), nonDefaultDaysList)) {
+                    nonDefaultDaysList = nonDefaultDayDurationBuilder.updateNonDefaultDayWithNewDuration(nonDefaultDaysList, countBasedSlots.get(), commandHearing.getEstimatedMinutes());
+                }
             }
 
-            if (isSchedulingAndListingUpdateRequired(commandHearing.getJurisdictionType(), nonDefaultDaysList)) {
-                nonDefaultDaysList = nonDefaultDayDurationBuilder.updateNonDefaultDayWithNewDuration(nonDefaultDaysList, countBasedSlots.get(), commandHearing.getEstimatedMinutes());
-            }
             final uk.gov.moj.cpp.listing.domain.Hearing domainHearing = commandToDomainConverter.convert(commandHearing, convertNonDefaultDaysToDomain(nonDefaultDaysList));
 
             final CourtCentreDetails courtCentre = courtCentres.get(domainHearing.getCourtCentreId());
@@ -315,7 +327,8 @@ public class ListingCommandHandler {
                         domainHearing.getWeekCommencingEndDate(),
                         domainHearing.getWeekCommencingDurationInWeeks(),
                         domainHearing.getNonDefaultDays(),
-                        countBasedSlots.get()
+                        countBasedSlots.get(),
+                        isSlotsBooked
                 );
 
                 final Stream<Object> allocationEvents = hearing.applyAllocationRules(finalBookingReference, countBasedSlots.get());
@@ -377,7 +390,6 @@ public class ListingCommandHandler {
     @Handles("listing.command.update-hearing-for-listing-enriched")
     public void updateHearingForListing(final JsonEnvelope command) throws EventStreamException {
 
-
         LOGGER.info("'listing.command.handler.update-hearing-for-listing-enriched' received with payload {}", command.toObfuscatedDebugString());
 
         final UpdateHearingForListingEnriched updateHearingForListingEnriched = jsonObjectConverter.convert(command.payloadAsJsonObject(), UpdateHearingForListingEnriched.class);
@@ -392,7 +404,6 @@ public class ListingCommandHandler {
 
         final LocalTime defaultStartTime = courtCentre.getDefaultStartTime();
         final Map<String, Integer> hearingTypesIdDurationMap = hearingTypeFactory.getHearingTypesIdDurationMap(command);
-
 
         // Mandatory fields that always require a value
         final UUID hearingId = updateHearingForListing.getHearingId();
@@ -1368,17 +1379,19 @@ public class ListingCommandHandler {
 
     private void generateNonDefaultDays(final List<uk.gov.justice.listing.commands.NonDefaultDay> nonDefaultDaysList,
                                         final List<CourtSchedule> courtScheduleList,
-                                        final Boolean isCountBasedSlot) {
+                                        final Boolean isCountBasedSlot, final HearingListingNeeds commandHearing) {
+        final ZonedDateTime startDate = CommandToDomainConverter.getStartDateTime(commandHearing);
+        final int hour = startDate.toLocalDateTime().toLocalTime().getHour();
+        final long minute = startDate.toLocalDateTime().toLocalTime().getMinute();
         courtScheduleList.forEach(cs ->
-                // build nonDefaultDays with provisionalSlot information
                 nonDefaultDaysList.add(
                         uk.gov.justice.listing.commands.NonDefaultDay.nonDefaultDay()
                                 .withCourtScheduleId(Optional.of(cs.getCourtScheduleId()))
                                 .withOucode(Optional.of(cs.getOuCode()))
                                 .withSession(Optional.of(cs.getCourtSession()))
-                                .withDuration(isCountBasedSlot ? Optional.of(1) : Optional.of(cs.getAvailableDuration()))
+                                .withDuration(isCountBasedSlot ? Optional.of(1) : Optional.of(commandHearing.getEstimatedMinutes()))
                                 .withCourtRoomId(Optional.of(cs.getCourtRoomNumber())) // for prospect developers, names mismatch but fields point to the same context
-                                .withStartTime(cs.getSessionDate().atStartOfDay(ZoneId.systemDefault()))
+                                .withStartTime(startDate.withHour(hour).minusMinutes(minute))
                                 .build()
                 )
 

@@ -52,6 +52,11 @@
                                         <implementation>java.time.ZonedDateTime</implementation>
                                     </typeMapping>
                                     <typeMapping>
+                                        <name>localTime</name>
+                                        <type>reference</type>
+                                        <implementation>java.time.LocalTime</implementation>
+                                    </typeMapping>
+                                    <typeMapping>
                                         <name>uuid</name>
                                         <type>reference</type>
                                         <implementation>java.util.UUID</implementation>

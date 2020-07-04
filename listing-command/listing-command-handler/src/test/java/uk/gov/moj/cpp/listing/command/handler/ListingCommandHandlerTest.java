@@ -147,7 +147,9 @@ import uk.gov.moj.cpp.listing.command.utils.ExtendHearingHelper;
 import uk.gov.moj.cpp.listing.command.utils.FileUtil;
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCaseDefendantOffenceIdsBuilder;
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
+import uk.gov.moj.cpp.listing.command.utils.RotaSlotToNonDefaultDayConverter;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
+import uk.gov.moj.cpp.listing.common.azure.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.Address;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
@@ -201,6 +203,7 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.MatcherAssert;
@@ -304,6 +307,7 @@ public class ListingCommandHandlerTest {
     private static final List NON_SITTING_DAYS = Collections.EMPTY_LIST;
     private static final List NON_DEFAULT_DAYS = Collections.EMPTY_LIST;
     private static final String EARLIEST_START_TIME = "2012-12-12T01:02:33Z";
+    private static final String LISTED_START_TIME = "2020-07-01T10:00:00Z";
 
 
     private static final UUID JUDICIAL_ID_1 = randomUUID();
@@ -315,6 +319,17 @@ public class ListingCommandHandlerTest {
     private static final String HEARING_LANGUAGE = "ENGLISH";
     private static final String DEFAULT_DURATION = "6";
     private static final String DEFAULT_START_TIME = "10:30";
+    private static final String SLOT_START_TIME = "2020-06-23T01:02:33Z";
+    private static final Integer SLOT_DURATION = 25;
+    private static final String SLOT_SCHEDULE_ID = randomUUID().toString();
+    private static final String SLOT_SESSION = "AM";
+    private static final Integer SLOT_COURT_ROOM_ID = 123498;
+    private static final String SLOT_OUCODE = "RASDFG";
+    private static final String PROVISIONAL_SCHEDULE_ID = randomUUID().toString();
+    private static final String PROVISIONAL_SESSION = "AM";
+    private static final Integer PROVISIONAL_COURT_ROOM = 178498;
+    private static final String PROVISIONAL_OUCODE = "WERDFG";
+    private static final String PROVISIONAL_START_TIME = "2020-07-01";
     private static final String SEQUENCE_1 = "1";
     private static final String SEQUENCE_2 = "2";
     private static final String HEARING_DATE_1 = "2012-12-11";
@@ -398,6 +413,8 @@ public class ListingCommandHandlerTest {
     private ProsecutionCaseDefendantOffenceIdsBuilder prosecutionCaseDefendantOffenceIdsBuilder;
     @Spy
     private ExtendHearingUtils extendHearingUtils;
+    @Spy
+    private RotaSlotToNonDefaultDayConverter slotToNonDefaultDayConverter;
 
     private final boolean hasCustodyTimeLimit = true;
     @Mock
@@ -406,6 +423,8 @@ public class ListingCommandHandlerTest {
     private Case aCase;
     @Mock
     private Application anApplication;
+    @Mock
+    private ProvisionalBookingService provisionalBookingService;
 
     @Mock
     private HearingTypeFactory hearingTypeFactory;
@@ -500,15 +519,129 @@ public class ListingCommandHandlerTest {
         when(hearing.list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(Optional.empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(NON_DEFAULT_DAYS), eq(false))).thenReturn(events);
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(NON_DEFAULT_DAYS), eq(false), eq(false))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(Optional.empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(NON_DEFAULT_DAYS), eq(false));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(NON_DEFAULT_DAYS), eq(false), eq(false));
 
+    }
+
+    @Test
+    public void shouldPopulateNonDefaultDaysWhenBookedSlotsExist() throws Exception {
+        final JsonEnvelope commandEnvelope = createListCourtHearingCommandEnvelopeWithBookSlot();
+
+        final LocalDate endDate = null;
+
+        final List<ListedCase> listedCases = Arrays.asList(createdListedCase());
+        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = createJudicalRoles();
+
+        final CourtCentreDefaults courtCentreDefaults = CourtCentreDefaults.courtCentreDefaults()
+                .withDefaultDuration(Integer.valueOf(DEFAULT_DURATION))
+                .withDefaultStartTime(LocalTime.parse(DEFAULT_START_TIME))
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .build();
+
+        final List<CourtApplication> courtApplications = Collections.singletonList(getCourtApplication());
+
+        final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds = Collections.singletonList(
+                CourtApplicationPartyListingNeeds.courtApplicationPartyListingNeeds()
+                        .withCourtApplicationId(fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
+                        .withCourtApplicationPartyId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
+                        .withHearingLanguageNeeds(HearingLanguageNeeds.ENGLISH)
+                        .build());
+
+        final List<NonDefaultDay> nonDefaultDays = Arrays.asList(NonDefaultDay.nonDefaultDay()
+                .withStartTime(parse(SLOT_START_TIME).withZoneSameInstant(ZoneId.of("UTC")))
+                .withDuration(of(SLOT_DURATION))
+                .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
+                .withOucode(of(SLOT_OUCODE))
+                .withCourtScheduleId(of(SLOT_SCHEDULE_ID))
+                .withSession(of(SLOT_SESSION))
+                .build());
+
+
+
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+        when(hearing.list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(Optional.empty()),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(nonDefaultDays), eq(false), eq(true))).thenReturn(events);
+
+        listingCommandHandler.listCourtHearing(commandEnvelope);
+
+        verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(Optional.empty()),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(nonDefaultDays), eq(false), eq(true));
+
+    }
+
+    @Test
+    public void shouldPopulateNonDefaultDaysWhenAdjourningDateAndBookingReferenceAreExists() throws Exception {
+        final JsonEnvelope commandEnvelope = createListCourtHearingCommandEnvelopeWithAdjournment();
+
+        final LocalDate endDate = null;
+
+        final List<ListedCase> listedCases = Arrays.asList(createdListedCase());
+        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = createJudicalRoles();
+
+        final CourtCentreDefaults courtCentreDefaults = CourtCentreDefaults.courtCentreDefaults()
+                .withDefaultDuration(Integer.valueOf(DEFAULT_DURATION))
+                .withDefaultStartTime(LocalTime.parse(DEFAULT_START_TIME))
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .build();
+
+        final List<CourtApplication> courtApplications = Collections.singletonList(getCourtApplication());
+
+        final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds = Collections.singletonList(
+                CourtApplicationPartyListingNeeds.courtApplicationPartyListingNeeds()
+                        .withCourtApplicationId(fromString("48ddbd0a-31db-4814-b052-aa3ba9afb800"))
+                        .withCourtApplicationPartyId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
+                        .withHearingLanguageNeeds(HearingLanguageNeeds.ENGLISH)
+                        .build());
+
+        final List<NonDefaultDay> nonDefaultDays = Arrays.asList(NonDefaultDay.nonDefaultDay()
+                .withStartTime(parse(LISTED_START_TIME).withZoneSameInstant(ZoneId.of("UTC")))
+                .withDuration(of(INITIAL_ESTIMATE_MINUTES))
+                .withCourtRoomId(of(PROVISIONAL_COURT_ROOM))
+                .withOucode(of(PROVISIONAL_OUCODE))
+                .withCourtScheduleId(of(PROVISIONAL_SCHEDULE_ID))
+                .withSession(of(PROVISIONAL_SESSION))
+                .build());
+
+        when(provisionalBookingService.getSlots(any())).thenReturn(Response.ok(createResponseForProvisonalBookSlot()).build());
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+        when(hearing.list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(Optional.empty()),
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(nonDefaultDays), eq(false), eq(true))).thenReturn(events);
+
+        listingCommandHandler.listCourtHearing(commandEnvelope);
+
+        verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
+                eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
+                eq(parse(LISTED_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(Optional.empty()),
+                eq(empty()), eq(empty()), eq(empty()), eq(nonDefaultDays), eq(false), eq(false));
+
+    }
+
+    private JsonObject createResponseForProvisonalBookSlot() {
+        final String jsonProvisionalSlotString = FileUtil.givenPayload("/test-data/listing.command.provisional-slot-response.json").toString()
+                .replace("PROVISIONAL_SCHEDULE_ID",PROVISIONAL_SCHEDULE_ID)
+                .replace("PROVISIONAL_OUCODE",PROVISIONAL_OUCODE)
+                .replace("PROVISIONAL_SESSION",PROVISIONAL_SESSION)
+                .replace("PROVISIONAL_COURT_ROOM", String.valueOf(PROVISIONAL_COURT_ROOM))
+                .replace("PROVISIONAL_START_TIME",PROVISIONAL_START_TIME);
+        final JsonReader jsonReader = Json.createReader(new StringReader(jsonProvisionalSlotString));
+        return jsonReader.readObject();
     }
 
     private CourtApplication getCourtApplication() {
@@ -1771,7 +1904,7 @@ public class ListingCommandHandlerTest {
         final UUID courtListFileId = fromString("1deeec47-056b-431a-b131-0ea6f5d554ed");
         final String fileName = "FILENAME";
         final PublishCourtListType publishCourtListType = FIRM;
-        final ZonedDateTime producedTime = ZonedDateTime.parse("2019-11-15T11:13:19.314Z[UTC]");
+        final ZonedDateTime producedTime = parse("2019-11-15T11:13:19.314Z[UTC]");
         final LocalDate publishDate = LocalDate.now();
         when(eventSource.getStreamById(publishCourtListRequestId)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
@@ -2073,6 +2206,70 @@ public class ListingCommandHandlerTest {
                 .replace("EARLIEST_START_TIME", EARLIEST_START_TIME)
                 .replace("WEEK_COMMENCING_START_DATE", WEEK_COMMENCING_START_DATE.toString())
                 .replace("WEEK_COMMENCING_DURATION", WEEK_COMMENCING_DURATION.toString());
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.list-court-hearing", jsonReader.readObject());
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private JsonEnvelope createListCourtHearingCommandEnvelopeWithBookSlot() {
+        final String jsonString = FileUtil.givenPayload("/test-data/listing.command.list-court-hearing-with-booked-slots.json").toString()
+                .replace("HEARING_ID", HEARING_ID_1.toString())
+                .replace("OFFENCE_ID", OFFENCE_ID1.toString())
+                .replace("REPORTING_RESTRICTIONS", REPORTING_RESTRICTIONS)
+                .replace("PROSECUTOR_DATES_TO_AVOID", PROSECUTOR_DATES_TO_AVOID)
+                .replace("JURISDICTION_TYPE", JURISDICTION_TYPE.toString())
+                .replace("JUDICIAL_ID", JUDICIAL_ID_1.toString())
+                .replace("AUTHORITY_ID", AUTHORITY_ID.toString())
+                .replace("CUSTODY_TIME_LIMIT", CUSTODY_TIME_LIMIT)
+                .replace("DEFAULT_DURATION", DEFAULT_DURATION)
+                .replace("DEFAULT_START_TIME", DEFAULT_START_TIME)
+                .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
+                .replace("COURT_ROOM_ID", COURT_ROOM_ID.toString())
+                .replace("LISTING_DIRECTIONS", LISTING_DIRECTIONS)
+                .replace("DATE_OF_BIRTH", DATE_OF_BIRTH)
+                .replaceAll("DEFENDANT_ID", DEFENDANT_ID1.toString())
+                .replaceAll("CASE_ID", CASE_ID.toString())
+                .replace("EARLIEST_START_TIME", EARLIEST_START_TIME)
+                .replace("WEEK_COMMENCING_START_DATE", WEEK_COMMENCING_START_DATE.toString())
+                .replace("WEEK_COMMENCING_DURATION", WEEK_COMMENCING_DURATION.toString())
+                .replace("SLOT_START_TIME", SLOT_START_TIME)
+                .replace("SLOT_DURATION", String.valueOf(SLOT_DURATION))
+                .replace("SLOT_SCHEDULE_ID", SLOT_SCHEDULE_ID)
+                .replace("SLOT_SESSION", SLOT_SESSION)
+                .replace("SLOT_OUCODE", SLOT_OUCODE)
+                .replace("SLOT_COURT_ROOM_ID", String.valueOf(SLOT_COURT_ROOM_ID));
+
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.list-court-hearing", jsonReader.readObject());
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private JsonEnvelope createListCourtHearingCommandEnvelopeWithAdjournment() {
+        final String jsonString = FileUtil.givenPayload("/test-data/listing.command.list-court-hearing-with-adjournment.json").toString()
+                .replace("HEARING_ID", HEARING_ID_1.toString())
+                .replace("OFFENCE_ID", OFFENCE_ID1.toString())
+                .replace("REPORTING_RESTRICTIONS", REPORTING_RESTRICTIONS)
+                .replace("PROSECUTOR_DATES_TO_AVOID", PROSECUTOR_DATES_TO_AVOID)
+                .replace("JURISDICTION_TYPE", JURISDICTION_TYPE.toString())
+                .replace("JUDICIAL_ID", JUDICIAL_ID_1.toString())
+                .replace("AUTHORITY_ID", AUTHORITY_ID.toString())
+                .replace("CUSTODY_TIME_LIMIT", CUSTODY_TIME_LIMIT)
+                .replace("DEFAULT_DURATION", DEFAULT_DURATION)
+                .replace("DEFAULT_START_TIME", DEFAULT_START_TIME)
+                .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
+                .replace("COURT_ROOM_ID", COURT_ROOM_ID.toString())
+                .replace("LISTING_DIRECTIONS", LISTING_DIRECTIONS)
+                .replace("DATE_OF_BIRTH", DATE_OF_BIRTH)
+                .replaceAll("DEFENDANT_ID", DEFENDANT_ID1.toString())
+                .replaceAll("CASE_ID", CASE_ID.toString())
+                .replace("LISTED_START_TIME", LISTED_START_TIME);
+
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.list-court-hearing", jsonReader.readObject());

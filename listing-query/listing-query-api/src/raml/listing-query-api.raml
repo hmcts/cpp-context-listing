@@ -69,7 +69,7 @@ protocols: [ HTTP, HTTPS ]
         hearingId:
           description: hearing id
           type: string
-          required: true
+          required: false
         caseUrn:
           description: Comma seperated specific case urns
           type: string
@@ -80,6 +80,14 @@ protocols: [ HTTP, HTTPS ]
           required: false
         jurisdictionType:
            description: it one of type of jurisdictionType i.e. CROWN, MAGISTRATES
+           type: string
+           required: false
+        matchedDefendantIds:
+           description: comma separated matched defendant id's
+           type: string
+           required: false
+        caseUrnForLinkedCases:
+           description: case urn used to search linked cases
            type: string
            required: false
       responses:

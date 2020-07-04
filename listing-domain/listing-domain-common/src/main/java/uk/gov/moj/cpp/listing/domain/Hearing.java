@@ -59,9 +59,11 @@ public class Hearing {
 
   private final Optional<Integer> weekCommencingDurationInWeeks;
 
+  private final Optional<Boolean> isSlotsBooked;
+
   public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, final List<HearingDay> hearingDays, final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections, final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final ZonedDateTime startDateTime,
                  final Type type, final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds, final Optional<Boolean> hasAdjournmentDate,
-                 final Optional<LocalDate> weekCommencingStartDate, final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks){
+                 final Optional<LocalDate> weekCommencingStartDate, final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks, final Optional<Boolean> isSlotsBooked){
     this.allocated = allocated;
     this.courtCentreId = courtCentreId;
     this.courtRoomId = courtRoomId;
@@ -87,6 +89,7 @@ public class Hearing {
     this.weekCommencingStartDate = weekCommencingStartDate;
     this.weekCommencingEndDate = weekCommencingEndDate;
     this.weekCommencingDurationInWeeks = weekCommencingDurationInWeeks;
+    this.isSlotsBooked = isSlotsBooked;
   }
 
   public Boolean getAllocated() {
@@ -187,6 +190,10 @@ public class Hearing {
     return weekCommencingDurationInWeeks;
   }
 
+  public Optional<Boolean> getIsSlotsBooked() {
+    return isSlotsBooked;
+  }
+
   public static Builder hearing() {
     return new Hearing.Builder();
   }
@@ -220,12 +227,13 @@ public class Hearing {
             Objects.equals(hasAdjournmentDate, hearing.hasAdjournmentDate) &&
             Objects.equals(weekCommencingStartDate, hearing.weekCommencingStartDate) &&
             Objects.equals(weekCommencingEndDate, hearing.weekCommencingEndDate) &&
-            Objects.equals(weekCommencingDurationInWeeks, hearing.weekCommencingDurationInWeeks);
+            Objects.equals(weekCommencingDurationInWeeks, hearing.weekCommencingDurationInWeeks) &&
+            Objects.equals(isSlotsBooked, hearing.isSlotsBooked);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate);
+    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate, isSlotsBooked);
   }
 
   @Override
@@ -256,6 +264,7 @@ public class Hearing {
             ", weekCommencingStartDate=" + weekCommencingStartDate +
             ", weekCommencingEndDate=" + weekCommencingEndDate +
             ", weekCommencingDurationInWeeks=" + weekCommencingDurationInWeeks +
+            ", isSlotsBooked=" + isSlotsBooked +
             '}';
   }
 
@@ -309,6 +318,8 @@ public class Hearing {
     private Optional<LocalDate> weekCommencingEndDate;
 
     private Optional<Integer> weekCommencingDurationInWeeks;
+
+    private Optional<Boolean> isSlotsBooked;
 
     public Builder withAllocated(final Boolean allocated) {
       this.allocated = allocated;
@@ -433,8 +444,13 @@ public class Hearing {
       return this;
     }
 
+    public Builder withIsSlotsBooked(final Optional<Boolean> isSlotsBooked) {
+      this.isSlotsBooked = isSlotsBooked;
+      return this;
+    }
+
     public Hearing build() {
-      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks);
+      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks, this.isSlotsBooked);
     }
   }
 }
