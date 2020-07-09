@@ -15,5 +15,6 @@
         <module>listing-domain-transformations-delete-all-events</module>
         <module>listing-domain-transformation-spiresults</module>
         <module>listing-domain-transformations-pilotdata</module>
+        <module>listing-domain-transformation-judicialresult-mandatory-attributes</module>
     </modules>
 </project>
