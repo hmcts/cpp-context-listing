@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
 
+import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -114,10 +115,10 @@ public class CourtToEventConverterTest {
         assertThat(of(false), is(defendant.getRestrictFromCourtList()));
         assertThat(of(YOUTH), is(defendant.getIsYouth()));
         assertThat(ADDRESS_1, is(defendant.getAddress().get().getAddress1()));
-        assertThat(defendant.getAddress().get().getAddress2(), nullValue());
-        assertThat(defendant.getAddress().get().getAddress3(), nullValue());
-        assertThat(defendant.getAddress().get().getAddress4(), nullValue());
-        assertThat(defendant.getAddress().get().getAddress5(), nullValue());
+        assertThat(defendant.getAddress().get().getAddress2(), is(empty()));
+        assertThat(defendant.getAddress().get().getAddress3(), is(empty()));
+        assertThat(defendant.getAddress().get().getAddress4(), is(empty()));
+        assertThat(defendant.getAddress().get().getAddress5(), is(empty()));
         assertThat(of(POST_CODE), is(defendant.getAddress().get().getPostcode()));
 
 

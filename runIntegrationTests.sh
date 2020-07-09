@@ -7,8 +7,8 @@
 ${VAGRANT_DIR:?"Please export VAGRANT_DIR environment variable to point at atcm-vagrant"}
 WILDFLY_DEPLOYMENT_DIR="${VAGRANT_DIR}/deployments"
 CONTEXT_NAME=listing
-FRAMEWORK_VERSION=6.4.0
-EVENT_STORE_VERSION=2.4.5
+FRAMEWORK_VERSION=7.0.7
+EVENT_STORE_VERSION=7.0.5
 
 
 #fail script on error

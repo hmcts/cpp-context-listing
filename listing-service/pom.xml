@@ -3,7 +3,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.listing</groupId>
         <artifactId>listing-parent</artifactId>
-        <version>6.4.35-SNAPSHOT</version>
+        <version>7.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -51,6 +51,10 @@
             <artifactId>listing-event-sources</artifactId>
             <version>${project.version}</version>
             <classifier>yaml</classifier>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.common</groupId>
+            <artifactId>service-component-config</artifactId>
         </dependency>
 
         <!-- Test dependencies -->

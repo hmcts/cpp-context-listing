@@ -103,10 +103,11 @@ public class EjectEventListenerTest {
 
     @Test
     public void shouldEjectCaseForListing() throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
         List<ListedCase> testCases = createListedCases();
         List<CourtApplication> testCourtApplications = createCourtApplications();
+
         String testCasesString = objectMapper.writeValueAsString(testCases);
         JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
 
@@ -135,7 +136,6 @@ public class EjectEventListenerTest {
         verify(hearingRepository, times(2)).save(hearing);
 
     }
-
 
     @Test
     public void shouldEjectApplicationForListing() throws IOException {
