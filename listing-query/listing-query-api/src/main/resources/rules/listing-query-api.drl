@@ -47,7 +47,7 @@ rule "Query - API - listing.search.court.list"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.search.court.list");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN, RuleConstants.GROUP_POLICE_ADMIN));
   then
     $outcome.setSuccess(true);
 end
