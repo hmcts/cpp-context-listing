@@ -293,8 +293,7 @@ public class ListingCommandHandler {
                     nonDefaultDaysList = nonDefaultDayDurationBuilder.updateNonDefaultDayWithNewDuration(nonDefaultDaysList, countBasedSlots.get(), commandHearing.getEstimatedMinutes());
                 }
             }
-
-            final uk.gov.moj.cpp.listing.domain.Hearing domainHearing = commandToDomainConverter.convert(commandHearing, convertNonDefaultDaysToDomain(nonDefaultDaysList));
+            final uk.gov.moj.cpp.listing.domain.Hearing domainHearing = commandToDomainConverter.convert(commandHearing, convertNonDefaultDaysToDomain(nonDefaultDaysList), listCourtHearing.getShadowListedOffences());
 
             final CourtCentreDetails courtCentre = courtCentres.get(domainHearing.getCourtCentreId());
 
@@ -542,7 +541,7 @@ public class ListingCommandHandler {
                 (command.payloadAsJsonObject(), AddCasesForHearing.class);
 
         updateHearingEventStream(command, addCasesForHearing.getHearingId(), (Hearing hearing) -> {
-            final Stream<Object> addedCases = hearing.addCasesForHearing(addCasesForHearing.getProsecutionCases());
+            final Stream<Object> addedCases = hearing.addCasesForHearing(addCasesForHearing.getProsecutionCases(), addCasesForHearing.getShadowListedOffences());
             return Stream.of(addedCases).flatMap(i -> i);
         });
     }

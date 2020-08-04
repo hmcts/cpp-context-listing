@@ -224,6 +224,7 @@ public class UnscheduledListingCommandBuilder {
                         .withLaidDate(Optional.of("2019-05-01"))
                         .withOffenceWording("No Travel Card")
                         .withLaaApplnReference(Optional.empty())
+                        .withShadowListed(of(Boolean.FALSE))
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withWelshTitle("a title in Welsh")
                                 .withWelshLegislation(of("legislation in Welsh"))

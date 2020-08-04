@@ -20,11 +20,14 @@ public class OffenceData {
     private final Optional<CustodyTimeLimit> custodyTimeLimit;
     private final Optional<LaaReferenceData> laaApplnReference;
     private final LocalDate laidDate;
+    private Optional<Boolean> shadowListed;
 
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                        final String statementOfOffenceTitleWelsh, final String offenceWording,
-                       final int count, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit, final Optional<LaaReferenceData> laaApplnReference, final LocalDate laidDate) {
+                       final int count, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit,
+                       final Optional<LaaReferenceData> laaApplnReference, final LocalDate laidDate,
+                       final Optional<Boolean> shadowListed) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
@@ -39,6 +42,7 @@ public class OffenceData {
         this.offenceDefinitionId = offenceDefinitionId;
         this.custodyTimeLimit =  custodyTimeLimit;
         this.laidDate = laidDate;
+        this.shadowListed = shadowListed;
     }
 
     public Optional<LaaReferenceData> getLaaApplnReference() {
@@ -79,5 +83,11 @@ public class OffenceData {
 
     public LocalDate getLaidDate() {
         return laidDate;
+    }
+
+    public Optional<Boolean> getShadowListed() { return shadowListed; }
+
+    public void setShadowListed(Optional<Boolean> shadowListed) {
+        this.shadowListed = shadowListed;
     }
 }

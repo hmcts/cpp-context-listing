@@ -89,37 +89,40 @@ public class DefendantOffencesEventListener {
         return cases -> getAddedListedCase(caseId, defendantId, offence, cases);
     }
 
-    private List<ListedCase> getUpdatedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> cases) {
-        List<ListedCase> listedCases = cases;
+    private List<ListedCase> getUpdatedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases) {
         ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
         List<Defendant> defendants = listedCase.getDefendants();
         Defendant originalDefendant = Iterables.find(defendants, defendant -> defendant.getId().equals(defendantId));
         final Optional<Offence> originalOffence = originalDefendant.getOffences().stream().filter(oo -> oo.getId().equals(updatedOffence.getId())).findFirst();
-        originalDefendant.getOffences().replaceAll(offence -> offence.getId().equals(updatedOffence.getId()) ? buildOffence(updatedOffence, getRestrictCourtList(originalOffence)) : offence);
+        originalDefendant.getOffences().replaceAll(offence -> offence.getId().equals(updatedOffence.getId()) ? buildOffence(updatedOffence, originalOffence, getRestrictCourtList(originalOffence)) : offence);
         return listedCases;
     }
 
-    private List<ListedCase> getAddedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> cases) {
-        List<ListedCase> listedCases = cases;
+    private List<ListedCase> getAddedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases) {
         ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
         List<Defendant> defendants = listedCase.getDefendants();
         Defendant originalDefendant = Iterables.find(defendants, defendant -> defendant.getId().equals(defendantId));
 
         originalDefendant.getOffences().add(updatedOffence);
+        listedCases.replaceAll(
+                listedCase1 -> listedCase1.getId().equals(listedCase.getId()) ? updateShadowListedFlagForListedCase(listedCase) : listedCase1);
+
         return listedCases;
     }
 
-    private List<ListedCase> getDeletedListedCase(UUID caseId, UUID defendantId, UUID offenceId, List<ListedCase> cases) {
-        List<ListedCase> listedCases = cases;
+    private List<ListedCase> getDeletedListedCase(UUID caseId, UUID defendantId, UUID offenceId, List<ListedCase> listedCases) {
         ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
         List<Defendant> defendants = listedCase.getDefendants();
         Defendant originalDefendant = Iterables.find(defendants, defendant -> defendant.getId().equals(defendantId));
 
         originalDefendant.getOffences().removeIf(offence -> offence.getId().equals(offenceId));
+        listedCases.replaceAll(
+                listedCase1 -> listedCase1.getId().equals(listedCase.getId()) ? updateShadowListedFlagForListedCase(listedCase) : listedCase1);
+
         return listedCases;
     }
 
-    private Offence buildOffence(Offence updatedOffence, Optional<Boolean> restrictCourtList){
+    private Offence buildOffence(Offence updatedOffence, Optional<Offence> originalOffence, Optional<Boolean> restrictCourtList){
         return Offence.offence()
                 .withStatementOfOffence(updatedOffence.getStatementOfOffence())
                 .withOffenceWording(updatedOffence.getOffenceWording())
@@ -129,6 +132,7 @@ public class DefendantOffencesEventListener {
                 .withStartDate(updatedOffence.getStartDate())
                 .withRestrictFromCourtList(restrictCourtList)
                 .withLaaApplnReference(updatedOffence.getLaaApplnReference())
+                .withShadowListed(originalOffence.isPresent() ? originalOffence.get().getShadowListed() : Optional.of(Boolean.FALSE))
                 .build();
     }
 
@@ -137,6 +141,24 @@ public class DefendantOffencesEventListener {
             return offence.get().getRestrictFromCourtList();
         }
         return Optional.empty();
+    }
+
+    private ListedCase updateShadowListedFlagForListedCase(ListedCase listedCase){
+        final boolean caseShadowListed = listedCase.getDefendants().stream()
+                .flatMap(defendant -> defendant.getOffences().stream())
+                .allMatch(offence -> offence.getShadowListed().isPresent() && offence.getShadowListed().get());
+
+        return ListedCase.listedCase()
+                .withCaseIdentifier(listedCase.getCaseIdentifier())
+                .withCaseStatus(listedCase.getCaseStatus())
+                .withDefendants(listedCase.getDefendants())
+                .withIsEjected(listedCase.getIsEjected())
+                .withLinkedCases(listedCase.getLinkedCases())
+                .withMarkers(listedCase.getMarkers())
+                .withRestrictFromCourtList(listedCase.getRestrictFromCourtList())
+                .withId(listedCase.getId())
+                .withShadowListed(Optional.of(caseShadowListed))
+                .build();
     }
 
 }

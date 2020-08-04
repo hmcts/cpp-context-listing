@@ -2078,7 +2078,7 @@ public class ListingCommandHandlerTest {
 
         listingCommandHandler.handleAddCasesForHearing(commandEnvelope);
 
-        verify(hearing, times(1)).addCasesForHearing(any(List.class));
+        verify(hearing, times(1)).addCasesForHearing(any(List.class), anyList());
     }
 
     private uk.gov.justice.listing.events.Hearing getAllocatedHearingById(final UUID hearingId1, final UUID caseId1, final String urn1) {
@@ -2987,6 +2987,7 @@ public class ListingCommandHandlerTest {
                         .build())
                 .withDefendants(Arrays.asList(createDomainDefendant())
                 )
+                .withShadowListed(of(Boolean.FALSE))
                 .build();
     }
 
@@ -3020,6 +3021,7 @@ public class ListingCommandHandlerTest {
                                 .withLegislation(of("legislation"))
                                 .withTitle("a title")
                                 .build())
+                        .withShadowListed(of(Boolean.FALSE))
 
                         .build()))
                 .build();
@@ -3076,7 +3078,9 @@ public class ListingCommandHandlerTest {
                                 .withWelshLegislation(Optional.empty())
                                 .withLegislation(Optional.empty())
                                 .withTitle("TFL Ticket Dodger")
-                                .build()).build()))
+                                .build())
+                        .withShadowListed(of(Boolean.FALSE))
+                        .build()))
                 .build();
 
     }

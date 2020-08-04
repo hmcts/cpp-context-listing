@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067", "squid:S2065"})
+@SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067", "squid:S2065", "pmd:BeanMembersShouldSerialize"})
 public class Defendant {
     private final Optional<BailStatus> bailStatus;
 
@@ -117,6 +117,7 @@ public class Defendant {
         return lastName;
     }
 
+    @SuppressWarnings({"squid:S2384"})
     public List<Offence> getOffences() {
         return offences;
     }
@@ -147,8 +148,10 @@ public class Defendant {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Defendant)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Defendant))
+            return false;
         final Defendant defendant = (Defendant) o;
         return Objects.equals(bailStatus, defendant.bailStatus) &&
                 Objects.equals(custodyTimeLimit, defendant.custodyTimeLimit) &&
@@ -173,6 +176,31 @@ public class Defendant {
         return Objects.hash(bailStatus, custodyTimeLimit, dateOfBirth, datesToAvoid, defenceOrganisation, firstName, hearingLanguageNeeds, id, masterDefendantId, courtProceedingsInitiated, lastName, prosecutionCaseId, offences, organisationName, specificRequirements, isYouth);
     }
 
+    @Override
+    public String toString() {
+        return "Defendant{" +
+                "bailStatus=" + bailStatus +
+                ", custodyTimeLimit=" + custodyTimeLimit +
+                ", dateOfBirth=" + dateOfBirth +
+                ", datesToAvoid=" + datesToAvoid +
+                ", defenceOrganisation=" + defenceOrganisation +
+                ", firstName=" + firstName +
+                ", hearingLanguageNeeds=" + hearingLanguageNeeds +
+                ", id=" + id +
+                ", masterDefendantId=" + masterDefendantId +
+                ", courtProceedingsInitiated=" + courtProceedingsInitiated +
+                ", lastName=" + lastName +
+                ", prosecutionCaseId=" + prosecutionCaseId +
+                ", offences=" + offences +
+                ", organisationName=" + organisationName +
+                ", specificRequirements=" + specificRequirements +
+                ", isYouth=" + isYouth +
+                ", nationalityDescription=" + nationalityDescription +
+                ", address=" + address +
+                '}';
+    }
+
+    @SuppressWarnings("pmd:BeanMembersShouldSerialize")
     public static final class Builder {
         private Optional<BailStatus> bailStatus;
         private Optional<String> custodyTimeLimit;
@@ -256,6 +284,7 @@ public class Defendant {
             return this;
         }
 
+        @SuppressWarnings({"squid:S2384"})
         public Builder withOffences(final List<Offence> offences) {
             this.offences = offences;
             return this;

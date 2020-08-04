@@ -277,6 +277,7 @@ public class RestrictCourtListEventListenerTest {
                         .withOffences(singletonList(Offence.offence()
                                 .withId(randomUUID())
                                 .withOffenceCode(STRING.next())
+                                .withShadowListed(Optional.of(Boolean.FALSE))
                                 .withStartDate(LocalDates.to(LocalDate.now()))
                                 .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                         .withTitle(STRING.next())
@@ -284,6 +285,7 @@ public class RestrictCourtListEventListenerTest {
                                 .build()))
                         .build()))
                 .withId(UUID.randomUUID())
+                .withShadowListed(Optional.of(Boolean.FALSE))
                 .build());
     }
 

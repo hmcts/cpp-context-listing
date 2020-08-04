@@ -31,6 +31,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -122,7 +123,8 @@ public class CaseMarkersEventListenerTest {
         caseMarkersEventListener.handleCaseMarkersUpdated(caseMarkersToBeUpdatedEnvelope);
 
         verify(properties).replace(anyObject(), objectNodeCaptur.capture());
-        final int markersSize = objectNodeCaptur.getValue().get(0).get("markers").size();
+        final JsonNode newListedCase = objectNodeCaptur.getValue().get(0);
+        final int markersSize = newListedCase.get("markers").size();
         MatcherAssert.assertThat(markersSize, equalTo(2));
         final JsonNode caseMarkers1 = objectNodeCaptur.getValue().get(0).get("markers").get(0);
         final JsonNode caseMarkers2 = objectNodeCaptur.getValue().get(0).get("markers").get(1);
@@ -133,6 +135,10 @@ public class CaseMarkersEventListenerTest {
         MatcherAssert.assertThat(caseMarkers2.get("markerTypeDescription").toString(), equalTo("\"" + CASE_MARKER_DESCRIPTION_2 + "\""));
         MatcherAssert.assertThat(caseMarkers2.get("markerTypeid").toString(), equalTo("\"" + CASE_MARKER_TYPE_ID_2.toString() + "\""));
         verify(hearingRepository).save(hearing);
+
+        MatcherAssert.assertThat(newListedCase.get("id").textValue() , equalTo(testCases.get(0).getId().toString()));
+        MatcherAssert.assertThat(newListedCase.get("caseIdentifier").get("caseReference").textValue() , equalTo(testCases.get(0).getCaseIdentifier().getCaseReference().toString()));
+        MatcherAssert.assertThat(newListedCase.get("shadowListed").asBoolean() , equalTo(testCases.get(0).getShadowListed().get()));
     }
 
     @Test
@@ -262,6 +268,7 @@ public class CaseMarkersEventListenerTest {
                         .build())
                 .withDefendants(buildDefendantList())
                 .withMarkers(buildCaseMarkersList())
+                .withShadowListed(Optional.of(Boolean.TRUE))
                 .withId(CASE_ID)
                 .build());
     }

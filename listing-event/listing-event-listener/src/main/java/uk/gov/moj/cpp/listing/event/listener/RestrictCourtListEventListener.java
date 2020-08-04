@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Optional.ofNullable;
 import static uk.gov.justice.listing.events.ApplicantRespondent.applicantRespondent;
@@ -100,7 +101,8 @@ public class RestrictCourtListEventListener {
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
                 .withDefendants(listedCase.getDefendants())
                 .withId(listedCase.getId())
-                .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt)).build();
+                .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
+                .withShadowListed(listedCase.getShadowListed()).build();
         cases.replaceAll(lc -> lc.getId().equals(caseId) ? newListedCase : lc);
         return cases;
     }
@@ -159,6 +161,7 @@ public class RestrictCourtListEventListener {
                 .withStatementOfOffence(originalOffence.getStatementOfOffence())
                 .withOffenceWording(originalOffence.getOffenceWording())
                 .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
+                .withShadowListed(originalOffence.getShadowListed())
                 .build();
         originalDefendant.getOffences().replaceAll(offence -> offence.getId().equals(offencesId) ? newOffence : offence);
         return listedCases;

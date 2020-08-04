@@ -36,6 +36,9 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/linked-cases.json"
       }
+    },
+    "shadowListed": {
+      "type": "boolean"
     }
   },
   "required": [

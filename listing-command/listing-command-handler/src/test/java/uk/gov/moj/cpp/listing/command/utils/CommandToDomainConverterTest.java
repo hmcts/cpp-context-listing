@@ -16,7 +16,10 @@ import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
@@ -150,6 +153,88 @@ public class CommandToDomainConverterTest {
         //then
         assertThat(actual.getStartDateTime(), not(commandHearing.getEarliestStartDateTime().get().toLocalDate()));
         assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getListedStartDateTime().get().toString())));
+    }
+
+    @Test
+    public void shouldSetShadowListedFlagForOneOffence(){
+        //given
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingWithMultipleOffences();
+        List<UUID> shadowListedOffences = Collections.singletonList(UUID.fromString("3789ab16-0bb7-4ef1-87ef-c936bf0364f1"));
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing, Collections.emptyList(), shadowListedOffences);
+
+        //then
+        final Defendant defendant1 = actual.getListedCases().get(0).getDefendants().get(0);
+        final Defendant defendant2 = actual.getListedCases().get(0).getDefendants().get(1);
+
+        assertThat(actual.getListedCases().get(0).getShadowListed(), is(of(false)));
+        assertThat(defendant1.getOffences().get(0).getShadowListed(), is(of(true)));
+        assertThat(defendant1.getOffences().get(1).getShadowListed(), is(of(false)));
+        assertThat(defendant2.getOffences().get(0).getShadowListed(), is(of(true)));
+        assertThat(defendant2.getOffences().get(1).getShadowListed(), is(of(false)));
+    }
+
+    @Test
+    public void shouldSetShadowListedFlagForCase(){
+        //given
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingWithMultipleOffences();
+        List<UUID> shadowListedOffences = Arrays.asList(
+                UUID.fromString("3789ab16-0bb7-4ef1-87ef-c936bf0364f1"),
+                UUID.fromString("8a2d31c5-ac51-4c38-b1b4-dcef68d078b9"));
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing, Collections.emptyList(), shadowListedOffences);
+
+        //then
+        final Defendant defendant1 = actual.getListedCases().get(0).getDefendants().get(0);
+        final Defendant defendant2 = actual.getListedCases().get(0).getDefendants().get(1);
+
+        assertThat(actual.getListedCases().get(0).getShadowListed(), is(of(true)));
+        assertThat(defendant1.getOffences().get(0).getShadowListed(), is(of(true)));
+        assertThat(defendant1.getOffences().get(1).getShadowListed(), is(of(true)));
+        assertThat(defendant2.getOffences().get(0).getShadowListed(), is(of(true)));
+        assertThat(defendant2.getOffences().get(1).getShadowListed(), is(of(true)));
+    }
+
+    @Test
+    public void shouldNotSetShadowListedFlagWhenNoOffences(){
+        //given
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingWithMultipleOffences();
+        List<UUID> shadowListedOffences = Collections.emptyList();
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing, Collections.emptyList(), shadowListedOffences);
+
+        //then
+        final Defendant defendant1 = actual.getListedCases().get(0).getDefendants().get(0);
+        final Defendant defendant2 = actual.getListedCases().get(0).getDefendants().get(1);
+
+        assertThat(actual.getListedCases().get(0).getShadowListed(), is(of(false)));
+        assertThat(defendant1.getOffences().get(0).getShadowListed(), is(of(false)));
+        assertThat(defendant1.getOffences().get(1).getShadowListed(), is(of(false)));
+        assertThat(defendant2.getOffences().get(0).getShadowListed(), is(of(false)));
+        assertThat(defendant2.getOffences().get(1).getShadowListed(), is(of(false)));
+    }
+
+    @Test
+    public void shouldNotSetShadowListedFlagWhenListIsNull(){
+        //given
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingWithMultipleOffences();
+        List<UUID> shadowListedOffences = null;
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing, Collections.emptyList(), shadowListedOffences);
+
+        //then
+        final Defendant defendant1 = actual.getListedCases().get(0).getDefendants().get(0);
+        final Defendant defendant2 = actual.getListedCases().get(0).getDefendants().get(1);
+
+        assertThat(actual.getListedCases().get(0).getShadowListed(), is(of(false)));
+        assertThat(defendant1.getOffences().get(0).getShadowListed(), is(of(false)));
+        assertThat(defendant1.getOffences().get(1).getShadowListed(), is(of(false)));
+        assertThat(defendant2.getOffences().get(0).getShadowListed(), is(of(false)));
+        assertThat(defendant2.getOffences().get(1).getShadowListed(), is(of(false)));
     }
 
     private void assertCourtApplications(HearingListingNeeds commandHearing, uk.gov.moj.cpp.listing.domain.Hearing actual) {

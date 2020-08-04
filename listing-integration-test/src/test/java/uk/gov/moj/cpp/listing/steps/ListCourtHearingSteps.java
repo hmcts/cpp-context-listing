@@ -252,6 +252,26 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
+    public void whenProgressionHearingExtended() throws IOException {
+        final String eventPayloadString = getStringFromResource("prosecution-case-with-shadow-listed-offences.json")
+                .replaceAll("HEARING_ID", hearingsData.getHearingData().get(0).getId().toString())
+                .replaceAll("CASE_ID_1", UUID.randomUUID().toString())
+                .replaceAll("DEFENDANT_ID_1", UUID.randomUUID().toString())
+                .replaceAll("OFFENCE_ID_1", UUID.randomUUID().toString())
+                .replaceAll("CASE_ID_2", UUID.randomUUID().toString())
+                .replaceAll("DEFENDANT_ID_2", UUID.randomUUID().toString())
+                .replaceAll("OFFENCE_ID_2", UUID.randomUUID().toString());
+
+        JsonObject hearingExtendedDataObject = new StringToJsonObjectConverter().convert(eventPayloadString);
+
+        QueueUtil.sendMessage(
+                publicMessageProducerProgressionHearingExtendedEvent,
+                PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED,
+                hearingExtendedDataObject,
+                metadataOf(randomUUID(), PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
+        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED, hearingExtendedDataObject, getLoggedInHeader());
+    }
+
     private Response getResponseCaseSubmittedForListing(final boolean isStandaloneApp) {
 
         stubReferenceDataForFirstHearing();
@@ -521,6 +541,55 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.postcode",
                                         equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get()))
 
+                        )));
+    }
+
+    public void verifyHearingListedWithShadowListedFlag(final boolean isAllocated) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[0].listedCases[0].shadowListed",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].listedCases[1].shadowListed",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[0].shadowListed",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[1].shadowListed",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[2].shadowListed",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[1].offences[0].shadowListed",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[1].offences[1].shadowListed",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[1].offences[2].shadowListed",
+                                        equalTo(true))
+                        )));
+    }
+
+    /**
+     * We have added two new listed cases with one offence each
+     * */
+    public void verifyHearingExtendedWithShadowListedFlag(final boolean isAllocated) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[0].listedCases[2].shadowListed",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].listedCases[3].shadowListed",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].listedCases[2].defendants[0].offences[0].shadowListed",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].listedCases[3].defendants[0].offences[0].shadowListed",
+                                        equalTo(true))
                         )));
     }
 
@@ -940,10 +1009,18 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
-        //   List<DefendantData> defendantData = listedCaseData.getDefendants();
+
+        final List<UUID> shadowListedOffences = hearingData.getListedCases()
+                .stream()
+                .flatMap(listedCase -> listedCase.getDefendants().stream())
+                .flatMap(defendant -> defendant.getOffences().stream())
+                .filter(offence -> offence.getShadowListed().orElse(Boolean.FALSE))
+                .map(offence -> offence.getOffenceId())
+                .collect(Collectors.toList());
 
         return ListCourtHearing.listCourtHearing()
                 .withAdjournedFromDate(Optional.of(LocalDate.now().toString()))
+                .withShadowListedOffences(shadowListedOffences)
                 .withHearings(singletonList(HearingListingNeeds.hearingListingNeeds()
                         .withCourtCentre(CourtCentre.courtCentre()
                                 .withId(hearingData.getCourtCentreId())

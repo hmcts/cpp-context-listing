@@ -7,6 +7,7 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
 import uk.gov.justice.core.courts.AssociatedDefenceOrganisation;
 import uk.gov.justice.core.courts.BailStatus;
@@ -21,25 +22,34 @@ import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.StatementOfOffence;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public class CourtToEventConverter {
 
     private CourtToEventConverter() {
     }
 
-    public static ListedCase buildListedCase(final ProsecutionCase pc) {
+    public static ListedCase buildListedCase(final ProsecutionCase pc, final List<UUID> shadowListedOffences) {
+        final List<Defendant> defendants = pc.getDefendants().stream()
+                .map(defendant -> buildDefendant(defendant, shadowListedOffences))
+                .collect(toList());
+
+        final boolean caseShadowListed = defendants.stream()
+                .flatMap(defendant -> defendant.getOffences().stream())
+                .allMatch(offence -> offence.getShadowListed().orElse(Boolean.FALSE));
+
         return ListedCase.listedCase()
                 .withId(pc.getId())
                 .withCaseIdentifier(buildCaseIdentifier(pc))
                 .withMarkers(isNull(pc.getCaseMarkers()) ? emptyList() : pc.getCaseMarkers().stream()
                         .map(CourtToEventConverter::convertCaseMarkersToMarkers)
                         .collect(toList()))
-                .withDefendants(pc.getDefendants().stream()
-                        .map(CourtToEventConverter::buildDefendant)
-                        .collect(toList()))
+                .withDefendants(defendants)
                 .withRestrictFromCourtList(of(Boolean.FALSE))
                 .withCaseStatus(pc.getCaseStatus())
+                .withShadowListed(of(caseShadowListed))
                 .build();
     }
 
@@ -47,7 +57,7 @@ public class CourtToEventConverter {
         return CaseIdentifier.caseIdentifier()
                 .withAuthorityCode(pc.getProsecutionCaseIdentifier().getProsecutionAuthorityCode())
                 .withAuthorityId(pc.getProsecutionCaseIdentifier().getProsecutionAuthorityId())
-                .withCaseReference(pc.getProsecutionCaseIdentifier().getCaseURN() != null ? pc.getProsecutionCaseIdentifier().getCaseURN() : pc.getProsecutionCaseIdentifier().getProsecutionAuthorityReference())
+                .withCaseReference(ofNullable(pc.getProsecutionCaseIdentifier().getCaseURN()).orElse(pc.getProsecutionCaseIdentifier().getProsecutionAuthorityReference()))
                 .build();
     }
 
@@ -58,7 +68,7 @@ public class CourtToEventConverter {
                 .withMarkerTypeid(caseMarker.getMarkerTypeid()).build();
     }
 
-    private static Defendant buildDefendant(final uk.gov.justice.core.courts.Defendant d) {
+    private static Defendant buildDefendant(final uk.gov.justice.core.courts.Defendant d, final List<UUID> shadowListedOffences) {
         final Person personDetail = getPersonDetail(d);
         return Defendant.defendant()
                 .withId(d.getId())
@@ -69,7 +79,7 @@ public class CourtToEventConverter {
                 .withLastName(getLastName(personDetail))
                 .withOrganisationName(getOrganisationName(d.getDefenceOrganisation()))
                 .withOffences(d.getOffences().stream()
-                        .map(CourtToEventConverter::buildOffence)
+                        .map(offence -> buildOffence(offence, shadowListedOffences))
                         .collect(toList()))
                 .withDefenceOrganisation(getDefenceOrganisationName(d.getAssociatedDefenceOrganisation()))
                 .withBailStatus(getBailStatus(d))
@@ -110,7 +120,7 @@ public class CourtToEventConverter {
 
     }
 
-    private static Offence buildOffence(final uk.gov.justice.core.courts.Offence o) {
+    private static Offence buildOffence(final uk.gov.justice.core.courts.Offence o, final List<UUID> shadowListedOffences) {
         return Offence.offence()
                 .withId(o.getId())
                 .withEndDate(o.getEndDate())
@@ -121,6 +131,7 @@ public class CourtToEventConverter {
                 .withRestrictFromCourtList(of(Boolean.FALSE))
                 .withLaaApplnReference(buildLaaReference(o.getLaaApplnReference()))
                 .withLaidDate(o.getLaidDate())
+                .withShadowListed(of(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId())))
                 .build();
     }
 

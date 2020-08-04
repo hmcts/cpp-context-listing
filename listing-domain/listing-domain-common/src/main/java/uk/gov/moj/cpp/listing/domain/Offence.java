@@ -1,9 +1,10 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S1067", "squid:S00121", "PMD:BeanMembersShouldSerialize", "squid:S00107", "squid:S00122"})
+@SuppressWarnings({"squid:S1067", "squid:S00121", "pmd:BeanMembersShouldSerialize", "squid:S00107", "squid:S00122"})
 public class Offence {
     private final Optional<String> endDate;
 
@@ -23,7 +24,9 @@ public class Offence {
 
     private final Optional<String> laidDate;
 
-    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit, final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate) {
+    private final Optional<Boolean> shadowListed;
+
+    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit, final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate, final Optional<Boolean> shadowListed) {
         this.endDate = endDate;
         this.id = id;
         this.offenceCode = offenceCode;
@@ -33,6 +36,7 @@ public class Offence {
         this.custodyTimeLimit = custodyTimeLimit;
         this.laaApplnReference = laaApplnReference;
         this.laidDate = laidDate;
+        this.shadowListed = shadowListed;
     }
 
     public Optional<String> getEndDate() {
@@ -69,47 +73,48 @@ public class Offence {
         return laidDate;
     }
 
+    public Optional<Boolean> getShadowListed() { return shadowListed; }
+
     public static Builder offence() {
         return new Offence.Builder();
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-        final Offence that = (Offence) obj;
-
-        return java.util.Objects.equals(this.endDate, that.endDate) &&
-                java.util.Objects.equals(this.id, that.id) &&
-                java.util.Objects.equals(this.offenceCode, that.offenceCode) &&
-                java.util.Objects.equals(this.offenceWording, that.offenceWording) &&
-                java.util.Objects.equals(this.startDate, that.startDate) &&
-                java.util.Objects.equals(this.statementOfOffence, that.statementOfOffence) &&
-                java.util.Objects.equals(this.custodyTimeLimit, that.custodyTimeLimit) &&
-                java.util.Objects.equals(this.laidDate, that.laidDate) &&
-                java.util.Objects.equals(this.laaApplnReference, that.laaApplnReference);
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final Offence offence = (Offence) o;
+        return Objects.equals(endDate, offence.endDate) &&
+                Objects.equals(id, offence.id) &&
+                Objects.equals(offenceCode, offence.offenceCode) &&
+                Objects.equals(offenceWording, offence.offenceWording) &&
+                Objects.equals(startDate, offence.startDate) &&
+                Objects.equals(statementOfOffence, offence.statementOfOffence) &&
+                Objects.equals(custodyTimeLimit, offence.custodyTimeLimit) &&
+                Objects.equals(laaApplnReference, offence.laaApplnReference) &&
+                Objects.equals(laidDate, offence.laidDate) &&
+                Objects.equals(shadowListed, offence.shadowListed);
     }
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate);
+        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed);
     }
 
     @Override
     public String toString() {
         return "Offence{" +
-                "endDate='" + endDate + "'," +
-                "id='" + id + "'," +
-                "offenceCode='" + offenceCode + "'," +
-                "offenceWording='" + offenceWording + "'," +
-                "startDate='" + startDate + "'," +
-                "statementOfOffence='" + statementOfOffence + "'," +
-                "custodyTimeLimit='" + custodyTimeLimit + "'" +
-                "laaApplnReference='" + laaApplnReference + "'" +
-                "laidDate='" + laidDate + "'" +
-                "}";
+                "endDate=" + endDate +
+                ", id=" + id +
+                ", offenceCode='" + offenceCode + '\'' +
+                ", offenceWording='" + offenceWording + '\'' +
+                ", startDate='" + startDate + '\'' +
+                ", statementOfOffence=" + statementOfOffence +
+                ", custodyTimeLimit=" + custodyTimeLimit +
+                ", laaApplnReference=" + laaApplnReference +
+                ", laidDate=" + laidDate +
+                ", shadowListed=" + shadowListed +
+                '}';
     }
 
     @SuppressWarnings("pmd:BeanMembersShouldSerialize")
@@ -131,6 +136,8 @@ public class Offence {
         private Optional<String> laidDate;
 
         private Optional<LaaReference> laaApplnReference;
+
+        private Optional<Boolean> shadowListed;
 
         public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
@@ -177,8 +184,13 @@ public class Offence {
             return this;
         }
 
+        public Builder withShadowListed(final  Optional<Boolean> shadowListed){
+            this.shadowListed = shadowListed;
+            return this;
+        }
+
         public Offence build() {
-            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed);
         }
     }
 }

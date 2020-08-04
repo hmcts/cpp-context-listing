@@ -11,6 +11,7 @@ import static uk.gov.moj.cpp.listing.domain.RuleConstants.GROUP_VICTIMS_WITNESS_
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LEGAL_ADVISERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LISTING_OFFICERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.NPS;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.SYSTEM_USERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.YOTS;
 
 import uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider;
@@ -97,7 +98,7 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldBeAsExpectedForListingSearchHearing() {
         assertAccessAsExpected("listing.search.hearing",
-                COURT_CLERKS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, LISTING_OFFICERS, LEGAL_ADVISERS);
+                COURT_CLERKS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, LISTING_OFFICERS, LEGAL_ADVISERS, SYSTEM_USERS);
     }
 
     private void assertAccessAsExpected(String actionName, String... expectedGroups) {

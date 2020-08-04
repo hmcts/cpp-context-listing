@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import uk.gov.justice.listing.events.LinkedCases;
 import uk.gov.justice.listing.events.LinkedCasesUpdated;
 import uk.gov.justice.listing.events.LinkedToCases;
@@ -12,12 +11,16 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+
+import javax.inject.Inject;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class LinkOrUnlinkCasesEventListener {
@@ -92,6 +95,7 @@ public class LinkOrUnlinkCasesEventListener {
                 .withRestrictFromCourtList(listedCase.getRestrictFromCourtList())
                 .withMarkers(listedCase.getMarkers())
                 .withLinkedCases(linkedCases)
+                .withShadowListed(listedCase.getShadowListed())
                 .build();
     }
 

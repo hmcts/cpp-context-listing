@@ -77,7 +77,8 @@ public class EjectEventListener {
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
                 .withDefendants(listedCase.getDefendants())
                 .withId(listedCase.getId())
-                .withIsEjected(ofNullable(Boolean.TRUE)).build();
+                .withIsEjected(ofNullable(Boolean.TRUE))
+                .withShadowListed(listedCase.getShadowListed()).build();
         cases.replaceAll(lc -> lc.getId().equals(caseId) ? newListedCase : lc);
         return cases;
     }

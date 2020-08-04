@@ -1661,10 +1661,10 @@ public class Hearing implements Aggregate {
     }
 
 
-    public Stream<Object> addCasesForHearing(final List<ProsecutionCase> prosecutionCases) {
+    public Stream<Object> addCasesForHearing(final List<ProsecutionCase> prosecutionCases, final List<UUID> shadowListedOffences) {
         return apply(Stream.of(AddedCasesForHearing.addedCasesForHearing()
                 .withUnAllocatedListedCases(prosecutionCases.stream()
-                        .map(CourtToEventConverter::buildListedCase)
+                        .map(prosecutionCase -> CourtToEventConverter.buildListedCase(prosecutionCase, shadowListedOffences))
                         .collect(Collectors.toList()))
                 .withHearingId(hearingId)
                 .build()));

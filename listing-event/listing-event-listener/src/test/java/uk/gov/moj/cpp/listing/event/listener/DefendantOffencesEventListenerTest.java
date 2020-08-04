@@ -28,6 +28,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -113,12 +114,19 @@ public class DefendantOffencesEventListenerTest {
         defendantOffencesEventListener.offenceUpdated(offenceUpdatedEnvelope);
 
         verify(properties).replace(anyObject(), objectNodeCaptur.capture());
-        String expectedOffenceCode = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences")
+        final JsonNode newListedCase = objectNodeCaptur.getValue().get(0);
+        final ListedCase testListedCase = testCases.get(0);
+        String expectedOffenceCode = newListedCase.get("defendants").get(0).get("offences")
                 .get(0).get("offenceCode").toString();
 
-        int numberOffence = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").size();
+        int numberOffence = newListedCase.get("defendants").get(0).get("offences").size();
         MatcherAssert.assertThat(numberOffence, equalTo(1));
         MatcherAssert.assertThat(expectedOffenceCode, equalTo("\"" + EXPECTED_OFFENCE_CODE + "\""));
+
+        MatcherAssert.assertThat(newListedCase.get("shadowListed").asBoolean(), equalTo(testListedCase.getShadowListed().get()));
+        MatcherAssert.assertThat(newListedCase.get("defendants").get(0).get("offences").get(0).get("shadowListed").asBoolean(),
+                equalTo(testListedCase.getDefendants().get(0).getOffences().get(0).getShadowListed().get()));
+
         verify(hearingRepository).save(hearing);
     }
 
@@ -137,6 +145,7 @@ public class DefendantOffencesEventListenerTest {
                         .withStartDate(LocalDates.to(LocalDate.now()))
                         .withOffenceCode(EXPECTED_OFFENCE_CODE)
                         .withId(OFFENCE_ID)
+                        .withShadowListed(Optional.ofNullable(null))
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withTitle(STRING.next())
                                 .withWelshTitle(STRING.next())
@@ -222,9 +231,11 @@ public class DefendantOffencesEventListenerTest {
                                         .withLegislation(of(STRING.next()))
                                         .withTitle(STRING.next())
                                         .build())
+                                .withShadowListed(Optional.of(Boolean.TRUE))
                                 .build()))
                         .build()))
                 .withId(CASE_ID)
+                .withShadowListed(Optional.of(Boolean.TRUE))
                 .build());
     }
 }

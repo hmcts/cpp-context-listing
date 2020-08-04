@@ -79,6 +79,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplication());
     }
 
+    public static HearingsData hearingsDataWithShadowListedOffences() {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithShadowListedOffences());
+    }
+
 
     public HearingsData combine(final HearingsData moreHearingsData) {
         final List<HearingData> combinedHearingsData = new ArrayList<>();

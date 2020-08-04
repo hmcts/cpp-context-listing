@@ -47,8 +47,8 @@ public class NewDomainToEventConverter {
                 .withDefendants(lc.getDefendants().stream()
                         .map(NewDomainToEventConverter::buildDefendant)
                         .collect(toList()))
-                .withRestrictFromCourtList(of(FALSE))
-
+                .withRestrictFromCourtList(of(Boolean.FALSE))
+                .withShadowListed(lc.getShadowListed())
                 .build();
     }
 
@@ -77,7 +77,7 @@ public class NewDomainToEventConverter {
                 .withDatesToAvoid(d.getDatesToAvoid())
                 .withHearingLanguageNeeds(d.getHearingLanguageNeeds().isPresent()
                         ? HearingLanguageNeeds.valueFor(d.getHearingLanguageNeeds().get().toString())
-                        : Optional.empty())
+                        : empty())
                 .withOrganisationName(d.getOrganisationName())
                 .withSpecificRequirements(d.getSpecificRequirements())
                 .withOffences(d.getOffences().stream()
@@ -163,6 +163,7 @@ public class NewDomainToEventConverter {
                 .withRestrictFromCourtList(of(FALSE))
                 .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference(o.getLaaApplnReference().get()) : empty())
                 .withLaidDate(o.getLaidDate())
+                .withShadowListed(o.getShadowListed())
                 .build();
     }
 

@@ -36,6 +36,7 @@ import uk.gov.moj.cpp.listing.steps.data.OrganisationData;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -215,6 +216,31 @@ public class HearingsDataFactory {
                 .collect(toList());
     }
 
+    public static List<HearingData> hearingsDataWithShadowListedOffences() {
+        final UUID courtCentreId = UUID.randomUUID();
+        final String judiciaryType = "MAGISTRATES";
+        final LocalDate hearingEndDate = LocalDate.now().plusDays(1);
+        final UUID courtRoomId = randomUUID();
+
+        final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
+        final List<HearingData> listHearingData = new ArrayList<>();
+        listHearingData.add(new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
+                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                courtRoomId, ZonedDateTime.now(), listedCaseData,
+                Arrays.asList(randomJudicialRole(judiciaryType)), judiciaryType, STRING.next(),
+                singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court", LocalDate.now().toString()));
+
+        listHearingData.get(0)
+                .getListedCases()
+                .stream()
+                .flatMap(listedCase -> listedCase.getDefendants().stream())
+                .flatMap(defendant -> defendant.getOffences().stream())
+                .forEach(offence -> offence.setShadowListed(of(Boolean.TRUE)));
+
+        return listHearingData;
+    }
+
     private static List<ListedCaseData> manyRandomListingCases(final Integer numberOfListingCases) {
         return IntStream.range(0, numberOfListingCases)
                 .mapToObj((int i) -> randomListedCase())
@@ -304,7 +330,7 @@ public class HearingsDataFactory {
     private static OffenceData randomOffence() {
         return new OffenceData(randomUUID(), STRING.next(), LocalDate.now(),
                 LocalDate.now(), STRING.next(), STRING.next(), STRING.next(),
-                1, randomUUID(), Optional.of(randomCustodyTimeLimit()), Optional.of(randomLaaReferenceData()), LocalDate.now());
+                1, randomUUID(), Optional.of(randomCustodyTimeLimit()), Optional.of(randomLaaReferenceData()), LocalDate.now(), of(Boolean.FALSE));
     }
 
     private static CustodyTimeLimit randomCustodyTimeLimit() {

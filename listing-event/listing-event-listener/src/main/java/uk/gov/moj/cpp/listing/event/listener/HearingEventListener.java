@@ -173,6 +173,7 @@ public class HearingEventListener {
                 .withMarkers(listedCase.getMarkers())
                 .withRestrictFromCourtList(listedCase.getRestrictFromCourtList())
                 .withId(listedCase.getId())
+                .withShadowListed(listedCase.getShadowListed())
                 .build();
         listedCases.replaceAll(
                 listedCase1 -> listedCase1.getId().equals(newListedCase.getId()) ? newListedCase : listedCase1);

@@ -8,6 +8,8 @@ import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
+import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -133,6 +135,26 @@ public class ListCourtHearingIT extends AbstractIT {
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.singleHearingData())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingByIdWithInvalidId();
+        }
+    }
+
+    @Test
+    public void shouldListHearingWithShadowListedFlag() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithShadowListedOffences())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedWithShadowListedFlag(ALLOCATED);
+        }
+    }
+
+    @Test
+    public void shouldExtendHearingWithShadowListedFlag() throws IOException {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithShadowListedOffences())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.whenProgressionHearingExtended();
+            listCourtHearingSteps.verifyHearingExtendedWithShadowListedFlag(ALLOCATED);
         }
     }
 }

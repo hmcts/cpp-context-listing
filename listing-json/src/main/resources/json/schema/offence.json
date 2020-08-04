@@ -30,6 +30,9 @@
     },
     "laidDate": {
       "type": "string"
+    },
+    "shadowListed": {
+      "type": "boolean"
     }
   },
   "required": [

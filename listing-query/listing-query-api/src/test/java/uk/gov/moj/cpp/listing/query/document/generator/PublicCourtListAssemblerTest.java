@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.query.document.generator;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
@@ -25,6 +26,7 @@ import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtCentreDetails;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtRoomDetails;
@@ -38,6 +40,7 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 
 import com.google.common.collect.ImmutableMap;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -137,7 +140,7 @@ public class PublicCourtListAssemblerTest {
         when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
                 .thenReturn(generateJudiciaryEnvelope());
 
-        final JsonObject publicListData = publicListService.assemble(buildRequestEnvelopeRestrictedPublicList(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), PUBLIC, TRUE).get();
+        JsonObject publicListData = publicListService.assemble(buildRequestEnvelopeRestrictedPublicList(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, FALSE).get();
 
         assertRestrictedCasePublicCourtListPayload(publicListData);
 
@@ -325,17 +328,7 @@ public class PublicCourtListAssemblerTest {
 
         assertThat(courtRoomsJo.getString("courtRoomName"), is(COURT_ROOM_NAME_1));
 
-        JsonObject timeslot = courtRoomsJo.getJsonArray("timeslots").getJsonObject(0);
-
-
-        JsonObject hearing = timeslot.getJsonArray("hearings").getJsonObject(0);
-        assertThat(hearing.getString("startTime"), is(START_TIME1.substring(11, 16)));
-        assertThat(hearing.getString("hearingType"), is(HEARING_STRING));
-        assertThat(hearing.getString("reportingRestrictionReason"), is(EMPTY));
-
-
-        assertThat(hearing.getString("caseNumber"), is(EMPTY));
-        assertThat(hearing.getJsonArray("defendants").size(), is(0));
+        assertThat(courtRoomsJo.getJsonArray("timeslots"), Matchers.empty());
     }
 
     private CourtCentreDetails generateCourtCentreDetails(Boolean isWelsh) {

@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.nullValue;
@@ -25,8 +26,12 @@ import uk.gov.justice.listing.events.StatementOfOffence;
 
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.Test;
 
@@ -77,11 +82,12 @@ public class CourtToEventConverterTest {
 
     @Test
     public void shouldConvert() {
-        final ListedCase listedCase = CourtToEventConverter.buildListedCase(getSampleProsecutionCase());
+        final ListedCase listedCase = CourtToEventConverter.buildListedCase(getSampleProsecutionCase(), Collections.emptyList());
 
         assertThat(CASE_ID, is(listedCase.getId()));
         assertThat(of(CASE_STATUS), is(listedCase.getCaseStatus()));
         assertThat(of(false), is(listedCase.getRestrictFromCourtList()));
+        assertThat(listedCase.getShadowListed(), is(Optional.of(Boolean.FALSE)));
 
         final CaseIdentifier caseIdentifier = listedCase.getCaseIdentifier();
         assertThat(CASE_URN, is(caseIdentifier.getCaseReference()));
@@ -130,6 +136,7 @@ public class CourtToEventConverterTest {
         assertThat(OFFENCE_WORDING, is(offence.getOffenceWording()));
         assertThat(of(Boolean.FALSE), is(offence.getRestrictFromCourtList()));
         assertThat(of(LAID_DATE), is(offence.getLaidDate()));
+        assertThat(offence.getShadowListed(), is(Optional.of(Boolean.FALSE)));
 
         final uk.gov.justice.listing.events.LaaReference laaReference = offence.getLaaApplnReference().get();
         assertThat(LAA_APPLICATION_REFERENCE, is(laaReference.getApplicationReference()));
@@ -145,6 +152,34 @@ public class CourtToEventConverterTest {
         assertThat(OFFENCE_TITLE, is(statementOfOffence.getTitle()));
         assertThat(WELSH_TITLE, is(statementOfOffence.getWelshTitle()));
         assertThat(of(LEGISLATION_WELSH), is(statementOfOffence.getWelshLegislation()));
+    }
+
+    @Test
+    public void shouldSetShadowListedFlag() {
+        final ListedCase listedCase = CourtToEventConverter.buildListedCase(getSampleProsecutionCase(), Arrays.asList(OFFENCE_ID));
+
+        assertThat(listedCase.getShadowListed(), is(Optional.of(Boolean.TRUE)));
+        assertThat(listedCase.getDefendants().get(0).getOffences().get(0).getShadowListed(), is(Optional.of(Boolean.TRUE)));
+    }
+
+    @Test
+    public void shouldNotCarryShadowListedFlagWhenOneOffenceIsNotShadowListed() {
+        final ProsecutionCase prosecutionCase = getProsecutionCaseWithMultipleDefendantsAndOffences(2, 2);
+        final List<UUID> shadowListedOffences = prosecutionCase.getDefendants().get(0)
+                .getOffences().stream().map(offence -> offence.getId())
+                .collect(Collectors.toList());
+
+        final ListedCase listedCase = CourtToEventConverter.buildListedCase(prosecutionCase, shadowListedOffences);
+        final uk.gov.justice.listing.events.Defendant defendant1 = listedCase.getDefendants().get(0);
+        final uk.gov.justice.listing.events.Defendant defendant2 = listedCase.getDefendants().get(1);
+
+        assertThat(listedCase.getShadowListed(), is(Optional.of(Boolean.FALSE)));
+
+        assertThat(defendant1.getOffences().get(0).getShadowListed(), is(Optional.of(Boolean.TRUE)));
+        assertThat(defendant1.getOffences().get(1).getShadowListed(), is(Optional.of(Boolean.TRUE)));
+
+        assertThat(defendant2.getOffences().get(0).getShadowListed(), is(Optional.of(Boolean.FALSE)));
+        assertThat(defendant2.getOffences().get(1).getShadowListed(), is(Optional.of(Boolean.FALSE)));
     }
 
     private ProsecutionCase getSampleProsecutionCase() {
@@ -248,5 +283,57 @@ public class CourtToEventConverterTest {
                 .withMarkerTypeDescription(MARKER_TYPE_DESCRIPTION)
                 .withMarkerTypeid(MARKER_TYPEID)
                 .build());
+    }
+
+    private ProsecutionCase getProsecutionCaseWithMultipleDefendantsAndOffences(int defendantCount, int offencesCount) {
+        return ProsecutionCase.prosecutionCase()
+                .withId(CASE_ID)
+                .withProsecutionCaseIdentifier(getSampleCaseIdentifier())
+                .withCaseMarkers(getSampleCaseMarkers())
+                .withDefendants(getMultipleDefendants(defendantCount, offencesCount))
+                .withCaseStatus(of(CASE_STATUS))
+                .build();
+    }
+
+    private List<Defendant> getMultipleDefendants(int defendantCount, int offencesCount) {
+        return IntStream.range(0, defendantCount)
+                .mapToObj((int i) -> getRandomDefendant(offencesCount))
+                .collect(toList());
+    }
+
+    private Defendant getRandomDefendant(int offencesCount) {
+        return Defendant.defendant()
+                .withId(UUID.randomUUID())
+                .withMasterDefendantId(UUID.randomUUID())
+                .withCourtProceedingsInitiated(COURT_PROCEEDINGS_INITIATED)
+                .withDefenceOrganisation(of(Organisation.organisation()
+                        .withName(ORGANIZATION_NAME)
+                        .build()))
+                .withIsYouth(of(YOUTH))
+                .withPersonDefendant(of(getSamplePersonDefendant()))
+                .withOffences(getMultipleOffences(offencesCount))
+                .build();
+    }
+
+    private List<Offence> getMultipleOffences(int offencesCount) {
+        return IntStream.range(0, offencesCount)
+                .mapToObj((int i) -> getRandomOffence())
+                .collect(toList());
+    }
+
+    private Offence getRandomOffence() {
+        return Offence.offence()
+                .withId(UUID.randomUUID())
+                .withEndDate(of(OFFENCE_END_DATE))
+                .withStartDate(OFFENCE_START_DATE)
+                .withOffenceCode(OFFENCE_CODE)
+                .withWording(OFFENCE_WORDING)
+                .withOffenceLegislation(of(OFFENCE_LEGISLATION))
+                .withOffenceTitle(OFFENCE_TITLE)
+                .withOffenceLegislationWelsh(of(LEGISLATION_WELSH))
+                .withOffenceTitleWelsh(of(WELSH_TITLE))
+                .withLaaApplnReference(of(getSampleLaaReference()))
+                .withLaidDate(of(LAID_DATE))
+                .build();
     }
 }

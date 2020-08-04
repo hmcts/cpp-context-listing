@@ -66,6 +66,7 @@ public class CaseMarkersEventListener {
                     .withIsEjected(listedCase.getIsEjected())
                     .withRestrictFromCourtList(listedCase.getRestrictFromCourtList())
                     .withMarkers(updatedCaseMarkers)
+                    .withShadowListed(listedCase.getShadowListed())
                     .build();
             listedCases.remove(listedCase);
             listedCases.add(newListedCase);
