@@ -93,7 +93,6 @@ import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.Defendant;
 import uk.gov.moj.cpp.listing.domain.DefendantOffenceIds;
-import uk.gov.moj.cpp.listing.domain.HearingDay;
 import uk.gov.moj.cpp.listing.domain.HearingLanguage;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
@@ -126,14 +125,14 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings({"squid:S1172", "squid:S2629", "squid:S1948", "squid:S00107", "squid:S3655", "squid:S1067", "squid:CommentedOutCodeLine", "squid:S1068", "squid:S4973"})
+@SuppressWarnings({"squid:S1172", "squid:S2629", "squid:S00107", "squid:S3655", "squid:S1067", "squid:CommentedOutCodeLine", "squid:S1068", "squid:S4973", "PMD.BeanMembersShouldSerialize", "PMD.NullAssignment"})
 public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
     private static final long serialVersionUID = -9149179514523240080L;
 
-    private final List<uk.gov.justice.listing.events.ListedCase> unAllocatedListedCases = new ArrayList();
+    private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList();
     private UUID hearingId;
     private boolean allocated;
     private Type type;
@@ -253,7 +252,7 @@ public class Hearing implements Aggregate {
 
                 final List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = generateNewNonDefaultDays(estimateMinutes, startDate, hearingTypeDuration, nonDefaultDays, isCountBasedSlotSelected);
                 final LocalTime defaultStartTime = nonNull(courtCentreDefaults) ? courtCentreDefaults.getDefaultStartTime() : null;
-                builder.withHearingDays(HearingDaysCalculator.calculate(startDate.toLocalDate(), hearingEndDate.get(), emptyList(), convertEventToDomain(newNonDefaultDays),defaultStartTime, hearingTypeDuration));
+                builder.withHearingDays(HearingDaysCalculator.calculate(startDate.toLocalDate(), hearingEndDate.get(), emptyList(), convertEventToDomain(newNonDefaultDays), defaultStartTime, hearingTypeDuration));
                 builder.withNonDefaultDays(newNonDefaultDays);
             } else {
                 builder.withHearingDays(emptyList());
@@ -788,7 +787,7 @@ public class Hearing implements Aggregate {
         }
 
         final Map<LocalDate, Integer> hearingDaysSequencesMap = sequenceHearing.getHearingDays().stream()
-                .collect(Collectors.toMap(HearingDay::getHearingDate, HearingDay::getSequence));
+                .collect(Collectors.toMap(uk.gov.moj.cpp.listing.domain.HearingDay::getHearingDate, uk.gov.moj.cpp.listing.domain.HearingDay::getSequence));
         final boolean sequenceChanged = hasSequenceChanged(hearingDaysSequencesMap);
 
         final List<uk.gov.justice.listing.events.HearingDay> updatedHearingDays = this.hearingDays.stream()
@@ -1386,7 +1385,6 @@ public class Hearing implements Aggregate {
     @SuppressWarnings({"squid:S1172"})
     private void onHearingAllocatedForListing(final HearingAllocatedForListing event) {
         this.allocated = Boolean.TRUE;
-//        this.bookingId = event.getBookingId().get();
     }
 
     @SuppressWarnings({"squid:S1172"})
@@ -1433,7 +1431,7 @@ public class Hearing implements Aggregate {
         }
         return hearingDays.stream()
                 .map(cd -> HearingDay.hearingDay()
-                        .withCourtScheduleId(cd.getCourtScheduleId())
+                        .withCourtScheduleId(cd.getCourtScheduleId().orElse(null))
                         .withDurationMinutes(cd.getDurationMinutes())
                         .withEndTime(cd.getEndTime())
                         .withSequence(cd.getSequence())
@@ -1612,7 +1610,7 @@ public class Hearing implements Aggregate {
                     .map(uk.gov.justice.listing.events.CourtApplication::getId).collect(toList());
         }
         if (!event.getUnAllocatedListedCases().isEmpty()) {
-            unAllocatedListedCases.addAll(event.getUnAllocatedListedCases());
+            unAllocatedListedCases.addAll(event.getUnAllocatedListedCases().stream().map(EventAggregateConverter::buildAggregateListedCase).collect(toList()));
         }
 
     }
@@ -1643,7 +1641,7 @@ public class Hearing implements Aggregate {
                                 .build()
                         ).collect(toList()))
                 .withCourtApplicationIds(this.confirmedCourtApplicationIds.isEmpty() ? null : this.confirmedCourtApplicationIds)
-                .withUnAllocatedListedCases(this.unAllocatedListedCases.isEmpty() ? null : this.unAllocatedListedCases)
+                .withUnAllocatedListedCases(this.unAllocatedListedCases.isEmpty() ? null : this.unAllocatedListedCases.stream().map(EventAggregateConverter::buildEventListedCase).collect(toList()))
                 .withExistingHearingId(unallocatedHearing.getId())
                 .build();
     }

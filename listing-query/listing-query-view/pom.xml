@@ -8,11 +8,7 @@
     </parent>
 
     <artifactId>listing-query-view</artifactId>
-    <packaging>war</packaging>
-
-    <properties>
-        <cpp.service-component>QUERY_VIEW</cpp.service-component>
-    </properties>
+    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>

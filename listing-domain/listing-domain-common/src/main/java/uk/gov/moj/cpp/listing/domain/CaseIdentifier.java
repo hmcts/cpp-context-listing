@@ -1,9 +1,10 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 @SuppressWarnings({"squid:S00107", "squid:S00121"})
-public class CaseIdentifier {
+public class CaseIdentifier implements Serializable {
   private final String authorityCode;
 
   private final UUID authorityId;

@@ -2,13 +2,12 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static javax.json.Json.createObjectBuilder;
-import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
-import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
-import uk.gov.justice.services.core.annotation.FrameworkComponent;
-import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.spi.JsonEnvelopeProvider;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
+import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -24,8 +23,7 @@ import org.slf4j.LoggerFactory;
 public class ListingService {
 
     @Inject
-    @FrameworkComponent(EVENT_PROCESSOR)
-    private Requester requester;
+    private HearingQueryView hearingQueryView;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingService.class);
 
@@ -42,9 +40,7 @@ public class ListingService {
         endDate.ifPresent(s -> LOGGER.info("endDate is: {}", s));
 
         endDate.ifPresent(pEndDate -> restRequestParametersBuilder.add("endDate", pEndDate));
-
-        final JsonEnvelope response = requester.request(envelop(restRequestParametersBuilder.build()).withName("listing.courtlist").withMetadataFrom(envelope));
-
+        final JsonEnvelope response = hearingQueryView.retrieveCourtList(JsonEnvelopeProvider.provider().envelopeFrom(metadataFrom(envelope.metadata()).withName("listing.courtlist"), restRequestParametersBuilder.build()));
         return response.payloadAsJsonObject();
     }
 
@@ -59,7 +55,7 @@ public class ListingService {
                 .add("publishCourtListType", publishCourtListType.name())
                 .add("published", true);
 
-        final JsonEnvelope response = requester.request(envelop(restRequestParametersBuilder.build()).withName("listing.courtlist").withMetadataFrom(envelope));
+        final JsonEnvelope response = hearingQueryView.retrieveCourtList(JsonEnvelopeProvider.provider().envelopeFrom(metadataFrom(envelope.metadata()).withName("listing.courtlist"), restRequestParametersBuilder.build()));
 
         return response.payloadAsJsonObject();
     }

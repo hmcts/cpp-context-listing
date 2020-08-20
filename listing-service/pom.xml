@@ -44,7 +44,6 @@
             <groupId>uk.gov.moj.cpp.listing</groupId>
             <artifactId>listing-query-view</artifactId>
             <version>${project.version}</version>
-            <classifier>classes</classifier>
         </dependency>
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>

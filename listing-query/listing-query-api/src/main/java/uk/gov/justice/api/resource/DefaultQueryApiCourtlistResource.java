@@ -4,7 +4,6 @@ import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_DISPOSITION;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 import static javax.ws.rs.core.Response.status;
 import static uk.gov.justice.services.core.interceptor.InterceptorContext.interceptorContextWithInput;
@@ -24,6 +23,7 @@ import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.document.generator.DocumentGeneratorClient;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
+import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 import uk.gov.moj.cpp.systemusers.ServiceContextSystemUserProvider;
 
 import java.io.ByteArrayInputStream;
@@ -75,6 +75,9 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
     @Inject
     private ReferenceDataService referenceDataService;
 
+    @Inject
+    private HearingQueryView hearingQueryView;
+
     @Override
     public Response getCourtList(final String courtCentreId, final String courtRoomId, final String listId,
                                  final String startDate, final String endDate, final boolean restricted, UUID userId) {
@@ -98,9 +101,9 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
                             .build());
 
 
-            return interceptorChainProcessor.process(interceptorContextWithInput(documentQuery))
-                    .map(queryResponse -> getDocumentContent(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted))
-                    .orElse(status(NOT_FOUND).build());
+
+             interceptorChainProcessor.process(interceptorContextWithInput(documentQuery));
+             return getDocumentContent(hearingQueryView.getCourtListContent(documentQuery), courtCentreId, courtRoomId, courtListType.get(), restricted);
         }
         return Response.status(BAD_REQUEST).entity(String.format("Bad request - No matching list type found for %s", listId)).build();
     }

@@ -21,18 +21,6 @@
                 <artifactId>rest-client-generator-plugin</artifactId>
                 <dependencies>
                     <dependency>
-                        <groupId>uk.gov.moj.cpp.listing</groupId>
-                        <artifactId>listing-query-view</artifactId>
-                        <version>${project.version}</version>
-                        <classifier>raml</classifier>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>*</groupId>
-                                <artifactId>*</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
                         <groupId>uk.gov.moj.cpp.referencedata</groupId>
                         <artifactId>referencedata-query-api</artifactId>
                         <version>${referencedata.version}</version>
@@ -105,6 +93,11 @@
         <dependency>
             <groupId>uk.gov.moj.cpp.listing</groupId>
             <artifactId>listing-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-query-view</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

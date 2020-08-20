@@ -15,21 +15,19 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
-import static uk.gov.justice.services.test.utils.core.matchers.HandlerClassMatcher.isHandlerClass;
-import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
 
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.core.annotation.Handles;
-import uk.gov.justice.services.core.requester.Requester;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
+import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -38,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.json.JsonObject;
 import javax.json.JsonValue;
 
 import com.google.common.collect.ImmutableList;
@@ -74,7 +73,7 @@ public class HearingQueryApiTest {
     public final ExpectedException expectedException = ExpectedException.none();
     private Map<String, String> apiMethodsToHandlerNames;
     @Mock
-    private Requester requester;
+    private HearingQueryView hearingQueryView;
 
     @Mock
     private ReferenceDataLoader referenceDataLoader;
@@ -106,21 +105,6 @@ public class HearingQueryApiTest {
                 .collect(toList());
 
         assertThat(apiMethodsToHandlerNames.values(), containsInAnyOrder(ramlActionNames.toArray()));
-    }
-
-    @Test
-    public void ensureThatSomeOfTheMethodsArePassthroughs() {
-        apiMethodsToHandlerNames
-                .entrySet()
-                .stream()
-                .filter(entry -> !METHODS_WHICH_ARE_NOT_MERELY_PASS_THROUGH.contains(entry.getKey()))
-                .forEach(entry ->
-                        assertThat(HearingQueryApi.class,
-                                isHandlerClass(QUERY_API)
-                                        .with(method(entry.getKey())
-                                                .thatHandles(entry.getValue())
-                                                .withRequesterPassThrough())));
-
     }
 
     @Test
@@ -160,7 +144,7 @@ public class HearingQueryApiTest {
                         .build());
 
         final JsonEnvelope envelopeReturnedFromRequester = mock(JsonEnvelope.class);
-        when(requester.request(proposedQuery)).thenReturn(envelopeReturnedFromRequester);
+        when(hearingQueryView.getHearingById(proposedQuery)).thenReturn(envelopeReturnedFromRequester);
 
         final JsonEnvelope returnedEnvelope = hearingQueryApi.searchForHearingById(proposedQuery);
 
@@ -186,11 +170,11 @@ public class HearingQueryApiTest {
                         new OrganisationUnit(UUID.fromString("c9f485a3-dda3-4909-8a34-d599ae3316a4"), "OP565"))
         );
         ArgumentCaptor<JsonEnvelope> envelopeArgumentCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
-        final JsonEnvelope results = mock(JsonEnvelope.class);
-        when(requester.request(envelopeArgumentCaptor.capture())).thenReturn(results);
+        final Envelope<JsonObject> results = mock(Envelope.class);
+        when(hearingQueryView.searchUnscheduledHearings(envelopeArgumentCaptor.capture())).thenReturn(results);
 
 
-        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchUnscheduledHearings(proposedQuery);
+        final Envelope<JsonObject> returnedEnvelope = hearingQueryApi.searchUnscheduledHearings(proposedQuery);
 
         assertSame(returnedEnvelope, results);
         Assert.assertThat(envelopeArgumentCaptor.getValue(), is(jsonEnvelope(
@@ -227,11 +211,11 @@ public class HearingQueryApiTest {
                         new OrganisationUnit(UUID.fromString("c9f485a3-dda3-4909-8a34-d599ae3316a4"), "OP565"))
         );
         ArgumentCaptor<JsonEnvelope> envelopeArgumentCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
-        final JsonEnvelope results = mock(JsonEnvelope.class);
-        when(requester.request(envelopeArgumentCaptor.capture())).thenReturn(results);
+        final Envelope<JsonObject> results = mock(Envelope.class);
+        when(hearingQueryView.searchUnscheduledHearings(envelopeArgumentCaptor.capture())).thenReturn(results);
 
 
-        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchUnscheduledHearings(proposedQuery);
+        final Envelope<JsonObject> returnedEnvelope = hearingQueryApi.searchUnscheduledHearings(proposedQuery);
 
         assertSame(returnedEnvelope, results);
         Assert.assertThat(envelopeArgumentCaptor.getValue(), is(jsonEnvelope(

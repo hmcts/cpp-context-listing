@@ -33,11 +33,13 @@ import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.document.generator.DocumentGeneratorClient;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
+import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 import uk.gov.moj.cpp.systemusers.ServiceContextSystemUserProvider;
 
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -65,6 +67,9 @@ public class DefaultQueryApiCourtlistResourceTest {
 
     @Mock
     private InterceptorChainProcessor interceptorChainProcessor;
+
+    @Mock
+    private HearingQueryView hearingQueryView;
 
     @Mock
     private ServiceContextSystemUserProvider serviceContextSystemUserProvider;
@@ -105,6 +110,7 @@ public class DefaultQueryApiCourtlistResourceTest {
 
         final JsonEnvelope documentDetails = documentDetails(materialId);
         when(interceptorChainProcessor.process(argThat((Matchers.any(InterceptorContext.class))))).thenReturn(Optional.ofNullable(documentDetails));
+        when(hearingQueryView.getCourtListContent(argThat((Matchers.any(JsonEnvelope.class))))).thenReturn(documentDetails);
         when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(documentContentResponse.getStatus()).thenReturn(SC_OK);
     }

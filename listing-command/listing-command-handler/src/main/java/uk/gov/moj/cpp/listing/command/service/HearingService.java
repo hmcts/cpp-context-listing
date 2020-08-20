@@ -8,6 +8,7 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
+import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 
 import javax.inject.Inject;
 import javax.json.JsonObject;
@@ -28,7 +29,7 @@ public class HearingService {
 
     @Inject
     @ServiceComponent(QUERY_API)
-    private Requester requester;
+    private HearingQueryView hearingQueryView;
 
     public JsonEnvelope getHearingById(final UUID hearingId, final JsonEnvelope event) {
         final JsonObject payload = createObjectBuilder().add("id", hearingId.toString()).build();
@@ -38,7 +39,7 @@ public class HearingService {
         final JsonEnvelope jsonEnvelope = JsonEnvelope.envelopeFrom(metaData,payload);
         final JsonEnvelope request = enveloper.withMetadataFrom(jsonEnvelope, HEARING_QUERY_BY_HEARING_ID).apply(payload);
 
-        return requester.request(request);
+        return hearingQueryView.getHearingById(request);
     }
 
     @VisibleForTesting

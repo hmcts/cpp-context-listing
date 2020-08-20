@@ -6,7 +6,6 @@ import static java.time.LocalDate.parse;
 import static java.time.LocalTime.MAX;
 import static java.time.LocalTime.MIN;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toSet;
@@ -23,9 +22,7 @@ import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFEN
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
-import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -74,7 +71,6 @@ import org.slf4j.LoggerFactory;
 
 
 @SuppressWarnings({"squid:S1192", "squid:S00107"})
-@ServiceComponent(Component.QUERY_VIEW)
 public class HearingQueryView {
     private static final String PUBLISH_COURT_LIST_TYPES = "publishCourtListTypes";
     private static final String PUBLISH_COURT_LIST_TYPE = "publishCourtListType";

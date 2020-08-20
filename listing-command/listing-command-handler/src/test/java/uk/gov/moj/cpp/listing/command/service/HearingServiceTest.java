@@ -10,6 +10,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 
 import java.util.UUID;
 
@@ -27,7 +28,7 @@ public class HearingServiceTest {
     private Enveloper enveloper = createEnveloper();
 
     @Mock
-    private Requester requester;
+    private HearingQueryView hearingQueryView;
 
     @InjectMocks
     private HearingService hearingService;
@@ -44,12 +45,12 @@ public class HearingServiceTest {
         final UUID HEARING_ID = UUID.randomUUID();
         final JsonEnvelope eventEnvelope = generateEmptyEnvelope();
         final JsonEnvelope returnedResponseEnvelope = generateEmptyEnvelope();
-        when(requester.request(eventEnvelope)).thenReturn(returnedResponseEnvelope);
+        when(hearingQueryView.getCourtListPublishStatus(eventEnvelope)).thenReturn(returnedResponseEnvelope);
         final ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
 
         hearingService.getHearingById(HEARING_ID, eventEnvelope);
 
-        verify(requester).request(argumentCaptorForRequestEnvelope.capture());
+        verify(hearingQueryView).getHearingById(argumentCaptorForRequestEnvelope.capture());
         final JsonEnvelope requestEnvelope = argumentCaptorForRequestEnvelope.getValue();
         assertThat(requestEnvelope.metadata().name(), is(HEARING_QUERY_BY_HEARING_ID));
     }

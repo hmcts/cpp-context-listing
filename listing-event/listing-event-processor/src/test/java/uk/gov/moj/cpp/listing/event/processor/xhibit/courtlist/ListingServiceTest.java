@@ -12,10 +12,9 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.WARN;
 
-import uk.gov.justice.services.core.requester.Requester;
-import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
+import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -39,10 +38,10 @@ public class ListingServiceTest {
     private ListingService listingService;
 
     @Mock
-    private Requester requester;
+    private HearingQueryView hearingQueryView;
 
     @Captor
-    private ArgumentCaptor<Envelope> requestCaptor;
+    private ArgumentCaptor<JsonEnvelope> requestCaptor;
 
     private JsonEnvelope inputEnvelope;
     private LocalDate startDate = parse("2019-11-13");
@@ -64,7 +63,7 @@ public class ListingServiceTest {
         inputEnvelope = envelopeFrom(metadataBuilder().withName("listing").withId(randomUUID()), createObjectBuilder());
 
         final JsonEnvelope responseEnvelope = envelopeFrom(metadataBuilder().withName("listing.courtlist").withId(randomUUID()), payload);
-        when(requester.request(any(Envelope.class))).thenReturn(responseEnvelope);
+        when(hearingQueryView.retrieveCourtList(any(JsonEnvelope.class))).thenReturn(responseEnvelope);
     }
 
     @Test
@@ -101,7 +100,7 @@ public class ListingServiceTest {
                                        final PublishCourtListType publishCourtListType,
                                        final boolean isPublished) {
 
-        verify(requester).request(requestCaptor.capture());
+        verify(hearingQueryView).retrieveCourtList(requestCaptor.capture());
 
         final JsonObject actualRequestParameters = (JsonObject) requestCaptor.getValue().payload();
 

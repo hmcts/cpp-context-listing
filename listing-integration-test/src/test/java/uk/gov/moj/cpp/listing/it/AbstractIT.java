@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.listing.it;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.moj.cpp.listing.utils.AuthorisationServiceStub.stubEnableAllCapabilities;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 
@@ -43,7 +42,6 @@ public class AbstractIT {
     @Before
     public void setUp() {
         setupAsAuthorisedUser(USER_ID_VALUE);
-        stubEnableAllCapabilities();
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
     }
 

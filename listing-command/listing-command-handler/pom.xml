@@ -96,6 +96,11 @@
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.listing</groupId>
+            <artifactId>listing-query-view</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
