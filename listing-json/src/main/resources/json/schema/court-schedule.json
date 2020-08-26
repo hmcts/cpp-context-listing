@@ -56,6 +56,12 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/court-schedule-judiciary.json"
       }
+    },
+    "slotStartTimes": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/court-schedule-slot-start-time.json"
+      }
     }
   },
   "definitions": {

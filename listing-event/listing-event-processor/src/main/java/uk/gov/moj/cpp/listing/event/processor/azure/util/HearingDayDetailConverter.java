@@ -4,6 +4,7 @@ import static java.lang.String.valueOf;
 import static java.util.EnumSet.range;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.toIsoString;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.FIVE_PM;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.ONE_PM;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.TWELVE_AM;
@@ -73,12 +74,13 @@ public class HearingDayDetailConverter {
         final LocalDate date = hearingDaySittingDay.toLocalDate();
         final Optional<UUID> courtScheduleId = hearingDay.getCourtScheduleId();
         final String session = StringUtils.trimToEmpty(getMeridian(hearingDaySittingDay));
+        final String hearingStartTime = toIsoString(hearingDay.getStartTime());
 
         HearingDayDetail hearingDayDetail = null;
         if ("AD".equalsIgnoreCase(session) && isFalse(isForAdjournmentHearing)) {
             LOGGER.info("Is for Adjournment hearing:{}, session is {} and does not fall within AM or PM range. Slot will not be updated", isForAdjournmentHearing, session);
         } else {
-            hearingDayDetail = new HearingDayDetail(date.toString(), getMeridian(hearingDaySittingDay), duration, courtScheduleId.isPresent() ? Optional.of(courtScheduleId.get().toString()) : Optional.empty());
+            hearingDayDetail = new HearingDayDetail(date.toString(), getMeridian(hearingDaySittingDay), duration, courtScheduleId.isPresent() ? Optional.of(courtScheduleId.get().toString()) : Optional.empty(), hearingStartTime);
         }
         return hearingDayDetail;
     }

@@ -18,6 +18,7 @@
       "availableSlots": 20,
       "availableDuration": 0,
       "judiciaries": [],
+      "slotStartTimes": [],
       "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37"
     },
     {
@@ -38,6 +39,7 @@
       "availableSlots": 20,
       "availableDuration": 0,
       "judiciaries": [],
+      "slotStartTimes": [],
       "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37"
     }
   ]

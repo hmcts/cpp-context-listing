@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.processor.azure.util;
 
 import static com.jayway.jsonassert.JsonAssert.with;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
@@ -32,7 +33,6 @@ import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -46,14 +46,12 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-@Ignore
 @RunWith(MockitoJUnitRunner.class)
 public class SlotsToJsonStringConverterTest {
 
@@ -74,6 +72,14 @@ public class SlotsToJsonStringConverterTest {
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
     private static final String CIRCUIT_JUDGE = "CIRCUIT_JUDGE";
     private static final String HEARING_ALLOCATED_FOR_LISTING = "listing.events.hearing-allocated-for-listing";
+    public static final String EXPECTED_HEARING_START_TIME = "2019-12-02T11:11:30.000Z";
+
+    private JsonEnvelope event;
+    private String ouCode;
+    private int courtRoomId;
+    private HearingConfirmed hearingConfirmed;
+    private boolean isForAdjournmentHearing;
+    private String expectedZoneDateTime;
 
     @Mock
     private ListingReferenceDataService listingReferenceDataService;
@@ -87,17 +93,17 @@ public class SlotsToJsonStringConverterTest {
     @Before
     public void before() {
         setField(this.jsonObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
+        initTestData();
     }
 
-    @Test
-    public void getSlotDetailFromHearingConfirmed() {
-        final JsonEnvelope event = hearingAllocatedEvent();
-        final String ouCode = "B01LY00";
-        final int courtRoomId = 2;
+    private void initTestData() {
+        event = hearingAllocatedEvent();
+        ouCode = "B01LY00";
+        courtRoomId = 2;
         final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
         final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
-        final String expectedZoneDateTime = HearingDayDetailConverter.getMeridian(DATE_TIME);
+        expectedZoneDateTime = HearingDayDetailConverter.getMeridian(DATE_TIME);
 
         final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
 
@@ -105,13 +111,17 @@ public class SlotsToJsonStringConverterTest {
 
         given(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).willReturn(courtRoomId);
 
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
-        final boolean isForAdjournmentHearing = false;
+        hearingConfirmed = hearingConfirmed(formattedDateTime);
+        isForAdjournmentHearing = false;
 
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(HearingAllocatedForListing.hearingAllocatedForListing()
                 .withBookingId(Optional.of(UUID.randomUUID()))
-                .withHearingDays(Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).build()))
+                .withHearingDays(Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).withStartTime(DATE_TIME).build()))
                 .build());
+    }
+
+    @Test
+    public void getSlotDetailFromHearingConfirmed() {
 
         final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing);
 
@@ -121,26 +131,13 @@ public class SlotsToJsonStringConverterTest {
                 .assertThat("$[0].ouCode", equalTo(ouCode))
                 .assertThat("$[0].sessionDate", equalTo(START_DATE.toString()))
                 .assertThat("$[0].session", equalTo(expectedZoneDateTime))
-                .assertThat("$[0].duration", equalTo(10));
+                .assertThat("$[0].duration", equalTo(10))
+                .assertThat("$[0].hearingStartTime", equalTo(EXPECTED_HEARING_START_TIME));
 
     }
 
     @Test
     public void shouldGetSlotDetailFromHearingConfirmedWhenAllDayAndIsAdjournmentHearing() {
-        final JsonEnvelope event = hearingAllocatedEvent();
-        final String ouCode = "B01LY00";
-        final int courtRoomId = 2;
-        final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME_1);
-        final String expectedZoneDateTime = HearingDayDetailConverter.getMeridian(START_DATE_TIME_1);
-
-        final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
-
-        given(listingReferenceDataService.getPayLoadForCourtRoom(event, COURT_CENTRE_ID.toString())).willReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject));
-
-        given(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).willReturn(courtRoomId);
-
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
-        final boolean isForAdjournmentHearing = true;
 
         final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing);
 
@@ -149,26 +146,20 @@ public class SlotsToJsonStringConverterTest {
                 .assertThat("$[0].ouCode", equalTo(ouCode))
                 .assertThat("$[0].sessionDate", equalTo(START_DATE.toString()))
                 .assertThat("$[0].session", equalTo(expectedZoneDateTime))
-                .assertThat("$[0].duration", equalTo(10));
+                .assertThat("$[0].duration", equalTo(10))
+                .assertThat("$[0].hearingStartTime", equalTo(EXPECTED_HEARING_START_TIME));
     }
 
     @Test
     public void shouldReturnEmptyStringFromGetSlotDetailFromHearingConfirmed() {
-        final JsonEnvelope event = hearingAllocatedEvent();
-        final int courtRoomId = 2;
-        final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME_1);
 
-        final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
-
-        given(listingReferenceDataService.getPayLoadForCourtRoom(event, COURT_CENTRE_ID.toString())).willReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject));
-
-        given(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).willReturn(courtRoomId);
-
-        final HearingConfirmed hearingConfirmed = hearingConfirmed(formattedDateTime);
-        final boolean isForAdjournmentHearing = false;
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class))
+                .willReturn(HearingAllocatedForListing
+                        .hearingAllocatedForListing()
+                        .withHearingDays(emptyList())
+                        .build());
 
         final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing);
-
         assertNotNull(slotDetailFromHearingConfirmed);
         assertThat(slotDetailFromHearingConfirmed.isEmpty(), equalTo(true));
     }
@@ -192,7 +183,8 @@ public class SlotsToJsonStringConverterTest {
                 .assertThat("$[1].courtRoomId", equalTo(34))
                 .assertThat("$[1].ouCode", equalTo("BA09UK"))
                 .assertThat("$[1].hearingId", equalTo(HEARING_ID.toString()))
-                .assertThat("$[1].courtScheduleId", equalTo("224687"));
+                .assertThat("$[1].courtScheduleId", equalTo("224687"))
+                .assertThat("$[0].hearingStartTime", equalTo(EXPECTED_HEARING_START_TIME));
     }
 
     private JsonEnvelope hearingAllocatedEvent() {

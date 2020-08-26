@@ -14,7 +14,7 @@ public class SlotDetail {
     private int duration;
     private String courtScheduleId;
     private String bookingId;
-
+    private String hearingStartTime;
 
     public SlotDetail(final String ouCode,
                       final String businessType,
@@ -24,7 +24,8 @@ public class SlotDetail {
                       final String hearingId,
                       final int duration,
                       final String courtScheduleId,
-                      final String bookingId) {
+                      final String bookingId,
+                      final String hearingStartTime) {
         this.ouCode = ouCode;
         this.businessType = businessType;
         this.courtRoomId = courtRoomId;
@@ -34,6 +35,7 @@ public class SlotDetail {
         this.duration = duration;
         this.courtScheduleId = courtScheduleId;
         this.bookingId = bookingId;
+        this.hearingStartTime = hearingStartTime;
     }
 
     public String getOuCode() {
@@ -108,6 +110,14 @@ public class SlotDetail {
         this.bookingId = bookingId;
     }
 
+    public String getHearingStartTime() {
+        return hearingStartTime;
+    }
+
+    public void setHearingStartTime(final String hearingStartTime) {
+        this.hearingStartTime = hearingStartTime;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -116,20 +126,22 @@ public class SlotDetail {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
+
         final SlotDetail that = (SlotDetail) o;
-        return duration == that.duration &&
+        return courtRoomId == that.courtRoomId &&
+                duration == that.duration &&
                 Objects.equals(ouCode, that.ouCode) &&
                 Objects.equals(businessType, that.businessType) &&
-                Objects.equals(courtRoomId, that.courtRoomId) &&
                 Objects.equals(sessionDate, that.sessionDate) &&
                 Objects.equals(session, that.session) &&
                 Objects.equals(hearingId, that.hearingId) &&
                 Objects.equals(courtScheduleId, that.courtScheduleId) &&
-                Objects.equals(bookingId, that.bookingId);
+                Objects.equals(bookingId, that.bookingId) &&
+                Objects.equals(hearingStartTime, that.hearingStartTime);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ouCode, businessType, courtRoomId, sessionDate, session, hearingId, duration, courtScheduleId, bookingId);
+        return Objects.hash(ouCode, businessType, courtRoomId, sessionDate, session, hearingId, duration, courtScheduleId, bookingId, hearingStartTime);
     }
 }

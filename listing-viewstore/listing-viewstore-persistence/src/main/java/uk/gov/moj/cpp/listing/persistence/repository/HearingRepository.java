@@ -185,20 +185,19 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
     @Query(value = "select id, properties  " +
             "from hearing  " +
             "where  " +
-            "cast(properties ->> 'allocated' as boolean) = ?1  " +
-            "and (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)" +
-            "and (?2 is null or properties ->> 'courtCentreId' = cast(?2 as text))  " +
-            "and (?3 is null or properties ->> 'courtRoomId' = cast(?3 as text))  " +
-            "and (?4  = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?4 as jsonb))  " +
-            "and (?5 is null or properties -> 'type' ->> 'id' = cast(?5 as text))  " +
-            "and (?6 is null or properties ->> 'jurisdictionType' = cast(?6 as text))  " +
+            "properties -> 'allocated'  @> cast(?1 as jsonb)  " +
+            "and (properties -> 'unscheduled' is null or properties -> 'unscheduled' @> cast('false' as jsonb))" +
+            "and (?2 = 'null' or properties -> 'courtCentreId' \\?\\? ?2 )  " +
+            "and (?3 = 'null' or properties -> 'courtRoomId' \\?\\? ?3  )  " +
+            "and (?4 = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?4 as jsonb))  " +
+            "and (?5 = 'null' or properties -> 'type' -> 'id' \\?\\? ?5 )  " +
+            "and (?6 = 'null' or properties -> 'jurisdictionType' \\?\\? ?6)  " +
             "and ( " +
             "   cast(properties ->> 'startDate' as date) between cast(?7 as date) and cast(?8 as date) or  " +
             "   cast(properties ->> 'endDate' as date) between cast(?7 as date) and cast(?8 as date) or  " +
             "   ( cast(properties ->> 'startDate' as date) <= cast(?7 as date) and cast(properties ->> 'endDate' as date) >= cast(?8 as date) )  " +
-            ")"
-            , isNative = true)
-    List<Hearing> findHearings(final boolean allocated,
+            ")", isNative = true)
+    List<Hearing> findHearings(final String allocated ,
                                final String courtCentreId,
                                final String courtRoomId,
                                final String authorityCode,

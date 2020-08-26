@@ -98,7 +98,7 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldBeAsExpectedForListingSearchHearing() {
         assertAccessAsExpected("listing.search.hearing",
-                COURT_CLERKS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, LISTING_OFFICERS, LEGAL_ADVISERS, SYSTEM_USERS);
+                COURT_CLERKS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, LISTING_OFFICERS, LEGAL_ADVISERS, SYSTEM_USERS, COURT_ASSOCIATE);
     }
 
     private void assertAccessAsExpected(String actionName, String... expectedGroups) {

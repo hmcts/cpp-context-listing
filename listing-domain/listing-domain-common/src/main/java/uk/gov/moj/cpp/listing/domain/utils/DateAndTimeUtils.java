@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.Set;
 
@@ -13,7 +14,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.math.NumberUtils;
 
 public class DateAndTimeUtils {
-
+    private static final DateTimeFormatter ISO_8601_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     public static final ZoneId UTC = ZoneId.of("UTC");
     public static final ZoneId BST = ZoneId.of("Europe/London");
 
@@ -71,6 +72,14 @@ public class DateAndTimeUtils {
 
     public static ZonedDateTime convertUTCToLocalTime(LocalDateTime localDateTime) {
         return localDateTime.atZone(ZoneOffset.UTC).withZoneSameInstant(BST);
+    }
+
+    public static String toIsoString(ZonedDateTime zonedDateTime) {
+        if (zonedDateTime == null) {
+            return null;
+        }
+
+        return zonedDateTime.format(ISO_8601_FORMATTER);
     }
 
     private static String correctRawHours(final String rawHours) {

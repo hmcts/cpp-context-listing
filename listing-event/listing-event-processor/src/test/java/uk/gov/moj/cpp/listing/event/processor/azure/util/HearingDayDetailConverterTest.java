@@ -32,6 +32,8 @@ public class HearingDayDetailConverterTest {
     private static final String EXPECTED_FIRST_HEARING_DETAIL_DATE = "2019-12-02";
     private static final String EXPECTED_FIRST_HEARING_DETAIL_TIME = getMeridian(ZonedDateTime.parse("2019-12-04T11:15:30-05:00"));
     private static final String EXPECTED_SECOND_HEARING_DETAIL_TIME = getMeridian(ZonedDateTime.parse("2019-12-04T11:15:30-05:00"));
+    public static final String EXPECTED_FIRST_HEARING_START_TIME = "2019-12-02T11:11:30.000Z";
+    public static final String EXPECTED_SECONG_HEARING_START_TIME = "2019-12-04T11:15:30.000Z";
 
     @Test
     public void shouldGetHearingDayDetails() {
@@ -42,10 +44,12 @@ public class HearingDayDetailConverterTest {
         assertThat(hearingDayDetails.get(0).getDate(), is(EXPECTED_FIRST_HEARING_DETAIL_DATE));
         assertThat(hearingDayDetails.get(0).getTime(), is(EXPECTED_FIRST_HEARING_DETAIL_TIME));
         assertThat(hearingDayDetails.get(0).getDuration(), is(20));
+        assertThat(hearingDayDetails.get(0).getHearingStartTime(), is(EXPECTED_FIRST_HEARING_START_TIME));
+
         assertThat(hearingDayDetails.get(1).getDate(), is(EXPECTED_SECOND_HEARING_DETAIL_DATE));
         assertThat(hearingDayDetails.get(1).getTime(), is(EXPECTED_SECOND_HEARING_DETAIL_TIME));
         assertThat(hearingDayDetails.get(1).getDuration(), is(10));
-
+        assertThat(hearingDayDetails.get(1).getHearingStartTime(), is(EXPECTED_SECONG_HEARING_START_TIME));
     }
 
     @Test
@@ -57,6 +61,8 @@ public class HearingDayDetailConverterTest {
         assertThat(hearingDayDetails.size(), is(1));
         assertThat(hearingDayDetails.get(0).getDate(), is(EXPECTED_FIRST_HEARING_DETAIL_DATE));
         assertThat(hearingDayDetails.get(0).getDuration(), is(20));
+        assertThat(hearingDayDetails.get(0).getHearingStartTime(), is("2019-12-02T04:15:30.000Z"));
+
     }
 
     @Test
@@ -167,6 +173,7 @@ public class HearingDayDetailConverterTest {
                 .withCourtScheduleId(Optional.of(UUID.randomUUID()))
                 .withDurationMinutes(chd.getListedDurationMinutes())
                 .withHearingDate(chd.getSittingDay().toLocalDate())
+                .withStartTime(chd.getSittingDay())
                 .build()
         ).collect(Collectors.toList());
 

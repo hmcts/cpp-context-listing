@@ -13,7 +13,7 @@ rule "Command - API - Action - listing.command.list-court-hearing"
     $outcome: Outcome();
     $action: Action(name == "listing.command.list-court-hearing");
     eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS,
-    RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS));
+    RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE));
   then
     $outcome.setSuccess(true);
 end
@@ -23,7 +23,7 @@ rule "Command - API - Action - listing.command.list-unscheduled-court-hearing"
     $outcome: Outcome();
     $action: Action(name == "listing.command.list-unscheduled-court-hearing");
     eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.LEGAL_ADVISERS,
-    RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS));
+    RuleConstants.COURT_CLERKS, RuleConstants.SYSTEM_USERS, RuleConstants.COURT_ASSOCIATE));
   then
     $outcome.setSuccess(true);
 end
@@ -41,7 +41,7 @@ rule "Command - API - Action - listing.command.vacate-trial"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.command.vacate-trial");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
   then
     $outcome.setSuccess(true);
 end
@@ -77,7 +77,7 @@ rule "Command - API - Action - listing.command.restrict-court-list"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.command.restrict-court-list");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CPS, RuleConstants.YOTS, RuleConstants.NPS));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CPS, RuleConstants.YOTS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE));
   then
     $outcome.setSuccess(true);
 end
@@ -86,7 +86,7 @@ rule "Command - API - Action - listing.command.publish-court-list"
   when
     $outcome: Outcome();
     $action: Action(name == "listing.command.publish-court-list");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS));
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE));
   then
     $outcome.setSuccess(true);
 end

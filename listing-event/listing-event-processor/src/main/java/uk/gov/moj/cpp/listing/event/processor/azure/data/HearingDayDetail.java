@@ -7,13 +7,15 @@ public class HearingDayDetail {
     private String date;
     private String time;
     private int duration;
+    private String hearingStartTime;
     private Optional<String> courtScheduleId;
 
-    public HearingDayDetail(final String date, final String time, final int duration, final Optional<String> courtScheduleId) {
+    public HearingDayDetail(final String date, final String time, final int duration, final Optional<String> courtScheduleId, final String hearingStartTime) {
         this.date = date;
         this.time = time;
         this.duration = duration;
         this.courtScheduleId = courtScheduleId;
+        this.hearingStartTime = hearingStartTime;
     }
 
     public String getDate() {
@@ -48,6 +50,15 @@ public class HearingDayDetail {
         this.courtScheduleId = courtScheduleId;
     }
 
+    public String getHearingStartTime() {
+        return hearingStartTime;
+    }
+
+    public void setHearingStartTime(final String hearingStartTime) {
+        this.hearingStartTime = hearingStartTime;
+    }
+
+    @SuppressWarnings("squid:S1067")
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -59,11 +70,13 @@ public class HearingDayDetail {
         final HearingDayDetail that = (HearingDayDetail) o;
         return duration == that.duration &&
                 Objects.equals(date, that.date) &&
-                Objects.equals(time, that.time);
+                Objects.equals(time, that.time) &&
+                Objects.equals(hearingStartTime, that.hearingStartTime) &&
+                Objects.equals(courtScheduleId, that.courtScheduleId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(date, time, duration);
+        return Objects.hash(date, time, duration, hearingStartTime, courtScheduleId);
     }
 }

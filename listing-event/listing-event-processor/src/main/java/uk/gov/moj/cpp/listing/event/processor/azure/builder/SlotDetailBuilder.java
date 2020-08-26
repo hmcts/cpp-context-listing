@@ -13,6 +13,7 @@ public class SlotDetailBuilder {
     private int duration;
     private String courtScheduleId;
     private String bookingId;
+    private String hearingStartTime;
 
     private SlotDetailBuilder() {
     }
@@ -66,6 +67,11 @@ public class SlotDetailBuilder {
         return this;
     }
 
+    public SlotDetailBuilder withHearingStartTime(final String hearingStartTime) {
+        this.hearingStartTime = hearingStartTime;
+        return this;
+    }
+
     public SlotDetail build() {
         return new SlotDetail(
                 ouCode,
@@ -76,7 +82,8 @@ public class SlotDetailBuilder {
                 hearingId,
                 duration,
                 courtScheduleId,
-                bookingId
+                bookingId,
+                hearingStartTime
         );
     }
 

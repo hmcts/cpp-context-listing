@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor.azure.util;
 import static java.lang.String.format;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.toIsoString;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.HearingDayDetailConverter.getHearingDayDetails;
 
 import uk.gov.justice.core.courts.ConfirmedHearing;
@@ -12,6 +13,7 @@ import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.HearingDayDetail;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
@@ -101,7 +103,8 @@ public class SlotsToJsonStringConverter {
                 .withHearingId(hearingId)
                 .withSessionDate(hearingDayDetail.getDate())
                 .withSession(hearingDayDetail.getTime())
-                .withDuration(hearingDayDetail.getDuration());
+                .withDuration(hearingDayDetail.getDuration())
+                .withHearingStartTime(hearingDayDetail.getHearingStartTime());
 
         bookingId.ifPresent(slotDetailBuilder::withBookingId);
         hearingDayDetail.getCourtScheduleId().ifPresent(slotDetailBuilder::withCourtScheduleId);
@@ -119,6 +122,7 @@ public class SlotsToJsonStringConverter {
         nonDefaultDay.getOucode().ifPresent(builder::withOuCode);
         nonDefaultDay.getCourtRoomId().ifPresent(builder::withCourtRoomId);
         nonDefaultDay.getSession().ifPresent(builder::withSession);
+        builder.withHearingStartTime(toIsoString(nonDefaultDay.getStartTime()));
 
         return builder.build();
     }

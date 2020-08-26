@@ -54,7 +54,8 @@ public class HearingSlotsIT extends AbstractIT {
                         withJsonPath("$.hearingSlots[0].availableSlots", is(5)),
                         withJsonPath("$.hearingSlots[0].availableDuration", is(0)),
                         withJsonPath("$.hearingSlots[0].maxSlots", is(10)),
-                        withJsonPath("$.hearingSlots[0].maxDuration", is(0))
+                        withJsonPath("$.hearingSlots[0].maxDuration", is(0)),
+                        withJsonPath("$.hearingSlots[0].slotStartTimes.size()", is(1))
                 ))
         );
     }

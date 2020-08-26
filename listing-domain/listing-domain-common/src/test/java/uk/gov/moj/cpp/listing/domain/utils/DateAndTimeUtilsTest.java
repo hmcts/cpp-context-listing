@@ -1,13 +1,17 @@
 package uk.gov.moj.cpp.listing.domain.utils;
 
+import static java.time.ZoneOffset.UTC;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.toIsoString;
 
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.ZonedDateTime;
 import java.util.Optional;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 public class DateAndTimeUtilsTest {
@@ -147,6 +151,13 @@ public class DateAndTimeUtilsTest {
 
         assertThat(numberOfMinutesOpt, is(Optional.of(222)));
 
+    }
+
+    @Test
+    public void shouldConvertToIsoString() {
+        final ZonedDateTime dateTimeOffset = ZonedDateTime.of(2020, 1, 2, 18, 5, 22, 0, UTC);
+        final String actual = toIsoString(dateTimeOffset);
+        assertThat(actual, CoreMatchers.is("2020-01-02T18:05:22.000Z"));
     }
 
     private void assertThatNextWorkingDayIsAsExpected(LocalDate today, LocalDate expectedNextWorkingDay) {

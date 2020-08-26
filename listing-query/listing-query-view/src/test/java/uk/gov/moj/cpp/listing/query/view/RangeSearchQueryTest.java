@@ -6,6 +6,7 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -46,6 +47,7 @@ public class RangeSearchQueryTest {
     private static final UUID COURT_ROOM_ID = randomUUID();
     private static final UUID ID = UUID.fromString("7c5e9d0c-9e28-46a9-b139-68fc0813842c");
     private static final boolean ALLOCATED = true;
+    private static final String ALLOCATEDSTR = "true";
     private static final String ALLOCATED_QUERY_PARAMETER = "allocated";
     private static final String SEARCH_DATE_QUERY_PARAMETER = "searchDate";
     private static final String START_DATE_QUERY_PARAMETER = "startDate";
@@ -92,7 +94,7 @@ public class RangeSearchQueryTest {
         final JsonArray hearingsJsonArray = hearingsJsonArray();
 
         when(hearingRepository.findHearings(
-                ALLOCATED,
+                ALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_ID_SEARCH,
@@ -119,12 +121,8 @@ public class RangeSearchQueryTest {
 
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
-                payloadIsJson(
-                        withJsonPath("$.hearings[0].hello", equalTo("world"))
-                ))
-        ));
-
+        assertEquals("world", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("hello"));
+        assertEquals( "listing.search.hearings", results.metadata().name());
     }
 
     @Test
@@ -156,11 +154,8 @@ public class RangeSearchQueryTest {
 
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
-                payloadIsJson(
-                        withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo("2019-10-13"))
-                ))
-        ));
+        assertEquals( "2019-10-13", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("weekCommencingStartDate"));
+        assertEquals( "listing.search.hearings", results.metadata().name());
     }
 
     @Test
@@ -193,11 +188,8 @@ public class RangeSearchQueryTest {
 
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
-                payloadIsJson(
-                        withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo("2019-10-13"))
-                ))
-        ));
+        assertEquals("2019-10-13", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("weekCommencingStartDate"));
+        assertEquals( "listing.search.hearings", results.metadata().name());
     }
 
 
@@ -208,12 +200,12 @@ public class RangeSearchQueryTest {
         final JsonArray hearingsJsonArray = hearingsJsonArray();
 
         when(hearingRepository.findHearings(
-                ALLOCATED,
-                null,
-                null,
+                ALLOCATEDSTR,
+                "null",
+                "null",
                 HearingRepository.ALL_AUTHORITY_CODES_SEARCH,
-                null,
-                null,
+                "null",
+                "null",
                 EARLIEST_SEARCH_DATE,
                 LATEST_SEARCH_DATE
         ))
@@ -229,12 +221,8 @@ public class RangeSearchQueryTest {
 
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
-        assertThat(results, is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.search.hearings"),
-                payloadIsJson(
-                        withJsonPath("$.hearings[0].hello", equalTo("world"))
-                ))
-        ));
-
+        assertEquals( "world", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("hello"));
+        assertEquals("listing.search.hearings", results.metadata().name());
     }
 
 

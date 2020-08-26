@@ -3,12 +3,14 @@ package uk.gov.moj.cpp.listing.query.view;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
 
-import uk.gov.justice.services.core.enveloper.Enveloper;
+import java.util.Optional;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
@@ -38,9 +40,6 @@ public class RangeSearchQuery {
     @SuppressWarnings("squid:S1312")
     @Inject
     private Logger logger;
-
-    @Inject
-    private Enveloper enveloper;
 
     @Inject
     private HearingRepository repository;
@@ -79,12 +78,9 @@ public class RangeSearchQuery {
                 findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate) :
                 findHearings(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, startDate, endDate);
 
-        return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
-                createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
-                        .build()
-        );
 
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
+                createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings)));
     }
 
     private List<Hearing> findHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate) {
@@ -110,12 +106,12 @@ public class RangeSearchQuery {
 
     private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate) {
         return repository.findHearings(
-                allocated,
-                courtCentreId,
-                courtRoomId,
+                String.valueOf(allocated),
+                Optional.ofNullable(courtCentreId).orElse("null"),
+                Optional.ofNullable(courtRoomId).orElse("null"),
                 authorityIdSearchString,
-                hearingTypeId,
-                jurisdictionType,
+                Optional.ofNullable(hearingTypeId).orElse("null"),
+                Optional.ofNullable(jurisdictionType).orElse("null"),
                 startDate,
                 endDate
         );

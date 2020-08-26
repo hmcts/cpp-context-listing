@@ -41,6 +41,16 @@
           "deputy": true,
           "benchChairman": false
         }
+      ],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2019-10-11T10:00:00.000Z",
+          "count": 9
+        },
+        {
+          "hearingStartTime": "2019-10-11T12:00:00.000Z",
+          "count": 3
+        }
       ]
     }
   ]

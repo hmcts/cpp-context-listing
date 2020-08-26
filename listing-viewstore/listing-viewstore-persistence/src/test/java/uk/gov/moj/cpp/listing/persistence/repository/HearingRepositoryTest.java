@@ -54,6 +54,7 @@ import org.junit.runner.RunWith;
 public class HearingRepositoryTest extends BaseTransactionalTest {
 
     private static final Boolean UNALLOCATED = false;
+    private static final String UNALLOCATEDSTR = "false";
     private static final UUID HEARING_ID = UUID.randomUUID();
     private static final UUID OTHER_HEARING_ID = UUID.randomUUID();
     private static final UUID OTHER_HEARING_ID2 = UUID.randomUUID();
@@ -143,7 +144,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenHearings();
 
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED,
+                UNALLOCATEDSTR,
                 UUID.randomUUID().toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_CODE_SEARCH,
@@ -162,7 +163,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED,
+                UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_CODE_SEARCH,
@@ -300,8 +301,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED,
-                null,
+                UNALLOCATEDSTR,
+                "null",
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_CODE_SEARCH,
                 HEARING_TYPE.getId().toString(),
@@ -325,9 +326,9 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED,
+                UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
-                null,
+                "null",
                 AUTHORITY_CODE_SEARCH,
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
@@ -349,7 +350,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenHearings();
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATED,
+        final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 HearingRepository.ALL_AUTHORITY_CODES_SEARCH,
@@ -373,11 +374,11 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenHearings();
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATED,
+        final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_CODE_SEARCH,
-                null,
+                "null",
                 JURISDICTION_TYPE.toString(),
                 to(START_SEARCH_DATE),
                 to(END_SEARCH_DATE));
@@ -397,12 +398,12 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenHearings();
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATED,
+        final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
-                null,
+                "null",
                 ALL_AUTHORITY_CODES_SEARCH,
-                null,
-                null,
+                "null",
+                "null",
                 EARLIEST_SEARCH_DATE,
                 LATEST_SEARCH_DATE);
 
@@ -448,12 +449,12 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED,
+                UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_CODE_SEARCH,
                 HEARING_TYPE.getId().toString(),
-                null,
+                "null",
                 to(START_SEARCH_DATE),
                 to(END_SEARCH_DATE));
 
@@ -474,7 +475,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED,
+                UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_CODE_SEARCH,
@@ -603,7 +604,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED,
+                UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_CODE_SEARCH,
@@ -625,7 +626,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED,
+                UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_CODE_SEARCH,
@@ -651,7 +652,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED,
+                UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_CODE_SEARCH,
@@ -677,7 +678,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED,
+                UNALLOCATEDSTR,
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_CODE_SEARCH,

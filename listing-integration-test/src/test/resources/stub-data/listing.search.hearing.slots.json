@@ -19,7 +19,13 @@
       "maxDuration": 0,
       "availableSlots": 5,
       "availableDuration": 0,
-      "judiciaries": []
+      "judiciaries": [],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2020-06-01T09:00:00.000Z",
+          "count": 5
+        }
+      ]
     },
     {
       "courtScheduleId": "0674a9fb-5a8e-4d56-9ea2-e6073dee0c1a",
@@ -38,7 +44,13 @@
       "maxDuration": 0,
       "availableSlots": -1,
       "availableDuration": -1,
-      "judiciaries": []
+      "judiciaries": [],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2020-06-01T09:00:00.000Z",
+          "count": 1
+        }
+      ]
     },
     {
       "courtScheduleId": "05d598c8-d7a3-454e-a4c5-a3dd14458da6",
@@ -57,7 +69,13 @@
       "maxDuration": 0,
       "availableSlots": -2,
       "availableDuration": -2,
-      "judiciaries": []
+      "judiciaries": [],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2020-06-01T09:00:00.000Z",
+          "count": 2
+        }
+      ]
     },
     {
       "courtScheduleId": "1f21af69-c589-44cd-ae12-5f0297cd60d1",
@@ -76,7 +94,8 @@
       "maxDuration": 0,
       "availableSlots": 0,
       "availableDuration": 0,
-      "judiciaries": []
+      "judiciaries": [],
+      "slotStartTimes": []
     },
     {
       "courtScheduleId": "262bebb9-1959-4c75-a857-679f8c7a51af",
@@ -95,7 +114,13 @@
       "maxDuration": 0,
       "availableSlots": -1,
       "availableDuration": -1,
-      "judiciaries": []
+      "judiciaries": [],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2020-06-01T09:00:00.000Z",
+          "count": 1
+        }
+      ]
     },
     {
       "courtScheduleId": "28042238-a1f3-413c-b531-f2edb43bfb7d",
@@ -114,7 +139,8 @@
       "maxDuration": 0,
       "availableSlots": 0,
       "availableDuration": 0,
-      "judiciaries": []
+      "judiciaries": [],
+      "slotStartTimes": []
     },
     {
       "courtScheduleId": "2993dd36-9d17-4310-b383-69085d7c6432",
@@ -133,7 +159,8 @@
       "maxDuration": 0,
       "availableSlots": 0,
       "availableDuration": 0,
-      "judiciaries": []
+      "judiciaries": [],
+      "slotStartTimes": []
     },
     {
       "courtScheduleId": "2ede81f3-7eef-41cb-8f64-b96af521362f",
@@ -152,7 +179,13 @@
       "maxDuration": 0,
       "availableSlots": -1,
       "availableDuration": -1,
-      "judiciaries": []
+      "judiciaries": [],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2020-06-01T09:00:00.000Z",
+          "count": 1
+        }
+      ]
     },
     {
       "courtScheduleId": "45ca055d-b70c-4c6b-8edb-4b95e5238167",
@@ -171,7 +204,13 @@
       "maxDuration": 0,
       "availableSlots": -1,
       "availableDuration": -1,
-      "judiciaries": []
+      "judiciaries": [],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2020-06-01T09:00:00.000Z",
+          "count": 1
+        }
+      ]
     },
     {
       "courtScheduleId": "49aa5945-c397-4574-9b5a-5a62bbe0685e",
@@ -190,7 +229,17 @@
       "maxDuration": 0,
       "availableSlots": -2,
       "availableDuration": -2,
-      "judiciaries": []
+      "judiciaries": [],
+      "slotStartTimes": [
+        {
+          "hearingStartTime": "2020-06-01T10:00:00.000Z",
+          "count": 1
+        },
+        {
+          "hearingStartTime": "2020-06-01T11:00:00.000Z",
+          "count": 1
+        }
+      ]
     }
   ]
 }
