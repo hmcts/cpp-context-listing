@@ -555,16 +555,10 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(true)),
                                 withJsonPath("$.hearings[0].hearingDays[0].hearingDate",
                                         equalTo(courtScheduleSlots[0])),
-                                withJsonPath("$.hearings[0].hearingDays[0].startTime",
-                                        equalTo(calculateHearingStartTime(courtScheduleSlots[0], hearingData.getHearingStartTime()))),
                                 withJsonPath("$.hearings[0].hearingDays[1].hearingDate",
                                         equalTo(courtScheduleSlots[1])),
-                                withJsonPath("$.hearings[0].hearingDays[1].startTime",
-                                        equalTo(calculateHearingStartTime(courtScheduleSlots[1], hearingData.getHearingStartTime()))),
                                 withJsonPath("$.hearings[0].hearingDays[2].hearingDate",
-                                        equalTo(courtScheduleSlots[2])),
-                                withJsonPath("$.hearings[0].hearingDays[2].startTime",
-                                        equalTo(calculateHearingStartTime(courtScheduleSlots[2], hearingData.getHearingStartTime())))
+                                        equalTo(courtScheduleSlots[2]))
                         )));
     }
 
@@ -1779,17 +1773,5 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
     private static String getStringFromResource(final String path) throws IOException {
         return Resources.toString(getResource(path), defaultCharset());
-    }
-
-    private String calculateHearingStartTime(String date, ZonedDateTime hearingStartTime){
-        // return 2020-02-12T15:00:00.000Z
-        final DateTimeFormatter parseFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        final DateTimeFormatter printFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX");
-        final LocalDate localDate = LocalDate.parse(date, parseFormatter);
-
-        ZonedDateTime zdt = localDate.atStartOfDay(ZoneId.of("UTC"))
-                .withHour(hearingStartTime.getHour())
-                .withMinute(hearingStartTime.getMinute());
-        return zdt.format(printFormatter);
     }
 }
