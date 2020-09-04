@@ -330,6 +330,7 @@ public class ListingCommandHandlerTest {
     private static final Integer PROVISIONAL_COURT_ROOM = 178498;
     private static final String PROVISIONAL_OUCODE = "WERDFG";
     private static final String PROVISIONAL_START_TIME = "2020-07-01";
+    private static final String PROVISIONAL_SESSION_DATE = "2020-07-01";
     private static final String SEQUENCE_1 = "1";
     private static final String SEQUENCE_2 = "2";
     private static final String HEARING_DATE_1 = "2012-12-11";
@@ -639,7 +640,8 @@ public class ListingCommandHandlerTest {
                 .replace("PROVISIONAL_OUCODE",PROVISIONAL_OUCODE)
                 .replace("PROVISIONAL_SESSION",PROVISIONAL_SESSION)
                 .replace("PROVISIONAL_COURT_ROOM", String.valueOf(PROVISIONAL_COURT_ROOM))
-                .replace("PROVISIONAL_START_TIME",PROVISIONAL_START_TIME);
+                .replace("PROVISIONAL_START_TIME",PROVISIONAL_START_TIME)
+                .replace("PROVISIONAL_SESS_DATE",PROVISIONAL_SESSION_DATE);
         final JsonReader jsonReader = Json.createReader(new StringReader(jsonProvisionalSlotString));
         return jsonReader.readObject();
     }

@@ -36,6 +36,7 @@ import uk.gov.moj.cpp.listing.steps.data.OrganisationData;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -462,7 +463,7 @@ public class HearingsDataFactory {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
         return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
                 LocalDate.now(), HEARING_ESTIMATE_MINUTES,
-                randomUUID(), ZonedDateTime.now(), listedCaseData,
+                randomUUID(), ZonedDateTime.now().truncatedTo(ChronoUnit.HOURS), listedCaseData,
                 judicialRoles, "MAGISTRATES", STRING.next(),
                 singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
                 singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court", LocalDate.now().toString());

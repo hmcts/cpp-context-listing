@@ -7,6 +7,7 @@
       "duration":0,
       "courtRoomNumber": "PROVISIONAL_COURT_ROOM",
       "startTime": "PROVISIONAL_START_TIME",
+      "sessionDate": "PROVISIONAL_SESS_DATE",
       "maxSlots": 0
     }
   ]

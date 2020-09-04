@@ -78,11 +78,17 @@ public class AzureScheduleServiceStub {
                 ));
     }
 
-    public static void stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased() {
+    public static void stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(String[] courtSchedules) {
+        String payload = getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON);
+
+        for (int i = 0; i < courtSchedules.length; i++) {
+            payload = payload.replace("SESSION_DATE_" + (i+1), courtSchedules[i]);
+        }
+
         stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", notMatching("null"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON))
+                        .withBody(payload)
                         .withHeader("Content-Type", "application/json")
                 ));
     }

@@ -74,14 +74,26 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
-    public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlots() {
-
-        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased();
+    public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlotsWinterTime() {
+        final String[] courtScheduleSlots = {"2020-02-11", "2020-02-12", "2020-02-13"};
+        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtScheduleSlots);
 
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtScheduleSlots);
+        }
+    }
+
+    @Test
+    public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlotsSummerTime() {
+        final String[] courtScheduleSlots = {"2020-05-21", "2020-05-22", "2020-05-23"};
+        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtScheduleSlots);
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtScheduleSlots);
         }
     }
 

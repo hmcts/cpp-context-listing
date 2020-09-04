@@ -111,15 +111,18 @@ import uk.gov.moj.cpp.listing.domain.aggregate.rules.HearingLanguageRule;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -248,19 +251,32 @@ public class Hearing implements Aggregate {
             if (nonNull(startDate)) {
                 builder.withStartDate(of(startDate.toLocalDate()));
                 final Optional<LocalDate> hearingEndDate = Optional.of(HearingEndDateRule.apply(endDate, startDate.toLocalDate()));
-                builder.withEndDate(hearingEndDate);
-
                 final List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = generateNewNonDefaultDays(estimateMinutes, startDate, hearingTypeDuration, nonDefaultDays, isCountBasedSlotSelected);
                 final LocalTime defaultStartTime = nonNull(courtCentreDefaults) ? courtCentreDefaults.getDefaultStartTime() : null;
-                builder.withHearingDays(HearingDaysCalculator.calculate(startDate.toLocalDate(), hearingEndDate.get(), emptyList(), convertEventToDomain(newNonDefaultDays), defaultStartTime, hearingTypeDuration));
+                final List<uk.gov.justice.listing.events.HearingDay> hearingDaysCalculated = HearingDaysCalculator.calculate(startDate.toLocalDate(), hearingEndDate.get(), emptyList(), convertEventToDomain(newNonDefaultDays), defaultStartTime, hearingTypeDuration);
+                builder.withHearingDays(hearingDaysCalculated);
                 builder.withNonDefaultDays(newNonDefaultDays);
+
+                final LocalDate enddDate = hearingDaysCalculated.stream()
+                        .sorted(Comparator.comparing(uk.gov.justice.listing.events.HearingDay::getStartTime).reversed())
+                        .filter(hearingDate -> !hearingDate.getHearingDate().isBefore(startDate.toLocalDate()))
+                        .findFirst().map(uk.gov.justice.listing.events.HearingDay::getHearingDate).orElse(hearingEndDate.get());
+                builder.withEndDate(enddDate);
+                final long numOfDaysBetween = ChronoUnit.DAYS.between(startDate.toLocalDate(), enddDate);
+
+                builder.withNonSittingDays(IntStream.iterate(0, i -> i + 1)
+                        .limit(numOfDaysBetween)
+                        .mapToObj(i -> startDate.toLocalDate().plusDays(i))
+                        .filter(day -> hearingDaysCalculated.stream().noneMatch(hearingDay -> hearingDay.getHearingDate().equals(day)))
+                        .collect(Collectors.toList()));
             } else {
                 builder.withHearingDays(emptyList());
                 builder.withStartDate(empty());
                 builder.withNonDefaultDays(emptyList());
+                builder.withNonSittingDays(emptyList());
             }
 
-            builder.withNonSittingDays(emptyList()).withCourtApplications(courtApplications.stream()
+            builder.withCourtApplications(courtApplications.stream()
                     .map(NewDomainToEventConverter::buildCourtApplications)
                     .collect((toList())))
                     .withWeekCommencingDurationInWeeks(weekCommencingDurationInWeeks)

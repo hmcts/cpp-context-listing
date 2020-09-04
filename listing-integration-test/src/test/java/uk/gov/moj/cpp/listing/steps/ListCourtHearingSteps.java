@@ -72,6 +72,7 @@ import uk.gov.justice.listing.courts.WeekCommencingDate;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
@@ -84,6 +85,8 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -472,6 +475,96 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
                                         equalTo(true))
+                        )));
+    }
+
+    public void verifyHearingListedWithHearingDays(final boolean isAllocated, final String[] courtScheduleSlots) {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
+
+        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
+
+        final DefendantData defendant = listedCaseData.getDefendants().get(0);
+
+        final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, defendant, defendant.getLastName());
+        final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
+
+        ResponseData resp = poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath(lastNameFilter),
+                                withJsonPath(caseReferenceFilter),
+                                withJsonPath("$.hearings[0].id",
+                                        equalTo(hearingData.getId().toString())),
+                                withJsonPath("$.hearings[0].jurisdictionType",
+                                        equalTo(hearingData.getJurisdictionType())),
+                                withJsonPath("$.hearings[0].courtCentreId",
+                                        equalTo(hearingData.getCourtCentreId().toString())),
+                                withJsonPath("$.hearings[0].type.id",
+                                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
+                                withJsonPath("$.hearings[0].type.description",
+                                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
+                                withJsonPath("$.hearings[0].startDate",
+                                        equalTo(hearingData.getHearingStartDate().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicationType",
+                                        equalTo(hearingData.getCourtApplications().get(0).getType())),
+                                withJsonPath("$.hearings[0].courtApplications[0].id",
+                                        equalTo(hearingData.getCourtApplications().get(0).getId().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].linkedCaseId",
+                                        equalTo(hearingData.getCourtApplications().get(0).getLinkedCaseId().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
+                                        equalTo(hearingData.getCourtApplications().get(0).getParentApplicationId().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicationParticulars",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicationParticulars())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.lastName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getLastName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address1",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress1())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address2",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress2().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address3",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress3().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address4",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress4().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.address5",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getAddress5().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.address.postcode",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getAddress().getPostcode().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.firstName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getFirstName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].lastName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getLastName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address1",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress1())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address2",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress2().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address3",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress3().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address4",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress4().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.address5",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getAddress5().get())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.postcode",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get())),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
+                                        equalTo(true)),
+                                withJsonPath("$.hearings[0].hearingDays[0].hearingDate",
+                                        equalTo(courtScheduleSlots[0])),
+                                withJsonPath("$.hearings[0].hearingDays[0].startTime",
+                                        equalTo(calculateHearingStartTime(courtScheduleSlots[0], hearingData.getHearingStartTime()))),
+                                withJsonPath("$.hearings[0].hearingDays[1].hearingDate",
+                                        equalTo(courtScheduleSlots[1])),
+                                withJsonPath("$.hearings[0].hearingDays[1].startTime",
+                                        equalTo(calculateHearingStartTime(courtScheduleSlots[1], hearingData.getHearingStartTime()))),
+                                withJsonPath("$.hearings[0].hearingDays[2].hearingDate",
+                                        equalTo(courtScheduleSlots[2])),
+                                withJsonPath("$.hearings[0].hearingDays[2].startTime",
+                                        equalTo(calculateHearingStartTime(courtScheduleSlots[2], hearingData.getHearingStartTime())))
                         )));
     }
 
@@ -1686,5 +1779,17 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
     private static String getStringFromResource(final String path) throws IOException {
         return Resources.toString(getResource(path), defaultCharset());
+    }
+
+    private String calculateHearingStartTime(String date, ZonedDateTime hearingStartTime){
+        // return 2020-02-12T15:00:00.000Z
+        final DateTimeFormatter parseFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        final DateTimeFormatter printFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+        final LocalDate localDate = LocalDate.parse(date, parseFormatter);
+
+        ZonedDateTime zdt = localDate.atStartOfDay(ZoneId.of("UTC"))
+                .withHour(hearingStartTime.getHour())
+                .withMinute(hearingStartTime.getMinute());
+        return zdt.format(printFormatter);
     }
 }

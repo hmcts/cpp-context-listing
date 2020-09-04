@@ -27,12 +27,13 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
     private Integer maxDuration;
     private Integer availableSlots;
     private Integer availableDuration;
+    private String hearingStartTime;
     private final List<CourtScheduleJudiciary> judiciaries = new ArrayList();
 
     public CourtSchedule() {
     }
 
-    public CourtSchedule(final String bookingId, final String courtScheduleId, final String listingProfileId, final String ouCode, final String courtRoomId, final Integer courtRoomNumber, final String courtHouseName, final String courtRoomName, final String operationalUnit, final String businessType, final String panel, final String courtSession, final LocalDate sessionDate, final Integer maxSlots, final Integer maxDuration, final Integer availableSlots, final Integer availableDuration) {
+    public CourtSchedule(final String bookingId, final String courtScheduleId, final String listingProfileId, final String ouCode, final String courtRoomId, final Integer courtRoomNumber, final String courtHouseName, final String courtRoomName, final String operationalUnit, final String businessType, final String panel, final String courtSession, final LocalDate sessionDate, final Integer maxSlots, final Integer maxDuration, final Integer availableSlots, final Integer availableDuration, final String hearingStartTime) {
         this.bookingId = bookingId;
         this.courtScheduleId = courtScheduleId;
         this.listingProfileId = listingProfileId;
@@ -50,6 +51,7 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
         this.maxDuration = maxDuration;
         this.availableSlots = availableSlots;
         this.availableDuration = availableDuration;
+        this.hearingStartTime = hearingStartTime;
     }
 
     public String getBookingId() {
@@ -190,6 +192,14 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
 
     public List<CourtScheduleJudiciary> getJudiciaries() {
         return judiciaries;
+    }
+
+    public String getHearingStartTime() {
+        return hearingStartTime;
+    }
+
+    public void setHearingStartTime(final String hearingStartTime) {
+        this.hearingStartTime = hearingStartTime;
     }
 
     @Override

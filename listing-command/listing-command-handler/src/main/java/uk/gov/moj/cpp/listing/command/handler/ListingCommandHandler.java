@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static javax.json.JsonValue.NULL;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
@@ -129,6 +130,9 @@ import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -159,6 +163,7 @@ public class ListingCommandHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandHandler.class);
     public static final String HEARING_ID = "hearingId";
     private static final String PROSECUTION_CASE = "prosecutionCase";
+    private static final ZoneId UTC = ZoneId.of("UTC");
 
     @Inject
     private EventSource eventSource;
@@ -1379,9 +1384,10 @@ public class ListingCommandHandler {
     private void generateNonDefaultDays(final List<uk.gov.justice.listing.commands.NonDefaultDay> nonDefaultDaysList,
                                         final List<CourtSchedule> courtScheduleList,
                                         final Boolean isCountBasedSlot, final HearingListingNeeds commandHearing) {
-        final ZonedDateTime startDate = CommandToDomainConverter.getStartDateTime(commandHearing);
-        final int hour = startDate.toLocalDateTime().toLocalTime().getHour();
-        final long minute = startDate.toLocalDateTime().toLocalTime().getMinute();
+        final OffsetDateTime startDate = CommandToDomainConverter.getStartDateTime(commandHearing)
+                .toInstant().atOffset(ZoneOffset.UTC);
+        final int hour = startDate.getHour();
+        final long minute = startDate.getMinute();
         courtScheduleList.forEach(cs ->
                 nonDefaultDaysList.add(
                         uk.gov.justice.listing.commands.NonDefaultDay.nonDefaultDay()
@@ -1390,7 +1396,7 @@ public class ListingCommandHandler {
                                 .withSession(Optional.of(cs.getCourtSession()))
                                 .withDuration(isCountBasedSlot ? Optional.of(1) : Optional.of(commandHearing.getEstimatedMinutes()))
                                 .withCourtRoomId(Optional.of(cs.getCourtRoomNumber())) // for prospect developers, names mismatch but fields point to the same context
-                                .withStartTime(startDate.withHour(hour).minusMinutes(minute))
+                                .withStartTime(isBlank(cs.getHearingStartTime()) ? cs.getSessionDate().atStartOfDay(UTC).withHour(hour).minusMinutes(minute) : ZonedDateTime.parse(cs.getHearingStartTime()))
                                 .build()
                 )
 
