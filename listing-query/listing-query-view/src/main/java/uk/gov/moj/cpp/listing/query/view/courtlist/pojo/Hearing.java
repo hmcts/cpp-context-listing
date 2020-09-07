@@ -24,6 +24,10 @@ public class Hearing {
 
     private boolean weekCommencing;
 
+    private boolean hasVideoLink;
+
+    private String videoLinkDetails;
+
     public LocalDateTime getStartTime() {
         return startTime;
     }
@@ -86,5 +90,21 @@ public class Hearing {
 
     public void setWeekCommencing(final boolean weekCommencing) {
         this.weekCommencing = weekCommencing;
+    }
+
+    public boolean hasVideoLink() {
+        return hasVideoLink;
+    }
+
+    public void setHasVideoLink(final boolean hasVideoLink) {
+        this.hasVideoLink = hasVideoLink;
+    }
+
+    public String getVideoLinkDetails() {
+        return videoLinkDetails;
+    }
+
+    public void setVideoLinkDetails(final String videoLinkDetails) {
+        this.videoLinkDetails = videoLinkDetails;
     }
 }

@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.CaseDetails;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.CourtApplicationDetails;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.Hearing;
@@ -57,7 +59,12 @@ public class SittingsJsonGenerator {
                 .add("startTime", hearing.getStartTime().toString())
                 .add("hearingType", hearing.getHearingType())
                 .add("restrictFromCourtList", hearing.isRestrictFromCourtList())
-                .add("weekCommencing", hearing.isWeekCommencing());
+                .add("weekCommencing", hearing.isWeekCommencing())
+                .add("hasVideoLink", hearing.hasVideoLink());
+
+        if(hearing.hasVideoLink() && isNotBlank(hearing.getVideoLinkDetails())) {
+            hearingJsonBuilder.add("videoLinkDetails", hearing.getVideoLinkDetails());
+        }
 
         if (hearing.getEndTime().isPresent()) {
             hearingJsonBuilder.add("endTime", hearing.getEndTime().orElseThrow(IllegalStateException::new).toString());

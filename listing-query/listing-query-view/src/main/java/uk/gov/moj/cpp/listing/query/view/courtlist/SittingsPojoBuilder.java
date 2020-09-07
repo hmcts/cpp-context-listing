@@ -27,12 +27,13 @@ import org.slf4j.LoggerFactory;
 
 public class SittingsPojoBuilder {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SittingsPojoBuilder.class);
-
     public static final String LISTED_CASES = "listedCases";
+    private static final Logger LOGGER = LoggerFactory.getLogger(SittingsPojoBuilder.class);
     private static final String START_TIME = "startTime";
     private static final String END_TIME = "endTime";
     private static final String UNABLE_TO_GET_DEFAULT_START_OR_END_TIME = "Unable to get default start or end time";
+    private static final String VIDEO_LINK_DETAILS = "videoLinkDetails";
+    private static final String HAS_VIDEO_LINK = "hasVideoLink";
 
     private SittingsPojoBuilder() {
         throw new IllegalStateException("Utility class");
@@ -69,7 +70,7 @@ public class SittingsPojoBuilder {
     }
 
     private static void buildNewSitting(final LocalDate startDate, final String endDate, final List<Sitting> sittings, final FlatHearing flatHearing) {
-        if(flatHearing.getHearingDate().equals(startDate) || flatHearing.isWeekCommencing() || isForMultiDay(flatHearing.getHearingDate(), startDate, endDate)){
+        if (flatHearing.getHearingDate().equals(startDate) || flatHearing.isWeekCommencing() || isForMultiDay(flatHearing.getHearingDate(), startDate, endDate)) {
             LOGGER.debug("Creating new sitting for FlatHearing with {}", flatHearing.getHearingDate());
             sittings.add(createNewSitting(flatHearing, startDate));
         }
@@ -149,14 +150,13 @@ public class SittingsPojoBuilder {
         }
     }
 
-    private static LocalDateTime getDefaultStartOrEndTime(final Optional<JsonObject> hearingDayJson){
+    private static LocalDateTime getDefaultStartOrEndTime(final Optional<JsonObject> hearingDayJson) {
 
-        if(hearingDayJson.isPresent()){
+        if (hearingDayJson.isPresent()) {
             final String defaultTime = hearingDayJson.get().getString(END_TIME, "");
-            if(StringUtils.isNotBlank(defaultTime)){
+            if (StringUtils.isNotBlank(defaultTime)) {
                 return ZonedDateTime.parse(defaultTime).toLocalDateTime();
-            }
-            else{
+            } else {
                 try {
                     throw new IllegalArgumentException(UNABLE_TO_GET_DEFAULT_START_OR_END_TIME);
                 } catch (IllegalArgumentException e) {
@@ -177,7 +177,7 @@ public class SittingsPojoBuilder {
         Optional<JsonObject> jsonObjectByStartDate = empty();
         Optional<JsonObject> jsonObjectByHearingDate = empty();
 
-        if(!flatHearing.isWeekCommencing()){
+        if (!flatHearing.isWeekCommencing()) {
             jsonObjectByStartDate = getJsonObjectBySpecifiedDate(caseHearingsJson, startDate.toString());
             jsonObjectByHearingDate = getJsonObjectBySpecifiedDate(caseHearingsJson, flatHearing.getHearingDate().toString());
         }
@@ -207,6 +207,12 @@ public class SittingsPojoBuilder {
             hearing.setCaseDetails(empty());
         }
 
+        if (caseHearingsJson.containsKey(HAS_VIDEO_LINK) && caseHearingsJson.getBoolean(HAS_VIDEO_LINK)) {
+            hearing.setHasVideoLink(true);
+            if (caseHearingsJson.containsKey(VIDEO_LINK_DETAILS) && !caseHearingsJson.isNull(VIDEO_LINK_DETAILS)) {
+                hearing.setVideoLinkDetails(caseHearingsJson.getString(VIDEO_LINK_DETAILS));
+            }
+        }
         return hearing;
     }
 

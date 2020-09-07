@@ -168,4 +168,15 @@ subscriptions_descriptor:
         - name: listing.events.hearing-rescheduled
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-rescheduled.json
 
+        - name: listing.events.video-link-details-assigned-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.video-link-details-assigned-for-hearing.json
+
+        - name: listing.events.video-link-details-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.video-link-details-changed-for-hearing.json
+
+        - name: listing.events.video-link-details-removed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.video-link-details-removed-for-hearing.json
+
+
+
       event_source_name: listing

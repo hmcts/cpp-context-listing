@@ -88,6 +88,71 @@ public class CourtServicesMapperTest extends BaseMapperTest {
     }
 
     @Test
+    public void generateSortedByCourtRoomIDWithVideoLinkForApplicationAndCase() throws Exception {
+
+        final UUID courtCentreId = context.getParameters().getCourtCentreId();
+
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+
+        final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-videolink.json")
+                .getJsonArray("courtLists").getValuesAs(JsonObject.class);
+
+        final FirmListMapper firmListMapper = new FirmListMapper(context, courtListsForPublishing, courtServicesMapper);
+
+        final String generatedXml = xmlUtils.convertToXml(firmListMapper.generate());
+
+        xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FIRM.getSchemaName());
+
+        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingWithVideoLinkMapperTest.xml");
+    }
+
+
+    @Test
+    public void generateSortedByCourtRoomIDWithVideoLinkForApplicationAndCaseForDraftPublishType() throws Exception {
+
+        final UUID courtCentreId = context.getParameters().getCourtCentreId();
+
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+
+        final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-videolink.json")
+                .getJsonArray("courtLists").getValuesAs(JsonObject.class);
+
+        final DailyListMapper dailyListMapper = new DailyListMapper(context, courtListsForPublishing, courtServicesMapper);
+
+        final String generatedXml = xmlUtils.convertToXml(dailyListMapper.generate());
+
+        xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.DRAFT.getSchemaName());
+
+        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedDraftListSortedSittingWithVideoLinkMapperTest.xml");
+    }
+
+
+    @Test
+    public void generateSortedByCourtRoomIDWithVideoLinkForApplicationAndCaseForFinalPublishType() throws Exception {
+
+        final UUID courtCentreId = context.getParameters().getCourtCentreId();
+
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+
+        final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-videolink.json")
+                .getJsonArray("courtLists").getValuesAs(JsonObject.class);
+
+        final DailyListMapper dailyListMapper = new DailyListMapper(context, courtListsForPublishing, courtServicesMapper);
+
+        final String generatedXml = xmlUtils.convertToXml(dailyListMapper.generate());
+
+        xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FINAL.getSchemaName());
+
+        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedDraftListSortedSittingWithVideoLinkMapperTest.xml");
+    }
+
+    @Test
     public void generateSortedByCourtRoomIDWhenJudgeTitleJudicialPrefixIsNotPresent() throws Exception {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();

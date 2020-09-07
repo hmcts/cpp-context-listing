@@ -54,7 +54,8 @@
                   "hearingLanguageNeeds":"ENGLISH",
                   "restrictFromCourtList":false
                 }
-              ]
+              ],
+              "hasVideoLink": false
             }
           ]
         },
@@ -103,7 +104,8 @@
                   "hearingLanguageNeeds":"ENGLISH",
                   "restrictFromCourtList":false
                 }
-              ]
+              ],
+              "hasVideoLink": false
             }
           ]
         }

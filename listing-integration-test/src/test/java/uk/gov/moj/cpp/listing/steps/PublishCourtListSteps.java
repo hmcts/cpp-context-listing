@@ -87,11 +87,10 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
-    public JsonObject verifyCourtListPublishStatus(final String expectedPublishStatus) {
+    public JsonObject verifyCourtListPublishStatus(final String expectedPublishStatus, final String weekCommencing) {
         final String courtCentreId = commandJsonObject.getString("courtCentreId");
         final String courtListType = commandJsonObject.getString("publishCourtListType");
         final String publishDate = LocalDate.now().toString();
-        final String weekCommencing = "true";
         final String queryPart = format(readConfig().getProperty("listing.court.list.publish.status"),
                 courtCentreId,
                 courtListType,
@@ -116,16 +115,30 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         return jsonFromString(response.getPayload());
     }
 
+
     public static HearingsData loadHearingDataWithJudiciary(final UUID courtCentreId) {
-        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, "DISTRICT_JUDGE");
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, UUID.randomUUID(), "DISTRICT_JUDGE");
         createHearingListed(hearingsData);
         return hearingsData;
     }
 
-    public void verifySentPublishedCourtListHearingData() throws Exception {
+    public static HearingsData loadHearingDataWithJudiciary(final UUID courtCentreId, final UUID courtRoomId) {
+        final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, courtRoomId, "DISTRICT_JUDGE");
+        createHearingListed(hearingsData);
+        return hearingsData;
+    }
+
+    public void verifySentPublishedCourtListHearingData(final boolean checkVideoLink, final String videoLinkDetails) throws Exception {
 
         verifyCourtHeader();
-        verifyCourtCourtList();
+        verifyCourtCourtList(checkVideoLink, videoLinkDetails);
+
+    }
+
+    public void verifySentPublishedCourtListHearingDataForDraft(final boolean checkVideoLink, final String videoLinkDetails) throws Exception {
+
+        verifyCourtHeaderDailyList();
+        verifyCourtCourtListDailyList(checkVideoLink, videoLinkDetails);
 
     }
 
@@ -139,7 +152,17 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
     }
 
-    private void verifyCourtCourtList() throws Exception {
+    private void verifyCourtHeaderDailyList() throws Exception {
+
+        final String sentXml = getSentXml();
+
+        assertXpathEvaluatesTo(PRESTON_COURT_NAME, "//*[local-name()='CourtHouseName']/text()", sentXml);
+        assertXpathEvaluatesTo(PRESTON_COURT_ID, "/*[local-name()='DailyList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseCode']/text()", sentXml);
+        assertXpathEvaluatesTo(PRESTON_COURT_NAME, "/*[local-name()='DailyList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseName']/text()", sentXml);
+
+    }
+
+    private void verifyCourtCourtList(final boolean checkVideoLink, final String videoLinkDetails) throws Exception {
 
         final String sentXml = getSentXml();
 
@@ -158,8 +181,38 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         assertXpathEvaluatesTo("PTP", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='HearingDetails']/@HearingType", sentXml);
 
+        if(checkVideoLink) {
+            assertXpathEvaluatesTo(videoLinkDetails, "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                    "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='ListNote']/text()", sentXml);
+        }
+
     }
 
+    private void verifyCourtCourtListDailyList(final boolean checkVideoLink, final String videoLinkDetails) throws Exception {
+
+        final String sentXml = getSentXml();
+
+        assertXpathEvaluatesTo(PRESTON_COURT_SITE_NAME, "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='CourtHouse']/*[local-name()='CourtHouseName']/text()", sentXml);
+        assertXpathEvaluatesTo(PRESTON_COURT_SITE_ID, "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='CourtHouse']/*[local-name()='CourtHouseCode']/text()", sentXml);
+        assertXpathEvaluatesTo("1", "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='CourtRoomNumber']/text()", sentXml);
+        assertXpathEvaluatesTo("Mark J", "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameForename']/text()", sentXml);
+        assertXpathEvaluatesTo("Ainsworth", "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameSurname']/text()", sentXml);
+        assertXpathEvaluatesTo("Recorder Mark J Ainsworth judge", "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameRequestedName']/text()", sentXml);
+        assertXpathEvaluatesTo("PTP", "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='HearingDetails']/@HearingType", sentXml);
+
+        if(checkVideoLink) {
+            assertXpathEvaluatesTo(videoLinkDetails, "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                    "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='ListNote']/text()", sentXml);
+        }
+
+    }
 
     public void verifySentPublishedCourtListHasNoHearings() throws Exception {
         verifySentPublishedCourtListFileIsExpected("expectations/FirmList-with-no-hearings.xml");

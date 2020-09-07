@@ -53,6 +53,12 @@
     },
     "hearingLanguage": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/hearingLanguage"
+    },
+    "hasVideoLink": {
+      "type": "boolean"
+    },
+    "videoLinkDetails": {
+      "type": "string"
     }
   },
   "required": [

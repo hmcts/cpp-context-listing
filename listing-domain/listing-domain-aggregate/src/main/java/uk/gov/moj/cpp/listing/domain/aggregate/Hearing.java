@@ -85,6 +85,9 @@ import uk.gov.justice.listing.events.StartDateRemovedForHearing;
 import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.listing.events.TypeChangedForHearing;
 import uk.gov.justice.listing.events.TypeOfList;
+import uk.gov.justice.listing.events.VideoLinkDetailsAssignedForHearing;
+import uk.gov.justice.listing.events.VideoLinkDetailsChangedForHearing;
+import uk.gov.justice.listing.events.VideoLinkDetailsRemovedForHearing;
 import uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing;
 import uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
@@ -128,7 +131,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings({"squid:S1172", "squid:S2629", "squid:S00107", "squid:S3655", "squid:S1067", "squid:CommentedOutCodeLine", "squid:S1068", "squid:S4973", "PMD.BeanMembersShouldSerialize", "PMD.NullAssignment"})
+@SuppressWarnings({"squid:S1172", "squid:S2629", "squid:S1948", "squid:S00107", "squid:S3655", "squid:S1067", "squid:CommentedOutCodeLine", "squid:S1068", "squid:S4973", "PMD.BeanMembersShouldSerialize", "PMD.NullAssignment"})
 public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
@@ -158,6 +161,8 @@ public class Hearing implements Aggregate {
     private Integer weekCommencingDurationInWeeks;
     private boolean updateSlot;
     private boolean hasAdjournmentDate;
+    private boolean hasVideoLink;
+    private String videoLinkDetails;
 
     @Override
     public Object apply(final Object event) {
@@ -184,6 +189,9 @@ public class Hearing implements Aggregate {
                 when(CourtRoomAssignedToHearing.class).apply(this::onCourtRoomAssignedToHearing),
                 when(CourtRoomChangedForHearing.class).apply(this::onCourtRoomChangedForHearing),
                 when(CourtRoomRemovedFromHearing.class).apply(this::onCourtRoomRemovedFromHearing),
+                when(VideoLinkDetailsAssignedForHearing.class).apply(this::onVideoLinkAssignedForHearing),
+                when(VideoLinkDetailsRemovedForHearing.class).apply(this::onVideoLinkRemovedForHearing),
+                when(VideoLinkDetailsChangedForHearing.class).apply(this::onVideoLinkChangedForHearing),
                 when(CourtCentreChangedForHearing.class).apply(this::onCourtCentreChangedForHearing),
                 when(HearingAllocatedForListing.class).apply(this::onHearingAllocatedForListing),
                 when(AllocatedHearingUpdatedForListing.class).apply(this::onAllocatedHearingUpdatedForListing),
@@ -434,6 +442,41 @@ public class Hearing implements Aggregate {
                     .build()));
         } else {
             LOGGER.info("Incoming JurisdictionType {} is the same as current type {} for hearing with id {} - Ignore", jurisdictionType, this.jurisdictionType, hearingId);
+            return Stream.empty();
+        }
+    }
+
+
+    public Stream<Object> assignOrUpdateVideoLinkDetails(final Boolean hasVideoLink, final String videoLinkDetails, final UUID hearingId) {
+        if (!this.hasVideoLink) {
+            return apply(Stream.of(VideoLinkDetailsAssignedForHearing.videoLinkDetailsAssignedForHearing()
+                    .withHasVideoLink(hasVideoLink)
+                    .withVideoLinkDetails(videoLinkDetails)
+                    .withHearingId(hearingId)
+                    .build()));
+        }
+
+        if (hasChanged(this.videoLinkDetails, videoLinkDetails)) {
+            return apply(Stream.of(VideoLinkDetailsChangedForHearing.videoLinkDetailsChangedForHearing()
+                    .withHasVideoLink(hasVideoLink)
+                    .withVideoLinkDetails(videoLinkDetails)
+                    .withHearingId(hearingId)
+                    .build()));
+        }
+
+        LOGGER.info("Incoming video link details {} {} is the same as current video link details {} {} for hearing with id {} - Ignore", hasVideoLink, this.hasVideoLink, videoLinkDetails, this.videoLinkDetails, hearingId);
+        return Stream.empty();
+
+    }
+
+
+    public Stream<Object> removeVideoLinkDetails(final UUID hearingId) {
+        if (currentlyAssigned(this.hasVideoLink) && hasVideoLink) {
+            return apply(Stream.of(VideoLinkDetailsRemovedForHearing.videoLinkDetailsRemovedForHearing()
+                    .withHearingId(hearingId)
+                    .build()));
+        } else {
+            LOGGER.info("No video link detail is currently assigned for hearing with id {} so cannot be removed - Ignore", hearingId);
             return Stream.empty();
         }
     }
@@ -1257,6 +1300,7 @@ public class Hearing implements Aggregate {
         }
 
         this.hasAdjournmentDate = hearing.getAdjournedFromDate().isPresent();
+
     }
 
     private List<uk.gov.justice.listing.events.HearingDay> mergeHearingDaySequences(final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, final Map<ZonedDateTime, HearingDay> existingHearingDays) {
@@ -1357,6 +1401,21 @@ public class Hearing implements Aggregate {
 
     private void onCourtRoomChangedForHearing(final CourtRoomChangedForHearing event) {
         this.courtRoomId = event.getCourtRoomId();
+    }
+
+    private void onVideoLinkChangedForHearing(final VideoLinkDetailsChangedForHearing event) {
+        this.videoLinkDetails = event.getVideoLinkDetails().orElse(null);
+        this.hasVideoLink = event.getHasVideoLink();
+    }
+
+    private void onVideoLinkAssignedForHearing(final VideoLinkDetailsAssignedForHearing event) {
+        this.videoLinkDetails = event.getVideoLinkDetails().orElse(null);
+        this.hasVideoLink = event.getHasVideoLink();
+    }
+
+    private void onVideoLinkRemovedForHearing(final VideoLinkDetailsRemovedForHearing event) {
+        this.videoLinkDetails = null;
+        this.hasVideoLink = false;
     }
 
     @SuppressWarnings({"squid:S1172"})

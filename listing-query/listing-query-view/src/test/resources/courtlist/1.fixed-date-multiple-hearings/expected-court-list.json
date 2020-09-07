@@ -96,7 +96,8 @@
                   "specificRequirements": "Vod be zabarej mibot seh gej vucpev cuvil zowje gan ofa as lu zoma upacamut ku.",
                   "restrictFromCourtList": false
                 }
-              ]
+              ],
+              "hasVideoLink": false
             },
             {
               "startTime": "2019-12-16T14:59",
@@ -125,7 +126,8 @@
                   "restrictFromCourtList": false,
                   "courtApplicationPartyType": "PERSON"
                 }
-              ]
+              ],
+              "hasVideoLink": false
             }
           ]
         }

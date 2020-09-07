@@ -61,7 +61,8 @@
                   "specificRequirements": "Esihez ojwir kuhgebti piwum farmapsel woruh nofri jipte zid ozsic iveulies ma odseil bemki idtotni paoweim kuh.",
                   "restrictFromCourtList": false
                 }
-              ]
+              ],
+              "hasVideoLink": false
             },
             {
               "startTime": "2019-12-16T09:21:11",
@@ -90,7 +91,8 @@
                   "restrictFromCourtList": false,
                   "courtApplicationPartyType": "PERSON"
                 }
-              ]
+              ],
+              "hasVideoLink": false
             }
           ]
         }
@@ -180,7 +182,8 @@
                   "specificRequirements": "Efgo dajsu gino ru pet ihva ikijagce puzceg pa co enewutev sadeit.",
                   "restrictFromCourtList": false
                 }
-              ]
+              ],
+              "hasVideoLink": false
             },
             {
               "startTime": "2019-12-16T09:21",
@@ -209,7 +212,8 @@
                   "restrictFromCourtList": false,
                   "courtApplicationPartyType": "PERSON"
                 }
-              ]
+              ],
+              "hasVideoLink": false
             }
           ]
         }

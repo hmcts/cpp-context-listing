@@ -129,6 +129,12 @@
         "id",
         "description"
       ]
+    },
+    "hasVideoLink": {
+      "type": "boolean"
+    },
+    "videoLinkDetails": {
+      "type": "string"
     }
   },
   "definitions": {

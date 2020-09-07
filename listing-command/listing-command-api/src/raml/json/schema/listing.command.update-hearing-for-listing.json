@@ -65,6 +65,12 @@
     "hearingLanguage": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/hearingLanguage"
     },
+    "hasVideoLink": {
+      "type": "boolean"
+    },
+    "videoLinkDetails": {
+      "type": "string"
+    },
     "prosecutionCases": {
       "description": "Prosecution cases to be added in allocated hearing",
       "type": "array",

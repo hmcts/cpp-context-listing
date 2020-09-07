@@ -44,6 +44,82 @@ public class HearingIT extends AbstractIT {
         }
     }
 
+  @Test
+    public void assignVideoLinkDetailsInAllocatedListing() {
+        final HearingsData hearingsData = HearingsData.hearingsData();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
+            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.verifyHearingConfirmedInPublicMQ();
+        }
+    }
+
+
+
+    @Test
+    public void changeVideoLinkDetailsInAllocatedListing() {
+        final HearingsData hearingsData = HearingsData.hearingsData();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
+            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.verifyHearingConfirmedInPublicMQ();
+        }
+
+
+        final UpdatedHearingData updatedHearingDataForChangeingVideoLinkDetails = UpdatedHearingData.updatedHearingDataWithVideoLink(updatedHearingDataForAllocation);
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForChangeingVideoLinkDetails)) {
+            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
+            updateHearingSteps.verifyHearingUpdatedResultsForVideoLinkDetailsInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+        }
+    }
+    @Test
+    public void removeVideoLinkDetailsInAllocatedListing() {
+        final HearingsData hearingsData = HearingsData.hearingsData();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
+            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.verifyHearingConfirmedInPublicMQ();
+        }
+
+
+        final UpdatedHearingData updatedHearingDataForChangingVideoLinkDetails = UpdatedHearingData.updatedHearingDataWithoutVideoLink(updatedHearingDataForAllocation);
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForChangingVideoLinkDetails)) {
+            updateHearingSteps.whenHearingIsUpdatedForListing();
+            updateHearingSteps.verifyHearingUpdatedResultsForRemovingVideoLinkDetailsInMQ();
+        }
+    }
+
+
     @Test
     public void shouldUpdateHearingResultsInPartialAllocatedListing() {
         HearingsData hearingsData = HearingsData.hearingsData();
@@ -148,6 +224,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingUpdatedInPublicMQ();
         }
     }
+
 
     @Test
     public void updateHearingResultsInUpdatedListingAndUpdateSlotDetails() {

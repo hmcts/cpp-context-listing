@@ -45,6 +45,8 @@ public class JsonObjectBuilderHelper {
     public static final String FIELD_WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     public static final String FIELD_WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
     public static final String FIELD_WEEK_COMMENCING_DURATION = "weekCommencingDurationInWeeks";
+    public static final String HAS_VIDEO_LINK = "hasVideoLink";
+    public static final String VIDEO_LINK_DETAILS = "videoLinkDetails";
 
     public static String prepareJsonForUpdatedHearingData(final UpdatedHearingData updatedHearingData) {
         final JsonObjectBuilder builder = createObjectBuilder();
@@ -63,6 +65,8 @@ public class JsonObjectBuilderHelper {
         addIfNotNull(builder, FIELD_WEEK_COMMENCING_START_DATE, updatedHearingData.getWeekCommencingStartDate());
         addIfNotNull(builder, FIELD_WEEK_COMMENCING_END_DATE, updatedHearingData.getWeekCommencingEndDate());
         addIfNotNull(builder, FIELD_WEEK_COMMENCING_DURATION, updatedHearingData.getWeekCommencingDurationInWeeks());
+        addIfNotNull(builder, HAS_VIDEO_LINK, updatedHearingData.getHasVideoLink());
+        addIfNotNull(builder, VIDEO_LINK_DETAILS, updatedHearingData.getVideoLinkDetails());
 
         return builder.build().toString();
     }
@@ -80,6 +84,12 @@ public class JsonObjectBuilderHelper {
     }
 
     public static void addIfNotNull(final JsonObjectBuilder builder, final String fieldName, final Integer value) {
+        if (value != null) {
+            builder.add(fieldName, value);
+        }
+    }
+
+    public static void addIfNotNull(final JsonObjectBuilder builder, final String fieldName, final Boolean value) {
         if (value != null) {
             builder.add(fieldName, value);
         }

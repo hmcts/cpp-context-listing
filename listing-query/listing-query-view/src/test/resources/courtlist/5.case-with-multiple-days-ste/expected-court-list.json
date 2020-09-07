@@ -135,7 +135,8 @@
                   "dateOfBirth": "1999-02-18",
                   "restrictFromCourtList": false
                 }
-              ]
+              ],
+              "hasVideoLink": false
             }
           ]
         },
@@ -265,7 +266,8 @@
                   "dateOfBirth": "1999-02-18",
                   "restrictFromCourtList": false
                 }
-              ]
+              ],
+              "hasVideoLink": false
             }
           ]
         }

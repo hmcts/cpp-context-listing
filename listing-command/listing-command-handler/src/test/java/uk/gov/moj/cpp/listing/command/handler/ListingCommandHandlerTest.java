@@ -113,6 +113,9 @@ import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
 import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.listing.events.TypeChangedForHearing;
+import uk.gov.justice.listing.events.VideoLinkDetailsAssignedForHearing;
+import uk.gov.justice.listing.events.VideoLinkDetailsChangedForHearing;
+import uk.gov.justice.listing.events.VideoLinkDetailsRemovedForHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -335,7 +338,8 @@ public class ListingCommandHandlerTest {
     private static final String SEQUENCE_2 = "2";
     private static final String HEARING_DATE_1 = "2012-12-11";
     private static final String HEARING_DATE_2 = "2012-12-12";
-
+    private static final Boolean HAS_VIDEO_LINK = true;
+    private static final String VIDEO_LINK_DETAILS = "Video Link Details";
     private static final UUID COURT_APPLICATION_ID = randomUUID();
     private static final String COURT_APPLICATION_TYPE = STRING.next();
     private static final UUID COURT_CENTRE_ID_ONE = UUID.fromString("89592405-c29b-3706-b1d3-b1dd3a08b227");
@@ -484,7 +488,7 @@ public class ListingCommandHandlerTest {
                 OffenceDeleted.class, SequenceHearings.class, UpdateCourtApplicationForHearings.class, AddCourtApplicationForHearing.class,
                 CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class,
                 PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class, RecordCourtListProduced.class,
-                PublishedCourtListStored.class, TrialVacated.class, HearingRescheduled.class);
+                PublishedCourtListStored.class, TrialVacated.class, HearingRescheduled.class, VideoLinkDetailsChangedForHearing.class, VideoLinkDetailsRemovedForHearing.class, VideoLinkDetailsAssignedForHearing.class);
 
             setField(this.extendHearingUtils, "prosecutionCasesBuilder", prosecutionCasesBuilder);
 
@@ -760,6 +764,7 @@ public class ListingCommandHandlerTest {
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), Integer.valueOf(DEFAULT_DURATION)));
         when(hearing.removeWeekCommencingDates(HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearingFactory.getHearingById(any(),any())).thenReturn(getSampleStoredHearing());
+        when(hearing.assignOrUpdateVideoLinkDetails(HAS_VIDEO_LINK, VIDEO_LINK_DETAILS, HEARING_ID_1)).thenReturn(mock(Stream.class));
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -778,6 +783,7 @@ public class ListingCommandHandlerTest {
         verify(hearing).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1);
         verify(hearing).removeWeekCommencingDates(HEARING_ID_1);
+        verify(hearing).assignOrUpdateVideoLinkDetails(HAS_VIDEO_LINK, VIDEO_LINK_DETAILS, HEARING_ID_1);
     }
 
     @Test
@@ -824,7 +830,7 @@ public class ListingCommandHandlerTest {
         when(hearing.changeWeekCommencingDate(WEEK_COMMENCING_START_DATE, WEEK_COMMENCING_END_DATE, WEEK_COMMENCING_DURATION, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), Integer.valueOf(DEFAULT_DURATION)));
         when(hearingFactory.getHearingById(any(),any())).thenReturn(getSampleStoredHearing());
-
+        when(hearing.removeVideoLinkDetails(HEARING_ID_1)).thenReturn(Stream.of());
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -842,6 +848,7 @@ public class ListingCommandHandlerTest {
         verify(hearing).assignHearingDays(null, null, NON_SITTING_DAYS1, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1);
         verify(hearing).changeWeekCommencingDate(WEEK_COMMENCING_START_DATE, WEEK_COMMENCING_END_DATE, WEEK_COMMENCING_DURATION, HEARING_ID_1);
+        verify(hearing).removeVideoLinkDetails(HEARING_ID_1);
     }
 
 
@@ -2481,7 +2488,9 @@ public class ListingCommandHandlerTest {
                 .replace("\"IS_BENCH_CHAIRMAN\"", IS_BENCH_CHAIRMAN.toString())
                 .replace("JUDICIAL_ID", JUDICIAL_ID_1.toString())
                 .replace("JUDICIAL_ROLE_TYPE", JUDICIAL_ROLE_TYPE)
-                .replace("AUTHORITY_ID", AUTHORITY_ID.toString());
+                .replace("AUTHORITY_ID", AUTHORITY_ID.toString())
+                .replace("\"HAS_VIDEO_LINK\"", HAS_VIDEO_LINK.toString())
+                .replace("VIDEO_LINK_DETAILS", VIDEO_LINK_DETAILS);
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.update-hearing-for-listing", jsonReader.readObject());

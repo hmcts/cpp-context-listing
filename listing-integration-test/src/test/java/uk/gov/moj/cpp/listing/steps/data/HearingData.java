@@ -29,6 +29,8 @@ public class HearingData {
     private LocalDate weekCommencingStartDate;
     private LocalDate weekCommencingEndDate;
     private int weekCommencingDuration;
+    private Boolean hasVideoLink;
+    private String videoLinkDetails;
 
     private String adjournmentDate;
     private List<RotaSlot> bookedSlots;
@@ -57,6 +59,35 @@ public class HearingData {
         this.reportingRestrictionReason = reportingRestrictionReason;
         this.courtApplications = courtApplications;
         this.courtApplicationPartyNeeds = courtApplicationPartyNeeds;
+    }
+
+
+    public HearingData(final UUID id, final UUID courtCentreId, final HearingTypeData hearingTypeData,
+                       final LocalDate hearingStartDate, final LocalDate hearingEndDate,
+                       final int hearingEstimateMinutes, final UUID courtRoomId,
+                       final ZonedDateTime hearingStartTime, final List<ListedCaseData> listedCases,
+                       final List<JudicialRoleData> judiciary, final String jurisdictionType,
+                       final String reportingRestrictionReason,
+                       final List<CourtApplicationData> courtApplications,
+                       final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds, final String name, final Boolean hasVideoLink, final String videoLinkDetails) {
+
+        this.id = id;
+        this.courtCentreId = courtCentreId;
+        this.name = name;
+        this.hearingEstimateMinutes = hearingEstimateMinutes;
+        this.hearingStartDate = hearingStartDate;
+        this.hearingEndDate = hearingEndDate;
+        this.hearingTypeData = hearingTypeData;
+        this.courtRoomId = courtRoomId;
+        this.hearingStartTime = hearingStartTime;
+        this.listedCases = listedCases;
+        this.judiciary = judiciary;
+        this.jurisdictionType = jurisdictionType;
+        this.reportingRestrictionReason = reportingRestrictionReason;
+        this.courtApplications = courtApplications;
+        this.courtApplicationPartyNeeds = courtApplicationPartyNeeds;
+        this.hasVideoLink = hasVideoLink;
+        this.videoLinkDetails = videoLinkDetails;
     }
 
     public HearingData(final UUID id, final UUID courtCentreId, final String name, final HearingTypeData hearingTypeData,
@@ -222,5 +253,13 @@ public class HearingData {
 
     public List<RotaSlot> getBookedSlots() {
         return bookedSlots;
+    }
+
+    public Boolean getHasVideoLink() {
+        return hasVideoLink;
+    }
+
+    public String getVideoLinkDetails() {
+        return videoLinkDetails;
     }
 }

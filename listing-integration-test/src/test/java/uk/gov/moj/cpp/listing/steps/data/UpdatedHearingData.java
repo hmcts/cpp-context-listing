@@ -22,11 +22,13 @@ import java.util.UUID;
 public class UpdatedHearingData {
 
     protected static final LocalTime DEFAULT_START_TIME = LocalTime.of(9, 30);
+    protected static final LocalTime DEFAULT_START_TIME_1 = LocalTime.of(17, 00);
     private static final HearingTypeData SENTENCE_HEARING_TYPE = new HearingTypeData(randomUUID(), "Sentence");
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final String HEARING_LANGUAGE_WELSH = "WELSH";
     private static final String HEARING_LANGUAGE_ENGLISH = "ENGLISH";
     private static final String JURISDICTION_TYPE_MAGISTRATES = "MAGISTRATES";
+    private static final String JURISDICTION_TYPE_CROWN = "CROWN";
     private static final String COURT_SCHEDULE_ID = randomUUID().toString();
     private static final String OUCODE = "BKROOL";
     private static final String SESSION = "AM";
@@ -49,7 +51,8 @@ public class UpdatedHearingData {
     private final String weekCommencingEndDate;
     private final Integer weekCommencingDurationInWeeks;
     private final String jurisdictionType;
-
+    private final Boolean hasVideoLink;
+    private final String videoLinkDetails;
 
     public UpdatedHearingData(final UUID hearingId,
                               final UUID courtCentreId,
@@ -63,7 +66,9 @@ public class UpdatedHearingData {
                               final List<JudicialRoleData> judiciary, final String jurisdictionType,
                               final String weekCommencingStartDate,
                               final String weekCommencingEndDate,
-                              final Integer weekCommencingDurationInWeeks) {
+                              final Integer weekCommencingDurationInWeeks,
+                              final Boolean hasVideoLink,
+                              final String videoLinkDetails) {
         this.hearingId = hearingId;
         this.courtCentreId = courtCentreId;
         this.name = name;
@@ -79,6 +84,8 @@ public class UpdatedHearingData {
         this.weekCommencingStartDate = weekCommencingStartDate;
         this.weekCommencingEndDate = weekCommencingEndDate;
         this.weekCommencingDurationInWeeks = weekCommencingDurationInWeeks;
+        this.hasVideoLink = hasVideoLink;
+        this.videoLinkDetails = videoLinkDetails;
     }
 
     public static UpdatedHearingData updatedHearingDataForAllocation(final UUID hearingId) {
@@ -110,10 +117,23 @@ public class UpdatedHearingData {
         final List<NonDefaultDayData> nonDefaultDays = asList(firstNonDefaultDayData, secondNonDefaultDayData);
 
         final String endDate = startDate.plusDays(2).toString();
+        final Boolean hasVideoLink = true;
+        final String videoLinkDetails = "videoLinkDetails";
 
         return new UpdatedHearingData(hearingId, randomUUID(), RandomGenerator.STRING.next(), randomUUID(), SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
-                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null);
+                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, hasVideoLink, videoLinkDetails);
+    }
+
+    public static UpdatedHearingData updatedHearingDataForVideoLink(final HearingData hearingData,final Boolean hasVideoLink, final String videoLinkDetails) {
+
+        final LocalDate startDate = nextOrSameWorkingDay(LocalDate.now());
+
+        final List<String> nonSittingDays = asList(startDate.plusDays(1).toString());
+
+        return new UpdatedHearingData(hearingData.getId(), hearingData.getCourtCentreId(), RandomGenerator.STRING.next(), hearingData.getCourtRoomId(), hearingData.getHearingTypeData(),
+                hearingData.getHearingStartDate().toString(), hearingData.getHearingEndDate().toString(), Collections.emptyList(),
+                nonSittingDays, HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), JURISDICTION_TYPE_CROWN, null, null, hearingData.getWeekCommencingDuration(), hasVideoLink, videoLinkDetails);
     }
 
     private static LocalDate nextOrSameWorkingDay(LocalDate date) {
@@ -144,7 +164,7 @@ public class UpdatedHearingData {
 
         return new UpdatedHearingData(hearingId, randomUUID(), "Carmarthen Magistrates Court", randomUUID(), SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
-                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null);
+                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, null, null);
     }
 
     public static UpdatedHearingData updatedHearingData(final HearingData hearingData) {
@@ -158,10 +178,30 @@ public class UpdatedHearingData {
 
         final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, startTime, UTC);
         final List<NonDefaultDayData> nonDefaultDays = asList(new NonDefaultDayData(startTimeWithZone.format(DATE_TIME_FORMAT), of(DURATION)));
-
         return new UpdatedHearingData(hearingData.getId(), hearingData.getCourtCentreId(), hearingData.getName(), courtRoomId, SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
-                Collections.emptyList(), HEARING_LANGUAGE_WELSH, judiciary, hearingData.getJurisdictionType(), null, null, null);
+                Collections.emptyList(), HEARING_LANGUAGE_WELSH, judiciary, hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), hearingData.getVideoLinkDetails());
+
+    }
+    public static UpdatedHearingData updatedHearingDataWithVideoLink(final UpdatedHearingData hearingData) {
+
+        //changed values
+
+        final String videoLinkDetails = "videoLinkChanged";
+        return new UpdatedHearingData(hearingData.getHearingId(), hearingData.getCourtCentreId(), hearingData.getName(), hearingData.getCourtRoomId(), SENTENCE_HEARING_TYPE,
+                hearingData.getStartDate(), hearingData.getEndDate(), hearingData.getNonDefaultDays(),
+                Collections.emptyList(), HEARING_LANGUAGE_WELSH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), videoLinkDetails);
+
+    }
+
+    public static UpdatedHearingData updatedHearingDataWithoutVideoLink(final UpdatedHearingData hearingData) {
+
+        //changed values
+        final Boolean hasVideoLink = null;
+        final String videoLinkDetails = null;
+        return new UpdatedHearingData(hearingData.getHearingId(), hearingData.getCourtCentreId(), hearingData.getName(), hearingData.getCourtRoomId(), SENTENCE_HEARING_TYPE,
+                hearingData.getStartDate(), hearingData.getEndDate(), hearingData.getNonDefaultDays(),
+                Collections.emptyList(), HEARING_LANGUAGE_WELSH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), null, null, null, hasVideoLink, videoLinkDetails);
 
     }
 
@@ -173,7 +213,7 @@ public class UpdatedHearingData {
         return new UpdatedHearingData(hearingData.getId(), hearingData.getCourtCentreId(), hearingData.getName(), courtRoomId, hearingData.getHearingTypeData(),
                 hearingData.getHearingStartDate().toString(), hearingData.getHearingEndDate().toString(),
                 Arrays.asList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(DURATION))),
-                Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), null, null, null);
+                Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), hearingData.getVideoLinkDetails());
 
     }
 
@@ -185,7 +225,7 @@ public class UpdatedHearingData {
         return new UpdatedHearingData(hearingData.getId(), hearingData.getCourtCentreId(), hearingData.getName(), hearingData.getCourtRoomId(), hearingData.getHearingTypeData(),
                 hearingData.getHearingStartDate().toString(), endDate,
                 Arrays.asList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(DURATION))),
-                Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), null, null, null);
+                Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), hearingData.getVideoLinkDetails());
 
     }
 
@@ -198,15 +238,15 @@ public class UpdatedHearingData {
         return new UpdatedHearingData(hearingData.getId(), hearingData.getCourtCentreId(), hearingData.getName(), hearingData.getCourtRoomId(), hearingData.getHearingTypeData(),
                 hearingData.getHearingStartDate().toString(), hearingData.getHearingEndDate().toString(),
                 Arrays.asList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT))),
-                Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, judiciary, hearingData.getJurisdictionType(), null, null, null);
+                Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, judiciary, hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), hearingData.getVideoLinkDetails());
 
     }
 
     public static UpdatedHearingData updatedHearingDataWithWeekCommencingDate(final HearingData hearingData, final String weekCommencingStartDate, final String weekCommencingEndDate, final int weekCommencingDurationInWeeks) {
         return new UpdatedHearingData(hearingData.getId(), hearingData.getCourtCentreId(), hearingData.getName(), null, hearingData.getHearingTypeData(),
                 null, null,
-                Arrays.asList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(DURATION))),
-                Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks);
+                Arrays.asList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(1))),
+                Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingData.getHasVideoLink(), hearingData.getVideoLinkDetails());
 
     }
 
@@ -268,6 +308,14 @@ public class UpdatedHearingData {
 
     public Integer getWeekCommencingDurationInWeeks() {
         return weekCommencingDurationInWeeks;
+    }
+
+    public Boolean getHasVideoLink() {
+        return hasVideoLink;
+    }
+
+    public String getVideoLinkDetails() {
+        return videoLinkDetails;
     }
 }
 

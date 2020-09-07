@@ -433,6 +433,8 @@ public class ListingCommandHandler {
 
         final uk.gov.justice.listing.events.Hearing storedHearing = hearingFactory.getHearingById(hearingId, command);
 
+        final Boolean hasVideoLink = updateHearingForListing.getHasVideoLink().orElse(null);
+        final String videoLinkDetails = updateHearingForListing.getVideoLinkDetails().orElse(null);
 
         updateHearingEventStream(jsonEnvelope, hearingId, (Hearing hearing) -> {
             final Stream<Object> typeEvents = hearing.changeType(type, hearingId);
@@ -472,8 +474,10 @@ public class ListingCommandHandler {
 
             final Stream<Object> rescheduledEvents = hearing.applyRescheduledCheck(startDateEventList);
 
+            final Stream<Object> videoLinkDetailsUpdateEvent = hasVideoLink != null && hasVideoLink ? hearing.assignOrUpdateVideoLinkDetails(hasVideoLink, videoLinkDetails, hearingId) : hearing.removeVideoLinkDetails(hearingId);
+
             return Stream.of(typeEvents, jurisdictionTypeEvents, hearingLanguageEvents, startDateEventList.stream(), nonDefaultDaysEvents, endDateEvents,
-                    nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, hearingPartiallyEvents, rescheduledEvents).flatMap(i -> i);
+                    nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, hearingPartiallyEvents, rescheduledEvents, videoLinkDetailsUpdateEvent).flatMap(i -> i);
         });
     }
 
@@ -1332,12 +1336,6 @@ public class ListingCommandHandler {
                 .collect(Collectors.toList());
     }
 
-
-    // Justin: "These private methods are only used by the export command. Move to a dedicated 'helper' class."
-    // TODO [SCSL-176] I'd like to find a common place for this, accessible to both this class
-    // as well as uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory.
-    // I thought that 'listing-domain-common' module would be a good choice, but
-    // we don't have CourtCentreDetails in there.
     private CourtCentreDetails toCourtCentreDetails(final JsonObject courtCentreDetailsAsJson) {
         final UUID courtCentreId = UUID.fromString(courtCentreDetailsAsJson.getString("id"));
         final Integer defaultDurationMinutes =

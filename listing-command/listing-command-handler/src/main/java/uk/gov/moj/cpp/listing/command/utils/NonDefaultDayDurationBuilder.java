@@ -46,6 +46,8 @@ public class NonDefaultDayDurationBuilder {
                 .withWeekCommencingDurationInWeeks(hearing.getWeekCommencingDurationInWeeks())
                 .withWeekCommencingEndDate(hearing.getWeekCommencingEndDate())
                 .withWeekCommencingStartDate(hearing.getWeekCommencingStartDate())
+                .withHasVideoLink(hearing.getHasVideoLink())
+                .withVideoLinkDetails(hearing.getVideoLinkDetails())
                 .build();
     }
 

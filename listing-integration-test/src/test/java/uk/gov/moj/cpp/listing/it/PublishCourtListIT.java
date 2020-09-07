@@ -24,8 +24,10 @@ import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.PublishCourtListSteps;
+import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -78,7 +80,7 @@ public class PublishCourtListIT extends AbstractIT {
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(null, publishCourtListCommandPayload);
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
-        publishCourtListSteps.verifyCourtListPublishStatus("COURT_LIST_REQUESTED");
+        publishCourtListSteps.verifyCourtListPublishStatus("COURT_LIST_REQUESTED", "true");
 //        publishCourtListSteps.waitForPublishedCourtListStored(courtCentreId, publishCourtListType, startDate);
 //        publishCourtListSteps.waitForCompletedExport(courtCentreId, publishCourtListType, startDate);
         TimeUnit.SECONDS.sleep(20);
@@ -88,6 +90,7 @@ public class PublishCourtListIT extends AbstractIT {
     @Test
     public void shouldPublishCourtListWithHearings() throws Exception {
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
@@ -100,11 +103,11 @@ public class PublishCourtListIT extends AbstractIT {
 
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
-        final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId);
+        final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
 
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
-        stubGetReferenceDataCourtMappings(new CourtCentreData(randomUUID(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
         stubGetReferenceDataCpCourtRooms(hearingsData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
         stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
 
@@ -112,7 +115,7 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.verifyHearingListedFromAPI(true);
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
-        publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL");
+        publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL", "true");
 //        publishCourtListSteps.waitForPublishedCourtListStored(courtCentreId, publishCourtListType, startDate);
 //        publishCourtListSteps.verifySentPublishedCourtListHearingData();
     }
@@ -141,6 +144,176 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.verifyThatWeSuccessfullyRequestedAFinalListPublication(courtCentreIdOne, expectedPublishDate);
         publishCourtListSteps.verifyThatWeSuccessfullyRequestedAFinalListPublication(courtCentreIdTwo, expectedPublishDate);
 
+    }
+
+
+    @Test
+    public void shouldPublishCourtListWithHearingsWithVideoLinkForFirmPublishType() throws Exception {
+        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final UUID courtListId = randomUUID();
+        final int courtRoomId = 231;
+        final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
+        final LocalDate startDate = LocalDate.now();
+
+        final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
+                courtCentreId,
+                publishCourtListType,
+                startDate);
+
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+
+        final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
+
+       final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForVideoLink(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
+            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+        }
+
+
+        stubIdMapperReturningExistingAssociation(courtListId);
+        stubOrganisationUnit(courtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCpCourtRooms(hearingsData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
+
+        final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
+        publishCourtListSteps.verifyHearingListedFromAPI(true);
+        publishCourtListSteps.acceptCourtListXmlFiles();
+        publishCourtListSteps.sendPublishCourtListCommand();
+        publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL", "true");
+        publishCourtListSteps.verifySentPublishedCourtListHearingData(true , "Video Link:videoLinkDetails");
+    }
+
+
+    @Test
+    public void shouldPublishCourtListWithHearingsWithOutVideoLinkForFirmPublishType() throws Exception {
+        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final UUID courtListId = randomUUID();
+        final int courtRoomId = 231;
+        final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
+        final LocalDate startDate = LocalDate.now();
+
+        final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
+                courtCentreId,
+                publishCourtListType,
+                startDate);
+
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+
+        final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
+
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForVideoLink(hearingsData.getHearingData().get(0), true, null);
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
+            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedNoVideoLinkDetailsWhenQueryingFromAPI();
+        }
+
+
+        stubIdMapperReturningExistingAssociation(courtListId);
+        stubOrganisationUnit(courtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCpCourtRooms(hearingsData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
+
+        final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
+        publishCourtListSteps.verifyHearingListedFromAPI(true);
+        publishCourtListSteps.acceptCourtListXmlFiles();
+        publishCourtListSteps.sendPublishCourtListCommand();
+        publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL", "true");
+        TimeUnit.SECONDS.sleep(20);
+        publishCourtListSteps.verifySentPublishedCourtListHearingData(true , "Video Link:");
+    }
+
+
+    @Test
+    public void shouldPublishCourtListWithHearingsWithVideoLinkForDraftPublishType() throws Exception {
+        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final UUID courtListId = randomUUID();
+        final int courtRoomId = 231;
+        final PublishCourtListType publishCourtListType = PublishCourtListType.DRAFT;
+        final LocalDate startDate = LocalDate.now();
+
+        final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
+                courtCentreId,
+                publishCourtListType,
+                startDate);
+
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+
+        final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
+
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForVideoLink(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
+            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+        }
+
+
+        stubIdMapperReturningExistingAssociation(courtListId);
+        stubOrganisationUnit(courtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCpCourtRooms(hearingsData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
+
+        final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
+        publishCourtListSteps.verifyHearingListedFromAPI(true);
+        publishCourtListSteps.acceptCourtListXmlFiles();
+        publishCourtListSteps.sendPublishCourtListCommand();
+        publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL", "false");
+        TimeUnit.SECONDS.sleep(20);
+        publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true , "Video Link:videoLinkDetails");
+    }
+
+    @Test
+    public void shouldPublishCourtListWithHearingsWithVideoLinkForFinalPublishType() throws Exception {
+        final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
+        final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
+        final UUID courtListId = randomUUID();
+        final int courtRoomId = 231;
+        final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
+        final LocalDate startDate = LocalDate.now();
+
+        final JsonObject publishCourtListCommandPayload = buildPublishCourtListCommandPayload(
+                courtCentreId,
+                publishCourtListType,
+                startDate);
+
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+
+        final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
+
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForVideoLink(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
+            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+        }
+
+
+        stubIdMapperReturningExistingAssociation(courtListId);
+        stubOrganisationUnit(courtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, DEFAULT_COURT_ROOM_ID, DEFAULT_COURT_CENTRE_NAME));
+        stubGetReferenceDataCpCourtRooms(hearingsData.getHearingData().get(0).getCourtRoomId(), courtRoomId);
+        stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
+
+        final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
+        publishCourtListSteps.verifyHearingListedFromAPI(true);
+        publishCourtListSteps.acceptCourtListXmlFiles();
+        publishCourtListSteps.sendPublishCourtListCommand();
+        publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL", "false");
+        TimeUnit.SECONDS.sleep(20);
+        publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true , "Video Link:videoLinkDetails");
     }
 
     private void sendPublishFinalCourtListsForAllCrownCourtsCommand(final JsonObject commandAsJson) {
