@@ -28,7 +28,7 @@ public class EventStreamTransform implements EventTransformation {
     private final Set<UUID> uuidList = new HashSet<>();
 
     public EventStreamTransform() {
-        uuidList.addAll(Stream.of("applicationId.csv", "caseId.csv", "hearingId.csv")
+        uuidList.addAll(Stream.of("caseId.csv", "hearingId.csv")
                 .flatMap(csvFilename -> CsvFileHelper.getCsvRecords(csvFilename).stream())
                 .collect(Collectors.toList()));
     }
