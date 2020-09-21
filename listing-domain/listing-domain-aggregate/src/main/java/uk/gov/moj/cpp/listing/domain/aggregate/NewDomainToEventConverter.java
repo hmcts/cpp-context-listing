@@ -10,7 +10,9 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.events.CaseIdentifier;
+import uk.gov.justice.listing.events.CommittingCourt;
 import uk.gov.justice.listing.events.CourtApplicationPartyType;
+import uk.gov.justice.listing.events.CourtHouseType;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.HearingLanguageNeeds;
 import uk.gov.justice.listing.events.JudicialRoleType;
@@ -31,7 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 
-@SuppressWarnings({"squid:S3655","squid:S1067","squid:S2583"})
+@SuppressWarnings({"squid:S3655", "squid:S1067", "squid:S2583"})
 public class NewDomainToEventConverter {
 
     private NewDomainToEventConverter() {
@@ -65,7 +67,7 @@ public class NewDomainToEventConverter {
 
 
     @SuppressWarnings({"squid:S3655", "squid:S1067"})
-    public static Defendant buildDefendant(uk.gov.moj.cpp.listing.domain.Defendant d) {
+    public static Defendant buildDefendant(final uk.gov.moj.cpp.listing.domain.Defendant d) {
         return Defendant.defendant()
                 .withId(d.getId())
                 .withMasterDefendantId(d.getMasterDefendantId())
@@ -94,16 +96,16 @@ public class NewDomainToEventConverter {
 
 
     @SuppressWarnings({"squid:S3655", "squid:S1067"})
-    private static  Optional<uk.gov.justice.core.courts.Address> buildAddress(uk.gov.moj.cpp.listing.domain.Address address) {
+    private static Optional<uk.gov.justice.core.courts.Address> buildAddress(final uk.gov.moj.cpp.listing.domain.Address address) {
 
-            return of(uk.gov.justice.core.courts.Address.address()
-                    .withAddress1(ofNullable(address.getAddress1()).orElse(""))
-                    .withAddress2(ofNullable(address.getAddress2()).orElse(empty()))
-                    .withAddress3(ofNullable(address.getAddress3()).orElse(empty()))
-                    .withAddress4(ofNullable(address.getAddress4()).orElse(empty()))
-                    .withAddress5(ofNullable(address.getAddress5()).orElse(empty()))
-                    .withPostcode(ofNullable(address.getPostcode()).orElse(empty()))
-                    .build());
+        return of(uk.gov.justice.core.courts.Address.address()
+                .withAddress1(ofNullable(address.getAddress1()).orElse(""))
+                .withAddress2(ofNullable(address.getAddress2()).orElse(empty()))
+                .withAddress3(ofNullable(address.getAddress3()).orElse(empty()))
+                .withAddress4(ofNullable(address.getAddress4()).orElse(empty()))
+                .withAddress5(ofNullable(address.getAddress5()).orElse(empty()))
+                .withPostcode(ofNullable(address.getPostcode()).orElse(empty()))
+                .build());
     }
 
     public static NewBaseDefendant buildNewBaseDefendant(final uk.gov.moj.cpp.listing.domain.Defendant d) {
@@ -120,7 +122,7 @@ public class NewDomainToEventConverter {
                 .withBailStatus(buildBailStatusEvent(d.getBailStatus()))
                 .withIsYouth(d.getIsYouth())
                 .withAddress(nonNull(d.getAddress()) && d.getAddress().isPresent() ? buildAddress(d.getAddress().get()) : empty())
-                .withNationalityDescription(nonNull(d.getNationalityDescription()) && d.getNationalityDescription().isPresent()  ?  d.getNationalityDescription() : empty())
+                .withNationalityDescription(nonNull(d.getNationalityDescription()) && d.getNationalityDescription().isPresent() ? d.getNationalityDescription() : empty())
                 .build();
     }
 
@@ -137,13 +139,13 @@ public class NewDomainToEventConverter {
         return o.stream().map(NewDomainToEventConverter::buildOffence).collect(toList());
     }
 
-    public static List<LinkedToCases> convertDomainToLinkedToCasesEvent(List<uk.gov.moj.cpp.listing.domain.LinkedToCases> linkedToCases) {
+    public static List<LinkedToCases> convertDomainToLinkedToCasesEvent(final List<uk.gov.moj.cpp.listing.domain.LinkedToCases> linkedToCases) {
         return linkedToCases.stream()
                 .map(NewDomainToEventConverter::buildLinkedToCases)
                 .collect(toList());
     }
 
-    private static LinkedToCases buildLinkedToCases(uk.gov.moj.cpp.listing.domain.LinkedToCases linkedToCases) {
+    private static LinkedToCases buildLinkedToCases(final uk.gov.moj.cpp.listing.domain.LinkedToCases linkedToCases) {
         return LinkedToCases.linkedToCases()
                 .withCaseId(linkedToCases.getCaseId())
                 .withCaseUrn(linkedToCases.getCaseUrn())
@@ -151,8 +153,8 @@ public class NewDomainToEventConverter {
     }
 
     @SuppressWarnings({"squid:S3655"})
-    public static Offence buildOffence(uk.gov.moj.cpp.listing.domain.Offence o) {
-        return Offence.offence()
+    public static Offence buildOffence(final uk.gov.moj.cpp.listing.domain.Offence o) {
+        final Offence.Builder builder = Offence.offence()
                 .withId(o.getId())
                 .withEndDate(o.getEndDate())
                 .withStartDate(o.getStartDate())
@@ -163,7 +165,11 @@ public class NewDomainToEventConverter {
                 .withRestrictFromCourtList(of(FALSE))
                 .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference(o.getLaaApplnReference().get()) : empty())
                 .withLaidDate(o.getLaidDate())
-                .withShadowListed(o.getShadowListed())
+                .withShadowListed(o.getShadowListed());
+        if (nonNull(o.getCommittingCourt()) && o.getCommittingCourt().isPresent()) {
+            builder.withCommittingCourt(buildCommittingCourt(o.getCommittingCourt().get()));
+        }
+        return builder
                 .build();
     }
 
@@ -249,6 +255,17 @@ public class NewDomainToEventConverter {
                 .withStatusDescription(laaReference.getStatusDescription())
                 .withStatusDate(laaReference.getStatusDate())
                 .withStatusId(laaReference.getStatusId())
+                .build());
+    }
+
+    private static Optional<CommittingCourt> buildCommittingCourt(final uk.gov.moj.cpp.listing.domain.CommittingCourt committingCourt) {
+
+        return of(CommittingCourt.committingCourt()
+                .withCourtCentreId(committingCourt.getCourtCentreId())
+                .withCourtHouseCode(committingCourt.getCourtHouseCode())
+                .withCourtHouseName(committingCourt.getCourtHouseName())
+                .withCourtHouseShortName(committingCourt.getCourtHouseShortName())
+                .withCourtHouseType(CourtHouseType.valueOf(committingCourt.getCourtHouseType().name()))
                 .build());
     }
 }

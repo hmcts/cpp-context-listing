@@ -18,7 +18,13 @@
               "welshTitle": "Wounding with intent",
               "legislation": "legislation"
             },
-            "restrictFromCourtList": false
+            "restrictFromCourtList": false,
+            "committingCourt" : {
+              "courtCentreId" : "f34a5dba-8c4b-4ec8-8b9a-6af405c00ebf",
+              "courtHouseType" : "MAGISTRATES_COURT",
+              "courtHouseCode" : "430",
+              "courtHouseName" : "Lancashire Magistrates' Court"
+            }
           }],
           "firstName": "Georgia",
           "dateOfBirth": "1990-03-03",

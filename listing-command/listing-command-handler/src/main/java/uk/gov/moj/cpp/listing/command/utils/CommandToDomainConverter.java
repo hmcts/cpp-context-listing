@@ -30,6 +30,7 @@ import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
+import uk.gov.moj.cpp.listing.domain.CommittingCourt;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.Hearing;
@@ -39,6 +40,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
+import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.Type;
 import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
@@ -54,7 +56,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @SuppressWarnings({"squid:S3655", "squid:S1067", "squid:MethodCyclomaticComplexity"})
-public class CommandToDomainConverter implements Converter<uk.gov.justice.core.courts.HearingListingNeeds, Hearing> {
+public class CommandToDomainConverter implements Converter<HearingListingNeeds, Hearing> {
 
     @SuppressWarnings({"squid:S3655"})
     public static ZonedDateTime extractStartDate(final HearingListingNeeds commandHearing) {
@@ -73,15 +75,15 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
 
     @SuppressWarnings({"squid:S3655"})
     @Override
-    public uk.gov.moj.cpp.listing.domain.Hearing convert(final uk.gov.justice.core.courts.HearingListingNeeds commandHearing) {
+    public Hearing convert(final HearingListingNeeds commandHearing) {
         final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
-        if(isNotEmpty(commandHearing.getBookedSlots())){
+        if (isNotEmpty(commandHearing.getBookedSlots())) {
             commandHearing.getBookedSlots().forEach(rotaSlot -> nonDefaultDays.add(convertNonDefaultDay(rotaSlot)));
         }
         return convert(commandHearing, nonDefaultDays, emptyList());
     }
 
-    public uk.gov.moj.cpp.listing.domain.Hearing convert(final uk.gov.justice.core.courts.HearingListingNeeds commandHearing, final List<NonDefaultDay> nonDefaultDays, final  List<UUID> shadowListedOffences) {
+    public Hearing convert(final HearingListingNeeds commandHearing, final List<NonDefaultDay> nonDefaultDays, final List<UUID> shadowListedOffences) {
         List<uk.gov.moj.cpp.listing.domain.JudicialRole> domainJudicialRoles = emptyList();
         if (commandHearing.getJudiciary() != null) {
             domainJudicialRoles = commandHearing.getJudiciary().stream()
@@ -99,7 +101,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
         final Optional<LocalDate> weekCommencingEndDate = weekCommencingStartDate.isPresent() && weekCommencingDurationInWeeks.isPresent() ?
                 of(weekCommencingStartDate.get().plusWeeks(weekCommencingDurationInWeeks.get())) : empty();
 
-        return uk.gov.moj.cpp.listing.domain.Hearing.hearing()
+        return Hearing.hearing()
                 .withId(commandHearing.getId())
                 .withType(buildHearingType(commandHearing.getType()))
                 .withHearingLanguage(empty())
@@ -205,7 +207,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .build();
     }
 
-    private ListedCase buildListedCases(final HearingListingNeeds commandHearing, final ProsecutionCase prosecutionCase, List<UUID> shadowListedOffences) {
+    private ListedCase buildListedCases(final HearingListingNeeds commandHearing, final ProsecutionCase prosecutionCase, final List<UUID> shadowListedOffences) {
         final List<uk.gov.moj.cpp.listing.domain.Defendant> defendants = prosecutionCase.getDefendants().stream()
                 .map(d -> buildDefendants(commandHearing, d, shadowListedOffences))
                 .collect(toList());
@@ -245,7 +247,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
     }
 
     @SuppressWarnings({"squid:S3655", "squid:S1067", "squid:MethodCyclomaticComplexity"})
-    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingUnscheduledListingNeeds commandHearing, Defendant d) {
+    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingUnscheduledListingNeeds commandHearing, final Defendant d) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
                 .withMasterDefendantId(Optional.ofNullable(d.getMasterDefendantId()))
@@ -270,7 +272,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
     }
 
     @SuppressWarnings({"squid:S3655", "squid:S1067", "squid:MethodCyclomaticComplexity"})
-    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingListingNeeds commandHearing, Defendant d, final List<UUID> shadowListedOffences) {
+    private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingListingNeeds commandHearing, final Defendant d, final List<UUID> shadowListedOffences) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
                 .withMasterDefendantId(Optional.ofNullable(d.getMasterDefendantId()))
@@ -367,7 +369,7 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                     .anyMatch(offenceId -> offenceId.equals(o.getId()));
         }
 
-        return uk.gov.moj.cpp.listing.domain.Offence.offence()
+        final Offence.Builder builder = Offence.offence()
                 .withId(o.getId())
                 .withEndDate(o.getEndDate())
                 .withStartDate(o.getStartDate())
@@ -376,8 +378,22 @@ public class CommandToDomainConverter implements Converter<uk.gov.justice.core.c
                 .withOffenceWording(o.getWording())
                 .withStatementOfOffence(buildStatementOfOffence(o))
                 .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference((o.getLaaApplnReference().get())) : empty())
-                .withShadowListed(Optional.of(shadowListed))
+                .withShadowListed(of(shadowListed));
+        if (nonNull(o.getCommittingCourt()) && o.getCommittingCourt().isPresent()) {
+            builder.withCommittingCourt(buildCommittingCourt(o.getCommittingCourt().get()));
+        }
+        return builder
                 .build();
+    }
+
+    private static Optional<uk.gov.moj.cpp.listing.domain.CommittingCourt> buildCommittingCourt(final uk.gov.justice.core.courts.CommittingCourt committingCourt) {
+
+        return of(CommittingCourt.committingCourt().withCourtCentreId(committingCourt.getCourtCentreId())
+                .withCourtHouseCode(committingCourt.getCourtHouseCode())
+                .withCourtHouseName(committingCourt.getCourtHouseName())
+                .withCourtHouseShortName(committingCourt.getCourtHouseShortName())
+                .withCourtHouseType(JurisdictionType.valueOf(committingCourt.getCourtHouseType().name()))
+                .build());
     }
 
     private StatementOfOffence buildStatementOfOffence(final uk.gov.justice.core.courts.Offence offence) {

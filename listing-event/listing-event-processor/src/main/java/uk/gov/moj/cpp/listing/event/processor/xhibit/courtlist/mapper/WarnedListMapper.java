@@ -119,12 +119,12 @@ public class WarnedListMapper extends AbstractCourtListMapper {
                 .collect(Collectors.toSet());
 
         if (hearingTypeUuids.isEmpty()) {
-            LOGGER.warn("Expecting 1 hearingTye, got nothing");
+            LOGGER.warn("Expecting 1 hearingType, got nothing");
             return null;
         }
 
         if (hearingTypeUuids.size() > 1) {
-            LOGGER.warn("Expecting 1 hearingTye, got {} ", hearingTypeUuids);
+            LOGGER.warn("Expecting 1 hearingType, got {} ", hearingTypeUuids);
         }
 
         final UUID hearingUUID = hearingTypeUuids.stream().

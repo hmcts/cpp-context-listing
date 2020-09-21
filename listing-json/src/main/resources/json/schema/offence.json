@@ -33,6 +33,10 @@
     },
     "shadowListed": {
       "type": "boolean"
+    },
+    "committingCourt": {
+      "description": "Sending court details",
+      "$ref": "http://justice.gov.uk/listing/events/committingCourt.json"
     }
   },
   "required": [

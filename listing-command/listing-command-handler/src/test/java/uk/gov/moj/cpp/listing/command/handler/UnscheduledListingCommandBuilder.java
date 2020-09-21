@@ -154,7 +154,7 @@ public class UnscheduledListingCommandBuilder {
         return listUnscheduledCourtHearingCommandEnvelopeFor("/test-data/listing.command.list-unscheduled-court-hearing.json");
     }
 
-    static JsonEnvelope listUnscheduledCourtHearingCommandEnvelopeFor(String testDataFileLocation) {
+    static JsonEnvelope listUnscheduledCourtHearingCommandEnvelopeFor(final String testDataFileLocation) {
         final String jsonString = FileUtil.givenPayload(testDataFileLocation).toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("OFFENCE_ID", OFFENCE_ID1.toString())
@@ -322,4 +322,4 @@ public class UnscheduledListingCommandBuilder {
                 .withIsDeputy(of(IS_DEPUTY)).build());
     }
 
-}
+    }

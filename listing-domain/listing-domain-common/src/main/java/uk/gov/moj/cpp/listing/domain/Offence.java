@@ -26,7 +26,9 @@ public class Offence {
 
     private final Optional<Boolean> shadowListed;
 
-    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit, final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate, final Optional<Boolean> shadowListed) {
+    private final Optional<CommittingCourt> committingCourt;
+
+    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit, final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate, final Optional<Boolean> shadowListed, final Optional<CommittingCourt> committingCourt) {
         this.endDate = endDate;
         this.id = id;
         this.offenceCode = offenceCode;
@@ -37,6 +39,7 @@ public class Offence {
         this.laaApplnReference = laaApplnReference;
         this.laidDate = laidDate;
         this.shadowListed = shadowListed;
+        this.committingCourt = committingCourt;
     }
 
     public Optional<String> getEndDate() {
@@ -67,13 +70,21 @@ public class Offence {
         return statementOfOffence;
     }
 
-    public Optional<CustodyTimeLimit> getCustodyTimeLimit(){ return custodyTimeLimit;}
+    public Optional<CustodyTimeLimit> getCustodyTimeLimit() {
+        return custodyTimeLimit;
+    }
 
     public Optional<String> getLaidDate() {
         return laidDate;
     }
 
-    public Optional<Boolean> getShadowListed() { return shadowListed; }
+    public Optional<Boolean> getShadowListed() {
+        return shadowListed;
+    }
+
+    public Optional<CommittingCourt> getCommittingCourt() {
+        return committingCourt;
+    }
 
     public static Builder offence() {
         return new Offence.Builder();
@@ -81,8 +92,12 @@ public class Offence {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         final Offence offence = (Offence) o;
         return Objects.equals(endDate, offence.endDate) &&
                 Objects.equals(id, offence.id) &&
@@ -93,7 +108,8 @@ public class Offence {
                 Objects.equals(custodyTimeLimit, offence.custodyTimeLimit) &&
                 Objects.equals(laaApplnReference, offence.laaApplnReference) &&
                 Objects.equals(laidDate, offence.laidDate) &&
-                Objects.equals(shadowListed, offence.shadowListed);
+                Objects.equals(shadowListed, offence.shadowListed) &&
+                Objects.equals(committingCourt, offence.committingCourt);
     }
 
     @Override
@@ -114,6 +130,7 @@ public class Offence {
                 ", laaApplnReference=" + laaApplnReference +
                 ", laidDate=" + laidDate +
                 ", shadowListed=" + shadowListed +
+                ", committingCourt=" + committingCourt +
                 '}';
     }
 
@@ -138,6 +155,8 @@ public class Offence {
         private Optional<LaaReference> laaApplnReference;
 
         private Optional<Boolean> shadowListed;
+
+        private Optional<CommittingCourt> committingCourt;
 
         public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
@@ -184,13 +203,18 @@ public class Offence {
             return this;
         }
 
-        public Builder withShadowListed(final  Optional<Boolean> shadowListed){
+        public Builder withShadowListed(final Optional<Boolean> shadowListed) {
             this.shadowListed = shadowListed;
             return this;
         }
 
+        public Builder withCommittingCourt(final Optional<CommittingCourt> committingCourt) {
+            this.committingCourt = committingCourt;
+            return this;
+        }
+
         public Offence build() {
-            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt);
         }
     }
 }

@@ -59,6 +59,9 @@ import java.util.stream.Collectors;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import com.jayway.jsonpath.JsonPath;
+import net.minidev.json.JSONArray;
+
 /**
  * Map to elements defined in CourtServices.xsd
  */
@@ -89,13 +92,13 @@ public class CourtServicesMapper {
     private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern(AM_PM_TIME_FORMAT, Locale.ENGLISH);
     private static final DateTimeFormatter sittingAtFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final String TIME_MARKING_NOTE_TEXT = "NOT BEFORE %s";
+    private static final String COMMITTING_COURT_PATH = "$.defendants[*].offences[*].committingCourt";
+    private final CourtListGenerationContext context;
     private static final String HAS_VIDEO_LINK = "hasVideoLink";
     private static final String VIDEO_LINK_DETAILS = "videoLinkDetails";
 
-    private CourtListGenerationContext context;
-
-    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
-    private XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
+    private final CommonXhibitReferenceDataService commonXhibitReferenceDataService;
+    private final XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
 
     public CourtServicesMapper(final CourtListGenerationContext context,
                                final CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
@@ -338,13 +341,30 @@ public class CourtServicesMapper {
             generateAndSetTimeMarkingNote(hearingJson, hearingStructure);
         }
 
-        if (hearingJson.containsKey("courtCentreId")) {
-            hearingStructure.setCommittingCourt(generateCourtHouseStructure(fromString(hearingJson.getString("courtCentreId"))));
-        }
+        hearingStructure.setCommittingCourt(extractCommittingCourtFromOffence(hearingJson));
 
         hearingStructure.setListNote(evaluateListNoteText(hearingJson));
 
         return hearingStructure;
+    }
+
+    private CourtHouseStructure extractCommittingCourtFromOffence(final JsonObject hearingJson) {
+        if (!JsonPath.parse(hearingJson).read(COMMITTING_COURT_PATH, JSONArray.class).isEmpty()) {
+            final JsonObject committingCourt = (JsonObject) JsonPath.parse(hearingJson).read(COMMITTING_COURT_PATH, JSONArray.class).get(0);
+
+            final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
+
+            final String crestCourtId = commonXhibitReferenceDataService.getCourtDetails(fromString(committingCourt.getString("courtCentreId"))).getCrestCourtId();
+
+            courtHouseStructure.setCourtHouseType(CourtType.MAGISTRATES_COURT);
+            courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(crestCourtId));
+            courtHouseStructure.setCourtHouseName(committingCourt.getString("courtHouseName"));
+
+            return courtHouseStructure;
+        }
+
+        return null;
+
     }
 
     private HearingStructure generateHearingStructureForCourtApplication(final JsonObject hearingJson,

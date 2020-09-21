@@ -67,6 +67,7 @@ public class SittingsPojoBuilder {
         LOGGER.debug("is week commencing = {}", flatHearing.isWeekCommencing());
         LOGGER.debug("startDate = {}", startDate);
         LOGGER.debug("endDate = {}", endDate);
+        LOGGER.debug("caseHearings = {}", flatHearing.getCaseHearings());
     }
 
     private static void buildNewSitting(final LocalDate startDate, final String endDate, final List<Sitting> sittings, final FlatHearing flatHearing) {
@@ -159,7 +160,7 @@ public class SittingsPojoBuilder {
             } else {
                 try {
                     throw new IllegalArgumentException(UNABLE_TO_GET_DEFAULT_START_OR_END_TIME);
-                } catch (IllegalArgumentException e) {
+                } catch (final IllegalArgumentException e) {
                     LOGGER.info(UNABLE_TO_GET_DEFAULT_START_OR_END_TIME, e);
 
                 }

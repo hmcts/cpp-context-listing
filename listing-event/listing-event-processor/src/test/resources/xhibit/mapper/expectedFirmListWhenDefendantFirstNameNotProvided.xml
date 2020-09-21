@@ -89,6 +89,11 @@
                                     <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
                                 </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
+                            <cs:CommittingCourt>
+                                <cs:CourtHouseType>Magistrates Court</cs:CourtHouseType>
+                                <cs:CourtHouseCode>000</cs:CourtHouseCode>
+                                <cs:CourtHouseName>Lancashire Magistrates' Court</cs:CourtHouseName>
+                            </cs:CommittingCourt>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
