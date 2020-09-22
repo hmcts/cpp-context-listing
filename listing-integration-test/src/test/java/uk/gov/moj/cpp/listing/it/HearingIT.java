@@ -386,5 +386,15 @@ public class HearingIT extends AbstractIT {
         vacatingTrialSteps.verifyVacatedTrialWtihEmptyReasonIdWhenQueryingFromAPI();
     }
 
+    @Test
+    public void shouldFindUnallocatedHearingWithCaseUrn() {
+        final HearingsData hearingsData = HearingsData.hearingsData();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedWithAnyAllocationFromAPI(UNALLOCATED);
+        }
+    }
+
 
 }

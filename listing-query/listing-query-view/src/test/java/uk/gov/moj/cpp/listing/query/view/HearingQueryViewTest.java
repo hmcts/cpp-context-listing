@@ -44,6 +44,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtLis
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -450,6 +451,34 @@ public class HearingQueryViewTest {
                         ))
                 ));
         verify(hearingRepository).findHearings(eq("caseUrnValue"), eq("typeOfListValue"));
+        verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
+    }
+
+    @Test
+    public void shouldSearchHearingsWithAnyAllocationWithCaseUrn() throws IOException {
+
+        final List<Hearing> hearingsJson = hearingsJson();
+        final JsonArray hearingsJsonArray = hearingsJsonArray();
+
+        when(hearingRepository.findHearingsByCaseUrnAndAnyAllocationState("CASEURNVALUE"))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(hearingsJsonArray);
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(CASE_URN, "caseUrnValue")
+                        .build());
+
+        final Envelope<JsonObject> results = hearingsQueryView.searchHearingsWithAnyAllocationState(query);
+
+        assertThat(JsonEnvelope.envelopeFrom(results.metadata(), results.payload()),
+                is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.any-allocation.search.hearings"),
+                        payloadIsJson(
+                                withJsonPath("$.hearings[0].hello", equalTo("world"))
+                        ))
+                ));
+        verify(hearingRepository).findHearingsByCaseUrnAndAnyAllocationState(eq("CASEURNVALUE"));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
     }
 

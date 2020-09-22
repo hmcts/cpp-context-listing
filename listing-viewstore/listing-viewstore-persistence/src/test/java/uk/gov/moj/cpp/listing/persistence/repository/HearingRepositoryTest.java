@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.time.LocalDate.now;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -42,6 +44,7 @@ import javax.inject.Inject;
 
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Predicate;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
@@ -1293,6 +1296,24 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", anyOf(equalTo(JURISDICTION_TYPE.toString()), equalTo(OTHER_JURISDICTION_TYPE.toString()))));
         assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
     }
+
+    @Test
+    public void shouldFindHearingsByCaseUrnAndAnyAllocationState() {
+
+        //given
+        givenVariousHearings();
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearingsByCaseUrnAndAnyAllocationState("45DI277164");
+
+        //then
+        assertThat(actualHearings.size(), is(3));
+        assertThat(extractFields(actualHearings, "$.id"), containsInAnyOrder(HEARING_ID.toString(), OTHER_HEARING_ID.toString(), OTHER_HEARING_ID2.toString()));
+        assertThat(extractFields(actualHearings, "$.allocated"), containsInAnyOrder(Boolean.TRUE.toString(), Boolean.FALSE.toString(), Boolean.FALSE.toString()));
+        assertThat(actualHearings.get(0).getProperties(), isJson(withoutJsonPath("$.unscheduled")));
+        assertThat(actualHearings.get(1).getProperties(), isJson(withoutJsonPath("$.unscheduled")));
+        assertThat(actualHearings.get(1).getProperties(), isJson(withoutJsonPath("$.unscheduled")));
+    }
     @Test
     public void shouldFindUnscheduledHearingsWithApplicationCaseReference() {
 
@@ -1468,6 +1489,98 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 null,
                 null,
                 TEST_DATA_SAMPLE_HEARING_JSON);
+    }
+
+    private void givenVariousHearings() {
+        saveHearingJson(
+                HEARING_ID,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                UNALLOCATED,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_HEARING_JSON);
+
+        saveHearingJson(
+                OTHER_HEARING_ID,
+                OTHER_COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                true,
+                OTHER_AUTHORITY_ID,
+                OTHER_HEARING_TYPE,
+                OTHER_JURISDICTION_TYPE,
+                OTHER_JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_HEARING_JSON);
+
+        saveHearingJson(
+                OTHER_HEARING_ID2,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                UNALLOCATED,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_HEARING_JSON);
+
+        saveHearingJson(
+                UUID.randomUUID(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                false,
+                AUTHORITY_ID,
+                HEARING_TYPE,
+                JURISDICTION_TYPE,
+                JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_UNSCHEDULED_HEARING_JSON);
+
+        saveHearingJson(
+                UUID.randomUUID(),
+                OTHER_COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                false,
+                OTHER_AUTHORITY_ID,
+                OTHER_HEARING_TYPE,
+                OTHER_JURISDICTION_TYPE,
+                OTHER_JUDICIAL_ID,
+                START_DATE,
+                END_DATE,
+                START_TIME,
+                END_TIME,
+                HEARING_DATE,
+                null,
+                null,
+                TEST_DATA_SAMPLE_UNSCHEDULED_WITHOUT_CASE_HEARING_JSON);
     }
 
 

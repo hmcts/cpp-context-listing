@@ -336,3 +336,24 @@ protocols: [ HTTP, HTTPS ]
                   application/vnd.listing.search.hearings+json:
                     example:  !include json/listing.search.hearings.json
                     schema:  !include  json/schema/listing.search.hearings.json
+
+/hearings/any-allocation:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.any-allocation.search.hearings
+        ...
+      queryParameters:
+        caseUrn:
+          type: string
+          required: true
+          description: Comma seperated specific case urns
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json

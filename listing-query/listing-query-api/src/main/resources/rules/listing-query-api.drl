@@ -87,3 +87,12 @@ rule "Query - API - listing.unscheduled.search.hearings"
   then
     $outcome.setSuccess(true);
 end
+
+rule "Query - API - listing.any-allocation.search.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.any-allocation.search.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end

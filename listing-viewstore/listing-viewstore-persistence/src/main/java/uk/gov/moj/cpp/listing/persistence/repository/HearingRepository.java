@@ -413,6 +413,29 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
 
     /**
      * @param caseUrn
+     * @return
+     */
+    @Query(value = "select distinct id, properties" +
+            " from hearing " +
+            " where (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)" +
+            "  and (  id in (select hearingId" +
+            "             from (" +
+            "                      select id as hearingId, jsonb_array_elements(properties -> 'listedCases') as cases" +
+            "                      from hearing) as allCases" +
+            "             where ?1 is null" +
+            "                or UPPER(allCases.cases -> 'caseIdentifier' ->> 'caseReference') = cast(?1 as text))" +
+            "           or id in (select hearingId" +
+            "             from (" +
+            "                      select id as hearingId, jsonb_array_elements(properties -> 'courtApplications') as application" +
+            "                      from hearing) as allApplications" +
+            "             where ?1 is null" +
+            "                or UPPER(allApplications.application ->> 'applicationReference') = cast(?1 as text))" +
+            "      ) "
+            , isNative = true)
+    List<Hearing> findHearingsByCaseUrnAndAnyAllocationState(String caseUrn);
+
+    /**
+     * @param caseUrn
      * @param typeOfList
      * @param courtCentreIds
      * @return

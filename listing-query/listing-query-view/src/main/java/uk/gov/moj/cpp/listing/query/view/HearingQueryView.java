@@ -260,13 +260,26 @@ public class HearingQueryView {
                 masterDefendantSet,
                 linkedCaseUrnSet,
                 caseUrnForLinkedCases
-                );
+        );
 
         return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
                 createObjectBuilder()
                         .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
                         .build()
         );
+    }
+
+    @Handles("listing.any-allocation.search.hearings")
+    public Envelope<JsonObject> searchHearingsWithAnyAllocationState(final JsonEnvelope query) throws IOException {
+        final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN).toUpperCase();
+
+        LOGGER.info("\n Query params - caseUrn : {} ", caseUrnQueryParam);
+
+        final List<Hearing> hearings = repository.findHearingsByCaseUrnAndAnyAllocationState(caseUrnQueryParam);
+
+        return Enveloper.envelop(createObjectBuilder()
+                .add(HEARINGS,  hearingJsonListConverterFilterEjectCases.convert(hearings))
+                .build()).withName("listing.any-allocation.search.hearings").withMetadataFrom(query);
     }
 
 
