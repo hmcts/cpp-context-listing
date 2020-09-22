@@ -14,12 +14,19 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/court-schedule.json"
       }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/notes.json"
+      }
     }
   },
   "additionalProperties": false,
   "required": [
     "results",
     "pageCount",
-    "hearingSlots"
+    "hearingSlots",
+    "notes"
   ]
 }

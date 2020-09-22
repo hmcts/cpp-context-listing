@@ -28,6 +28,7 @@ public class SearchAvailableHearingIT extends AbstractIT {
         databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
         databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
         databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
     }
 
     @Test
@@ -118,7 +119,7 @@ public class SearchAvailableHearingIT extends AbstractIT {
         try (ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1));
              ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData2))) {
             listCourtHearingSteps1.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps2.verifyAvailableHearing(caseAndDefendantData1, masterDefendantId1);
+            listCourtHearingSteps2.verifyAvailableHearing(caseAndDefendantData1, masterDefendantId1, false);
         }
     }
 
@@ -138,7 +139,42 @@ public class SearchAvailableHearingIT extends AbstractIT {
         try (ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1));
              ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData2))) {
             listCourtHearingSteps1.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps2.verifyAvailableHearing(caseAndDefendantData1, masterDefendantId1);
+            listCourtHearingSteps2.verifyAvailableHearing(caseAndDefendantData1, masterDefendantId1, false);
+        }
+    }
+
+    @Test
+    public void shouldRetunNotesAndListAvailableHearingsWhenHearingsAndNotesExist() {
+        final UUID hearingId1 = UUID.randomUUID();
+        final UUID masterDefendantId1 = UUID.randomUUID();
+        final String caseUrn = STRING.next();
+        final String caseUrnForLinkedCases = STRING.next();
+        final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
+
+        final CaseAndDefendantData caseAndDefendantData1 = new CaseAndDefendantData(hearingId1, null, caseUrn, masterDefendantId1, CASE_AND_MATCHED_DEFENDANTS, null, jurisdictionTypeCrown,
+                caseUrnForLinkedCases, caseUrnForLinkedCases);
+
+        try (ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1))) {
+            listCourtHearingSteps1.createListingNotes();
+            listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps1.verifyAvailableHearing(caseAndDefendantData1, masterDefendantId1, true);
+        }
+    }
+
+    @Test
+    public void shouldNotReturnNotesWhenAvailableHearingsNotExist() {
+        final UUID hearingId1 = UUID.randomUUID();
+        final UUID masterDefendantId1 = UUID.randomUUID();
+        final String caseUrn = STRING.next();
+        final String caseUrnForLinkedCases = STRING.next();
+        final String jurisdictionTypeCrown = JurisdictionType.CROWN.name();
+
+        final CaseAndDefendantData caseAndDefendantData1 = new CaseAndDefendantData(hearingId1, null, caseUrn, masterDefendantId1, CASE_AND_MATCHED_DEFENDANTS, null, jurisdictionTypeCrown,
+                caseUrnForLinkedCases, caseUrnForLinkedCases);
+
+        try (ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData1))) {
+            listCourtHearingSteps1.createListingNotes();
+            listCourtHearingSteps1.verifyAvailableHearingNotExists(caseAndDefendantData1, masterDefendantId1);
         }
     }
 }

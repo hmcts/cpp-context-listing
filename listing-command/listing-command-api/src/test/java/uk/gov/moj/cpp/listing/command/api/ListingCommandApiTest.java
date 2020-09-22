@@ -19,11 +19,14 @@ import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerClassMatcher.isHandlerClass;
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.justice.listing.commands.CreateListingNote;
+import uk.gov.justice.listing.commands.DeleteListingNote;
 import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearing;
@@ -38,6 +41,7 @@ import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 
 import java.util.Arrays;
@@ -84,6 +88,10 @@ public class ListingCommandApiTest {
     private UpdateHearingForListing updateHearingForListing;
     @Mock
     private ListCourtHearing listCourtHearing;
+    @Mock
+    private CreateListingNote createListingNote;
+    @Mock
+    private DeleteListingNote deleteListingNote;
     @InjectMocks
     private ListingCommandApi listingCommandApi;
     @Mock
@@ -311,5 +319,44 @@ public class ListingCommandApiTest {
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
     }
 
+    @Test
+    public void shouldCreateListingNote() {
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, CreateListingNote.class)).willReturn(createListingNote);
+        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.command.create-listing-note");
+        given(envelope.metadata()).willReturn(metadataBuilder.build());
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
+                ArgumentCaptor.forClass(JsonEnvelope.class);
+        listingCommandApi.handleCreateNote(envelope);
+        verify(sender).send(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.create-listing-note"));
+    }
+
+    @Test
+    public void shouldDeleteListingNote() {
+        final JsonEnvelope command = mock(JsonEnvelope.class);
+        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.command.handler.delete-listing-note");
+        when(command.metadata()).thenReturn(metadataBuilder.build());
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
+        listingCommandApi.handleDeleteNote(command);
+
+        verify(sender).send(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.handler.delete-listing-note"));
+    }
+
+    @Test
+    public void shouldEditNote() {
+        final JsonEnvelope command = mock(JsonEnvelope.class);
+        final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.command.handler.edit-listing-note");
+        when(command.metadata()).thenReturn(metadataBuilder.build());
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        listingCommandApi.handleEditNote(command);
+
+        verify(sender).send(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.handler.edit-listing-note"));
+
+    }
 }
 

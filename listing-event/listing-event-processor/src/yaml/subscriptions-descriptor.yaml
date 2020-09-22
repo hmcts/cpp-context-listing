@@ -83,6 +83,15 @@ subscriptions_descriptor:
         - name: listing.events.hearing-rescheduled
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-rescheduled.json
 
+        - name: listing.events.created-listing-note
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.created-listing-note.json
+
+        - name: listing.events.listing-note-edited
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.listing-note-edited.json
+
+        - name: listing.events.deleted-listing-note
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.deleted-listing-note.json
+
       event_source_name: listing
 
     - name: public event subscription

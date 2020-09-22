@@ -31,7 +31,8 @@ import ru.yandex.qatools.embed.postgresql.ext.SubdirTempDir;
 @SuiteClasses({
         HearingRepositoryTest.class,
         CourtListPublishStatusJdbcRepositoryTest.class,
-        PublishedCourtListRepositoryTest.class
+        PublishedCourtListRepositoryTest.class,
+        NotesRepositoryTest.class
 })
 public class PersistenceTestSuite {
 

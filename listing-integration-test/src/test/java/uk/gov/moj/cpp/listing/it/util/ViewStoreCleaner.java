@@ -12,4 +12,8 @@ public class ViewStoreCleaner {
         databaseCleaner.cleanViewStoreTables(CONTEXT_NAME,
                 "hearing");
     }
+
+    public void cleanViewStoreTables(String tableName) {
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, tableName);
+    }
 }

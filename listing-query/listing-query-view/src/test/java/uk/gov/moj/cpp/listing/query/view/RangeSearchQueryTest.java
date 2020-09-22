@@ -1,25 +1,25 @@
 package uk.gov.moj.cpp.listing.query.view;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.junit.Before;
+import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
+import uk.gov.justice.services.common.converter.LocalDates;
+import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
@@ -27,8 +27,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import javax.json.Json;
-import javax.json.JsonArray;
 
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.junit.Test;
@@ -43,9 +41,7 @@ import org.slf4j.Logger;
 public class RangeSearchQueryTest {
 
     private static final UUID COURT_CENTRE_ID = randomUUID();
-    private static final String PUBLISH_COURT_LIST_TYPES = "FIRM,FINAL";
     private static final UUID COURT_ROOM_ID = randomUUID();
-    private static final UUID ID = UUID.fromString("7c5e9d0c-9e28-46a9-b139-68fc0813842c");
     private static final boolean ALLOCATED = true;
     private static final String ALLOCATEDSTR = "true";
     private static final String ALLOCATED_QUERY_PARAMETER = "allocated";
@@ -87,11 +83,25 @@ public class RangeSearchQueryTest {
     @InjectMocks
     private RangeSearchQuery rangeSearchQuery;
 
+    private ListToJsonArrayConverter listToJsonArrayConverter = new ListToJsonArrayConverter();
+
+    @Spy
+    private StringToJsonObjectConverter stringToJsonObjectConverter;
+
+
+    @Before
+    public void setup() throws IllegalAccessException {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        FieldUtils.writeField(this.listToJsonArrayConverter, "mapper", objectMapper, true);
+        FieldUtils.writeField(this.listToJsonArrayConverter, "stringToJsonObjectConverter", stringToJsonObjectConverter, true);
+        FieldUtils.writeField(this.rangeSearchQuery, "listToJsonArrayConverter", listToJsonArrayConverter, true);
+    }
+
+
     @Test
     public void searchHearingsWithDateRangeWithAllParametersProvided() {
 
-        final List<Hearing> hearingsJson = hearingsJson();
-        final JsonArray hearingsJsonArray = hearingsJsonArray();
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
 
         when(hearingRepository.findHearings(
                 ALLOCATEDSTR,
@@ -104,7 +114,7 @@ public class RangeSearchQueryTest {
                 SEARCH_DATE.toString()))
                 .thenReturn(hearingsJson);
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -121,7 +131,8 @@ public class RangeSearchQueryTest {
 
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
-        assertEquals("world", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("hello"));
+        assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
+        assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
         assertEquals( "listing.search.hearings", results.metadata().name());
     }
 
@@ -129,7 +140,6 @@ public class RangeSearchQueryTest {
     public void searchHearingsWithWeekCommencingDateRange() {
 
         final List<Hearing> hearingsJson = hearingJsonForWeekCommencing();
-        final JsonArray hearingsJsonArray = hearingsForWeekCommencingJsonArray();
 
         when(hearingRepository.findHearingsByWeekCommencingRange(
                 null,
@@ -141,7 +151,7 @@ public class RangeSearchQueryTest {
                 WEEK_COMMENCING_END_DATE.toString()))
                 .thenReturn(hearingsJson);
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -154,6 +164,7 @@ public class RangeSearchQueryTest {
 
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
+        assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
         assertEquals( "2019-10-13", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("weekCommencingStartDate"));
         assertEquals( "listing.search.hearings", results.metadata().name());
     }
@@ -162,7 +173,6 @@ public class RangeSearchQueryTest {
     public void searchUnallocatedHearingsWithWeekCommencingDateRange() {
 
         final List<Hearing> hearingsJson = hearingJsonForWeekCommencing();
-        final JsonArray hearingsJsonArray = hearingsForWeekCommencingJsonArray();
 
         when(hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
                 null,
@@ -175,7 +185,7 @@ public class RangeSearchQueryTest {
                 false))
                 .thenReturn(hearingsJson);
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -188,6 +198,7 @@ public class RangeSearchQueryTest {
 
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
+        assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
         assertEquals("2019-10-13", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("weekCommencingStartDate"));
         assertEquals( "listing.search.hearings", results.metadata().name());
     }
@@ -196,8 +207,7 @@ public class RangeSearchQueryTest {
     @Test
     public void searchHearingsWithDateRangeWithAllOptionalParametersNotProvided() {
 
-        final List<Hearing> hearingsJson = hearingsJson();
-        final JsonArray hearingsJsonArray = hearingsJsonArray();
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
 
         when(hearingRepository.findHearings(
                 ALLOCATEDSTR,
@@ -211,7 +221,7 @@ public class RangeSearchQueryTest {
         ))
                 .thenReturn(hearingsJson);
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -221,47 +231,50 @@ public class RangeSearchQueryTest {
 
         final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
 
-        assertEquals( "world", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("hello"));
+        assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
+        assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
         assertEquals("listing.search.hearings", results.metadata().name());
     }
 
 
-    private List<Hearing> hearingsJson() {
-        final String testJsonString = "{ \"hello\": \"world\" }";
+    private List<Hearing> hearingsJson(String allocated) {
+        final String testJsonString = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
         final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
     }
 
-    private JsonArray hearingsJsonArray() {
-        return Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
-                        .add("hello", "world"))
-                .build();
-    }
-
     private List<Hearing> hearingJsonForWeekCommencing() {
-        final String testJsonString = "{\n" +
-                "\t\"hearings\": [{\n" +
+        final String testJsonStringForAllocated = "{\n" +
                 "\t\t\"id\": \"54482cb7-31aa-4c64-8656-3be6e3a4d158\",\n" +
+                "\t\t\"allocated\": \"true\",\n" +
+                "\t\t\"weekCommencingStartDate\": \"2019-10-13\",\n" +
+                "\t\t\"weekCommencingEndDate\": \"2019-10-25\",\n" +
+                "\t\t\"startDate\": \"2020-09-03\",\n" +
+                "\t\t\"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\",\n" +
+                "\t\t\"listedCases\": [{\n" +
+                "\t\t}],\n" +
+                "\t\t\"courtApplications\": [{\n" +
+                "\t\t}]\n" +
+                "\t}";
+        final String testJsonStringForUnallocated = "{\n" +
+                "\t\t\"id\": \"54482cb7-31aa-4c64-8656-3be6e3a4d158\",\n" +
+                "\t\t\"allocated\": \"false\",\n" +
                 "\t\t\"weekCommencingStartDate\": \"2019-10-13\",\n" +
                 "\t\t\"weekCommencingEndDate\": \"2019-10-25\",\n" +
                 "\t\t\"listedCases\": [{\n" +
                 "\t\t}],\n" +
                 "\t\t\"courtApplications\": [{\n" +
                 "\t\t}]\n" +
-                "\t}]\n" +
-                "}";
-        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
-        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+                "\t}";
+        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonStringForAllocated));
+        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonStringForUnallocated));
         return newArrayList(hearing1, hearing2);
 
     }
 
-    private JsonArray hearingsForWeekCommencingJsonArray() {
-        return Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
-                        .add("weekCommencingStartDate", "2019-10-13"))
-                .build();
+
+    private List<Notes> createNotesList() {
+        return newArrayList(new Notes(UUID.randomUUID(),UUID.fromString("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18"), LocalDates.from("2020-09-03"), "Note 1" ));
     }
 }

@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.utils;
 
+import java.time.LocalDate;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -23,10 +25,12 @@ public class AzureScheduleServiceStub {
     private static final String HEARING_SLOTS = "/hearingSlots";
 
     public static final String LISTING_SEARCH_HEARING_SLOTS_JSON = "stub-data/listing.search.hearing.slots.json";
+    public static final String LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON = "stub-data/listing.search.hearing.slots.empty.json";
     public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleCountBased.json";
     public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON = "stub-data/provisionalBookingSampleDataMultipleCourtSchedulesCountBased.json";
     public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleDurationBased.json";
     public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON = "stub-data/provisionalBookingSampleDataMultipleCourtSchedulesDurationBased.json";
+    public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleCountBasedWithSessionDate.json";
 
     static {
         configureFor(HOST, 8080);
@@ -37,7 +41,7 @@ public class AzureScheduleServiceStub {
                 .willReturn(aResponse().withStatus(NO_CONTENT.getStatusCode())));
     }
 
-    public static void stubGetAvailableHearingSlots() {
+    public static void stubGetAvailableHearingSlots(boolean isEmpty) {
         stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + HEARING_SLOTS)))
                 .withQueryParam("sessionStartDate", matching("2017-10-11"))
                 .withQueryParam("pageNumber", matching("1"))
@@ -46,7 +50,17 @@ public class AzureScheduleServiceStub {
                 .withQueryParam("oucodeL2Code", matching("Z01KR05"))
                 .withQueryParam("sessionEndDate", matching("2020-10-11"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
-                        .withBody(getPayload(LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withBody(getPayload(isEmpty ? LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withHeader("Content-Type", "application/json")
+                ));
+    }
+
+    public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate sessionDate) {
+        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
+                .withQueryParam("bookingIds", notMatching("null"))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON)
+                                .replace("%SESSION_DATE%",sessionDate.toString()))
                         .withHeader("Content-Type", "application/json")
                 ));
     }

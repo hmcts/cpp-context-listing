@@ -490,7 +490,7 @@ public class ListingCommandHandlerTest {
                 PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class, RecordCourtListProduced.class,
                 PublishedCourtListStored.class, TrialVacated.class, HearingRescheduled.class, VideoLinkDetailsChangedForHearing.class, VideoLinkDetailsRemovedForHearing.class, VideoLinkDetailsAssignedForHearing.class);
 
-            setField(this.extendHearingUtils, "prosecutionCasesBuilder", prosecutionCasesBuilder);
+        setField(this.extendHearingUtils, "prosecutionCasesBuilder", prosecutionCasesBuilder);
 
     }
 
@@ -569,7 +569,6 @@ public class ListingCommandHandlerTest {
                 .build());
 
 
-
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
@@ -640,9 +639,9 @@ public class ListingCommandHandlerTest {
 
     private JsonObject createResponseForProvisonalBookSlot() {
         final String jsonProvisionalSlotString = FileUtil.givenPayload("/test-data/listing.command.provisional-slot-response.json").toString()
-                .replace("PROVISIONAL_SCHEDULE_ID",PROVISIONAL_SCHEDULE_ID)
-                .replace("PROVISIONAL_OUCODE",PROVISIONAL_OUCODE)
-                .replace("PROVISIONAL_SESSION",PROVISIONAL_SESSION)
+                .replace("PROVISIONAL_SCHEDULE_ID", PROVISIONAL_SCHEDULE_ID)
+                .replace("PROVISIONAL_OUCODE", PROVISIONAL_OUCODE)
+                .replace("PROVISIONAL_SESSION", PROVISIONAL_SESSION)
                 .replace("PROVISIONAL_COURT_ROOM", String.valueOf(PROVISIONAL_COURT_ROOM))
                 .replace("PROVISIONAL_START_TIME",PROVISIONAL_START_TIME)
                 .replace("PROVISIONAL_SESS_DATE",PROVISIONAL_SESSION_DATE);
@@ -856,7 +855,7 @@ public class ListingCommandHandlerTest {
     public void shouldUpdateHearingForListingWithDeleteUnallocatedHearingWhenPartialAllocation() throws Exception {
         final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope();
 
-        when(hearingFactory.getHearingById(any(),any())).thenReturn(getSampleStoredHearing());
+        when(hearingFactory.getHearingById(any(), any())).thenReturn(getSampleStoredHearing());
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
@@ -908,7 +907,6 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.updateHearingForListing(commandEnvelope);
         verify(hearing, never()).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
     }
-
 
 
     @Test
@@ -2056,7 +2054,7 @@ public class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-        when(hearing.vacateTrial(HEARING_ID_1,REASON )).thenReturn(mock(Stream.class));
+        when(hearing.vacateTrial(HEARING_ID_1, REASON)).thenReturn(mock(Stream.class));
 
         listingCommandHandler.vacateTrial(commandEnvelope);
 
@@ -2075,7 +2073,6 @@ public class ListingCommandHandlerTest {
 
         verify(hearing, times(1)).hearingVacateTrial(of(REASON));
     }
-
 
 
     @Test
@@ -2131,13 +2128,13 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope getEnvelopeForVacateTrial(final UUID reason) {
-        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 +"\",\"vacatedTrialReasonId\":\""+reason+"\"}";
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"vacatedTrialReasonId\":\"" + reason + "\"}";
         final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.vacate-trial-enriched", jsonReader.readObject());
     }
 
     private JsonEnvelope getEnvelopeForHearingVacateTrial(final UUID reason) {
-        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 +"\",\"vacatedTrialReasonId\":\""+reason+"\"}";
+        final String requestBody = "{\"hearingId\":\"" + HEARING_ID_1 + "\",\"vacatedTrialReasonId\":\"" + reason + "\"}";
         final JsonReader jsonReader = Json.createReader(new StringReader(requestBody));
         return createEnvelope("listing.command.hearing-vacate-trial", jsonReader.readObject());
     }
@@ -2159,7 +2156,6 @@ public class ListingCommandHandlerTest {
             throw new RuntimeException(e);
         }
     }
-
     private JsonEnvelope updateSequenceForHearingDayCommandEnvelope() {
         final String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-sequence-for-hearing-day.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())

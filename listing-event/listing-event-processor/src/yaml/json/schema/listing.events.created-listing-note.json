@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.created-listing-note.json",
+  "type": "object",
+  "properties": {
+    "id" : {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "hearingDate": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/datePattern"
+    },
+    "courtRoomId": {
+      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
+    },
+    "noteDescription": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "hearingDate",
+    "courtRoomId",
+    "noteDescription"
+  ],
+  "additionalProperties": false
+}

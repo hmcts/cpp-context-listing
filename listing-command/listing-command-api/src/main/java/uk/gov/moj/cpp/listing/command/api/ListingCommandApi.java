@@ -1,11 +1,7 @@
 package uk.gov.moj.cpp.listing.command.api;
 
-import static java.util.Objects.nonNull;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
-import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
-import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
@@ -27,18 +23,20 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 
+import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.util.Objects.nonNull;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
+import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 
 @ServiceComponent(COMMAND_API)
 @SuppressWarnings("squid:S2629")
@@ -209,4 +207,22 @@ public class ListingCommandApi {
         sender.send(jsonEnvelope);
     }
 
+    @Handles("listing.command.create-listing-note")
+    public void handleCreateNote(final JsonEnvelope jsonEnvelope) {
+        sender.send(jsonEnvelope);
+    }
+
+    @Handles("listing.command.edit-listing-note")
+    public void handleEditNote(final JsonEnvelope jsonEnvelope) {
+        sender.send(JsonEnvelope.envelopeFrom(
+                JsonEnvelope.metadataFrom(jsonEnvelope.metadata()).withName("listing.command.handler.edit-listing-note"),
+                jsonEnvelope.payloadAsJsonObject()));
+    }
+
+    @Handles("listing.command.delete-listing-note")
+    public void handleDeleteNote(final JsonEnvelope jsonEnvelope) {
+        sender.send(JsonEnvelope.envelopeFrom(
+                JsonEnvelope.metadataFrom(jsonEnvelope.metadata()).withName("listing.command.handler.delete-listing-note"),
+                jsonEnvelope.payloadAsJsonObject()));
+    }
 }

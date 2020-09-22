@@ -167,9 +167,21 @@ baseUri: message://command/handler/message/listing
       application/vnd.listing.command.update-linked-case-in-hearing+json:
         example: !include json/listing.command.update-linked-case-in-hearing.json
         schema:  !include json/schema/listing.command.update-linked-case-in-hearing.json
+
       application/vnd.listing.command.vacate-trial-enriched+json:
         example: !include json/listing.command.vacate-trial-enriched.json
         schema: !include json/schema/listing.command.vacate-trial-enriched.json
+
       application/vnd.listing.command.hearing-vacate-trial+json:
         example: !include json/listing.command.hearing-vacate-trial.json
         schema: !include json/schema/listing.command.hearing-vacate-trial.json
+      application/vnd.listing.command.create-listing-note+json:
+        schema: !include json/schema/listing.command.create-listing-note.json
+        example: !include json/listing.command.create-listing-note.json
+      application/vnd.listing.command.handler.delete-listing-note+json:
+        schema: !include json/schema/listing.command.handler.delete-listing-note.json
+        example: !include json/listing.command.handler.delete-listing-note.json
+
+      application/vnd.listing.command.handler.edit-listing-note+json:
+        schema: !include json/schema/listing.command.edit-note-for-listing.json
+        example: !include json/listing.command.edit-note-for-listing.json

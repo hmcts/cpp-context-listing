@@ -17,6 +17,7 @@ import static uk.gov.moj.cpp.listing.domain.RuleConstants.YOTS;
 import uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider;
 import uk.gov.moj.cpp.accesscontrol.drools.Action;
 import uk.gov.moj.cpp.accesscontrol.test.utils.BaseDroolsAccessControlTest;
+import uk.gov.moj.cpp.listing.domain.RuleConstants;
 
 import java.util.Map;
 
@@ -37,6 +38,9 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_PUBLISH_COURT_LISTS_FOR_CROWN_COURTS = "listing.command.publish-court-lists-for-crown-courts";
     private static final String ACTION_COURT_LIST_REQUEST_EXPORT = "listing.command.court-list-request-export";
     private static final String RANDOM_GROUP = "Random group";
+    private static final String ACTION_EDIT_NOTE_FOR_LISTING = "listing.command.edit-listing-note";
+    private static final String ACTION_CREATE_LISTING_NOTE = "listing.command.create-listing-note";
+    private static final String ACTION_DELETE_LISTING_NOTE = "listing.command.delete-listing-note";
 
 
     @Mock
@@ -46,7 +50,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     public void shouldAllowAuthorisedUserToListCourtHearing() {
         final Action action = createActionFor(ACTION_LIST_COURT_HEARING);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
-                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS, SYSTEM_USERS, COURT_ASSOCIATE ))
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS, SYSTEM_USERS, COURT_ASSOCIATE))
                 .willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);
@@ -66,7 +70,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     public void shouldAllowAuthorisedUserToListUnscheduledCourtHearing() {
         final Action action = createActionFor(ACTION_LIST_UNSCHEDULED_COURT_HEARING);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
-                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS, SYSTEM_USERS, COURT_ASSOCIATE ))
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS, SYSTEM_USERS, COURT_ASSOCIATE))
                 .willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);
@@ -137,6 +141,47 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     }
 
     @Test
+    public void shouldAllowAuthorisedUserToCreateListingNote() {
+        final Action action = createActionFor(ACTION_CREATE_LISTING_NOTE);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ASSOCIATE))
+                .willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowAuthorisedUserToCreateListingNote() {
+        final Action action = createActionFor(ACTION_CREATE_LISTING_NOTE);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RANDOM_GROUP)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertFailureOutcome(results);
+    }
+
+
+    @Test
+    public void shouldAllowAuthorisedUserToDeleteListingNote() {
+        final Action action = createActionFor(ACTION_DELETE_LISTING_NOTE);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ASSOCIATE))
+                .willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowAuthorisedUserToDeleteListingNote() {
+        final Action action = createActionFor(ACTION_DELETE_LISTING_NOTE);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RANDOM_GROUP)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertFailureOutcome(results);
+    }
+
+    @Test
     public void shouldAllowSystemUserToPublishCourtListsForCrownCourts() {
         final Action action = createActionFor(ACTION_PUBLISH_COURT_LISTS_FOR_CROWN_COURTS);
         given(userAndGroupProvider.isSystemUser(action)).willReturn(true);
@@ -173,6 +218,33 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
 
         final ExecutionResults results = executeRulesWith(action);
 
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldOnlyAllowHMCTSusersToEditNote() {
+
+        final Action action = createActionFor(ACTION_EDIT_NOTE_FOR_LISTING);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action,
+                RuleConstants.LISTING_OFFICERS, RuleConstants.CROWN_COURT_ADMIN,
+                RuleConstants.COURT_ADMINISTRATORS, RuleConstants.COURT_CLERKS,
+                RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ASSOCIATE))
+                .willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowUnauthorisedUsersToEditNote() {
+
+        final Action action = createActionFor(ACTION_EDIT_NOTE_FOR_LISTING);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action,
+                RuleConstants.YOTS, CPS,
+                NPS))
+                .willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }
 

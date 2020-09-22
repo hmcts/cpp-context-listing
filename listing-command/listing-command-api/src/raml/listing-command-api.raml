@@ -178,3 +178,45 @@ protocols: [ HTTP, HTTPS ]
       responses:
         202:
           description: Request accepted
+/listing-note:
+   post:
+      description: |
+        Create listing note
+        ...
+        (mapping):
+          requestType: application/vnd.listing.command.create-listing-note+json
+          name: listing.command.create-listing-note
+        ...
+      body:
+        application/vnd.listing.command.create-listing-note+json:
+            schema: !include json/schema/listing.command.create-listing-note.json
+            example: !include json/listing.command.create-listing-note.json
+
+      responses:
+        202:
+          description: Request accepted
+
+/listing-notes/{noteId}:
+  post:
+      description:  |
+        Edit and delete existing note.
+        ...
+        (mapping):
+          requestType: application/vnd.listing.command.edit-listing-note+json
+          name: listing.command.edit-listing-note
+        (mapping):
+          requestType: application/vnd.listing.command.delete-listing-note+json
+          name: listing.command.delete-listing-note
+        ...
+      body:
+        application/vnd.listing.command.edit-listing-note+json:
+            schema: !include json/schema/listing.command.edit-note-for-listing.json
+            example: !include json/listing.command.edit-note-for-listing.json
+        application/vnd.listing.command.delete-listing-note+json:
+            schema: !include json/schema/listing.command.delete-listing-note.json
+            example: !include json/listing.command.delete-listing-note.json
+
+      responses:
+        202:
+          description: Request accepted
+

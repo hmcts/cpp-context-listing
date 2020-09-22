@@ -14,12 +14,15 @@ import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.StringUtils.contains;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
 import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -29,6 +32,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
@@ -68,6 +72,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
 
 @SuppressWarnings({"squid:S1192", "squid:S00107"})
@@ -91,6 +96,7 @@ public class HearingQueryView {
     private static final String END_TIME = "endTime";
     private static final String LIST_ID = "listId";
     private static final String HEARINGS = "hearings";
+    private static final String NOTES = "notes";
     private static final String ID = "id";
     private static final String CASE_URN = "caseUrn";
     private static final String HEARING_ID = "hearingId";
@@ -125,6 +131,12 @@ public class HearingQueryView {
 
     @Inject
     private Enveloper enveloper;
+
+    @Inject
+    private NotesService notesService;
+
+    @Inject
+    private ListToJsonArrayConverter<Notes> listToJsonArrayConverter;
 
     @Handles("listing.search.hearings")
     public JsonEnvelope searchHearings(final JsonEnvelope query) {
@@ -163,12 +175,12 @@ public class HearingQueryView {
                 endTime
         );
 
+        final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, searchDate, hearings);
 
-        return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
                         .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
-                        .build()
-        );
+                        .add(NOTES, listToJsonArrayConverter.convert(notes)));
     }
 
     @Handles("listing.unscheduled.search.hearings")
@@ -262,11 +274,12 @@ public class HearingQueryView {
                 caseUrnForLinkedCases
         );
 
-        return enveloper.withMetadataFrom(query, "listing.search.hearings").apply(
+        final List<Notes> notes = notesService.findNotes(true, null, null, hearings);
+
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
                         .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
-                        .build()
-        );
+                        .add(NOTES, listToJsonArrayConverter.convert(notes)));
     }
 
     @Handles("listing.any-allocation.search.hearings")
@@ -329,7 +342,7 @@ public class HearingQueryView {
                 ? getPublishedCourtListResponsePayload(queryPayload)
                 : getUnpublishedCourtListResponsePayload(queryEnvelope, queryPayload);
 
-        return enveloper.withMetadataFrom(queryEnvelope, "listing.courtlist").apply(courtListResponsePayload);
+        return envelopeFrom(metadataFrom(queryEnvelope.metadata()).withName("listing.courtlist"), courtListResponsePayload);
     }
 
     private JsonObject getPublishedCourtListResponsePayload(final JsonObject queryPayload) {
@@ -372,8 +385,8 @@ public class HearingQueryView {
                 ? getPublishedCourtList(queryPayload)
                 : publishedCourtListRepository.findAll();
 
-        return enveloper.withMetadataFrom(query, "listing.publishedcourtlist")
-                .apply(publishedCourtListToJsonConverter.convert(publishedCourtLists));
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.publishedcourtlist"),
+                publishedCourtListToJsonConverter.convert(publishedCourtLists));
     }
 
     private List<PublishedCourtList> getPublishedCourtList(final JsonObject queryPayload) {
@@ -417,7 +430,7 @@ public class HearingQueryView {
                     return builder.build();
                 });
 
-        return enveloper.withMetadataFrom(query, "listing.court.list.publish.status").apply(createObjectBuilder().add("publishCourtListStatuses", courtListPublishStatuses).build());
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.court.list.publish.status"), createObjectBuilder().add("publishCourtListStatuses", courtListPublishStatuses));
     }
 
     @Handles(NAME_LISTING_SEARCH_HEARING)
@@ -436,8 +449,8 @@ public class HearingQueryView {
         if (hearing == null) {
             throw new NotFoundException("There is no Hearing for that ID.");
         }
-        return enveloper.withMetadataFrom(query, NAME_LISTING_SEARCH_HEARING)
-                .apply(HearingToJsonConverter.convert(hearing));
+        return envelopeFrom(metadataFrom(query.metadata()).withName(NAME_LISTING_SEARCH_HEARING),
+                HearingToJsonConverter.convert(hearing));
     }
 
     private UUID extractUUID(final JsonEnvelope query) {
@@ -445,26 +458,22 @@ public class HearingQueryView {
     }
 
     private JsonEnvelope createAlphabeticalListJsonEnvelope(final JsonEnvelope query, final List<Hearing> matchedHearings) {
-        return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list"),
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertHearingResultForAlphabeticalList(matchedHearings))
-                        .build()
-        );
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertHearingResultForAlphabeticalList(matchedHearings)));
     }
 
     private JsonEnvelope createPublicStandardCourtListJsonEnvelope(final JsonEnvelope query, final Hearing matchedHearingsJsonObject) {
-        return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list"),
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertHearingResultForPublicList(matchedHearingsJsonObject))
-                        .build()
-        );
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertHearingResultForPublicList(matchedHearingsJsonObject)));
     }
 
     private JsonEnvelope createEmptyResponse(JsonEnvelope query) {
-        return enveloper.withMetadataFrom(query, "listing.search.court.list").apply(
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list"),
                 createObjectBuilder()
-                        .add(HEARINGS, createArrayBuilder().build())
-                        .build());
+                        .add(HEARINGS, createArrayBuilder().build()));
+
     }
 
     private String getDateTimeAsString(final String date, final String time, final String defaultTime) {

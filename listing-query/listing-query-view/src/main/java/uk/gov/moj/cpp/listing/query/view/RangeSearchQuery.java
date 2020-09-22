@@ -11,6 +11,7 @@ import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EA
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
 
 import java.util.Optional;
+import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
@@ -47,6 +48,10 @@ public class RangeSearchQuery {
     @Inject
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
 
+
+    @Inject
+    private ListToJsonArrayConverter listToJsonArrayConverter;
+
     public JsonEnvelope rangeSearchHearings(final JsonEnvelope query) {
         final boolean allocated = query.payloadAsJsonObject().getBoolean(ALLOCATED_QUERY_PARAMETER, false);
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
@@ -77,7 +82,6 @@ public class RangeSearchQuery {
         final List<Hearing> hearings = !weekCommencingStartDate.isEmpty() ?
                 findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate) :
                 findHearings(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, startDate, endDate);
-
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings)));

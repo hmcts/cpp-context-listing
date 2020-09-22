@@ -283,7 +283,7 @@ public class ListingCommandHandler {
             if (isSlotsBooked) {
                 final List<uk.gov.justice.listing.commands.NonDefaultDay> finalNonDefaultDaysList = nonDefaultDaysList;
                 commandHearing.getBookedSlots()
-                        .forEach(b-> finalNonDefaultDaysList.add(rotaSlotToNonDefaultDayConverter.convert(b)));
+                        .forEach(b -> finalNonDefaultDaysList.add(rotaSlotToNonDefaultDayConverter.convert(b)));
                 nonDefaultDaysList = finalNonDefaultDaysList;
             } else {
                 if (listCourtHearing.getAdjournedFromDate().isPresent() && commandHearing.getBookingReference().isPresent()) {

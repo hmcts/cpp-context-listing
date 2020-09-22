@@ -7,10 +7,17 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/hearing.json"
       }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/notes.json"
+      }
     }
   },
   "required": [
-    "hearings"
+    "hearings",
+    "notes"
   ],
   "additionalProperties": false
 }

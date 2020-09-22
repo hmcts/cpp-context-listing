@@ -28,6 +28,7 @@ public class ListCourtHearingIT extends AbstractIT {
         databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
         databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
         databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
     }
 
 

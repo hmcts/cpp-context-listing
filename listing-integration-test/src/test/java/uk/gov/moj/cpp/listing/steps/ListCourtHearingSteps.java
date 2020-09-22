@@ -36,6 +36,8 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.AssociatedPerson;
 import uk.gov.justice.core.courts.BailStatus;
@@ -69,6 +71,7 @@ import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.courts.LinkType;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.WeekCommencingDate;
+import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -174,6 +177,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
     protected String request;
+
+    private NotesSteps notesSteps = new NotesSteps();
 
     public ListCourtHearingSteps(final HearingsData hearingsData) {
         this.hearingsData = hearingsData;
@@ -487,8 +492,23 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].courtApplications[0].respondents[0].address.postcode",
                                         equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
-                                        equalTo(true))
-                        )));
+                                        equalTo(true)))));
+    }
+
+    private Matcher getNotesMatcher(boolean isAllocated, boolean noteExist) {
+        if(isAllocated == false || noteExist == false){
+            return withJsonPath("$.notes.size()", is(0));
+        }else{
+            final AtomicInteger index= new AtomicInteger(0);
+            final List<Matcher> noteMatchers = hearingsData.getHearingData().stream().
+                    filter(hearing -> hearing.getCourtRoomId() != null).
+                    limit(1).
+                    map(hearing -> allOf(withJsonPath("$.notes["+index.get()+"].courtRoomId", equalTo(hearing.getCourtRoomId().toString())),
+                            withJsonPath("$.notes["+index.getAndIncrement()+"].date", equalTo("2020-05-21")))).
+                    collect(Collectors.toList());
+            noteMatchers.add(withJsonPath("$.notes.size()", is(noteMatchers.size())));
+            return allOf(noteMatchers.toArray(new Matcher[noteMatchers.size()]));
+        }
     }
 
     public void verifyHearingListedWithHearingDays(final boolean isAllocated, final String[] courtScheduleSlots) {
@@ -918,7 +938,9 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         equalTo(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
-                                        equalTo(masterDefendantId.toString()))
+                                        equalTo(masterDefendantId.toString())),
+                                withJsonPath("$.notes.size()",
+                                        equalTo(0))
                         )));
     }
 
@@ -944,7 +966,9 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         not(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
-                                        equalTo(masterDefendantId.toString()))
+                                        equalTo(masterDefendantId.toString())),
+                                withJsonPath("$.notes.size()",
+                                        equalTo(0))
                         )));
     }
 
@@ -964,13 +988,15 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].jurisdictionType",
                                         equalTo(JurisdictionType.CROWN.name())),
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
-                                        equalTo(caseAndDefendantData.getCaseUrn()))
+                                        equalTo(caseAndDefendantData.getCaseUrn())),
+                                withJsonPath("$.notes.size()",
+                                        equalTo(0))
                         )));
 
 
     }
 
-    public void verifyAvailableHearing(final CaseAndDefendantData caseAndDefendantData, final UUID masterDefendantId) {
+    public void verifyAvailableHearing(final CaseAndDefendantData caseAndDefendantData, final UUID masterDefendantId, final boolean notesExists) {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.available.search.hearings-defendant.ids"),
@@ -990,7 +1016,23 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].listedCases[0].caseIdentifier.caseReference",
                                         equalTo(caseAndDefendantData.getCaseUrn())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].masterDefendantId",
-                                        equalTo(caseAndDefendantData.getMasterDefendantId().toString()))
+                                        equalTo(caseAndDefendantData.getMasterDefendantId().toString())),
+                                getNotesMatcher(true, notesExists)
+                        )));
+    }
+
+    public void verifyAvailableHearingNotExists(final CaseAndDefendantData caseAndDefendantData, final UUID masterDefendantId) {
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.available.search.hearings-defendant.ids"),
+                        masterDefendantId.toString()));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings.size()",
+                                        equalTo(0)),
+                                getNotesMatcher(true, false)
                         )));
     }
 
@@ -1765,6 +1807,11 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
         verifyHearingConfirmedEvent();
+    }
+
+    public void createListingNotes(){
+        this.hearingsData.getHearingData().stream().filter( hearing -> hearing.getCourtRoomId() != null).
+                forEach( hearing -> notesSteps.createNoteForListing(hearing.getCourtRoomId(), "2020-05-21", "note 1"));
     }
 
     private void verifyHearingConfirmedEvent() {

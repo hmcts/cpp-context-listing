@@ -28,7 +28,9 @@ public class ListingCommandHandlerRamlConfigTest {
 
     @Before
     public void setup() {
-        handlerMethodsToHandlerNames = handlerMethodsToHandlerNames(ListingCommandHandler.class, UnscheduledListingCommandHandler.class);
+        handlerMethodsToHandlerNames = handlerMethodsToHandlerNames(ListingCommandHandler.class,
+                UnscheduledListingCommandHandler.class,
+                ListingNoteCommandHandler.class);
     }
 
     @Test
