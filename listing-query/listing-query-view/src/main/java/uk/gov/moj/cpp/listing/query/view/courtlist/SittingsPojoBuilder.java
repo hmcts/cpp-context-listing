@@ -34,6 +34,8 @@ public class SittingsPojoBuilder {
     private static final String UNABLE_TO_GET_DEFAULT_START_OR_END_TIME = "Unable to get default start or end time";
     private static final String VIDEO_LINK_DETAILS = "videoLinkDetails";
     private static final String HAS_VIDEO_LINK = "hasVideoLink";
+    private static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
+    private static final String WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
 
     private SittingsPojoBuilder() {
         throw new IllegalStateException("Utility class");
@@ -127,9 +129,9 @@ public class SittingsPojoBuilder {
 
     private static LocalDateTime getHearingStartTime(final JsonObject caseHearingsJson, final Optional<JsonObject> hearingDayJson, final Optional<JsonObject> hearingDateJson) {
 
-        if (isHearingWeekCommencing(caseHearingsJson)) {
-            return ZonedDateTime.parse(caseHearingsJson.getJsonArray("nonDefaultDays")
-                    .getJsonObject(0).getString(START_TIME)).toLocalDateTime();
+        if (caseHearingsJson.containsKey(WEEK_COMMENCING_START_DATE)) {
+            final String weekCommencingStartDate = caseHearingsJson.getString(WEEK_COMMENCING_START_DATE);
+            return LocalDate.parse(weekCommencingStartDate).atTime(0, 0);
         } else {
             return hearingDayJson.map(jsonObject -> ZonedDateTime.parse(jsonObject
                     .getString(START_TIME)).toLocalDateTime()).orElseGet(() -> getDefaultStartOrEndTime(hearingDateJson));
@@ -139,11 +141,9 @@ public class SittingsPojoBuilder {
 
     private static Optional<LocalDateTime> getHearingEndTime(final Optional<JsonObject> hearingDayJson, final JsonObject caseHearingsJson, final Optional<JsonObject> hearingDateJson) {
 
-        if (isHearingWeekCommencing(caseHearingsJson)) {
-            final Optional<String> endTimeString = Optional.ofNullable(caseHearingsJson.getJsonArray("nonDefaultDays")
-                    .getJsonObject(0).getString(END_TIME, null));
-
-            return endTimeString.map(s -> ZonedDateTime.parse(s).toLocalDateTime());
+        if (caseHearingsJson.containsKey(WEEK_COMMENCING_END_DATE)) {
+            final String weekCommencingEndDate = caseHearingsJson.getString(WEEK_COMMENCING_END_DATE);
+            return Optional.ofNullable(LocalDate.parse(weekCommencingEndDate).atTime(0, 0));
         } else {
             return Optional.ofNullable(hearingDateJson.map(jsonObject -> ZonedDateTime.parse(jsonObject
                     .getString(END_TIME)).toLocalDateTime()).orElseGet(() -> getDefaultStartOrEndTime(hearingDayJson)));
@@ -227,10 +227,6 @@ public class SittingsPojoBuilder {
 
     private static boolean isCaseHearing(final JsonObject caseHearingsJson) {
         return caseHearingsJson.containsKey(LISTED_CASES);
-    }
-
-    private static boolean isHearingWeekCommencing(final JsonObject caseHearingsJson) {
-        return caseHearingsJson.containsKey("weekCommencingStartDate");
     }
 
     private static boolean isHearingRestricted(final JsonObject caseHearingsJson) {
