@@ -1460,6 +1460,17 @@ public class Hearing implements Aggregate {
     @SuppressWarnings({"squid:S1172"})
     private void onHearingAllocatedForListing(final HearingAllocatedForListing event) {
         this.allocated = Boolean.TRUE;
+        this.prosecutionCaseDefendantOffenceIds = event.getProsecutionCaseDefendantsOffenceIds().stream()
+                .map(lc -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
+                        .withId(lc.getId())
+                        .withDefendants(lc.getDefendants().stream()
+                                .map(d -> DefendantOffenceIds.defendantOffenceIds()
+                                        .withId(d.getId())
+                                        .withOffences(d.getOffenceIds())
+                                        .build())
+                                .collect(toList()))
+                        .build()
+                ).collect(toList());
     }
 
     @SuppressWarnings({"squid:S1172"})
