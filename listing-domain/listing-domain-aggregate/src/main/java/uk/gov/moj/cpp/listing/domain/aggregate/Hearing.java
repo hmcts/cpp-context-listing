@@ -128,6 +128,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1460,17 +1461,22 @@ public class Hearing implements Aggregate {
     @SuppressWarnings({"squid:S1172"})
     private void onHearingAllocatedForListing(final HearingAllocatedForListing event) {
         this.allocated = Boolean.TRUE;
-        this.prosecutionCaseDefendantOffenceIds = event.getProsecutionCaseDefendantsOffenceIds().stream()
-                .map(lc -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
-                        .withId(lc.getId())
-                        .withDefendants(lc.getDefendants().stream()
-                                .map(d -> DefendantOffenceIds.defendantOffenceIds()
-                                        .withId(d.getId())
-                                        .withOffences(d.getOffenceIds())
-                                        .build())
-                                .collect(toList()))
-                        .build()
-                ).collect(toList());
+
+        if (CollectionUtils.isNotEmpty(event.getProsecutionCaseDefendantsOffenceIds())) {
+            this.prosecutionCaseDefendantOffenceIds = event.getProsecutionCaseDefendantsOffenceIds().stream()
+                    .map(lc -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
+                            .withId(lc.getId())
+                            .withDefendants(lc.getDefendants().stream()
+                                    .map(d -> DefendantOffenceIds.defendantOffenceIds()
+                                            .withId(d.getId())
+                                            .withOffences(d.getOffenceIds())
+                                            .build())
+                                    .collect(toList()))
+                            .build()
+                    ).collect(toList());
+        } else {
+            this.prosecutionCaseDefendantOffenceIds = emptyList();
+        }
     }
 
     @SuppressWarnings({"squid:S1172"})

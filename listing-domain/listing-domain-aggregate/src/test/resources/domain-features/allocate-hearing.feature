@@ -36,3 +36,13 @@ Feature: Allocate a hearing
     And hearing days changed for hearing
     When you applyAllocationRules to a Hearing using a defendants offences
     Then hearing allocated for listing with is update slot false
+
+  Scenario: An unallocated hearing has been listed a courtroom has been assigned and non default days
+  have been assigned. Applying partial allocation rules results in hearing being allocated with selected defendants offences.
+
+    Given hearing listed with multiple defendant
+    And court room assigned to hearing
+    And non default days assigned to hearing
+    And hearing days changed for hearing
+    When you applyAllocationRules to a Hearing using a defendants offences
+    Then hearing allocated for listing
