@@ -13,9 +13,9 @@ public class CommittingCourt {
 
     private final Optional<String> courtHouseShortName;
 
-    private final JurisdictionType courtHouseType;
+    private final CourtHouseType courtHouseType;
 
-    public CommittingCourt(final UUID courtCentreId, final Optional<String> courtHouseCode, final String courtHouseName, final Optional<String> courtHouseShortName, final JurisdictionType courtHouseType) {
+    public CommittingCourt(final UUID courtCentreId, final Optional<String> courtHouseCode, final String courtHouseName, final Optional<String> courtHouseShortName, final CourtHouseType courtHouseType) {
         this.courtCentreId = courtCentreId;
         this.courtHouseCode = courtHouseCode;
         this.courtHouseName = courtHouseName;
@@ -39,7 +39,7 @@ public class CommittingCourt {
         return courtHouseShortName;
     }
 
-    public JurisdictionType getCourtHouseType() {
+    public CourtHouseType getCourtHouseType() {
         return courtHouseType;
     }
 
@@ -56,7 +56,7 @@ public class CommittingCourt {
 
         private String courtHouseShortName;
 
-        private JurisdictionType courtHouseType;
+        private CourtHouseType courtHouseType;
 
         public Builder withCourtCentreId(final UUID courtCentreId) {
             this.courtCentreId = courtCentreId;
@@ -88,7 +88,7 @@ public class CommittingCourt {
             return this;
         }
 
-        public Builder withCourtHouseType(final JurisdictionType courtHouseType) {
+        public Builder withCourtHouseType(final CourtHouseType courtHouseType) {
             this.courtHouseType = courtHouseType;
             return this;
         }

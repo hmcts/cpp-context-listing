@@ -33,6 +33,7 @@ import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CommittingCourt;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
+import uk.gov.moj.cpp.listing.domain.CourtHouseType;
 import uk.gov.moj.cpp.listing.domain.Hearing;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
@@ -392,7 +393,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withCourtHouseCode(committingCourt.getCourtHouseCode())
                 .withCourtHouseName(committingCourt.getCourtHouseName())
                 .withCourtHouseShortName(committingCourt.getCourtHouseShortName())
-                .withCourtHouseType(JurisdictionType.valueOf(committingCourt.getCourtHouseType().name()))
+                .withCourtHouseType(CourtHouseType.MAGISTRATES)
                 .build());
     }
 

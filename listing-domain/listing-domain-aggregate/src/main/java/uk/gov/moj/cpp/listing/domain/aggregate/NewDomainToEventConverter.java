@@ -265,7 +265,7 @@ public class NewDomainToEventConverter {
                 .withCourtHouseCode(committingCourt.getCourtHouseCode())
                 .withCourtHouseName(committingCourt.getCourtHouseName())
                 .withCourtHouseShortName(committingCourt.getCourtHouseShortName())
-                .withCourtHouseType(CourtHouseType.valueOf(committingCourt.getCourtHouseType().name()))
+                .withCourtHouseType(CourtHouseType.MAGISTRATES)
                 .build());
     }
 }
