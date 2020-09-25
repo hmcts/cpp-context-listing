@@ -12,7 +12,6 @@ import static java.util.stream.Collectors.toList;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.CommittingCourt;
 import uk.gov.justice.listing.events.CourtApplicationPartyType;
-import uk.gov.justice.listing.events.CourtHouseType;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.HearingLanguageNeeds;
 import uk.gov.justice.listing.events.JudicialRoleType;
@@ -265,7 +264,6 @@ public class NewDomainToEventConverter {
                 .withCourtHouseCode(committingCourt.getCourtHouseCode())
                 .withCourtHouseName(committingCourt.getCourtHouseName())
                 .withCourtHouseShortName(committingCourt.getCourtHouseShortName())
-                .withCourtHouseType(CourtHouseType.MAGISTRATES)
                 .build());
     }
 }
