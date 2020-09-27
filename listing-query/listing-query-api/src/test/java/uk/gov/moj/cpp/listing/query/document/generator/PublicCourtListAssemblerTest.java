@@ -16,6 +16,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
@@ -44,6 +46,8 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -89,7 +93,6 @@ public class PublicCourtListAssemblerTest {
     private static final String WELSH = "Welsh";
     private static final boolean NOT_WELSH = false;
     private static final boolean IS_WELSH = true;
-    private static final String HEARING_STRING = "Hearing";
     private static final String DEFENDANT_STRING = "Defendant";
     private static final String APPLICATION_TYPE = STRING.next();
     private static final String APPLICATION_PARTICULARS = STRING.next();
@@ -98,10 +101,16 @@ public class PublicCourtListAssemblerTest {
     private CourtCentreFactory courtCentreFactory;
 
     @Mock
+    private JudiciaryNameMapper judiciaryNameMapper;
+
+    @Mock
     private ReferenceDataService referenceDataService;
 
     @Spy
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Captor
+    private ArgumentCaptor<JsonObject> argumentCaptor;
 
     @InjectMocks
     private StandardPublicCourtListTemplateAssembler publicListService;
@@ -119,6 +128,7 @@ public class PublicCourtListAssemblerTest {
         when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
                 .thenReturn(generateJudiciaryEnvelope());
 
+        when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
         JsonObject publicListData = publicListService.assemble(buildRequestEnvelope(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), PUBLIC, TRUE).get();
 
         assertPublicCourtListPayload(publicListData, CHECK_JUDICIARY);
@@ -131,6 +141,9 @@ public class PublicCourtListAssemblerTest {
         JsonObject hearing = timeslot.getJsonArray("hearings").getJsonObject(0);
         assertThat(hearing.getString("startTime"), is(START_TIME2.substring(11, 16)));
         assertThat(hearing.getString("caseNumber"), is(CASE_REFERENCE2));
+        verify(judiciaryNameMapper, times(2)).getName(argumentCaptor.capture());
+        final JsonObject judiciary = argumentCaptor.getValue();
+        assertThat(judiciary, is(notNullValue()));
     }
 
     @Test
@@ -205,6 +218,7 @@ public class PublicCourtListAssemblerTest {
                 .thenReturn(generateCourtCentreDetails(NOT_WELSH));
         when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
                 .thenReturn(generateJudiciaryEnvelope());
+        when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
 
         final JsonEnvelope envelope = buildRequestEnvelope(true, false);
         final JsonObject publicListData = publicListService.assemble(envelope, COURT_CENTRE_ID.toString(), null, PUBLIC, TRUE).get();
@@ -225,6 +239,9 @@ public class PublicCourtListAssemblerTest {
                 withJsonPath("$.hearingDates[1].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[0].offenceTitle", equalTo(APPLICATION_TYPE)),
                 withJsonPath("$.hearingDates[1].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[0].offenceWording", equalTo(APPLICATION_PARTICULARS))
         )));
+        verify(judiciaryNameMapper, times(2)).getName(argumentCaptor.capture());
+        final JsonObject judiciary = argumentCaptor.getValue();
+        assertThat(judiciary, is(notNullValue()));
     }
 
     @Test

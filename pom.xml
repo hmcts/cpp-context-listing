@@ -30,7 +30,7 @@
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <junit4-dataprovider.version>2.6</junit4-dataprovider.version>
         <coredomain.version>1.0.114</coredomain.version>
-        <referencedata.version>7.0.14</referencedata.version>
+        <referencedata.version>7.0.15</referencedata.version>
         <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
         <file-service-api.version>1.17.7</file-service-api.version>
         <sardine.version>5.7</sardine.version>
@@ -40,7 +40,7 @@
         <org.xmlunit.version>2.6.3
         </org.xmlunit.version>    <!-- Version property added to common-bom:2.2.1. Replace with org.xmlunit.version after upgrade to Framework 6 -->
         <com.sun.xml.bind.jaxb.version>2.2.11
-        </com.sun.xml.bind.jaxb.version>   <!-- Version property added to common-bom:2.2.1. Replace with com.sun.xml.bind.jaxb.version after upgrade to Framework 6 -->
+        </com.sun.xml.bind.jaxb.version>   <!-- Version propertyCourtServicesMapper.java added to common-bom:2.2.1. Replace with com.sun.xml.bind.jaxb.version after upgrade to Framework 6 -->
         <slf4j-log4j12.version>1.7.10</slf4j-log4j12.version>
         <postgresql.version>42.1.4</postgresql.version>
         <cpp-platform-data-utils.version>6.4.11</cpp-platform-data-utils.version>

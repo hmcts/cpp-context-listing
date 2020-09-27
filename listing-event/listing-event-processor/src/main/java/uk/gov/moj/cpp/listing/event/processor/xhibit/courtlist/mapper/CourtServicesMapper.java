@@ -69,9 +69,6 @@ public class CourtServicesMapper {
 
     public static final String MASKED_VALUE = "******";
     public static final String OFFENCES = "offences";
-    public static final String TITLE_PREFIX = "titlePrefix";
-    public static final String TITLE_JUDICIAL_PREFIX = "titleJudicialPrefix";
-    public static final String TITLE_SUFFIX = "titleSuffix";
     public static final String FIRST_NAME = "firstName";
     public static final String LAST_NAME = "lastName";
     public static final String FORENAMES = "forenames";
@@ -93,12 +90,15 @@ public class CourtServicesMapper {
     private static final DateTimeFormatter sittingAtFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final String TIME_MARKING_NOTE_TEXT = "NOT BEFORE %s";
     private static final String COMMITTING_COURT_PATH = "$.defendants[*].offences[*].committingCourt";
-    private final CourtListGenerationContext context;
     private static final String HAS_VIDEO_LINK = "hasVideoLink";
     private static final String VIDEO_LINK_DETAILS = "videoLinkDetails";
 
-    private final CommonXhibitReferenceDataService commonXhibitReferenceDataService;
-    private final XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
+    private RequestedNameMapper judicialRequestedName = new RequestedNameMapper();
+
+    private CourtListGenerationContext context;
+
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
+    private XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
 
     public CourtServicesMapper(final CourtListGenerationContext context,
                                final CommonXhibitReferenceDataService commonXhibitReferenceDataService) {
@@ -267,13 +267,7 @@ public class CourtServicesMapper {
 
         final JudiciaryStructure.Judge judgeStructure = objectFactory.createJudiciaryStructureJudge();
 
-        judgeStructure.setCitizenNameRequestedName(
-                buildCitizenRequestedName(
-                        judiciary.getString(TITLE_JUDICIAL_PREFIX, judiciary.getString(TITLE_PREFIX, EMPTY)),
-                        judiciary.getString(FORENAMES),
-                        judiciary.getString(SURNAME),
-                        judiciary.getString(TITLE_SUFFIX, EMPTY)
-                ));
+        judgeStructure.setCitizenNameRequestedName(judicialRequestedName.getRequestedJudgeName(judiciary));
         judgeStructure.getCitizenNameForename().add(judiciary.getString(FORENAMES));
         judgeStructure.setCitizenNameSurname(judiciary.getString(SURNAME));
 
@@ -286,10 +280,7 @@ public class CourtServicesMapper {
 
         final JudiciaryStructure.Justice justice = objectFactory.createJudiciaryStructureJustice();
 
-        justice.setCitizenNameRequestedName(
-                buildCitizenRequestedName(
-                        judiciary.getString(TITLE_PREFIX, EMPTY), judiciary.getString(FORENAMES), judiciary.getString(SURNAME), judiciary.getString(TITLE_SUFFIX, EMPTY)
-                ));
+        justice.setCitizenNameRequestedName(judicialRequestedName.getRequestedJusticeName(judiciary));
         justice.getCitizenNameForename().add(judiciary.getString(FORENAMES));
         justice.setCitizenNameSurname(judiciary.getString(SURNAME));
 
@@ -383,7 +374,7 @@ public class CourtServicesMapper {
         // Map applicant to defendant
         hearingStructure.setDefendants(generateHearingStructureDefendantsForCourtApplication(hearingJson));
         final String listNote = evaluateListNoteText(hearingJson);
-        if(isNotBlank(listNote)) {
+        if (isNotBlank(listNote)) {
             hearingStructure.setListNote(listNote);
         }
 
@@ -550,10 +541,7 @@ public class CourtServicesMapper {
         }
         citizenNameStructure.setCitizenNameSurname(lastName);
 
-        citizenNameStructure.setCitizenNameRequestedName(
-                buildCitizenRequestedName(
-                        firstName, lastName
-                ));
+        citizenNameStructure.setCitizenNameRequestedName(judicialRequestedName.getRequestedCitizenName(firstName,lastName));
 
         return citizenNameStructure;
     }
@@ -694,13 +682,6 @@ public class CourtServicesMapper {
         return caseStructureCaseDefendants;
     }
 
-    private String buildCitizenRequestedName(final String forenames, final String surname) {
-        return buildCitizenRequestedName(EMPTY, forenames, surname, EMPTY);
-    }
-
-    private String buildCitizenRequestedName(final String titlePrefix, final String forenames, final String surname, final String titleSuffix) {
-        return format("%s %s %s %s", titlePrefix, forenames, surname, titleSuffix).trim();
-    }
 
     private void generateAndSetTimeMarkingNote(final JsonObject hearingJson, final HearingStructure hearingStructure) {
         final ZonedDateTime localTime = DateAndTimeUtils.convertUTCToLocalTime(LocalDateTime.parse(hearingJson.getString("startTime")));

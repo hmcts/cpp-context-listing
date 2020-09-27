@@ -18,16 +18,20 @@ public class Judiciary implements Serializable {
 
     private String forenames;
 
-    public Judiciary(final UUID id, final String titleSuffix, final String titlePrefix, final String titleJudicialPrefix, final String surname, final String forenames) {
+    private String requestedName;
+
+    public Judiciary(final UUID id, final String titleSuffix, final String titlePrefix, final String titleJudicialPrefix, final String surname, final String forenames, final String requestedName) {
         this.id = id;
         this.titleSuffix = titleSuffix;
         this.titlePrefix = titlePrefix;
         this.titleJudicialPrefix = titleJudicialPrefix;
         this.surname = surname;
         this.forenames = forenames;
+        this.requestedName = requestedName;
     }
 
-    public Judiciary() {}
+    public Judiciary() {
+    }
 
     public UUID getId() {
         return id;
@@ -53,6 +57,10 @@ public class Judiciary implements Serializable {
         return forenames;
     }
 
+    public String getRequestedName() {
+        return requestedName;
+    }
+
     public static class Builder {
         private UUID id;
         private String titleSuffix;
@@ -60,6 +68,7 @@ public class Judiciary implements Serializable {
         private String titleJudicialPrefix;
         private String surname;
         private String forenames;
+        private String requestedName;
 
         public Judiciary.Builder withId(final UUID id) {
             this.id = id;
@@ -91,8 +100,13 @@ public class Judiciary implements Serializable {
             return this;
         }
 
+        public Judiciary.Builder withRequestedName(final String requestedName) {
+            this.requestedName = requestedName;
+            return this;
+        }
+
         public Judiciary build() {
-            return new Judiciary(id, titleSuffix, titlePrefix, titleJudicialPrefix, surname, forenames);
+            return new Judiciary(id, titleSuffix, titlePrefix, titleJudicialPrefix, surname, forenames, requestedName);
         }
     }
 }

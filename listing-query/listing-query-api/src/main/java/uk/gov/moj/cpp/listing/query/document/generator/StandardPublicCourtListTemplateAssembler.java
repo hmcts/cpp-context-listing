@@ -88,11 +88,8 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String SPACE = " ";
     private static final DateTimeFormatter DOB_FORMATTER = DateTimeFormatter.ofPattern("d MMM yyyy");
     private static final DecimalFormat START_TIME_FORMAT = new DecimalFormat("00");
-    private static final String TITLE_PREFIX = "titlePrefix";
     private static final String TITLE_PREFIX_WELSH = "titlePrefixWelsh";
     private static final String SURNAME = "surname";
-    private static final String TITLE_JUDICIARY_PREFIX = "titleJudiciaryPrefix";
-    private static final String TITLE_SUFFIX = "titleSuffix";
     private static final String DATE_OF_BIRTH = "dateOfBirth";
     private static final String NATIONALITY_DESCRIPTION = "nationalityDescription";
     private static final String AUTHORITY_CODE = "authorityCode";
@@ -138,6 +135,9 @@ public class StandardPublicCourtListTemplateAssembler {
 
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Inject
+    private JudiciaryNameMapper judiciaryNameMapper;
 
 
     public Optional<JsonObject> assemble(JsonEnvelope envelope, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final boolean restricted) {
@@ -306,7 +306,7 @@ public class StandardPublicCourtListTemplateAssembler {
         final List<String> judiciaryNames = judiciariesJsonObject.getJsonArray(JUDICIARIES).getValuesAs(JsonObject.class).stream()
                 .filter(j -> courtRoomJudiciaryIds.contains(j.getString(ID)))
                 .sorted(comparing(jo -> jo.getString(SURNAME)))
-                .map(j -> j.getString(TITLE_PREFIX, BLANK_STRING) + SPACE + j.getString(TITLE_JUDICIARY_PREFIX, BLANK_STRING) + SPACE + j.getString(SURNAME, BLANK_STRING) + (j.getString(TITLE_SUFFIX, BLANK_STRING).equals(BLANK_STRING) ? BLANK_STRING : SPACE + j.getString(TITLE_SUFFIX)))
+                .map(j -> judiciaryNameMapper.getName(j))
                 .collect(toList());
         return String.join(", ", judiciaryNames);
     }

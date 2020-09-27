@@ -18,6 +18,10 @@
     "isBenchChairman": {
       "description": "Indicates if the magistrate acts as a bench chairman.  This is only applicable to magistrate roles",
       "type": "boolean"
+    },
+    "userId": {
+      "description": "The reference data identify for the user id.",
+      "$ref": "listing-definitions.json#/definitions/uuid"
     }
   },
   "required": [

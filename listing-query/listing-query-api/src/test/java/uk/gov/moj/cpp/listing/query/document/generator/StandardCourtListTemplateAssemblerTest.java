@@ -88,7 +88,6 @@ public class StandardCourtListTemplateAssemblerTest {
     private static final String DATE_OF_BIRTH = "1983-05-23";
     private static final int SEQUENCE_1 = 1;
     private static final String ORGANISATION_NAME = "organisationName";
-    private static final String HEARING_STRING = "Hearing";
     private static final int SEQUENCE_2 = 2;
     private static final String PTP = "Plea & Trial Preparation";
     private static final String CPS = "CPS";
@@ -96,6 +95,9 @@ public class StandardCourtListTemplateAssemblerTest {
 
     @Mock
     private CourtCentreFactory courtCentreFactory;
+
+    @Mock
+    private JudiciaryNameMapper judiciaryNameMapper;
 
     @Mock
     private ReferenceDataService referenceDataService;
@@ -114,6 +116,7 @@ public class StandardCourtListTemplateAssemblerTest {
     public void setup() {
         setField(this.jsonObjectToObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
+        when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
     }
 
 
@@ -124,6 +127,7 @@ public class StandardCourtListTemplateAssemblerTest {
                 .thenReturn(generateCourtCentreDetails());
         when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
                 .thenReturn(generateJsonEnvelope());
+
         Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingData()), COURT_CENTRE_ID.toString(), null, CourtListType.STANDARD, FALSE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
