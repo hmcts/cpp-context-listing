@@ -92,6 +92,9 @@ subscriptions_descriptor:
         - name: listing.events.deleted-listing-note
           schema_uri: http://justice.gov.uk/listing/events/listing.events.deleted-listing-note.json
 
+        - name: listing.events.available-slots-for-hearing-freed
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.available-slots-for-hearing-freed.json
+
       event_source_name: listing
 
     - name: public event subscription
@@ -124,9 +127,12 @@ subscriptions_descriptor:
           schema_uri: http://justice.gov.uk/core/courts/defendant-legalaid-status-updated.json
 
         - name: public.hearing.trial-vacated
-          schema_uri: http://justice.gov.uk/core/courts/public.hearing.trial-vacated.json
+          schema_uri: http://justice.gov.uk/hearing/courts/trial-vacated.json
 
         - name: public.progression.case-linked
           schema_uri: http://justice.gov.uk/progression/courts/case-linked.json
+
+        - name: public.hearing.hearing-days-cancelled
+          schema_uri: http://justice.gov.uk/hearing/courts/hearing-days-cancelled.json
 
       event_source_name: public.event.source

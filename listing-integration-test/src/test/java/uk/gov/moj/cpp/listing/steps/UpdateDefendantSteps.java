@@ -25,7 +25,7 @@ import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.json.JsonObject;
-import java.time.ZonedDateTime;
+
 import java.util.UUID;
 
 import static com.jayway.jsonpath.Criteria.where;
@@ -50,41 +50,29 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
-
 public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDefendantSteps.class);
 
-
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED = "public.progression.case-defendant-changed";
-
-    private static final String COMMAND_SELECTOR_UPDATE_CASE_DEFENDANT_DETAILS = "listing.command.update-case-defendant-details";
     private static final String EVENT_SELECTOR_DEFENDANTS_TO_BE_UPDATED = "listing.events.defendants-to-be-updated";
-    private static final String COMMAND_SELECTOR_UPDATE_DEFENDANTS_FOR_HEARING = "listing.command.update-defendants-for-hearing";
     private static final String EVENT_SELECTOR_DEFENDANT_DETAILS_UPDATED = "listing.events.new-defendant-details-updated";
 
-
-    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
-            ".search.hearings+json";
-
+    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
     private final MessageProducer publicEventDefendantUpdated;
     private final MessageConsumer publicEventMessageConsumerDefendantUpdated;
     private final MessageConsumer privateEventMessageDefendantsToBeUpdated;
     private final MessageConsumer privateEventsMessageDefendantDetailsUpdated;
 
-
     private String request;
-
 
     private final HearingData hearingData;
     private final UpdatedDefendantData updatedDefendantData;
     private final ListedCaseData listedCaseData;
     private final UUID caseId;
 
-    ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
-
-    ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
-
+    private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+    private final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
 
     public UpdateDefendantSteps(final UUID caseId, final HearingData hearingData, final UpdatedDefendantData defendantData) {
         this.caseId = caseId;
@@ -98,7 +86,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         privateEventMessageDefendantsToBeUpdated = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANTS_TO_BE_UPDATED);
         privateEventsMessageDefendantDetailsUpdated = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANT_DETAILS_UPDATED);
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     public void whenCaseDefendantsUpdatedPublicEventIsPublished() {
@@ -112,7 +100,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
                 metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED).withUserId(randomUUID().toString()).build());
 
         request = updateCaseDefendantDetailsObject.toString();
-        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED, request, getLoggedInHeader());
+        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED, request);
     }
 
 

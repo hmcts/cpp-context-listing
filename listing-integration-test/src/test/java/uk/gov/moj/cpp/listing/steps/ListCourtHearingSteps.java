@@ -1,10 +1,8 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import static com.google.common.io.Resources.getResource;
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.nio.charset.Charset.defaultCharset;
 import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
@@ -17,6 +15,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -26,6 +25,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMat
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
@@ -88,8 +88,6 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -105,7 +103,6 @@ import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.Resources;
 import com.jayway.jsonpath.Filter;
 import com.jayway.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
@@ -116,23 +113,13 @@ import org.slf4j.LoggerFactory;
 public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListCourtHearingSteps.class);
 
-    private static final String LISTING_COMMAND_LIST_COURT_HEARING = "listing.command" +
-            ".list-court-hearing";
+    private static final String LISTING_COMMAND_LIST_COURT_HEARING = "listing.command.list-court-hearing";
+    private static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING = "listing.command.extend-hearing-for-hearing";
 
-    private static final String MEDIA_TYPE_LIST_COURT_HEARING = "application/vnd.listing" +
-            ".command.list-court-hearing+json";
-
-    protected static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
-            ".search.hearings+json";
-
-    private static final String MEDIA_TYPE_SEARCH_HEARING_JSON = "application/vnd.listing" +
-            ".search.hearing+json";
-
-    public static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING = "listing.command" +
-            ".extend-hearing-for-hearing";
-
-    public static final String MEDIA_TYPE_LIST_EXTEND_HEARING_FOR_HEARING = "application/vnd.listing." +
-            "command.extend-hearing-for-hearing+json";
+    private static final String MEDIA_TYPE_LIST_COURT_HEARING = "application/vnd.listing.command.list-court-hearing+json";
+    private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
+    private static final String MEDIA_TYPE_SEARCH_HEARING_JSON = "application/vnd.listing.search.hearing+json";
+    private static final String MEDIA_TYPE_LIST_EXTEND_HEARING_FOR_HEARING = "application/vnd.listing.command.extend-hearing-for-hearing+json";
 
     private static final String EVENT_SELECTOR_HEARING_LISTED = "listing.events.hearing-listed";
     private static final String EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING = "listing.events.hearing-allocated-for-listing";
@@ -195,7 +182,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
         publicMessageProducerProgressionHearingExtendedEvent = QueueUtil.publicEvents.createProducer();
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     public ListCourtHearingSteps() {
@@ -211,7 +198,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
         publicMessageProducerProgressionHearingExtendedEvent = QueueUtil.publicEvents.createProducer();
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     protected static com.jayway.jsonpath.JsonPath getJsonPathQueryForDefendantLastName(final HearingData hearing, final ListedCaseData listedCase, final DefendantData defendant, final String expectedLastName) {
@@ -261,7 +248,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void whenProgressionHearingExtended() throws IOException {
-        final String eventPayloadString = getStringFromResource("prosecution-case-with-shadow-listed-offences.json")
+        final String eventPayloadString = getPayload("prosecution-case-with-shadow-listed-offences.json")
                 .replaceAll("HEARING_ID", hearingsData.getHearingData().get(0).getId().toString())
                 .replaceAll("CASE_ID_1", UUID.randomUUID().toString())
                 .replaceAll("DEFENDANT_ID_1", UUID.randomUUID().toString())
@@ -524,7 +511,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, defendant, defendant.getLastName());
         final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
 
-        ResponseData resp = poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),
                         payload().isJson(allOf(
@@ -594,6 +581,19 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(courtScheduleSlots[2]))
                         )));
     }
+
+    public void verifyHearingIsNotListed(final boolean allocated) {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), allocated));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(withJsonPath("hearings", hasSize(0))));
+    }
+
 
     public void verifyHearingListedFromAPIAllocatedForBookSlots() {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -693,7 +693,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
     /**
      * We have added two new listed cases with one offence each
-     * */
+     */
     public void verifyHearingExtendedWithShadowListedFlag(final boolean isAllocated) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
@@ -1620,7 +1620,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         final String extendHearingForHearingUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING), unAllocatedHearingId));
 
-        final String requestBody = getStringFromResource("stub-data/listing.command.extend.hearing-for-hearing-partial.json")
+        final String requestBody = getPayload("stub-data/listing.command.extend.hearing-for-hearing-partial.json")
                 .replace("HEARING_ID1", allocatedHearingId.toString())
                 .replace("CASE_ID1", listedCaseData.getCaseId().toString())
                 .replace("DEFENDANT_ID1", listedCaseData.getDefendants().get(0).getDefendantId().toString())
@@ -1639,7 +1639,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         final ListedCaseData case1 = listedCaseData.get(0);
         final ListedCaseData case2 = listedCaseData.get(1);
 
-        final String requestBody = getStringFromResource("stub-data/listing.command.extend.hearing-for-hearing-whole.json")
+        final String requestBody = getPayload("stub-data/listing.command.extend.hearing-for-hearing-whole.json")
                 .replace("HEARING_ID1", allocatedHearingId.toString())
                 .replace("CASE_ID1", case1.getCaseId().toString())
                 .replace("DEFENDANT_ID1", case1.getDefendants().get(0).getDefendantId().toString())
@@ -1697,7 +1697,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         final String defendant2 = jsonResponse1.get("confirmedHearing.prosecutionCases[1].defendants[0].id");
         final String offence2 = jsonResponse1.get("confirmedHearing.prosecutionCases[1].defendants[0].offences[0].id");
 
-        final String eventPayloadString = getStringFromResource("prosecution-case.json")
+        final String eventPayloadString = getPayload("prosecution-case.json")
                 .replaceAll("HEARING_ID", allocatedHearingId.toString())
                 .replaceAll("CASE_ID_1", newCaseIds.get(0))
                 .replaceAll("DEFENDANT_ID_1", defendant1)
@@ -1742,7 +1742,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         final String defendant1 = jsonResponse1.get("confirmedHearing.prosecutionCases[0].defendants[0].id");
         final String offence1 = jsonResponse1.get("confirmedHearing.prosecutionCases[0].defendants[0].offences[0].id");
 
-        final String eventPayloadString = getStringFromResource("prosecution-case-partial-allocation.json")
+        final String eventPayloadString = getPayload("prosecution-case-partial-allocation.json")
                 .replaceAll("HEARING_ID", allocatedHearingId.toString())
                 .replaceAll("CASE_ID_1", newCaseIds.get(0))
                 .replaceAll("DEFENDANT_ID_1", defendant1)
@@ -1829,9 +1829,5 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         Assert.assertThat(jsonResponse.get(publicEventType + ".courtCentre.id"), is(hearingData.getCourtCentreId().toString()));
         Assert.assertThat(jsonResponse.get(publicEventType + ".courtCentre.name"), is("Liverpool Crown Court"));
         Assert.assertThat(jsonResponse.get(publicEventType + ".courtApplicationIds[0]"), is(hearingData.getCourtApplications().get(0).getId().toString()));
-    }
-
-    private static String getStringFromResource(final String path) throws IOException {
-        return Resources.toString(getResource(path), defaultCharset());
     }
 }

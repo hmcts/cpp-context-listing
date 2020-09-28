@@ -13,6 +13,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData hearingsData(final String jurisdictionType) {
+        return new HearingsData(HearingsDataFactory.hearingsData(jurisdictionType));
+    }
+
     public static HearingsData hearingsData(final UUID hearingId) {
         return new HearingsData(HearingsDataFactory.hearingsData(hearingId));
     }

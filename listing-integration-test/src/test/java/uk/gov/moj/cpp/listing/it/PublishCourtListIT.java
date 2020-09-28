@@ -81,14 +81,12 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus("COURT_LIST_REQUESTED", "true");
-//        publishCourtListSteps.waitForPublishedCourtListStored(courtCentreId, publishCourtListType, startDate);
-//        publishCourtListSteps.waitForCompletedExport(courtCentreId, publishCourtListType, startDate);
         TimeUnit.SECONDS.sleep(20);
         publishCourtListSteps.verifySentPublishedCourtListHasNoHearings();
     }
 
     @Test
-    public void shouldPublishCourtListWithHearings() throws Exception {
+    public void shouldPublishCourtListWithHearings() {
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
@@ -116,8 +114,6 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL", "true");
-//        publishCourtListSteps.waitForPublishedCourtListStored(courtCentreId, publishCourtListType, startDate);
-//        publishCourtListSteps.verifySentPublishedCourtListHearingData();
     }
 
     @Test
@@ -143,7 +139,6 @@ public class PublishCourtListIT extends AbstractIT {
 
         publishCourtListSteps.verifyThatWeSuccessfullyRequestedAFinalListPublication(courtCentreIdOne, expectedPublishDate);
         publishCourtListSteps.verifyThatWeSuccessfullyRequestedAFinalListPublication(courtCentreIdTwo, expectedPublishDate);
-
     }
 
 

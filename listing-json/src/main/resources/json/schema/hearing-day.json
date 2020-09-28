@@ -4,7 +4,7 @@
   "type": "object",
   "properties": {
     "hearingDate":{
-      "$ref": "#/definitions/localDate"
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/localDate"
     },
     "startTime": {
       "type": "string",
@@ -23,6 +23,10 @@
     },
     "courtScheduleId": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "isCancelled": {
+      "description": "is hearing days cancelled",
+      "type": "boolean"
     }
   },
   "required": [
@@ -32,11 +36,5 @@
     "durationMinutes",
     "sequence"
   ],
-  "definitions": {
-    "localDate": {
-      "type": "string",
-      "format": "date"
-    }
-  },
   "additionalProperties": false
 }

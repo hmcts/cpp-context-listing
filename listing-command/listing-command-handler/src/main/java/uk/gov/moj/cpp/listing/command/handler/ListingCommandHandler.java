@@ -15,6 +15,7 @@ import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMet
 import static uk.gov.justice.services.eventsourcing.source.core.Events.streamOf;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.asJson;
+import static uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
 
@@ -44,6 +45,7 @@ import uk.gov.justice.listing.courts.AddDefendantsToCourtProceedingsForHearing;
 import uk.gov.justice.listing.courts.AddHearingToCaseCommand;
 import uk.gov.justice.listing.courts.AddOffencesForHearing;
 import uk.gov.justice.listing.courts.AddedOffences;
+import uk.gov.justice.listing.courts.CancelHearingDays;
 import uk.gov.justice.listing.courts.CaseOrApplicationEjected;
 import uk.gov.justice.listing.courts.Cases;
 import uk.gov.justice.listing.courts.ChangeJudiciaryForHearings;
@@ -103,6 +105,7 @@ import uk.gov.moj.cpp.listing.command.utils.CourtsDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CourtsDeletedOffenceToDomainCaseSimpleOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsUpdatedOffenceToDomainOffence;
+import uk.gov.moj.cpp.listing.command.utils.HearingDaysToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.NonDefaultDayDurationBuilder;
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCaseDefendantOffenceIdsBuilder;
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
@@ -114,7 +117,6 @@ import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
-import uk.gov.moj.cpp.listing.domain.HearingDay;
 import uk.gov.moj.cpp.listing.domain.HearingLanguage;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
@@ -215,6 +217,9 @@ public class ListingCommandHandler {
 
     @Inject
     private CasesToDomainConverter casesToDomainConverter;
+
+    @Inject
+    private HearingDaysToDomainConverter hearingDaysToDomainConverter;
 
     @Inject
     private ProsecutionCasesBuilder prosecutionCasesBuilder;
@@ -381,14 +386,11 @@ public class ListingCommandHandler {
 
     @Handles("listing.command.hearing-vacate-trial")
     public void hearingVacateTrial(final JsonEnvelope command) throws EventStreamException {
-
         LOGGER.info("'listing.command.hearing-vacate-trial' received with payload {}", command.toObfuscatedDebugString());
-
         final HearingVacateTrial hearingVacateTrial = jsonObjectConverter.convert(command.payloadAsJsonObject(), HearingVacateTrial.class);
 
         updateHearingEventStream(command, hearingVacateTrial.getHearingId(), (Hearing hearing) ->
                 hearing.hearingVacateTrial(hearingVacateTrial.getVacatedTrialReasonId()));
-
     }
 
     @Handles("listing.command.update-hearing-for-listing-enriched")
@@ -470,7 +472,7 @@ public class ListingCommandHandler {
             final Stream<Object> allocationEvents = hearing.applyAllocationRules(prosecutionCaseDefendantOffenceIds);
             final Stream<Object> hearingPartiallyEvents = extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing, hearingId, updateHearingForListingEnriched.getProsecutionCases(), storedHearing);
 
-            final List<Object> startDateEventList = startDateEvents.collect(Collectors.toList());
+            final List<Object> startDateEventList = startDateEvents.collect(toList());
 
             final Stream<Object> rescheduledEvents = hearing.applyRescheduledCheck(startDateEventList);
 
@@ -1172,6 +1174,17 @@ public class ListingCommandHandler {
         eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
     }
 
+    @Handles("listing.command.cancel-hearing-days")
+    public void cancelHearingDays(final Envelope<CancelHearingDays> envelope) throws EventStreamException {
+        final CancelHearingDays payload = envelope.payload();
+
+        final EventStream eventStream = eventSource.getStreamById(payload.getHearingId());
+        final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+        final Stream<Object> events = hearingAggregate.cancelHearingDays(payload.getHearingId(), hearingDaysToDomainConverter.convert(payload.getHearingDays()));
+
+        appendEventsToStream(envelope, eventStream, events);
+    }
+
     @VisibleForTesting
     void setClock(final Clock clock) {
         this.clock = clock;
@@ -1211,7 +1224,6 @@ public class ListingCommandHandler {
                 .withPublishCourtListType(PublishCourtListType.FINAL)
                 .withRequestedTime(Optional.of(zonedNow))
                 .build();
-
     }
 
     private void appendEventsToStream(final Envelope<?> envelope, final EventStream eventStream, final Stream<Object> events) throws EventStreamException {
@@ -1227,7 +1239,7 @@ public class ListingCommandHandler {
                     .map(sh -> uk.gov.moj.cpp.listing.domain.SequenceHearing.sequenceHearing()
                             .withHearingDays(sh.getSequenceHearingDays()
                                     .stream()
-                                    .map(shd -> HearingDay.hearingDay()
+                                    .map(shd -> hearingDay()
                                             .withHearingDate(shd.getHearingDate())
                                             .withSequence(shd.getSequence())
                                             .build())
@@ -1292,8 +1304,6 @@ public class ListingCommandHandler {
                 .withCourtApplicationType(restrictCourtList.getCourtApplicationType().orElse(null))
                 .withRestrictFromCourtList(restrictCourtList.getRestrictCourtList())
                 .build();
-
-
     }
 
     private void updateHearingEventStream(final JsonEnvelope command, final UUID hearingId,
@@ -1312,7 +1322,6 @@ public class ListingCommandHandler {
 
         final Stream<Object> events = aggregatorFunction.apply(listingCase);
         eventStream.append(events.map(toEnvelopeWithMetadataFrom(command)));
-
     }
 
     private void updateApplicationEventStream(final JsonEnvelope command, final UUID applicationId,
@@ -1333,7 +1342,7 @@ public class ListingCommandHandler {
                 .filter(x -> x.getValueType() == JsonValue.ValueType.OBJECT)
                 .map(x -> (JsonObject) x)
                 .map(this::toCourtCentreDetails)
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     private CourtCentreDetails toCourtCentreDetails(final JsonObject courtCentreDetailsAsJson) {
@@ -1410,8 +1419,7 @@ public class ListingCommandHandler {
     private boolean comparePersistedAndRequestedCaseMaps(final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap,
                                                          final uk.gov.justice.listing.events.Hearing unAllocatedHearingPersisted,
                                                          final List<ProsecutionCases> prosecutionCases,
-                                                         final ExtendHearingForHearingEnriched extendHearingForHearingEnriched
-    ) {
+                                                         final ExtendHearingForHearingEnriched extendHearingForHearingEnriched) {
         //build <case, <defendant, <offences>>> map of the persisted unallocated hearing
         final Map<UUID, Map<UUID, List<UUID>>> persistedUnallocatedHearingCasesMap = extendHearingUtils.buildPersistedCaseDefendantOffenceMap(unAllocatedHearingPersisted);
 

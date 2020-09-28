@@ -1,10 +1,12 @@
 package uk.gov.moj.cpp.listing.common.azure;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
 
 import uk.gov.moj.cpp.platform.data.utils.rest.service.RestClientService;
 
 import java.util.Map;
+import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -27,7 +29,6 @@ public class DefaultRotaslAzureService implements RotaslAzureService {
     @Override
     public Response get(final String endpoint, final String subscription, final Map<String, String> params) {
         final Map<String, String> headers = getHeaders(subscription);
-
         final String url = getURL(endpoint);
 
         return restService.newResponseFrom(restService.get(url, headers, params), JsonObject.class);
@@ -36,7 +37,6 @@ public class DefaultRotaslAzureService implements RotaslAzureService {
     @Override
     public Response put(final String endpoint, final String subscription, final Object payload) {
         final Map<String, String> headers = getHeaders(subscription);
-
         final String url = getURL(endpoint);
 
         return restService.newResponseFrom(restService.put(url, headers, payload), JsonObject.class);
@@ -45,16 +45,22 @@ public class DefaultRotaslAzureService implements RotaslAzureService {
     @Override
     public Response post(final String endpoint, final String subscription, final Object payload) {
         final Map<String, String> headers = getHeaders(subscription);
-
         final String url = getURL(endpoint);
 
         return restService.newResponseFrom(restService.post(url, headers, payload), JsonObject.class);
     }
 
+    @Override
+    public Response delete(final String endpoint, final String subscription, final UUID hearingId) {
+        final Map<String, String> headers = getHeaders(subscription);
+
+        final String url = format("%s/%s", getURL(endpoint), hearingId.toString());
+
+        return restService.newResponseFrom(restService.delete(url, headers), JsonObject.class);
+    }
+
     private String getURL(final String endpoint) {
-
         return format("%s/%s", rotaslAzureConfig.getServiceUri(), endpoint);
-
     }
 
     private Map<String, String> getHeaders(final String subscriptionKey) {

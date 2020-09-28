@@ -11,6 +11,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.lang.String.format;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -51,7 +53,7 @@ public class AzureScheduleServiceStub {
                 .withQueryParam("sessionEndDate", matching("2020-10-11"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(isEmpty ? LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : LISTING_SEARCH_HEARING_SLOTS_JSON))
-                        .withHeader("Content-Type", "application/json")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -70,7 +72,7 @@ public class AzureScheduleServiceStub {
                 .withQueryParam("bookingIds", notMatching("null"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON))
-                        .withHeader("Content-Type", "application/json")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -79,7 +81,7 @@ public class AzureScheduleServiceStub {
                 .withQueryParam("bookingIds", notMatching("null"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON))
-                        .withHeader("Content-Type", "application/json")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -88,7 +90,7 @@ public class AzureScheduleServiceStub {
                 .withQueryParam("bookingIds", notMatching("null"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON))
-                        .withHeader("Content-Type", "application/json")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 
@@ -96,14 +98,14 @@ public class AzureScheduleServiceStub {
         String payload = getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON);
 
         for (int i = 0; i < courtSchedules.length; i++) {
-            payload = payload.replace("SESSION_DATE_" + (i+1), courtSchedules[i]);
+            payload = payload.replace("SESSION_DATE_" + (i + 1), courtSchedules[i]);
         }
 
         stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", notMatching("null"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
-                        .withHeader("Content-Type", "application/json")
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }
 

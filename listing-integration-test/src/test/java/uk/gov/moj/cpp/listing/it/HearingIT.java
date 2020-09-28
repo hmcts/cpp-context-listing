@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static java.util.UUID.randomUUID;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
+import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAvailableHearingSlotsService;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
@@ -27,7 +29,7 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void updateHearingResultsInAllocatedListingAndRaisesPublicHearingConfirmedPublicEvent() {
-        final HearingsData hearingsData = HearingsData.hearingsData();
+        final HearingsData hearingsData = hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
@@ -122,7 +124,7 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void shouldUpdateHearingResultsInPartialAllocatedListing() {
-        HearingsData hearingsData = HearingsData.hearingsData();
+        HearingsData hearingsData = hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
@@ -148,7 +150,7 @@ public class HearingIT extends AbstractIT {
         final UUID courtCentreId = randomUUID();
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, "MAGISTRATES"))) {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
@@ -160,7 +162,7 @@ public class HearingIT extends AbstractIT {
     @Test
     public void shouldRaisePublicHearingConfirmedPublicEventAndNotUpdateSlotDetails() {
 
-        final HearingsData hearingsData = HearingsData.hearingsData();
+        final HearingsData hearingsData = hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
@@ -192,7 +194,7 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void updateHearingResultsInAllocatedListingAndRaisesPublicHearingConfirmedPublicEventWithNoJudiciary() {
-        final HearingsData hearingsData = HearingsData.hearingsData();
+        final HearingsData hearingsData = hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
@@ -230,7 +232,7 @@ public class HearingIT extends AbstractIT {
     public void updateHearingResultsInUpdatedListingAndUpdateSlotDetails() {
         final UUID courtCentreId = randomUUID();
 
-        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, "MAGISTRATES");
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
@@ -355,35 +357,23 @@ public class HearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
             listCourtHearingSteps.verifyHearingListedWithWeekCommencingFromAPI(UNALLOCATED, LocalDate.now(), 1);
         }
-
     }
 
     @Test
-    public void shouldVacateTrial() throws Exception {
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
-        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+    public void shouldHideUnallocatedHearingOnceVacatedFromUnallocatedLists() {
+        final HearingsData hearingsData = hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        }
-        final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
-        vacatingTrialSteps.whenPublicEventHearingTrialVacatedIsPublished();
-        vacatingTrialSteps.verifyHearingVacatingTrialEvent();
-        vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
-    }
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
-    @Test
-    public void shouldVacateTrialWithEmptyReasonId() throws Exception {
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
-        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
+            vacatingTrialSteps.whenHearingIsVacated();
+
+            vacatingTrialSteps.verifyListingTrialVacatedEvent(false);
+            vacatingTrialSteps.verifyVacatedTrialWhenQueryingFromAPI();
+            listCourtHearingSteps.verifyHearingIsNotListed(false);
         }
-        final VacatingTrialSteps vacatingTrialSteps = new VacatingTrialSteps(hearingsData);
-        vacatingTrialSteps.whenPublicEventHearingTrialVacatedIsPublishedWithEmptyVacatedTrialReasonId();
-        vacatingTrialSteps.verifyHearingVacatingTrialEventForEmptyReasonId();
-        vacatingTrialSteps.verifyVacatedTrialWtihEmptyReasonIdWhenQueryingFromAPI();
     }
 
     @Test

@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view;
 
+import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
@@ -10,7 +12,6 @@ import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AU
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
 
-import java.util.Optional;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
@@ -36,7 +37,6 @@ public class RangeSearchQuery {
     private static final String HEARINGS = "hearings";
     private static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     private static final String WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
-
 
     @SuppressWarnings("squid:S1312")
     @Inject
@@ -111,11 +111,11 @@ public class RangeSearchQuery {
     private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate) {
         return repository.findHearings(
                 String.valueOf(allocated),
-                Optional.ofNullable(courtCentreId).orElse("null"),
-                Optional.ofNullable(courtRoomId).orElse("null"),
+                ofNullable(courtCentreId).orElse("null"),
+                ofNullable(courtRoomId).orElse("null"),
                 authorityIdSearchString,
-                Optional.ofNullable(hearingTypeId).orElse("null"),
-                Optional.ofNullable(jurisdictionType).orElse("null"),
+                ofNullable(hearingTypeId).orElse("null"),
+                ofNullable(jurisdictionType).orElse("null"),
                 startDate,
                 endDate
         );
@@ -123,7 +123,7 @@ public class RangeSearchQuery {
 
     private String getAuthorityIdSearchString(String authorityId) {
         if (authorityId != null) {
-            return String.format(AUTHORITY_ID_SEARCH, authorityId);
+            return format(AUTHORITY_ID_SEARCH, authorityId);
         }
         return ALL_AUTHORITY_CODES_SEARCH;
     }

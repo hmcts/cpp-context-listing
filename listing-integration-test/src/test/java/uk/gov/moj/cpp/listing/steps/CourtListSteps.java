@@ -45,12 +45,11 @@ public class CourtListSteps extends AbstractIT {
     private Response getResponseData(final String listId) {
         final String endDate = listId.equals(STANDARD) ? updatedHearingData.getStartDate() : updatedHearingData.getEndDate();
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.create.court.list"), updatedHearingData.getCourtCentreId(),
+                format(readConfig().getProperty("listing.search.court.list"), updatedHearingData.getCourtCentreId(),
                         updatedHearingData.getStartDate(), listId, endDate));
         final RequestParams requestParams = requestParams(searchHearingUrl, "application/vnd.listing.search.court.list+json")
                                                     .withHeader(USER_ID, USER_ID_VALUE)
                                                     .build();
         return new RestClient().query(requestParams.getUrl(), requestParams.getMediaType(), requestParams.getHeaders());
     }
-
 }

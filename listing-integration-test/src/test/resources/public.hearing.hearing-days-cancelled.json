@@ -1,0 +1,23 @@
+{
+  "hearingId": "HEARING_ID",
+  "hearingDays": [
+    {
+      "listedDurationMinutes": 30,
+      "listingSequence": 0,
+      "sittingDay": "DAY_1_SITTING_DAY",
+      "isCancelled": DAY_1_IS_CANCELLED
+    },
+    {
+      "listedDurationMinutes": 10,
+      "listingSequence": 1,
+      "sittingDay": "DAY_2_SITTING_DAY",
+      "isCancelled": DAY_2_IS_CANCELLED
+    },
+    {
+      "listedDurationMinutes": 10,
+      "listingSequence": 1,
+      "sittingDay": "DAY_3_SITTING_DAY",
+      "isCancelled": DAY_3_IS_CANCELLED
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "sequenceHearing": {
+    "id": "5c5a1d30-0414-11e7-93ae-92361f002671",
+    "hearingDays": [
+      {
+        "hearingDate": "2020-09-14",
+        "sequence": "2",
+        "durationMinutes": "1",
+        "endTime": "2020-09-14T09:01:00.000Z",
+        "startTime": "2020-09-14T09:00:00.000Z"
+      }
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.hearing;
 
 import static java.lang.String.format;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static javax.json.Json.createArrayBuilder;
 import static uk.gov.moj.cpp.listing.query.view.hearing.JsonArrayCollector.toArrayNode;
@@ -10,7 +11,9 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -58,6 +61,7 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
                 .map(Hearing::getProperties)
                 .map(this::filterEjectedCasesAndCourtApplicationsForAlphabeticalList)
                 .map(this::removeHearingsWhenBothCasesAndApplicationsAreEmpty)
+                .filter(Objects::nonNull)
                 .map(hearingJsonNode -> this.jsonFromString(hearingJsonNode.get(0).toString()))
                 .collect(toArrayNode());
     }
@@ -71,6 +75,7 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
                 return createArrayBuilder().build();
             }
             return publicHearingResult.getJsonArray(HEARINGS).getValuesAs(JsonObject.class).stream()
+                    .filter(Objects::nonNull)
                     .map(hearingByCourtCentreId -> this.enrich(hearingByCourtCentreId, JUDICIARY, judiciary))
                     .collect(toArrayNode());
         }
@@ -78,6 +83,9 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     }
 
     private JsonNode filterEjectedCasesAndCourtApplicationsForAlphabeticalList(final JsonNode properties) {
+        if (isNull(properties)) {
+            return null;
+        }
         final List<JsonNode> listedCasesNodes = properties.findValues(LISTED_CASES);
         final List<JsonNode> courtApplicationsNodes = properties.findValues(COURT_APPLICATIONS);
         listedCasesNodes.forEach(this::removeNodeForEjectedFlag);
@@ -86,6 +94,9 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     }
 
     private JsonNode removeHearingsWhenBothCasesAndApplicationsAreEmpty(final JsonNode properties) {
+        if (isNull(properties)) {
+            return null;
+        }
         final JsonNode hearingsByHearingDate = properties.findPath(HEARINGS_BY_HEARING_DATE);
         if (!hearingsByHearingDate.isMissingNode() && hearingsByHearingDate.isArray()) {
             final ArrayNode arrayNode = (ArrayNode) hearingsByHearingDate;
@@ -147,13 +158,18 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     private JsonObject enrich(final JsonObject source, final String judiciaryKey, final JsonArray judiciaryValue) {
         final JsonObjectBuilder builder = Json.createObjectBuilder();
         builder.add(judiciaryKey, judiciaryValue);
-        source.forEach((key, value) -> {
-            if (key.equals(HEARINGS_BY_COURT_CENTRE_ID)) {
-                builder.add(key, filterEjectCaseAndCourtApplicationFromHearing(value));
-            } else {
-                builder.add(key, value);
+        final Iterator<String> keys = source.keySet().iterator();
+        while (keys.hasNext()) {
+            final String key = keys.next();
+            if (!source.isNull(key)) {
+                if (key.equals(HEARINGS_BY_COURT_CENTRE_ID)) {
+                    builder.add(key, filterEjectCaseAndCourtApplicationFromHearing(source.get(key)));
+                } else {
+                    builder.add(key, source.get(key));
+                }
             }
-        });
+        }
+
         return builder.build();
     }
 

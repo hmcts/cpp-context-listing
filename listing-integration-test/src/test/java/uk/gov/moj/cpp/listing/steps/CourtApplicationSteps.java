@@ -103,7 +103,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
         publicEventMessageConsumerCourtApplicationAdded = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED);
         privateMessageConsumerCourtApplicationAddedForHearing = QueueUtil.privateEvents.createConsumer(PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     public void whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended() {

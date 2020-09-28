@@ -134,10 +134,8 @@ subscriptions_descriptor:
         - name: listing.event.publish-court-list-produced
           schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-produced.json
 
-
         - name: listing.event.publish-court-list-produced
           schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-produced.json
-
 
         - name: listing.event.publish-court-list-export-successful
           schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-export-successful.json
@@ -145,10 +143,8 @@ subscriptions_descriptor:
         - name: listing.event.publish-court-list-requested
           schema_uri: http://justice.gov.uk/listing/event/listing.event.publish-court-list-requested.json
 
-
         - name: listing.event.published-court-list-stored
           schema_uri: http://justice.gov.uk/listing/event/listing.event.published-court-list-stored.json
-
 
         - name: listing.events.adjourned-hearing-date-added
           schema_uri: http://justice.gov.uk/listing/events/listing.events.adjourned-hearing-date-added.json
@@ -177,7 +173,8 @@ subscriptions_descriptor:
         - name: listing.events.video-link-details-removed-for-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.video-link-details-removed-for-hearing.json
 
-
+        - name: listing.events.hearing-days-cancelled
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-cancelled.json
 
         - name: listing.events.created-listing-note
           schema_uri: http://justice.gov.uk/listing/events/listing.events.created-listing-note.json

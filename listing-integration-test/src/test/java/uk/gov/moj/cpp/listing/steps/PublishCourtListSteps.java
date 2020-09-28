@@ -56,11 +56,11 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     private static final String PRESTON_COURT_ID = "448";
     private static final String PRESTON_COURT_SITE_ID = "448";
 
-    private JsonObject commandJsonObject;
+    private final JsonObject commandJsonObject;
 
     public PublishCourtListSteps(final HearingsData hearingsData, final JsonObject commandJsonObject) {
         super(hearingsData);
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         this.commandJsonObject = commandJsonObject;
     }
 
@@ -342,7 +342,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 courtCentreId.toString(), publishCourtListType.name(), startDate.toString()));
         final String request = commandJsonObject.toString();
 
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", commandUrl, MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST, request, getLoggedInHeader());
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", commandUrl, MEDIA_TYPE_LISTING_COMMAND_PUBLISH_COURT_LIST, request);
 
         final Response response = restClient.postCommand(commandUrl, MEDIA_TYPE_LISTING_COMMAND_EXPORT_COURT_LIST, request, getLoggedInHeader());
 

@@ -69,7 +69,7 @@ public class CaseLinkedIT extends AbstractIT {
     }
 
     @Test
-    public void shouldUpdateLinkedCases() throws Exception {
+    public void shouldUpdateLinkedCases() {
         final HearingsData hearingsData = listCourtHearing();
         final UUID hearingId = hearingsData.getHearingData().get(0).getId();
         final UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();

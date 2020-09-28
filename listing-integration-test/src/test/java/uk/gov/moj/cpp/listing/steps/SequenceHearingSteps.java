@@ -69,7 +69,7 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
 
     public SequenceHearingSteps(SequenceHearingData sequenceHearingData) {
         this.sequenceHearingData = sequenceHearingData;
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         createMessageConsumers();
 
@@ -82,11 +82,9 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
 
         request = prepareJsonForSequenceHearingDays();
 
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_SEQUENCE_HEARING_DAYS, request, getLoggedInHeader());
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_SEQUENCE_HEARING_DAYS, request);
 
-        restClient.postCommand(updateHearingUrl, MEDIA_TYPE_SEQUENCE_HEARING_DAYS,
-                request, getLoggedInHeader());
-
+        restClient.postCommand(updateHearingUrl, MEDIA_TYPE_SEQUENCE_HEARING_DAYS, request, getLoggedInHeader());
     }
 
 

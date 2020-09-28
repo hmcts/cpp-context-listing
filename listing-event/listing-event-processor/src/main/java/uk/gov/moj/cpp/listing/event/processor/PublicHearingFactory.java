@@ -27,11 +27,7 @@ public class PublicHearingFactory {
     }
 
     protected HearingDay buildHearingDay(uk.gov.justice.listing.events.HearingDay hd) {
-        return HearingDay.hearingDay()
-                .withListedDurationMinutes(hd.getDurationMinutes())
-                .withListingSequence(of(hd.getSequence()))
-                .withSittingDay(hd.getStartTime())
-                .build();
+        return new HearingDay(hd.getIsCancelled(), hd.getDurationMinutes(), of(hd.getSequence()), hd.getStartTime());
     }
 
     protected HearingType buildType(uk.gov.justice.listing.events.Type type) {

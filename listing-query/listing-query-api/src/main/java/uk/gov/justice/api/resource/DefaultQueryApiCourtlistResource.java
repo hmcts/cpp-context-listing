@@ -80,7 +80,7 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
 
     @Override
     public Response getCourtList(final String courtCentreId, final String courtRoomId, final String listId,
-                                 final String startDate, final String endDate, final boolean restricted, UUID userId) {
+                                 final String startDate, final String endDate, final boolean restricted, final UUID userId) {
         final Optional<CourtListType> courtListType = CourtListType.valueFor(listId);
         if (courtListType.isPresent()) {
             final JsonObjectBuilder builder =

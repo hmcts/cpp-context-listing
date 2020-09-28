@@ -50,7 +50,7 @@ public class PersistenceTestSuite {
 
     @BeforeClass
     public static void setupBeforeClass() {
-        if (Boolean.valueOf(System.getProperty(RUN_PERSISTENCE_TEST_IN_PIPELINE, "true"))) {
+        if (Boolean.parseBoolean(System.getProperty(RUN_PERSISTENCE_TEST_IN_PIPELINE, "true"))) {
             startForPipeline();
         } else {
             startForLocal();
@@ -88,7 +88,7 @@ public class PersistenceTestSuite {
                                         .packageResolver(new PackagePaths(cmd, SubdirTempDir.defaultInstance()))
                                         .build()
                                 )
-                ).commandLinePostProcessor(privilegedWindowsRunasPostprocessor()).build();
+                ).commandLinePostProcessor(privilegedWindowsRunAsPostprocessor()).build();
     }
 
     @AfterClass
@@ -97,7 +97,7 @@ public class PersistenceTestSuite {
     }
 
 
-    private static ICommandLinePostProcessor privilegedWindowsRunasPostprocessor() {
+    private static ICommandLinePostProcessor privilegedWindowsRunAsPostprocessor() {
         if (Platform.detect().equals(Platform.Windows)) {
             try {
                 int adminCommandResult = Runtime.getRuntime().exec("net session").waitFor();

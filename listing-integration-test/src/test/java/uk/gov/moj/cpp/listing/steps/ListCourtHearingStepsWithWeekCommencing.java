@@ -5,6 +5,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataForWeekCommencing;
+import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingData;
 import static uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData.updatedHearingDataWithWeekCommencingDate;
 
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -76,7 +77,7 @@ public class ListCourtHearingStepsWithWeekCommencing {
     }
 
     public static UpdatedHearingData updatedHearingListedData(final HearingsData hearingsData) {
-        UpdatedHearingData updatedHearingData = UpdatedHearingData.updatedHearingData(hearingsData.getHearingData().get(0));
+        UpdatedHearingData updatedHearingData = updatedHearingData(hearingsData.getHearingData().get(0));
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData)) {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();

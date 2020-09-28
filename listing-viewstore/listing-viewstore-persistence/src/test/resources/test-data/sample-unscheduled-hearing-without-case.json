@@ -5,6 +5,7 @@
     "description": "Trial"
   },
   "endDate": "END_DATE_FIELD",
+  "isVacatedTrial": VACATED_TRIAL_FIELD,
   "allocated": false,
   "unscheduled": true,
   "typeOfList": {

@@ -4,9 +4,14 @@ import static java.time.ZonedDateTime.now;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.listing.events.AvailableSlotsForHearingFreed.availableSlotsForHearingFreed;
+import static uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay;
 
+import uk.gov.justice.listing.events.AvailableSlotsForHearingFreed;
 import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing;
 import uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing;
@@ -18,6 +23,8 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+
+import javax.ws.rs.core.Response;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +44,9 @@ public class AzureListingEventProcessorTest {
 
     @Mock
     private HearingSlotsService hearingSlotsService;
+
+    @Mock
+    private Response response;
 
     @InjectMocks
     private AzureListingEventProcessor azureListingEventProcessor;
@@ -67,7 +77,6 @@ public class AzureListingEventProcessorTest {
                 .withHearingId(HEARING_ID)
                 .build();
         given(envelope.payload()).willReturn(hearing);
-
         given(slotsToJsonStringConverter.convertNonDefaultDaysToJson(HEARING_ID, hearing.getNonDefaultDays())).willReturn(TEST_OUTPUT);
 
         azureListingEventProcessor.nonDefaultDaysChangedForHearing(envelope);
@@ -75,9 +84,24 @@ public class AzureListingEventProcessorTest {
         verify(hearingSlotsService).update(TEST_OUTPUT);
     }
 
+    @Test
+    public void shouldDeleteSlotsInAzureWhenHearingSlotsAvailable() {
+        final Envelope<AvailableSlotsForHearingFreed> envelope = (Envelope<AvailableSlotsForHearingFreed>) mock(Envelope.class);
+        when(hearingSlotsService.delete(any(UUID.class))).thenReturn(response);
+
+        final AvailableSlotsForHearingFreed hearing = availableSlotsForHearingFreed()
+                .withHearingId(HEARING_ID)
+                .build();
+        given(envelope.payload()).willReturn(hearing);
+
+        azureListingEventProcessor.freeAvailableHearingSlots(envelope);
+
+        verify(hearingSlotsService).delete(HEARING_ID);
+    }
+
     private List<NonDefaultDay> nonDefaultDays() {
 
-        final NonDefaultDay nonDefaultDay1 = NonDefaultDay.nonDefaultDay()
+        final NonDefaultDay nonDefaultDay1 = nonDefaultDay()
                 .withStartTime(START_DATE_TIME)
                 .withDuration(of(1))
                 .withCourtRoomId(of(123))
@@ -86,7 +110,7 @@ public class AzureListingEventProcessorTest {
                 .withSession(of("AD"))
                 .build();
 
-        final NonDefaultDay nonDefaultDay2 = NonDefaultDay.nonDefaultDay()
+        final NonDefaultDay nonDefaultDay2 = nonDefaultDay()
                 .withStartTime(START_DATE_TIME)
                 .withDuration(of(311))
                 .withCourtRoomId(of(34))

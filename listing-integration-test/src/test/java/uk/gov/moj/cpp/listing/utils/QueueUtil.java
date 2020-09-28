@@ -32,9 +32,9 @@ public class QueueUtil {
 
     private static final long RETRIEVE_TIMEOUT = 20000;
 
-    private Session session;
+    private final Session session;
 
-    private Topic topic;
+    private final Topic topic;
 
     public static final QueueUtil publicEvents = new QueueUtil("public.event");
 
@@ -53,6 +53,14 @@ public class QueueUtil {
             LOGGER.error("Fatal error initialising Artemis", e);
             throw new RuntimeException(e);
         }
+    }
+
+    public static QueueUtil getPublicTopicInstance() {
+        return new QueueUtil("public.event");
+    }
+
+    public static QueueUtil getPrivateTopicInstance(final String topicName) {
+        return new QueueUtil(topicName);
     }
 
     public MessageConsumer createConsumer(final String eventSelector) {
@@ -97,8 +105,8 @@ public class QueueUtil {
     }
 
     public static JsonPath retrieveMessage(final MessageConsumer consumer, long customTimeOutInMillis) {
-        String messageString = retrieveMessageString(consumer, customTimeOutInMillis);
-        return new JsonPath(messageString);
+        final String messageString = retrieveMessageString(consumer, customTimeOutInMillis);
+        return messageString != null ? new JsonPath(messageString) : null;
     }
 
     public static String retrieveMessageString(final MessageConsumer consumer, long customTimeOutInMillis) {

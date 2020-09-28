@@ -11,7 +11,8 @@
     "endTime": "2018-06-01T10:30:00.000Z",
     "hearingDate": "2018-06-01",
     "sequence": 0,
-    "startTime": "2018-06-01T10:00:00.000Z"
+    "startTime": "2018-06-01T10:00:00.000Z",
+    "isCancelled": false
   }],
   "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
   "hearingLanguage": "WELSH",

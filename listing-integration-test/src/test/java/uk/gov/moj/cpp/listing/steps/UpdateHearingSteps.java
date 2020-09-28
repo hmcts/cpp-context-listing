@@ -177,7 +177,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         this.hearingData = hearingsData.getHearingData().get(0);
         this.listedCaseDatas = hearingsData.getHearingData().get(0).getListedCases();
         this.updatedHearingData = updatedHearingData;
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         createMessageConsumers();
 
@@ -354,36 +354,28 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         }
     }
 
-    private static void addNullableStringField(final JsonObjectBuilder builder, final String fieldName, final Optional<String> value) {
-        if (value.isPresent()) {
-            builder.add(fieldName, value.get());
-        }
+    private static void addNullableStringField(final JsonObjectBuilder builder, final String fieldName, final Optional<String> optionalValue) {
+        optionalValue.ifPresent(value -> builder.add(fieldName, value));
     }
 
-    private static void addNullableIntegerFieldIfNotNull(final JsonObjectBuilder builder, final String fieldName, final Optional<Integer> value) {
-        if (value.isPresent()) {
-            builder.add(fieldName, value.get());
-        }
+    private static void addNullableIntegerFieldIfNotNull(final JsonObjectBuilder builder, final String fieldName, final Optional<Integer> optionalValue) {
+        optionalValue.ifPresent(value -> builder.add(fieldName, value));
     }
 
-    private static void addNullableIntegerField(final JsonObjectBuilder builder, final String fieldName, final Optional<Integer> value) {
-        if (value.isPresent()) {
-            builder.add(fieldName, value.get());
+    private static void addNullableIntegerField(final JsonObjectBuilder builder, final String fieldName, final Optional<Integer> optionalValue) {
+        if (optionalValue.isPresent()) {
+            builder.add(fieldName, optionalValue.get());
         } else {
             builder.addNull(fieldName);
         }
     }
 
-    private static void addNullableUUIDField(final JsonObjectBuilder builder, final String fieldName, final Optional<UUID> value) {
-        if (value.isPresent()) {
-            builder.add(fieldName, value.get().toString());
-        }
+    private static void addNullableUUIDField(final JsonObjectBuilder builder, final String fieldName, final Optional<UUID> optionalValue) {
+        optionalValue.ifPresent(value -> builder.add(fieldName, value.toString()));
     }
 
-    private static void addOptionalBooleanField(final JsonObjectBuilder builder, final String fieldName, final Optional<Boolean> value) {
-        if (value.isPresent()) {
-            builder.add(fieldName, value.get());
-        }
+    private static void addOptionalBooleanField(final JsonObjectBuilder builder, final String fieldName, final Optional<Boolean> optionalValue) {
+        optionalValue.ifPresent(value -> builder.add(fieldName, value));
     }
 
     private void createMessageConsumers() {
@@ -428,7 +420,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
         request = prepareJsonForUpdatedHearingData(updatedHearingData);
 
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING, request, getLoggedInHeader());
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING, request);
 
         final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
                 request, getLoggedInHeader());
@@ -461,7 +453,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
         request = prepareJsonForUpdatedHearingDataWithProsecutionCases(updatedHearingData, listedCaseDatas);
 
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING, request, getLoggedInHeader());
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING, request);
 
         final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
                 request, getLoggedInHeader());
@@ -476,7 +468,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
         request = prepareJsonForChangeJudiciaryForHearings(updatedHearingData);
 
-        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_CHANGE_JUDICIARY_FOR_HEARINGS, request, getLoggedInHeader());
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_CHANGE_JUDICIARY_FOR_HEARINGS, request);
 
         final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_CHANGE_JUDICIARY_FOR_HEARINGS,
                 request, getLoggedInHeader());
@@ -487,9 +479,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     @Override
     public void close() {
         try {
-
             closeMessageConsumers();
-
         } catch (final JMSException e) {
             LOGGER.error("Error closing privateMessageConsumerHearingListed: {}", e.getMessage());
         }
@@ -899,10 +889,6 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
         assertThat(jsonResponse.get("prosecutionCaseDefendantsOffenceIds[0].defendants[0].offenceIds[0]"),
                 is(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getOffenceId().toString()));
-
-
-
-
     }
 
 

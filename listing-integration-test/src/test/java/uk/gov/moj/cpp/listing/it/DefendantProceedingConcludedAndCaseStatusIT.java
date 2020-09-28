@@ -11,7 +11,7 @@ import org.junit.Test;
 
 public class DefendantProceedingConcludedAndCaseStatusIT extends AbstractIT {
     @Test
-    public void shouldUpdateDefendantProceedingConcludedAndCaseStatusEventFromProgression() throws Exception {
+    public void shouldUpdateDefendantProceedingConcludedAndCaseStatusEventFromProgression() {
         HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();

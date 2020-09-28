@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.common.azure;
 
 import java.util.Map;
+import java.util.UUID;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -31,5 +32,13 @@ public class HearingSlotsService {
         }
 
         return rotaslAzureService.put(SERVICE, rotaslAzureConfig.getSubscriptionKey(), payload);
+    }
+
+    public Response delete(final UUID hearingId) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Delete slots in Azure S & L with hearing id '{}'", hearingId);
+        }
+
+        return rotaslAzureService.delete(SERVICE, rotaslAzureConfig.getSubscriptionKey(), hearingId);
     }
 }

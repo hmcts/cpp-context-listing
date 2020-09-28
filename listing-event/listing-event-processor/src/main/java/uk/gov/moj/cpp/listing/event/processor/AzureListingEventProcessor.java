@@ -3,10 +3,10 @@ package uk.gov.moj.cpp.listing.event.processor;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 
+import uk.gov.justice.listing.events.AvailableSlotsForHearingFreed;
 import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing;
 import uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing;
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 import javax.inject.Inject;
+import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ public class AzureListingEventProcessor {
 
     private static final String PRIVATE_EVENT_NON_DEFAULT_DAYS_ASSIGNED = "listing.events.non-default-days-assigned-to-hearing";
     private static final String PRIVATE_EVENT_NON_DEFAULT_DAYS_CHANGED = "listing.events.non-default-days-changed-for-hearing";
+    private static final String     PRIVATE_EVENT_AVAILABLE_SLOTS_FOR_HEARING_FREED = "listing.events.available-slots-for-hearing-freed";
 
     @Inject
     private SlotsToJsonStringConverter jsonStringConverter;
@@ -47,6 +49,17 @@ public class AzureListingEventProcessor {
         final NonDefaultDaysChangedForHearing hearing = event.payload();
 
         updateHearingSlots(hearing.getHearingId(), hearing.getNonDefaultDays());
+    }
+
+    @Handles(PRIVATE_EVENT_AVAILABLE_SLOTS_FOR_HEARING_FREED)
+    public void freeAvailableHearingSlots(final Envelope<AvailableSlotsForHearingFreed> event) {
+        final UUID hearingId = event.payload().getHearingId();
+
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("'listing.events.available-slots-for-hearing-freed' received on hearingId {}", hearingId);
+        }
+        final Response response = hearingSlotsService.delete(hearingId);
+        LOGGER.info("Received response with status {}/{}", response.getStatus(), response.getStatusInfo());
     }
 
     private void updateHearingSlots(final UUID hearingId, final List<NonDefaultDay> nonDefaultDays) {

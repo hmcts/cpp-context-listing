@@ -131,7 +131,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
         privateEventsMessageOffenceAdded = privateEvents.createConsumer(EVENT_SELECTOR_OFFENCES_ADDED);
         privateEventsMessageOffenceDeleted = privateEvents.createConsumer(EVENT_SELECTOR_OFFENCES_DELETED);
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     public void whenCaseDefendantOffencesUpdatedPublicEventIsPublished() {

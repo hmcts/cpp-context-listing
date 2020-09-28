@@ -98,6 +98,7 @@ public class HearingConfirmedFactoryTest {
 
         assertThat(listedHearing.getHearingDays().get(0).getSittingDay().toInstant().toString(),
                 is(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME, BST).withZoneSameInstant(UTC).toInstant().toString()));
+        assertThat(listedHearing.getHearingDays().get(0).getIsCancelled().get(), is(true));
         assertThat(listedHearing.getType().getDescription(), is(TYPE));
         assertThat(listedHearing.getType().getId(), is(TYPE_ID));
         assertThat(listedHearing.getCourtCentre().getId(), is(COURT_CENTRE_ID));
@@ -150,6 +151,7 @@ public class HearingConfirmedFactoryTest {
                 .withDurationMinutes(DURATION_MINUTES)
                 .withStartTime(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME, BST).withZoneSameInstant(UTC))
                 .withEndTime(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME.plusMinutes(DURATION_MINUTES), BST).withZoneSameInstant(UTC))
+                .withIsCancelled(true)
                 .build());
 
 

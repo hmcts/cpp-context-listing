@@ -1,8 +1,12 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
+import static java.lang.Boolean.FALSE;
+import static java.util.Objects.isNull;
+
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 @SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067", "squid:S1948", "PMD.BeanMembersShouldSerialize"})
@@ -21,13 +25,16 @@ public class HearingDay implements Serializable {
 
     private final ZonedDateTime startTime;
 
-    public HearingDay(final Integer durationMinutes, final ZonedDateTime endTime, final LocalDate hearingDate, final Integer sequence, final ZonedDateTime startTime, final UUID courtScheduleId) {
+    private final Boolean isCancelled;
+
+    public HearingDay(final Integer durationMinutes, final ZonedDateTime endTime, final LocalDate hearingDate, final Integer sequence, final ZonedDateTime startTime, final UUID courtScheduleId, final Boolean isCancelled) {
         this.durationMinutes = durationMinutes;
         this.endTime = endTime;
         this.hearingDate = hearingDate;
         this.sequence = sequence;
         this.startTime = startTime;
         this.courtScheduleId = courtScheduleId;
+        this.isCancelled = isCancelled;
     }
 
     public Integer getDurationMinutes() {
@@ -54,41 +61,48 @@ public class HearingDay implements Serializable {
         return courtScheduleId;
     }
 
+    public Boolean isCancelled() {
+        return isNull(isCancelled) ? FALSE : isCancelled;
+    }
+
     public static Builder hearingDay() {
         return new Builder();
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (this == obj) {
+    public boolean equals(final Object o) {
+        if (this == o) {
             return true;
         }
-        if (obj == null || getClass() != obj.getClass()) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final HearingDay that = (HearingDay) obj;
-
-        return java.util.Objects.equals(this.durationMinutes, that.durationMinutes) &&
-                java.util.Objects.equals(this.endTime, that.endTime) &&
-                java.util.Objects.equals(this.hearingDate, that.hearingDate) &&
-                java.util.Objects.equals(this.sequence, that.sequence) &&
-                java.util.Objects.equals(this.startTime, that.startTime);
+        final HearingDay that = (HearingDay) o;
+        return Objects.equals(getCourtScheduleId(), that.getCourtScheduleId()) &&
+                Objects.equals(getDurationMinutes(), that.getDurationMinutes()) &&
+                Objects.equals(getEndTime(), that.getEndTime()) &&
+                Objects.equals(getHearingDate(), that.getHearingDate()) &&
+                Objects.equals(getSequence(), that.getSequence()) &&
+                Objects.equals(getStartTime(), that.getStartTime()) &&
+                Objects.equals(isCancelled(), that.isCancelled());
     }
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(durationMinutes, endTime, hearingDate, sequence, startTime);
+        return Objects.hash(getCourtScheduleId(), getDurationMinutes(), getEndTime(), getHearingDate(), getSequence(), getStartTime(), isCancelled());
     }
 
     @Override
     public String toString() {
         return "HearingDay{" +
-                "durationMinutes='" + durationMinutes + "'," +
-                "endTime='" + endTime + "'," +
-                "hearingDate='" + hearingDate + "'," +
-                "sequence='" + sequence + "'," +
-                "startTime='" + startTime + "'" +
-                "}";
+                "courtScheduleId=" + courtScheduleId +
+                ", durationMinutes=" + durationMinutes +
+                ", endTime=" + endTime +
+                ", hearingDate=" + hearingDate +
+                ", sequence=" + sequence +
+                ", startTime=" + startTime +
+                ", isCancelled=" + isCancelled +
+                '}';
     }
 
 
@@ -105,6 +119,8 @@ public class HearingDay implements Serializable {
         private ZonedDateTime startTime;
 
         private UUID courtScheduleId;
+
+        private Boolean isCancelled;
 
         public Builder withDurationMinutes(final Integer durationMinutes) {
             this.durationMinutes = durationMinutes;
@@ -136,8 +152,13 @@ public class HearingDay implements Serializable {
             return this;
         }
 
+        public Builder withIsCancelled(final Boolean isCancelled) {
+            this.isCancelled = isCancelled;
+            return this;
+        }
+
         public HearingDay build() {
-            return new HearingDay(durationMinutes, endTime, hearingDate, sequence, startTime, courtScheduleId);
+            return new HearingDay(durationMinutes, endTime, hearingDate, sequence, startTime, courtScheduleId, isCancelled);
         }
     }
 }

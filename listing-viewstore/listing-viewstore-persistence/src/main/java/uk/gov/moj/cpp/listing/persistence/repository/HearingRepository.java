@@ -17,7 +17,8 @@ import org.apache.deltaspike.data.api.Repository;
  * The two search queries differ in how dates and times are searched for.  For the search where a
  * <code>searchDate</code> is provided you you must also provide a <code>startTime</code> and
  * <code>endTime</code> time range.  Whereas the other search that accepts a <code>startDate</code>
- * and <code>endDate</code> date range does not accept a time range.  The date range search does not accept a time range for the following reasons.
+ * and <code>endDate</code> date range does not accept a time range.  The date range search does not
+ * accept a time range for the following reasons.
  * <ul>
  * <li>From a usability perspective its unclear what a time range would be where you have a date
  * range spanning more
@@ -35,13 +36,12 @@ import org.apache.deltaspike.data.api.Repository;
  */
 @SuppressWarnings({"squid:S00107", "squid:S1214"})
 @Repository
-public interface HearingRepository extends EntityRepository<Hearing, UUID>,
-        EntityManagerDelegate<Hearing> {
+public interface HearingRepository extends EntityRepository<Hearing, UUID>, EntityManagerDelegate<Hearing> {
 
     String ALL_AUTHORITY_CODES_SEARCH = "[ ]";
 
     String WEEK_COMMENCING_CORE_QUERY = "(?1 is null or properties ->> 'courtCentreId' = cast(?1 as text))  " +
-            "and (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)" +
+            "and (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false) " +
             "and (?2 is null or properties ->> 'courtRoomId' = cast(?2 as text))  " +
             "and (?3 = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?3 as jsonb))  " +
             "and (?4 is null or properties -> 'type' ->> 'id' = cast(?4 as text))  " +
@@ -68,23 +68,25 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
      * @param courtRoomId      to search for or <code>null</code> for any courtRoomId - optional.
      * @param authorityCode    to search for or <code>null</code> for any authorityCode - optional.
      * @param hearingTypeId    to search for or <code>null</code> for any hearingType - optional.
-     * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType - optional.
+     * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType -
+     *                         optional.
      * @param searchDate       to search for - mandatory.
      * @param startTime        to search for  - mandatory.
      * @param endTime          to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select distinct id, properties  " +
-            "from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays  " +
-            "where  " +
-            "cast(properties ->> 'allocated' as boolean) = ?1  " +
-            "and (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)" +
-            "and (?2 is null or properties ->> 'courtCentreId' = cast(?2 as text))  " +
-            "and (?3 is null or properties ->> 'courtRoomId' = cast(?3 as text))  " +
-            "and (?4  = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?4 as jsonb))  " +
-            "and (?5 is null or properties -> 'type' ->> 'id' = cast(?5 as text))  " +
-            "and (?6 is null or properties ->> 'jurisdictionType' = cast(?6 as text))  " +
-            "and cast(?7 as date) between cast(properties ->> 'startDate' as date) and cast(properties ->> 'endDate' as date)  " +
+    @Query(value = "select distinct id, properties " +
+            "from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays " +
+            "where " +
+            "cast(properties ->> 'allocated' as boolean) = ?1 " +
+            "and (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false) " +
+            "and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
+            "and (?2 is null or properties ->> 'courtCentreId' = cast(?2 as text)) " +
+            "and (?3 is null or properties ->> 'courtRoomId' = cast(?3 as text)) " +
+            "and (?4  = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?4 as jsonb)) " +
+            "and (?5 is null or properties -> 'type' ->> 'id' = cast(?5 as text)) " +
+            "and (?6 is null or properties ->> 'jurisdictionType' = cast(?6 as text)) " +
+            "and cast(?7 as date) between cast(properties ->> 'startDate' as date) and cast(properties ->> 'endDate' as date) " +
             "and cast(hearingDays ->> 'startTime' as timestamp) >= cast(?8 as timestamp)  " +
             "and cast(hearingDays ->> 'startTime' as timestamp) <= cast(?9 as timestamp)"
             , isNative = true)
@@ -102,13 +104,16 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
     /**
      * Find {@link Hearing}s based on the following parameters
      *
-     * @param allocated            property to search for - mandatory.
-     * @param jurisdictionTypes    to search for or <code>null</code> for any jurisdictionTypes.
-     * @param hearingId            property to search for - mandatory.
-     * @param caseUrnSet           to search for or <code>empty string</code> for any case urn.
-     * @param masterDefendantIdSet to search for or <code>empty string</code> for any master defendant id.
-     * @param linkedCaseUrn        to search for or <code>empty string</code> for any linked case urn.
-     * @param caseUrnForLinkedCases to search for or <code>empty string</code> for any linked case urn.
+     * @param allocated             property to search for - mandatory.
+     * @param jurisdictionTypes     to search for or <code>null</code> for any jurisdictionTypes.
+     * @param hearingId             property to search for - mandatory.
+     * @param caseUrnSet            to search for or <code>empty string</code> for any case urn.
+     * @param masterDefendantIdSet  to search for or <code>empty string</code> for any master
+     *                              defendant id.
+     * @param linkedCaseUrn         to search for or <code>empty string</code> for any linked case
+     *                              urn.
+     * @param caseUrnForLinkedCases to search for or <code>empty string</code> for any linked case
+     *                              urn.
      * @return Hearings.
      */
     @Query(value = "select id, properties  " +
@@ -158,8 +163,6 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "and (?3 is null or properties ->> 'id' != cast(?3 as text))) allLinkedCaseReference) " +
             "))) "
             , isNative = true)
-
-
     List<Hearing> findHearings(final boolean allocated,
                                final Set<String> jurisdictionTypes,
                                final String hearingId,
@@ -177,7 +180,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
      * @param courtRoomId      to search for or <code>null</code> for any courtRoomId - optional.
      * @param authorityCode    to search for or <code>null</code> for any authorityCode - optional.
      * @param hearingTypeId    to search for or <code>null</code> for any hearingType - optional.
-     * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType - optional.
+     * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType -
+     *                         optional.
      * @param startDate        to search for - mandatory.
      * @param endDate          to search for - mandatory.
      * @return Hearings.
@@ -186,7 +190,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "from hearing  " +
             "where  " +
             "properties -> 'allocated'  @> cast(?1 as jsonb)  " +
-            "and (properties -> 'unscheduled' is null or properties -> 'unscheduled' @> cast('false' as jsonb))" +
+            "and (properties -> 'unscheduled' is null or properties -> 'unscheduled' @> cast('false' as jsonb)) " +
+            "and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
             "and (?2 = 'null' or properties -> 'courtCentreId' \\?\\? ?2 )  " +
             "and (?3 = 'null' or properties -> 'courtRoomId' \\?\\? ?3  )  " +
             "and (?4 = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?4 as jsonb))  " +
@@ -197,7 +202,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "   cast(properties ->> 'endDate' as date) between cast(?7 as date) and cast(?8 as date) or  " +
             "   ( cast(properties ->> 'startDate' as date) <= cast(?7 as date) and cast(properties ->> 'endDate' as date) >= cast(?8 as date) )  " +
             ")", isNative = true)
-    List<Hearing> findHearings(final String allocated ,
+    List<Hearing> findHearings(final String allocated,
                                final String courtCentreId,
                                final String courtRoomId,
                                final String authorityCode,
@@ -209,18 +214,24 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
     /**
      * Find {@link Hearing}s based on the query parameters
      *
-     * @param courtCentreId           to search for or <code>null</code> for any courtCentreId - optional.
-     * @param courtRoomId             to search for or <code>null</code> for any courtRoomId - optional.
-     * @param authorityCode           to search for or <code>null</code> for any authorityCode - optional.
-     * @param hearingTypeId           to search for or <code>null</code> for any hearingType - optional.
-     * @param jurisdictionType        to search for or <code>null</code> for any jurisdictionType - optional.
+     * @param courtCentreId           to search for or <code>null</code> for any courtCentreId -
+     *                                optional.
+     * @param courtRoomId             to search for or <code>null</code> for any courtRoomId -
+     *                                optional.
+     * @param authorityCode           to search for or <code>null</code> for any authorityCode -
+     *                                optional.
+     * @param hearingTypeId           to search for or <code>null</code> for any hearingType -
+     *                                optional.
+     * @param jurisdictionType        to search for or <code>null</code> for any jurisdictionType -
+     *                                optional.
      * @param weekCommencingStartDate to search for - mandatory.
      * @param weekCommencingEndDate   to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select id, properties  " +
-            "from hearing  " +
-            "where  " +
+    @Query(value = "select id, properties " +
+            "from hearing " +
+            "where " +
+            "(properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) and " +
             WEEK_COMMENCING_CORE_QUERY
             , isNative = true)
     List<Hearing> findHearingsByWeekCommencingRange(
@@ -236,20 +247,25 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
      * Find {@link Hearing}s based on the query parameters
      *
      * @param allocated               property to search for -mandatory.
-     * @param courtCentreId           to search for or <code>null</code> for any courtCentreId - optional.
-     * @param courtRoomId             to search for or <code>null</code> for any courtRoomId - optional.
-     * @param authorityCode           to search for or <code>null</code> for any authorityCode - optional.
-     * @param hearingTypeId           to search for or <code>null</code> for any hearingType - optional.
-     * @param jurisdictionType        to search for or <code>null</code> for any jurisdictionType - optional.
+     * @param courtCentreId           to search for or <code>null</code> for any courtCentreId -
+     *                                optional.
+     * @param courtRoomId             to search for or <code>null</code> for any courtRoomId -
+     *                                optional.
+     * @param authorityCode           to search for or <code>null</code> for any authorityCode -
+     *                                optional.
+     * @param hearingTypeId           to search for or <code>null</code> for any hearingType -
+     *                                optional.
+     * @param jurisdictionType        to search for or <code>null</code> for any jurisdictionType -
+     *                                optional.
      * @param weekCommencingStartDate to search for - mandatory.
      * @param weekCommencingEndDate   to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select id, properties  " +
-            "from hearing  " +
-            "where  " +
-            "cast(properties ->> 'allocated' as boolean) = ?8  " +
-            "and " +
+    @Query(value = "select id, properties " +
+            "from hearing " +
+            "where " +
+            "(properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) and " +
+            "cast(properties ->> 'allocated' as boolean) = ?8 and " +
             WEEK_COMMENCING_CORE_QUERY
             , isNative = true)
     List<Hearing> findUnallocatedHearingsByWeekCommencingRange(
@@ -263,7 +279,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             final boolean allocated);
 
     /**
-     * Find {@link Hearing}s based on the query parameters.  This query will be used by the 'Public List' and the 'Standard List'
+     * Find {@link Hearing}s based on the query parameters.  This query will be used by the 'Public
+     * List' and the 'Standard List'
      *
      * @param allocated     property to search for - mandatory.
      * @param courtCentreId to search for or <code>null</code> for any courtCentreId - mandatory.
@@ -272,7 +289,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
      * @return Hearings.
      */
     @Query(value =
-            "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id," +
+            "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id, " +
                     "( " +
                     "select row_to_json(combinedJudiciaryAndHearings) as properties " +
                     "    from " +
@@ -290,6 +307,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                     "                    from hearing" +
                     "                    where properties ->> 'courtCentreId' = cast(?2 as text) " +
                     "                    and cast(properties ->> 'allocated' as boolean) = ?1 " +
+                    "                    and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
                     "                ) judicialId " +
                     "            ) uniqueJudiciary " +
                     "        ) a," +
@@ -311,6 +329,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                     "                                from hearing " +
                     "                                where properties ->> 'courtCentreId' = cast(?2 as text) " +
                     "                                and cast(properties ->> 'allocated' as boolean) = ?1 " +
+                    "                                and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
                     "                                and properties -> 'hearingDays' @> cast(concat('[{\"hearingDate\": \"', h3.hearingDate, '\"}]') as jsonb) " +
                     "                            ) hearings " +
                     "                        )  " +
@@ -323,11 +342,12 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                     "                                from hearing" +
                     "                                where properties ->> 'courtCentreId' = cast(?2 as text) " +
                     "                                and cast(properties ->> 'allocated' as boolean) = ?1 " +
+                    "                                and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
                     "                            ) as h2 " +
                     "                        ) as h3 " +
                     "                    ) hbsd " +
                     "                    where cast(\"hearingDate\" as date) between cast(?3 as date) and cast(?4 as date) " +
-                    "                ) from hearing h4  " +
+                    "                ) from hearing h4 " +
                     "            ) hrngByCourtCentreId " +
                     "            where \"courtCentreId\" = cast(?2 as text) " +
                     "        ) b " +
@@ -340,7 +360,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                                               final String endDate);
 
     /**
-     * Find {@link Hearing}s based on the query parameters. This query will be used by the 'Alphabetical List'
+     * Find {@link Hearing}s based on the query parameters. This query will be used by the
+     * 'Alphabetical List'
      *
      * @param allocated     property to search for - mandatory.
      * @param courtCentreId to search for or <code>null</code> for any courtCentreId - mandatory.
@@ -362,6 +383,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                     "                where properties -> 'hearingDays' @> cast(concat('[{\"hearingDate\": \"', hrngByHearingDate.hearingDate, '\"}]') as jsonb) " +
                     "                and properties ->> 'courtCentreId' = cast(?2 as text) " +
                     "                and cast(properties ->> 'allocated' as boolean) = ?1 " +
+                    "                and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
                     "                and hearingDays ->> 'hearingDate' = hrngByHearingDate.hearingDate " +
                     "            ) hearings  " +
                     "        )  " +
@@ -372,6 +394,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                     "                from hearing  " +
                     "                where properties ->> 'courtCentreId' = cast(?2 as text) " +
                     "                and cast(properties ->> 'allocated' as boolean) = ?1 " +
+                    "                and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
                     "            ) as h2  " +
                     "        ) as hrngByHearingDate   " +
                     "        where cast(hearingDate as date) = cast(?3 as date) " +
@@ -383,14 +406,10 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
                                                   final String hearingDate);
 
 
-    /**
-     * @param caseUrn
-     * @param typeOfList
-     * @return
-     */
     @Query(value = "select distinct id, properties" +
             " from hearing " +
-            " where cast(properties ->> 'allocated' as boolean) = false" +
+            " where (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true)" +
+            "  and cast(properties ->> 'allocated' as boolean) = false" +
             "  and cast(properties ->> 'unscheduled' as boolean) = true" +
             "  and ( ( properties -> 'listedCases' is null and ?1 is null ) " +
             "           or id in (select hearingId" +
@@ -405,7 +424,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "                      from hearing) as allApplications" +
             "             where ?1 is null" +
             "                or UPPER(allApplications.application ->> 'applicationReference') = cast(?1 as text))" +
-            "      ) "+
+            "      ) " +
             "  and (?2 is null" +
             "    or properties -> 'typeOfList' ->> 'id' = cast(?2 as text))"
             , isNative = true)
@@ -442,7 +461,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
      */
     @Query(value = "select distinct id, properties" +
             " from hearing" +
-            " where cast(properties ->> 'allocated' as boolean) = false" +
+            " where (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true)" +
+            "  and cast(properties ->> 'allocated' as boolean) = false" +
             "  and cast(properties ->> 'unscheduled' as boolean) = true" +
             "  and ( ( properties -> 'listedCases' is null and ?1 is null ) " +
             "           or id in (select hearingId" +
@@ -457,7 +477,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>,
             "                      from hearing) as appApplications" +
             "             where ?1 is null" +
             "                or UPPER(appApplications.application ->> 'applicationReference') = cast(?1 as text))" +
-            "      ) "+
+            "      ) " +
             "  and (?2 is null" +
             "    or properties -> 'typeOfList' ->> 'id' = cast(?2 as text))" +
             "  and (properties ->> 'courtCentreId' in (?3))"

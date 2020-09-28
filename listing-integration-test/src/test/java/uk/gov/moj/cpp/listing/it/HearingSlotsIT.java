@@ -138,7 +138,7 @@ public class HearingSlotsIT extends AbstractIT {
 
 
     @Test
-    public void shouldReturnErrorWhenSessionEndDateIsEmpty() throws IOException {
+    public void shouldReturnErrorWhenSessionEndDateIsEmpty() {
         final Map<String, String> params = getParams();
         params.remove("sessionEndDate");
 

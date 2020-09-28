@@ -76,7 +76,7 @@ public class RestrictCourtListSteps extends AbstractIT implements AutoCloseable 
         publicEventMessageConsumerRestrictCourtList = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_RESTRICT_COURT_LIST);
         privateMessageConsumerRestrictCourtList = QueueUtil.privateEvents.createConsumer(PRIVATE_EVENT_RESTRICT_COURT_LIST);
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
     public void whenRestrictingCaseOrStandaloneApplicationForCourtListing(RestrictCourtListData restrictListingFromCourtData) {
         final JsonObject restrictCourtListDataObject = (JsonObject) objectToJsonValueConverter.convert(restrictListingFromCourtData);

@@ -61,7 +61,7 @@ public class WeekCommencingHearingSteps extends AbstractIT implements AutoClosea
 
     public WeekCommencingHearingSteps(final UpdatedHearingData updatedHearingData) {
         this.updatedHearingData = updatedHearingData;
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         createMessageConsumers();
     }

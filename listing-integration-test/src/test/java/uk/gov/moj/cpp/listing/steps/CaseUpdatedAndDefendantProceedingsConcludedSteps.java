@@ -1,8 +1,6 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import static com.google.common.io.Resources.getResource;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.nio.charset.Charset.defaultCharset;
 import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -10,16 +8,16 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
-import com.google.common.io.Resources;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -67,14 +65,14 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         this.listedCaseData = hearingData.getListedCases().get(0);
 
         this.publicEventCaseUpdatedAndHearingResulted = QueueUtil.publicEvents.createProducer();
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         this.publicEventMessageConsumerCaseUpdatedAndHearingResulted = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED);
         this.privateEventMessageConsumerCaseUpdatedAndHearingResulted = privateEvents.createConsumer(LISTING_EVENTS_CASE_RESULTED_AND_DEFENDANT_PROCEEDINGS_CONCLUDED);
     }
 
-    public void whenPublicEventCaseUpdatedAndHearingResultedIsPublished() throws IOException {
+    public void whenPublicEventCaseUpdatedAndHearingResultedIsPublished() {
         final UUID defendantId = listedCaseData.getDefendants().get(0).getDefendantId();
-        final String eventPayloadString = getStringFromResource("public.progression.hearing-resulted-case-updated.json")
+        final String eventPayloadString = getPayload("public.progression.hearing-resulted-case-updated.json")
                 .replaceAll("CASE_ID", caseId.toString())
                 .replaceAll("DEFENDANT_ID", defendantId.toString());
         final JsonObject jsonObject = new StringToJsonObjectConverter().convert(eventPayloadString);
@@ -126,9 +124,5 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
             throw new RuntimeException(e);
 
         }
-    }
-
-    private static String getStringFromResource(final String path) throws IOException {
-        return Resources.toString(getResource(path), defaultCharset());
     }
 }

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -18,14 +19,11 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import com.jayway.restassured.response.Header;
 import org.junit.Before;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("WeakerAccess")
 public class AbstractIT {
     public static final UUID USER_ID_VALUE = randomUUID();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractIT.class);
     protected static final Header CPP_UID_HEADER = new Header(USER_ID, USER_ID_VALUE.toString());
 
     protected static RestClient restClient = new RestClient();
@@ -35,37 +33,42 @@ public class AbstractIT {
 
     private final static ThreadLocal<UUID> USER_CONTEXT = new ThreadLocal<>();
 
-    public static void givenAUserHasLoggedInAsAListingOfficers(final UUID validUserId) {
-        setLoggedInUser(validUserId);
-    }
-
     @Before
     public void setUp() {
+        reset();
         setupAsAuthorisedUser(USER_ID_VALUE);
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
     }
 
-    protected static void setLoggedInUser(final UUID userId) {
+    protected void givenAUserHasLoggedInAsAListingOfficer(final UUID validUserId) {
+        setLoggedInUser(validUserId);
+    }
+
+    protected void setLoggedInUser(final UUID userId) {
         USER_CONTEXT.set(userId);
     }
 
-    protected static UUID getLoggedInUser() {
+    protected UUID getLoggedInUser() {
         return USER_CONTEXT.get();
     }
 
-    protected static MultivaluedMap<String, Object> getLoggedInHeader() {
+    protected MultivaluedMap<String, Object> getLoggedInHeader() {
+        return getLoggedInHeader(getLoggedInUser());
+    }
+
+    protected MultivaluedMap<String, Object> getLoggedInHeader(final UUID userId) {
         final MultivaluedMap<String, Object> header = new MultivaluedHashMap<>();
-        header.add(USER_ID, getLoggedInUser().toString());
+        header.add(USER_ID, userId);
         return header;
     }
 
-    public String getQueryString(final Map<String, String> params) {
+    protected String getQueryString(final Map<String, String> params) {
         return params.entrySet().stream()
                 .map(e -> e.getKey() + "=" + e.getValue())
                 .collect(joining("&"));
     }
 
-    public Map<String, String> getParams() {
+    protected Map<String, String> getParams() {
         final Map<String, String> params = new HashMap<>();
         params.put("panel", "ADULT");
         params.put("oucodeL2Code", "Z01KR05");

@@ -91,7 +91,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         privateEventMessageDefendantsToBeAdded = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS);
         privateEventsMessageDefendantDetailsAdded = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS);
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     public void whenCaseDefendantsAddedPublicEventIsPublished() {

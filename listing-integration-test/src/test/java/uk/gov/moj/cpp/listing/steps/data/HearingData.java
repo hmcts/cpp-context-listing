@@ -23,9 +23,9 @@ public class HearingData {
     private final String jurisdictionType;
     private final List<CourtApplicationData> courtApplications;
     private final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds;
-    private LocalDate hearingStartDate;
-    private LocalDate hearingEndDate;
-    private ZonedDateTime hearingStartTime;
+    private final LocalDate hearingStartDate;
+    private final LocalDate hearingEndDate;
+    private final ZonedDateTime hearingStartTime;
     private LocalDate weekCommencingStartDate;
     private LocalDate weekCommencingEndDate;
     private int weekCommencingDuration;

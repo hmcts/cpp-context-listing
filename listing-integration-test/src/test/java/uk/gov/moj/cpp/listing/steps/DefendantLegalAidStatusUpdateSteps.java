@@ -69,7 +69,7 @@ public class DefendantLegalAidStatusUpdateSteps extends AbstractIT implements Au
         publicEventMessageConsumerDefendantUpdated = QueueUtil.publicEvents.createConsumer(PUBLIC_PROGRESSION_DEFENDANT_LEGALAID_STATUS_UPDATED);
         privateEventsMessageDefendantLegalAidStatusUpdated = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANT_LEGALAID_STATUS_UPDATED_FOR_HEAIRNG);
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     public void whenCaseDefendantLegalAidStatusUpdatedPublicEventIsPublished() {

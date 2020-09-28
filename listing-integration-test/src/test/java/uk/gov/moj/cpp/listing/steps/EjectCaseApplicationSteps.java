@@ -82,7 +82,7 @@ public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseab
         publicEventMessageConsumerCaseApplication = QueueUtil.publicEvents.createConsumer(PUBLIC_PROGRESSION_EVENTS_CASE_OR_APPLICATION_EJECTED);
         privateEventsMessageCaseEjected = privateEvents.createConsumer(EVENT_SELECTOR_CASE_EJECTED);
         privateEventsMessageApplicationEjected = privateEvents.createConsumer(EVENT_SELECTOR_APPLICATION_EJECTED);
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     public void buildEjectCaseData() {

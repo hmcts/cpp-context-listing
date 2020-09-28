@@ -81,7 +81,7 @@ public class UpdateCaseMarkersSteps extends AbstractIT implements AutoCloseable 
 
         privateEventsMessageCaseMarkersToBeUpdated = privateEvents.createConsumer(EVENT_SELECTOR_CASE_MARKERS_TO_BE_UPDATED);
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     public void whenCaseMarkerUpdatedPublicEventIsPublished() {

@@ -1,34 +1,5 @@
 package uk.gov.moj.cpp.listing.it;
 
-import com.jayway.awaitility.core.ConditionTimeoutException;
-import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
-import org.hamcrest.CoreMatchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
-import uk.gov.justice.services.test.utils.persistence.TestJdbcConnectionProvider;
-import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
-import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
-import uk.gov.moj.cpp.listing.steps.NotesSteps;
-import uk.gov.moj.cpp.listing.steps.data.HearingData;
-import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-import uk.gov.moj.cpp.listing.utils.QueueUtil;
-
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static com.jayway.awaitility.Awaitility.with;
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
@@ -54,6 +25,37 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
+import uk.gov.justice.services.test.utils.persistence.TestJdbcConnectionProvider;
+import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
+import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
+import uk.gov.moj.cpp.listing.steps.NotesSteps;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.utils.QueueUtil;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
+
+import com.jayway.awaitility.core.ConditionTimeoutException;
+import com.jayway.jsonpath.Filter;
+import com.jayway.restassured.path.json.JsonPath;
+import org.hamcrest.CoreMatchers;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Test;
+
 public class ListingNoteIT extends AbstractIT {
 
     private static final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
@@ -77,7 +79,7 @@ public class ListingNoteIT extends AbstractIT {
 
     @Test
     public void shouldCreateNoteForListing() {
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         final LocalDate date = now();
         final UUID courtRoomId = randomUUID();
         messageConsumerClientPublicForCreateNote = publicEvents.createConsumer(PUBLIC_LISTING_CREATED_LISTING_NOTE);
@@ -90,7 +92,7 @@ public class ListingNoteIT extends AbstractIT {
 
     @Test
     public void shouldEditNote() {
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         //Given 1 : A note created using create note command
         UUID noteId = createRandomNote(now());
@@ -114,7 +116,7 @@ public class ListingNoteIT extends AbstractIT {
 
     @Test
     public void shouldDeleteListingNote() {
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         //Given : A note created using create note command
         final LocalDate hearingDate = now();
         final UUID noteId = createRandomNote(hearingDate);
@@ -171,7 +173,7 @@ public class ListingNoteIT extends AbstractIT {
     @Test
     public void shouldReturnNotesGivenNoHearingExistForCourtRoomIdAndDateOnSearchQuery() {
 
-        givenAUserHasLoggedInAsAListingOfficers(USER_ID_VALUE);
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         //Given 1 : No Hearing data but Note data exist for given courtRoom and date
         UUID courtRoomId = randomUUID();

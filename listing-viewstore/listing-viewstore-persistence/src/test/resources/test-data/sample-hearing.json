@@ -133,6 +133,7 @@
     }
   ],
   "courtCentreId": "COURT_CENTRE_ID_FIELD",
+  "isVacatedTrial": VACATED_TRIAL_FIELD,
   "nonDefaultDays": [
     {
       "startTime": "2018-11-03T11:53:16.000Z"

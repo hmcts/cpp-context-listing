@@ -26,15 +26,10 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.ReadContext;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.hamcrest.Matcher;
-import org.junit.Before;
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
@@ -54,10 +49,10 @@ import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtLis
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
+import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -74,14 +69,18 @@ import javax.json.JsonObject;
 import javax.json.JsonValue;
 import javax.ws.rs.NotFoundException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.ReadContext;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.hamcrest.Matcher;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
-import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
 
 @RunWith(MockitoJUnitRunner.class)
@@ -127,8 +126,6 @@ public class HearingQueryViewTest {
     private static final LocalTime END_TIME = LocalTime.now();
     private static final String PUBLISH_DATE = "2012-12-11";
     private static final String PUBLISH_DATE_WEEK_COMMENCING = "2012-12-13";
-    private static final LocalDateTime EARLIEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MIN);
-    private static final LocalDateTime LATEST_SEARCH_DATE_TIME = LocalDateTime.of(SEARCH_DATE, LocalTime.MAX);
     private static final String EMPTY_STRING = "";
 
 
@@ -277,7 +274,7 @@ public class HearingQueryViewTest {
                 eq(AUTHORITY_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
                 eq(SEARCH_DATE.atTime(START_TIME).toString()), eq(SEARCH_DATE.atTime(END_TIME).toString()));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
-        verify(notesService,times(1)).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class));
+        verify(notesService, times(1)).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class));
     }
 
     @Test
@@ -323,7 +320,7 @@ public class HearingQueryViewTest {
         final JsonEnvelope results = hearingsQueryView.searchAvailableHearings(query);
 
         assertThat(results, is(jsonEnvelope(metadata().withName("listing.search.hearings"),
-                payloadIsJson( allOf(
+                payloadIsJson(allOf(
                         withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
                         withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")),
                         withJsonPath("$.notes.size()", equalTo(0)))
@@ -376,7 +373,7 @@ public class HearingQueryViewTest {
         final JsonEnvelope results = hearingsQueryView.searchAvailableHearings(query);
 
         assertThat(results, is(jsonEnvelope(metadata().withName("listing.search.hearings"),
-                payloadIsJson( allOf(
+                payloadIsJson(allOf(
                         withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
                         withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")),
                         withJsonPath("$.notes.size()", equalTo(0)))
@@ -396,7 +393,7 @@ public class HearingQueryViewTest {
 
     @Test
     public void shouldReturnNotesAndSearchAvailableHearingsWithWithAllParametersProvided() throws Exception {
-        searchAvailableHearingsWithWithAllParametersProvided(getHearingById(),true);
+        searchAvailableHearingsWithWithAllParametersProvided(getHearingById(), true);
     }
 
     public void searchAvailableHearingsWithWithAllParametersProvided(final Hearing returnedHearing, final boolean notesExist) throws Exception {
@@ -433,7 +430,7 @@ public class HearingQueryViewTest {
 
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
                 .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
-        if(notesExist) {
+        if (notesExist) {
             when(notesService.findNotes(eq(ALLOCATED), eq(null), eq(null), any(List.class))).thenReturn(createNotesList());
         }
         final JsonEnvelope query = envelopeFrom(
@@ -450,10 +447,10 @@ public class HearingQueryViewTest {
         final JsonEnvelope results = hearingsQueryView.searchAvailableHearings(query);
 
         assertThat(results, is(jsonEnvelope(metadata().withName("listing.search.hearings"),
-                payloadIsJson( allOf(
+                payloadIsJson(allOf(
                         withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
                         withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")),
-                        getMatcherForNotes(notesExist) )
+                        getMatcherForNotes(notesExist))
                 ))
         ));
         verify(hearingRepository).findBy(eq(ID));
@@ -482,7 +479,7 @@ public class HearingQueryViewTest {
 
         final Envelope<JsonObject> results = hearingsQueryView.searchUnscheduledHearings(query);
 
-        assertThat(JsonEnvelope.envelopeFrom(results.metadata(), results.payload()),
+        assertThat(envelopeFrom(results.metadata(), results.payload()),
                 is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.unscheduled.search.hearings"),
                         payloadIsJson(
                                 withJsonPath("$.hearings[0].hello", equalTo("world"))
@@ -542,7 +539,7 @@ public class HearingQueryViewTest {
 
         final Envelope<JsonObject> results = hearingsQueryView.searchUnscheduledHearings(query);
 
-        assertThat(JsonEnvelope.envelopeFrom(results.metadata(), results.payload()),
+        assertThat(envelopeFrom(results.metadata(), results.payload()),
                 is(jsonEnvelope(withMetadataEnvelopedFrom(query).withName("listing.unscheduled.search.hearings"),
                         payloadIsJson(
                                 withJsonPath("$.hearings[0].hello", equalTo("world"))
@@ -588,8 +585,7 @@ public class HearingQueryViewTest {
 
         when(hearingRepository.findHearingsForAlphabeticalList(ALLOCATED, COURT_CENTRE_ID.toString(), LocalDates.to(SEARCH_DATE)))
                 .thenReturn(hearingsJson);
-        when(hearingJsonListConverterFilterEjectCases.convertHearingResultForAlphabeticalList(hearingsJson))
-                .thenReturn(hearingsJsonArray);
+        when(hearingJsonListConverterFilterEjectCases.convertHearingResultForAlphabeticalList(hearingsJson)).thenReturn(hearingsJsonArray);
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -652,7 +648,7 @@ public class HearingQueryViewTest {
                 eq(AUTHORITY_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
                 eq(SEARCH_DATE.atTime(START_TIME).toString()), eq(SEARCH_DATE.atTime(END_TIME).toString()));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
-        verify(notesService,times(1)).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class));
+        verify(notesService, times(1)).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class));
     }
 
     @Test(expected = NullPointerException.class)
@@ -875,7 +871,7 @@ public class HearingQueryViewTest {
 
 
     private List<Hearing> hearingsJson(String allocated) {
-        final String testJsonString = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
+        final String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
         final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
@@ -908,16 +904,16 @@ public class HearingQueryViewTest {
     }
 
     private List<Notes> createNotesList() {
-        return newArrayList(new Notes(UUID.randomUUID(),UUID.fromString("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18"), LocalDates.from("2020-09-03"), "Note 1" ));
+        return newArrayList(new Notes(UUID.randomUUID(), UUID.fromString("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18"), LocalDates.from("2020-09-03"), "Note 1"));
     }
 
-    private Matcher<? super ReadContext> getMatcherForNotes(boolean exist){
-         if ( exist){
-             return allOf( withJsonPath("$.notes.size()", equalTo(1)),
-                     withJsonPath("$.notes[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")) );
-         }else{
-             return allOf( withJsonPath("$.notes.size()", equalTo(0)) );
-         }
+    private Matcher<? super ReadContext> getMatcherForNotes(boolean exist) {
+        if (exist) {
+            return allOf(withJsonPath("$.notes.size()", equalTo(1)),
+                    withJsonPath("$.notes[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")));
+        } else {
+            return allOf(withJsonPath("$.notes.size()", equalTo(0)));
+        }
 
     }
 }

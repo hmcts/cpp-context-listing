@@ -1,15 +1,19 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static uk.gov.moj.cpp.listing.command.utils.FileUtil.givenPayload;
+
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.HearingListingNeeds;
+import uk.gov.justice.listing.courts.CancelHearingDays;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+
+import java.io.StringReader;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
-
-import java.io.StringReader;
 
 public class CommandBuilder {
 
@@ -25,22 +29,22 @@ public class CommandBuilder {
     }
 
     public HearingListingNeeds buildCommandHearing() {
-        JsonObject hearingJsonObject = FileUtil.givenPayload("/test-data/listing.commands.hearing.json");
+        JsonObject hearingJsonObject = givenPayload("/test-data/listing.commands.hearing.json");
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
     }
 
     public HearingListingNeeds buildCommandHearingForBookedSlots() {
-        JsonObject hearingJsonObject = FileUtil.givenPayload("/test-data/listing.commands.hearing-booked-slots.json");
+        JsonObject hearingJsonObject = givenPayload("/test-data/listing.commands.hearing-booked-slots.json");
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
     }
 
     public HearingListingNeeds buildCommandHearingStandalone() {
-        JsonObject hearingJsonObject = FileUtil.givenPayload("/test-data/listing.commands.hearing-standalone.json");
+        JsonObject hearingJsonObject = givenPayload("/test-data/listing.commands.hearing-standalone.json");
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
     }
 
     public HearingListingNeeds buildHearingWithListedStartDateTime() {
-        String jsonString = FileUtil.givenPayload("/test-data/listing.command.hearing-listed-date-over-earliest-date.json").toString()
+        String jsonString = givenPayload("/test-data/listing.command.hearing-listed-date-over-earliest-date.json").toString()
                 .replace("EARLIEST_START_TIME", EARLIEST_START_TIME)
                 .replace("LISTED_START_TIME", LISTED_START_TIME);
 
@@ -49,27 +53,32 @@ public class CommandBuilder {
     }
 
     public HearingListingNeeds buildCommandHearingWithMultipleOffences() {
-        JsonObject hearingJsonObject = FileUtil.givenPayload("/test-data/listing.commands.hearing-multiple-offences.json");
+        JsonObject hearingJsonObject = givenPayload("/test-data/listing.commands.hearing-multiple-offences.json");
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
     }
 
     public CourtApplication buildCourtApplication() {
-        JsonObject courtApplication = FileUtil.givenPayload("/test-data/listing.court-application-applicant-respondent.json");
+        JsonObject courtApplication = givenPayload("/test-data/listing.court-application-applicant-respondent.json");
         return jsonObjectToObjectConverter.convert(courtApplication, CourtApplication.class);
     }
 
     public HearingListingNeeds buildCommandHearingWithLegalEntity() {
-        JsonObject hearingJsonObject = FileUtil.givenPayload("/test-data/listing.court-application-case-legal-entity.json");
+        JsonObject hearingJsonObject = givenPayload("/test-data/listing.court-application-case-legal-entity.json");
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
     }
 
     public CourtApplication buildCourtApplicationWithLegalEntity() {
-        JsonObject courtApplication = FileUtil.givenPayload("/test-data/listing.court-application-applicant-legal-entity.json");
+        JsonObject courtApplication = givenPayload("/test-data/listing.court-application-applicant-legal-entity.json");
         return jsonObjectToObjectConverter.convert(courtApplication, CourtApplication.class);
     }
 
     public CourtApplication buildCourtApplicationWithOrganisation() {
-        JsonObject courtApplication = FileUtil.givenPayload("/test-data/listing.court-application-applicant-organisation.json");
+        JsonObject courtApplication = givenPayload("/test-data/listing.court-application-applicant-organisation.json");
         return jsonObjectToObjectConverter.convert(courtApplication, CourtApplication.class);
+    }
+
+    public List<uk.gov.justice.core.courts.HearingDay> buildHearingDays() {
+        final JsonObject cancelHearingDaysCommand = givenPayload("/test-data/listing.command.cancel-hearing-days.json");
+        return jsonObjectToObjectConverter.convert(cancelHearingDaysCommand, CancelHearingDays.class).getHearingDays();
     }
 }
