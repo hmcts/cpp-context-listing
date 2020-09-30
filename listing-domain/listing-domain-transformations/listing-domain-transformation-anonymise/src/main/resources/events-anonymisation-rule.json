@@ -34,7 +34,8 @@
     {
       "eventName": "listing.events.hearing-listed",
       "fieldsToBeIgnored": [
-        "$.hearing.listedCases[*].defendants[*].hearingLanguageNeeds"
+        "$.hearing.listedCases[*].defendants[*].hearingLanguageNeeds",
+        "$.hearing.courtCentreDetails.defaultStartTime"
       ]
     },
     {
