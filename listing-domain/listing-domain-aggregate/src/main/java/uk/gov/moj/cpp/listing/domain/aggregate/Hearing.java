@@ -146,7 +146,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = -9149179514523240080L;
+    private static final long serialVersionUID = -9149179514523241101L;
 
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
@@ -272,22 +272,27 @@ public class Hearing implements Aggregate {
                 final Optional<LocalDate> hearingEndDate = Optional.of(HearingEndDateRule.apply(endDate, startDate.toLocalDate()));
                 final List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = generateNewNonDefaultDays(estimateMinutes, startDate, hearingTypeDuration, nonDefaultDays, isCountBasedSlotSelected);
                 final LocalTime defaultStartTime = nonNull(courtCentreDefaults) ? courtCentreDefaults.getDefaultStartTime() : null;
-                final List<uk.gov.justice.listing.events.HearingDay> hearingDaysCalculated = HearingDaysCalculator.calculate(startDate.toLocalDate(), hearingEndDate.get(), emptyList(), convertEventToDomain(newNonDefaultDays), defaultStartTime, hearingTypeDuration);
-                builder.withHearingDays(hearingDaysCalculated);
                 builder.withNonDefaultDays(newNonDefaultDays);
 
-                final LocalDate enddDate = hearingDaysCalculated.stream()
-                        .sorted(Comparator.comparing(uk.gov.justice.listing.events.HearingDay::getStartTime).reversed())
-                        .filter(hearingDate -> !hearingDate.getHearingDate().isBefore(startDate.toLocalDate()))
-                        .findFirst().map(uk.gov.justice.listing.events.HearingDay::getHearingDate).orElse(hearingEndDate.get());
+                final LocalDate enddDate = newNonDefaultDays.stream()
+                        .sorted(Comparator.comparing(uk.gov.justice.listing.events.NonDefaultDay::getStartTime).reversed())
+                        .map(nonDefaultDay -> nonDefaultDay.getStartTime().toLocalDate())
+                        .filter(nonDefaultDay -> !nonDefaultDay.isBefore(startDate.toLocalDate()))
+                        .findFirst().orElse(hearingEndDate.get());
                 builder.withEndDate(enddDate);
+
                 final long numOfDaysBetween = ChronoUnit.DAYS.between(startDate.toLocalDate(), enddDate);
 
-                builder.withNonSittingDays(IntStream.iterate(0, i -> i + 1)
+                final List<LocalDate> allNonSittingDays = IntStream.iterate(0, i -> i + 1)
                         .limit(numOfDaysBetween)
                         .mapToObj(i -> startDate.toLocalDate().plusDays(i))
-                        .filter(day -> hearingDaysCalculated.stream().noneMatch(hearingDay -> hearingDay.getHearingDate().equals(day)))
-                        .collect(Collectors.toList()));
+                        .filter(day -> newNonDefaultDays.stream().noneMatch(nonDefaultDay -> nonDefaultDay.getStartTime().toLocalDate().equals(day)))
+                        .collect(Collectors.toList());
+
+                builder.withNonSittingDays(allNonSittingDays);
+
+                final List<uk.gov.justice.listing.events.HearingDay> hearingDaysCalculated = HearingDaysCalculator.calculate(startDate.toLocalDate(), enddDate, allNonSittingDays, convertEventToDomain(newNonDefaultDays), defaultStartTime, hearingTypeDuration);
+                builder.withHearingDays(hearingDaysCalculated);
             } else {
                 builder.withHearingDays(emptyList());
                 builder.withStartDate(empty());

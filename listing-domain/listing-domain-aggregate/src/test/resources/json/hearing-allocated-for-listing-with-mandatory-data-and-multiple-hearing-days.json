@@ -113,8 +113,8 @@
     "hearingDays": [
       {
         "hearingDate": "2018-06-01",
-        "startTime": "2018-06-01T10:00:00.000Z",
-        "endTime": "2018-06-01T10:30:00.000Z",
+        "startTime": "2018-06-01T10:30:00.000Z",
+        "endTime": "2018-06-01T11:00:00.000Z",
         "durationMinutes": 30,
         "sequence": 0
       },
@@ -142,8 +142,8 @@
     "hearingDays": [
       {
         "hearingDays": "2018-06-01",
-        "startTime": "2018-06-01T10:00:00.000Z",
-        "endTime": "2018-06-01T10:30:00.000Z",
+        "startTime": "2018-06-01T10:30:00.000Z",
+        "endTime": "2018-06-01T11:00:00.000Z",
         "durationMinutes": 30,
         "sequence": 0,
         "isCancelled": false

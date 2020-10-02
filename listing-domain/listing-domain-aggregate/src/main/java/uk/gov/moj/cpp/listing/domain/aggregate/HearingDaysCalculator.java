@@ -63,11 +63,8 @@ public class HearingDaysCalculator {
                 }
         );
 
-        if (nonDefaultDays.isEmpty()) {
-            return buildSequentialHearingDays(startDate, endDate, nonSittingDays, nonDefaultDayMap, defaultStartTime, defaultDuration, isCountBasedSlotSelected);
-        }
-        Collections.sort(hearingDayList, Comparator.comparing(HearingDay::getHearingDate)
-        );
+        hearingDayList.addAll(buildSequentialHearingDays(startDate, endDate, nonSittingDays, nonDefaultDayMap, defaultStartTime, defaultDuration, isCountBasedSlotSelected));
+        Collections.sort(hearingDayList, Comparator.comparing(HearingDay::getHearingDate));
         return hearingDayList;
 
     }
@@ -83,6 +80,7 @@ public class HearingDaysCalculator {
         return IntStream.rangeClosed(0, (int) noOfDaysBetween)
                 .mapToObj(startDate::plusDays)
                 .filter(d -> !nonSittingDays.contains(d))
+                .filter(d -> !nonDefaultDayMap.keySet().contains(d))
                 .map(date ->
                         nonDefaultDayMap.containsKey(date)
                                 ? buildNonDefaultHearingDay(nonDefaultDayMap, date, isCountBasedSlotSelected ? 1 : defaultDuration)

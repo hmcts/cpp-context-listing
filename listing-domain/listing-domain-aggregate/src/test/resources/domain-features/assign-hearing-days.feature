@@ -8,6 +8,22 @@ Feature: Assign hearing days to a hearing or change the hearing days
     Then hearing days changed for hearing
 
 
+  Scenario: An unallocated hearing has been listed and assigning hearing days results in the
+    calendar being assigned to the hearing with no non default days
+
+    Given hearing listed
+    When you assignHearingDays to a Hearing using a start and end date with no non default days
+    Then hearing days updated for hearing with default days
+
+
+  Scenario: An unallocated hearing has been listed and assigning hearing days results in the
+    calendar being assigned to the hearing with non default days
+
+    Given hearing listed
+    When you assignHearingDays to a Hearing using a start and end date with non default days
+    Then hearing days updated for hearing with non default days
+
+
   Scenario: A request to change the hearing days for a hearing that has not been listed does not result in any change
 
     Given no previous events

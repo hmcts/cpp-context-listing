@@ -1,12 +1,13 @@
 {
   "startDate": "2018-06-01",
-  "endDate": "2018-06-03",
+  "endDate": "2018-06-07",
   "nonSittingDays": [
     "2018-06-03"
   ],
   "nonDefaultDays": [
     {
-      "startTime": "2018-06-01T10:30:00.000Z"
+      "startTime": "2018-06-04T10:30:00.000Z",
+      "duration": 45
     }
   ],
   "defaultStartTime": "11:00",
