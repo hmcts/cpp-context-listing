@@ -98,6 +98,31 @@ protocols: [ HTTP, HTTPS ]
                     example:  !include json/listing.search.hearings.json
                     schema:  !include  json/schema/listing.search.hearings.json
 
+/hearings/allocated-and-unallocated:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.allocated.and.unallocated.hearings
+        ...
+      queryParameters:
+        caseId:
+          description: case id
+          type: string
+          required: false
+        applicationId:
+          description: application id
+          type: string
+          required: false
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json
+
 /hearings/range-search:
    get:
       description: |

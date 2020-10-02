@@ -1356,6 +1356,88 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
     }
 
+    @Test
+    public void shouldFindAllocatedAndUnallocatedHearingsByCaseId() {
+
+        //given
+        givenAllocatedAndUnallocatedHearings();
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId("e2b13dc0-de95-11e8-9df5-e56feb0784f6",null);
+        //then
+        System.out.println("-->"+HEARING_ID.toString());
+        System.out.println("-->"+OTHER_HEARING_ID.toString());
+
+        System.out.println("==>"+extractFields(actualHearings, "$.id"));
+        System.out.println("==>"+extractFields(actualHearings, "$.id"));
+
+        assertThat(actualHearings.size(), is(2));
+//        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.id", equalTo(OTHER_HEARING_ID.toString())));
+//        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(HEARING_ID.toString())));
+
+
+        assertTrue(extractFields(actualHearings, "$.id").contains(HEARING_ID.toString()));
+         assertTrue(extractFields(actualHearings, "$.id").contains(OTHER_HEARING_ID.toString()));
+
+    }
+
+    @Test
+    public void shouldFindAllocatedAndUnallocatedHearingsByApplicationId() {
+
+        //given
+        givenAllocatedAndUnallocatedHearings();
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(null,"e02b8109-9b61-42b9-8741-2283d832ec19");
+        //then
+        assertThat(actualHearings.size(), is(2));
+        assertTrue(extractFields(actualHearings, "$.id").contains(HEARING_ID.toString()));
+        assertTrue(extractFields(actualHearings, "$.id").contains(OTHER_HEARING_ID.toString()));
+
+    }
+    private List<Hearing> givenAllocatedAndUnallocatedHearings() {
+
+        final List<Hearing> hearingsToBeCreated = new ArrayList<>();
+        hearingsToBeCreated.add(getHearingJson(hearingRepositoryContext()
+                .withHearingId(HEARING_ID)
+                .withCourtCentreId(OTHER_COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withAllocated(UNALLOCATED)
+                .withVacated(NOT_VACATED)
+                .withAuthorityId(OTHER_AUTHORITY_ID)
+                .withHearingType(OTHER_HEARING_TYPE)
+                .withJurisdictionType(OTHER_JURISDICTION_TYPE)
+                .withJudicialId(OTHER_JUDICIAL_ID)
+                .withStartDate(START_DATE)
+                .withEndDate(END_DATE)
+                .withStartTime(START_TIME)
+                .withEndTime(END_TIME)
+                .withHearingDate(HEARING_DATE)
+                .withFileLocation(TEST_DATA_SAMPLE_UNSCHEDULED_HEARING_JSON)
+                .build()));
+
+        hearingsToBeCreated.add(getHearingJson(hearingRepositoryContext()
+                .withHearingId(OTHER_HEARING_ID)
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withAllocated(ALLOCATED)
+                .withVacated(true)
+                .withAuthorityId(AUTHORITY_ID)
+                .withHearingType(HEARING_TYPE)
+                .withJurisdictionType(JURISDICTION_TYPE)
+                .withJudicialId(JUDICIAL_ID)
+                .withStartDate(START_DATE)
+                .withEndDate(END_DATE)
+                .withStartTime(START_TIME)
+                .withEndTime(END_TIME)
+                .withHearingDate(HEARING_DATE)
+                .withFileLocation(TEST_DATA_SAMPLE_UNSCHEDULED_HEARING_JSON)
+                .build()));
+
+        hearingsToBeCreated.forEach(hearingToBeCreated -> hearingRepository.save(hearingToBeCreated));
+        return hearingsToBeCreated;
+    }
+
     private List<Hearing> givenAvailableHearings() {
         final List<Hearing> hearingsToBeCreated = new ArrayList<>();
         hearingsToBeCreated.add(getHearingJson(hearingRepositoryContext()

@@ -76,8 +76,12 @@ public class HearingQueryApi {
         return hearingQueryView.searchAvailableHearings(query);
     }
 
+    @Handles("listing.allocated.and.unallocated.hearings")
+    public JsonEnvelope searchUnallocatedHearings(final JsonEnvelope query) {
+        return hearingQueryView.searchAllocatedAndUnallocatedHearings(query);
+    }
     @Handles("listing.any-allocation.search.hearings")
-    public Envelope<JsonObject> searchHearingsWithAnyAllocationState(final JsonEnvelope query) throws IOException {
+    public Envelope<JsonObject> searchHearingsWithAnyAllocationState(final JsonEnvelope query)  {
         return hearingQueryView.searchHearingsWithAnyAllocationState(query);
     }
 

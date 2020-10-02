@@ -12,7 +12,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollForUnscheduledHearings;
+import static uk.gov.moj.cpp.listing.endpoint.UnallocatedHearingsEndpoint.pollForUnallocatedHearings;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
@@ -67,19 +67,19 @@ import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
+public class ListUnAllocatedCourtHearingSteps extends ListCourtHearingSteps {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ListUnscheduledCourtHearingSteps.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ListUnAllocatedCourtHearingSteps.class);
     private static final String LISTING_COMMAND_UNSCHEDULED_LIST_COURT_HEARING = "listing.command.list-unscheduled-court-hearing";
     private static final String MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING = "application/vnd.listing.command.list-unscheduled-court-hearing+json";
 
 
-    public ListUnscheduledCourtHearingSteps(final HearingsData hearingsData) {
+
+    public ListUnAllocatedCourtHearingSteps(final HearingsData hearingsData) {
         super(hearingsData);
     }
 
-
-    public void whenCaseIsSubmittedForUnscheduledListing() {
+    public void whenCaseIsSubmittedForUnallocatedListing() {
         final Response response = getResponseCaseSubmittedForUnscheduledListing(false);
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
@@ -104,58 +104,6 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
 
         return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING,
                 request, getLoggedInHeader());
-    }
-
-
-
-    public void verifyHearingUnscheduledListedFromAPI() {
-        final HearingData hearingData = getHearingsData().getHearingData().get(0);
-
-        final UUID courtCentreId = getHearingsData().getHearingData().get(0).getCourtCentreId();
-
-        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
-
-        final DefendantData defendant = listedCaseData.getDefendants().get(0);
-
-        final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, defendant, defendant.getLastName());
-        final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
-
-        final Matcher<ReadContext> unscheduledHearingVerifiedMatcher = allOf(
-                withJsonPath(lastNameFilter),
-                withJsonPath(caseReferenceFilter),
-                withJsonPath("$.hearings[0].id",
-                        equalTo(hearingData.getId().toString())),
-                withJsonPath("$.hearings[0].jurisdictionType",
-                        equalTo(hearingData.getJurisdictionType())),
-                withJsonPath("$.hearings[0].courtCentreId",
-                        equalTo(hearingData.getCourtCentreId().toString())),
-                withJsonPath("$.hearings[0].type.id",
-                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
-                withJsonPath("$.hearings[0].type.description",
-                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
-                withJsonPath("$.hearings[0].startDate",
-                        equalTo(hearingData.getHearingStartDate().toString())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicationType",
-                        equalTo(hearingData.getCourtApplications().get(0).getType())),
-                withJsonPath("$.hearings[0].courtApplications[0].id",
-                        equalTo(hearingData.getCourtApplications().get(0).getId().toString())),
-                withJsonPath("$.hearings[0].courtApplications[0].linkedCaseId",
-                        equalTo(hearingData.getCourtApplications().get(0).getLinkedCaseId().toString())),
-                withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
-                        equalTo(hearingData.getCourtApplications().get(0).getParentApplicationId().toString())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicant.lastName",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getLastName())),
-                withJsonPath("$.hearings[0].courtApplications[0].applicant.firstName",
-                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getFirstName())),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
-                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())),
-                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].lastName",
-                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getLastName())),
-                withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
-                        equalTo(true))
-        );
-
-        pollForUnscheduledHearings(getLoggedInUser(), courtCentreId, unscheduledHearingVerifiedMatcher);
     }
 
 
@@ -211,6 +159,20 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                 .build();
     }
 
+
+    private List<JudicialRole> getJudiciary(final HearingData hearingData) {
+        return hearingData.getJudiciary() != null
+                ? asList(JudicialRole.judicialRole()
+                .withJudicialId(hearingData.getJudiciary().get(0).getJudicialId())
+                .withJudicialRoleType(JudicialRoleType.judicialRoleType()
+                        .withJudiciaryType(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())
+                        .withJudicialRoleTypeId(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudicialRoleTypeId())
+                        .build())
+                .withIsDeputy(hearingData.getJudiciary().get(0).getIsDeputy())
+                .withIsBenchChairman(hearingData.getJudiciary().get(0).getIsBenchChairman())
+                .build())
+                : null;
+    }
     private List<ProsecutionCase> convertToListedCases(final HearingData hearingData, final ListedCaseData listedCaseData) {
         return hearingData.getListedCases().stream()
                 .map(lc -> ProsecutionCase.prosecutionCase().withId(lc.getCaseId())
@@ -294,21 +256,6 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                         .build())
                 .collect(Collectors.toList());
     }
-
-    private List<JudicialRole> getJudiciary(final HearingData hearingData) {
-        return hearingData.getJudiciary() != null
-                ? asList(JudicialRole.judicialRole()
-                .withJudicialId(hearingData.getJudiciary().get(0).getJudicialId())
-                .withJudicialRoleType(JudicialRoleType.judicialRoleType()
-                        .withJudiciaryType(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())
-                        .withJudicialRoleTypeId(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudicialRoleTypeId())
-                        .build())
-                .withIsDeputy(hearingData.getJudiciary().get(0).getIsDeputy())
-                .withIsBenchChairman(hearingData.getJudiciary().get(0).getIsBenchChairman())
-                .build())
-                : null;
-    }
-
     private List<CourtApplication> getCourtApplications(final HearingData hearingData) {
         return asList(CourtApplication.courtApplication()
                 .withId(hearingData.getCourtApplications().get(0).getId())
@@ -408,5 +355,60 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                         .build()))
                 .build();
     }
+    public void verifyHearingUnallocatededFromAPI() {
+        final HearingData hearingData = getHearingsData().getHearingData().get(0);
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.unallocated-hearings"),
+                        getHearingsData().getHearingData().get(0).getListedCases().get(0).getCaseId()));
+
+        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
+
+        final DefendantData defendant = listedCaseData.getDefendants().get(0);
+
+        final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, defendant, defendant.getLastName());
+        final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
+
+
+
+
+        final Matcher<ReadContext> unallocateddHearingVerifiedMatcher = allOf(
+                                withJsonPath(lastNameFilter),
+                                withJsonPath(caseReferenceFilter),
+                                withJsonPath("$.hearings[0].id",
+                                        equalTo(hearingData.getId().toString())),
+                                withJsonPath("$.hearings[0].jurisdictionType",
+                                        equalTo(hearingData.getJurisdictionType())),
+                                withJsonPath("$.hearings[0].courtCentreId",
+                                        equalTo(hearingData.getCourtCentreId().toString())),
+                                withJsonPath("$.hearings[0].type.id",
+                                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
+                                withJsonPath("$.hearings[0].type.description",
+                                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
+                                withJsonPath("$.hearings[0].startDate",
+                                        equalTo(hearingData.getHearingStartDate().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicationType",
+                                        equalTo(hearingData.getCourtApplications().get(0).getType())),
+                                withJsonPath("$.hearings[0].courtApplications[0].id",
+                                        equalTo(hearingData.getCourtApplications().get(0).getId().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].linkedCaseId",
+                                        equalTo(hearingData.getCourtApplications().get(0).getLinkedCaseId().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].parentApplicationId",
+                                        equalTo(hearingData.getCourtApplications().get(0).getParentApplicationId().toString())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.lastName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getLastName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].applicant.firstName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getApplicant().getFirstName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].firstName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())),
+                                withJsonPath("$.hearings[0].courtApplications[0].respondents[0].lastName",
+                                        equalTo(hearingData.getCourtApplications().get(0).getRespondent().getLastName())),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
+                                        equalTo(true))
+                        );
+        pollForUnallocatedHearings(getLoggedInUser(), hearingData, unallocateddHearingVerifiedMatcher);
+    }
+
+
 
 }

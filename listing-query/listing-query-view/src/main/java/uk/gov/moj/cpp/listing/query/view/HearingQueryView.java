@@ -14,6 +14,7 @@ import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.StringUtils.contains;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
@@ -67,6 +68,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -104,6 +106,8 @@ public class HearingQueryView {
     private static final String NOTES = "notes";
     private static final String ID = "id";
     private static final String CASE_URN = "caseUrn";
+    private static final String CASE_ID = "caseId";
+    private static final String APPLICATION_ID = "applicationId";
     private static final String HEARING_ID = "hearingId";
     private static final String TYPE_OF_LIST = "typeOfList";
     private static final String COURT_CENTRE_IDS = "courtCentreIds";
@@ -213,6 +217,24 @@ public class HearingQueryView {
                 .withMetadataFrom(query);
     }
 
+    @Handles("listing.allocated.and.unallocated.hearings")
+    public JsonEnvelope searchAllocatedAndUnallocatedHearings(final JsonEnvelope query) {
+        final List<Hearing> hearings;
+        final String caseIdQueryParam = query.payloadAsJsonObject().getString(CASE_ID, null);
+        final String applicationIdQueryParam = query.payloadAsJsonObject().getString(APPLICATION_ID, null);
+        if (isEmpty(caseIdQueryParam) && isEmpty(applicationIdQueryParam)) {
+            return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
+                    createObjectBuilder()
+                            .add(HEARINGS, Json.createArrayBuilder().build())
+            );
+        }
+        hearings = repository.findAllocatedAndUnallocatedHearingsByCaseId(caseIdQueryParam, applicationIdQueryParam);
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
+                createObjectBuilder()
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
+                        );
+    }
+
     @Handles("listing.available.search.hearings")
     public JsonEnvelope searchAvailableHearings(final JsonEnvelope query) throws IOException {
         final String hearingId = query.payloadAsJsonObject().getString(HEARING_ID, null);
@@ -287,7 +309,7 @@ public class HearingQueryView {
     }
 
     @Handles("listing.any-allocation.search.hearings")
-    public Envelope<JsonObject> searchHearingsWithAnyAllocationState(final JsonEnvelope query) throws IOException {
+    public Envelope<JsonObject> searchHearingsWithAnyAllocationState(final JsonEnvelope query) {
         final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN).toUpperCase();
 
         LOGGER.info("\n Query params - caseUrn : {} ", caseUrnQueryParam);

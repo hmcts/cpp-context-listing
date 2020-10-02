@@ -138,6 +138,52 @@
       ]
     }
   ],
+  "courtApplications": [
+    {
+      "id": "e02b8109-9b61-42b9-8741-2283d832ec19",
+      "applicant": {
+        "id": "6f8e93bd-9e8e-49e2-8aa0-397cc9c0a0fc",
+        "address": {
+          "address1": "lDmBVBgnak",
+          "address2": "Um31yDkB40",
+          "address3": "3QJoAwEQW1",
+          "address4": "JLjHdlqa51",
+          "address5": "5HLImi1E7a",
+          "postcode": "SW13 0AA"
+        },
+        "lastName": "QUyC5zlNy8",
+        "firstName": "lIDo8geJzD",
+        "isRespondent": false,
+        "restrictFromCourtList": false,
+        "courtApplicationPartyType": "PERSON"
+      },
+      "respondents": [
+        {
+          "id": "a605c4b9-dd44-4625-a45c-30befbdc782c",
+          "address": {
+            "address1": "ikiudc7GT1",
+            "address2": "FNyizvz3iY",
+            "address3": "91wLOGjyvW",
+            "address4": "QiPSKU4VAs",
+            "address5": "s4xBpmdL3I",
+            "postcode": "SW13 0AA"
+          },
+          "lastName": "v5UYn38Ueq",
+          "firstName": "Tsb2XTQ5Uk",
+          "isRespondent": true,
+          "restrictFromCourtList": false,
+          "courtApplicationPartyType": "PERSON"
+        }
+      ],
+      "linkedCaseId": "5773f7ac-f827-424b-9f61-66adc9a7cf3a",
+      "applicationType": "TCRQH83kW3",
+      "parentApplicationId": "52ff2563-1c3a-48cb-a35c-b5e789213fa7",
+      "applicationReference": "OUtx5XgK3Q",
+      "restrictFromCourtList": false,
+      "applicationParticulars": "vjOXHNBvcz",
+      "restrictCourtApplicationType": false
+    }
+  ],
   "courtCentreId": "COURT_CENTRE_ID_FIELD",
   "nonDefaultDays": [
     {

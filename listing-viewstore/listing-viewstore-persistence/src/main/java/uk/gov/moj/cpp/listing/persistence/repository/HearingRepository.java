@@ -484,4 +484,42 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             , isNative = true)
     List<Hearing> findHearings(String caseUrn, String typeOfList, Set<String> courtCentreIds);
 
+    /**
+     * @param caseId
+     * @return
+     */
+    @Query(value =  "select id, properties from ( " +
+            "select distinct id, properties" +
+            " from hearing " +
+            "where " +
+            "cast(properties ->> 'allocated' as boolean) = false " +
+            "and ( ?1 is null or cast(?1 as text) IN " +
+            "(" +
+            "  SELECT jsonb_array_elements(properties -> 'listedCases') ->> 'id' " +
+            ") ) " +
+            "and ( ?2 is null or cast(?2 as text) IN " +
+            "(" +
+            "  SELECT jsonb_array_elements(properties -> 'courtApplications') ->> 'id' " +
+            ") ) " +
+            " UNION " +
+            "select distinct id, properties " +
+            "            from hearing " +
+            "            where " +
+            "            cast(properties ->> 'allocated' as boolean) = true " +
+            "            and (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)  " +
+            "and (  ?1 is null or cast(?1 as text) IN " +
+            "(" +
+            "  SELECT jsonb_array_elements(properties -> 'listedCases') ->> 'id' " +
+            ") ) "+
+            "and ( ?2 is null or cast(?2 as text) IN " +
+            "(" +
+            "  SELECT jsonb_array_elements(properties -> 'courtApplications') ->> 'id' " +
+            ") ) " +
+            ") as all_hearing "+
+            "order by cast(all_hearing.properties ->> 'startDate' as date) desc," +
+            "cast(all_hearing.properties ->> 'endDate' as date) desc"
+            , isNative = true)
+    List<Hearing> findAllocatedAndUnallocatedHearingsByCaseId(String caseId, String applicationId);
+
+
 }
