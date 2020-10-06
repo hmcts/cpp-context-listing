@@ -204,6 +204,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                         .build())
                 .withIsDeputy(judicialRole.getIsDeputy())
                 .withIsBenchChairman(judicialRole.getIsBenchChairman())
+                .withUserId(judicialRole.getUserId().orElse(null))
                 .build();
     }
 

@@ -73,7 +73,8 @@
         "judiciaryType": "MAGISTRATE"
       },
       "isDeputy": false,
-      "isBenchChairman": true
+      "isBenchChairman": true,
+      "userId": "505a3e6d-5dd9-49ab-b2a5-7016fd074290"
     }
   ],
   "defendantListingNeeds": [

@@ -137,6 +137,7 @@ public class PublishCourtListIT extends AbstractIT {
 
         sendPublishFinalCourtListsForAllCrownCourtsCommand(commandAsJson);
 
+
         publishCourtListSteps.verifyThatWeSuccessfullyRequestedAFinalListPublication(courtCentreIdOne, expectedPublishDate);
         publishCourtListSteps.verifyThatWeSuccessfullyRequestedAFinalListPublication(courtCentreIdTwo, expectedPublishDate);
     }

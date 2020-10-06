@@ -10,7 +10,8 @@
         "judiciaryType": "MAGISTRATE"
       },
       "isDeputy": false,
-      "isBenchChairman": true
+      "isBenchChairman": true,
+      "userId": "USER_ID_1"
     },
     {
       "judicialId": "JUDICIAL_ID_2",
@@ -18,7 +19,8 @@
         "judiciaryType": "MAGISTRATE"
       },
       "isDeputy": true,
-      "isBenchChairman": false
+      "isBenchChairman": false,
+      "userId": "USER_ID_2"
     }
   ]
 }

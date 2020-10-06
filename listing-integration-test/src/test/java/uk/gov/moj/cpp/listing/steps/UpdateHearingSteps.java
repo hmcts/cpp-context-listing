@@ -93,6 +93,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     public static final String FIELD_PROSECUTION_CASES = "prosecutionCases";
     public static final String FIELD_HAS_VIDEO_LINK = "hasVideoLink";
     public static final String FIELD_VIDEO_LINK_DETAILS = "videoLinkDetails";
+    public static final String FIELD_USER_ID = "userId";
     public static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
     public static final String FIELD_HEARING_TYPE_ID = "id";
@@ -288,7 +289,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 ).collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build();
     }
 
-    private static JsonArray prepareJsonHearingIdArray(final UUID hearingId) {
+   private static JsonArray prepareJsonHearingIdArray(final UUID hearingId) {
         final JsonArrayBuilder builder = Json.createArrayBuilder();
         builder.add(hearingId.toString());
         return builder.build();
@@ -301,10 +302,11 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                     .map(ndd -> {
                         final JsonObjectBuilder builder = createObjectBuilder()
                                 .add(FIELD_JUDICIAL_ID, ndd.getJudicialId().toString())
-                                .add(FIELD_JUDICIAL_ROLE_TYPE, prepareJudicialRoleType(ndd.getJudicialRoleType()));
+                                .add(FIELD_JUDICIAL_ROLE_TYPE, prepareJudicialRoleType(ndd.getJudicialRoleType()))
+                                .add(FIELD_USER_ID,ndd.getUserId().toString());
+
                         addOptionalBooleanField(builder, FIELD_IS_DEPUTY, ndd.getIsDeputy());
                         addOptionalBooleanField(builder, FIELD_IS_BENCH_CHAIRMAN, ndd.getIsBenchChairman());
-
                         return builder;
                     })
                     .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
@@ -663,6 +665,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get(publicEventType + ".type.description"), is(updatedHearingData.getHearingTypData().getTypeDescription()));
         assertThat(jsonResponse.get(publicEventType + ".judiciary[0].judicialId"), is(updatedHearingData.getJudiciary().get(0).getJudicialId().toString()));
         assertThat(jsonResponse.get(publicEventType + ".judiciary[0].judicialRoleType.judiciaryType"), is(updatedHearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType()));
+        assertThat(jsonResponse.get(publicEventType + ".judiciary[0].userId"), is(updatedHearingData.getJudiciary().get(0).getUserId().toString()));
         assertThat(jsonResponse.get(publicEventType + ".prosecutionCases[0].id"), is(hearingData.getListedCases().get(0).getCaseId().toString()));
         assertThat(jsonResponse.get(publicEventType + ".prosecutionCases[0].defendants[0].id"), is(hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString()));
         assertThat(jsonResponse.get(publicEventType + ".prosecutionCases[0].defendants[0].offences[0].id"), is(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getOffenceId().toString()));

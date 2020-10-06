@@ -167,6 +167,10 @@
           "type": [
             "boolean"
           ]
+        },
+        "userId": {
+          "description": "The reference data identify for the user id.",
+          "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
         }
       },
       "required": [

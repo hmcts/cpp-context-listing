@@ -582,7 +582,7 @@ public class HearingsDataFactory {
     }
 
     private static JudicialRoleData randomJudicialRole(final String judiciaryType) {
-        return new JudicialRoleData(Optional.empty(), Optional.ofNullable(BOOLEAN.next()), randomUUID(),
+        return new JudicialRoleData(Optional.empty(), Optional.ofNullable(BOOLEAN.next()), randomUUID(),randomUUID(),
                 new JudicialRoleTypeData(Optional.empty(), judiciaryType));
     }
 

@@ -6,8 +6,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import javax.json.JsonObject;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class RequestedNameMapper {
 
     private static final String REQUESTED_NAME = "requestedName";

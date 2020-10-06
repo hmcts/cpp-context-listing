@@ -46,6 +46,7 @@ public class PublicHearingFactory {
                         .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId())
                         .build())
                 .withJudicialId(jr.getJudicialId())
+                .withUserId(jr.getUserId())
                 .build();
     }
 }

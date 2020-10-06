@@ -14,7 +14,8 @@
         "judiciaryType": "MAGISTRATE"
       },
       "isDeputy": true,
-      "isBenchChairman": null
+      "isBenchChairman": null,
+      "userId": "379de9da-c18f-4f11-852f-40096dbe856d"
     }
   ],
   "nonDefaultDays": [

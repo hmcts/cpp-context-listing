@@ -1263,6 +1263,7 @@ public class ListingCommandHandler {
                             .withJudiciaryType(jr.getJudicialRoleType().getJudiciaryType())
                             .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId().orElse(null))
                             .build())
+                    .withUserId(jr.getUserId().orElse(null))
                     .build()).collect(toList());
         }
         return domainJudiciary;

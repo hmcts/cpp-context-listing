@@ -1221,6 +1221,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                         .build())
                                 .withIsDeputy(hearingData.getJudiciary().get(0).getIsDeputy())
                                 .withIsBenchChairman(hearingData.getJudiciary().get(0).getIsBenchChairman())
+                                .withUserId(hearingData.getJudiciary().get(0).getUserId())
                                 .build())
                                 : null)
                         .withJurisdictionType(hearingData.getJurisdictionType() != null ? JurisdictionType.valueFor(hearingData.getJurisdictionType()).get() : null)

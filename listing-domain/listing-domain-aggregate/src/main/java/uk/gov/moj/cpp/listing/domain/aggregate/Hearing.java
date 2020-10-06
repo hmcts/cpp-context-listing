@@ -1600,6 +1600,7 @@ public class Hearing implements Aggregate {
                         .withJudicialId(jr.getJudicialId())
                         .withIsDeputy(jr.getIsDeputy())
                         .withIsBenchChairman(jr.getIsBenchChairman())
+                        .withUserId(jr.getUserId().orElse(null))
                         .build())
                 .collect(toList());
     }
@@ -1613,6 +1614,7 @@ public class Hearing implements Aggregate {
                         .withJudiciaryType(jr.getJudicialRoleType().getJudiciaryType())
                         .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId())
                         .build())
+                .withUserId(jr.getUserId())
                 .build();
     }
 

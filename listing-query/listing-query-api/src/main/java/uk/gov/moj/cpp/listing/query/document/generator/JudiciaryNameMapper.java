@@ -4,8 +4,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import javax.json.JsonObject;
 
-import org.apache.commons.lang3.StringUtils;
-
 public class JudiciaryNameMapper {
 
     private static final String SPACE = " ";

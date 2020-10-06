@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -316,6 +317,7 @@ public class CommandToDomainConverterTest {
         assertThat(actualJudicialRole.getIsBenchChairman(), is(commandJudicialRole.getIsBenchChairman()));
         assertThat(actualJudicialRole.getIsDeputy(), is(commandJudicialRole.getIsDeputy()));
         assertThat(actualJudicialRole.getJudicialId(), is(commandJudicialRole.getJudicialId()));
+        assertThat(Optional.of(actualJudicialRole.getUserId()),is(commandJudicialRole.getUserId()));
         assertThat(actualJudicialRole.getJudicialRoleType().getJudiciaryType(), is(commandJudicialRole.getJudicialRoleType().getJudiciaryType()));
         assertThat(actualJudicialRole.getJudicialRoleType().getJudicialRoleTypeId(), is(commandJudicialRole.getJudicialRoleType().getJudicialRoleTypeId()));
     }

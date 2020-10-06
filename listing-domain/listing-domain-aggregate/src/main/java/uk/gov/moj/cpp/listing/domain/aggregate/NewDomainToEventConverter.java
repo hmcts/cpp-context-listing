@@ -204,6 +204,7 @@ public class NewDomainToEventConverter {
                 .withJudicialId(domainJudicialRole.getJudicialId())
                 .withIsDeputy(domainJudicialRole.getIsDeputy())
                 .withIsBenchChairman(domainJudicialRole.getIsBenchChairman())
+                .withUserId(domainJudicialRole.getUserId())
                 .build();
     }
 

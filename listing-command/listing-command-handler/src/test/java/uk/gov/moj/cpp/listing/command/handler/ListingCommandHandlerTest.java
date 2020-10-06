@@ -324,6 +324,8 @@ public class ListingCommandHandlerTest {
 
     private static final UUID JUDICIAL_ID_1 = randomUUID();
     private static final UUID JUDICIAL_ID_2 = randomUUID();
+    private static final UUID USER_ID_1 = randomUUID();
+    private static final UUID USER_ID_2 = randomUUID();
     private static final String JUDICIAL_ROLE_TYPE = "MAGISTRATE";
     private static final Boolean IS_DEPUTY = false;
     private static final Boolean IS_BENCH_CHAIRMAN = true;
@@ -719,6 +721,10 @@ public class ListingCommandHandlerTest {
         assertThat(judicialRoleArguments.get(0).get(1).getJudicialId(), equalTo(JUDICIAL_ID_2));
         assertThat(judicialRoleArguments.get(1).get(0).getJudicialId(), equalTo(JUDICIAL_ID_1));
         assertThat(judicialRoleArguments.get(1).get(1).getJudicialId(), equalTo(JUDICIAL_ID_2));
+        assertThat(judicialRoleArguments.get(0).get(0).getUserId(),equalTo(USER_ID_1));
+        assertThat(judicialRoleArguments.get(0).get(1).getUserId(),equalTo(USER_ID_2));
+        assertThat(judicialRoleArguments.get(1).get(0).getUserId(),equalTo(USER_ID_1));
+        assertThat(judicialRoleArguments.get(1).get(1).getUserId(),equalTo(USER_ID_2));
 
         final List<UUID> hearingIdArguments = hearingIdCaptor.getAllValues();
 
@@ -2147,7 +2153,9 @@ public class ListingCommandHandlerTest {
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("HEARING_ID_2", HEARING_ID_2.toString())
                 .replace("JUDICIAL_ID_1", JUDICIAL_ID_1.toString())
-                .replace("JUDICIAL_ID_2", JUDICIAL_ID_2.toString());
+                .replace("JUDICIAL_ID_2", JUDICIAL_ID_2.toString())
+                .replace("USER_ID_1",USER_ID_1.toString())
+                .replace("USER_ID_2",USER_ID_2.toString());
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.change-judiciary-for-hearing", jsonReader.readObject());
