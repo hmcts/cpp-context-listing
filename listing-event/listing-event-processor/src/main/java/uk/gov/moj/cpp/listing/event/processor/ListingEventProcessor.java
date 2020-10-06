@@ -319,8 +319,6 @@ public class ListingEventProcessor {
             LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENT_HEARING_ALLOCATED_FOR_LISTING, envelope.toObfuscatedDebugString());
         }
 
-        publishHearingConfirmedPublicEvent(envelope);
-
         final HearingConfirmed hearingConfirmed = getHearingConfirmed(envelope);
         final HearingAllocatedForListing hearingAllocatedForListing = getHearingAllocatedForListing(envelope);
         final boolean isSlotUpdated = hearingAllocatedForListing.getUpdateSlot().orElse(false);
@@ -329,6 +327,8 @@ public class ListingEventProcessor {
         LOGGER.debug("HearingConfirmed confirmedHearing used for slot update: {}", hearingConfirmed.getConfirmedHearing());
 
         slotUpdater.updateSlot(envelope, hearingConfirmed.getConfirmedHearing(), isSlotUpdated, isForAdjournmentHearing);
+
+        publishHearingConfirmedPublicEvent(envelope);
     }
 
     @Handles(PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING)
@@ -337,14 +337,14 @@ public class ListingEventProcessor {
             LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING, envelope.toObfuscatedDebugString());
         }
 
-        publishHearingUpdatedPublicEvent(envelope);
-
         final HearingUpdated hearingUpdated = getHearingUpdated(envelope);
         final boolean isSlotUpdated = getAllocatedHearingUpdatedForListing(envelope).getUpdateSlot().orElse(false);
 
         LOGGER.debug("HearingUpdated confirmedHearing used for slot update: {}", hearingUpdated.getUpdatedHearing());
 
         slotUpdater.updateSlot(envelope, hearingUpdated.getUpdatedHearing(), isSlotUpdated, false);
+
+        publishHearingUpdatedPublicEvent(envelope);
     }
 
     @Handles(PRIVATE_EVENT_RESTRICT_COURT_LIST)

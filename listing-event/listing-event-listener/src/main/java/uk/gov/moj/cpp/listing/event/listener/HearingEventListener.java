@@ -73,19 +73,20 @@ public class HearingEventListener {
 
     @Handles("listing.events.hearing-allocated-for-listing")
     public void hearingAllocated(final Envelope<HearingAllocatedForListing> event) {
+        final long startTime = System.currentTimeMillis();
         final HearingAllocatedForListing hearingAllocatedForListing = event.payload();
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
-        LOGGER.info("'listing.events.hearing-allocated-for-listing' received hearingId {}", hearingId);
         jsonEntityFinder.find(hearingId).put("allocated", ALLOCATED).remove("unscheduled").save();
+        LOGGER.info("'listing.events.hearing-allocated-for-listing' received hearingId {} in {}", hearingId, System.currentTimeMillis() - startTime);
     }
 
     @Handles("listing.events.hearing-unallocated-for-listing")
     public void hearingUnallocated(final Envelope<HearingUnallocatedForListing> event) {
+        final long startTime = System.currentTimeMillis();
         final HearingUnallocatedForListing hearingUnallocatedForListing = event.payload();
         final UUID hearingId = hearingUnallocatedForListing.getHearingId();
-        LOGGER.info("'listing.events.hearing-unallocated-for-listing' received hearingId {}", hearingId);
         jsonEntityFinder.find(hearingId).put("allocated", !ALLOCATED).save();
-
+        LOGGER.info("'listing.events.hearing-unallocated-for-listing' received hearingId {} in {}", hearingId, System.currentTimeMillis() - startTime);
     }
 
     @Handles("listing.events.trial-vacated")
