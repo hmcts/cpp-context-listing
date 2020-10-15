@@ -3,11 +3,9 @@ package uk.gov.moj.cpp.listing.command.factory;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
-import static org.apache.activemq.artemis.utils.JsonLoader.createReader;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.isNull;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;

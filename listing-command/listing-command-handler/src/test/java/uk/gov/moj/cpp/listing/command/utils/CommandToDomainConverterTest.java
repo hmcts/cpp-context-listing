@@ -9,11 +9,18 @@ import uk.gov.justice.core.courts.DefendantListingNeeds;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.RotaSlot;
-import uk.gov.justice.services.common.converter.ZonedDateTimes;
-import uk.gov.moj.cpp.listing.domain.*;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
+import uk.gov.moj.cpp.listing.domain.CourtApplication;
+import uk.gov.moj.cpp.listing.domain.Defendant;
+import uk.gov.moj.cpp.listing.domain.JudicialRole;
+import uk.gov.moj.cpp.listing.domain.ListedCase;
+import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
+import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -38,10 +45,9 @@ public class CommandToDomainConverterTest {
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
     @Spy
-    @InjectMocks
-    JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectToObjectConverter();
+    JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
-    ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
+    ObjectToJsonValueConverter objectToJsonValueConverter = new JsonObjectConvertersFactory().objectToJsonValueConverter();
 
     @InjectMocks
     CommandBuilder commandBuilder;

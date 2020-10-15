@@ -191,12 +191,14 @@ public class ReferenceDataLoaderTest {
     public void shouldGetJudiciariesList() {
         final String titlePrefix = "Mr";
         final String titleJudicialPrefix = "Recorder";
+        final String judiciaryType = "Recorder";
         final UUID judiciaryId = randomUUID();
 
         final Judiciary expectedJudiciary = new Judiciary.Builder()
                 .withId(judiciaryId)
                 .withTitlePrefix(titlePrefix)
                 .withTitleJudicialPrefix(titleJudicialPrefix)
+                .withJudiciaryType(judiciaryType)
                 .build();
 
         final JudiciariesList expectedJudiciariesList = new JudiciariesList(Arrays.asList(expectedJudiciary));

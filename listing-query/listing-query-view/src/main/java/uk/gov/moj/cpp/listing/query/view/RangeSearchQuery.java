@@ -52,6 +52,28 @@ public class RangeSearchQuery {
     @Inject
     private ListToJsonArrayConverter listToJsonArrayConverter;
 
+    public JsonEnvelope rangeSearchHearingsForJudgeList(final JsonEnvelope query) {
+        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
+        final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
+        final String startDate = query.payloadAsJsonObject().getString(START_DATE, EARLIEST_SEARCH_DATE);
+        final String endDate = query.payloadAsJsonObject().getString(END_DATE, LATEST_SEARCH_DATE);
+
+
+        logger.info("Query params -  " +
+                        "courtCentreId: {}, " +
+                        "courtRoomId: {}, " +
+                        "startDate: {}, " +
+                        "endDate: {}, "
+                , courtCentreId, courtRoomId, startDate, endDate);
+
+        final List<Hearing> hearings = findHearings(true, courtCentreId, courtRoomId, ALL_AUTHORITY_CODES_SEARCH, null, null, startDate, endDate);
+
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.range.search.hearings.for.judge"),
+                createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings)));
+    }
+
+
+
     public JsonEnvelope rangeSearchHearings(final JsonEnvelope query) {
         final boolean allocated = query.payloadAsJsonObject().getBoolean(ALLOCATED_QUERY_PARAMETER, false);
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);

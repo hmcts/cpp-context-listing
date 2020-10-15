@@ -185,4 +185,7 @@ subscriptions_descriptor:
         - name: listing.events.deleted-listing-note
           schema_uri: http://justice.gov.uk/listing/events/listing.events.delete-listing-note.json
 
+        - name: listing.event.hearing-counsel-modified
+          schema_uri: http://justice.gov.uk/listing/events/listing.event.hearing-counsel-modified.json
+
       event_source_name: listing

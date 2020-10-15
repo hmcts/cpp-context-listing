@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.domain.referencedata;
 import java.io.Serializable;
 import java.util.UUID;
 
-@SuppressWarnings("pmd:BeanMembersShouldSerialize")
+@SuppressWarnings("PMD.BeanMembersShouldSerialize")
 public class Judiciary implements Serializable {
 
     private UUID id;
@@ -20,7 +20,10 @@ public class Judiciary implements Serializable {
 
     private String requestedName;
 
-    public Judiciary(final UUID id, final String titleSuffix, final String titlePrefix, final String titleJudicialPrefix, final String surname, final String forenames, final String requestedName) {
+    private String judiciaryType;
+
+    public Judiciary(final UUID id, final String titleSuffix, final String titlePrefix, final String titleJudicialPrefix,
+                     final String surname, final String forenames, final String requestedName, final String judiciaryType) {
         this.id = id;
         this.titleSuffix = titleSuffix;
         this.titlePrefix = titlePrefix;
@@ -28,6 +31,7 @@ public class Judiciary implements Serializable {
         this.surname = surname;
         this.forenames = forenames;
         this.requestedName = requestedName;
+        this.judiciaryType = judiciaryType;
     }
 
     public Judiciary() {
@@ -61,6 +65,11 @@ public class Judiciary implements Serializable {
         return requestedName;
     }
 
+    public String getJudiciaryType() {
+        return judiciaryType;
+    }
+
+
     public static class Builder {
         private UUID id;
         private String titleSuffix;
@@ -69,6 +78,7 @@ public class Judiciary implements Serializable {
         private String surname;
         private String forenames;
         private String requestedName;
+        private String judiciaryType;
 
         public Judiciary.Builder withId(final UUID id) {
             this.id = id;
@@ -105,8 +115,13 @@ public class Judiciary implements Serializable {
             return this;
         }
 
+        public Judiciary.Builder withJudiciaryType(final String judiciaryType) {
+            this.judiciaryType = judiciaryType;
+            return this;
+        }
+
         public Judiciary build() {
-            return new Judiciary(id, titleSuffix, titlePrefix, titleJudicialPrefix, surname, forenames, requestedName);
+            return new Judiciary(id, titleSuffix, titlePrefix, titleJudicialPrefix, surname, forenames, requestedName, judiciaryType);
         }
     }
 }

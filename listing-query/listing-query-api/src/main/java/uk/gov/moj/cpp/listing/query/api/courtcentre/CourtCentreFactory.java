@@ -34,6 +34,7 @@ public class CourtCentreFactory {
     private static final String WELSH_ADDRESS_3 = "welshAddress3";
     private static final String WELSH_ADDRESS_4 = "welshAddress4";
     private static final String WELSH_ADDRESS_5 = "welshAddress5";
+    private static final String OU_CODE_L3_NAME = "oucodeL3Name";
     private static final String COURTROOMS = "courtrooms";
     private static final String ID = "id";
     private static final String COURTROOM_NAME = "courtroomName";
@@ -61,6 +62,7 @@ public class CourtCentreFactory {
         final String welshAddress3 = jsonObject.getString(WELSH_ADDRESS_3, null);
         final String welshAddress4 = jsonObject.getString(WELSH_ADDRESS_4, null);
         final String welshAddress5 = jsonObject.getString(WELSH_ADDRESS_5, null);
+        final String ouCodeL3Name = jsonObject.getString(OU_CODE_L3_NAME, null);
         final Boolean welsh = jsonObject.getBoolean(IS_WELSH, false);
         final Map<UUID, CourtRoomDetails> courtRooms = jsonObject.getJsonArray(COURTROOMS).getValuesAs(JsonObject.class).stream()
                 .map(courtRoomJsonObject -> {
@@ -90,6 +92,7 @@ public class CourtCentreFactory {
                 .withWelshAddress5(welshAddress5)
                 .withCourtRooms(courtRooms)
                 .withWelsh(welsh)
+                .withOuCodeL3Name(ouCodeL3Name)
                 .build();
     }
 }

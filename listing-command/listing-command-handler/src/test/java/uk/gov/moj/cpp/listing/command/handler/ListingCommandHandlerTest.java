@@ -79,6 +79,7 @@ import uk.gov.justice.listing.courts.UpdateCourtApplicationForHearings;
 import uk.gov.justice.listing.courts.UpdateLinkedCaseInHearing;
 import uk.gov.justice.listing.courts.UpdateLinkedCases;
 import uk.gov.justice.listing.event.CourtListExportRequested;
+import uk.gov.justice.listing.event.HearingCounselModified;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishCourtListType;
@@ -138,6 +139,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
@@ -387,13 +389,15 @@ public class ListingCommandHandlerTest {
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     @Spy
     private Clock clock = new StoppedClock(parse("2018-01-02T13:04:05+00:00[Europe/London]"));
+
     @Spy
-    @InjectMocks
-    private final JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectToObjectConverter();
+    private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
+
     @Spy
-    @InjectMocks
-    private final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter();
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter = new JsonObjectConvertersFactory().objectToJsonObjectConverter();
+
     private final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
+
     @InjectMocks
     ExtendHearingHelper extendHearingHelper;
     @InjectMocks
@@ -475,7 +479,8 @@ public class ListingCommandHandlerTest {
     @Mock
     private UUIDService uuidService;
     @Spy
-    private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CourtListExportRequested.class);
+    private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CourtListExportRequested.class,
+            HearingCounselModified.class);
 
     private final static LocalDate SUNDAY_25TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 25);
     private final static LocalDate MONDAY_26TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 26);
@@ -2035,6 +2040,7 @@ public class ListingCommandHandlerTest {
             throw new RuntimeException(e);
         }
     }
+
     private JsonEnvelope updateSequenceForHearingDayCommandEnvelope() {
         final String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-sequence-for-hearing-day.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
@@ -3251,4 +3257,35 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.setClock(this.clock);
     }
 
+    @Test
+    public void shouldModifyHearingCounsels() throws Exception {
+        final JsonObject modifyHearingCounselsCommand = FileUtil.givenPayload("/test-data/listing.command.handler.modify-hearing-counsel.json");
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.handler.modify-hearing-counsel",
+                modifyHearingCounselsCommand);
+
+        when(eventSource.getStreamById(UUID.fromString(modifyHearingCounselsCommand.getString("hearingId"))))
+                .thenReturn(eventStream);
+
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+
+        listingCommandHandler.modifyHearingCounsels(commandEnvelope);
+
+        assertThat(verifyAppendAndGetArgumentFrom(eventStream),
+                streamContaining(jsonEnvelope(
+                        withMetadataEnvelopedFrom(commandEnvelope)
+                                .withName("listing.event.hearing-counsel-modified")
+                                .withCausationIds(commandEnvelope.metadata().id()), payload()
+                                .isJson(allOf(
+                                        withJsonPath("$.hearingId",
+                                                equalTo(modifyHearingCounselsCommand.getString("hearingId"))),
+                                        withJsonPath("$.action",
+                                                equalTo(modifyHearingCounselsCommand.getString("action"))),
+                                        withJsonPath("$.counselType",
+                                                equalTo(modifyHearingCounselsCommand.getString("counselType"))),
+                                        withJsonPath("$.payload",
+                                                equalTo(modifyHearingCounselsCommand.getString("payload")))
+                                )))
+                )
+        );
+    }
 }

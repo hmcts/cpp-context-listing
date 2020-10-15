@@ -10,8 +10,7 @@ import static uk.gov.justice.services.core.interceptor.InterceptorContext.interc
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.ALPHABETICAL;
-import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
-import static uk.gov.moj.cpp.listing.domain.CourtListType.STANDARD;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.JUDGE;
 
 import uk.gov.justice.services.core.annotation.Adapter;
 import uk.gov.justice.services.core.annotation.Component;
@@ -22,6 +21,7 @@ import uk.gov.moj.cpp.listing.domain.utils.NullAwareJsonObjectBuilder;
 import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.document.generator.DocumentGeneratorClient;
+import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 import uk.gov.moj.cpp.systemusers.ServiceContextSystemUserProvider;
@@ -78,6 +78,10 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
     @Inject
     private HearingQueryView hearingQueryView;
 
+    @Inject
+    private JudgeListTemplateAssembler judgeListTemplateAssembler;
+
+
     @Override
     public Response getCourtList(final String courtCentreId, final String courtRoomId, final String listId,
                                  final String startDate, final String endDate, final boolean restricted, final UUID userId) {
@@ -103,15 +107,16 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
 
 
              interceptorChainProcessor.process(interceptorContextWithInput(documentQuery));
-             return getDocumentContent(hearingQueryView.getCourtListContent(documentQuery), courtCentreId, courtRoomId, courtListType.get(), restricted);
+            final CourtListType listType = courtListType.get();
+            return getDocumentContent(listType == JUDGE ? hearingQueryView.rangeSearchHearingsForJudge(documentQuery) : hearingQueryView.getCourtListContent(documentQuery), courtCentreId, courtRoomId, listType, restricted, startDate);
         }
         return Response.status(BAD_REQUEST).entity(String.format("Bad request - No matching list type found for %s", listId)).build();
     }
 
-    private Response getDocumentContent(final JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final boolean restricted) {
+    private Response getDocumentContent(final JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final boolean restricted, final String startDate) {
         final String pdfMimeType = "application/pdf";
         if (!JsonValue.NULL.equals(queryResponse.payload())) {
-            final Optional<JsonObject> courtListData = buildCourtListData(queryResponse, courtCentreId, courtRoomId , courtListType, restricted);
+            final Optional<JsonObject> courtListData = buildCourtListData(queryResponse, courtCentreId, courtRoomId , courtListType, restricted, startDate);
             if (courtListData.isPresent()) {
                 final JsonObject courtListPayload = courtListData.get();
                 LOGGER.info("getDocumentContent() :: courtListPayload {} ", courtListPayload);
@@ -128,15 +133,17 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
         return Response.status(BAD_REQUEST).entity("Bad request - No data found for the supplied parameters").build();
     }
 
-    private Optional<JsonObject> buildCourtListData(JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final boolean restricted) {
+    private Optional<JsonObject> buildCourtListData(JsonEnvelope queryResponse, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final boolean restricted, final String startDate) {
         LOGGER.info("Received request for listType {}", courtListType);
         if (ALPHABETICAL.equals(courtListType)) {
             return alpbhabeticalCourtListService.buildAlphabeticalCourtListData(queryResponse, courtCentreId);
         }
-        else if(STANDARD.equals(courtListType) || PUBLIC.equals(courtListType)) {
-            return standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, restricted);
+
+        if (JUDGE.equals(courtListType)) {
+            return judgeListTemplateAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, startDate);
         }
-        return Optional.empty();
+
+        return standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, restricted);
     }
 
     private String getTemplateName(final CourtListType courtListType, boolean welsh){

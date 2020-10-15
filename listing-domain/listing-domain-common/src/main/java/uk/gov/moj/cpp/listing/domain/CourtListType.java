@@ -1,11 +1,16 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Arrays.stream;
+
 import java.util.Optional;
 
 public enum CourtListType {
   ALPHABETICAL("ALPHABETICAL", "CourtList", "CourtListEnglishWelsh"),
   PUBLIC("PUBLIC", "PublicStandardList", "BilingualPublicCourtList"),
-  STANDARD("STANDARD", "PublicStandardList", null);
+  STANDARD("STANDARD", "PublicStandardList", null),
+  BENCH("BENCH", "PublicStandardList", null),
+  JUDGE("JUDGE", "JudgeList", null);
+
 
   private final String value;
   private final String templateName;
@@ -31,9 +36,7 @@ public enum CourtListType {
   }
 
   public static Optional<CourtListType> valueFor(final String value) {
-    if(ALPHABETICAL.value.equalsIgnoreCase(value)) { return Optional.of(ALPHABETICAL); }
-    if(PUBLIC.value.equalsIgnoreCase(value)) { return Optional.of(PUBLIC); }
-    if(STANDARD.value.equalsIgnoreCase(value)) { return Optional.of(STANDARD); }
-    return Optional.empty();
+
+    return stream(CourtListType.values()).filter(x -> x.toString().equalsIgnoreCase(value)).findFirst();
   }
 }

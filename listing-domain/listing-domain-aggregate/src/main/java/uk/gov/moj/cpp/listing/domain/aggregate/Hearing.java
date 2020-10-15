@@ -1830,6 +1830,16 @@ public class Hearing implements Aggregate {
         return apply(eventStream);
     }
 
+    public Stream<Object> modifyCounselsInHearing(final List<ProsecutionCase> prosecutionCases, final List<UUID> shadowListedOffences) {
+        return apply(Stream.of(AddedCasesForHearing.addedCasesForHearing()
+                .withUnAllocatedListedCases(prosecutionCases.stream()
+                        .map(prosecutionCase -> CourtToEventConverter.buildListedCase(prosecutionCase, shadowListedOffences))
+                        .collect(Collectors.toList()))
+                .withHearingId(hearingId)
+                .build()));
+
+    }
+
     private Stream<Object> freeCancelledHearingDaySlots(final UUID hearingId, final List<HearingDay> hearingDaysFromAggregate) {
         if (MAGISTRATES != jurisdictionType) {
             return Stream.empty();
@@ -1875,4 +1885,5 @@ public class Hearing implements Aggregate {
         return new HearingDay(hearingDayInAggregate.getDurationMinutes(), hearingDayInAggregate.getEndTime(), hearingDayInAggregate.getHearingDate(),
                 hearingDayInAggregate.getSequence(), hearingDayInAggregate.getStartTime(), hearingDayInAggregate.getCourtScheduleId(), cancelled);
     }
+
 }

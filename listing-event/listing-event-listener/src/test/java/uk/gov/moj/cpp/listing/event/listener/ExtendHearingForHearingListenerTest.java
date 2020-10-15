@@ -22,6 +22,7 @@ import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.io.IOException;
@@ -45,7 +46,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class ExtendHearingForHearingListenerTest {
 
-
     @Mock
     private HearingRepository hearingRepository;
     @Mock
@@ -63,12 +63,12 @@ public class ExtendHearingForHearingListenerTest {
     @Mock
     ObjectNode properties;
     private static final String LISTED_CASES_FIELD = "listedCases";
+
     @Spy
-    @InjectMocks
-    private final ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
+    private ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
+
     @Spy
-    @InjectMocks
-    private final JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectToObjectConverter();
+    private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
     @Test
     public void shouldAddedCasesForHearing() throws IOException {

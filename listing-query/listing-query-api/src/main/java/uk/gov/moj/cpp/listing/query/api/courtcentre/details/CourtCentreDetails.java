@@ -25,11 +25,12 @@ public class CourtCentreDetails {
     private final String welshAddress4;
     private final String welshAddress5;
     private final Boolean welsh;
+    private final String ouCodeL3Name;
     private final Map<UUID, CourtRoomDetails> courtRooms;
 
 
     public CourtCentreDetails(UUID id, String courtCentreName, String welshCourtCentreName, String address1, String address2, String address3, String address4, String address5, String postcode,
-                              String welshAddress1, String welshAddress2, String welshAddress3, String welshAddress4, String welshAddress5, Map<UUID, CourtRoomDetails> courtRooms, final Boolean welsh) {
+                              String welshAddress1, String welshAddress2, String welshAddress3, String welshAddress4, String welshAddress5, Map<UUID, CourtRoomDetails> courtRooms, final Boolean welsh, final String ouCodeL3Name) {
         this.id = id;
         this.courtCentreName = courtCentreName;
         this.welshCourtCentreName = welshCourtCentreName;
@@ -46,6 +47,7 @@ public class CourtCentreDetails {
         this.welshAddress5 = welshAddress5;
         this.courtRooms = courtRooms;
         this.welsh = welsh;
+        this.ouCodeL3Name = ouCodeL3Name;
     }
 
     public UUID getId() {
@@ -112,6 +114,10 @@ public class CourtCentreDetails {
         return welsh;
     }
 
+    public String getOuCodeL3Name() {
+        return ouCodeL3Name;
+    }
+
     public static Builder courtCentreDetails() {
         return new CourtCentreDetails.Builder();
     }
@@ -164,6 +170,9 @@ public class CourtCentreDetails {
         private String welshAddress3;
         private String welshAddress4;
         private String welshAddress5;
+        private String ouCodeL3Name;
+
+
 
         private Map<UUID, CourtRoomDetails> courtRooms;
         private Boolean welsh;
@@ -247,9 +256,15 @@ public class CourtCentreDetails {
             this.welsh= welsh;
             return this;
         }
+
+        public Builder withOuCodeL3Name(final String ouCodeL3Name) {
+            this.ouCodeL3Name = ouCodeL3Name;
+            return this;
+        }
+
         public CourtCentreDetails build() {
             return new CourtCentreDetails(id, courtCentreName, welshCourtCentreName, address1, address2, address3, address4, address5,
-                    postcode, welshAddress1, welshAddress2, welshAddress3, welshAddress4, welshAddress5, courtRooms, welsh);
+                    postcode, welshAddress1, welshAddress2, welshAddress3, welshAddress4, welshAddress5, courtRooms, welsh, ouCodeL3Name);
         }
 
     }

@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.query.document.generator.courtlist;
 import java.util.List;
 import java.util.Objects;
 
-@SuppressWarnings({"squid:S1067", "squid:S00107", "squid:S00121"})
+@SuppressWarnings({"squid:S1067", "squid:S00107", "squid:S00121", "squid:S2384"})
 public class Defendant {
     private String organisationName;
 
@@ -20,6 +20,10 @@ public class Defendant {
     private Address address;
 
     private List<Offence> offences;
+
+    private List<Counsel> prosecutionCounsels;
+
+    private List<Counsel> defenceCounsels;
 
     public String getOrganisationName() {
         return organisationName;
@@ -53,6 +57,14 @@ public class Defendant {
         return address;
     }
 
+    public List<Counsel> getProsecutionCounsels() {
+        return prosecutionCounsels;
+    }
+
+    public List<Counsel> getDefenceCounsels() {
+        return defenceCounsels;
+    }
+
     public static Defendant.Builder defendant() {
         return new Defendant.Builder();
     }
@@ -66,6 +78,8 @@ public class Defendant {
         private String nationality;
         private List<Offence> offences;
         private Address address;
+        private List<Counsel> prosecutionCounsels;
+        private List<Counsel> defenceCounsels;
 
         private Builder() {
         }
@@ -104,6 +118,16 @@ public class Defendant {
             return this;
         }
 
+        public Defendant.Builder withProsecutionCounsels(List<Counsel> prosecutionCounsels) {
+            this.prosecutionCounsels = prosecutionCounsels;
+            return this;
+        }
+
+        public Defendant.Builder withDefenceCounsels(List<Counsel> defenceCounsels) {
+            this.defenceCounsels = defenceCounsels;
+            return this;
+        }
+
         public Defendant.Builder withAddress(Address address) {
             this.address = address;
             return this;
@@ -118,6 +142,8 @@ public class Defendant {
             defendant.offences = this.offences;
             defendant.nationality = nationality;
             defendant.address = address;
+            defendant.prosecutionCounsels = prosecutionCounsels;
+            defendant.defenceCounsels = defenceCounsels;
             return defendant;
         }
     }

@@ -28,6 +28,7 @@ import uk.gov.justice.core.courts.UpdateCaseMarkersToHearingCommand;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.CourtListRequestExport;
 import uk.gov.justice.listing.commands.Defendant;
+import uk.gov.justice.listing.commands.ModifyHearingCounselCommand;
 import uk.gov.justice.listing.commands.Offence;
 import uk.gov.justice.listing.commands.PublishCourtList;
 import uk.gov.justice.listing.commands.PublishCourtListType;
@@ -72,6 +73,7 @@ import uk.gov.justice.listing.courts.UpdateOffencesForHearing;
 import uk.gov.justice.listing.courts.UpdatedOffences;
 import uk.gov.justice.listing.courts.VacateTrialEnriched;
 import uk.gov.justice.listing.event.CourtListExportRequested;
+import uk.gov.justice.listing.event.HearingCounselModified;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishedCourtListStored;
@@ -1170,6 +1172,27 @@ public class ListingCommandHandler {
 
         final UUID streamId = courtListId;
         final EventStream eventStream = eventSource.getStreamById(streamId);
+
+        eventStream.append(events.map(toEnvelopeWithMetadataFrom(commandEnvelope)));
+    }
+
+    @Handles("listing.command.handler.modify-hearing-counsel")
+    public void modifyHearingCounsels(final JsonEnvelope commandEnvelope) throws EventStreamException {
+        final JsonObject payload = commandEnvelope.payloadAsJsonObject();
+
+        LOGGER.info("'listing.command.handler.modify-hearing-counsel' received with payload {}",
+                commandEnvelope.toObfuscatedDebugString());
+
+        final ModifyHearingCounselCommand modifyHearingCounsels = jsonObjectConverter.convert(payload, ModifyHearingCounselCommand.class);
+        final HearingCounselModified event = new HearingCounselModified(
+                uk.gov.justice.listing.event.Action.valueFor(modifyHearingCounsels.getAction().name()).orElse(null),
+                uk.gov.justice.listing.event.CounselType.valueFor(modifyHearingCounsels.getCounselType().name()).orElse(null),
+                modifyHearingCounsels.getHearingId(),
+                modifyHearingCounsels.getPayload());
+
+        final Stream<Object> events = streamOf(event);
+
+        final EventStream eventStream = eventSource.getStreamById(modifyHearingCounsels.getHearingId());
 
         eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
     }

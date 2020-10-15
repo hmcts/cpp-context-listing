@@ -9,6 +9,7 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 
 import java.util.List;
 
@@ -24,11 +25,10 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class HearingDaysToDomainConverterTest {
 
     @Spy
-    private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+    private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
     @Spy
-    @InjectMocks
-    private final JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectToObjectConverter();
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
     @InjectMocks
     private CommandBuilder commandBuilder;

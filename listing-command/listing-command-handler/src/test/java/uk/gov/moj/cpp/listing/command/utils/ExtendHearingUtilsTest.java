@@ -22,9 +22,8 @@ import uk.gov.justice.listing.events.Hearing;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
 
 import java.util.ArrayList;
@@ -36,7 +35,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -49,16 +47,13 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class ExtendHearingUtilsTest {
 
     @Spy
-    private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
-    @Spy
-    @InjectMocks
-    private final JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectToObjectConverter();
-    private final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
-    @InjectMocks
-    ExtendHearingHelper extendHearingHelper;
+    private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
     @InjectMocks
-    ExtendHearingUtils extendHearingUtils;
+    private ExtendHearingHelper extendHearingHelper;
+
+    @InjectMocks
+    private ExtendHearingUtils extendHearingUtils;
 
     @Spy
     private ProsecutionCasesBuilder prosecutionCasesBuilder;

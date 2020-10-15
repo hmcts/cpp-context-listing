@@ -135,6 +135,20 @@
     },
     "videoLinkDetails": {
       "type": "string"
+    },
+    "prosecutionCounsels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/prosecutionCounsel.json"
+      }
+    },
+    "defenceCounsels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/core/courts/defenceCounsel.json"
+      }
     }
   },
   "definitions": {

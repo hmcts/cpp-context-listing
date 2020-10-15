@@ -48,6 +48,12 @@
             <artifactId>common-core-domain</artifactId>
             <version>${coredomain.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.tngtech.junit.dataprovider</groupId>
+            <artifactId>junit4-dataprovider</artifactId>
+            <version>${junit4-dataprovider.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 

@@ -1,5 +1,15 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
+import uk.gov.justice.core.courts.CourtApplication;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
+import uk.gov.moj.cpp.listing.domain.Address;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -7,30 +17,20 @@ import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import uk.gov.justice.core.courts.CourtApplication;
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.moj.cpp.listing.domain.Address;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-
 @RunWith(MockitoJUnitRunner.class)
 public class CourtApplicationToDomainConverterTest {
     private final CourtApplicationToDomainConverter converter = new CourtApplicationToDomainConverter();
 
     @Spy
-    ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+    private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
     @Spy
-    @InjectMocks
-    JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectToObjectConverter();
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
-    ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
+    private ObjectToJsonValueConverter objectToJsonValueConverter = new JsonObjectConvertersFactory().objectToJsonValueConverter();
 
     @InjectMocks
-    CommandBuilder commandBuilder;
+    private CommandBuilder commandBuilder;
 
     @Test
     public void shouldConvertCourtApplicationWithApplicantRespondent() {

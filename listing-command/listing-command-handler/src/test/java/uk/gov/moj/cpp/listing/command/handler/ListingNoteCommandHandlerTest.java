@@ -15,6 +15,7 @@ import uk.gov.justice.services.core.aggregate.AggregateService;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.utils.FileUtil;
 import uk.gov.moj.cpp.listing.common.NoteUUIDService;
 import uk.gov.moj.cpp.listing.domain.aggregate.ListingNote;
@@ -53,10 +54,10 @@ public class ListingNoteCommandHandlerTest {
     private NoteUUIDService noteUUIDService;
 
     @Spy
-    @InjectMocks
-    private final JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectToObjectConverter();
+    private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
+
     @Spy
-    private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+    private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
     @InjectMocks
     @Spy

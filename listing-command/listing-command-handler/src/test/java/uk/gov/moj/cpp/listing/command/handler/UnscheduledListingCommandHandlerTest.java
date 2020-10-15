@@ -43,6 +43,7 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
@@ -78,13 +79,13 @@ public class UnscheduledListingCommandHandlerTest {
     private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(HearingListed.class);
     @Spy
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+
     @Spy
-    @InjectMocks
-    private final JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectToObjectConverter();
+    private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
+
     @Spy
-    @InjectMocks
-    private final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter();
-    private final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
+    private final ObjectToJsonObjectConverter objectToJsonObjectConverter = new JsonObjectConvertersFactory().objectToJsonObjectConverter();
+    private final ObjectToJsonValueConverter objectToJsonValueConverter = new JsonObjectConvertersFactory().objectToJsonValueConverter();
     @Spy
     private final CommandToDomainConverter commandToDomainConverter = new CommandToDomainConverter();
     @Mock

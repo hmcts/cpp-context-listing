@@ -1,0 +1,96 @@
+{
+  "courtRoomName": "Room 1",
+  "hearingDate": "2019-01-29",
+  "sittings": [
+    {
+      "judiciaryNames": [],
+      "sittingTime": "01:00 PM",
+      "hearings": [
+        {
+          "hearingType": "Trial",
+          "caseNumber": "CAJ4BGEAG7",
+          "hearingDay": {
+            "hearingDate": "2019-01-29",
+            "endTime": "02:00 PM",
+            "startTime": "01:00 PM",
+            "durationMinutes": 40
+          },
+          "defendants": [
+            {
+              "firstName": "Bob1",
+              "surname": "Smith1"
+            }
+          ]
+        },
+        {
+          "hearingType": "Trial",
+          "caseNumber": "CAJ4BGEAG7",
+          "hearingDay": {
+            "hearingDate": "2019-01-29",
+            "endTime": "04:00 PM",
+            "startTime": "03:00 PM",
+            "durationMinutes": 60
+          },
+          "defendants": [
+            {
+              "firstName": "Bob1",
+              "surname": "Smith1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "judiciaryNames": [
+        "Her Majesty"
+      ],
+      "sittingTime": "08:00 AM",
+      "hearings": [
+        {
+          "hearingType": "Trial",
+          "caseNumber": "CAJ4BGEAG7",
+          "hearingDay": {
+            "hearingDate": "2019-01-29",
+            "endTime": "02:00 PM",
+            "startTime": "08:00 AM",
+            "durationMinutes": 360
+          },
+          "defendants": [
+            {
+              "firstName": "Rayen",
+              "surname": "Jack"
+            },
+            {
+              "firstName": "Mike",
+              "surname": "Ray"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "judiciaryNames": [
+        "Her Majesty Honour"
+      ],
+      "sittingTime": "09:00 AM",
+      "hearings": [
+        {
+          "hearingType": "Trial",
+          "caseNumber": "CAJ4BGEAG7",
+          "hearingDay": {
+            "hearingDate": "2019-01-29",
+            "endTime": "02:00 PM",
+            "startTime": "09:00 AM",
+            "durationMinutes": 360
+          },
+          "defendants": [
+            {
+              "firstName": "Bob",
+              "surname": "Smith"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -13,6 +13,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,6 +33,7 @@ import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.query.api.service.AlphabeticalCourtListService;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.document.generator.DocumentGeneratorClient;
+import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 import uk.gov.moj.cpp.systemusers.ServiceContextSystemUserProvider;
@@ -39,7 +41,6 @@ import uk.gov.moj.cpp.systemusers.ServiceContextSystemUserProvider;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -82,6 +83,9 @@ public class DefaultQueryApiCourtlistResourceTest {
     private StandardPublicCourtListTemplateAssembler standardCourtListTemplateAssembler;
 
     @Mock
+    private JudgeListTemplateAssembler judgeListTemplateAssembler;
+
+    @Mock
     private Response documentContentResponse;
 
     @Mock
@@ -96,11 +100,13 @@ public class DefaultQueryApiCourtlistResourceTest {
     private final UUID userId = randomUUID();
     private final UUID materialId = randomUUID();
     private final UUID systemUserId = randomUUID();
-    private final byte [] documentResponseBinary = "test".getBytes();
-    private static final String COURT_CENTRE_ID =  randomUUID().toString();
-    private static final String COURT_ROOM_ID =  randomUUID().toString();
-    private static final String LIST_ID_ALPHABETICAL =  "Alphabetical";
-    private static final String LIST_ID_STANDARD =  "Standard";
+    private final byte[] documentResponseBinary = "test".getBytes();
+    private static final String COURT_CENTRE_ID = randomUUID().toString();
+    private static final String COURT_ROOM_ID = randomUUID().toString();
+    private static final String LIST_ID_ALPHABETICAL = "Alphabetical";
+    private static final String LIST_ID_STANDARD = "Standard";
+    private static final String LIST_ID_BENCH = "Bench";
+    private static final String LIST_ID_JUDGE = "Judge";
     private static final String START_DATE = to(now());
     private static final String END_DATE = to(now());
 
@@ -111,6 +117,7 @@ public class DefaultQueryApiCourtlistResourceTest {
         final JsonEnvelope documentDetails = documentDetails(materialId);
         when(interceptorChainProcessor.process(argThat((Matchers.any(InterceptorContext.class))))).thenReturn(Optional.ofNullable(documentDetails));
         when(hearingQueryView.getCourtListContent(argThat((Matchers.any(JsonEnvelope.class))))).thenReturn(documentDetails);
+        when(hearingQueryView.rangeSearchHearingsForJudge(argThat((Matchers.any(JsonEnvelope.class))))).thenReturn(documentDetails);
         when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(documentContentResponse.getStatus()).thenReturn(SC_OK);
     }
@@ -139,9 +146,39 @@ public class DefaultQueryApiCourtlistResourceTest {
                 .thenReturn(Optional.of(Json.createObjectBuilder().build()));
         when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
 
-        final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_STANDARD, START_DATE, END_DATE, TRUE,UUID.randomUUID());
+        final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_STANDARD, START_DATE, END_DATE, TRUE, UUID.randomUUID());
 
         verifyResponse(headers, documentContentResponse, LIST_ID_STANDARD);
+
+    }
+
+    @Test
+    public void shouldRunAllInterceptorsAndFetchAndStreamDocumentForBench() {
+
+        final MultivaluedMap headers = givenHeaders();
+        when(standardCourtListTemplateAssembler.assemble(
+                any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(Boolean.class)))
+                .thenReturn(Optional.of(Json.createObjectBuilder().build()));
+        when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
+
+        final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_BENCH, START_DATE, END_DATE, TRUE, UUID.randomUUID());
+
+        verifyResponse(headers, documentContentResponse, LIST_ID_BENCH);
+
+    }
+
+    @Test
+    public void shouldRunAllInterceptorsAndFetchAndStreamDocumentForJudge() {
+
+        final MultivaluedMap headers = givenHeaders();
+        when(judgeListTemplateAssembler.assemble(
+                any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), anyString()))
+                .thenReturn(Optional.of(Json.createObjectBuilder().build()));
+        when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.ofNullable(false));
+
+        final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_JUDGE, START_DATE, END_DATE, TRUE, UUID.randomUUID());
+
+        verifyResponse(headers, documentContentResponse, LIST_ID_JUDGE);
 
     }
 
@@ -170,6 +207,7 @@ public class DefaultQueryApiCourtlistResourceTest {
     private JsonEnvelope documentDetails(final JsonValue payload) {
         return envelopeFrom(metadataWithRandomUUID(COURT_LIST_QUERY_NAME), payload);
     }
+
     private void verifyInterceptorChainExecution(String expectedListId) {
         verify(interceptorChainProcessor).process(interceptorContextCaptor.capture());
 

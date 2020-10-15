@@ -3,8 +3,8 @@ package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.listing.commands.NonDefaultDay;

@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
@@ -15,6 +14,8 @@ import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.TrialVacated;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -54,6 +55,12 @@ public class HearingEventListener {
     private final ObjectMapper mapper;
 
     @Inject
+    private JsonObjectToObjectConverter jsonToObjectConverter;
+
+    @Inject
+    private StringToJsonObjectConverter stringToJsonObjectConverter;
+
+    @Inject
     public HearingEventListener(final HearingRepository hearingRepository,
                                 final ObjectMapper mapper) {
         this.hearingRepository = hearingRepository;
@@ -64,7 +71,7 @@ public class HearingEventListener {
     @Handles("listing.events.hearing-listed")
     public void hearingListed(final Envelope<HearingListed> event) {
         HearingListed hearingListed = event.payload();
-        JsonNode hearingJsonNode = convertToJsonNode(hearingListed.getHearing());
+        final JsonNode hearingJsonNode = convertToObject(hearingListed.getHearing());
         UUID hearingId = hearingListed.getHearing().getId();
         LOGGER.info("'listing.events.hearing-listed' received hearingId {}", hearingId);
         final Hearing hearing = new Hearing(hearingId, hearingJsonNode);
@@ -227,9 +234,8 @@ public class HearingEventListener {
 
     }
 
-    private JsonNode convertToJsonNode(Object source) {
+    private JsonNode convertToObject(Object source) {
         return mapper.valueToTree(source);
     }
-
 
 }

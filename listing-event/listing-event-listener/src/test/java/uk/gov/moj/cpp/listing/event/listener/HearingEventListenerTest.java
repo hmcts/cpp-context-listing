@@ -85,7 +85,6 @@ public class HearingEventListenerTest {
     private HearingRescheduled hearingRescheduled;
 
 
-
     @InjectMocks
     private HearingEventListener hearingEventListener;
 
@@ -209,7 +208,6 @@ public class HearingEventListenerTest {
     }
 
 
-
     @Test
     public void shouldHearingRescheduled() {
         final Envelope<HearingRescheduled> envelope = (Envelope<HearingRescheduled>) mock(Envelope.class);
@@ -226,5 +224,4 @@ public class HearingEventListenerTest {
         verify(properties).put(eq("vacatedTrialReasonId"), eq(""));
         verify(hearingRepository).save(hearing);
     }
-
 }

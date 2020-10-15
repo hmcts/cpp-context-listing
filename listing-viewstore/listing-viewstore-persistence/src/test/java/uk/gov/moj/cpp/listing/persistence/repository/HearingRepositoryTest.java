@@ -56,6 +56,8 @@ import javax.inject.Inject;
 
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Predicate;
+import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;

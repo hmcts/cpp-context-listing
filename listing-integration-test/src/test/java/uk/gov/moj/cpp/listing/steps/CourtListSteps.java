@@ -1,13 +1,5 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import uk.gov.justice.services.test.utils.core.http.RequestParams;
-import uk.gov.justice.services.test.utils.core.rest.RestClient;
-import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
-import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
-
-import javax.ws.rs.core.Response;
-
 import static java.text.MessageFormat.format;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.junit.Assert.assertEquals;
@@ -21,6 +13,14 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
+
+import uk.gov.justice.services.test.utils.core.http.RequestParams;
+import uk.gov.justice.services.test.utils.core.rest.RestClient;
+import uk.gov.moj.cpp.listing.it.AbstractIT;
+import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+
+import javax.ws.rs.core.Response;
 
 public class CourtListSteps extends AbstractIT {
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
@@ -45,8 +45,8 @@ public class CourtListSteps extends AbstractIT {
     private Response getResponseData(final String listId) {
         final String endDate = listId.equals(STANDARD) ? updatedHearingData.getStartDate() : updatedHearingData.getEndDate();
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.search.court.list"), updatedHearingData.getCourtCentreId(),
-                        updatedHearingData.getStartDate(), listId, endDate));
+                format(readConfig().getProperty("listing.search.court.list-court-room-id"), updatedHearingData.getCourtCentreId(),
+                        updatedHearingData.getStartDate(), listId, endDate, updatedHearingData.getCourtRoomId()));
         final RequestParams requestParams = requestParams(searchHearingUrl, "application/vnd.listing.search.court.list+json")
                                                     .withHeader(USER_ID, USER_ID_VALUE)
                                                     .build();

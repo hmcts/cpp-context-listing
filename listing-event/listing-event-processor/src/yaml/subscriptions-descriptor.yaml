@@ -135,4 +135,22 @@ subscriptions_descriptor:
         - name: public.hearing.hearing-days-cancelled
           schema_uri: http://justice.gov.uk/hearing/courts/hearing-days-cancelled.json
 
+        - name: public.hearing.defence-counsel-added
+          schema_uri: http://cpp.moj.gov.uk/hearing/json/schema/event/defence-counsel-added.json
+
+        - name: public.hearing.defence-counsel-updated
+          schema_uri: http://cpp.moj.gov.uk/hearing/json/schema/event/defence-counsel-updated.json
+
+        - name: public.hearing.defence-counsel-removed
+          schema_uri: http://cpp.moj.gov.uk/hearing/json/schema/event/defence-counsel-removed.json
+
+        - name: public.hearing.prosecution-counsel-added
+          schema_uri: http://cpp.moj.gov.uk/hearing/json/schema/event/prosecution-counsel-added.json
+
+        - name: public.hearing.prosecution-counsel-updated
+          schema_uri: http://cpp.moj.gov.uk/hearing/json/schema/event/prosecution-counsel-updated.json
+
+        - name: public.hearing.prosecution-counsel-removed
+          schema_uri: http://cpp.moj.gov.uk/hearing/json/schema/event/prosecution-counsel-removed.json
+
       event_source_name: public.event.source

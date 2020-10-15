@@ -232,7 +232,7 @@ public class HearingQueryView {
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
                         .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
-                        );
+        );
     }
 
     @Handles("listing.available.search.hearings")
@@ -317,9 +317,15 @@ public class HearingQueryView {
         final List<Hearing> hearings = repository.findHearingsByCaseUrnAndAnyAllocationState(caseUrnQueryParam);
 
         return Enveloper.envelop(createObjectBuilder()
-                .add(HEARINGS,  hearingJsonListConverterFilterEjectCases.convert(hearings))
+                .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
                 .build()).withName("listing.any-allocation.search.hearings").withMetadataFrom(query);
     }
+
+    @Handles("listing.range.search.hearings.for.judge.list")
+    public JsonEnvelope rangeSearchHearingsForJudge(final JsonEnvelope query) {
+        return rangeSearchQuery.rangeSearchHearingsForJudgeList(query);
+    }
+
 
     @Handles("listing.range.search.hearings")
     public JsonEnvelope rangeSearchHearings(final JsonEnvelope query) {
@@ -342,19 +348,18 @@ public class HearingQueryView {
                         LIST_ID + " : {}, ",
                 courtCentreId, courtRoomId, startDate, endDate, listId);
         final Optional<CourtListType> listType = valueFor(listId);
-        if (listType.isPresent()) {
-            if (listType.get().equals(PUBLIC) || listType.get().equals(STANDARD)) {
-                final Hearing matchedHearingsJsonObject = repository.findHearingsForPublicStandardList(TRUE, courtCentreId, startDate, endDate);
-                return createPublicStandardCourtListJsonEnvelope(query, matchedHearingsJsonObject);
-            } else {
-                final List<Hearing> matchedHearings = repository.findHearingsForAlphabeticalList(TRUE, courtCentreId, startDate);
-                return createAlphabeticalListJsonEnvelope(query, matchedHearings);
-            }
-            // Plug in queries for other list types
-        } else {
+        if (!listType.isPresent()) {
             LOGGER.error("Supplied CourtList type is not valid {} ", listId);
             return createEmptyResponse(query);
         }
+
+        if (listType.get().equals(CourtListType.ALPHABETICAL)) {
+            final List<Hearing> matchedHearings = repository.findHearingsForAlphabeticalList(TRUE, courtCentreId, startDate);
+            return createAlphabeticalListJsonEnvelope(query, matchedHearings);
+        }
+        // Plug in queries for other list types
+        final Hearing matchedHearingsJsonObject = repository.findHearingsForPublicStandardList(TRUE, courtCentreId, startDate, endDate);
+        return createPublicStandardCourtListJsonEnvelope(query, matchedHearingsJsonObject);
     }
 
     @Handles("listing.courtlist")

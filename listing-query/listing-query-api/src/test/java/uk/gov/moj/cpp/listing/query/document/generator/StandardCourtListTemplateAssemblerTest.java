@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.query.document.generator;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.activemq.artemis.utils.JsonLoader.createReader;
@@ -9,6 +10,7 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyList;
@@ -42,24 +44,29 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
 import com.google.common.collect.ImmutableMap;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(DataProviderRunner.class)
 public class StandardCourtListTemplateAssemblerTest {
 
     private static final UUID COURT_CENTRE_ID = randomUUID();
@@ -92,6 +99,13 @@ public class StandardCourtListTemplateAssemblerTest {
     private static final String PTP = "Plea & Trial Preparation";
     private static final String CPS = "CPS";
     private static final String DEFENDANT_STRING = "Defendant";
+    private static final UUID CASE_ID1 = UUID.randomUUID();
+    private static final UUID CASE_ID2 = UUID.randomUUID();
+    private static final UUID DEFENDANT_ID1 = UUID.randomUUID();
+    private static final UUID DEFENDANT_ID2 = UUID.randomUUID();
+    private static final UUID DEFENDANT_ID3 = UUID.randomUUID();
+
+
 
     @Mock
     private CourtCentreFactory courtCentreFactory;
@@ -111,9 +125,17 @@ public class StandardCourtListTemplateAssemblerTest {
     @Spy
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
+    @DataProvider
+    public static Object[][] validCourtList() {
+        return new Object[][]{
+//                {CourtListType.STANDARD},
+                {CourtListType.BENCH}
+        };
+    }
 
     @Before
     public void setup() {
+        MockitoAnnotations.initMocks(this);
         setField(this.jsonObjectToObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
         when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
@@ -121,17 +143,18 @@ public class StandardCourtListTemplateAssemblerTest {
 
 
     @Test
-    public void shouldAssembleDataForStandardCourtListTemplateWithNullCourtRoomId() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForStandardAndBenchCourtListTemplateWithNullCourtRoomId(final CourtListType courtListType) {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
         when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
                 .thenReturn(generateJsonEnvelope());
 
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingData()), COURT_CENTRE_ID.toString(), null, CourtListType.STANDARD, FALSE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingData()), COURT_CENTRE_ID.toString(), null, courtListType, FALSE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
-        assertThat(actualCourtList.getListType(), is(CourtListType.STANDARD.toString().toLowerCase()));
+        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
@@ -145,7 +168,7 @@ public class StandardCourtListTemplateAssemblerTest {
 
         assertThat(actualHearingDate.getCourtRooms().size(), is(2));
         CourtRoom actualCourtRoom = actualHearingDate.getCourtRooms().get(0);
-        assertCourtRoom(actualCourtRoom);
+        assertCourtRoom(actualCourtRoom, 2);
 
         Timeslot actualTimeslot = actualCourtRoom.getTimeslots().get(0);
         assertThat(actualTimeslot.getHearings().size(), is(2));
@@ -168,16 +191,17 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForStandardCourtListTemplateWithCourtRoomId() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForStandardAndBenchCourtListTemplateWithCourtRoomId(final CourtListType courtListType) {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
         when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
                 .thenReturn(generateJsonEnvelope());
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingData()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD, FALSE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataForBenchList()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, FALSE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
-        assertThat(actualCourtList.getListType(), is(CourtListType.STANDARD.toString().toLowerCase()));
+        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
@@ -191,7 +215,101 @@ public class StandardCourtListTemplateAssemblerTest {
 
         assertThat(actualHearingDate.getCourtRooms().size(), is(1));
         CourtRoom actualCourtRoom = actualHearingDate.getCourtRooms().get(0);
-        assertCourtRoom(actualCourtRoom);
+        assertCourtRoom(actualCourtRoom, 1);
+
+        Timeslot actualTimeslot = actualCourtRoom.getTimeslots().get(0);
+        assertThat(actualTimeslot.getHearings().size(), is(2));
+        Hearing actualHearing = actualTimeslot.getHearings().get(0);
+        assertHearing(actualHearing);
+
+        Defendant actualDefendant = actualHearing.getDefendants().get(0);
+        assertDefendant(actualDefendant,2);
+        assertOffence(actualDefendant.getOffences().get(0));
+
+        CourtRoom actualCourtRoom1 = actualHearingDate.getCourtRooms().get(0);
+        assertThat(actualCourtRoom1.getCourtRoomName(), is(COURT_ROOM_NAME_1));
+
+        List<String> caseNumbers = asList("42GD8525719", "42GD8525720");
+
+        final List<Defendant> defendants = actualCourtList.getHearingDates().stream()
+                .map(hd -> hd.getCourtRooms())
+                .flatMap(List::stream)
+                .collect(Collectors.toList())
+                .stream()
+                .map(cr -> cr.getTimeslots())
+                .flatMap(List::stream)
+                .collect(Collectors.toList())
+                .stream()
+                .map(c -> c.getHearings())
+                .flatMap(List::stream)
+                .collect(Collectors.toList()).stream().filter(h -> caseNumbers.contains(h.getCaseNumber()))
+                .map(Hearing::getDefendants).flatMap(List::stream).collect(Collectors.toList());
+
+
+        if(courtListType == CourtListType.BENCH) {
+            //Verify Defence Counsel
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Cheyanne"))
+                    .map(d -> d.getDefenceCounsels()).flatMap(List::stream).collect(Collectors.toList()).stream()
+                    .anyMatch(dc -> (dc.getFirstName().equals("Rosy") && dc.getLastName().equals("Mary"))), is(true));
+
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Rodger"))
+                    .map(d -> d.getDefenceCounsels()).flatMap(List::stream).collect(Collectors.toList()).isEmpty(), is(true));
+
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Mayyen"))
+                    .map(d -> d.getDefenceCounsels()).flatMap(List::stream).collect(Collectors.toList()).stream()
+                    .anyMatch(dc -> (dc.getFirstName().equals("Sam") && dc.getLastName().equals("Lory"))), is(true));
+
+            //Verify Prosecution Case
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Cheyanne"))
+                    .map(d -> d.getProsecutionCounsels()).flatMap(List::stream).collect(Collectors.toList()).stream()
+                    .anyMatch(dc -> (dc.getFirstName().equals("John") && dc.getLastName().equals("Turkey"))), is(true));
+
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Rodger"))
+                    .map(d -> d.getProsecutionCounsels()).flatMap(List::stream).collect(Collectors.toList()).stream()
+                    .anyMatch(dc -> (dc.getFirstName().equals("John") && dc.getLastName().equals("Turkey"))), is(true));
+
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Mayyen"))
+                    .map(d -> d.getProsecutionCounsels()).flatMap(List::stream).collect(Collectors.toList()).stream()
+                    .anyMatch(dc -> (dc.getFirstName().equals("Barry") && dc.getLastName().equals("tony"))), is(true));
+        } else {
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Cheyanne")).collect(Collectors.toList()).get(0).getDefenceCounsels(), nullValue());
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Rodger")).collect(Collectors.toList()).get(0).getDefenceCounsels(), nullValue());
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Mayyen")).collect(Collectors.toList()).get(0).getDefenceCounsels(), nullValue());
+
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Cheyanne")).collect(Collectors.toList()).get(0).getProsecutionCounsels(), nullValue());
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Rodger")).collect(Collectors.toList()).get(0).getProsecutionCounsels(), nullValue());
+            assertThat(defendants.stream().filter(d -> d.getFirstName().equals("Mayyen")).collect(Collectors.toList()).get(0).getProsecutionCounsels(), nullValue());
+
+        }
+
+    }
+
+    @Test
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForStandardCourtListTemplateWithCourtRoomId(final CourtListType courtListType) {
+
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails());
+        when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
+                .thenReturn(generateJsonEnvelope());
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingData()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, FALSE);
+        final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
+
+        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
+        assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
+        assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
+        assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
+        assertThat(actualCourtList.getCourtCentreAddress2(), is(notNullValue()));
+
+        assertThat(actualCourtList.getHearingDates().size(), is(1));
+
+        HearingDate actualHearingDate = actualCourtList.getHearingDates().get(0);
+        assertThat(actualHearingDate.getHearingDate(), is(START_DATE));
+
+
+        assertThat(actualHearingDate.getCourtRooms().size(), is(1));
+        CourtRoom actualCourtRoom = actualHearingDate.getCourtRooms().get(0);
+        assertCourtRoom(actualCourtRoom, 2);
 
         Timeslot actualTimeslot = actualCourtRoom.getTimeslots().get(0);
         assertThat(actualTimeslot.getHearings().size(), is(2));
@@ -214,16 +332,17 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForStandardCourtListTemplateWithOneShadowListedOffence() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForStandardCourtListTemplateWithOneShadowListedOffence(final CourtListType courtListType) {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
         when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
                 .thenReturn(generateJsonEnvelope());
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildCourtListWithOneShadowListedOffence()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD, TRUE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildCourtListWithOneShadowListedOffence()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, TRUE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
-        assertThat(actualCourtList.getListType(), is(CourtListType.STANDARD.toString().toLowerCase()));
+        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
@@ -251,11 +370,12 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForStandardCourtListTemplateWhenThereIsNoJudiciary() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForStandardCourtListTemplateWhenThereIsNoJudiciary(final CourtListType courtListType) {
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
 
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataForNoJudiciary()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD, FALSE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataForNoJudiciary()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, FALSE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
         assertThat(actualCourtList.getHearingDates().size(), is(1));
@@ -273,11 +393,12 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForStandardCourtListTemplateWithApplication() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForStandardCourtListTemplateWithApplication(final CourtListType courtListType) {
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
 
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataForNoJudiciaryWithApplication()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD, FALSE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataForNoJudiciaryWithApplication()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, FALSE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
         assertThat(actualCourtList.getHearingDates().size(), is(1));
@@ -294,16 +415,17 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForRestrictedCaseStandardCourtListTemplateWithCourtRoomId() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForRestrictedCaseStandardCourtListTemplateWithCourtRoomId(final CourtListType courtListType) {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
         when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
                 .thenReturn(generateJsonEnvelope());
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataRestrictedCase()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD, TRUE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataRestrictedCase()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, TRUE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
-        assertThat(actualCourtList.getListType(), is(CourtListType.STANDARD.toString().toLowerCase()));
+        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
@@ -329,16 +451,17 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForRestrictedDefendantStandardCourtListTemplateWithCourtRoomId() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForRestrictedDefendantStandardCourtListTemplateWithCourtRoomId(final CourtListType courtListType) {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
         when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
                 .thenReturn(generateJsonEnvelope());
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataRestrictedDefendant()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD, TRUE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataRestrictedDefendant()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, TRUE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
-        assertThat(actualCourtList.getListType(), is(CourtListType.STANDARD.toString().toLowerCase()));
+        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
@@ -364,16 +487,17 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForRestrictedMultipleDefendantStandardCourtListTemplateWithCourtRoomId() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForRestrictedMultipleDefendantStandardCourtListTemplateWithCourtRoomId(final CourtListType courtListType) {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
         when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
                 .thenReturn(generateJsonEnvelope());
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataRestrictedMultipleDefendant()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD, TRUE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataRestrictedMultipleDefendant()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, TRUE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
-        assertThat(actualCourtList.getListType(), is(CourtListType.STANDARD.toString().toLowerCase()));
+        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
@@ -399,16 +523,17 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForRestrictedOffenceStandardCourtListTemplate() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForRestrictedOffenceStandardCourtListTemplate(final CourtListType courtListType) {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
         when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
                 .thenReturn(generateJsonEnvelope());
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataRestrictedOffence()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD, TRUE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataRestrictedOffence()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, TRUE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
-        assertThat(actualCourtList.getListType(), is(CourtListType.STANDARD.toString().toLowerCase()));
+        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
@@ -444,14 +569,15 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForStandardCourtListTemplateWithLegalEntityDefendant() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForStandardCourtListTemplateWithLegalEntityDefendant(final CourtListType courtListType) {
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
 
         when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
                 .thenReturn(generateJsonEnvelope());
 
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildCourtListWithLegalEntityDefendant()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD, FALSE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildCourtListWithLegalEntityDefendant()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, FALSE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
         Defendant actualDefendant = actualCourtList.getHearingDates().get(0).getCourtRooms().get(0).getTimeslots().get(0).getHearings().get(0).getDefendants().get(0);
@@ -460,16 +586,17 @@ public class StandardCourtListTemplateAssemblerTest {
     }
 
     @Test
-    public void shouldAssembleDataForRestrictedCourtListTemplateWithLegalEntityDefendant() {
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForRestrictedCourtListTemplateWithLegalEntityDefendant(final CourtListType courtListType) {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
         when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
                 .thenReturn(generateJsonEnvelope());
-        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildRestrictedCourtListWithLegalEntityDefendant()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.STANDARD, TRUE);
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildRestrictedCourtListWithLegalEntityDefendant()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, TRUE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
-        assertThat(actualCourtList.getListType(), is(CourtListType.STANDARD.toString().toLowerCase()));
+        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
@@ -488,11 +615,41 @@ public class StandardCourtListTemplateAssemblerTest {
 
     }
 
-    private void assertCourtRoom(CourtRoom actualCourtRoom) {
+    @Test
+    @UseDataProvider("validCourtList")
+    public void shouldAssembleDataForShadowedAndRestrictedCaseStandardCourtListTemplateWithCourtRoomId(final CourtListType courtListType) {
+
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails());
+        when(referenceDataService.getJudiciariesByIdList(anyList(), any(JsonEnvelope.class)))
+                .thenReturn(generateJsonEnvelope());
+        Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingDataShadowedAndRestrictedCase()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), courtListType, TRUE);
+        final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
+
+        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
+        assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
+        assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
+        assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
+        assertThat(actualCourtList.getCourtCentreAddress2(), is(notNullValue()));
+
+        assertThat(actualCourtList.getHearingDates().size(), is(1));
+
+        HearingDate actualHearingDate = actualCourtList.getHearingDates().get(0);
+        assertThat(actualHearingDate.getHearingDate(), is(START_DATE));
+
+
+        assertThat(actualHearingDate.getCourtRooms().size(), is(1));
+        CourtRoom actualCourtRoom = actualHearingDate.getCourtRooms().get(0);
+
+        assertThat(actualCourtRoom.getTimeslots().size(), is(0));
+    }
+
+
+    private void assertCourtRoom(final CourtRoom actualCourtRoom, final int numberOfTimeSlots) {
         assertThat(actualCourtRoom.getCourtRoomName(), is(COURT_ROOM_NAME_1));
         assertThat(actualCourtRoom.getJudiciaryNames(), CoreMatchers.containsString("Ainsworth"));
 
-        assertThat(actualCourtRoom.getTimeslots().size(), is(2));
+        assertThat(actualCourtRoom.getTimeslots().size(), is(numberOfTimeSlots));
 
     }
 
@@ -592,6 +749,26 @@ public class StandardCourtListTemplateAssemblerTest {
         }
     }
 
+    private JsonArray buildHearingDataForBenchList() {
+        String jsonString = FileUtil.getPayload("stubbed.hearingRepository.findHearingsForBenchListScenario.json")
+                .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
+                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("JUDICIARY2_ID", JUDICIARY2_ID.toString())
+                .replaceAll("JUDICIARY3_ID", JUDICIARY3_ID.toString())
+                .replaceAll("DATE_OF_BIRTH", DATE_OF_BIRTH)
+                .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
+                .replaceAll("COURT_ROOM_2_ID", COURT_ROOM_2_ID.toString())
+                .replaceAll("CASE_ID1", CASE_ID1.toString())
+                .replaceAll("CASE_ID2", CASE_ID2.toString())
+                .replaceAll("DEFENDANT_ID1", DEFENDANT_ID1.toString())
+                .replaceAll("DEFENDANT_ID2", DEFENDANT_ID2.toString())
+                .replaceAll("DEFENDANT_ID3", DEFENDANT_ID3.toString());
+        try (JsonReader jsonReader = createReader(new StringReader(jsonString))) {
+            return jsonReader.readArray();
+        }
+    }
+
+
     private JsonArray buildHearingDataForNoJudiciary() {
         String jsonString = FileUtil.getPayload("stubbed.hearingRepository.findHearingsForPublicList-StandardList-NoJudiciaryScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
@@ -668,6 +845,21 @@ public class StandardCourtListTemplateAssemblerTest {
                 .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
                 .replaceAll("JUDICIARY2_ID", JUDICIARY2_ID.toString())
                 .replaceAll("JUDICIARY3_ID", JUDICIARY3_ID.toString())
+                .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
+                .replaceAll("COURT_ROOM_2_ID", COURT_ROOM_2_ID.toString());
+        try (JsonReader jsonReader = createReader(new StringReader(jsonString))) {
+            return jsonReader.readArray();
+        }
+    }
+
+    private JsonArray buildHearingDataShadowedAndRestrictedCase() {
+
+        String jsonString = FileUtil.getPayload("restrict/stubbed.shadowListedAndRestrictedCasesForPublicStandardListScenario.json")
+                .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
+                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("JUDICIARY2_ID", JUDICIARY2_ID.toString())
+                .replaceAll("JUDICIARY3_ID", JUDICIARY3_ID.toString())
+                .replaceAll("DATE_OF_BIRTH", DATE_OF_BIRTH)
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
                 .replaceAll("COURT_ROOM_2_ID", COURT_ROOM_2_ID.toString());
         try (JsonReader jsonReader = createReader(new StringReader(jsonString))) {

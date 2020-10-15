@@ -5,6 +5,7 @@ import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.event.utils.EventBuilder;
 
 import java.util.List;
@@ -22,14 +23,13 @@ public class AddOffencesForHearingCommandCollectionConverterTest {
     private AddOffencesForHearingCommandCollectionConverter  addOffencesForHearingCommandCollectionConverter = new AddOffencesForHearingCommandCollectionConverter();
 
     @Spy
-    ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+    private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
     @Spy
-    @InjectMocks
-    JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectToObjectConverter();
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
     @InjectMocks
-    EventBuilder eventBuilder;
+    private EventBuilder eventBuilder;
 
     @Test
     public void convertFromDefendantsToBeUpdatedEventToListOfUpdateDefendantsForHearingCommands() throws Exception {
