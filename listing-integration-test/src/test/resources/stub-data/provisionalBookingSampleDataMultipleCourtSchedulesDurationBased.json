@@ -4,7 +4,7 @@
       "courtScheduleId": "1e837de0-743a-4a2c-9db3-b2e678c48729",
       "listingProfileId": "CS2393820",
       "ouCode": "B01EF00",
-      "courtRoomId": "fce80cd4-0c00-3c30-9471-2c2ee7a52453",
+      "courtRoomId": "COURT_ROOM_ID_1",
       "courtRoomNumber": 793,
       "courtHouseName": "Croydon Magistrates' Court",
       "courtRoomName": "Courtroom 06",
@@ -19,13 +19,14 @@
       "availableDuration": 360,
       "judiciaries": [],
       "slotStartTimes": [],
-      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37"
+      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37",
+      "courtHouseId": "COURT_CENTRE_ID"
     },
     {
       "courtScheduleId": "3e837de0-743a-4a2c-9db3-b2e678c48729",
       "listingProfileId": "CS2393822",
       "ouCode": "B01EF00",
-      "courtRoomId": "fce80cd4-0c00-3c30-9471-2c2ee7a52453",
+      "courtRoomId": "COURT_ROOM_ID_3",
       "courtRoomNumber": 793,
       "courtHouseName": "Croydon Magistrates' Court",
       "courtRoomName": "Courtroom 06",
@@ -40,13 +41,14 @@
       "availableDuration": 360,
       "judiciaries": [],
       "slotStartTimes": [],
-      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37"
+      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37",
+      "courtHouseId": "COURT_CENTRE_ID"
     },
     {
       "courtScheduleId": "2e837de0-743a-4a2c-9db3-b2e678c48729",
       "listingProfileId": "CS2393822",
       "ouCode": "B01EF00",
-      "courtRoomId": "fce80cd4-0c00-3c30-9471-2c2ee7a52453",
+      "courtRoomId": "COURT_ROOM_ID_2",
       "courtRoomNumber": 793,
       "courtHouseName": "Croydon Magistrates' Court",
       "courtRoomName": "Courtroom 06",
@@ -61,7 +63,8 @@
       "availableDuration": 360,
       "judiciaries": [],
       "slotStartTimes": [],
-      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37"
+      "bookingId": "62883cad-6dfa-4485-8e97-c766a1d45c37",
+      "courtHouseId": "COURT_CENTRE_ID"
     }
   ]
 }

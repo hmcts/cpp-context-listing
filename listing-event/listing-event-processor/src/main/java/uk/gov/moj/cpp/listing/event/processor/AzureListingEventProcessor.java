@@ -75,7 +75,11 @@ public class AzureListingEventProcessor {
 
     private List<NonDefaultDay> getMagistratesNonDefaultDays(final List<NonDefaultDay> nonDefaultDays) {
         return nonDefaultDays.stream()
-                .filter(ndd -> ndd.getCourtScheduleId().isPresent())
+                .filter(ndd -> ndd.getCourtScheduleId().isPresent() || isSlotDetailPresent(ndd))
                 .collect(toList());
+    }
+
+    private boolean isSlotDetailPresent(final NonDefaultDay ndd) {
+        return ndd.getOucode().isPresent() && ndd.getCourtRoomId().isPresent() && ndd.getSession().isPresent();
     }
 }

@@ -12,6 +12,13 @@ import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvi
 
 import uk.gov.moj.cpp.listing.steps.CancelHearingSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.HearingDay;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import uk.gov.moj.cpp.listing.steps.data.HearingDay;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
@@ -129,13 +136,18 @@ public class CancelHearingDaysIT extends AbstractIT {
     }
 
     private HearingsData givenMultidayAllocatedHearingExists(final List<HearingDay> hearingDays, final String jurisdiction) {
-        final String[] courtScheduleSlots = {to(hearingDays.get(0).getSittingDay().toLocalDate()), to(hearingDays.get(1).getSittingDay().toLocalDate()), to(hearingDays.get(2).getSittingDay().toLocalDate())};
-        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtScheduleSlots);
 
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(jurisdiction);
+        final List<HearingData> hearingData = hearingsData.getHearingData();
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>(){{
+            put(to(hearingDays.get(0).getSittingDay().toLocalDate()), hearingData.get(0).getCourtRoomId().toString());
+            put(to(hearingDays.get(1).getSittingDay().toLocalDate()), hearingData.get(0).getCourtRoomId().toString());
+            put(to(hearingDays.get(2).getSittingDay().toLocalDate()), hearingData.get(0).getCourtRoomId().toString());
+        }};
+        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, hearingData.get(0).getCourtCentreId().toString());
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtScheduleSlots);
+            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().stream().toArray(String[]::new), courtRoomSchedules.values().stream().toArray(String[]::new));
         }
         return hearingsData;
     }

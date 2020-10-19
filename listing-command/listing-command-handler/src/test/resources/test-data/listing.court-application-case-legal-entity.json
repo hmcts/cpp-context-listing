@@ -145,5 +145,17 @@
       "type": {
         "description": "PTP",
         "id": "52edf232-3c09-4c74-a6ad-737985c2e662"
-      }
+      },
+      "bookedSlots": [
+        {
+          "startTime": "2020-06-22T01:02:33Z",
+          "duration": 25,
+          "courtScheduleId": "d74876ff-2bd9-435a-87e3-b8047cb1357a",
+          "session": "AM",
+          "oucode": "ABS236",
+          "courtRoomId": 123498,
+          "roomId": "d74876ff-2bd9-435a-87e3-b8047cb1352a",
+          "courtCentreId": "d74876ff-2bd9-435a-87e3-b8047cb1351a"
+        }
+      ]
     }

@@ -7,6 +7,7 @@ import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.FUTURE_LOCAL_DATE;
 
+import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -34,6 +36,7 @@ public class HearingDaysCalculatorTest {
     private static final LocalDate END_DATE = FUTURE_LOCAL_DATE.next();
     private static final int DEFAULT_DURATION = 30;
     private static final int OTHER_DURATION = 60;
+    private static final CourtCentre COURT_CENTRE  = CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build();
 
     @Test
     public void shouldCreateEmptyHearingDaysCollectionIfNoStartDateProvided() {
@@ -41,7 +44,7 @@ public class HearingDaysCalculatorTest {
         final LocalDate startDate = null;
 
         //when
-        final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, END_DATE, new ArrayList<>(), new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION);
+        final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, END_DATE, new ArrayList<>(), new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION, COURT_CENTRE);
 
         //then
         assertThat(actual, is(empty()));
@@ -54,7 +57,7 @@ public class HearingDaysCalculatorTest {
         final LocalDate endDate = null;
 
         //when
-        final List<HearingDay> actual = HearingDaysCalculator.calculate(START_DATE, endDate, new ArrayList<>(), new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION);
+        final List<HearingDay> actual = HearingDaysCalculator.calculate(START_DATE, endDate, new ArrayList<>(), new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION, COURT_CENTRE);
 
         //then
         assertThat(actual, is(empty()));
@@ -68,7 +71,7 @@ public class HearingDaysCalculatorTest {
         final LocalDate endDate = START_DATE;
 
         //when
-        final List<HearingDay> actual = HearingDaysCalculator.calculate(START_DATE, endDate, new ArrayList<>(), new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION);
+        final List<HearingDay> actual = HearingDaysCalculator.calculate(START_DATE, endDate, new ArrayList<>(), new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION, COURT_CENTRE);
 
         //then
         assertThat(actual, not(empty()));
@@ -90,7 +93,7 @@ public class HearingDaysCalculatorTest {
         final LocalDate endDate = startDate.plusDays(totalHearingDays - 1L);
 
         //when
-        final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, endDate, new ArrayList<>(), new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION);
+        final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, endDate, new ArrayList<>(), new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION, COURT_CENTRE);
 
         //then
         assertThat(actual.size(), is(totalHearingDays));
@@ -108,7 +111,7 @@ public class HearingDaysCalculatorTest {
         final List<LocalDate> nonSittingDays = Arrays.asList(startDate.plusDays(1));
 
         //when
-        final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, endDate, nonSittingDays, new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION);
+        final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, endDate, nonSittingDays, new ArrayList<>(), DEFAULT_TIME, DEFAULT_DURATION, COURT_CENTRE);
 
         //then
         assertThat(actual.size(), is(totalDaysStartToEndDate - 1));
@@ -130,7 +133,8 @@ public class HearingDaysCalculatorTest {
                         .withDuration(of(OTHER_DURATION))
                         .build()),
                 DEFAULT_TIME,
-                DEFAULT_DURATION);
+                DEFAULT_DURATION,
+                COURT_CENTRE);
 
         //then
         assertThat(actual.get(0).getStartTime(), is(ZonedDateTime.of(START_DATE, startTime, UTC)));
@@ -155,7 +159,8 @@ public class HearingDaysCalculatorTest {
                         .withDuration(Optional.of(DEFAULT_DURATION))
                         .build()),
                 DEFAULT_TIME,
-                DEFAULT_DURATION);
+                DEFAULT_DURATION,
+                COURT_CENTRE);
 
         //then
         assertThat(actual.get(0).getStartTime(), is(ZonedDateTime.of(START_DATE, startTime, UTC)));
@@ -188,7 +193,7 @@ public class HearingDaysCalculatorTest {
                 NonDefaultDay.nonDefaultDay().withStartTime(startTime4).withDuration(of(durations[3])).build());
 
         //when
-        final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, endDate, nonSittingDays, startTimes, DEFAULT_TIME, DEFAULT_DURATION);
+        final List<HearingDay> actual = HearingDaysCalculator.calculate(startDate, endDate, nonSittingDays, startTimes, DEFAULT_TIME, DEFAULT_DURATION, COURT_CENTRE);
 
         //then
         assertThat(actual.size(), is(totalDaysStartToEndDate - nonSittingDays.size()));

@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Arrays.asList;
+import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.codehaus.groovy.runtime.DefaultGroovyMethods.any;
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -21,6 +22,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.HandlerClassMatch
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
+import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
@@ -40,7 +42,11 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.Metadata;
+import uk.gov.justice.services.messaging.MetadataBuilder;
+import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 
@@ -57,6 +63,7 @@ import javax.json.JsonValue;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Matchers;
 import org.mockito.Mock;
@@ -96,6 +103,8 @@ public class ListingCommandApiTest {
     private ListingCommandApi listingCommandApi;
     @Mock
     private ExtendHearingForHearing extendHearingForHearing;
+    @Captor
+    private ArgumentCaptor<Envelope> envelopeArgumentCaptor;
 
     @Test
     public void testIfMethodsArePassThrough() {
@@ -114,6 +123,7 @@ public class ListingCommandApiTest {
         //given
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(empty());
 
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
@@ -143,6 +153,7 @@ public class ListingCommandApiTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(empty());
 
         given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
 
@@ -276,6 +287,7 @@ public class ListingCommandApiTest {
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(updateHearingForListing.getJurisdictionType()).willReturn(MAGISTRATES);
         given(updateHearingForListing.getNonDefaultDays()).willReturn(getNonDefaultDays());
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(empty());
 
 
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
@@ -358,5 +370,14 @@ public class ListingCommandApiTest {
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.handler.edit-listing-note"));
 
     }
+    @Test
+    public void shouldHandleCorrectHearingDaysWithoutCourtCentre() {
+        final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
+        when(envelope.metadata()).thenReturn(mockMetadata);
+        listingCommandApi.handleCorrectHearingDaysWithoutCourtCentre(envelope);
+        verify(sender).send(envelopeArgumentCaptor.capture());
+        assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is(LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC));
+    }
+
 }
 

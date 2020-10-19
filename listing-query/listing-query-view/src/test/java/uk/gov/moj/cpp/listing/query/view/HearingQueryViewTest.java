@@ -15,6 +15,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.anyMapOf;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -161,6 +164,8 @@ public class HearingQueryViewTest {
         FieldUtils.writeField(this.hearingsQueryView, "listToJsonArrayConverter", listToJsonArrayConverter, true);
     }
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @Test
     public void shouldReturnCorrectPublishCourtListStatusForWeekCommencing() {
 
@@ -230,10 +235,66 @@ public class HearingQueryViewTest {
     }
 
     @Test
+    public void searchHearingsWithSearchDateWithAllParametersProvidedApartFromStartTime() {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+        final JsonArray hearingsJsonArray = hearingsJsonArray();
+
+        Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                        .add("hello", "world"))
+                .build();
+
+        when(hearingRepository.findHearings(
+                ALLOCATED,
+                COURT_CENTRE_ID.toString(),
+                COURT_ROOM_ID.toString(),
+                AUTHORITY_ID_SEARCH,
+                HEARING_TYPE_ID.toString(),
+                JURISDICTION_TYPE.toString(),
+                SEARCH_DATE.toString(),
+                SEARCH_DATE.atTime(LocalTime.MIN).toString(),
+                SEARCH_DATE.atTime(END_TIME).toString()))
+                .thenReturn(hearingsJson);
+
+        when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyListOf(Hearing.class), anyMapOf(String.class, String.class))).thenReturn(hearingsJsonArray);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(SEARCH_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_TIME_QUERY_PARAMETER, END_TIME.toString())
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.searchHearings(query);
+
+        assertThat(results, is(jsonEnvelope(metadata().withName("listing.search.hearings"),
+                payloadIsJson(
+                        withJsonPath("$.hearings[0].hello", equalTo("world"))
+                ))
+        ));
+        verify(hearingRepository).findHearings(eq(ALLOCATED), eq(COURT_CENTRE_ID.toString()), eq(COURT_ROOM_ID.toString()),
+                eq(AUTHORITY_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
+                eq(SEARCH_DATE.atTime(LocalTime.MIN).toString()), eq(SEARCH_DATE.atTime(END_TIME).toString()));
+        verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMapOf(String.class, String.class));
+    }
+
+    @Test
     public void searchHearingsWithSearchDateWithAllParametersProvided() {
 
         final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
         final JsonArray hearingsJsonArray = hearingsJsonArray();
+
+        Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                        .add("hello", "world"))
+                .build();
 
         when(hearingRepository.findHearings(
                 ALLOCATED,
@@ -246,9 +307,10 @@ public class HearingQueryViewTest {
                 SEARCH_DATE.atTime(START_TIME).toString(),
                 SEARCH_DATE.atTime(END_TIME).toString()))
                 .thenReturn(hearingsJson);
-        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
+
+        when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyListOf(Hearing.class), anyMapOf(String.class, String.class))).thenReturn(hearingsJsonArray);
         when(notesService.findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class))).thenReturn(createNotesList());
+
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
                 createObjectBuilder()
@@ -273,7 +335,7 @@ public class HearingQueryViewTest {
         verify(hearingRepository).findHearings(eq(ALLOCATED), eq(COURT_CENTRE_ID.toString()), eq(COURT_ROOM_ID.toString()),
                 eq(AUTHORITY_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
                 eq(SEARCH_DATE.atTime(START_TIME).toString()), eq(SEARCH_DATE.atTime(END_TIME).toString()));
-        verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
+        verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMapOf(String.class, String.class));
         verify(notesService, times(1)).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class));
     }
 
@@ -623,8 +685,8 @@ public class HearingQueryViewTest {
                 SEARCH_DATE.atTime(START_TIME).toString(),
                 SEARCH_DATE.atTime(END_TIME).toString()))
                 .thenReturn(hearingsJson);
-        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenCallRealMethod();
+
+        when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyListOf(Hearing.class), anyMapOf(String.class, String.class))).thenCallRealMethod();
         when(notesService.findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class))).thenReturn(createNotesList());
 
         final JsonEnvelope query = envelopeFrom(
@@ -647,7 +709,8 @@ public class HearingQueryViewTest {
         verify(hearingRepository).findHearings(eq(ALLOCATED), eq(COURT_CENTRE_ID.toString()), eq(COURT_ROOM_ID.toString()),
                 eq(AUTHORITY_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
                 eq(SEARCH_DATE.atTime(START_TIME).toString()), eq(SEARCH_DATE.atTime(END_TIME).toString()));
-        verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
+
+        verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMapOf(String.class, String.class));
         verify(notesService, times(1)).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class));
     }
 

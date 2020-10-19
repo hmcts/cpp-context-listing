@@ -18,21 +18,27 @@ public class NonDefaultDayData {
 
     private final Optional<String> session;
 
-    public NonDefaultDayData(final String startTime) {
-        this(startTime, empty());
+    private final Optional<String> roomId;
+
+    private final Optional<String> courtCentreId;
+
+    public NonDefaultDayData(final String startTime, final Optional<String> courtCentreId, final Optional<String> roomId) {
+        this(startTime, empty(), courtCentreId, roomId);
     }
 
-    public NonDefaultDayData(final String startTime, final Optional<Integer> duration) {
-        this(startTime, duration, empty(), empty(), empty(), empty());
+    public NonDefaultDayData(final String startTime, final Optional<Integer> duration, final Optional<String> courtCentreId, final Optional<String> roomId) {
+        this(startTime, duration, empty(), empty(), empty(), empty(), courtCentreId, roomId);
     }
 
-    public NonDefaultDayData(final String startTime, final Optional<Integer> duration, final Optional<String> courtScheduleId, final Optional<Integer> courtRoomId, final Optional<String> oucode, final Optional<String> session) {
+    public NonDefaultDayData(final String startTime, final Optional<Integer> duration, final Optional<String> courtScheduleId, final Optional<Integer> courtRoomId, final Optional<String> oucode, final Optional<String> session, final Optional<String> courtCentreId, final Optional<String> roomId) {
         this.startTime = startTime;
         this.duration = duration;
         this.courtScheduleId = courtScheduleId;
         this.courtRoomId = courtRoomId;
         this.oucode = oucode;
         this.session = session;
+        this.courtCentreId = courtCentreId;
+        this.roomId = roomId;
     }
 
     public Optional<Integer> getDuration() {
@@ -57,5 +63,13 @@ public class NonDefaultDayData {
 
     public Optional<String> getSession() {
         return session;
+    }
+
+    public Optional<String> getRoomId() {
+        return roomId;
+    }
+
+    public Optional<String> getCourtCentreId() {
+        return courtCentreId;
     }
 }

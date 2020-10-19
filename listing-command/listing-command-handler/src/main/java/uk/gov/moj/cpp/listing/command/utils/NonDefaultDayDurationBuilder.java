@@ -48,6 +48,7 @@ public class NonDefaultDayDurationBuilder {
                 .withWeekCommencingStartDate(hearing.getWeekCommencingStartDate())
                 .withHasVideoLink(hearing.getHasVideoLink())
                 .withVideoLinkDetails(hearing.getVideoLinkDetails())
+                .withSelectedCourtCentre(hearing.getSelectedCourtCentre())
                 .build();
     }
 
@@ -89,7 +90,9 @@ public class NonDefaultDayDurationBuilder {
                 .withDuration(ofNullable(totalDuration))
                 .withOucode(nonDefaultDay.getOucode())
                 .withSession(nonDefaultDay.getSession())
-                .withStartTime(nonDefaultDay.getStartTime()).build();
+                .withStartTime(nonDefaultDay.getStartTime())
+                .withCourtCentreId(nonDefaultDay.getCourtCentreId())
+                .withRoomId(nonDefaultDay.getRoomId()).build();
     }
 
     private boolean isAllDaySessionBooking(final List<NonDefaultDay> nonDefaultDays, final int duration) {

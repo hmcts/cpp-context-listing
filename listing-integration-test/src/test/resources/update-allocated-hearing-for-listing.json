@@ -1,0 +1,19 @@
+{
+  "courtCentreId": "COURT_CENTRE_ID",
+  "courtRoomId": "COURT_ROOM_ID",
+  "type": {
+    "id": "06b0c2bf-3f98-46ed-ab7e-56efaf9ecced",
+    "description": "Plea and Trial Preparation"
+  },
+  "startDate": "START_DATE",
+  "endDate": "END_DATE",
+  "nonSittingDays": [],
+  "nonDefaultDays": [],
+  "judiciary": [],
+  "jurisdictionType": "MAGISTRATES",
+  "hearingLanguage": "WELSH",
+  "selectedCourtCentre": {
+    "id": "UPDATED_CENTRE_ID",
+    "courtRoomId": "UPDATED_ROOM_ID"
+  }
+}

@@ -23,7 +23,23 @@
     "nonDefaultDays": [
       {
         "startTime": "NON_DEFAULT_DAY",
-        "duration": null
+        "duration": "SLOT_DURATION",
+        "courtCentreId": "COURT_CENTRE_ID",
+        "courtRoomId": "COURT_ROOM_NUMBER",
+        "oucode": "OU_CODE",
+        "roomId": "COURT_ROOM_ID",
+        "session": "SLOT_SESSION",
+        "courtScheduleId": "COURT_SCHEDULE_ID_1"
+      },
+      {
+        "courtCentreId": "COURT_CENTRE_ID",
+        "courtRoomId": "COURT_ROOM_NUMBER",
+        "courtScheduleId": "COURT_SCHEDULE_ID_2",
+        "duration": "SLOT_DURATION",
+        "oucode": "OU_CODE",
+        "roomId": "ROOM_ID_1",
+        "session": "SESSION_1",
+        "startTime": "DEFAULT_DAY_1"
       }
     ],
     "nonSittingDays": [

@@ -1,7 +1,12 @@
 package uk.gov.moj.cpp.listing.command.api;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.util.Objects.nonNull;
+import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
+import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
+import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
+
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
@@ -13,6 +18,7 @@ import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
 import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
 import uk.gov.justice.listing.courts.ListUnscheduledCourtHearingEnriched;
 import uk.gov.justice.listing.courts.ProsecutionCases;
+import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -23,20 +29,19 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 
-import javax.inject.Inject;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static java.util.Objects.nonNull;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
-import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
-import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
+import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServiceComponent(COMMAND_API)
 @SuppressWarnings("squid:S2629")
@@ -47,6 +52,7 @@ public class ListingCommandApi {
     static final String LISTING_COMMAND_LIST_UNSCHEDULED_COURT_HEARING_ENRICHED = "listing.command.list-unscheduled-court-hearing-enriched";
     static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
     static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
+    static final String LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC = "listing.command.correct-hearing-days-without-court-centre";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     private static final String PROSECUTION_CASES = "prosecutionCases";
@@ -123,7 +129,7 @@ public class ListingCommandApi {
 
         final JsonArray prosecutionCases = payload.getJsonArray(PROSECUTION_CASES);
 
-        final CourtCentreDetails courtCentre = courtCentreFactory.getCourtCentre(updateHearingForListing.getCourtCentreId(), envelope);
+        final CourtCentreDetails courtCentre = courtCentreFactory.getCourtCentre(getCourtCentreId(updateHearingForListing), envelope);
         final UpdateHearingForListingEnriched updateHearingForListingEnriched = UpdateHearingForListingEnriched.updateHearingForListingEnriched()
                 .withCourtCentreDetails(courtCentre)
                 .withUpdateHearingForListing(updateHearingForListing)
@@ -135,6 +141,15 @@ public class ListingCommandApi {
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED),
                 objectToJsonValueConverter.convert(updateHearingForListingEnriched)));
 
+    }
+
+    private UUID getCourtCentreId(final UpdateHearingForListing updateHearingForListing) {
+        final UUID courtCentreId = updateHearingForListing.getCourtCentreId();
+        final Optional<SelectedCourtCentre> selectedCourtCentre = updateHearingForListing.getSelectedCourtCentre();
+        if (selectedCourtCentre.isPresent() && CROWN.equals(updateHearingForListing.getJurisdictionType())) {
+                return selectedCourtCentre.get().getId();
+        }
+        return courtCentreId;
     }
 
     @Handles("listing.command.vacate-trial")
@@ -224,5 +239,10 @@ public class ListingCommandApi {
         sender.send(JsonEnvelope.envelopeFrom(
                 JsonEnvelope.metadataFrom(jsonEnvelope.metadata()).withName("listing.command.handler.delete-listing-note"),
                 jsonEnvelope.payloadAsJsonObject()));
+    }
+    @Handles("listing.correct-hearing-days-without-court-centre")
+    public void handleCorrectHearingDaysWithoutCourtCentre(final JsonEnvelope envelope) {
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC),
+                envelope.payload()));
     }
 }

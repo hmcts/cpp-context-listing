@@ -37,10 +37,12 @@ import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 import com.jayway.jsonpath.Filter;
 import com.jayway.restassured.path.json.JsonPath;
+import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,9 +65,11 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
     private MessageConsumer publicMessageConsumerHearingUpdated;
 
 
-    private final SequenceHearingData sequenceHearingData;
+    private SequenceHearingData sequenceHearingData;
 
     private String request;
+
+    public SequenceHearingSteps() {}
 
     public SequenceHearingSteps(SequenceHearingData sequenceHearingData) {
         this.sequenceHearingData = sequenceHearingData;
@@ -233,6 +237,28 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("hearingDays[0].sequence"), is(sequenceHearingData.getSequencedDays().get(parse(sequenceHearingData.getUpdatedHearingData().getStartDate()))));
         assertThat(jsonResponse.get("hearingDays[1].hearingDate"), is(sequenceHearingData.getUpdatedHearingData().getEndDate()));
         assertThat(jsonResponse.get("hearingDays[1].sequence"), is(sequenceHearingData.getSequencedDays().get(parse(sequenceHearingData.getUpdatedHearingData().getEndDate()))));
+    }
+
+    public void sequenceHearing(final JsonObject sequencedHearingJsonObject, final UUID hearingId) {
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_SEQUENCE_HEARING_DAYS), hearingId));
+
+        request = sequencedHearingJsonObject.toString();
+
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_SEQUENCE_HEARING_DAYS, request, getLoggedInHeader());
+
+        restClient.postCommand(updateHearingUrl, MEDIA_TYPE_SEQUENCE_HEARING_DAYS,
+                request, getLoggedInHeader());
+    }
+
+    public void verifyHearingDaysAreSequencedForHearing(final UUID courtCentreId, final UUID courtRoomId, final String searchDate, final Matcher[] matchers) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.court-room-id.search-date"), ALLOCATED, courtCentreId, courtRoomId, searchDate));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(matchers)));
     }
 }
 

@@ -6,6 +6,9 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.time.ZoneOffset.UTC;
+import static java.time.format.DateTimeFormatter.ofPattern;
+import static java.util.Collections.emptyMap;
+import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.IntStream.range;
 import static javax.json.Json.createArrayBuilder;
@@ -42,15 +45,21 @@ import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtCentreDetails;
 import uk.gov.moj.cpp.listing.query.api.courtcentre.details.CourtRoomDetails;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
+import org.apache.commons.collections.MapUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -82,6 +91,8 @@ public class AlphabeticalCourtListServiceTest {
     private static final String ADDRESS_1 = "22 Liverpool Street";
     private static final String POST_CODE = "LV12 9XA";
     private static final String ADDRESS_1_WELSH = "22 Welsh Street";
+    private static final ZoneId BST = ZoneId.of("Europe/London");
+    private static final String HH_MM = "HH:mm";
 
     private final UUID COURT_CENTRE_ID = randomUUID();
     private final UUID COURT_ROOM_ID = randomUUID();
@@ -96,6 +107,10 @@ public class AlphabeticalCourtListServiceTest {
     private static final String APPLICATION_REFERENCE_1 = STRING.next();
     private static final String APPLICATION_REFERENCE_2 = STRING.next();
     private static final String QUERY_NAME = "listing.search.court.list";
+    private static final String TOP_LEVEL_COURT_CENTRE_ID = randomUUID().toString();
+    private static final String TOP_LEVEL_COURT_ROOM_ID = randomUUID().toString();
+    private static final String OTHER_COURT_CENTRE_ID = randomUUID().toString();
+    private static final String OTHER_COURT_ROOM_ID = randomUUID().toString();
 
     @Mock
     private CourtCentreFactory courtCentreFactory;
@@ -287,6 +302,55 @@ public class AlphabeticalCourtListServiceTest {
         verify(courtCentreFactory).getCourtCentre(eq(COURT_CENTRE_ID), eq(envelope));
     }
 
+    @Test
+    public void shouldBuildAlphabeticalListDataForHearingsWithMultipleCourtCentres_1() {
+        final LocalDate date = LocalDate.now();
+        final LocalTime time = LocalTime.now();
+        final JsonEnvelope envelope = buildRequestEnvelopeForHearingWithMultipleCourtCentres(date, time);
+        when(courtCentreFactory.getCourtCentre(fromString(TOP_LEVEL_COURT_CENTRE_ID), envelope)).thenReturn(getCourtCentreDetails(false, fromString(TOP_LEVEL_COURT_CENTRE_ID), fromString(TOP_LEVEL_COURT_ROOM_ID)));
+
+        final Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, TOP_LEVEL_COURT_CENTRE_ID);
+
+        assertThat(listJson.orElse(createObjectBuilder().build()).toString(), isJson(allOf(
+                withJsonPath("$.courtCentreName", equalTo(COURT_CENTRE_NAME)),
+                withJsonPath("$.hearingDate", equalTo(date.format(ofPattern("dd MMMM yyyy")))),
+                withJsonPath("$.courtCentreAddress1", equalTo(ADDRESS_1 + ",")),
+                withJsonPath("$.courtCentreAddress2", equalTo(POST_CODE)),
+                withJsonPath("$.defendants", hasSize(6)),
+
+                withJsonPath("$.defendants[0].hearingStartTime", equalTo(time.format(ofPattern(HH_MM)))),
+                withJsonPath("$.defendants[1].hearingStartTime", equalTo(time.plusMinutes(60).format(ofPattern(HH_MM)))),
+                withJsonPath("$.defendants[2].hearingStartTime", equalTo(time.format(ofPattern(HH_MM)))),
+                withJsonPath("$.defendants[3].hearingStartTime", equalTo(time.plusMinutes(60).format(ofPattern(HH_MM)))),
+                withJsonPath("$.defendants[4].hearingStartTime", equalTo(time.format(ofPattern(HH_MM)))),
+                withJsonPath("$.defendants[5].hearingStartTime", equalTo(time.plusMinutes(60).format(ofPattern(HH_MM))))
+        )));
+        verify(courtCentreFactory).getCourtCentre(eq(fromString(TOP_LEVEL_COURT_CENTRE_ID)), eq(envelope));
+    }
+
+    @Test
+    public void shouldBuildAlphabeticalListDataForHearingsWithMultipleCourtCentres_2() {
+        final LocalDate date = LocalDate.now();
+        final LocalTime time = LocalTime.now();
+        final JsonEnvelope envelope = buildRequestEnvelopeForHearingWithMultipleCourtCentres(date, time);
+        when(courtCentreFactory.getCourtCentre(fromString(OTHER_COURT_CENTRE_ID), envelope)).thenReturn(getCourtCentreDetails(false, fromString(OTHER_COURT_CENTRE_ID), fromString(OTHER_COURT_ROOM_ID)));
+
+        final Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, OTHER_COURT_CENTRE_ID);
+
+        assertThat(listJson.orElse(createObjectBuilder().build()).toString(), isJson(allOf(
+                withJsonPath("$.courtCentreName", equalTo(COURT_CENTRE_NAME)),
+                withJsonPath("$.hearingDate", equalTo(date.format(ofPattern("dd MMMM yyyy")))),
+                withJsonPath("$.courtCentreAddress1", equalTo(ADDRESS_1 + ",")),
+                withJsonPath("$.courtCentreAddress2", equalTo(POST_CODE)),
+                withJsonPath("$.defendants", hasSize(3)),
+
+                withJsonPath("$.defendants[0].hearingStartTime", equalTo(time.plusMinutes(30).format(ofPattern(HH_MM)))),
+                withJsonPath("$.defendants[1].hearingStartTime", equalTo(time.plusMinutes(30).format(ofPattern(HH_MM)))),
+                withJsonPath("$.defendants[2].hearingStartTime", equalTo(time.plusMinutes(30).format(ofPattern(HH_MM))))
+        )));
+        verify(courtCentreFactory).getCourtCentre(eq(fromString(OTHER_COURT_CENTRE_ID)), eq(envelope));
+    }
+
     private JsonEnvelope buildRequestEnvelope(boolean isBST, boolean legalEntity) {
         final boolean caseRestricted = false;
         final boolean defendantRestricted = false;
@@ -314,31 +378,121 @@ public class AlphabeticalCourtListServiceTest {
                 queryPayload);
     }
 
+    private JsonObjectBuilder getHearingBuilder(final Map<String, String> hearingDetails) {
+        final JsonObjectBuilder objectBuilder = createObjectBuilder()
+                .add("id", randomUUID().toString());
+
+        if (MapUtils.isEmpty(hearingDetails)) {
+            objectBuilder.add("startDate", LocalDates.to(HEARING_DATE))
+                    .add("endDate", LocalDates.to(HEARING_DATE))
+                    .add("courtRoomId", COURT_ROOM_ID.toString())
+                    .add("courtCentreId", COURT_CENTRE_ID.toString());
+        } else {
+            hearingDetails.entrySet().forEach(e -> objectBuilder.add(e.getKey(), e.getValue()));
+        }
+
+        return objectBuilder;
+    }
+
     private JsonEnvelope buildRequestEnvelope(boolean isBST) {
         final JsonObject queryPayload = createObjectBuilder()
                 .add("hearings", createArrayBuilder().add(createObjectBuilder()
                         .add("hearingDate", isBST ? LocalDates.to(SUMMER_HEARING_DATE) : LocalDates.to(HEARING_DATE))
                         .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
-                                        .add("hearing", createObjectBuilder()
-                                                .add("id", randomUUID().toString())
-                                                .add("startDate", LocalDates.to(HEARING_DATE))
-                                                .add("endDate", LocalDates.to(HEARING_DATE))
+                                        .add("hearing", getHearingBuilder(emptyMap())
                                                 .add("allocated", true)
-                                                .add("courtRoomId", COURT_ROOM_ID.toString())
                                                 .add("hearingDays", generateHearingDays(isBST ? SUMMER_START_DATE_TIME : START_DATE_TIME_1))
-                                                .add("courtCentreId", COURT_CENTRE_ID.toString())
                                                 .add("listedCases", generateListedCases(false, false, false))
                                         )
                                 ).add(createObjectBuilder()
-                                        .add("hearing", createObjectBuilder()
-                                                .add("id", randomUUID().toString())
-                                                .add("startDate", LocalDates.to(HEARING_DATE))
-                                                .add("endDate", LocalDates.to(HEARING_DATE))
+                                        .add("hearing", getHearingBuilder(emptyMap())
                                                 .add("allocated", true)
-                                                .add("courtRoomId", COURT_ROOM_ID.toString())
                                                 .add("hearingDays", generateHearingDays(isBST ? SUMMER_START_DATE_TIME : START_DATE_TIME_2))
-                                                .add("courtCentreId", COURT_CENTRE_ID.toString())
                                                 .add("courtApplications", generateCourtApplications(false, false))
+                                        )
+                                )
+                        )
+                        .build()).build()).build();
+
+        return envelopeFrom(
+                metadataOf(randomUUID(), QUERY_NAME)
+                        .withUserId(randomUUID().toString())
+                        .build(),
+                queryPayload);
+    }
+
+    private JsonEnvelope buildRequestEnvelopeForHearingWithMultipleCourtCentres(final LocalDate hearingDate, final LocalTime hearingTime) {
+        final JsonObject queryPayload = createObjectBuilder()
+                .add("hearings", createArrayBuilder().add(createObjectBuilder()
+                        .add("hearingDate", hearingDate.toString())
+                        .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
+                                        .add("hearing", getHearingBuilder(Stream.of(new String[][]{
+                                                    {"startDate", hearingDate.toString()},
+                                                    {"endDate", hearingDate.plusDays(1).toString()},
+                                                    {"courtRoomId", TOP_LEVEL_COURT_ROOM_ID},
+                                                    {"courtCentreId", TOP_LEVEL_COURT_CENTRE_ID}
+                                                }).collect(Collectors.toMap(e -> e[0], e -> e[1])))
+                                                .add("allocated", true)
+                                                .add("hearingDays", generateHearingDaysForMultipleCourtCentres(new HashMap<LocalDate, Map<String, String>>(){{
+                                                    put(hearingDate, Stream.of(new String[][]{
+                                                            {"hearingTime", hearingTime.toString()},
+                                                            {"courtRoomId", TOP_LEVEL_COURT_ROOM_ID},
+                                                            {"courtCentreId", TOP_LEVEL_COURT_CENTRE_ID}
+                                                    }).collect(Collectors.toMap(e -> e[0], e -> e[1])));
+
+                                                    put(hearingDate.plusDays(1), Stream.of(new String[][]{
+                                                            {"hearingTime", hearingTime.toString()},
+                                                            {"courtRoomId", OTHER_COURT_ROOM_ID},
+                                                            {"courtCentreId", OTHER_COURT_CENTRE_ID}
+                                                    }).collect(Collectors.toMap(e -> e[0], e -> e[1])));
+                                                }}))
+                                                .add("listedCases", generateListedCases(false, false, false))
+                                        )
+                                ).add(createObjectBuilder()
+                                        .add("hearing", getHearingBuilder(Stream.of(new String[][]{
+                                                        {"startDate", hearingDate.toString()},
+                                                        {"endDate", hearingDate.plusDays(1).toString()},
+                                                        {"courtRoomId", OTHER_COURT_ROOM_ID},
+                                                        {"courtCentreId", OTHER_COURT_CENTRE_ID}
+                                                }).collect(Collectors.toMap(e -> e[0], e -> e[1])))
+                                                        .add("allocated", true)
+                                                        .add("hearingDays", generateHearingDaysForMultipleCourtCentres(new HashMap<LocalDate, Map<String, String>>(){{
+                                                            put(hearingDate, Stream.of(new String[][]{
+                                                                    {"hearingTime", hearingTime.plusMinutes(30).toString()},
+                                                                    {"courtRoomId", OTHER_COURT_ROOM_ID},
+                                                                    {"courtCentreId", OTHER_COURT_CENTRE_ID}
+                                                            }).collect(Collectors.toMap(e -> e[0], e -> e[1])));
+
+                                                            put(hearingDate.plusDays(1), Stream.of(new String[][]{
+                                                                    {"hearingTime", hearingTime.plusMinutes(30).toString()},
+                                                                    {"courtRoomId", TOP_LEVEL_COURT_ROOM_ID},
+                                                                    {"courtCentreId", TOP_LEVEL_COURT_CENTRE_ID}
+                                                            }).collect(Collectors.toMap(e -> e[0], e -> e[1])));
+                                                        }}))
+                                                        .add("listedCases", generateListedCases(false, false, false))
+                                        )
+                                ).add(createObjectBuilder()
+                                        .add("hearing", getHearingBuilder(Stream.of(new String[][]{
+                                                        {"startDate", hearingDate.toString()},
+                                                        {"endDate", hearingDate.plusDays(1).toString()},
+                                                        {"courtRoomId", TOP_LEVEL_COURT_ROOM_ID},
+                                                        {"courtCentreId", TOP_LEVEL_COURT_CENTRE_ID}
+                                                }).collect(Collectors.toMap(e -> e[0], e -> e[1])))
+                                                        .add("allocated", true)
+                                                        .add("hearingDays", generateHearingDaysForMultipleCourtCentres(new HashMap<LocalDate, Map<String, String>>(){{
+                                                            put(hearingDate, Stream.of(new String[][]{
+                                                                    {"hearingTime", hearingTime.plusMinutes(60).toString()},
+                                                                    {"courtRoomId", TOP_LEVEL_COURT_ROOM_ID},
+                                                                    {"courtCentreId", TOP_LEVEL_COURT_CENTRE_ID}
+                                                            }).collect(Collectors.toMap(e -> e[0], e -> e[1])));
+
+                                                            put(hearingDate.plusDays(1), Stream.of(new String[][]{
+                                                                    {"hearingTime", hearingTime.plusMinutes(60).toString()},
+                                                                    {"courtRoomId", TOP_LEVEL_COURT_ROOM_ID},
+                                                                    {"courtCentreId", TOP_LEVEL_COURT_CENTRE_ID}
+                                                            }).collect(Collectors.toMap(e -> e[0], e -> e[1])));
+                                                        }}))
+                                                        .add("listedCases", generateListedCases(false, false, false))
                                         )
                                 )
                         )
@@ -360,25 +514,15 @@ public class AlphabeticalCourtListServiceTest {
                 .add("hearings", createArrayBuilder().add(createObjectBuilder()
                         .add("hearingDate", LocalDates.to(HEARING_DATE))
                         .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
-                                        .add("hearing", createObjectBuilder()
-                                                .add("id", randomUUID().toString())
-                                                .add("startDate", LocalDates.to(HEARING_DATE))
-                                                .add("endDate", LocalDates.to(HEARING_DATE))
+                                        .add("hearing", getHearingBuilder(emptyMap())
                                                 .add("allocated", true)
-                                                .add("courtRoomId", COURT_ROOM_ID.toString())
                                                 .add("hearingDays", generateHearingDays(START_DATE_TIME_1))
-                                                .add("courtCentreId", COURT_CENTRE_ID.toString())
                                                 .add("listedCases", generateListedCases(caseRestricted, defendantRestricted, legalEntity))
                                         )
                                 ).add(createObjectBuilder()
-                                        .add("hearing", createObjectBuilder()
-                                                .add("id", randomUUID().toString())
-                                                .add("startDate", LocalDates.to(HEARING_DATE))
-                                                .add("endDate", LocalDates.to(HEARING_DATE))
+                                        .add("hearing", getHearingBuilder(emptyMap())
                                                 .add("allocated", true)
-                                                .add("courtRoomId", COURT_ROOM_ID.toString())
                                                 .add("hearingDays", generateHearingDays(START_DATE_TIME_2))
-                                                .add("courtCentreId", COURT_CENTRE_ID.toString())
                                                 .add("courtApplications", generateCourtApplications(caseRestricted, defendantRestricted))
                                         )
                                 )
@@ -414,6 +558,22 @@ public class AlphabeticalCourtListServiceTest {
                 .add("durationMinutes", 20)
                 .add("sequence", integer(1, 10).next())
         );
+    }
+
+    private JsonArrayBuilder generateHearingDaysForMultipleCourtCentres(final Map<LocalDate, Map<String, String>> hearingDayDetails) {
+        final JsonArrayBuilder builder = createArrayBuilder();
+        hearingDayDetails.entrySet().stream().forEach(day -> {
+            builder.add(createObjectBuilder()
+                    .add("courtCentreId", day.getValue().get("courtCentreId"))
+                    .add("courtRoomId", day.getValue().get("courtRoomId"))
+                    .add("startTime", ZonedDateTime.of(day.getKey(), LocalTime.parse(day.getValue().get("hearingTime")), BST).toString())
+                    .add("endTime", ZonedDateTime.of(day.getKey(), LocalTime.parse(day.getValue().get("hearingTime")).plusMinutes(30), BST).toString())
+                    .add("hearingDate", day.getKey().toString())
+                    .add("durationMinutes", 30)
+                    .add("sequence", integer(1, 10).next()));
+        });
+
+        return builder;
     }
 
     private JsonArrayBuilder generateListedCases(final boolean caseRestricted, final boolean defendantRestricted, final boolean legalEntity) {
@@ -490,25 +650,15 @@ public class AlphabeticalCourtListServiceTest {
                 .add("hearings", createArrayBuilder().add(createObjectBuilder()
                         .add("hearingDate", LocalDates.to(HEARING_DATE))
                         .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
-                                        .add("hearing", createObjectBuilder()
-                                                .add("id", randomUUID().toString())
-                                                .add("startDate", LocalDates.to(HEARING_DATE))
-                                                .add("endDate", LocalDates.to(HEARING_DATE))
+                                        .add("hearing", getHearingBuilder(emptyMap())
                                                 .add("allocated", true)
-                                                .add("courtRoomId", COURT_ROOM_ID.toString())
                                                 .add("hearingDays", generateHearingDays(START_DATE_TIME_1))
-                                                .add("courtCentreId", COURT_CENTRE_ID.toString())
                                                 .add("listedCases", generateListedCases(caseRestricted, defendantRestricted, false))
                                         )
                                 ).add(createObjectBuilder()
-                                        .add("hearing", createObjectBuilder()
-                                                .add("id", randomUUID().toString())
-                                                .add("startDate", LocalDates.to(HEARING_DATE))
-                                                .add("endDate", LocalDates.to(HEARING_DATE))
+                                        .add("hearing", getHearingBuilder(emptyMap())
                                                 .add("allocated", true)
-                                                .add("courtRoomId", COURT_ROOM_ID.toString())
                                                 .add("hearingDays", generateHearingDays(START_DATE_TIME_2))
-                                                .add("courtCentreId", COURT_CENTRE_ID.toString())
                                                 .add("courtApplications", generateCourtApplications(caseRestricted, defendantRestricted))
                                         )
                                 )
@@ -532,6 +682,25 @@ public class AlphabeticalCourtListServiceTest {
         return courtCentreDetails()
                 .withCourtCentreName(COURT_CENTRE_NAME)
                 .withId(COURT_CENTRE_ID)
+                .withWelshCourtCentreName(COURT_CENTRE_NAME_WELSH)
+                .withAddress1(ADDRESS_1)
+                .withPostcode(POST_CODE)
+                .withWelshAddress1(ADDRESS_1_WELSH)
+                .withCourtRooms(courtRooms)
+                .withWelsh(welsh)
+                .build();
+    }
+
+    private CourtCentreDetails getCourtCentreDetails(final Boolean welsh, final UUID courtCentreId, final UUID courtRoomId) {
+        final CourtRoomDetails courtRoomDetails = courtRoomDetails()
+                .withCourtRoomName(COURT_ROOM_NAME).withWelshCourtRoomName(COURT_ROOM_NAME_WELSH)
+                .withId(courtRoomId).build();
+        Map<UUID, CourtRoomDetails> courtRooms = new HashMap<>();
+        courtRooms.put(courtRoomDetails.getId(), courtRoomDetails);
+        courtRooms.put(courtRoomDetails.getId(), courtRoomDetails);
+        return courtCentreDetails()
+                .withCourtCentreName(COURT_CENTRE_NAME)
+                .withId(courtCentreId)
                 .withWelshCourtCentreName(COURT_CENTRE_NAME_WELSH)
                 .withAddress1(ADDRESS_1)
                 .withPostcode(POST_CODE)

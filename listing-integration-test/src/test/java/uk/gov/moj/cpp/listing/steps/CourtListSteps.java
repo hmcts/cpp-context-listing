@@ -22,10 +22,17 @@ import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import javax.ws.rs.core.Response;
 
+import java.util.UUID;
+
+import javax.ws.rs.core.Response;
+
 public class CourtListSteps extends AbstractIT {
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
     private static final String COURT_LIST_DATA = "test";
-    private final UpdatedHearingData updatedHearingData;
+    private  UpdatedHearingData updatedHearingData;
+    private static final String MEDIA_TYPE_SEARCH_COURT_LIST = "application/vnd.listing.search.court.list+json";
+
+    public CourtListSteps() { }
 
     public CourtListSteps(final UpdatedHearingData updatedHearingData) {
         this.updatedHearingData = updatedHearingData;
@@ -52,4 +59,19 @@ public class CourtListSteps extends AbstractIT {
                                                     .build();
         return new RestClient().query(requestParams.getUrl(), requestParams.getMediaType(), requestParams.getHeaders());
     }
+
+    public void verifyCourtListGenerated(final UUID courtCentreId, final String listId, final String startDate, final String endDate) {
+        stubDocumentCreate(COURT_LIST_DATA);
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.query.court-list"), listId, courtCentreId, startDate, endDate));
+        final RequestParams requestParams = requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_COURT_LIST)
+                .withHeader(USER_ID, USER_ID_VALUE)
+                .build();
+
+        final Response response = new RestClient().query(requestParams.getUrl(), requestParams.getMediaType(), requestParams.getHeaders());
+        final String responseData = response.readEntity(String.class);
+        assertEquals(OK.getStatusCode(), response.getStatus());
+        assertEquals(COURT_LIST_DATA, responseData);
+    }
+
 }

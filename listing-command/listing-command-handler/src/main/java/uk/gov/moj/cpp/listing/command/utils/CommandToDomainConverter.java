@@ -491,6 +491,8 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withDuration(rotaSlot.getDuration())
                 .withStartTime(rotaSlot.getStartTime())
                 .withCourtScheduleId(rotaSlot.getCourtScheduleId())
+                .withRoomId(rotaSlot.getRoomId())
+                .withCourtCentreId(rotaSlot.getCourtCentreId())
                 .build();
     }
 

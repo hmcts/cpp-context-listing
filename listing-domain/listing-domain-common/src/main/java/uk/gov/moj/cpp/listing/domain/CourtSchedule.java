@@ -28,12 +28,13 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
     private Integer availableSlots;
     private Integer availableDuration;
     private String hearingStartTime;
+    private String courtHouseId;
     private final List<CourtScheduleJudiciary> judiciaries = new ArrayList();
 
     public CourtSchedule() {
     }
 
-    public CourtSchedule(final String bookingId, final String courtScheduleId, final String listingProfileId, final String ouCode, final String courtRoomId, final Integer courtRoomNumber, final String courtHouseName, final String courtRoomName, final String operationalUnit, final String businessType, final String panel, final String courtSession, final LocalDate sessionDate, final Integer maxSlots, final Integer maxDuration, final Integer availableSlots, final Integer availableDuration, final String hearingStartTime) {
+    public CourtSchedule(final String bookingId, final String courtScheduleId, final String listingProfileId, final String ouCode, final String courtRoomId, final Integer courtRoomNumber, final String courtHouseName, final String courtRoomName, final String operationalUnit, final String businessType, final String panel, final String courtSession, final LocalDate sessionDate, final Integer maxSlots, final Integer maxDuration, final Integer availableSlots, final Integer availableDuration, final String hearingStartTime, final String courtHouseId) {
         this.bookingId = bookingId;
         this.courtScheduleId = courtScheduleId;
         this.listingProfileId = listingProfileId;
@@ -52,6 +53,7 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
         this.availableSlots = availableSlots;
         this.availableDuration = availableDuration;
         this.hearingStartTime = hearingStartTime;
+        this.courtHouseId = courtHouseId;
     }
 
     public String getBookingId() {
@@ -200,6 +202,14 @@ public class CourtSchedule implements Comparable<CourtSchedule> {
 
     public void setHearingStartTime(final String hearingStartTime) {
         this.hearingStartTime = hearingStartTime;
+    }
+
+    public String getCourtHouseId() {
+        return courtHouseId;
+    }
+
+    public void setCourtHouseId(final String courtHouseId) {
+        this.courtHouseId = courtHouseId;
     }
 
     @Override

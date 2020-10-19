@@ -188,4 +188,7 @@ subscriptions_descriptor:
         - name: listing.event.hearing-counsel-modified
           schema_uri: http://justice.gov.uk/listing/events/listing.event.hearing-counsel-modified.json
 
+        - name: listing.events.hearing-days-without-court-centre-corrected
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-without-court-centre-corrected.json
+
       event_source_name: listing

@@ -30,7 +30,7 @@ public class CourtApplicationToDomainConverterTest {
     private ObjectToJsonValueConverter objectToJsonValueConverter = new JsonObjectConvertersFactory().objectToJsonValueConverter();
 
     @InjectMocks
-    private CommandBuilder commandBuilder;
+    CommandBuilder commandBuilder;
 
     @Test
     public void shouldConvertCourtApplicationWithApplicantRespondent() {

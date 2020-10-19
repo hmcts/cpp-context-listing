@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 
+import com.google.common.collect.ImmutableMap;
 import com.jayway.awaitility.core.ConditionTimeoutException;
 import com.jayway.jsonpath.Filter;
 import com.jayway.restassured.path.json.JsonPath;
@@ -134,16 +135,17 @@ public class ListingNoteIT extends AbstractIT {
     @Test
     public void shouldReturnNotesForAllocatedHearingOnSearchQuery() {
 
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now());
         //Given 1 : Hearing data
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate();
+        List<HearingData> hearingData = hearingsData.getHearingData();
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
+
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
         }
 
         //Given 2 : Note data using courtRoomId and date from hearing data
-        List<HearingData> hearingData = hearingsData.getHearingData();
         notesSteps.createNoteForListing(hearingData.get(0).getCourtRoomId(), hearingData.get(0).getHearingStartDate().toString(), NOTE_DESCRIPTION);
         UUID noteId = verifyNoteExists(hearingData.get(0).getCourtRoomId(), hearingData.get(0).getHearingStartDate());
 
@@ -157,9 +159,10 @@ public class ListingNoteIT extends AbstractIT {
     @Test
     public void shouldNotReturnNotesForAllocatedHearingIfNoteNotExistForThatHearingOnSearchQuery() {
 
-        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now());
         //Given 1 : Hearing data and no Note data for this hearing
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+        List<HearingData> hearingData = hearingsData.getHearingData();
+        stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);

@@ -33,7 +33,9 @@
       "startTime": "DAY_1_START_TIME_FIELD",
       "hearingDate": "DAY_1_HEARING_DATE_FIELD",
       "durationMinutes": 15,
-      "isCancelled": DAY_1_IS_CANCELLED_FIELD
+      "isCancelled": DAY_1_IS_CANCELLED_FIELD,
+      "courtRoomId": "COURT_ROOM_ID_FIELD",
+      "courtCentreId": "COURT_CENTRE_ID_FIELD"
     },
     {
       "endTime": "DAY_2_END_TIME_FIELD",
@@ -41,7 +43,9 @@
       "startTime": "DAY_2_START_TIME_FIELD",
       "hearingDate": "DAY_2_HEARING_DATE_FIELD",
       "durationMinutes": 15,
-      "isCancelled": DAY_2_IS_CANCELLED_FIELD
+      "isCancelled": DAY_2_IS_CANCELLED_FIELD,
+      "courtRoomId": "COURT_ROOM_ID_FIELD",
+      "courtCentreId": "COURT_CENTRE_ID_FIELD"
     },
     {
       "endTime": "DAY_3_END_TIME_FIELD",
@@ -49,7 +53,9 @@
       "startTime": "DAY_3_START_TIME_FIELD",
       "hearingDate": "DAY_3_HEARING_DATE_FIELD",
       "durationMinutes": 15,
-      "isCancelled": DAY_3_IS_CANCELLED_FIELD
+      "isCancelled": DAY_3_IS_CANCELLED_FIELD,
+      "courtRoomId": "COURT_ROOM_ID_FIELD",
+      "courtCentreId": "COURT_CENTRE_ID_FIELD"
     }
   ],
   "listedCases": [

@@ -76,6 +76,8 @@ public class HearingListedToUpdateHearingForListingCommand implements Converter<
                 .withOucode(n.getOucode())
                 .withSession(n.getSession())
                 .withStartTime(n.getStartTime())
+                .withCourtCentreId(n.getCourtCentreId())
+                .withRoomId(n.getRoomId())
                 .build()));
         return nonDefaultDays;
     }

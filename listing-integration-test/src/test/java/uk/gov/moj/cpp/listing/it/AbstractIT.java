@@ -1,6 +1,9 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.reset;
+import static com.github.tomakehurst.wiremock.client.WireMock.reset;
+import static com.google.common.io.Resources.getResource;
+import static java.nio.charset.Charset.defaultCharset;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -9,6 +12,7 @@ import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUs
 
 import uk.gov.justice.services.test.utils.core.rest.RestClient;
 
+import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +21,7 @@ import java.util.UUID;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
+import com.google.common.io.Resources;
 import com.jayway.restassured.response.Header;
 import org.junit.Before;
 
@@ -78,5 +83,9 @@ public class AbstractIT {
         params.put("pageNumber", "1");
 
         return params;
+    }
+
+    protected static String getStringFromResource(final String path) throws IOException {
+        return Resources.toString(getResource(path), defaultCharset());
     }
 }

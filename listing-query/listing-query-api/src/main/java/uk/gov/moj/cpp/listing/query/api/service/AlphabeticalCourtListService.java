@@ -5,17 +5,21 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
 import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.defaultString;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.trim;
 import static org.apache.commons.lang3.StringUtils.upperCase;
 import static org.drools.core.util.StringUtils.EMPTY;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
+import static uk.gov.moj.cpp.listing.domain.utils.JsonUtils.getString;
 import static uk.gov.moj.cpp.listing.domain.utils.ZonedDateTimeFormatter.adjustDateTime;
 import static uk.gov.moj.cpp.listing.query.document.generator.alphabetical.courtlist.AlphabeticalListDefendant.AlphabeticalListDefendantBuilder.anAlphabeticalListDefendant;
 
@@ -39,6 +43,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
@@ -58,6 +64,7 @@ public class AlphabeticalCourtListService {
     private static final String CASE_IDENTIFIER = "caseIdentifier";
     private static final String CASE_REFERENCE = "caseReference";
     private static final String COURT_ROOM_ID = "courtRoomId";
+    private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String HEARINGS_BY_HEARING_DATE = "hearingsByHearingDate";
     private static final String DEFENDANTS = "defendants";
     private static final String HEARINGS = "hearings";
@@ -112,23 +119,33 @@ public class AlphabeticalCourtListService {
     private Stream<AlphabeticalListDefendant> getAlphabeticalListDefendantFromHearing(final JsonObject hearing, final LocalDate hearingDate,
                                                                                       final CourtCentreDetails courtCentreDetails, final boolean welsh) {
         final List<AlphabeticalListDefendant> defendantsFromHearing = newArrayList();
-        final Optional<String> hearingStartTime = getHearingStartTime(hearing, hearingDate);
-        final CourtRoomDetails courtRoomDetails = courtCentreDetails.getCourtRooms().get(fromString(hearing.getString(COURT_ROOM_ID)));
+        final List<JsonObject> matchedHearingDays = getMatchedHearingDays(hearing, hearingDate, courtCentreDetails.getId());
+
+        matchedHearingDays.stream().forEach(matchedHearingDay -> {
+            final String roomId = getString(matchedHearingDay, COURT_ROOM_ID);
+            final Optional<String> hearingStartTime = getHearingStartTime(hearing,hearingDate);
+            final String courtRoomId = isBlank(roomId) ? hearing.getString(COURT_ROOM_ID) : roomId;
+            final Optional<CourtRoomDetails> courtRoomDetails = ofNullable(courtCentreDetails.getCourtRooms().get(fromString(courtRoomId)));
+            courtRoomDetails.ifPresent(courtRoomDetail -> addDefendantsFromHearing(hearing, welsh, defendantsFromHearing, hearingStartTime, courtRoomDetail));
+        });
+        return defendantsFromHearing.stream();
+    }
+
+    private void addDefendantsFromHearing(final JsonObject hearing, final boolean welsh, final List<AlphabeticalListDefendant> defendantsFromHearing, final Optional<String> hearingStartTime, final CourtRoomDetails courtRoomDetail) {
         if (hearing.containsKey(LISTED_CASES) && !hearing.getJsonArray(LISTED_CASES).isEmpty()) {
             final List<AlphabeticalListDefendant> defendantsFromListedCases = hearing.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class).stream()
                     .filter(listedCase -> !listedCase.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE))
-                    .flatMap(listedCase -> getAlphabeticalListDefendantFromListedCase(listedCase, courtRoomDetails, hearingStartTime.orElse(EMPTY), welsh))
+                    .flatMap(listedCase -> getAlphabeticalListDefendantFromListedCase(listedCase, courtRoomDetail, hearingStartTime.orElse(EMPTY), welsh))
                     .collect(toList());
             defendantsFromHearing.addAll(defendantsFromListedCases);
         }
         if (hearing.containsKey(COURT_APPLICATIONS) && !hearing.getJsonArray(COURT_APPLICATIONS).isEmpty()) {
             final List<AlphabeticalListDefendant> defendantsFromCourtApplications = hearing.getJsonArray(COURT_APPLICATIONS).getValuesAs(JsonObject.class).stream()
                     .filter(courtApplication -> !courtApplication.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE))
-                    .flatMap(courtApplication -> getAlphabeticalListDefendantFromCourtApplication(courtApplication, courtRoomDetails, hearingStartTime.orElse(EMPTY), welsh))
+                    .flatMap(courtApplication -> getAlphabeticalListDefendantFromCourtApplication(courtApplication, courtRoomDetail, hearingStartTime.orElse(EMPTY), welsh))
                     .collect(toList());
             defendantsFromHearing.addAll(defendantsFromCourtApplications);
         }
-        return defendantsFromHearing.stream();
     }
 
     private Stream<AlphabeticalListDefendant> getAlphabeticalListDefendantFromCourtApplication(final JsonObject courtApplication, final CourtRoomDetails courtRoomDetails,
@@ -169,6 +186,14 @@ public class AlphabeticalCourtListService {
             return Optional.of(formatter.format(dateTime.getHour()) + ":" + formatter.format(dateTime.getMinute()));
         }
         return empty();
+    }
+
+    private List<JsonObject> getMatchedHearingDays(final JsonObject hearing, final LocalDate hearingDate, final UUID courtCentreId) {
+        return hearing.getJsonArray(HEARING_DAYS).getValuesAs(JsonObject.class).stream()
+                .filter(hearingDay -> LocalDates.from(hearingDay.getString(HEARING_DATE)).equals(hearingDate) && (
+                                isBlank(getString(hearingDay, COURT_CENTRE_ID)) || courtCentreId.equals(fromString(hearingDay.getString(COURT_CENTRE_ID)))
+                ))
+                .collect(Collectors.toList());
     }
 
     private AlphabeticalListDefendant getAlphabeticalListDefendantFromDefendantEquivalent(final JsonObject defendantEquivalent, final String hearingStartTime, final String applicationReference,

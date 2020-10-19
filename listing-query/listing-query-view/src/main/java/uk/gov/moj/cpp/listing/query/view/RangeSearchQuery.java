@@ -133,11 +133,11 @@ public class RangeSearchQuery {
     private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate) {
         return repository.findHearings(
                 String.valueOf(allocated),
-                ofNullable(courtCentreId).orElse("null"),
-                ofNullable(courtRoomId).orElse("null"),
+                ofNullable(courtCentreId).orElse(null),
+                ofNullable(courtRoomId).orElse(null),
                 authorityIdSearchString,
-                ofNullable(hearingTypeId).orElse("null"),
-                ofNullable(jurisdictionType).orElse("null"),
+                ofNullable(hearingTypeId).orElse(null),
+                ofNullable(jurisdictionType).orElse(null),
                 startDate,
                 endDate
         );

@@ -72,15 +72,17 @@ public class HearingDayDetailConverter {
         final int duration = hearingDay.getDurationMinutes();
         final ZonedDateTime hearingDaySittingDay = hearingDay.getHearingDate().atStartOfDay(ZoneId.systemDefault());
         final LocalDate date = hearingDaySittingDay.toLocalDate();
-        final Optional<UUID> courtScheduleId = hearingDay.getCourtScheduleId();
         final String session = StringUtils.trimToEmpty(getMeridian(hearingDaySittingDay));
         final String hearingStartTime = toIsoString(hearingDay.getStartTime());
+        final Optional<String> courtScheduleId = hearingDay.getCourtScheduleId().map(UUID::toString).map(Optional::of).orElse(Optional.empty());
+        final Optional<String> courtCentreId = hearingDay.getCourtCentreId().map(UUID::toString).map(Optional::of).orElse(Optional.empty());
+        final Optional<String> courtRoomId = hearingDay.getCourtRoomId().map(UUID::toString).map(Optional::of).orElse(Optional.empty());
 
         HearingDayDetail hearingDayDetail = null;
         if ("AD".equalsIgnoreCase(session) && isFalse(isForAdjournmentHearing)) {
             LOGGER.info("Is for Adjournment hearing:{}, session is {} and does not fall within AM or PM range. Slot will not be updated", isForAdjournmentHearing, session);
         } else {
-            hearingDayDetail = new HearingDayDetail(date.toString(), getMeridian(hearingDaySittingDay), duration, courtScheduleId.isPresent() ? Optional.of(courtScheduleId.get().toString()) : Optional.empty(), hearingStartTime);
+            hearingDayDetail = new HearingDayDetail(date.toString(), getMeridian(hearingDaySittingDay), duration, hearingStartTime, courtScheduleId, courtCentreId, courtRoomId);
         }
         return hearingDayDetail;
     }

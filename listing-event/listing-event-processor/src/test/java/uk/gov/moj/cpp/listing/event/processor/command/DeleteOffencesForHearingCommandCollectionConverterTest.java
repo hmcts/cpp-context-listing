@@ -29,7 +29,7 @@ public class DeleteOffencesForHearingCommandCollectionConverterTest {
     private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
     @InjectMocks
-    private EventBuilder eventBuilder;
+    EventBuilder eventBuilder;
 
     @Test
     public void convertFromDefendantsToBeUpdatedEventToListOfUpdateDefendantsForHearingCommands() throws Exception {

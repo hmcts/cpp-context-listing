@@ -247,6 +247,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingUpdatedResultsForSlotUpdateInMQ();
             updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
+            updateHearingSteps.verifyHearingDaysWhenQueryFromAPI();
         }
     }
 

@@ -18,10 +18,14 @@ import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.HearingDayDetail;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import javax.inject.Inject;
 
@@ -47,23 +51,16 @@ public class SlotsToJsonStringConverter {
 
         final CourtCentre courtCentre = confirmedHearing.getCourtCentre();
 
-
         final UUID roomId;
+
         if (courtCentre.getRoomId().isPresent()) {
             roomId = courtCentre.getRoomId().get();
         } else {
             throw new IllegalArgumentException(format("No room id specified %s to lookup court room number", courtCentre.getRoomId().get()));
         }
 
-        final JsonEnvelope payLoadForCourtRoom = listingReferenceDataService.getPayLoadForCourtRoom(jsonEnvelope, courtCentre.getId().toString());
-
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(format("Court Room Payload = %s looked up with Court Centre Id %s", payLoadForCourtRoom, courtCentre.getId().toString()));
-        }
-
-        final int courtRoomId = listingReferenceDataService.retrieveCourtRoomId(payLoadForCourtRoom.payloadAsJsonObject(), roomId, courtCentre.getId());
-
-        final String ouCode = payLoadForCourtRoom.payloadAsJsonObject().getString("oucode");
+        final Map<UUID, JsonEnvelope> courtRoomPayloadMap = new HashMap<>();
+        courtRoomPayloadMap.put(courtCentre.getId(), listingReferenceDataService.getPayLoadForCourtRoom(jsonEnvelope, courtCentre.getId().toString()));
 
         final HearingAllocatedForListing allocatedForListing = jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
         final List<HearingDay> hearingDays = allocatedForListing.getHearingDays();
@@ -77,9 +74,37 @@ public class SlotsToJsonStringConverter {
         final String hearingId = confirmedHearing.getId().toString();
         final Optional<String> bookingId = jsonEnvelope.payloadAsJsonObject().keySet().contains("bookingId") ? Optional.of(jsonEnvelope.payloadAsJsonObject().getString("bookingId")) : empty();
 
+        hearingDayDetails.stream().filter(hearingDay -> hearingDay.getCourtCentreId().isPresent()).forEach(hearingDay -> {
+            final UUID courtCentreId = UUID.fromString(hearingDay.getCourtCentreId().get());
+            if (courtRoomPayloadMap.get(courtCentreId) == null) {
+                final JsonEnvelope payLoadForCourtRoom = listingReferenceDataService.getPayLoadForCourtRoom(jsonEnvelope, courtCentreId.toString());
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info(format("Court Room Payload = %s looked up with Court Centre Id %s", payLoadForCourtRoom, courtCentreId.toString()));
+                }
+                courtRoomPayloadMap.put(courtCentreId, payLoadForCourtRoom);
+            }
+        });
+
         return toJSONString(hearingDayDetails.stream()
-                .map(hearingDayDetail -> retrieveSlotDetail(hearingDayDetail, ouCode, courtRoomId, hearingId, bookingId))
+                .map(hearingDayDetail -> {
+                    final Predicate<HearingDayDetail> defaultCourtCentre = getHearingDayDetailPredicate();
+                    final UUID courtCentreId = defaultCourtCentre.test(hearingDayDetail) ? courtCentre.getId() : hearingDayDetail.getCourtCentreId().map(UUID::fromString).orElse(null);
+                    final UUID courtRoomUUID = defaultCourtCentre.test(hearingDayDetail) ? roomId : hearingDayDetail.getCourtRoomId().map(UUID::fromString).orElse(null);
+                    if (courtCentreId == null) {
+                        return null;
+                    }
+                    final JsonEnvelope payLoadForCourtRoom = courtRoomPayloadMap.get(courtCentreId);
+                    final int courtRoomId = listingReferenceDataService.retrieveCourtRoomId(payLoadForCourtRoom.payloadAsJsonObject(), courtRoomUUID, courtCentreId);
+                    final String ouCode = payLoadForCourtRoom.payloadAsJsonObject().getString("oucode");
+
+                    return retrieveSlotDetail(hearingDayDetail, ouCode, courtRoomId, hearingId, bookingId);
+                })
+                .filter(Objects::nonNull)
                 .collect(toList()));
+    }
+
+    private Predicate<HearingDayDetail> getHearingDayDetailPredicate() {
+        return dayDetail -> !dayDetail.getCourtRoomId().isPresent() && !dayDetail.getCourtCentreId().isPresent();
     }
 
     public String convertNonDefaultDaysToJson(final UUID hearingId, final List<NonDefaultDay> nonDefaultDays) {

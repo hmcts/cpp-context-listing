@@ -11,6 +11,8 @@ import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
+import java.util.UUID;
+
 import javax.inject.Inject;
 import javax.json.JsonObject;
 
@@ -23,6 +25,7 @@ public class ReferenceDataService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReferenceDataService.class);
     private static final String REFERENCEDATA_QUERY_HEARING_TYPES = "referencedata.query.hearing-types";
     private static final String REFERENCEDATA_QUERY_COURT_CENTRES = "referencedata.query.courtrooms";
+    private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
 
     @Inject
     private Enveloper enveloper;
@@ -53,6 +56,32 @@ public class ReferenceDataService {
         final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(payload)
                 .withName(REFERENCEDATA_QUERY_COURT_CENTRES)
                 .withMetadataFrom(eventEnvelope);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
+    }
+
+    public JsonEnvelope getAllCourtRooms(final JsonEnvelope eventEnvelope) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Attempting to get all court rooms...");
+        }
+
+        final JsonObject payload = createObjectBuilder()
+                .build();
+
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(payload)
+                .withName(REFERENCEDATA_QUERY_COURT_CENTRES)
+                .withMetadataFrom(eventEnvelope);
+
+        return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
+    }
+
+    public JsonEnvelope getCourtCentreById(final UUID courtCentreId, final JsonEnvelope event) {
+        final JsonObject payload = createObjectBuilder().add("id", courtCentreId.toString()).build();
+        LOGGER.info("'referencedata.query.courtroom' request with payload {}", payload);
+
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(payload)
+                .withName(REFERENCEDATA_QUERY_COURTROOM)
+                .withMetadataFrom(event);
 
         return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
     }

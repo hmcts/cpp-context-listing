@@ -24,13 +24,19 @@ public class NonDefaultDay implements Serializable {
 
     private final ZonedDateTime startTime;
 
-    public NonDefaultDay(final Optional<String> courtScheduleId, final Optional<Integer> courtRoomId, final Optional<Integer> duration, final Optional<String> oucode, final Optional<String> session, final ZonedDateTime startTime) {
+    private final String courtCentreId;
+
+    private final String roomId;
+
+    public NonDefaultDay(final Optional<String> courtScheduleId, final Optional<Integer> courtRoomId, final Optional<Integer> duration, final Optional<String> oucode, final Optional<String> session, final ZonedDateTime startTime, final Optional<String> courtCentreId, final Optional<String> roomId) {
         this.courtScheduleId = courtScheduleId.orElse(null);
         this.courtRoomId = courtRoomId.orElse(null);
         this.duration = duration.orElse(null);
         this.oucode = oucode.orElse(null);
         this.session = session.orElse(null);
         this.startTime = startTime;
+        this.courtCentreId = courtCentreId.orElse(null);
+        this.roomId = roomId.orElse(null);
     }
 
     public Optional<String> getCourtScheduleId() {
@@ -57,43 +63,50 @@ public class NonDefaultDay implements Serializable {
         return startTime;
     }
 
+    public Optional<String> getCourtCentreId() {
+        return courtCentreId != null ? of(courtCentreId): empty();
+    }
+
+    public Optional<String> getRoomId() {
+        return roomId != null ? of(roomId): empty();
+    }
+
     public static Builder nonDefaultDay() {
         return new NonDefaultDay.Builder();
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        final NonDefaultDay that = (NonDefaultDay) obj;
-
-        return Objects.equals(this.courtScheduleId, that.courtScheduleId) &&
-                Objects.equals(this.courtRoomId, that.courtRoomId) &&
-                Objects.equals(this.duration, that.duration) &&
-                Objects.equals(this.oucode, that.oucode) &&
-                Objects.equals(this.session, that.session) &&
-                Objects.equals(this.startTime, that.startTime);
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final NonDefaultDay that = (NonDefaultDay) o;
+        return Objects.equals(courtScheduleId, that.courtScheduleId) &&
+                Objects.equals(courtRoomId, that.courtRoomId) &&
+                Objects.equals(duration, that.duration) &&
+                Objects.equals(oucode, that.oucode) &&
+                Objects.equals(session, that.session) &&
+                Objects.equals(startTime, that.startTime) &&
+                Objects.equals(courtCentreId, that.courtCentreId) &&
+                Objects.equals(roomId, that.roomId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(courtScheduleId, courtRoomId, duration, oucode, session, startTime);
+        return Objects.hash(courtScheduleId, courtRoomId, duration, oucode, session, startTime, courtCentreId, roomId);
     }
 
     @Override
     public String toString() {
         return "NonDefaultDay{" +
-                "courtScheduleId='" + courtScheduleId + "'," +
-                "courtRoomId='" + courtRoomId + "'," +
-                "duration='" + duration + "'," +
-                "oucode='" + oucode + "'," +
-                "session='" + session + "'," +
-                "startTime='" + startTime + "'" +
-                "}";
+                "courtScheduleId='" + courtScheduleId + '\'' +
+                ", courtRoomId=" + courtRoomId +
+                ", duration=" + duration +
+                ", oucode='" + oucode + '\'' +
+                ", session='" + session + '\'' +
+                ", startTime=" + startTime +
+                ", courtCentreId='" + courtCentreId + '\'' +
+                ", roomId='" + roomId + '\'' +
+                '}';
     }
 
     public static class Builder {
@@ -108,6 +121,10 @@ public class NonDefaultDay implements Serializable {
         private Optional<String> session = empty();
 
         private ZonedDateTime startTime;
+
+        private Optional<String> courtCentreId = empty();
+
+        private Optional<String> roomId = empty();
 
         public Builder withCourtScheduleId(final Optional<String> courtScheduleId) {
             this.courtScheduleId = courtScheduleId;
@@ -139,8 +156,18 @@ public class NonDefaultDay implements Serializable {
             return this;
         }
 
+        public Builder withCourtCentreId(final Optional<String> courtCentreId) {
+            this.courtCentreId = courtCentreId;
+            return this;
+        }
+
+        public Builder withRoomId(final Optional<String> roomId) {
+            this.roomId = roomId;
+            return this;
+        }
+
         public NonDefaultDay build() {
-            return new NonDefaultDay(courtScheduleId, courtRoomId, duration, oucode, session, startTime);
+            return new NonDefaultDay(courtScheduleId, courtRoomId, duration, oucode, session, startTime, courtCentreId, roomId);
         }
     }
 }

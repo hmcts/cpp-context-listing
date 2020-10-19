@@ -5,7 +5,11 @@
   "nonDefaultDays": [],
   "defaultStartTime": "11:00",
   "defaultDuration": "30",
-  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671"
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
+  "defaultCourtCentre": {
+    "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+    "courtRoomId": null
+  }
 }
 
 

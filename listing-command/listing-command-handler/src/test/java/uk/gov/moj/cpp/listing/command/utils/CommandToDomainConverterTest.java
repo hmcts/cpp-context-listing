@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.util.Optional.of;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
@@ -13,6 +14,13 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.moj.cpp.listing.domain.CourtApplication;
+import uk.gov.moj.cpp.listing.domain.Defendant;
+import uk.gov.moj.cpp.listing.domain.JudicialRole;
+import uk.gov.moj.cpp.listing.domain.ListedCase;
+import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
+import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.Defendant;
@@ -339,6 +347,8 @@ public class CommandToDomainConverterTest {
 
         //then
         assertThat(actual.getId(), is(commandHearing.getId()));
+        assertThat(actual.getNonDefaultDays().get(0).getRoomId(), notNullValue());
+        assertThat(actual.getNonDefaultDays().get(0).getCourtCentreId(), notNullValue());
         assertThat(actual.getJurisdictionType().name(), is(commandHearing.getJurisdictionType().name()));
         assertCourtApplications(commandHearing, actual);
         assertThat(actual.getCourtApplications().get(0).getApplicant().getLastName(),

@@ -7,6 +7,7 @@ import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
+import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
@@ -22,6 +23,8 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getJsonObject;
+import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getUUID;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
@@ -36,8 +39,6 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.AssociatedPerson;
 import uk.gov.justice.core.courts.BailStatus;
@@ -71,11 +72,9 @@ import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.courts.LinkType;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.WeekCommencingDate;
-import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
@@ -92,14 +91,20 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -321,6 +326,12 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 .forEach(hearingData -> stubGetReferenceDataJudiciaries(hearingData.getJudiciary().get(0).getJudicialId()));
     }
 
+    public void stubReferenceDataForHearing(final UUID courtCentreId, final UUID courtRoomId, final String name) {
+        stubGetReferenceDataCourtCentre(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, courtRoomId, name));
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+        stubGetReferenceDataCourtMappings(new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, courtRoomId, name));
+    }
+
     private Response getResponseCaseSubmittedForListingWithLegalEntity() {
         hearingsData.getHearingData().stream()
                 .map(HearingData::getCourtCentreId)
@@ -498,7 +509,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         }
     }
 
-    public void verifyHearingListedWithHearingDays(final boolean isAllocated, final String[] courtScheduleSlots) {
+    public void verifyHearingListedWithHearingDays(final boolean isAllocated, final String[] courtScheduleSlots, final String[] courtRoomIds) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
@@ -523,6 +534,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(hearingData.getJurisdictionType())),
                                 withJsonPath("$.hearings[0].courtCentreId",
                                         equalTo(hearingData.getCourtCentreId().toString())),
+                                withJsonPath("$.hearings[0].courtRoomId",
+                                        equalTo(hearingData.getCourtRoomId().toString())),
                                 withJsonPath("$.hearings[0].type.id",
                                         equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
                                 withJsonPath("$.hearings[0].type.description",
@@ -575,10 +588,16 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(true)),
                                 withJsonPath("$.hearings[0].hearingDays[0].hearingDate",
                                         equalTo(courtScheduleSlots[0])),
+                                withJsonPath("$.hearings[0].hearingDays[0].courtRoomId",
+                                        equalTo(courtRoomIds[0])),
                                 withJsonPath("$.hearings[0].hearingDays[1].hearingDate",
                                         equalTo(courtScheduleSlots[1])),
+                                withJsonPath("$.hearings[0].hearingDays[1].courtRoomId",
+                                        equalTo(courtRoomIds[1])),
                                 withJsonPath("$.hearings[0].hearingDays[2].hearingDate",
-                                        equalTo(courtScheduleSlots[2]))
+                                        equalTo(courtScheduleSlots[2])),
+                                withJsonPath("$.hearings[0].hearingDays[2].courtRoomId",
+                                        equalTo(courtRoomIds[2]))
                         )));
     }
 
@@ -1830,5 +1849,66 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         Assert.assertThat(jsonResponse.get(publicEventType + ".courtCentre.id"), is(hearingData.getCourtCentreId().toString()));
         Assert.assertThat(jsonResponse.get(publicEventType + ".courtCentre.name"), is("Liverpool Crown Court"));
         Assert.assertThat(jsonResponse.get(publicEventType + ".courtApplicationIds[0]"), is(hearingData.getCourtApplications().get(0).getId().toString()));
+    }
+
+    public void listCourtHearing(final JsonObject listCourtHearingJsonObject, Optional<LocalDate> adjournedFromDate, Optional<List<UUID>> shadowListedOffences) {
+
+        final UUID courtCentreId = getUUID(getJsonObject(listCourtHearingJsonObject, "courtCentre").get(), "id").orElse(null);
+        final UUID hearingTypeId = fromString(listCourtHearingJsonObject.getJsonObject("type").getString("id"));
+        final JsonArray judiciary = listCourtHearingJsonObject.getJsonArray("judiciary");
+        if (judiciary != null && !judiciary.isEmpty()) {
+            final UUID judicialId = fromString(judiciary.getValuesAs(JsonObject.class).stream().findFirst().get().getString("id"));
+            stubGetReferenceDataJudiciaries(judicialId);
+        }
+
+        final CourtCentreData courtCentreData = new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null, "City of London Magistrates' Court");
+        stubGetReferenceDataCourtCentreById(courtCentreData);
+        stubGetReferenceDataHearingTypes(hearingTypeId);
+
+        final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
+
+        final JsonObjectBuilder listCourtHearingPayload = Json.createObjectBuilder().add("hearings", Json.createArrayBuilder().add(listCourtHearingJsonObject));
+        if (adjournedFromDate.isPresent()) {
+            listCourtHearingPayload.add("adjournedFromDate", adjournedFromDate.get().toString());
+        }
+
+        if (shadowListedOffences.isPresent()) {
+            final JsonArrayBuilder offenceIdBuilder = Json.createArrayBuilder();
+            shadowListedOffences.get().stream().forEach(offenceId -> offenceIdBuilder.add(offenceId.toString()));
+            listCourtHearingPayload.add("shadowListedOffences", offenceIdBuilder);
+        }
+
+        request = listCourtHearingPayload.build().toString();
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\tHeader = {}\n\n", listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING, request, getLoggedInHeader());
+
+        final Response response = restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING,
+                request, getLoggedInHeader());
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public JsonObject preparePayloadToListCourtHearing(final String fileName, final Map<String, String> values) throws IOException {
+
+        final String eventPayloadString = getStringFromResource(fileName)
+                .replaceAll("HEARING_ID", values.get("hearingId"))
+                .replaceAll("COURT_CENTRE_ID", values.get("courtCentreId"))
+                .replaceAll("CASE_URN", values.get("caseUrn"))
+                .replaceAll("EARLIEST_START_TIME", values.get("hearingStartTime"))
+                .replaceAll("ESTIMATED_MINUTES", values.get("estimatedMinutes"));
+
+        return new StringToJsonObjectConverter().convert(eventPayloadString);
+    }
+
+    public void verifyUnallocatedHearingFound(final String hearingId, final Matcher[] matchers) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated"), UNALLOCATED));
+
+        final Filter idFilter = filter(where("id").is(hearingId));
+        final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(matchers)));
     }
 }

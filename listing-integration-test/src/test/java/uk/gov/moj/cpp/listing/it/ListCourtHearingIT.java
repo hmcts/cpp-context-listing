@@ -9,6 +9,8 @@ import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -76,25 +78,41 @@ public class ListCourtHearingIT extends AbstractIT {
 
     @Test
     public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlotsWinterTime() {
-        final String[] courtScheduleSlots = {"2020-02-11", "2020-02-12", "2020-02-13"};
-        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtScheduleSlots);
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1);
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
+        final String courtRoomId1 = hearingsData.getHearingData().get(0).getCourtRoomId().toString();
+        final String courtCentreId = hearingsData.getHearingData().get(0).getCourtCentreId().toString();
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>(){{
+            put("2020-02-11", courtRoomId1);
+            put("2020-02-12", courtRoomId1);
+            put("2020-02-13", "33b7d399-8379-437c-980d-af9487b1198c");
+        }};
+        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, courtCentreId);
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtScheduleSlots);
+            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().stream().toArray(String[]::new), courtRoomSchedules.values().stream().toArray(String[]::new));
         }
     }
 
     @Test
     public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlotsSummerTime() {
-        final String[] courtScheduleSlots = {"2020-05-21", "2020-05-22", "2020-05-23"};
-        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtScheduleSlots);
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1);
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
+        final String courtRoomId1 = hearingsData.getHearingData().get(0).getCourtRoomId().toString();
+        final String courtCentreId = hearingsData.getHearingData().get(0).getCourtCentreId().toString();
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>(){{
+            put("2020-05-21", courtRoomId1);
+            put("2020-05-22", "33b7d399-8379-437c-980d-af9487b1198c");
+            put("2020-05-23", courtRoomId1);
+        }};
+        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, courtCentreId);
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtScheduleSlots);
+            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().stream().toArray(String[]::new), courtRoomSchedules.values().stream().toArray(String[]::new));
         }
     }
 

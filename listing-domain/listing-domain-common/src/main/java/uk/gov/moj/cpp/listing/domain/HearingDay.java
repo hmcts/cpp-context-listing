@@ -25,7 +25,11 @@ public class HearingDay implements Serializable {
 
     private final Optional<Boolean> isCancelled;
 
-    public HearingDay(final Integer durationMinutes, final ZonedDateTime endTime, final LocalDate hearingDate, final Integer sequence, final ZonedDateTime startTime, final Optional<UUID> courtScheduleId, final Optional<Boolean> isCancelled) {
+    private final Optional<UUID> courtCentreId;
+
+    private final Optional<UUID> courtRoomId;
+
+    public HearingDay(final Integer durationMinutes, final ZonedDateTime endTime, final LocalDate hearingDate, final Integer sequence, final ZonedDateTime startTime, final Optional<UUID> courtScheduleId, final Optional<Boolean> isCancelled, final Optional<UUID> courtCentreId, final Optional<UUID> courtRoomId) {
         this.durationMinutes = durationMinutes;
         this.endTime = endTime;
         this.hearingDate = hearingDate;
@@ -33,6 +37,8 @@ public class HearingDay implements Serializable {
         this.startTime = startTime;
         this.courtScheduleId = courtScheduleId;
         this.isCancelled = isCancelled;
+        this.courtCentreId = courtCentreId;
+        this.courtRoomId = courtRoomId;
     }
 
     public Integer getDurationMinutes() {
@@ -67,6 +73,14 @@ public class HearingDay implements Serializable {
         return isCancelled;
     }
 
+    public Optional<UUID> getCourtCentreId() {
+        return courtCentreId;
+    }
+
+    public Optional<UUID> getCourtRoomId() {
+        return courtRoomId;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -82,12 +96,14 @@ public class HearingDay implements Serializable {
                 Objects.equals(getHearingDate(), that.getHearingDate()) &&
                 Objects.equals(getSequence(), that.getSequence()) &&
                 Objects.equals(getStartTime(), that.getStartTime()) &&
-                Objects.equals(getIsCancelled(), that.getIsCancelled());
+                Objects.equals(getIsCancelled(), that.getIsCancelled()) &&
+                Objects.equals(getCourtCentreId(), that.getCourtCentreId()) &&
+                Objects.equals(getCourtRoomId(), that.getCourtRoomId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getCourtScheduleId(), getDurationMinutes(), getEndTime(), getHearingDate(), getSequence(), getStartTime(), getIsCancelled());
+        return Objects.hash(getCourtScheduleId(), getDurationMinutes(), getEndTime(), getHearingDate(), getSequence(), getStartTime(), getIsCancelled(), getCourtCentreId(), getCourtRoomId());
     }
 
     @Override
@@ -100,6 +116,8 @@ public class HearingDay implements Serializable {
                 ", sequence=" + sequence +
                 ", startTime=" + startTime +
                 ", isCancelled=" + isCancelled +
+                ", courtCentreId=" + courtCentreId +
+                ", courtRoomId=" + courtRoomId +
                 '}';
     }
 
@@ -117,6 +135,10 @@ public class HearingDay implements Serializable {
         private Optional<UUID> courtScheduleId;
 
         private Optional<Boolean> isCancelled;
+
+        private Optional<UUID> courtCentreId;
+
+        private Optional<UUID> courtRoomId;
 
         public Builder withDurationMinutes(final Integer durationMinutes) {
             this.durationMinutes = durationMinutes;
@@ -153,8 +175,18 @@ public class HearingDay implements Serializable {
             return this;
         }
 
+        public Builder withCourtCentreId(final Optional<UUID> courtCentreId) {
+            this.courtCentreId = courtCentreId;
+            return this;
+        }
+
+        public Builder withCourtRoomId(final Optional<UUID> courtRoomId) {
+            this.courtRoomId = courtRoomId;
+            return this;
+        }
+
         public HearingDay build() {
-            return new HearingDay(durationMinutes, endTime, hearingDate, sequence, startTime, courtScheduleId, isCancelled);
+            return new HearingDay(durationMinutes, endTime, hearingDate, sequence, startTime, courtScheduleId, isCancelled, courtCentreId, courtRoomId);
         }
     }
 }

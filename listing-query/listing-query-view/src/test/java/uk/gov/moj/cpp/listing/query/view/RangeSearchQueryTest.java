@@ -211,11 +211,11 @@ public class RangeSearchQueryTest {
 
         when(hearingRepository.findHearings(
                 ALLOCATEDSTR,
-                "null",
-                "null",
+                null,
+                null,
                 HearingRepository.ALL_AUTHORITY_CODES_SEARCH,
-                "null",
-                "null",
+                null,
+                null,
                 EARLIEST_SEARCH_DATE,
                 LATEST_SEARCH_DATE
         ))

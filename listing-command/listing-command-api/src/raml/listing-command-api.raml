@@ -220,3 +220,21 @@ protocols: [ HTTP, HTTPS ]
         202:
           description: Request accepted
 
+
+/correct-hearing-days-without-court-centre:
+   post:
+      description: |
+        Update HearingDays without CourtCentre
+        ...
+        (mapping):
+          requestType: application/vnd.listing.correct-hearing-days-without-court-centre+json
+          name: listing.correct-hearing-days-without-court-centre
+        ...
+      body:
+        application/vnd.listing.correct-hearing-days-without-court-centre+json:
+            schema: !include json/schema/listing.correct-hearing-days-without-court-centre.json
+            example: !include json/listing.correct-hearing-days-without-court-centre.json
+
+      responses:
+        202:
+          description: Request accepted

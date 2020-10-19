@@ -21,6 +21,12 @@
     },
     "courtRoomId": {
       "type": "integer"
+    },
+    "courtCentreId": {
+      "type": "string"
+    },
+    "roomId": {
+      "type": "string"
     }
   },
   "required": [

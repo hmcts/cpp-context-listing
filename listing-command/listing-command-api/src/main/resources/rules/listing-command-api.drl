@@ -134,3 +134,13 @@ rule "Command - API - Action - listing.command.delete-listing-note"
   then
     $outcome.setSuccess(true);
 end
+
+rule "Command - API - Action - listing.correct-hearing-days-without-court-centre"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.correct-hearing-days-without-court-centre");
+    eval(userAndGroupProvider.isSystemUser($action))
+  then
+    $outcome.setSuccess(true);
+end
+

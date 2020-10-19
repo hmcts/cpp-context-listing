@@ -11,12 +11,18 @@ import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
+
+import java.time.LocalDate;
+import java.util.Map;
 
 public class AzureScheduleServiceStub {
 
@@ -57,12 +63,14 @@ public class AzureScheduleServiceStub {
                 ));
     }
 
-    public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate sessionDate) {
+    public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate sessionDate, final Map<String, String> values) {
+        final String courtRoomId = ofNullable(values.get("courtRoomId")).orElse("fce80cd4-0c00-3c30-9471-2c2ee7a52453");
         stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", notMatching("null"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON)
-                                .replace("%SESSION_DATE%",sessionDate.toString()))
+                                .replace("%SESSION_DATE%",sessionDate.toString())
+                                .replace("%COURT_ROOM_ID%", courtRoomId))
                         .withHeader("Content-Type", "application/json")
                 ));
     }
@@ -94,11 +102,15 @@ public class AzureScheduleServiceStub {
                 ));
     }
 
-    public static void stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(String[] courtSchedules) {
+    public static void stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(final Map<String, String> courtRoomScedules, final String courtCentreId) {
         String payload = getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_DURATION_BASED_JSON);
 
-        for (int i = 0; i < courtSchedules.length; i++) {
-            payload = payload.replace("SESSION_DATE_" + (i + 1), courtSchedules[i]);
+        int idx = 0;
+        for (Map.Entry<String, String> schedule : courtRoomScedules.entrySet()) {
+            ++idx;
+            payload = payload.replace("SESSION_DATE_" + (idx), schedule.getKey());
+            payload = payload.replace("COURT_ROOM_ID_" + (idx), schedule.getValue());
+            payload = payload.replace("COURT_CENTRE_ID", courtCentreId);
         }
 
         stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))

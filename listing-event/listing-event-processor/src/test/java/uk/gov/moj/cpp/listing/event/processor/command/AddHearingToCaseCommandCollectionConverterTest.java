@@ -8,7 +8,6 @@ import uk.gov.justice.listing.events.Hearing;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.event.utils.EventBuilder;
@@ -34,7 +33,7 @@ public class AddHearingToCaseCommandCollectionConverterTest {
     private JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
     @InjectMocks
-    private EventBuilder eventBuilder;
+    EventBuilder eventBuilder;
 
     @Test
     public void convert() {

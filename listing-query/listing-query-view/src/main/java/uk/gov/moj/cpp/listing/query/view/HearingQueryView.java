@@ -20,8 +20,6 @@ import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
-import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
-import static uk.gov.moj.cpp.listing.domain.CourtListType.STANDARD;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.valueFor;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
@@ -58,8 +56,10 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -159,6 +159,7 @@ public class HearingQueryView {
         final String searchDate = query.payloadAsJsonObject().getString(SEARCH_DATE);
         final String startTime = getDateTimeAsString(searchDate, query.payloadAsJsonObject().getString(START_TIME, MIN.toString()), MIN.toString());
         final String endTime = getDateTimeAsString(searchDate, query.payloadAsJsonObject().getString(END_TIME, MAX.toString()), MAX.toString());
+        final String startTimeForMatched = getDateTimeAsString(searchDate, query.payloadAsJsonObject().getString(START_TIME, LocalTime.now().toString()), LocalTime.now().toString());
 
         LOGGER.info("Query params -  " +
                         "allocated: {}, " +
@@ -188,8 +189,21 @@ public class HearingQueryView {
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
-                        .add(NOTES, listToJsonArrayConverter.convert(notes)));
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertForSearchHearing(hearings,
+                                getHearingDayMatchedCriteriaMap(courtCentreId, courtRoomId, searchDate, startTimeForMatched, endTime)))
+                        .add(NOTES, listToJsonArrayConverter.convert(notes))
+                        .build()
+        );
+    }
+
+    private Map<String, String> getHearingDayMatchedCriteriaMap(final String courtCentreId, final String courtRoomId, final String searchDate, final String startTime, final String endTime) {
+        final Map<String, String> hearingDayMatchedCriteriaMap = new HashMap<>();
+        hearingDayMatchedCriteriaMap.put(COURT_CENTRE_ID, courtCentreId);
+        hearingDayMatchedCriteriaMap.put(COURT_ROOM_ID, courtRoomId);
+        hearingDayMatchedCriteriaMap.put(SEARCH_DATE, searchDate);
+        hearingDayMatchedCriteriaMap.put(START_TIME, startTime);
+        hearingDayMatchedCriteriaMap.put(END_TIME, endTime);
+        return hearingDayMatchedCriteriaMap;
     }
 
     @Handles("listing.unscheduled.search.hearings")
@@ -232,7 +246,7 @@ public class HearingQueryView {
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
                         .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
-        );
+                        );
     }
 
     @Handles("listing.available.search.hearings")
@@ -308,6 +322,11 @@ public class HearingQueryView {
                         .add(NOTES, listToJsonArrayConverter.convert(notes)));
     }
 
+    @Handles("listing.range.search.hearings.for.judge.list")
+    public JsonEnvelope rangeSearchHearingsForJudge(final JsonEnvelope query) {
+        return rangeSearchQuery.rangeSearchHearingsForJudgeList(query);
+    }
+
     @Handles("listing.any-allocation.search.hearings")
     public Envelope<JsonObject> searchHearingsWithAnyAllocationState(final JsonEnvelope query) {
         final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN).toUpperCase();
@@ -317,15 +336,9 @@ public class HearingQueryView {
         final List<Hearing> hearings = repository.findHearingsByCaseUrnAndAnyAllocationState(caseUrnQueryParam);
 
         return Enveloper.envelop(createObjectBuilder()
-                .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
+                .add(HEARINGS,  hearingJsonListConverterFilterEjectCases.convert(hearings))
                 .build()).withName("listing.any-allocation.search.hearings").withMetadataFrom(query);
     }
-
-    @Handles("listing.range.search.hearings.for.judge.list")
-    public JsonEnvelope rangeSearchHearingsForJudge(final JsonEnvelope query) {
-        return rangeSearchQuery.rangeSearchHearingsForJudgeList(query);
-    }
-
 
     @Handles("listing.range.search.hearings")
     public JsonEnvelope rangeSearchHearings(final JsonEnvelope query) {

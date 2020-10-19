@@ -27,7 +27,11 @@ public class HearingDay implements Serializable {
 
     private final Boolean isCancelled;
 
-    public HearingDay(final Integer durationMinutes, final ZonedDateTime endTime, final LocalDate hearingDate, final Integer sequence, final ZonedDateTime startTime, final UUID courtScheduleId, final Boolean isCancelled) {
+    private final UUID courtCentreId;
+
+    private final UUID courtRoomId;
+
+    public HearingDay(final Integer durationMinutes, final ZonedDateTime endTime, final LocalDate hearingDate, final Integer sequence, final ZonedDateTime startTime, final UUID courtScheduleId, final Boolean isCancelled, final UUID courtCentreId, final UUID courtRoomId) {
         this.durationMinutes = durationMinutes;
         this.endTime = endTime;
         this.hearingDate = hearingDate;
@@ -35,6 +39,8 @@ public class HearingDay implements Serializable {
         this.startTime = startTime;
         this.courtScheduleId = courtScheduleId;
         this.isCancelled = isCancelled;
+        this.courtCentreId = courtCentreId;
+        this.courtRoomId = courtRoomId;
     }
 
     public Integer getDurationMinutes() {
@@ -65,6 +71,14 @@ public class HearingDay implements Serializable {
         return isNull(isCancelled) ? FALSE : isCancelled;
     }
 
+    public UUID getCourtCentreId() {
+        return courtCentreId;
+    }
+
+    public UUID getCourtRoomId() {
+        return courtRoomId;
+    }
+
     public static Builder hearingDay() {
         return new Builder();
     }
@@ -84,12 +98,14 @@ public class HearingDay implements Serializable {
                 Objects.equals(getHearingDate(), that.getHearingDate()) &&
                 Objects.equals(getSequence(), that.getSequence()) &&
                 Objects.equals(getStartTime(), that.getStartTime()) &&
-                Objects.equals(isCancelled(), that.isCancelled());
+                Objects.equals(isCancelled(), that.isCancelled()) &&
+                Objects.equals(getCourtCentreId(), that.getCourtCentreId()) &&
+                Objects.equals(getCourtRoomId(), that.getCourtRoomId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getCourtScheduleId(), getDurationMinutes(), getEndTime(), getHearingDate(), getSequence(), getStartTime(), isCancelled());
+        return Objects.hash(getCourtScheduleId(), getDurationMinutes(), getEndTime(), getHearingDate(), getSequence(), getStartTime(), isCancelled(), getCourtCentreId(), getCourtRoomId());
     }
 
     @Override
@@ -102,6 +118,8 @@ public class HearingDay implements Serializable {
                 ", sequence=" + sequence +
                 ", startTime=" + startTime +
                 ", isCancelled=" + isCancelled +
+                ", courtCentreId=" + courtCentreId +
+                ", courtRoomId=" + courtRoomId +
                 '}';
     }
 
@@ -121,6 +139,10 @@ public class HearingDay implements Serializable {
         private UUID courtScheduleId;
 
         private Boolean isCancelled;
+
+        private UUID courtCentreId;
+
+        private UUID courtRoomId;
 
         public Builder withDurationMinutes(final Integer durationMinutes) {
             this.durationMinutes = durationMinutes;
@@ -157,8 +179,18 @@ public class HearingDay implements Serializable {
             return this;
         }
 
+        public Builder withCourtCentreId(final UUID courtCentreId) {
+            this.courtCentreId = courtCentreId;
+            return this;
+        }
+
+        public Builder withCourtRoomId(final UUID courtRoomId) {
+            this.courtRoomId = courtRoomId;
+            return this;
+        }
+
         public HearingDay build() {
-            return new HearingDay(durationMinutes, endTime, hearingDate, sequence, startTime, courtScheduleId, isCancelled);
+            return new HearingDay(durationMinutes, endTime, hearingDate, sequence, startTime, courtScheduleId, isCancelled, courtCentreId, courtRoomId);
         }
     }
 }

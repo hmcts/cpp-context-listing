@@ -8,7 +8,9 @@
       "courtRoomNumber": "PROVISIONAL_COURT_ROOM",
       "startTime": "PROVISIONAL_START_TIME",
       "sessionDate": "PROVISIONAL_SESS_DATE",
-      "maxSlots": 0
+      "maxSlots": 0,
+      "courtHouseId": "PROVISIONAL_COURT_HOUSE_ID",
+      "courtRoomId": "PROVISIONAL_ROOM_ID"
     }
   ]
 }
