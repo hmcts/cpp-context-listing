@@ -19,7 +19,6 @@
         <dependency>
             <groupId>uk.gov.justice.services</groupId>
             <artifactId>file-service-api</artifactId>
-            <version>${file-service-api.version}</version>
         </dependency>
 
         <dependency>
