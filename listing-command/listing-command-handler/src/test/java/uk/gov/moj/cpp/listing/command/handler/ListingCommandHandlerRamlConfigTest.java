@@ -30,7 +30,8 @@ public class ListingCommandHandlerRamlConfigTest {
     public void setup() {
         handlerMethodsToHandlerNames = handlerMethodsToHandlerNames(ListingCommandHandler.class,
                 UnscheduledListingCommandHandler.class,
-                ListingNoteCommandHandler.class);
+                ListingNoteCommandHandler.class,
+                HearingMarkedAsDuplicateCommandHandler.class);
     }
 
     @Test

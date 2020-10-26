@@ -86,6 +86,7 @@ import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.Hearing;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
 import uk.gov.justice.listing.events.LinkedToCases;
@@ -109,6 +110,7 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
+import uk.gov.justice.services.messaging.spi.DefaultJsonEnvelope;
 import uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher;
 import uk.gov.justice.services.test.utils.core.random.Generator;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
@@ -1122,6 +1124,88 @@ public class ListingEventProcessorTest {
                 withJsonPath("$.hearingDays[1].sittingDay", equalTo(hearingDaysCancelledEvent.getHearingDays().get(1).getSittingDay().toString())),
                 withJsonPath("$.hearingDays[1].isCancelled", equalTo(hearingDaysCancelledEvent.getHearingDays().get(1).getIsCancelled().orElse(null)))
         )));
+    }
+
+    @Test
+    public void shouldHandleHearingMarkedAsDuplicate() {
+        final String hearingId = randomUUID().toString();
+        final String case1Id = randomUUID().toString();
+        final String case2Id = randomUUID().toString();
+        final String defendant1Id = randomUUID().toString();
+        final String defendant2Id = randomUUID().toString();
+        final String offence1Id = randomUUID().toString();
+        final String offence2Id = randomUUID().toString();
+        final JsonObject hearingMarkedAsDuplicate = createObjectBuilder()
+                .add("hearingId", hearingId)
+                .add("prosecutionCaseIds", Json.createArrayBuilder()
+                        .add(case1Id)
+                        .add(case2Id)
+                        .build())
+                .add("defendantIds", Json.createArrayBuilder()
+                        .add(defendant1Id)
+                        .add(defendant2Id)
+                        .build())
+                .add("offenceIds", Json.createArrayBuilder()
+                        .add(offence1Id)
+                        .add(offence2Id)
+                        .build())
+                .build();
+
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("public.commandEvent.hearing.marked-as-duplicate"),
+                hearingMarkedAsDuplicate);
+
+        listingEventProcessor.handleHearingMarkedAsDuplicate(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final JsonEnvelope commandEvent = this.senderJsonEnvelopeCaptor.getValue();
+
+        assertThat(commandEvent.metadata().name(), is("listing.command.mark-hearing-as-duplicate"));
+        assertThat(commandEvent.payload().toString(), isJson(allOf(
+                withJsonPath("$.hearingId", equalTo(hearingId)),
+                withJsonPath("$.prosecutionCaseIds[0]", equalTo(case1Id)),
+                withJsonPath("$.prosecutionCaseIds[1]", equalTo(case2Id)))));
+    }
+
+    @Test
+    public void shouldHandleHearingMarkedAsDuplicateForCase() {
+        final UUID hearingId = randomUUID();
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+
+        final JsonObject hearingMarkedAsDuplicate = createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("caseIds", Json.createArrayBuilder()
+                        .add(case1Id.toString())
+                        .add(case2Id.toString())
+                        .build())
+                .build();
+
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-marked-as-duplicate"),
+                hearingMarkedAsDuplicate);
+
+        when(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingMarkedAsDuplicate.class))
+                .thenReturn(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate()
+                .withHearingId(hearingId)
+                        .withCaseIds(Arrays.asList(case1Id,case2Id))
+                        .build());
+
+        listingEventProcessor.handlePrivateHearingMarkedAsDuplicate(event);
+
+        verify(this.sender,times(2)).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final JsonEnvelope firstCommandEvent = this.senderJsonEnvelopeCaptor.getAllValues().get(0);
+        final JsonEnvelope secondCommandEvent = this.senderJsonEnvelopeCaptor.getAllValues().get(1);
+
+        assertThat(firstCommandEvent.metadata().name(), is("listing.command.mark-hearing-as-duplicate-for-case"));
+        assertThat(firstCommandEvent.payload().toString(), isJson(allOf(
+                withJsonPath("$.hearingId", equalTo(hearingId.toString())),
+                withJsonPath("$.caseId", equalTo(case1Id.toString())))));
+
+        assertThat(secondCommandEvent.metadata().name(), is("listing.command.mark-hearing-as-duplicate-for-case"));
+        assertThat(secondCommandEvent.payload().toString(), isJson(allOf(
+                withJsonPath("$.hearingId", equalTo(hearingId.toString())),
+                withJsonPath("$.caseId", equalTo(case2Id.toString())))));
     }
 
     private JsonEnvelope allocatedHearingExtendedForListingEvent() {

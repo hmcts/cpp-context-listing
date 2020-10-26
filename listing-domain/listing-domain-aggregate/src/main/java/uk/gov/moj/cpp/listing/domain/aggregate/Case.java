@@ -16,6 +16,7 @@ import uk.gov.justice.listing.events.CaseEjectedForHearings;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.HearingAddedToCase;
+import uk.gov.justice.listing.events.HearingMarkedAsDuplicateForCase;
 import uk.gov.justice.listing.events.HearingUpdatedToCase;
 import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
@@ -56,6 +57,7 @@ public class Case implements Aggregate {
                 when(DefendantLegalaidStatusUpdated.class).apply(e -> onDefendantLegalaidStatusTobeUpdated()),
                 when(CaseResultedDefendantProceedingsConcluded.class).apply(e -> onCaseResultedDefendantProceedingsUpdated()),
                 when(CaseEjectedForHearings.class).apply(e -> onCaseEjectedForHearings()),
+                when(HearingMarkedAsDuplicateForCase.class).apply(this::onHearingMarkedAsDuplicateForCase),
                 otherwiseDoNothing());
     }
 
@@ -194,6 +196,13 @@ public class Case implements Aggregate {
                 .build()));
     }
 
+    public Stream<Object> markHearingAsDuplicate(final UUID hearingId, final UUID caseId) {
+        return Stream.of(HearingMarkedAsDuplicateForCase.hearingMarkedAsDuplicateForCase()
+                .withCaseId(caseId)
+                .withHearingId(hearingId)
+                .build());
+    }
+
     // Methods to apply aggregate state
 
     private void onHearingAddedToCase(HearingAddedToCase event) {
@@ -236,5 +245,8 @@ public class Case implements Aggregate {
         // Do Nothing
     }
 
+    private void onHearingMarkedAsDuplicateForCase(final HearingMarkedAsDuplicateForCase hearingMarkedAsDuplicateForCase){
+        this.hearingIds.remove(hearingMarkedAsDuplicateForCase.getHearingId());
+    }
 
 }

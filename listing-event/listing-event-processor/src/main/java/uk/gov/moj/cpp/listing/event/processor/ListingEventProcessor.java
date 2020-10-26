@@ -28,6 +28,7 @@ import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
@@ -66,9 +67,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
 import org.slf4j.Logger;
@@ -97,6 +98,7 @@ public class ListingEventProcessor {
     static final String PUBLIC_EVENT_PROGRESSION_EVENTS_CASE_OR_APPLICATION_EJECTED = "public.progression.events.case-or-application-ejected";
     static final String PUBLIC_EVENT_PROGRESSION_CASE_LINKED = "public.progression.case-linked";
     static final String PUBLIC_EVENT_HEARING_TRIAL_VACATED = "public.hearing.trial-vacated";
+    static final String PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT = "public.events.hearing.marked-as-duplicate";
     static final String LISTING_EVENTS_CASE_EJECTED_FOR_HEARINGS = "listing.events.case-ejected-for-hearings";
     static final String LISTING_EVENTS_APPLICATION_EJECTED_FOR_HEARINGS = "listing.events.application-ejected-for-hearings";
     static final String PRIVATE_EVENT_HEARING_LISTED = "listing.events.hearing-listed";
@@ -113,6 +115,7 @@ public class ListingEventProcessor {
     static final String PRIVATE_EVENT_CASE_MARKERS_TO_BE_UPDATED = "listing.events.case-markers-to-be-updated";
     static final String PRIVATE_EVENT_LINKED_CASES_TO_BE_UPDATED = "listing.events.linked-cases-to-be-updated";
     static final String PRIVATE_EVENT_TRIAL_VACATED = "listing.events.trial-vacated";
+    static final String PRIVATE_EVENT_HEARING_MARKED_AS_DUPLICATE = "listing.events.hearing-marked-as-duplicate";
     static final String PRIVATE_EVENT_HEARING_RESCHEDULED = "listing.events.hearing-rescheduled";
     static final String LISTING_EVENTS_CASE_RESULTED_DEFENDANT_PROCEEDINGS_UPDATED = "listing.events.case-resulted-defendant-proceedings-updated";
     static final String COMMAND_ADD_HEARING_TO_CASE = "listing.command.add-hearing-to-case";
@@ -138,6 +141,8 @@ public class ListingEventProcessor {
     static final String COMMAND_UPDATE_LINKED_CASE_IN_HEARING = "listing.command.update-linked-case-in-hearing";
     static final String COMMAND_UPDATE_HEARING_TO_CASE = "listing.command.update-hearing-to-case";
     static final String COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
+    static final String COMMAND_MARK_HEARING_AS_DUPLICATE = "listing.command.mark-hearing-as-duplicate";
+    static final String COMMAND_MARK_HEARING_AS_DUPLICATE_FOR_CASE = "listing.command.mark-hearing-as-duplicate-for-case";
     static final String PRIVATE_COMMAND_HEARING_VACATE_TRIAL = "listing.command.hearing-vacate-trial";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
@@ -160,6 +165,7 @@ public class ListingEventProcessor {
     private static final String DEFENDANT_ID = "defendantId";
     private static final String CASE_ID = "caseId";
     private static final String PROSECUTION_CASE = "prosecutionCase";
+    private static final String PROSECUTION_CASE_IDS = "prosecutionCaseIds";
 
     @Inject
     private Sender sender;
@@ -235,7 +241,7 @@ public class ListingEventProcessor {
 
         final TrialVacated trialVacated = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), TrialVacated.class);
 
-        final JsonObject vacatedTrialUpdatedPayload = Json.createObjectBuilder()
+        final JsonObject vacatedTrialUpdatedPayload = createObjectBuilder()
                 .add(HEARING_ID, trialVacated.getHearingId().toString())
                 .add(IS_VACATED, true)
                 .add(REASON_ID, trialVacated.getVacatedTrialReasonId().toString())
@@ -251,7 +257,7 @@ public class ListingEventProcessor {
 
         final HearingRescheduled hearingRescheduled = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingRescheduled.class);
 
-        final JsonObject vacatedTrialUpdatedPayload = Json.createObjectBuilder()
+        final JsonObject vacatedTrialUpdatedPayload = createObjectBuilder()
                 .add(HEARING_ID, hearingRescheduled.getHearingId().toString())
                 .add(IS_VACATED, false)
                 .add(ALLOCATED, hearingRescheduled.getAllocated())
@@ -259,6 +265,17 @@ public class ListingEventProcessor {
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_VACATED_TRIAL_UPDATED),
                 vacatedTrialUpdatedPayload));
+    }
+
+    @Handles(PRIVATE_EVENT_HEARING_MARKED_AS_DUPLICATE)
+    public void handlePrivateHearingMarkedAsDuplicate(final JsonEnvelope envelope) {
+        final HearingMarkedAsDuplicate hearingMarkedAsDuplicate = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingMarkedAsDuplicate.class);
+        final UUID hearingId = hearingMarkedAsDuplicate.getHearingId();
+
+        if (isNotEmpty(hearingMarkedAsDuplicate.getCaseIds())) {
+            hearingMarkedAsDuplicate.getCaseIds().forEach(caseId ->
+                    sendUpdateCaseWithDuplicateHearing(envelope, hearingId, caseId));
+        }
     }
 
     @Handles(PRIVATE_EVENT_COURT_APPLICATION_ADDED_FOR_LISTED_HEARING)
@@ -462,7 +479,7 @@ public class ListingEventProcessor {
             final JsonArray hearingIds = payload.getJsonArray(HEARING_IDS);
             hearingIds.forEach(hearingId -> {
                 final String caseId = payload.getString(PROSECUTION_CASE_ID);
-                final JsonObject caseEjectedCommandPayload = Json.createObjectBuilder()
+                final JsonObject caseEjectedCommandPayload = createObjectBuilder()
                         .add(PROSECUTION_CASE_ID, caseId)
                         .add(HEARING_ID, hearingId)
                         .add(REMOVAL_REASON, payload.getString(REMOVAL_REASON))
@@ -489,7 +506,7 @@ public class ListingEventProcessor {
             final JsonArray hearingIds = payload.getJsonArray(HEARING_IDS);
             hearingIds.forEach(hearingId -> {
                 final String applicationId = payload.getString(APPLICATION_ID);
-                final JsonObject applicationEjectedCommandPayload = Json.createObjectBuilder()
+                final JsonObject applicationEjectedCommandPayload = createObjectBuilder()
                         .add(APPLICATION_ID, applicationId)
                         .add(HEARING_ID, hearingId)
                         .add(REMOVAL_REASON, payload.getString(REMOVAL_REASON))
@@ -527,7 +544,7 @@ public class ListingEventProcessor {
         final JsonObject eventPayload = envelop.payloadAsJsonObject();
         final JsonArray hearingIds = eventPayload.getJsonArray("hearingIds");
         hearingIds.stream().forEach(hearingId -> {
-            final JsonObject commandPayload = Json.createObjectBuilder()
+            final JsonObject commandPayload = createObjectBuilder()
                     .add(HEARING_ID, hearingId)
                     .add(CASE_ID, eventPayload.getString(CASE_ID))
                     .add(DEFENDANT_ID, eventPayload.getString(DEFENDANT_ID))
@@ -566,7 +583,7 @@ public class ListingEventProcessor {
         final CaseResultedDefendantProceedingsConcluded caseResultedDefendantProceedingsConcluded = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), CaseResultedDefendantProceedingsConcluded.class);
         final List<UUID> hearingIds = caseResultedDefendantProceedingsConcluded.getHearingIds();
         hearingIds.forEach(hearingId -> {
-            final JsonObject commandPayload = Json.createObjectBuilder()
+            final JsonObject commandPayload = createObjectBuilder()
                     .add(HEARING_ID, hearingId.toString())
                     .add(PROSECUTION_CASE, objectToJsonObjectConverter.convert(caseResultedDefendantProceedingsConcluded.getProsecutionCase()))
                     .build();
@@ -610,6 +627,25 @@ public class ListingEventProcessor {
             LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PUBLIC_EVENT_HEARING_DAYS_CANCELLED, envelope.toObfuscatedDebugString());
         }
         sender.send(envelop(envelope.payloadAsJsonObject()).withName(COMMAND_CANCEL_HEARING_DAYS).withMetadataFrom(envelope));
+    }
+
+    @Handles(PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT)
+    public void handleHearingMarkedAsDuplicate(final JsonEnvelope envelope) {
+        LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT, envelope.toObfuscatedDebugString());
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_MARK_HEARING_AS_DUPLICATE),
+                generatePayloadForCommandMarkHearingAsDuplicate(envelope)));
+
+    }
+
+    private JsonObject generatePayloadForCommandMarkHearingAsDuplicate(final JsonEnvelope envelope) {
+        final JsonObjectBuilder commandPayloadBuilder = createObjectBuilder();
+        commandPayloadBuilder.add(HEARING_ID, envelope.payloadAsJsonObject().getString(HEARING_ID));
+        if (envelope.payloadAsJsonObject().containsKey(PROSECUTION_CASE_IDS)) {
+            commandPayloadBuilder.add(PROSECUTION_CASE_IDS, envelope.payloadAsJsonObject().getJsonArray(PROSECUTION_CASE_IDS));
+        }
+
+        return commandPayloadBuilder.build();
     }
 
     /*
@@ -872,6 +908,16 @@ public class ListingEventProcessor {
                         .withMetadataFrom(envelope));
             }
         }
+    }
+
+    private void sendUpdateCaseWithDuplicateHearing(final JsonEnvelope envelope, final UUID hearingId, final UUID caseId) {
+        final JsonObject hearingMarkedAsDuplicateForCase = createObjectBuilder()
+                .add(HEARING_ID,hearingId.toString())
+                .add(CASE_ID, caseId.toString())
+                .build();
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_MARK_HEARING_AS_DUPLICATE_FOR_CASE),
+                hearingMarkedAsDuplicateForCase));
     }
 
 }

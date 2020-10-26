@@ -1809,7 +1809,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingDeleted);
         LOGGER.debug("jsonResponse from privateMessageConsumerHearingDeleted: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.get("hearingIdToBeDeleted"), is(hearingId.toString()));
+        assertThat(jsonResponse.get("hearingIdToBeDeleted "), is(hearingId.toString()));
     }
 
     public void verifyHearingUpdatedPartiallyInActiveMQ(final UUID hearingId) {

@@ -95,6 +95,9 @@ subscriptions_descriptor:
         - name: listing.events.available-slots-for-hearing-freed
           schema_uri: http://justice.gov.uk/listing/events/listing.events.available-slots-for-hearing-freed.json
 
+        - name: listing.events.hearing-marked-as-duplicate
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-marked-as-duplicate
+
       event_source_name: listing
 
     - name: public event subscription
@@ -152,5 +155,8 @@ subscriptions_descriptor:
 
         - name: public.hearing.prosecution-counsel-removed
           schema_uri: http://cpp.moj.gov.uk/hearing/json/schema/event/prosecution-counsel-removed.json
+
+        - name: public.events.hearing.marked-as-duplicate
+          schema_uri: http://justice.gov.uk/hearing/courts/hearing.events.marked-as-duplicate.json
 
       event_source_name: public.event.source

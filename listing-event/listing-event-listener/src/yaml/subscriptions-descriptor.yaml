@@ -191,4 +191,7 @@ subscriptions_descriptor:
         - name: listing.events.hearing-days-without-court-centre-corrected
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-without-court-centre-corrected.json
 
+        - name: listing.events.hearing-marked-as-duplicate
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-marked-as-duplicate.json
+
       event_source_name: listing
