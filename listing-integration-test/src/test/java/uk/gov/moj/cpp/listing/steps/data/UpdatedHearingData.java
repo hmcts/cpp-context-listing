@@ -22,7 +22,7 @@ import java.util.UUID;
 
 public class UpdatedHearingData {
 
-    protected static final LocalTime DEFAULT_START_TIME = LocalTime.of(9, 30);
+    protected static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     protected static final LocalTime DEFAULT_START_TIME_1 = LocalTime.of(17, 00);
     private static final HearingTypeData SENTENCE_HEARING_TYPE = new HearingTypeData(randomUUID(), "Sentence");
     private static final ZoneId UTC = ZoneId.of("UTC");

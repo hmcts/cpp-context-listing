@@ -59,7 +59,7 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
 
-    private static final LocalTime DEFAULT_START_TIME = LocalTime.of(9, 30);
+    private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private MessageConsumer privateMessageConsumerHearingDaysSequenced;
     private MessageConsumer privateMessageConsumerAllocatedHearingUpdatedForListing;
     private MessageConsumer publicMessageConsumerHearingUpdated;
