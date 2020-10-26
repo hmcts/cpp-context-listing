@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import static java.util.stream.Collectors.toList;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
+import static utils.HearingDayUtil.getNotCancelledHearingDays;
 
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingDaysCancelled;
@@ -62,11 +62,5 @@ public class HearingDaysForHearingEventListener {
                 .find(hearingId)
                 .putObjectList(HEARING_DAYS, getNotCancelledHearingDays(hearingDays))
                 .save();
-    }
-
-    private List<HearingDay> getNotCancelledHearingDays(final List<HearingDay> hearingDays) {
-        return hearingDays.stream()
-                .filter(hearingDay -> !hearingDay.getIsCancelled().orElse(false))
-                .collect(toList());
     }
 }

@@ -14,6 +14,8 @@ public class HearingDaysToDomainConverter implements Converter<List<HearingDay>,
     public List<uk.gov.justice.listing.events.HearingDay> convert(final List<HearingDay> source) {
         return source.stream()
                 .map(hearingDay -> hearingDay()
+                        .withCourtRoomId(hearingDay.getCourtRoomId())
+                        .withCourtCentreId(hearingDay.getCourtCentreId())
                         .withHearingDate(hearingDay.getSittingDay().toLocalDate())
                         .withStartTime(hearingDay.getSittingDay())
                         .withSequence(hearingDay.getListingSequence().orElse(null))
