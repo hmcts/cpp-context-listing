@@ -194,4 +194,6 @@ subscriptions_descriptor:
         - name: listing.events.hearing-marked-as-duplicate
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-marked-as-duplicate.json
 
+        - name: listing.events.case-identifier-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.case-identifier-updated.json
       event_source_name: listing

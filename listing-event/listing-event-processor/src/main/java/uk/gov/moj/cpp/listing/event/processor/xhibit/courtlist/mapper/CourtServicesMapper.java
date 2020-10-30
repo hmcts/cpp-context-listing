@@ -409,9 +409,9 @@ public class CourtServicesMapper {
 
         final ProsecutionStructure prosecutionStructure = objectFactory.createProsecutionStructure();
 
-        final String authorityType = listedCase.getJsonObject(CASE_IDENTIFIER).getString("authorityCode");
+        final String authorityType = listedCase.getJsonObject(CASE_IDENTIFIER).getString("authorityCode","");
 
-        final ProsecutingAuthorityType prosecutingAuthorityType = CPS_PROSECUTOR_CODE.equals(authorityType)
+        final ProsecutingAuthorityType prosecutingAuthorityType = authorityType.startsWith(CPS_PROSECUTOR_CODE)
                 ? CROWN_PROSECUTION_SERVICE
                 : OTHER_PROSECUTOR;
 

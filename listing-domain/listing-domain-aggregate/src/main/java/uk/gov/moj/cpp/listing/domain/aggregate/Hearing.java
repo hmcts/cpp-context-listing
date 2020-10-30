@@ -48,6 +48,7 @@ import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CaseEjected;
+import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
@@ -102,6 +103,8 @@ import uk.gov.justice.listing.events.VideoLinkDetailsChangedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsRemovedForHearing;
 import uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing;
 import uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing;
+
+
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
@@ -2087,6 +2090,16 @@ public class Hearing implements Aggregate {
 
         eventStream = concat(eventStream, freeCancelledHearingDaySlots(hearingId, updatedHearingDays));
 
+        return apply(eventStream);
+    }
+
+    public Stream<Object> updateCaseIdentifier(UUID prosecutionAuthorityId, String prosecutionAuthorityCode, UUID prosecutionCaseId) {
+        final Stream<Object> eventStream = Stream.of(CaseIdentifierUpdated.caseIdentifierUpdated()
+        .withHearingId(this.hearingId)
+        .withProsecutionAuthorityCode(prosecutionAuthorityCode)
+        .withProsecutionAuthorityId(prosecutionAuthorityId)
+        .withProsecutionCaseId(prosecutionCaseId)
+        .build());
         return apply(eventStream);
     }
 

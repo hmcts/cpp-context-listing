@@ -77,6 +77,8 @@ import org.slf4j.LoggerFactory;
 
 public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
+    private static final String MEDIA_TYPE_SEARCH_HEARING = "application/vnd.listing.search.hearing+json";
+    private static final String LISTING_QUERY_HEARING = "listing.search.hearing";
     public static final String FIELD_START_DATE = "startDate";
     public static final String FIELD_END_DATE = "endDate";
     public static final String FIELD_JUDICIAL_ROLE_TYPE_ID = "judicialRoleTypeId";
@@ -1085,6 +1087,24 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                         ALLOCATED));
 
         verifyHearingFound(searchHearingUrl);
+    }
+
+    public void verifyCaseIdentifierWhenQueryingFromAPI(String hearingId, JsonObject payload, HearingsData hearingsData) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARING).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.listedCases[0].id", equalTo(payload.getString("prosecutionCaseId"))),
+                                withJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(payload.getString("prosecutionAuthorityId"))),
+                                withJsonPath("$.listedCases[0].caseIdentifier.authorityCode", equalTo(payload.getString("prosecutionAuthorityCode"))),
+                                withJsonPath("$.listedCases[0].caseIdentifier.caseReference", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseReference())),
+                                withJsonPath("$.listedCases[1].caseIdentifier.authorityId", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(1).getAuthorityId().toString())),
+                                withJsonPath("$.listedCases[1].caseIdentifier.authorityCode", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(1).getAuthorityCode())),
+                                withJsonPath("$.listedCases[1].caseIdentifier.caseReference", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(1).getCaseReference()))
+                        )));
     }
 
     public void verifyHearingFoundByAllocatedAndCourtCentreFromAPIAndStartDateAndEndDate() {

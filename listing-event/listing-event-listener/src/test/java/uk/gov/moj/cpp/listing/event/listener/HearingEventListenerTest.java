@@ -10,7 +10,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.getStringFromResource;
+import static org.hamcrest.MatcherAssert.assertThat;
 
+import org.hamcrest.CoreMatchers;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
@@ -19,6 +21,7 @@ import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.TrialVacated;
+import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
@@ -223,5 +226,40 @@ public class HearingEventListenerTest {
         verify(properties).put(eq("isVacatedTrial"), eq(false));
         verify(properties).put(eq("vacatedTrialReasonId"), eq(""));
         verify(hearingRepository).save(hearing);
+    }
+
+
+    @Test
+    public void shouldHandleCaseIdentifierProceedingsConcluded() throws Exception {
+        final UUID CASE_ID = UUID.fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final String testCases1 = getStringFromResource("defendant-proceedings-concluded.json");
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
+        final Envelope<CaseIdentifierUpdated> envelope = (Envelope<CaseIdentifierUpdated>) mock(Envelope.class);
+
+        final CaseIdentifierUpdated updateCaseIdentifier = CaseIdentifierUpdated.caseIdentifierUpdated()
+                .withProsecutionCaseId(CASE_ID)
+                .withHearingId(HEARING_ID)
+                .withProsecutionAuthorityCode("btx4uyUfIb")
+                .withProsecutionAuthorityId(UUID.fromString("f0ddeecf-fda8-46f8-a293-c1813e58b479"))
+                .build();
+
+        given(envelope.payload()).willReturn(updateCaseIdentifier);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        hearingEventListener.updateCaseIdentifier(envelope);
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(hearingRepository).save(hearing);
+        ArrayNode actualValue = objectNodeCaptor.getValue();
+
+        final String expectedCases1 = testCases1.replace("btx4uyUfIa", "btx4uyUfIb")
+                .replace("f0ddeecf-fda8-46f8-a293-c1813e58b478", "f0ddeecf-fda8-46f8-a293-c1813e58b479");
+        final JsonNode expectedCasesProperties = objectMapper.readTree(expectedCases1);
+        assertThat(actualValue, CoreMatchers.equalTo(expectedCasesProperties));
     }
 }

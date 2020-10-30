@@ -6,6 +6,7 @@ import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.usi
 
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
@@ -23,6 +24,7 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder;
+import uk.gov.justice.listing.events.CaseIdentifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -151,6 +153,47 @@ public class HearingEventListener {
                 .find(hearingId)
                 .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseWithDefendantProceedingsFunction(prosecutionCase, defendants))
                 .save();
+    }
+
+    @Handles("listing.events.case-identifier-updated")
+    public void updateCaseIdentifier(final Envelope<CaseIdentifierUpdated> event){
+        final CaseIdentifierUpdated updateCaseIdentifier = event.payload();
+        final UUID hearingId = updateCaseIdentifier.getHearingId();
+        final UUID prosecutionCaseId = updateCaseIdentifier.getProsecutionCaseId();
+
+        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
+        };
+
+        final CaseIdentifier caseIdentifier = CaseIdentifier.caseIdentifier()
+                .withAuthorityCode(updateCaseIdentifier.getProsecutionAuthorityCode())
+                .withAuthorityId(updateCaseIdentifier.getProsecutionAuthorityId())
+                .build();
+        using(hearingRepository)
+                .find(hearingId)
+                .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseWithProsecutorProceedingsFunction(prosecutionCaseId, caseIdentifier))
+                .save();
+    }
+
+    private Function<List<ListedCase>, List<ListedCase>> getUpdatedListedCaseWithProsecutorProceedingsFunction(final UUID prosecutionCaseId,
+                                                                                                               final CaseIdentifier caseIdentifier){
+        return cases -> getUpdatedListedCaseWithCaseIdentifierProceedings(prosecutionCaseId, caseIdentifier, cases);
+    }
+
+    private List<ListedCase> getUpdatedListedCaseWithCaseIdentifierProceedings(final UUID prosecutionCaseID,
+                                                                               final CaseIdentifier caseIdentifier,
+                                                                               final List<ListedCase> cases){
+        final List<ListedCase> listedCases = new ArrayList<>(cases);
+        final ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(prosecutionCaseID));
+        final CaseIdentifier orgCaseIdentifier = listedCase.getCaseIdentifier();
+        final CaseIdentifier updatedCaseIdentifier = CaseIdentifier.caseIdentifier().withValuesFrom(caseIdentifier)
+                .withCaseReference(orgCaseIdentifier.getCaseReference())
+                .build();
+        final ListedCase updatedListedCase = ListedCase.listedCase().withValuesFrom(listedCase)
+                .withCaseIdentifier(updatedCaseIdentifier).build();
+
+        listedCases.replaceAll(
+                listedCase1 -> listedCase1.getId().equals(updatedListedCase.getId()) ? updatedListedCase : listedCase1);
+        return listedCases;
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getUpdatedListedCaseWithDefendantProceedingsFunction(

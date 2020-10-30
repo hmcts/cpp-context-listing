@@ -120,6 +120,7 @@ import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
 import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.listing.events.TypeChangedForHearing;
+import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.VideoLinkDetailsAssignedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsChangedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsRemovedForHearing;
@@ -517,7 +518,7 @@ public class ListingCommandHandlerTest {
                 CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class,
                 PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class, RecordCourtListProduced.class,
                 PublishedCourtListStored.class, TrialVacated.class, HearingRescheduled.class, VideoLinkDetailsChangedForHearing.class,
-                VideoLinkDetailsRemovedForHearing.class, VideoLinkDetailsAssignedForHearing.class, CancelHearingDays.class);
+                VideoLinkDetailsRemovedForHearing.class, VideoLinkDetailsAssignedForHearing.class, CancelHearingDays.class, CaseIdentifierUpdated.class);
 
         setField(this.extendHearingUtils, "prosecutionCasesBuilder", prosecutionCasesBuilder);
 
@@ -908,6 +909,21 @@ public class ListingCommandHandlerTest {
 
         verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
 
+    }
+
+    @Test
+    public void shouldUpdateCaseIdentifier() throws Exception{
+        final JsonObject payload = Json.createObjectBuilder()
+                .add("prosecutionAuthorityId", randomUUID().toString())
+                .add("prosecutionAuthorityCode", STRING.next())
+                .add("hearingIds", Json.createArrayBuilder().add(randomUUID().toString()).add(randomUUID().toString()).build())
+                .build();
+        JsonEnvelope commandEnvelope = envelopeFrom(metadataBuilder().withName("listing.command.update-cps-prosecutor-with-associated-hearings").withId(randomUUID()).build(), payload);
+        when(hearing.updateCaseIdentifier(any(), any(), any())).thenReturn(mock(Stream.class));
+
+        listingCommandHandler.updateProsecutorForAssociatedHearings(commandEnvelope);
+
+        verify(hearing, times(2)).updateCaseIdentifier(any(), any(), any());
     }
 
     private uk.gov.justice.listing.events.Hearing getSampleStoredHearing() {

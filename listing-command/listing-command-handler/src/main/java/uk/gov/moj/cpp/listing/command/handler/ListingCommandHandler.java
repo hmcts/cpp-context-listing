@@ -68,6 +68,7 @@ import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.listing.courts.SequenceHearings;
 import uk.gov.justice.listing.courts.UpdateCaseDefendantDetails;
 import uk.gov.justice.listing.courts.UpdateCaseDefendantOffences;
+import uk.gov.justice.listing.courts.UpdateCaseIdentifierWithHearings;
 import uk.gov.justice.listing.courts.UpdateCourtApplicationCommand;
 import uk.gov.justice.listing.courts.UpdateCourtApplicationForHearings;
 import uk.gov.justice.listing.courts.UpdateDefendantsForHearing;
@@ -138,7 +139,6 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Application;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
-import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 import uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil;
 
 import java.time.LocalDate;
@@ -1338,6 +1338,22 @@ public class ListingCommandHandler {
 
         final Stream<Object> events = Stream.of(event);
         appendEventsToStream(commandEnvelope, eventStream, events);
+    }
+
+    @Handles("listing.command.update-cps-prosecutor-with-associated-hearings")
+    public void updateProsecutorForAssociatedHearings(final JsonEnvelope envelope) throws EventStreamException {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("listing.command.update-cps-prosecutor-with-associated-hearings event received {}", envelope.toObfuscatedDebugString());
+        }
+
+        final UpdateCaseIdentifierWithHearings updateCpsProsecutorWithHearings = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), UpdateCaseIdentifierWithHearings.class);
+
+        for (final UUID hearingId : updateCpsProsecutorWithHearings.getHearingIds()) {
+            final EventStream eventStream = eventSource.getStreamById(hearingId);
+            final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+            final Stream<Object> events = hearingAggregate.updateCaseIdentifier(updateCpsProsecutorWithHearings.getProsecutionAuthorityId(), updateCpsProsecutorWithHearings.getProsecutionAuthorityCode(), updateCpsProsecutorWithHearings.getProsecutionCaseId());
+            appendEventsToStream(envelope, eventStream, events);
+        }
     }
 
     @VisibleForTesting

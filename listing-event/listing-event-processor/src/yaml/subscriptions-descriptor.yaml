@@ -159,4 +159,7 @@ subscriptions_descriptor:
         - name: public.events.hearing.marked-as-duplicate
           schema_uri: http://justice.gov.uk/hearing/courts/hearing.events.marked-as-duplicate.json
 
+        - name: public.progression.events.cps-prosecutor-updated
+          schema_uri: http://cpp.moj.gov.uk/hearing/json/schema/event/cps-prosecutor-updated.json
+
       event_source_name: public.event.source
