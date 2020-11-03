@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/events/case-resulted-and-defendant-proceeding-concluded.json",
+  "id": "http://justice.gov.uk/listing/events/case-resulted-defendant-proceeding-concluded.json",
   "type": "object",
   "properties": {
     "hearingIds": {

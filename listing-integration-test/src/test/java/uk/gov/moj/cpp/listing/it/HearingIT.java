@@ -47,7 +47,7 @@ public class HearingIT extends AbstractIT {
     }
 
   @Test
-    public void assignVideoLinkDetailsInAllocatedListing() {
+    public void assignPublicListNoteInAllocatedListing() {
         final HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -58,9 +58,9 @@ public class HearingIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
 
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
-            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+            updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
         }
     }
@@ -68,7 +68,7 @@ public class HearingIT extends AbstractIT {
 
 
     @Test
-    public void changeVideoLinkDetailsInAllocatedListing() {
+    public void changePublicListNoteInAllocatedListing() {
         final HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -79,9 +79,9 @@ public class HearingIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
 
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
-            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+            updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
         }
 
@@ -89,13 +89,13 @@ public class HearingIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForChangeingVideoLinkDetails = UpdatedHearingData.updatedHearingDataWithVideoLink(updatedHearingDataForAllocation);
 
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForChangeingVideoLinkDetails)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
-            updateHearingSteps.verifyHearingUpdatedResultsForVideoLinkDetailsInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+            updateHearingSteps.verifyHearingUpdatedResultsForPublicListNoteInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
         }
     }
     @Test
-    public void removeVideoLinkDetailsInAllocatedListing() {
+    public void removePublicListNoteInAllocatedListing() {
         final HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -106,9 +106,9 @@ public class HearingIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
 
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
-            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+            updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
         }
 
@@ -117,7 +117,7 @@ public class HearingIT extends AbstractIT {
 
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForChangingVideoLinkDetails)) {
             updateHearingSteps.whenHearingIsUpdatedForListing();
-            updateHearingSteps.verifyHearingUpdatedResultsForRemovingVideoLinkDetailsInMQ();
+            updateHearingSteps.verifyHearingUpdatedResultsForRemovingPublicListNoteInMQ();
         }
     }
 

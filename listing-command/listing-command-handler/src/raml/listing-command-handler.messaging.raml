@@ -117,11 +117,9 @@ baseUri: message://command/handler/message/listing
         schema: !include json/schema/listing.command.update-case-resulted-defendant-proceedings-concluded.json
         example: !include json/listing.command.update-case-resulted-defendant-proceedings-concluded.json
 
-
-      application/vnd.listing.command.case-update-defendant-proceedings-updated+json:
-        schema: !include json/schema/listing.command.case-update-defendant-proceedings-updated.json
-        example: !include json/listing.command.case-update-defendant-proceedings-updated.json
-
+      application/vnd.listing.command.update-defendant-court-proceedings+json:
+        schema: !include json/schema/listing.command.update-defendant-court-proceedings.json
+        example: !include json/listing.command.update-defendant-court-proceedings.json
 
       application/vnd.listing.command.record-court-list-export-successful+json:
         schema: !include json/schema/listing.command.record-court-list-export-successful.json
@@ -212,3 +210,6 @@ baseUri: message://command/handler/message/listing
               schema: !include json/schema/listing.command.update-cps-prosecutor-with-associated-hearings.json
               example: !include json/listing.command.update-cps-prosecutor-with-associated-hearings.json
 
+      application/vnd.listing.command.mark-unallocated-hearing-as-duplicate+json:
+        example: !include json/listing.command.mark-unallocated-hearing-as-duplicate.json
+        schema: !include json/schema/listing.command.mark-unallocated-hearing-as-duplicate.json

@@ -47,12 +47,13 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("squid:S2629")
 public class ListingCommandApi {
 
-    static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
-    static final String LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED = "listing.command.list-court-hearing-enriched";
-    static final String LISTING_COMMAND_LIST_UNSCHEDULED_COURT_HEARING_ENRICHED = "listing.command.list-unscheduled-court-hearing-enriched";
-    static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
-    static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
-    static final String LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC = "listing.command.correct-hearing-days-without-court-centre";
+    private static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
+    private static final String LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED = "listing.command.list-court-hearing-enriched";
+    private static final String LISTING_COMMAND_LIST_UNSCHEDULED_COURT_HEARING_ENRICHED = "listing.command.list-unscheduled-court-hearing-enriched";
+    private static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
+    private static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
+    private static final String LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC = "listing.command.correct-hearing-days-without-court-centre";
+    private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.command.mark-unallocated-hearing-as-duplicate";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     private static final String PROSECUTION_CASES = "prosecutionCases";
@@ -147,7 +148,7 @@ public class ListingCommandApi {
         final UUID courtCentreId = updateHearingForListing.getCourtCentreId();
         final Optional<SelectedCourtCentre> selectedCourtCentre = updateHearingForListing.getSelectedCourtCentre();
         if (selectedCourtCentre.isPresent() && CROWN.equals(updateHearingForListing.getJurisdictionType())) {
-                return selectedCourtCentre.get().getId();
+            return selectedCourtCentre.get().getId();
         }
         return courtCentreId;
     }
@@ -240,9 +241,16 @@ public class ListingCommandApi {
                 JsonEnvelope.metadataFrom(jsonEnvelope.metadata()).withName("listing.command.handler.delete-listing-note"),
                 jsonEnvelope.payloadAsJsonObject()));
     }
+
     @Handles("listing.correct-hearing-days-without-court-centre")
     public void handleCorrectHearingDaysWithoutCourtCentre(final JsonEnvelope envelope) {
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC),
+                envelope.payload()));
+    }
+
+    @Handles("listing.mark-unallocated-hearing-as-duplicate")
+    public void handleMarkUnallocatedHearingAsDuplicate(final JsonEnvelope envelope) {
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING),
                 envelope.payload()));
     }
 }

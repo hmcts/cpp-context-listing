@@ -45,7 +45,23 @@ public class HearingAsMarkedIT extends AbstractIT {
             hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
             hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ();
             hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
+        }
+    }
 
+    @Test
+    public void shouldRemoveUnallocatedHearingMarkedAsDuplicate() {
+        final HearingsData hearingsData = hearingsData();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+
+        HearingData hearingData = hearingsData.getHearingData().get(0);
+        try (final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData)) {
+            hearingAsMarkedSteps.whenUnallocatedHearingMarkedAsDuplicateCommandIsSent();
+            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
+            hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
         }
     }
 

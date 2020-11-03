@@ -1060,7 +1060,7 @@ public class ListingEventProcessorTest {
         verify(this.sender, times(1)).send(this.senderJsonEnvelopeCaptor.capture());
         final List<JsonEnvelope> events = this.senderJsonEnvelopeCaptor.getAllValues();
 
-        assertThat(events.get(0).metadata().name(), is("listing.command.case-update-defendant-proceedings-updated"));
+        assertThat(events.get(0).metadata().name(), is("listing.command.update-defendant-court-proceedings"));
         assertThat(events.get(0).payloadAsJsonObject().getString("hearingId"), is(caseResultedDefendantProceedingsConcluded.getHearingIds().get(0).toString()));
         assertThat(events.get(0).payloadAsJsonObject().getJsonObject("prosecutionCase"), notNullValue());
     }

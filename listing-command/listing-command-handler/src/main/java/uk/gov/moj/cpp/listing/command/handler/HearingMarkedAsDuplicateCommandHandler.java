@@ -57,7 +57,19 @@ public class HearingMarkedAsDuplicateCommandHandler {
         final List<UUID> caseIds = markHearingAsDuplicate.getProsecutionCaseIds();
         updateHearingEventStream(command, hearingId, (Hearing hearing) ->
                 hearing.markHearingAsDuplicate(hearingId, caseIds));
+    }
 
+    @Handles("listing.command.mark-unallocated-hearing-as-duplicate")
+    public void handleMarkUnallocatedHearingAsDuplicate(final JsonEnvelope command) throws EventStreamException {
+
+        final UUID hearingId = UUID.fromString(command.payloadAsJsonObject().getString("hearingId"));
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.mark-unallocated-hearing-as-duplicate' for hearingId {}", hearingId);
+        }
+
+        updateHearingEventStream(command, hearingId, (Hearing hearing) ->
+                hearing.markUnallocatedHearingAsDuplicate(hearingId));
     }
 
     @Handles("listing.command.mark-hearing-as-duplicate-for-case")
@@ -73,8 +85,6 @@ public class HearingMarkedAsDuplicateCommandHandler {
 
         updateCaseEventStream(command, caseId, (Case listingCase) ->
                 listingCase.markHearingAsDuplicate(hearingId, caseId));
-
-
     }
 
     private void updateCaseEventStream(final JsonEnvelope command, final UUID caseId,

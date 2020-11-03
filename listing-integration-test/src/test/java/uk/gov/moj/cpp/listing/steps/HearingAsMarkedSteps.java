@@ -20,9 +20,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
@@ -35,7 +33,6 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.path.json.JsonPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +43,8 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
     private static final String PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT = "public.events.hearing.marked-as-duplicate";
     private static final String PRIVATE_HEARING_MARKED_AS_DUPLICATE_EVENT = "listing.events.hearing-marked-as-duplicate";
     private static final String PRIVATE_HEARING_MARKED_AS_DUPLICATE_FOR_CASE_EVENT = "listing.events.hearing-marked-as-duplicate-for-case";
+    private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.mark-unallocated-hearing-as-duplicate";
+    private static final String MEDIA_TYPE_DUPLICATE_UNALLOCATED_HEARING = "application/vnd.listing.duplicate-unallocated-hearing+json";
 
 
     private final MessageProducer publicEventHearingMarkedAsDuplicateEvent;
@@ -55,14 +54,9 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
-
     private String request;
 
     private final HearingData hearingData;
-
-
-    private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
-    private final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
 
     public HearingAsMarkedSteps(final HearingData hearingData) {
         this.hearingData = hearingData;
@@ -74,15 +68,15 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
-    public void whenHearingMarkedAsDuplicatePublicEventIsPublished(){
+    public void whenHearingMarkedAsDuplicatePublicEventIsPublished() {
         final String eventPayloadString = getPayload("public.hearing.marked-as-duplicate.json")
                 .replaceAll("HEARING_ID", hearingData.getId().toString())
                 .replaceAll("CASE_ID_1", hearingData.getListedCases().get(0).getCaseId().toString())
-                .replaceAll("DEFENDANT_ID_1",hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString())
+                .replaceAll("DEFENDANT_ID_1", hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString())
                 .replaceAll("OFFENCE_ID_1", hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getOffenceId().toString())
                 .replaceAll("CASE_ID_2", hearingData.getListedCases().get(1).getCaseId().toString())
                 .replaceAll("DEFENDANT_ID_2", hearingData.getListedCases().get(1).getDefendants().get(1).getDefendantId().toString())
-                .replaceAll("OFFENCE_ID_2",hearingData.getListedCases().get(1).getDefendants().get(1).getOffences().get(1).getOffenceId().toString());
+                .replaceAll("OFFENCE_ID_2", hearingData.getListedCases().get(1).getDefendants().get(1).getOffences().get(1).getOffenceId().toString());
 
         JsonObject hearingMarkedAsDuplicateObject = new StringToJsonObjectConverter().convert(eventPayloadString);
 
@@ -96,7 +90,15 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
         LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT, request, getLoggedInHeader());
     }
 
-    public void verifyHearingMarkedAsDuplicatePublicEventInActiveMQ(){
+    public void whenUnallocatedHearingMarkedAsDuplicateCommandIsSent() {
+        final String duplicateUnallocatedHearingUrl = String.format("%s/%s", getBaseUri(), format(readConfig().getProperty(LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING), hearingData.getId()));
+
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {}", duplicateUnallocatedHearingUrl, MEDIA_TYPE_DUPLICATE_UNALLOCATED_HEARING);
+
+        restClient.postCommand(duplicateUnallocatedHearingUrl, MEDIA_TYPE_DUPLICATE_UNALLOCATED_HEARING, null, getLoggedInHeader());
+    }
+
+    public void verifyHearingMarkedAsDuplicatePublicEventInActiveMQ() {
         final JsonPath jsRequest = new JsonPath(request);
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingMarkedAsDuplicateEvent);
         LOGGER.info("jsonResponse from publicMessageConsumerHearingMarkedAsDuplicateEvent: {}", jsonResponse.prettify());
@@ -119,7 +121,12 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
 
         LOGGER.debug("jsonResponse from privateMessageConsumerHearingMarkedAsDuplicateEvent: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.get("hearingId").toString(), is(jsRequest.getString("hearingId")));
+        if (request != null) {
+            assertThat(jsonResponse.get("hearingId").toString(), is(jsRequest.getString("hearingId")));
+        } else {
+            assertThat(jsonResponse.get("hearingId").toString(), is(hearingData.getId().toString()));
+        }
+
     }
 
     public void verifyHearingMarkedAsDuplicateForCaseInActiveMQ() {

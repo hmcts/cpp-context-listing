@@ -30,7 +30,7 @@ public class HearingData {
     private LocalDate weekCommencingEndDate;
     private int weekCommencingDuration;
     private Boolean hasVideoLink;
-    private String videoLinkDetails;
+    private String publicListNote;
 
     private String adjournmentDate;
     private List<RotaSlot> bookedSlots;
@@ -69,7 +69,7 @@ public class HearingData {
                        final List<JudicialRoleData> judiciary, final String jurisdictionType,
                        final String reportingRestrictionReason,
                        final List<CourtApplicationData> courtApplications,
-                       final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds, final String name, final Boolean hasVideoLink, final String videoLinkDetails) {
+                       final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds, final String name, final Boolean hasVideoLink, final String publicListNote) {
 
         this.id = id;
         this.courtCentreId = courtCentreId;
@@ -87,7 +87,7 @@ public class HearingData {
         this.courtApplications = courtApplications;
         this.courtApplicationPartyNeeds = courtApplicationPartyNeeds;
         this.hasVideoLink = hasVideoLink;
-        this.videoLinkDetails = videoLinkDetails;
+        this.publicListNote = publicListNote;
     }
 
     public HearingData(final UUID id, final UUID courtCentreId, final String name, final HearingTypeData hearingTypeData,
@@ -259,7 +259,7 @@ public class HearingData {
         return hasVideoLink;
     }
 
-    public String getVideoLinkDetails() {
-        return videoLinkDetails;
+    public String getPublicListNote() {
+        return publicListNote;
     }
 }

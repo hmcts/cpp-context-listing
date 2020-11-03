@@ -1,17 +1,21 @@
 Feature: Assign a hasVideoLink to a hearing or change the hasVideoLink
 
-  Scenario: An unallocated hearing has been listed and assigning the videoLink details results in the
-            the videoLink details being assigned to the hearing
+  Scenario: An unallocated hearing has been listed and assigning the hasVideoLink being assigned to the hearing
 
     Given hearing listed
-    When you assignOrUpdateVideoLinkDetails to a Hearing using a new hasVideoLink
+    When you assignVideoLink to a Hearing using a new hasVideoLink
     Then hasVideoLink assigned to hearing
 
-
-  Scenario: An unallocated hearing has been listed and a hasVideoLink and videoLinkDetails assigned. Changing the videoLink details
-            to a different videoLink details results in the videoLink details being changed for hearing
+  Scenario: An unallocated hearing has been listed and the hasVideoLink being assigned and then the hasVideoLink changed
 
     Given hearing listed
     And hasVideoLink assigned to hearing
-    When you assignOrUpdateVideoLinkDetails to a Hearing using a different hasVideoLink
-    Then hasVideoLink changed for hearing
+    When you assignVideoLink to a Hearing using a remove hasVideoLink
+    Then hasVideoLink changed to hearing
+
+  Scenario: An unallocated hearing has been listed and the hasVideoLink being assigned and then same hasVideoLink received
+
+    Given hearing listed
+    And hasVideoLink assigned to hearing
+    When you assignVideoLink to a Hearing using a new hasVideoLink
+    Then no events occurred

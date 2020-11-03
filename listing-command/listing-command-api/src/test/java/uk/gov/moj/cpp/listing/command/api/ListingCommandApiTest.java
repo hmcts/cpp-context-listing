@@ -22,7 +22,6 @@ import static uk.gov.justice.services.test.utils.core.matchers.HandlerClassMatch
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
-import static uk.gov.moj.cpp.listing.command.api.ListingCommandApi.LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
@@ -47,7 +46,6 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
-import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 
 import java.util.Arrays;
@@ -370,13 +368,27 @@ public class ListingCommandApiTest {
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.handler.edit-listing-note"));
 
     }
+
     @Test
     public void shouldHandleCorrectHearingDaysWithoutCourtCentre() {
         final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
         when(envelope.metadata()).thenReturn(mockMetadata);
+
         listingCommandApi.handleCorrectHearingDaysWithoutCourtCentre(envelope);
+
         verify(sender).send(envelopeArgumentCaptor.capture());
-        assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is(LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC));
+        assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is("listing.command.correct-hearing-days-without-court-centre"));
+    }
+
+    @Test
+    public void shouldHandleMarkUnallocatedHearingAsDuplicate() {
+        final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
+        when(envelope.metadata()).thenReturn(mockMetadata);
+
+        listingCommandApi.handleMarkUnallocatedHearingAsDuplicate(envelope);
+
+        verify(sender).send(envelopeArgumentCaptor.capture());
+        assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is("listing.command.mark-unallocated-hearing-as-duplicate"));
     }
 
 }

@@ -26,7 +26,7 @@ public class Hearing {
 
     private boolean hasVideoLink;
 
-    private String videoLinkDetails;
+    private String publicListNote;
 
     public LocalDateTime getStartTime() {
         return startTime;
@@ -100,11 +100,11 @@ public class Hearing {
         this.hasVideoLink = hasVideoLink;
     }
 
-    public String getVideoLinkDetails() {
-        return videoLinkDetails;
+    public String getPublicListNote() {
+        return publicListNote;
     }
 
-    public void setVideoLinkDetails(final String videoLinkDetails) {
-        this.videoLinkDetails = videoLinkDetails;
+    public void setPublicListNote(final String publicListNote) {
+        this.publicListNote = publicListNote;
     }
 }

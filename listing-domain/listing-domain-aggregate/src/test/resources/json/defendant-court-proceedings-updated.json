@@ -1,9 +1,10 @@
 {
   "_metadata": {
-    "name": "listing.events.case-update-defendant-proceedings-updated"
+    "name": "listing.events.defendant-court-proceedings-updated"
   },
-  "hearingId": "93c0ee7b-2e6f-43de-b500-3423b0169821",
+  "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
   "prosecutionCase": {
+    "caseStatus": "CLOSED",
     "defendants": [
       {
         "associatedPersons": [
@@ -43,8 +44,7 @@
             "role": "parent"
           }
         ],
-        "id": "e1d32d9d-29ec-4934-a932-22a50f223966",
-        "proceedingsConcluded" : true,
+        "id": "0baecac5-222b-402d-9047-84803679edac",
         "numberOfPreviousConvictionsCited": 5,
         "offences": [
           {
@@ -127,14 +127,14 @@
             "title": "MR"
           }
         },
+        "proceedingsConcluded": true,
         "prosecutionAuthorityReference": "TFL12345-ABC",
         "prosecutionCaseId": "2279b2c3-b0d3-4889-ae8e-1ecc20c39e27"
       }
     ],
-    "id": "291c84d1-3b5d-4697-bb3a-eb0506f54ed9",
+    "id": "31bf5d91-f90e-4117-a018-d1290e107692",
     "initiationCode": "J",
     "originatingOrganisation": "G01FT01AB",
-    "caseStatus" : "CLOSED",
     "prosecutionCaseIdentifier": {
       "prosecutionAuthorityCode": "TFL",
       "prosecutionAuthorityId": "cf73207f-3ced-488a-82a0-3fba79c2ce85",

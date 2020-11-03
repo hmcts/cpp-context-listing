@@ -15,6 +15,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import org.hamcrest.CoreMatchers;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
+import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingRescheduled;
@@ -173,6 +174,72 @@ public class HearingEventListenerTest {
         verify(hearingRepository).save(hearing);
     }
 
+    @Test
+    public void shouldUpdateDefendantCourtProceedingsWhenDefendantIsPresent() throws Exception {
+        final UUID CASE_ID = UUID.fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final UUID DEFENDANT_ID = UUID.fromString("ddc332a5-c141-40e2-b50f-94ab7552b763");
+        final String testCases1 = getStringFromResource("defendant-proceedings-concluded.json");
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
+        final Envelope<DefendantCourtProceedingsUpdated> envelope = (Envelope<DefendantCourtProceedingsUpdated>) mock(Envelope.class);
+
+        final DefendantCourtProceedingsUpdated defendantCourtProceedingsUpdated = DefendantCourtProceedingsUpdated
+                .defendantCourtProceedingsUpdated()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCase(ProsecutionCase.prosecutionCase()
+                        .withId(CASE_ID)
+                        .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
+                                .withId(DEFENDANT_ID)
+                                .withProceedingsConcluded(of(Boolean.TRUE))
+                                .build()))
+                        .build())
+                .build();
+        given(envelope.payload()).willReturn(defendantCourtProceedingsUpdated);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        hearingEventListener.updateDefendantCourtProceedings(envelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldNotUpdateDefendantCourtProceedingsWhenDefendantIsNotPresent() throws Exception {
+        final UUID CASE_ID = UUID.fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final UUID DEFENDANT_ID_NOT_MATCHED_IN_THE_EVENT = UUID.fromString("11c332a5-c141-40e2-b50f-94ab7552b722");
+        final String testCases1 = getStringFromResource("defendant-proceedings-concluded.json");
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
+        final Envelope<DefendantCourtProceedingsUpdated> envelope = (Envelope<DefendantCourtProceedingsUpdated>) mock(Envelope.class);
+
+        final DefendantCourtProceedingsUpdated defendantCourtProceedingsUpdated = DefendantCourtProceedingsUpdated
+                .defendantCourtProceedingsUpdated()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCase(ProsecutionCase.prosecutionCase()
+                        .withId(CASE_ID)
+                        .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
+                                .withId(DEFENDANT_ID_NOT_MATCHED_IN_THE_EVENT)
+                                .withProceedingsConcluded(of(Boolean.TRUE))
+                                .build()))
+                        .build())
+                .build();
+        given(envelope.payload()).willReturn(defendantCourtProceedingsUpdated);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        hearingEventListener.updateDefendantCourtProceedings(envelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(hearingRepository).save(hearing);
+    }
 
     @Test
     public void shouldTrialVacated() {

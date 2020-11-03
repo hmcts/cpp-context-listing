@@ -41,7 +41,7 @@
               "applicationReference": "16AR990439",
               "restrictFromCourtList": false,
               "hasVideoLink": true,
-              "videoLinkDetails": "Pre Conf"
+              "publicListNote": "Pre Conf"
             }
           ],
           "judiciary": [
@@ -151,7 +151,7 @@
               "weekCommencing": false,
               "restrictFromCourtList": false,
               "hasVideoLink": true,
-              "videoLinkDetails": "Conference at 10:30"
+              "publicListNote": "Conference at 10:30"
             }
           ],
           "judiciary": [

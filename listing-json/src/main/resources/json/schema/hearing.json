@@ -133,7 +133,7 @@
     "hasVideoLink": {
       "type": "boolean"
     },
-    "videoLinkDetails": {
+    "publicListNote": {
       "type": "string"
     },
     "prosecutionCounsels": {

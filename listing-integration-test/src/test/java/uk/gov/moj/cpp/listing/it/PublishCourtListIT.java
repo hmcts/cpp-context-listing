@@ -144,7 +144,7 @@ public class PublishCourtListIT extends AbstractIT {
 
 
     @Test
-    public void shouldPublishCourtListWithHearingsWithVideoLinkForFirmPublishType() throws Exception {
+    public void shouldPublishCourtListWithHearingsWithPublicListNoteForFirmPublishType() throws Exception {
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
@@ -161,12 +161,12 @@ public class PublishCourtListIT extends AbstractIT {
 
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
 
-       final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForVideoLink(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
+       final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "publicListNote");
 
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
-            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+            updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
         }
 
 
@@ -181,12 +181,12 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL", "true");
-        publishCourtListSteps.verifySentPublishedCourtListHearingData(true , "Video Link:videoLinkDetails");
+        publishCourtListSteps.verifySentPublishedCourtListHearingData(true , "publicListNote");
     }
 
 
     @Test
-    public void shouldPublishCourtListWithHearingsWithOutVideoLinkForFirmPublishType() throws Exception {
+    public void shouldPublishCourtListWithHearingsWithOutPublicListNoteForFirmPublishType() throws Exception {
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
@@ -203,12 +203,11 @@ public class PublishCourtListIT extends AbstractIT {
 
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
 
-        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForVideoLink(hearingsData.getHearingData().get(0), true, null);
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
 
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
-            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedNoVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+            updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
         }
 
 
@@ -224,7 +223,7 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL", "true");
         TimeUnit.SECONDS.sleep(20);
-        publishCourtListSteps.verifySentPublishedCourtListHearingData(true , "Video Link:");
+        publishCourtListSteps.verifySentPublishedCourtListHearingData(true , "");
     }
 
 
@@ -246,12 +245,12 @@ public class PublishCourtListIT extends AbstractIT {
 
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
 
-        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForVideoLink(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
 
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
-            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+            updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
         }
 
 
@@ -267,11 +266,11 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL", "false");
         TimeUnit.SECONDS.sleep(20);
-        publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true , "Video Link:videoLinkDetails");
+        publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true , "videoLinkDetails");
     }
 
     @Test
-    public void shouldPublishCourtListWithHearingsWithVideoLinkForFinalPublishType() throws Exception {
+    public void shouldPublishCourtListWithHearingsWithPublicListNoteForFinalPublishType() throws Exception {
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
@@ -288,12 +287,12 @@ public class PublishCourtListIT extends AbstractIT {
 
         final HearingsData hearingsData = loadHearingDataWithJudiciary(courtCentreId, courtRoomUUID);
 
-        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForVideoLink(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "publicListNote");
 
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithVideoLinkDetails();
-            updateHearingSteps.verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI();
+            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+            updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
+            updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
         }
 
 
@@ -309,7 +308,7 @@ public class PublishCourtListIT extends AbstractIT {
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus("EXPORT_SUCCESSFUL", "false");
         TimeUnit.SECONDS.sleep(20);
-        publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true , "Video Link:videoLinkDetails");
+        publishCourtListSteps.verifySentPublishedCourtListHearingDataForDraft(true , "publicListNote");
     }
 
     private void sendPublishFinalCourtListsForAllCrownCourtsCommand(final JsonObject commandAsJson) {

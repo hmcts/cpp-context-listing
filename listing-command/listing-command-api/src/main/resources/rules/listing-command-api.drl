@@ -144,3 +144,12 @@ rule "Command - API - Action - listing.correct-hearing-days-without-court-centre
     $outcome.setSuccess(true);
 end
 
+rule "Command - API - Action - listing.mark-unallocated-hearing-as-duplicate"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.mark-unallocated-hearing-as-duplicate");
+    eval(userAndGroupProvider.isSystemUser($action))
+  then
+    $outcome.setSuccess(true);
+end
+

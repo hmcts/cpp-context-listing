@@ -68,7 +68,7 @@
     "hasVideoLink": {
       "type": "boolean"
     },
-    "videoLinkDetails": {
+    "publicListNote": {
       "type": "string"
     },
     "selectedCourtCentre": {

@@ -46,7 +46,7 @@
                             </cs:HearingDetails>
                             <cs:TimeMarkingNote>NOT BEFORE 10:30 AM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
-                            <cs:ListNote>Video Link:Pre Conf</cs:ListNote>
+                            <cs:ListNote>Pre Conf</cs:ListNote>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -136,7 +136,7 @@
                                     <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
                                 </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
-                            <cs:ListNote>Video Link:Conference at 10:30</cs:ListNote>
+                            <cs:ListNote>Conference at 10:30</cs:ListNote>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>

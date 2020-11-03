@@ -8,6 +8,7 @@ import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
+import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingRescheduled;
@@ -144,14 +145,28 @@ public class HearingEventListener {
         final CaseUpdateDefendantProceedingsUpdated caseUpdateDefendantProceedingsUpdated = event.payload();
         final UUID hearingId = caseUpdateDefendantProceedingsUpdated.getHearingId();
         final ProsecutionCase prosecutionCase = caseUpdateDefendantProceedingsUpdated.getProsecutionCase();
-        final List<Defendant> defendants = prosecutionCase.getDefendants();
 
         final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
         };
 
         using(hearingRepository)
                 .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseWithDefendantProceedingsFunction(prosecutionCase, defendants))
+                .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseWithDefendantProceedingsFunction(prosecutionCase))
+                .save();
+    }
+
+    @Handles("listing.events.defendant-court-proceedings-updated")
+    public void updateDefendantCourtProceedings(final Envelope<DefendantCourtProceedingsUpdated> event) {
+        final DefendantCourtProceedingsUpdated defendantCourtProceedingsUpdated = event.payload();
+        final UUID hearingId = defendantCourtProceedingsUpdated.getHearingId();
+        final ProsecutionCase prosecutionCase = defendantCourtProceedingsUpdated.getProsecutionCase();
+
+        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
+        };
+
+        using(hearingRepository)
+                .find(hearingId)
+                .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseWithDefendantProceedingsFunction(prosecutionCase))
                 .save();
     }
 
@@ -197,22 +212,19 @@ public class HearingEventListener {
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getUpdatedListedCaseWithDefendantProceedingsFunction(
-            final ProsecutionCase prosecutionCase,
-            final List<uk.gov.justice.core.courts.Defendant> defendants) {
-        return cases -> getUpdatedListedCaseWithCaseStatusAndDefendantProceedings(prosecutionCase, defendants, cases);
+            final ProsecutionCase prosecutionCase) {
+        return cases -> getUpdatedListedCaseWithCaseStatusAndDefendantProceedings(prosecutionCase, cases);
     }
 
     private List<ListedCase> getUpdatedListedCaseWithCaseStatusAndDefendantProceedings(
             final ProsecutionCase prosecutionCase,
-            final List<uk.gov.justice.core.courts.Defendant> defendants,
-            final List<ListedCase> cases) {
+             final List<ListedCase> cases) {
         final List<ListedCase> listedCases = new ArrayList<>(cases);
         final ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(prosecutionCase.getId()));
         final List<uk.gov.justice.listing.events.Defendant> listedCaseDefendants = listedCase.getDefendants();
-        updateDefendantWithProceedingsIncluded(defendants, listedCaseDefendants);
+        updateDefendantWithProceedingsIncluded(prosecutionCase.getDefendants(), listedCaseDefendants);
         updateCaseStatus(prosecutionCase, listedCases, listedCase);
         return listedCases;
-
     }
 
     private void updateCaseStatus(final ProsecutionCase prosecutionCase, final List<ListedCase> listedCases, final ListedCase listedCase) {
@@ -233,9 +245,11 @@ public class HearingEventListener {
     private void updateDefendantWithProceedingsIncluded(final List<uk.gov.justice.core.courts.Defendant> defendants, final List<uk.gov.justice.listing.events.Defendant> listedCaseDefendants) {
         defendants.forEach(defendant -> {
             final UUID defendantId = defendant.getId();
-            final uk.gov.justice.listing.events.Defendant originalDefendant = Iterables.find(listedCaseDefendants, defendant1 -> defendant1.getId().equals(defendantId));
-            final uk.gov.justice.listing.events.Defendant newDefendant = getDefendant(defendant, originalDefendant);
-            listedCaseDefendants.replaceAll(defendant1 -> defendant1.getId().equals(newDefendant.getId()) ? newDefendant : defendant1);
+            final uk.gov.justice.listing.events.Defendant originalDefendant = Iterables.find(listedCaseDefendants, defendant1 -> defendant1.getId().equals(defendantId), null);
+            if (nonNull(originalDefendant)) {
+                final uk.gov.justice.listing.events.Defendant newDefendant = getDefendant(defendant, originalDefendant);
+                listedCaseDefendants.replaceAll(defendant1 -> defendant1.getId().equals(newDefendant.getId()) ? newDefendant : defendant1);
+            }
         });
     }
 

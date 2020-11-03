@@ -78,10 +78,10 @@ public class SittingsPojoBuilderTest {
 
         assertThat(sittingsMap.size(), is(1));
         assertThat(sittingsMap.get(0).getHearings().get(0).hasVideoLink(), is(true));
-        assertThat(sittingsMap.get(0).getHearings().get(0).getVideoLinkDetails(), is("Pre Conf"));
+        assertThat(sittingsMap.get(0).getHearings().get(0).getPublicListNote(), is("Pre Conf"));
 
         assertThat(sittingsMap.get(0).getHearings().get(1).hasVideoLink(), is(true));
-        assertThat(sittingsMap.get(0).getHearings().get(1).getVideoLinkDetails(), is("Test Conf"));
+        assertThat(sittingsMap.get(0).getHearings().get(1).getPublicListNote(), is("Test Conf"));
     }
 
 
@@ -102,10 +102,10 @@ public class SittingsPojoBuilderTest {
 
         assertThat(sittingsMap.size(), is(1));
         assertThat(sittingsMap.get(0).getHearings().get(0).hasVideoLink(), is(true));
-        assertThat(sittingsMap.get(0).getHearings().get(0).getVideoLinkDetails(), is("Pre Conf"));
+        assertThat(sittingsMap.get(0).getHearings().get(0).getPublicListNote(), is("Pre Conf"));
 
         assertThat(sittingsMap.get(0).getHearings().get(1).hasVideoLink(), is(true));
-        assertThat(sittingsMap.get(0).getHearings().get(1).getVideoLinkDetails(), nullValue());
+        assertThat(sittingsMap.get(0).getHearings().get(1).getPublicListNote(), nullValue());
     }
 
     @Test
@@ -153,9 +153,9 @@ public class SittingsPojoBuilderTest {
                 Optional.of(courtRoomId), caseHearings, false);
     }
 
-    private FlatHearing buildFlatHearingWithVideoLinkDetails(final String startDate, final UUID courtRoomId, final UUID judicialId, final boolean hasVideoLink, final String videoLinkDetails) {
+    private FlatHearing buildFlatHearingWithVideoLinkDetails(final String startDate, final UUID courtRoomId, final UUID judicialId, final boolean hasVideoLink, final String publicListNote) {
 
-        final JsonObject caseHearings = buildWeekCommencingCaseHearingsWithVideoLink(startDate, courtRoomId, judicialId, hasVideoLink, videoLinkDetails);
+        final JsonObject caseHearings = buildWeekCommencingCaseHearingsWithVideoLink(startDate, courtRoomId, judicialId, hasVideoLink, publicListNote);
 
         return new FlatHearing(LocalDate.parse(startDate), caseHearings.getJsonArray("judiciary"),
                 Optional.of(courtRoomId), caseHearings, true);
@@ -191,7 +191,7 @@ public class SittingsPojoBuilderTest {
                 .build();
     }
 
-    private JsonObject buildWeekCommencingCaseHearingsWithVideoLink(final String startDate, final UUID courtRoomId, final UUID judicialId, final boolean hasVideoLink, final String videoLinkDetails) {
+    private JsonObject buildWeekCommencingCaseHearingsWithVideoLink(final String startDate, final UUID courtRoomId, final UUID judicialId, final boolean hasVideoLink, final String publicListNote) {
 
         final JsonObjectBuilder hearing = Json.createObjectBuilder()
                 .add("weekCommencingStartDate", startDate)
@@ -205,8 +205,8 @@ public class SittingsPojoBuilderTest {
                 .add("nonDefaultDays", Json.createArrayBuilder()
                         .add(buildNonDefaultDaysJson()))
                 .add("hasVideoLink", hasVideoLink);
-        if(nonNull(videoLinkDetails)) {
-             hearing.add("videoLinkDetails", videoLinkDetails);
+        if(nonNull(publicListNote)) {
+             hearing.add("publicListNote", publicListNote);
 
         }
         return hearing.build();

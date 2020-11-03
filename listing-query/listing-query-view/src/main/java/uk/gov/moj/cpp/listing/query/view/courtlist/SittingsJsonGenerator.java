@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static java.util.Objects.nonNull;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.CaseDetails;
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.CourtApplicationDetails;
@@ -13,6 +14,7 @@ import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+
 
 public class SittingsJsonGenerator {
 
@@ -59,11 +61,14 @@ public class SittingsJsonGenerator {
                 .add("startTime", hearing.getStartTime().toString())
                 .add("hearingType", hearing.getHearingType())
                 .add("restrictFromCourtList", hearing.isRestrictFromCourtList())
-                .add("weekCommencing", hearing.isWeekCommencing())
-                .add("hasVideoLink", hearing.hasVideoLink());
+                .add("weekCommencing", hearing.isWeekCommencing());
 
-        if(hearing.hasVideoLink() && isNotBlank(hearing.getVideoLinkDetails())) {
-            hearingJsonBuilder.add("videoLinkDetails", hearing.getVideoLinkDetails());
+        if (nonNull(hearing.hasVideoLink())) {
+            hearingJsonBuilder.add("hasVideoLink", hearing.hasVideoLink());
+        }
+
+        if (isNotEmpty(hearing.getPublicListNote())) {
+            hearingJsonBuilder.add("publicListNote", hearing.getPublicListNote());
         }
 
         if (hearing.getEndTime().isPresent()) {

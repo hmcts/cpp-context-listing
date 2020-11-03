@@ -41,6 +41,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_EDIT_NOTE_FOR_LISTING = "listing.command.edit-listing-note";
     private static final String ACTION_CREATE_LISTING_NOTE = "listing.command.create-listing-note";
     private static final String ACTION_DELETE_LISTING_NOTE = "listing.command.delete-listing-note";
+    private static final String ACTION_MARK_UNALLOCATED_HEARING_AS_DUPLICATE = "listing.mark-unallocated-hearing-as-duplicate";
 
 
     @Mock
@@ -214,6 +215,26 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowNonSystemUserToCourtListRequestExport() {
         final Action action = createActionFor(ACTION_COURT_LIST_REQUEST_EXPORT);
+        given(userAndGroupProvider.isSystemUser(action)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowSystemUserToMarkUnallocatedHearingAsDuplicate() {
+        final Action action = createActionFor(ACTION_MARK_UNALLOCATED_HEARING_AS_DUPLICATE);
+        given(userAndGroupProvider.isSystemUser(action)).willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowNonSystemUserToMarkUnallocatedHearingAsDuplicate() {
+        final Action action = createActionFor(ACTION_MARK_UNALLOCATED_HEARING_AS_DUPLICATE);
         given(userAndGroupProvider.isSystemUser(action)).willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);

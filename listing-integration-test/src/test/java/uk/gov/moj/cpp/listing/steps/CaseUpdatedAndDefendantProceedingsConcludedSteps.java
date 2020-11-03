@@ -42,6 +42,7 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
     private static final Logger LOGGER = LoggerFactory.getLogger(CaseUpdatedAndDefendantProceedingsConcludedSteps.class);
     private static final String PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED = "public.progression.hearing-resulted-case-updated";
     private static final String LISTING_EVENTS_CASE_RESULTED_AND_DEFENDANT_PROCEEDINGS_CONCLUDED = "listing.events.case-resulted-defendant-proceedings-updated";
+    private static final String LISTING_EVENT_DEFENDANT_COURT_PROCEEDINGS_UPDATED = "listing.events.defendant-court-proceedings-updated";
     private static final String MEDIA_TYPE_HEARING_RESULTED_CASE_UPDATED_JSON = "application/vnd" +
             ".public.progression.hearing-resulted-case-updated+json";
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
@@ -50,6 +51,7 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
     private MessageProducer publicEventCaseUpdatedAndHearingResulted;
     private MessageConsumer publicEventMessageConsumerCaseUpdatedAndHearingResulted;
     private MessageConsumer privateEventMessageConsumerCaseUpdatedAndHearingResulted;
+    private MessageConsumer privateEventMessageConsumerDefendantCourtProceedingsUpdated;
     private final UUID metadataId;
     private final UUID userId;
     private final UUID caseId;
@@ -68,6 +70,7 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         this.publicEventMessageConsumerCaseUpdatedAndHearingResulted = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED);
         this.privateEventMessageConsumerCaseUpdatedAndHearingResulted = privateEvents.createConsumer(LISTING_EVENTS_CASE_RESULTED_AND_DEFENDANT_PROCEEDINGS_CONCLUDED);
+        this.privateEventMessageConsumerDefendantCourtProceedingsUpdated = privateEvents.createConsumer(LISTING_EVENT_DEFENDANT_COURT_PROCEEDINGS_UPDATED);
     }
 
     public void whenPublicEventCaseUpdatedAndHearingResultedIsPublished() {
@@ -89,12 +92,22 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
 
     }
 
-    public void verifyPublicEventCaseUpdatedAndHearingResultedInActiveMQ() {
+    public void verifyPrivateEventCaseResultedDefendantProceedingsUpdatedInActiveMQ() {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
         JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerCaseUpdatedAndHearingResulted);
         LOGGER.debug("jsonResponse from privateEventMessageConsumerCaseUpdatedAndHearingResulted: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("prosecutionCase"), CoreMatchers.notNullValue());
+    }
+
+    public void verifyPrivateEventDefendantCourtProceedingsUpdatedInActiveMQ() {
+        JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerDefendantCourtProceedingsUpdated);
+        LOGGER.debug("jsonResponse from privateEventMessageConsumerDefendantCourtProceedingsUpdated: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("prosecutionCase"), CoreMatchers.notNullValue());
     }
@@ -118,11 +131,11 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         try {
             this.publicEventCaseUpdatedAndHearingResulted.close();
             this.publicEventMessageConsumerCaseUpdatedAndHearingResulted.close();
-
+            this.privateEventMessageConsumerCaseUpdatedAndHearingResulted.close();
+            this.privateEventMessageConsumerDefendantCourtProceedingsUpdated.close();
         } catch (JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);
-
         }
     }
 }

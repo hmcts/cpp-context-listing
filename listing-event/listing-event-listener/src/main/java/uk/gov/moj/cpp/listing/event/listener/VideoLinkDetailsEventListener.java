@@ -2,6 +2,9 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
+import uk.gov.justice.listing.events.PublicListNoteChangedForHearing;
+import uk.gov.justice.listing.events.PublicListNoteRemovedFromHearing;
+import uk.gov.justice.listing.events.VideoLinkChangedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsAssignedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsChangedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsRemovedForHearing;
@@ -19,7 +22,7 @@ import javax.inject.Inject;
 public class VideoLinkDetailsEventListener {
 
     private static final String HAS_VIDEO_LINK = "hasVideoLink";
-    private static final String VIDEO_LINK_DETAILS = "videoLinkDetails";
+    private static final String PUBLIC_LIST_NOTE = "publicListNote";
     private HearingRepository hearingRepository;
 
     @Inject
@@ -47,7 +50,7 @@ public class VideoLinkDetailsEventListener {
         using(hearingRepository)
                 .find(hearingId)
                 .remove(HAS_VIDEO_LINK)
-                .remove(VIDEO_LINK_DETAILS)
+                .remove(PUBLIC_LIST_NOTE)
                 .save();
     }
 
@@ -55,7 +58,36 @@ public class VideoLinkDetailsEventListener {
         using(hearingRepository)
                 .find(hearingId)
                 .put(HAS_VIDEO_LINK, hasVideoLink)
-                .put(VIDEO_LINK_DETAILS, videoLinkDetails)
+                .put(PUBLIC_LIST_NOTE, videoLinkDetails)
                 .save();
     }
+
+
+    @Handles("listing.events.public-list-note-changed-for-hearing")
+    public void publicListNoteChangedForHearing(final Envelope<PublicListNoteChangedForHearing> event) {
+        final PublicListNoteChangedForHearing payload = event.payload();
+        using(hearingRepository)
+                .find(payload.getHearingId())
+                .put(PUBLIC_LIST_NOTE, payload.getPublicListNote())
+                .save();
+    }
+
+    @Handles("listing.events.public-list-note-removed-from-hearing")
+    public void publicListNoteRemovedForHearing(final Envelope<PublicListNoteRemovedFromHearing> event) {
+        final PublicListNoteRemovedFromHearing payload = event.payload();
+        using(hearingRepository)
+                .find(payload.getHearingId())
+                .remove(PUBLIC_LIST_NOTE)
+                .save();
+    }
+
+    @Handles("listing.events.video-link-changed-for-hearing")
+    public void videoLinkChangedForHearing(final Envelope<VideoLinkChangedForHearing> event) {
+        final VideoLinkChangedForHearing payload = event.payload();
+        using(hearingRepository)
+                .find(payload.getHearingId())
+                .put(HAS_VIDEO_LINK, payload.getHasVideoLink())
+                .save();
+    }
+
 }

@@ -32,7 +32,7 @@ public class SittingsPojoBuilder {
     private static final String START_TIME = "startTime";
     private static final String END_TIME = "endTime";
     private static final String UNABLE_TO_GET_DEFAULT_START_OR_END_TIME = "Unable to get default start or end time";
-    private static final String VIDEO_LINK_DETAILS = "videoLinkDetails";
+    private static final String PUBLIC_LIST_NOTE = "publicListNote";
     private static final String HAS_VIDEO_LINK = "hasVideoLink";
     private static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     private static final String WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
@@ -208,12 +208,15 @@ public class SittingsPojoBuilder {
             hearing.setCaseDetails(empty());
         }
 
-        if (caseHearingsJson.containsKey(HAS_VIDEO_LINK) && caseHearingsJson.getBoolean(HAS_VIDEO_LINK)) {
-            hearing.setHasVideoLink(true);
-            if (caseHearingsJson.containsKey(VIDEO_LINK_DETAILS) && !caseHearingsJson.isNull(VIDEO_LINK_DETAILS)) {
-                hearing.setVideoLinkDetails(caseHearingsJson.getString(VIDEO_LINK_DETAILS));
-            }
+        if (caseHearingsJson.containsKey(HAS_VIDEO_LINK)) {
+            hearing.setHasVideoLink(caseHearingsJson.getBoolean(HAS_VIDEO_LINK));
         }
+
+        if (caseHearingsJson.containsKey(PUBLIC_LIST_NOTE)) {
+            hearing.setPublicListNote(caseHearingsJson.getString(PUBLIC_LIST_NOTE));
+        }
+
+
         return hearing;
     }
 

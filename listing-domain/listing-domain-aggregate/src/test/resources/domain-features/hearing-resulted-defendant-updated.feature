@@ -12,13 +12,13 @@ Feature: Case updated and hearing resulted
     When you updateDefendantCaseResultedAndUpdated on a Case using a prosecutionCase
     Then no events occurred
 
-  Scenario: A hearing has been listed. When the case is updated and hearing resulted then listing.events.case-update-defendant-proceedings-updated will be raised.
+  Scenario: A hearing has been listed. When the case is updated and hearing resulted then listing.events.defendant-court-proceedings-updated will be raised.
 
-    Given hearing added to case
-    When you updateDefendantProceedingConcludedForHearing on a Hearing using a hearingId and prosecutionCase
-    Then update defendant proceedings
+    Given hearing listed in the future
+    When you updateDefendantCourtProceedingForHearing on a Hearing using a hearingId and prosecutionCase
+    Then defendant court proceedings updated
 
   Scenario: A hearing has been listed in the past. When the case is updated and hearing resulted then no event is raised.
     Given hearing listed in the past
-    When you updateDefendantProceedingConcludedForHearing on a Hearing with a hearing in past and prosecutionCase
+    When you updateDefendantCourtProceedingForHearing on a Hearing with a hearing in past and prosecutionCase
     Then no events occurred

@@ -114,7 +114,6 @@ import uk.gov.moj.cpp.listing.command.utils.CourtApplicationToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CourtsAddedOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsDefendantToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CourtsDeletedOffenceToDomainCaseSimpleOffence;
-import uk.gov.moj.cpp.listing.command.utils.CourtsOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.CourtsUpdatedOffenceToDomainOffence;
 import uk.gov.moj.cpp.listing.command.utils.HearingDaysToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.NonDefaultDayDurationBuilder;
@@ -212,9 +211,6 @@ public class ListingCommandHandler {
 
     @Inject
     private CourtsDeletedOffenceToDomainCaseSimpleOffence courtsDeletedOffenceToDomainCaseSimpleOffence;
-
-    @Inject
-    private CourtsOffenceToDomainOffence courtsOffenceToDomainOffence;
 
     @Inject
     private CommandDefendantToDomainConverter commandDefendantToDomainConverter;
@@ -452,8 +448,8 @@ public class ListingCommandHandler {
 
         final uk.gov.justice.listing.events.Hearing storedHearing = hearingFactory.getHearingById(hearingId, command);
 
-        final Boolean hasVideoLink = updateHearingForListing.getHasVideoLink().orElse(null);
-        final String videoLinkDetails = updateHearingForListing.getVideoLinkDetails().orElse(null);
+        final boolean hasVideoLink = updateHearingForListing.getHasVideoLink().orElse(false);
+        final String publicListNote = updateHearingForListing.getPublicListNote().orElse(null);
 
         final List<NonDefaultDay> nonDefaultDays = generateNewNonDefaultDays(command, updateHearingForListing, nonSittingDays, endDate, startDate,
                 defaultDuration, jurisdictionType);
@@ -500,10 +496,12 @@ public class ListingCommandHandler {
 
             final Stream<Object> rescheduledEvents = hearing.applyRescheduledCheck(startDateEventList);
 
-            final Stream<Object> videoLinkDetailsUpdateEvent = hasVideoLink != null && hasVideoLink ? hearing.assignOrUpdateVideoLinkDetails(hasVideoLink, videoLinkDetails, hearingId) : hearing.removeVideoLinkDetails(hearingId);
+            final Stream<Object> publicListNoteUpdateEvent = hearing.assignPublicListNote(publicListNote, hearingId);
+            final Stream<Object> videoLinkUpdateEvent = hearing.assignVideoLink(hasVideoLink, hearingId);
 
             return Stream.of(typeEvents, jurisdictionTypeEvents, hearingLanguageEvents, startDateEventList.stream(), nonDefaultDaysEvents, endDateEvents,
-                    nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, hearingPartiallyEvents, rescheduledEvents, videoLinkDetailsUpdateEvent).flatMap(i -> i);
+                    nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, hearingPartiallyEvents,
+                    rescheduledEvents, videoLinkUpdateEvent, publicListNoteUpdateEvent).flatMap(i -> i);
         });
     }
 
@@ -1127,14 +1125,14 @@ public class ListingCommandHandler {
         updateCaseEventStream(envelope, caseId, (Case listingCase) -> listingCase.updateDefendantCaseResultedAndUpdated(prosecutionCase));
     }
 
-    @Handles("listing.command.case-update-defendant-proceedings-updated")
-    public void updateDefendantProceedingsConcluded(final JsonEnvelope envelope) throws EventStreamException {
+    @Handles("listing.command.update-defendant-court-proceedings")
+    public void updateDefendantCourtProceedings(final JsonEnvelope envelope) throws EventStreamException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("listing.command.case-update-defendant-proceedings-updated event received {}", envelope.toObfuscatedDebugString());
+            LOGGER.debug("listing.command.update-defendant-court-proceedings event received {}", envelope.toObfuscatedDebugString());
         }
-        final UUID hearingId = UUID.fromString(envelope.payloadAsJsonObject().getString(HEARING_ID));
+        final UUID hearingId = fromString(envelope.payloadAsJsonObject().getString(HEARING_ID));
         final ProsecutionCase prosecutionCase = jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject(PROSECUTION_CASE), ProsecutionCase.class);
-        updateHearingEventStream(envelope, hearingId, (Hearing hearing) -> hearing.updateDefendantProceedingConcludedForHearing(hearingId, prosecutionCase));
+        updateHearingEventStream(envelope, hearingId, (Hearing hearing) -> hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase));
     }
 
 

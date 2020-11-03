@@ -96,17 +96,17 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     public static final String FIELD_IS_DEPUTY = "isDeputy";
     public static final String FIELD_COURT_ROOM_ID = "courtRoomId";
     public static final String FIELD_COURT_CENTRE_ID = "courtCentreId";
-    public static final String FIELD_ROOM_ID = "roomId";
+    private static final String FIELD_ROOM_ID = "roomId";
     public static final String FIELD_TYPE = "type";
     public static final String FIELD_START_TIME = "startTime";
     public static final String FIELD_NON_SITTING_DAYS = "nonSittingDays";
     public static final String FIELD_NON_DEFAULT_DAYS = "nonDefaultDays";
     public static final String FIELD_HEARING_LANGUAGE = "hearingLanguage";
     public static final String FIELD_JURISDICTION_TYPE = "jurisdictionType";
-    public static final String FIELD_PROSECUTION_CASES = "prosecutionCases";
-    public static final String FIELD_HAS_VIDEO_LINK = "hasVideoLink";
-    public static final String FIELD_VIDEO_LINK_DETAILS = "videoLinkDetails";
-    public static final String FIELD_USER_ID = "userId";
+    private static final String FIELD_PROSECUTION_CASES = "prosecutionCases";
+    private static final String FIELD_HAS_VIDEO_LINK = "hasVideoLink";
+    private static final String FIELD_PUBLIC_LIST_NOTE = "publicListNote";
+    private static final String FIELD_USER_ID = "userId";
     public static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
     public static final String FIELD_HEARING_TYPE_ID = "id";
@@ -140,9 +140,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTED_PUBLIC_VACATED_TRIAL_UPDATED = "public.listing.vacated-trial-updated";
     private static final String EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED = "listing.events.week-commencing-date-removed-for-hearing";
     private static final String EVENT_SELECTOR_HEARING_PARTIALLY_UPDATED = "listing.events.hearing-partially-updated";
-    private static final String EVENT_SELECTOR_VIDEO_LINK_DETAILS_ASSIGNED = "listing.events.video-link-details-assigned-for-hearing";
-    private static final String EVENT_SELECTOR_VIDEO_LINK_DETAILS_CHANGED = "listing.events.video-link-details-changed-for-hearing";
-    private static final String EVENT_SELECTOR_VIDEO_LINK_DETAILS_REMOVED = "listing.events.video-link-details-removed-for-hearing";
+    private static final String EVENT_SELECTOR_PUBLIC_LIST_NOTE_CHANGED = "listing.events.public-list-note-changed-for-hearing";
+    private static final String EVENT_SELECTOR_PUBLIC_LIST_NOTE_REMOVED = "listing.events.public-list-note-removed-from-hearing";
     private static final String FIELD_HEARINGS = "hearings";
     private static final int DEFAULT_DURATION_MINS = 120;
     private static final ZoneId UTC = ZoneId.of("UTC");
@@ -180,9 +179,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private MessageConsumer publicMessageConsumerVacatedTrialUpdated;
     private MessageConsumer privateMessageConsumerWeekCommencingDatesRemoved;
     private MessageConsumer privateMessageConsumerHearingPartiallyUpdated;
-    private MessageConsumer privateMessageConsumerVideoLinkDetailsAssigned;
-    private MessageConsumer privateMessageConsumerVideoLinkDetailsChanged;
-    private MessageConsumer privateMessageConsumerVideoLinkDetailsRemoved;
+    private MessageConsumer privateMessageConsumerPublicListNoteChanged;
+    private MessageConsumer privateMessageConsumerPublicListNoteRemoved;
 
 
     private String request;
@@ -220,6 +218,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
         return builder.build().toString();
     }
+
     private static String prepareJsonForUpdatedHearingDataWithVideoLinkDetails(final UpdatedHearingData updatedHearingData) {
         final JsonObjectBuilder builder = createObjectBuilder();
 
@@ -233,9 +232,9 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()))
                 .add(FIELD_HAS_VIDEO_LINK, updatedHearingData.getHasVideoLink());
 
-                if(nonNull(updatedHearingData.getVideoLinkDetails())) {
-                    builder.add(FIELD_VIDEO_LINK_DETAILS, updatedHearingData.getVideoLinkDetails());
-                }
+        if (nonNull(updatedHearingData.getPublicListNote())) {
+            builder.add(FIELD_PUBLIC_LIST_NOTE, updatedHearingData.getPublicListNote());
+        }
 
         addNullableStringField(builder, FIELD_END_DATE, updatedHearingData.getEndDate());
         addNullableStringField(builder, FIELD_COURT_ROOM_ID, getStringOrNull(updatedHearingData.getCourtRoomId()));
@@ -308,7 +307,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 ).collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build();
     }
 
-   private static JsonArray prepareJsonHearingIdArray(final UUID hearingId) {
+    private static JsonArray prepareJsonHearingIdArray(final UUID hearingId) {
         final JsonArrayBuilder builder = Json.createArrayBuilder();
         builder.add(hearingId.toString());
         return builder.build();
@@ -322,7 +321,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                         final JsonObjectBuilder builder = createObjectBuilder()
                                 .add(FIELD_JUDICIAL_ID, ndd.getJudicialId().toString())
                                 .add(FIELD_JUDICIAL_ROLE_TYPE, prepareJudicialRoleType(ndd.getJudicialRoleType()))
-                                .add(FIELD_USER_ID,ndd.getUserId().toString());
+                                .add(FIELD_USER_ID, ndd.getUserId().toString());
 
                         addOptionalBooleanField(builder, FIELD_IS_DEPUTY, ndd.getIsDeputy());
                         addOptionalBooleanField(builder, FIELD_IS_BENCH_CHAIRMAN, ndd.getIsBenchChairman());
@@ -429,9 +428,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         publicMessageConsumerVacatedTrialUpdated = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_VACATED_TRIAL_UPDATED);
         privateMessageConsumerWeekCommencingDatesRemoved = privateEvents.createConsumer(EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED);
         privateMessageConsumerHearingPartiallyUpdated = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_PARTIALLY_UPDATED);
-        privateMessageConsumerVideoLinkDetailsAssigned = privateEvents.createConsumer(EVENT_SELECTOR_VIDEO_LINK_DETAILS_ASSIGNED);
-        privateMessageConsumerVideoLinkDetailsChanged = privateEvents.createConsumer(EVENT_SELECTOR_VIDEO_LINK_DETAILS_CHANGED);
-        privateMessageConsumerVideoLinkDetailsRemoved = privateEvents.createConsumer(EVENT_SELECTOR_VIDEO_LINK_DETAILS_REMOVED);
+        privateMessageConsumerPublicListNoteChanged = privateEvents.createConsumer(EVENT_SELECTOR_PUBLIC_LIST_NOTE_CHANGED);
+        privateMessageConsumerPublicListNoteRemoved = privateEvents.createConsumer(EVENT_SELECTOR_PUBLIC_LIST_NOTE_REMOVED);
     }
 
     public void whenHearingIsUpdatedForListing() {
@@ -450,7 +448,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
-    public void whenHearingIsUpdatedForListingWithVideoLinkDetails() {
+
+    public void whenHearingIsUpdatedForListingWithPublicListNote() {
         stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
         stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
         stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
@@ -523,26 +522,28 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         verifyHearingDaysChangedEventForBothDays();
         verifyHearingAllocatedEvent();
     }
-    public void verifyHearingUpdatedResultsWithVideoLinkDetailsInAllocationInMQ() {
+
+    public void verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ() {
 
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.info("Request payload: {}", jsRequest.prettify());
 
-        verifyVideoLinkDetailsAssignedEvent();
+        verifyPublicListNoteChangedEvent();
     }
 
-    public void verifyHearingUpdatedResultsForVideoLinkDetailsInMQ() {
+    public void verifyHearingUpdatedResultsForPublicListNoteInMQ() {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        verifyVideoLinkDetailsChangedEvent();
+        verifyPublicListNoteChangedEvent();
 
     }
-    public void verifyHearingUpdatedResultsForRemovingVideoLinkDetailsInMQ() {
+
+    public void verifyHearingUpdatedResultsForRemovingPublicListNoteInMQ() {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        verifyVideoLinkDetailsRemovedEvent();
+        verifyPublicListNoteRemovedEvent();
 
     }
 
@@ -730,8 +731,9 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        verifyVideoLinkDetailsChangedEvent();
+        verifyPublicListNoteChangedEvent();
     }
+
     public void verifyHearingWithUpdatedJudiciaryInMQ() {
 
         final JsonPath jsRequest = new JsonPath(request);
@@ -805,27 +807,17 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
     }
 
-    private void verifyVideoLinkDetailsAssignedEvent() {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerVideoLinkDetailsAssigned);
-        LOGGER.info("jsonResponse from getPrivateMessageConsumerVideoLinkDetailsAssigned: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("hasVideoLink"), is(updatedHearingData.getHasVideoLink()));
-        assertThat(jsonResponse.get("videoLinkDetails"), is(updatedHearingData.getVideoLinkDetails()));
-    }
-
-    private void verifyVideoLinkDetailsChangedEvent() {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerVideoLinkDetailsChanged);
+    private void verifyPublicListNoteChangedEvent() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerPublicListNoteChanged);
         LOGGER.info("jsonResponse from privateMessageConsumerVideoLinkDetailsChanged: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("hasVideoLink"), is(updatedHearingData.getHasVideoLink()));
-        assertThat(jsonResponse.get("videoLinkDetails"), is(updatedHearingData.getVideoLinkDetails()));
+        assertThat(jsonResponse.get("publicListNote"), is(updatedHearingData.getPublicListNote()));
     }
-  private void verifyVideoLinkDetailsRemovedEvent() {
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerVideoLinkDetailsRemoved);
+
+    private void verifyPublicListNoteRemovedEvent() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerPublicListNoteRemoved);
         LOGGER.info("jsonResponse from privateMessageConsumerVideoLinkDetailsRemoved: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("hasVideoLink"), is(updatedHearingData.getHasVideoLink()));
-        assertThat(jsonResponse.get("videoLinkDetails"), is(updatedHearingData.getVideoLinkDetails()));
+        assertThat(jsonResponse.get("publicListNote"), is(updatedHearingData.getPublicListNote()));
     }
-
-
 
     private void verifyTypeChangedEvent() {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerTypeChanged);
@@ -913,7 +905,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.info("jsonResponse from privateMessageConsumerHearingAllocatedForListing: {}", jsonResponse.prettify());
 
 
-        assertThat(jsonResponse.prettify(),not(hasJsonPath ("$.prosecutionCaseDefendantsOffenceIds[*].defendants[*].offenceIds[*]",contains(offenceId.toString()))));
+        assertThat(jsonResponse.prettify(), not(hasJsonPath("$.prosecutionCaseDefendantsOffenceIds[*].defendants[*].offenceIds[*]", contains(offenceId.toString()))));
 
         assertThat(jsonResponse.get("prosecutionCaseDefendantsOffenceIds[0].id"),
                 is(hearingData.getListedCases().get(0).getCaseId().toString()));
@@ -1223,7 +1215,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("prosecutionCases[0].defendants[0].offences[0].offenceId"), is(offenceId.toString()));
     }
 
-    public void verifyHearingWithUpdatedVideoLinkDetailsWhenQueryingFromAPI() {
+    public void verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI() {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), ALLOCATED));
@@ -1240,12 +1232,12 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                                         equalTo(updatedHearingData.getHearingId().toString())),
                                 withJsonPath("$.hearings[0].hasVideoLink",
                                         equalTo(updatedHearingData.getHasVideoLink())),
-                                withJsonPath("$.hearings[0].videoLinkDetails",
-                                        equalTo(updatedHearingData.getVideoLinkDetails()))
+                                withJsonPath("$.hearings[0].publicListNote",
+                                        equalTo(updatedHearingData.getPublicListNote()))
                         )));
     }
 
-    public void verifyHearingWithUpdatedNoVideoLinkDetailsWhenQueryingFromAPI() {
+    public void verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI() {
 
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), ALLOCATED));
@@ -1341,9 +1333,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         publicMessageConsumerHearingUpdated.close();
         publicMessageConsumerVacatedTrialUpdated.close();
         privateMessageConsumerWeekCommencingDatesRemoved.close();
-        privateMessageConsumerVideoLinkDetailsAssigned.close();
-        privateMessageConsumerVideoLinkDetailsChanged.close();
-        privateMessageConsumerVideoLinkDetailsRemoved.close();
+        privateMessageConsumerPublicListNoteChanged.close();
+        privateMessageConsumerPublicListNoteRemoved.close();
     }
 
     public void updateHearingForListing(final JsonObject updateHearingJsonObject, final UUID hearingId) {

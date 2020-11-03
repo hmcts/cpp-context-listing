@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
-import static java.lang.Boolean.FALSE;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.UUID.fromString;
@@ -10,7 +9,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.CROWN_PROSECUTION_SERVICE;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.OTHER_PROSECUTOR;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.convertDate;
-import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.VideoLinkTextFormatter.getFormattedVideoLinkText;
+import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.PublicListNoteFormatter.getFormattedPublicListNote;
 
 import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
 import uk.gov.moj.cpp.listing.common.xhibit.XhibitReferenceDataValidator;
@@ -90,8 +89,7 @@ public class CourtServicesMapper {
     private static final DateTimeFormatter sittingAtFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final String TIME_MARKING_NOTE_TEXT = "NOT BEFORE %s";
     private static final String COMMITTING_COURT_PATH = "$.defendants[*].offences[*].committingCourt";
-    private static final String HAS_VIDEO_LINK = "hasVideoLink";
-    private static final String VIDEO_LINK_DETAILS = "videoLinkDetails";
+    private static final String PUBLIC_LIST_NOTE = "publicListNote";
 
     private RequestedNameMapper judicialRequestedName = new RequestedNameMapper();
 
@@ -382,9 +380,9 @@ public class CourtServicesMapper {
     }
 
     private String evaluateListNoteText(final JsonObject hearingJson) {
-        final boolean hasVideoLink = hearingJson.containsKey(HAS_VIDEO_LINK) ? hearingJson.getBoolean(HAS_VIDEO_LINK) : FALSE;
-        final String videoLink = hearingJson.containsKey(VIDEO_LINK_DETAILS) ? hearingJson.getString(VIDEO_LINK_DETAILS) : EMPTY;
-        return getFormattedVideoLinkText(hasVideoLink, videoLink);
+
+        final String publicListNote = hearingJson.containsKey(PUBLIC_LIST_NOTE) ? hearingJson.getString(PUBLIC_LIST_NOTE) : EMPTY;
+        return getFormattedPublicListNote(publicListNote);
     }
 
     private HearingTypeStructure generateHearingTypeStructure(final JsonObject hearing) {

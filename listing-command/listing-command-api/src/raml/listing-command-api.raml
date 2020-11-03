@@ -79,6 +79,9 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.command.vacate-trial+json
         name: listing.command.vacate-trial
+      (mapping):
+        requestType: application/vnd.listing.duplicate-unallocated-hearing+json
+        name: listing.mark-unallocated-hearing-as-duplicate
       ...
     body:
       application/vnd.listing.command.update-hearing-for-listing+json:
@@ -102,6 +105,7 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.command.vacate-trial+json:
         example: !include json/listing.command.vacate-trial.json
         schema: !include json/schema/listing.command.vacate-trial.json
+      application/vnd.listing.duplicate-unallocated-hearing+json: !!null
     responses:
       202:
         description: Request accepted
