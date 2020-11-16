@@ -55,7 +55,7 @@ public class DefendantEventListenerTest {
     private static final BailStatus EXPECTED_BAIL_STATUS = new BailStatus.Builder().withCode("B").withId(fromString("dd4073b6-22be-3875-9d63-5da286bb3ece")).withDescription("Conditional Bail").build();
 
     @Spy
-    private ObjectMapper mapper =  new ObjectMapperProducer().objectMapper();
+    private ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
 
     @Mock
     private Envelope<NewDefendantDetailsUpdated> defendantDetailsUpdatedEnvelope;
@@ -79,10 +79,10 @@ public class DefendantEventListenerTest {
     @Test
     public void shouldHandleDefendantDetailsUpdatedAndPersistSimpleDefendant() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        List<ListedCase> testCases = createListedCases();
-        String testCasesString =  mapper.writeValueAsString(testCases);
+        List<ListedCase> testCases = createListedCases(CASE_ID, DEFENDANT_ID);
+        String testCasesString = mapper.writeValueAsString(testCases);
         JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
-        Envelope<NewDefendantDetailsUpdated>  envelope = (Envelope<NewDefendantDetailsUpdated>) mock(Envelope.class);
+        Envelope<NewDefendantDetailsUpdated> envelope = (Envelope<NewDefendantDetailsUpdated>) mock(Envelope.class);
 
         NewDefendantDetailsUpdated hearingData = NewDefendantDetailsUpdated.newDefendantDetailsUpdated()
                 .withCaseId(CASE_ID)
@@ -116,12 +116,93 @@ public class DefendantEventListenerTest {
     }
 
     @Test
+    public void shouldNotUpdateHearingDefendantWhenCaseIsNotAssociatedToTheHearing() throws Exception {
+        final UUID defendantId = randomUUID();
+        final UUID nonAssociatedDefendantId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID nonAssociateCaseId = randomUUID();
+        final List<ListedCase> testCases = createListedCases(caseId, defendantId);
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = mapper.readTree(testCasesString);
+        final Envelope<NewDefendantDetailsUpdated> envelope = (Envelope<NewDefendantDetailsUpdated>) mock(Envelope.class);
+
+        final NewDefendantDetailsUpdated hearingData = NewDefendantDetailsUpdated.newDefendantDetailsUpdated()
+                .withCaseId(nonAssociateCaseId)
+                .withHearingId(HEARING_ID)
+                .withDefendant(NewBaseDefendant.newBaseDefendant()
+                        .withBailStatus(of(EXPECTED_BAIL_STATUS))
+                        .withId(nonAssociatedDefendantId)
+                        .build())
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(defendantDetailsUpdatedEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantEventListener.defendantDetailsUpdated(defendantDetailsUpdatedEnvelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+
+        final JsonNode caseList = objectNodeCaptor.getValue();
+        assertThat(caseList.size(), equalTo(1));
+        assertThat(caseList.get(0).get("id").asText(), equalTo(caseId.toString()));
+        final JsonNode defendants = caseList.get(0).get("defendants");
+        assertThat(defendants.size(), equalTo(1));
+        assertThat(defendants.get(0).get("id").asText(), equalTo(defendantId.toString()));
+
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldNotUpdateHearingDefendantWhenDefendantIsNotAssociatedToTheHearing() throws Exception {
+        final UUID defendantId = randomUUID();
+        final UUID nonAssociatedDefendantId = randomUUID();
+        final List<ListedCase> testCases = createListedCases(CASE_ID, defendantId);
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = mapper.readTree(testCasesString);
+        final Envelope<NewDefendantDetailsUpdated> envelope = (Envelope<NewDefendantDetailsUpdated>) mock(Envelope.class);
+
+        final NewDefendantDetailsUpdated hearingData = NewDefendantDetailsUpdated.newDefendantDetailsUpdated()
+                .withCaseId(CASE_ID)
+                .withHearingId(HEARING_ID)
+                .withDefendant(NewBaseDefendant.newBaseDefendant()
+                        .withBailStatus(of(EXPECTED_BAIL_STATUS))
+                        .withId(nonAssociatedDefendantId)
+                        .build())
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(defendantDetailsUpdatedEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantEventListener.defendantDetailsUpdated(defendantDetailsUpdatedEnvelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+
+        final JsonNode defendants = objectNodeCaptor.getValue().get(0).get("defendants");
+        assertThat(defendants.size(), equalTo(1));
+        assertThat(defendants.get(0).get("id").asText(), equalTo(defendantId.toString()));
+
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
     public void shouldHandleDefendantAddedAndPersistSimpleDefendant() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        List<ListedCase> testCases = createListedCases();
-        String testCasesString =  mapper.writeValueAsString(testCases);
+        List<ListedCase> testCases = createListedCases(CASE_ID, DEFENDANT_ID);
+        String testCasesString = mapper.writeValueAsString(testCases);
         JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
-        Envelope<NewDefendantAddedForCourtProceedings>  envelope = (Envelope<NewDefendantAddedForCourtProceedings>) mock(Envelope.class);
+        Envelope<NewDefendantAddedForCourtProceedings> envelope = (Envelope<NewDefendantAddedForCourtProceedings>) mock(Envelope.class);
 
         NewDefendantAddedForCourtProceedings hearingData = NewDefendantAddedForCourtProceedings.newDefendantAddedForCourtProceedings()
                 .withCaseId(CASE_ID)
@@ -151,11 +232,11 @@ public class DefendantEventListenerTest {
     @Test
     public void shouldHandleDefendantLegalAidStatusUpdated() throws Exception {
         final ObjectMapper objectMapper = new ObjectMapper();
-        final List<ListedCase> testCases = createListedCases();
-        final String testCasesString =  mapper.writeValueAsString(testCases);
+        final List<ListedCase> testCases = createListedCases(CASE_ID, DEFENDANT_ID);
+        final String testCasesString = mapper.writeValueAsString(testCases);
         final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
-        final Envelope<DefendantLegalaidStatusUpdatedForHearing>  envelope = (Envelope<DefendantLegalaidStatusUpdatedForHearing>) mock(Envelope.class);
-        final DefendantLegalaidStatusUpdatedForHearing defendantLegalaidStatusData= DefendantLegalaidStatusUpdatedForHearing.defendantLegalaidStatusUpdatedForHearing()
+        final Envelope<DefendantLegalaidStatusUpdatedForHearing> envelope = (Envelope<DefendantLegalaidStatusUpdatedForHearing>) mock(Envelope.class);
+        final DefendantLegalaidStatusUpdatedForHearing defendantLegalaidStatusData = DefendantLegalaidStatusUpdatedForHearing.defendantLegalaidStatusUpdatedForHearing()
                 .withDefendantId(DEFENDANT_ID)
                 .withHearingId(HEARING_ID)
                 .withCaseId(CASE_ID)
@@ -178,7 +259,80 @@ public class DefendantEventListenerTest {
 
     }
 
-    private List<ListedCase> createListedCases() {
+    @Test
+    public void shouldNotUpdateHearingDefendantsLegalAidStatusWhenCaseIsNotAssociatedToTheHearing() throws Exception {
+        final UUID defendantId = randomUUID();
+        final UUID nonAssociatedDefendantId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID nonAssociateCaseId = randomUUID();
+
+        final List<ListedCase> testCases = createListedCases(caseId, defendantId);
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = mapper.readTree(testCasesString);
+        final Envelope<DefendantLegalaidStatusUpdatedForHearing> envelope = (Envelope<DefendantLegalaidStatusUpdatedForHearing>) mock(Envelope.class);
+        final DefendantLegalaidStatusUpdatedForHearing defendantLegalaidStatusData = DefendantLegalaidStatusUpdatedForHearing.defendantLegalaidStatusUpdatedForHearing()
+                .withDefendantId(nonAssociatedDefendantId)
+                .withHearingId(HEARING_ID)
+                .withCaseId(nonAssociateCaseId)
+                .withLegalAidStatus("Granted")
+                .build();
+        given(envelope.payload()).willReturn(defendantLegalaidStatusData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantEventListener.defendantLegalStatusUpdatedForHearing(envelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+
+        final JsonNode caseList = objectNodeCaptor.getValue();
+        assertThat(caseList.size(), equalTo(1));
+        assertThat(caseList.get(0).get("id").asText(), equalTo(caseId.toString()));
+        final JsonNode defendants = caseList.get(0).get("defendants");
+        assertThat(defendants.size(), equalTo(1));
+        assertThat(defendants.get(0).get("id").asText(), equalTo(defendantId.toString()));
+
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldNotUpdateHearingDefendantsLegalAidStatusWhenDefendantIsNotAssociatedToTheHearing() throws Exception {
+        final UUID defendantId = randomUUID();
+        final UUID nonAssociatedDefendantId = randomUUID();
+
+        final List<ListedCase> testCases = createListedCases(CASE_ID, defendantId);
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = mapper.readTree(testCasesString);
+        final Envelope<DefendantLegalaidStatusUpdatedForHearing> envelope = (Envelope<DefendantLegalaidStatusUpdatedForHearing>) mock(Envelope.class);
+        final DefendantLegalaidStatusUpdatedForHearing defendantLegalaidStatusData = DefendantLegalaidStatusUpdatedForHearing.defendantLegalaidStatusUpdatedForHearing()
+                .withDefendantId(nonAssociatedDefendantId)
+                .withHearingId(HEARING_ID)
+                .withCaseId(CASE_ID)
+                .withLegalAidStatus("Granted")
+                .build();
+        given(envelope.payload()).willReturn(defendantLegalaidStatusData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        defendantEventListener.defendantLegalStatusUpdatedForHearing(envelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+
+        final JsonNode defendants = objectNodeCaptor.getValue().get(0).get("defendants");
+        assertThat(defendants.size(), equalTo(1));
+        assertThat(defendants.get(0).get("id").asText(), equalTo(defendantId.toString()));
+
+        verify(hearingRepository).save(hearing);
+    }
+
+    private List<ListedCase> createListedCases(final UUID caseId, final UUID defendantId) {
         return singletonList(ListedCase.listedCase()
                 .withCaseIdentifier(CaseIdentifier.caseIdentifier()
                         .withAuthorityCode(STRING.next())
@@ -187,7 +341,7 @@ public class DefendantEventListenerTest {
                         .build())
                 .withDefendants(singletonList(Defendant.defendant()
                         .withSpecificRequirements(Optional.empty())
-                        .withId(DEFENDANT_ID)
+                        .withId(defendantId)
                         .withBailStatus(of(new BailStatus.Builder().withCode("C").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).withDescription("Custody or remanded into custody").build()))
                         .withOffences(singletonList(Offence.offence()
                                 .withId(randomUUID())
@@ -199,7 +353,7 @@ public class DefendantEventListenerTest {
                                         .build())
                                 .build()))
                         .build()))
-                .withId(CASE_ID)
+                .withId(caseId)
                 .build());
     }
 }

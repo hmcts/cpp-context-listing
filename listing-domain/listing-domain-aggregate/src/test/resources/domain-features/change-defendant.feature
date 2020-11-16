@@ -18,3 +18,17 @@ Feature: Change defendant details following public event from Progression
     Given hearing listed in the past
     When you updateDefendants to a Hearing with a changed defendants
     Then no events occurred
+
+  Scenario: An hearing with multiple defendant listed. And only one of defendant detail is updated. When the case updated with the other defendant
+
+    Given hearing listed with multiple defendant
+    And defendant details updated
+    When you updateDefendants to a Hearing with a not updated defendants
+    Then no events occurred
+
+  Scenario: An hearing with multiple defendant listed. And  allocation is partial. When not allocated case updated.
+
+    Given hearing listed with multiple defendant
+    And allocated hearing with partial
+    When you updateDefendants to a Hearing with a not updated defendants
+    Then no events occurred

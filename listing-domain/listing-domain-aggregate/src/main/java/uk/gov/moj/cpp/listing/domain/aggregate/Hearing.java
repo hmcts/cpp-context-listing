@@ -149,6 +149,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -869,6 +870,7 @@ public class Hearing implements Aggregate {
         if (!isHearingInThePast()) {
             final List<Object> events = defendants.stream()
                     .filter(this::thisHearingContainsDefendant)
+                    .filter(defendant -> isCaseContainsDefendant(caseId, defendant.getId()))
                     .map(defendant -> defendantDetailsUpdatedEvent(caseId, defendant))
                     .collect(toList());
             return apply(events.stream());
@@ -1134,7 +1136,7 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> updateDefendantLegalAidStatusForHearing(final UUID hearingId, final UUID caseId,
                                                                   final UUID defendantId, final String legalAidStatus) {
-        if (this.duplicate) {
+        if (this.duplicate || !isCaseContainsDefendant(caseId, defendantId)) {
             return Stream.empty();
         }
 
@@ -1190,6 +1192,12 @@ public class Hearing implements Aggregate {
                         prosecutionCaseDefendantOffenceId.getDefendants().stream()
                                 .anyMatch(defendantOffenceId ->
                                         defendantOffenceId.getId().equals(defendant.getId())));
+    }
+
+    private boolean isCaseContainsDefendant(final UUID caseId, final UUID defendantId) {
+        final List<UUID> defendantIds = this.prosecutionCaseDefendants.get(caseId);
+
+        return CollectionUtils.isNotEmpty(defendantIds) && defendantIds.contains(defendantId);
     }
 
     private boolean thisHearingContainsDefendant(final UUID caseId, final UUID defendantId) {
@@ -1714,6 +1722,12 @@ public class Hearing implements Aggregate {
                                     .collect(toList()))
                             .build()
                     ).collect(toList());
+
+            this.prosecutionCaseDefendants.clear();
+            event.getProsecutionCaseDefendantsOffenceIds().forEach(
+                    prosecutionCase -> this.prosecutionCaseDefendants.put(prosecutionCase.getId(), prosecutionCase.getDefendants().stream()
+                            .map(uk.gov.justice.listing.events.DefendantOffenceIds::getId)
+                            .collect(toList())));
         } else {
             this.prosecutionCaseDefendantOffenceIds = emptyList();
         }
