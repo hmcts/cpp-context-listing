@@ -7,15 +7,19 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.LocalDate.parse;
 import static java.time.LocalTime.MAX;
 import static java.time.LocalTime.MIN;
+import static org.apache.commons.io.FileUtils.readFileToString;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
+import static org.skyscreamer.jsonassert.JSONCompareMode.STRICT;
 import static uk.gov.moj.cpp.listing.query.view.utils.FileUtil.givenPayload;
 
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
@@ -35,13 +39,18 @@ import javax.json.JsonObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.IOUtils;
+import org.json.JSONArray;
 import org.junit.Test;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 
 public class HearingJsonListConverterFilterEjectCasesTest {
 
     private static final String SAMPLE_HEARING_WITH_EJECTED_CASE = "/json/hearingSampleDataWithEjectCaseFlag.json";
     private static final String SAMPLE_HEARING_WITHOUT_EJECTED_CASE = "/json/hearingSampleDataWithoutEjectCaseFlag.json";
     private static final String PUBLIC_LIST = "/json/hearingDataForPublicListWithEjectFlag.json";
+    private static final String PUBLIC_LIST_MULTIPLE_CASES = "/json/hearingDataForPublicListWithEjectFlagMultiple.json";
+    private static final String EXPECTED_PUBLIC_LIST_MULTIPLE_CASES = "src/test/resources/json/expectedHearingDataForPublic.json";
     private static final String ALPHABETICAL_LIST = "/json/hearingDataForAlphabeticalListWithEjectFlag.json";
     private static final String SAMPLE_HEARING_WITH_2_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE = "/json/hearingSampleDataWith2HearingDaysInDifferentHearingDate.json";
     private static final String SAMPLE_HEARING_WITH_3_HEARING_DAYS_IN_DIFFERENT_HEARING_DATE = "/json/hearingSampleDataWith3HearingDaysInDifferentHearingDate.json";
@@ -414,13 +423,7 @@ public class HearingJsonListConverterFilterEjectCasesTest {
         final Hearing hearing = createHearing(PUBLIC_LIST);
 
         //When
-        final JsonArray hearingJsonArrayPublicList = converter.convertHearingResultForPublicList(hearing);
-
-        //Then
-        final JsonObject hearingJsonArrayPublicListJsonObject = (JsonObject) hearingJsonArrayPublicList.get(0);
-        final JsonArray hearingsByCourtCentreIdArray = hearingJsonArrayPublicListJsonObject.getJsonArray("hearingsByCourtCentreId");
-        final JsonObject hearingsByCourtCentreIdObject = hearingsByCourtCentreIdArray.getJsonObject(0);
-        final JsonArray hearingsByHearingDateJsonArray = hearingsByCourtCentreIdObject.getJsonArray("hearingsByHearingDate");
+        final JsonArray hearingsByHearingDateJsonArray = getHearingByDateJsonArray(hearing);
         final JsonObject hearingsByHearingDateJsonObject = hearingsByHearingDateJsonArray.getJsonObject(0);
         final JsonObject hearingJsonObject = hearingsByHearingDateJsonObject.getJsonObject("hearing");
         assertThat(hearingJsonObject.toString(), isJson(allOf(
@@ -428,6 +431,29 @@ public class HearingJsonListConverterFilterEjectCasesTest {
                 withJsonPath("$.listedCases[0].isEjected", equalTo(false)),
                 withJsonPath("$.courtApplications", hasSize(0))
         )));
+    }
+
+    @Test
+    public void shouldConvertHearingResultForPublicListForMultipleCases() throws IOException {
+        //Given
+        final Hearing hearing = createHearing(PUBLIC_LIST_MULTIPLE_CASES);
+
+        //When
+        final JsonArray hearingsByHearingDateJsonArray = getHearingByDateJsonArray(hearing);
+        JSONArray jsonArrayBigOne = new JSONArray();
+        hearingsByHearingDateJsonArray.forEach(s -> jsonArrayBigOne.put(s.toString()));
+        assertEquals(jsonArrayBigOne.toString(),
+                readFileToString(new File(EXPECTED_PUBLIC_LIST_MULTIPLE_CASES)), STRICT);
+    }
+
+    private JsonArray getHearingByDateJsonArray(final Hearing hearing) {
+        final JsonArray hearingJsonArrayPublicList = converter.convertHearingResultForPublicList(hearing);
+
+        //Then
+        final JsonObject hearingJsonArrayPublicListJsonObject = (JsonObject) hearingJsonArrayPublicList.get(0);
+        final JsonArray hearingsByCourtCentreIdArray = hearingJsonArrayPublicListJsonObject.getJsonArray("hearingsByCourtCentreId");
+        final JsonObject hearingsByCourtCentreIdObject = hearingsByCourtCentreIdArray.getJsonObject(0);
+        return hearingsByCourtCentreIdObject.getJsonArray("hearingsByHearingDate");
     }
 
     @Test

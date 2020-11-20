@@ -11,6 +11,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.ALPHABETICAL;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.JUDGE;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 
 import uk.gov.justice.services.core.annotation.Adapter;
 import uk.gov.justice.services.core.annotation.Component;
@@ -119,10 +120,11 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
             final Optional<JsonObject> courtListData = buildCourtListData(queryResponse, courtCentreId, courtRoomId , courtListType, restricted, startDate);
             if (courtListData.isPresent()) {
                 final JsonObject courtListPayload = courtListData.get();
-                LOGGER.info("getDocumentContent() :: courtListPayload {} ", courtListPayload);
                 final boolean isWelsh = referenceDataService.isHearingLanguageWelsh(queryResponse, courtCentreId).orElse(false);
+                final String templateName = getTemplateName(courtListType, isWelsh);
+                LOGGER.info("getDocumentContent() :: templateName {} :: isWelsh :: {} courtListPayload {} ", templateName, isWelsh, courtListPayload);
                 final byte[] binaryDocument = documentGeneratorClient.generateDocument(
-                        courtListPayload, getTemplateName(courtListType, isWelsh));
+                        courtListPayload, templateName);
                 final Response.ResponseBuilder responseBuilder = status(OK).entity(new ByteArrayInputStream(binaryDocument));
                 return responseBuilder.header(CONTENT_TYPE, pdfMimeType)
                         .header(CONTENT_DISPOSITION,
@@ -146,12 +148,12 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
         return standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType, restricted);
     }
 
-    private String getTemplateName(final CourtListType courtListType, boolean welsh){
-        LOGGER.info("getTemplateName() :: isWelsh {}", welsh);
-        if( ALPHABETICAL.equals(courtListType) && welsh){
+    private String getTemplateName(final CourtListType courtListType, boolean welsh) {
+        if ((ALPHABETICAL.equals(courtListType) || PUBLIC.equals(courtListType)) && welsh) {
             return courtListType.getWelshTemplateName();
         }
         return courtListType.getTemplateName();
     }
 
 }
+

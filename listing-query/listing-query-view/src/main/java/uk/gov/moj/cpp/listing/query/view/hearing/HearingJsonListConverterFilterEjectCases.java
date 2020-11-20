@@ -302,9 +302,11 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
                 if (h.isObject()) {
                     final ObjectNode hearingObjectNode = (ObjectNode) h;
                     final ArrayNode hearingsByHearingDateArrayNode = (ArrayNode) hearingObjectNode.get(HEARINGS_BY_HEARING_DATE);
-                    final ObjectNode hearingJsonObject = (ObjectNode) hearingsByHearingDateArrayNode.get(0).get(HEARING);
-                    removeNodeForEjectedFlag(hearingJsonObject.get(LISTED_CASES));
-                    removeNodeForEjectedFlag(hearingJsonObject.get(COURT_APPLICATIONS));
+                    hearingsByHearingDateArrayNode.forEach(s -> {
+                        final ObjectNode hearingJsonObject = (ObjectNode) s.get(HEARING);
+                        removeNodeForEjectedFlag(hearingJsonObject.get(LISTED_CASES));
+                        removeNodeForEjectedFlag(hearingJsonObject.get(COURT_APPLICATIONS));
+                    });
                 }
             });
         }
