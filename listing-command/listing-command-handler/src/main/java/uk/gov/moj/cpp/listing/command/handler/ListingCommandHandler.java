@@ -637,9 +637,7 @@ public class ListingCommandHandler {
             final List<UUID> allocatedHearingCasesId = extractListCasesId(allocatedHearing);
             final List<UUID> unAllocatedHearingCasesId = extractListCasesId(unAllocatedHearingPersisted);
 
-            final boolean canUpdateCase = canUpdateCase(allocatedHearingCasesId, unAllocatedHearingCasesId, unAllocatedHearingPersisted.getAllocated());
-
-            if (canUpdateCase) {
+            if (!unAllocatedHearingPersisted.getAllocated()) {
                 updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
                     final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unAllocatedHearingPersisted, unAllocatedHearingPersisted.getListedCases());
                     final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted);
@@ -1533,14 +1531,6 @@ public class ListingCommandHandler {
 
     private List<UUID> extractListCasesId(final uk.gov.justice.listing.events.Hearing hearing) {
         return hearing.getListedCases().stream().map(ListedCase::getId).collect(toList());
-    }
-
-
-    private boolean canUpdateCase(final List<UUID> allocatedHearingCasesId,
-                                  final List<UUID> unAllocatedHearingCasesId,
-                                  final boolean allocated) {
-
-        return !allocated && !allocatedHearingCasesId.containsAll(unAllocatedHearingCasesId);
     }
 
     private List<CourtSchedule> getCourtSchedules(final String bookingId) {

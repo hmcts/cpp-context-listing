@@ -1927,6 +1927,27 @@ public class ListingCommandHandlerTest {
     }
 
     @Test
+    public void shouldAmendHearingToUpdateDefendantOrOffenceWhenAddingDefendantToTheExistingProsecutionCase() throws Exception {
+        final UUID hearingID1 = randomUUID();
+        final UUID hearingID2 = randomUUID();
+        final UUID prosecutionCaseId = randomUUID();
+
+        final JsonEnvelope commandEnvelope = getEnvelopeForExtendWholeHearing(hearingID1, hearingID2);
+
+        final uk.gov.justice.listing.events.Hearing allocatedHearing = extendHearingHelper.getAllocatedHearingById(hearingID1, prosecutionCaseId, getCaseUrn());
+        final uk.gov.justice.listing.events.Hearing unAllocatedHearing = extendHearingHelper.getUnAllocatedHearingById(hearingID2, prosecutionCaseId, getCaseUrn());
+
+        doReturn(allocatedHearing).doReturn(unAllocatedHearing).when(hearingFactory)
+                .getHearingById(any(UUID.class), any(JsonEnvelope.class));
+
+        listingCommandHandler.extendHearingForHearing(commandEnvelope);
+
+        verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class));
+        verify(hearing, times(1)).deleteUnAllocatedHearing(hearingID2);
+    }
+
+    @Test
     @Ignore("This test is failing after updating service parent pom. Need to fix this.")
     public void listingCommandHandlerShouldExtendPartialHearingForHearings() throws Exception {
 
