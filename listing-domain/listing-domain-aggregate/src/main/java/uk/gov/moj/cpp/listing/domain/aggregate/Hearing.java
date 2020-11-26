@@ -2214,4 +2214,5 @@ public class Hearing implements Aggregate {
                 .withHearingId(hearingId)
                 .build());
     }
+
 }

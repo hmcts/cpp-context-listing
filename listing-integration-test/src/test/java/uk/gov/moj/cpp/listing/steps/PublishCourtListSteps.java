@@ -8,6 +8,7 @@ import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -21,22 +22,26 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAll
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.it.util.XmlEditor;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import uk.gov.moj.cpp.listing.utils.WebDavStub;
 
 import java.io.StringReader;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import javax.jms.MessageConsumer;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.ws.rs.core.Response;
 
+import com.jayway.restassured.path.json.JsonPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,8 +60,11 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     private static final String PRESTON_COURT_SITE_NAME = "PRESTON";
     private static final String PRESTON_COURT_ID = "448";
     private static final String PRESTON_COURT_SITE_ID = "448";
+    private static final String EVENT_SELECTED_PUBLIC_COURT_LIST_STAGING_DARTS = "public.listing.court-daily-list";
 
-    private final JsonObject commandJsonObject;
+
+    private JsonObject commandJsonObject;
+    private MessageConsumer publicMessageConsumerStagingDartsUpdated;
 
     public PublishCourtListSteps(final HearingsData hearingsData, final JsonObject commandJsonObject) {
         super(hearingsData);
@@ -115,6 +123,9 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         return jsonFromString(response.getPayload());
     }
 
+    public void createMessageConsumer() {
+        publicMessageConsumerStagingDartsUpdated = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_COURT_LIST_STAGING_DARTS);
+    }
 
     public static HearingsData loadHearingDataWithJudiciary(final UUID courtCentreId) {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, UUID.randomUUID(), "DISTRICT_JUDGE");
@@ -347,5 +358,14 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         final Response response = restClient.postCommand(commandUrl, MEDIA_TYPE_LISTING_COMMAND_EXPORT_COURT_LIST, request, getLoggedInHeader());
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void verifyPublicEventForCourtList(final UUID courtCentreId) {
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerStagingDartsUpdated);
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
+        assertThat(jsonResponse.get("courtCentreId"), is(courtCentreId.toString()));
+        assertThat(jsonResponse.get("dailyListDocument"), containsString("DailyList"));
+
     }
 }

@@ -228,7 +228,7 @@ public class PublishCourtListIT extends AbstractIT {
 
 
     @Test
-    public void shouldPublishCourtListWithHearingsWithVideoLinkForDraftPublishType() throws Exception {
+    public void shouldPublishCourtListWithHearingsWithVideoLinkForDraftPublishTypeAndPublishPublicMessage() throws Exception {
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
@@ -261,6 +261,7 @@ public class PublishCourtListIT extends AbstractIT {
         stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
+        publishCourtListSteps.createMessageConsumer();
         publishCourtListSteps.verifyHearingListedFromAPI(true);
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
@@ -303,6 +304,7 @@ public class PublishCourtListIT extends AbstractIT {
         stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
+        publishCourtListSteps.createMessageConsumer();
         publishCourtListSteps.verifyHearingListedFromAPI(true);
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();

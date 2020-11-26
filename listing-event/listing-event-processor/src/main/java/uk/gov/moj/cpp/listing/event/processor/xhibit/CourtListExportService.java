@@ -46,6 +46,8 @@ public class CourtListExportService {
 
             courtListFileGenerator.validateXml(parameters, courtListXml);
 
+            publishCourtListCommandSender.publishPublicMessageWithDailyList(envelope, parameters, courtListXml);
+
             try (final InputStream courtListXmlInputStream = new ByteArrayInputStream(courtListXml.getBytes())) {
                 xhibitService.sendToXhibit(courtListXmlInputStream, courtListMetadata.getFilename());
             }

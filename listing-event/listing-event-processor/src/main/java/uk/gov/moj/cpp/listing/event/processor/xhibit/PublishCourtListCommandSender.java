@@ -4,11 +4,14 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
+import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.annotation.FrameworkComponent;
 import uk.gov.justice.services.core.sender.Sender;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 
 import java.util.UUID;
@@ -17,6 +20,8 @@ import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+
+import org.apache.commons.lang3.StringEscapeUtils;
 
 @Stateless
 public class PublishCourtListCommandSender {
@@ -32,7 +37,9 @@ public class PublishCourtListCommandSender {
     private static final String START_DATE = "startDate";
     private static final String END_DATE = "endDate";
     private static final String COURT_LIST_FILE_NAME = "courtListFileName";
+    private static final String DAILY_LIST_XML = "dailyListDocument";
     private static final String COURT_LIST_JSON = "courtListJson";
+    private static final String COURT_LIST_ID = "courtListId";
 
     @Inject
     @FrameworkComponent("EVENT_PROCESSOR")
@@ -41,10 +48,24 @@ public class PublishCourtListCommandSender {
     @Inject
     private UtcClock utcClock;
 
+    public void publishPublicMessageWithDailyList(final JsonEnvelope envelope, final PublishCourtListRequestParameters requestParameters, final String dailyListXml) {
+        final PublishCourtListType publishCourtListType = requestParameters.getPublishCourtListType();
+        if(publishCourtListType == PublishCourtListType.DRAFT || publishCourtListType == PublishCourtListType.FINAL) {
+            final JsonObject payload = createObjectBuilder()
+                    .add(COURT_LIST_ID, requestParameters.getCourtListId().toString())
+                    .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
+                    .add(DAILY_LIST_XML, StringEscapeUtils.escapeXml10(dailyListXml))
+                    .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
+                    .build();
+            sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName("public.listing.court-daily-list"),
+                    payload));
+        }
+    }
+
     public void recordCourtListExportSuccessful(final PublishCourtListRequestParameters requestParameters, final String courtListFileName) {
 
         final JsonObject payload = createObjectBuilder()
-                .add("courtListId", requestParameters.getCourtListId().toString())
+                .add(COURT_LIST_ID, requestParameters.getCourtListId().toString())
                 .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
                 .add(START_DATE, requestParameters.getStartDate().toString())
                 .add(END_DATE, requestParameters.getEndDate().toString())
@@ -61,7 +82,7 @@ public class PublishCourtListCommandSender {
                                             final String courtListFileName) {
 
         final JsonObjectBuilder objectBuilder = createObjectBuilder()
-                .add("courtListId", requestParameters.getCourtListId().toString())
+                .add(COURT_LIST_ID, requestParameters.getCourtListId().toString())
                 .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
                 .add(START_DATE, requestParameters.getStartDate().toString())
                 .add(END_DATE, requestParameters.getEndDate().toString())

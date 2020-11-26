@@ -25,4 +25,7 @@ subscriptions_descriptor:
         - name: public.listing.note-edited
           schema_uri: http://justice.gov.uk/listing/courts/note-edited.json
 
+        - name: public.listing.court-daily-list
+          schema_uri: http://justice.gov.uk/listing/courts/court-list-daily-list.json
+
       event_source_name: public.event.source
