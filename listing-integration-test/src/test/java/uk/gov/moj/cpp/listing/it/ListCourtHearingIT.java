@@ -176,6 +176,7 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
             listCourtHearingSteps.verifyHearingListedWithShadowListedFlag(ALLOCATED);
+            listCourtHearingSteps.verifyHearingExtendedWithReportingRestriction(ALLOCATED);
         }
     }
 
@@ -186,6 +187,7 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.whenProgressionHearingExtended();
             listCourtHearingSteps.verifyHearingExtendedWithShadowListedFlag(ALLOCATED);
+            listCourtHearingSteps.verifyHearingExtendedWithReportingRestriction(ALLOCATED);
         }
     }
 }

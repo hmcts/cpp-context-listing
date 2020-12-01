@@ -170,6 +170,14 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
+                          "reportingRestrictions": [
+                            {
+                              "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                              "label": "RestrictionApplied",
+                              "orderedDate": "2020-11-24",
+                              "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                            }
+                          ],
                           "restrictFromCourtList": true
                         },
                         {
@@ -184,6 +192,14 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
+                          "reportingRestrictions": [
+                            {
+                              "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                              "label": "RestrictionApplied",
+                              "orderedDate": "2020-11-24",
+                              "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                            }
+                          ],
                           "restrictFromCourtList": true
                         }
                       ],
@@ -213,6 +229,14 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
+                          "reportingRestrictions": [
+                            {
+                              "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                              "label": "RestrictionApplied",
+                              "orderedDate": "2020-11-24",
+                              "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                            }
+                          ],
                           "restrictFromCourtList": true
                         },
                         {
@@ -227,6 +251,20 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
+                          "reportingRestrictions": [
+                            {
+                              "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                              "label": "RestrictionApplied",
+                              "orderedDate": "2020-11-24",
+                              "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                            },
+                            {
+                              "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                              "label": "RestrictionApplied",
+                              "orderedDate": "2020-11-24",
+                              "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                            }
+                          ],
                           "restrictFromCourtList": true
                         }
                       ],

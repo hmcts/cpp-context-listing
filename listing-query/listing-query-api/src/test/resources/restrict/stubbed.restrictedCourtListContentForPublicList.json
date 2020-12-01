@@ -67,7 +67,15 @@
                             "statementOfOffence": {
                               "title": "OFFENCE_TITLE",
                               "welshTitle": "WelshOFFENCE_TITLE"
-                            }
+                            },
+                            "reportingRestrictions": [
+                              {
+                                "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                                "label": "RestrictionApplied",
+                                "orderedDate": "2020-11-24",
+                                "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                              }
+                            ]
                           }
                         ],
                         "firstName": "FIRST_NAME",
@@ -150,7 +158,15 @@
                             "statementOfOffence": {
                               "title": "OFFENCE_TITLE",
                               "welshTitle": "welshOFFENCE_TITLE"
-                            }
+                            },
+                            "reportingRestrictions": [
+                              {
+                                "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                                "label": "RestrictionApplied",
+                                "orderedDate": "2020-11-24",
+                                "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                              }
+                            ]
                           }
                         ],
                         "firstName": "FIRST_NAME1",
@@ -175,7 +191,21 @@
                             "statementOfOffence": {
                               "title": "OFFENCE_TITLE",
                               "welshTitle": "WelshOFFENCE_TITLE"
-                            }
+                            },
+                            "reportingRestrictions": [
+                              {
+                                "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                                "label": "RestrictionApplied",
+                                "orderedDate": "2020-11-24",
+                                "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                              },
+                              {
+                                "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                                "label": "Yes",
+                                "orderedDate": "2020-11-24",
+                                "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                              }
+                            ]
                           },
                           {
                             "id": "785c2a47-174c-4032-ad29-4c79642048ad",
@@ -185,7 +215,15 @@
                             "statementOfOffence": {
                               "title": "OFFENCE_TITLE",
                               "welshTitle": "welshOFFENCE_TITLE"
-                            }
+                            },
+                            "reportingRestrictions": [
+                              {
+                                "id": "b0faf7dc-9459-4857-a184-fe498123c5ba",
+                                "label": "RestrictionApplied",
+                                "orderedDate": "2020-11-24",
+                                "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
+                              }
+                            ]
                           }
                         ],
                         "firstName": "FIRST_NAME1",

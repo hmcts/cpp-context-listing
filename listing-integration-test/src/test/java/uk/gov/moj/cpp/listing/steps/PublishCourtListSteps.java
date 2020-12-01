@@ -19,6 +19,7 @@ import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithForPublishingCourtListsWithoutReportingRestriction;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -139,10 +140,23 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         return hearingsData;
     }
 
+    public static HearingsData loadHearingData(final UUID courtCentreId, final UUID courtRoomId) {
+        final HearingsData hearingsData = hearingsDataWithForPublishingCourtListsWithoutReportingRestriction(courtCentreId, courtRoomId, "DISTRICT_JUDGE");
+        createHearingForListing(hearingsData);
+        return hearingsData;
+    }
+
     public void verifySentPublishedCourtListHearingData(final boolean checkVideoLink, final String videoLinkDetails) throws Exception {
 
         verifyCourtHeader();
         verifyCourtCourtList(checkVideoLink, videoLinkDetails);
+
+    }
+
+    public void verifySentRestrictedPublishedCourtListHearingData() throws Exception {
+
+        verifyCourtHeader();
+        verifyCourtCourtList();
 
     }
 
@@ -170,6 +184,26 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         assertXpathEvaluatesTo(PRESTON_COURT_NAME, "//*[local-name()='CourtHouseName']/text()", sentXml);
         assertXpathEvaluatesTo(PRESTON_COURT_ID, "/*[local-name()='DailyList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseCode']/text()", sentXml);
         assertXpathEvaluatesTo(PRESTON_COURT_NAME, "/*[local-name()='DailyList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseName']/text()", sentXml);
+
+    }
+
+    private void verifyCourtCourtList() throws Exception {
+
+        final String sentXml = getSentXml();
+
+        assertXpathEvaluatesTo(PRESTON_COURT_SITE_NAME, "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='CourtHouse']/*[local-name()='CourtHouseName']/text()", sentXml);
+        assertXpathEvaluatesTo(PRESTON_COURT_SITE_ID, "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='CourtHouse']/*[local-name()='CourtHouseCode']/text()", sentXml);
+        assertXpathEvaluatesTo("1", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='CourtRoomNumber']/text()", sentXml);
+        assertXpathEvaluatesTo("Mark J", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameForename']/text()", sentXml);
+        assertXpathEvaluatesTo("Ainsworth", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameSurname']/text()", sentXml);
+        assertXpathEvaluatesTo("Recorder Mark J Ainsworth judge", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameRequestedName']/text()", sentXml);
+
 
     }
 
@@ -358,6 +392,12 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         final Response response = restClient.postCommand(commandUrl, MEDIA_TYPE_LISTING_COMMAND_EXPORT_COURT_LIST, request, getLoggedInHeader());
 
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    private static void createHearingForListing(final HearingsData hearingsData) {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedAndListed();
+        }
     }
 
     public void verifyPublicEventForCourtList(final UUID courtCentreId) {

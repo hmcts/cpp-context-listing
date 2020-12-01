@@ -1253,7 +1253,8 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].id",
                                         equalTo(updatedHearingData.getHearingId().toString())),
                                 withJsonPath("$.hearings[0].hasVideoLink",
-                                        equalTo(updatedHearingData.getHasVideoLink()))
+                                        equalTo(updatedHearingData.getHasVideoLink())
+                                )
                         )));
     }
 

@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.query.document.generator.courtlist;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @SuppressWarnings({"squid:S1067", "squid:S00107", "squid:S00121", "squid:S2384"})
 public class Defendant {
@@ -18,6 +19,8 @@ public class Defendant {
     private String nationality;
 
     private Address address;
+
+    private Set<ReportingRestriction> reportingRestrictions;
 
     private List<Offence> offences;
 
@@ -65,6 +68,10 @@ public class Defendant {
         return defenceCounsels;
     }
 
+    public Set<ReportingRestriction> getReportingRestrictions() {
+        return reportingRestrictions;
+    }
+
     public static Defendant.Builder defendant() {
         return new Defendant.Builder();
     }
@@ -80,6 +87,7 @@ public class Defendant {
         private Address address;
         private List<Counsel> prosecutionCounsels;
         private List<Counsel> defenceCounsels;
+        private Set<ReportingRestriction> reportingRestrictions;
 
         private Builder() {
         }
@@ -132,6 +140,12 @@ public class Defendant {
             this.address = address;
             return this;
         }
+
+        public Defendant.Builder withReportingRestrictions(final Set<ReportingRestriction> reportingRestrictions) {
+            this.reportingRestrictions = reportingRestrictions;
+            return this;
+        }
+
         public Defendant build() {
             final Defendant defendant = new Defendant();
             defendant.organisationName = organisationName;
@@ -144,6 +158,7 @@ public class Defendant {
             defendant.address = address;
             defendant.prosecutionCounsels = prosecutionCounsels;
             defendant.defenceCounsels = defenceCounsels;
+            defendant.reportingRestrictions = reportingRestrictions;
             return defendant;
         }
     }

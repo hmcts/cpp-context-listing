@@ -87,6 +87,14 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithShadowListedOffences());
     }
 
+    public static HearingsData hearingsDataWithForPublishingCourtListsWithoutReportingRestriction(final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType){
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithNoReportingRestriction(courtCentreId, courtRoomId, judiciaryType));
+    }
+
+    public static HearingsData hearingsDataWithRestriction(final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithRestriction(courtCentreId,courtRoomId,judiciaryType));
+    }
+
 
     public HearingsData combine(final HearingsData moreHearingsData) {
         final List<HearingData> combinedHearingsData = new ArrayList<>();

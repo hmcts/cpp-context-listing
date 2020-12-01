@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static java.util.Objects.isNull;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 
@@ -8,6 +9,7 @@ import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
 import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
+import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,7 +56,7 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
                     .build());
         }
 
-        return uk.gov.moj.cpp.listing.domain.Offence.offence()
+        final uk.gov.moj.cpp.listing.domain.Offence.Builder builder = uk.gov.moj.cpp.listing.domain.Offence.offence()
                 .withId(courtOffence.getId())
                 .withOffenceCode(courtOffence.getOffenceCode())
                 .withStartDate(courtOffence.getStartDate())
@@ -62,8 +64,16 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
                 .withStatementOfOffence(statement)
                 .withOffenceWording(courtOffence.getWording())
                 .withCustodyTimeLimit(custodyTimeLimit)
-                .withLaaApplnReference(laaReference.isPresent() ? buildLaaReference((laaReference.get())) : empty())
-                .build();
+                .withLaaApplnReference(laaReference.isPresent() ? buildLaaReference((laaReference.get())) : empty());
+
+        if (!isNull(courtOffence.getReportingRestrictions()) && !courtOffence.getReportingRestrictions().isEmpty()) {
+            builder.withReportingRestrictions(courtOffence.getReportingRestrictions().stream()
+                    .map(ReportingRestrictionConverter::courtsToDomain)
+                    .collect(toList())
+            );
+        }
+
+        return builder.build();
     }
 
     private Optional<uk.gov.moj.cpp.listing.domain.LaaReference> buildLaaReference(final LaaReference laaReference) {

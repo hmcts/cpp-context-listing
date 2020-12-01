@@ -2,12 +2,14 @@ package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
 import uk.gov.justice.listing.commands.Offence;
 import uk.gov.justice.services.common.converter.Converter;
-import uk.gov.moj.cpp.listing.domain.LaaReference;
 import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
+import uk.gov.moj.cpp.listing.domain.LaaReference;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
+import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
 
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +51,7 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
                     .build());
         }
 
-        return uk.gov.moj.cpp.listing.domain.Offence.offence()
+        final uk.gov.moj.cpp.listing.domain.Offence.Builder offenceBuilder = uk.gov.moj.cpp.listing.domain.Offence.offence()
                 .withId(commandOffence.getId())
                 .withOffenceCode(commandOffence.getOffenceCode())
                 .withStartDate(commandOffence.getStartDate())
@@ -57,8 +59,13 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
                 .withStatementOfOffence(statementOfOffence)
                 .withOffenceWording(commandOffence.getOffenceWording())
                 .withCustodyTimeLimit(custodyTimeLimit)
-                .withLaaApplnReference(laaReference.isPresent() ? buildLaaReference((laaReference.get())) : empty())
-                .build();
+                .withLaaApplnReference(laaReference.isPresent() ? buildLaaReference((laaReference.get())) : empty());
+
+        if (isNotEmpty(commandOffence.getReportingRestrictions())) {
+            offenceBuilder.withReportingRestrictions(ReportingRestrictionConverter.eventsToDomainAsList(commandOffence.getReportingRestrictions()));
+        }
+
+        return offenceBuilder.build();
     }
 
     private Optional<LaaReference> buildLaaReference(final uk.gov.justice.listing.commands.LaaReference laaReference) {

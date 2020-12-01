@@ -127,6 +127,7 @@
                             <cs:HearingDetails HearingType="XXX">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2020-03-17</cs:HearingDate>
+                                <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999, ReportingRestriction Applied</cs:ListNote>
                             </cs:HearingDetails>
                             <cs:TimeMarkingNote>NOT BEFORE 10:00 AM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
@@ -136,7 +137,7 @@
                                     <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
                                 </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
-                            <cs:ListNote>Conference at 10:30</cs:ListNote>
+                            <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999, ReportingRestriction Applied, Conference at 10:30</cs:ListNote>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -185,6 +186,7 @@
                             <cs:HearingDetails HearingType="XXX">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2020-03-18</cs:HearingDate>
+                                <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
                             </cs:HearingDetails>
                             <cs:TimeMarkingNote>NOT BEFORE 10:00 AM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
@@ -194,6 +196,7 @@
                                     <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
                                 </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
+                            <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -242,6 +245,7 @@
                             <cs:HearingDetails HearingType="XXX">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2020-03-20</cs:HearingDate>
+                                <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
                             </cs:HearingDetails>
                             <cs:TimeMarkingNote>NOT BEFORE 10:00 AM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
@@ -251,6 +255,7 @@
                                     <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
                                 </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
+                            <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
@@ -289,6 +294,7 @@
             <cs:HearingDetails HearingType="XXX">
                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                 <cs:HearingDate>2020-02-16</cs:HearingDate>
+                <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
             </cs:HearingDetails>
             <cs:CaseNumber>CPP</cs:CaseNumber>
             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
@@ -297,6 +303,7 @@
                     <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
                 </cs:ProsecutingOrganisation>
             </cs:Prosecution>
+            <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
             <cs:Defendants>
                 <cs:Defendant>
                     <cs:PersonalDetails>
@@ -337,6 +344,7 @@
             <cs:HearingDetails HearingType="XXX">
                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                 <cs:HearingDate>2020-02-16</cs:HearingDate>
+                <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
             </cs:HearingDetails>
             <cs:CaseNumber>CPP</cs:CaseNumber>
             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
@@ -345,6 +353,7 @@
                     <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
                 </cs:ProsecutingOrganisation>
             </cs:Prosecution>
+            <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
             <cs:Defendants>
                 <cs:Defendant>
                     <cs:PersonalDetails>
@@ -375,6 +384,7 @@
             <cs:HearingDetails HearingType="XXX">
                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                 <cs:HearingDate>2020-02-16</cs:HearingDate>
+                <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
             </cs:HearingDetails>
             <cs:CaseNumber>CPP</cs:CaseNumber>
             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
@@ -383,6 +393,7 @@
                     <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
                 </cs:ProsecutingOrganisation>
             </cs:Prosecution>
+            <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
             <cs:Defendants>
                 <cs:Defendant>
                     <cs:PersonalDetails>

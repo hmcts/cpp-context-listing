@@ -147,7 +147,7 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedWithReportingRestrictionInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         }
         return hearingsData;

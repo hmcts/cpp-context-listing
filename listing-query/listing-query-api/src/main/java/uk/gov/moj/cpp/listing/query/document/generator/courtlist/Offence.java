@@ -52,7 +52,6 @@ public class Offence {
             return this;
         }
 
-
         public Offence build() {
             final Offence offence = new Offence();
             offence.offenceTitle = this.offenceTitle;

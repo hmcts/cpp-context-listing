@@ -6,6 +6,7 @@ import static java.util.UUID.fromString;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.CROWN_PROSECUTION_SERVICE;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.OTHER_PROSECUTOR;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.convertDate;
@@ -49,9 +50,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -60,6 +63,8 @@ import javax.json.JsonObject;
 
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Map to elements defined in CourtServices.xsd
@@ -90,6 +95,10 @@ public class CourtServicesMapper {
     private static final String TIME_MARKING_NOTE_TEXT = "NOT BEFORE %s";
     private static final String COMMITTING_COURT_PATH = "$.defendants[*].offences[*].committingCourt";
     private static final String PUBLIC_LIST_NOTE = "publicListNote";
+    private static final String REPORTING_RESTRICTIONS = "reportingRestrictions";
+    private static final String LABEL = "label";
+    private static final String DEFENDANTS = "defendants";
+    private static final String COMMA =", ";
 
     private RequestedNameMapper judicialRequestedName = new RequestedNameMapper();
 
@@ -332,7 +341,11 @@ public class CourtServicesMapper {
 
         hearingStructure.setCommittingCourt(extractCommittingCourtFromOffence(hearingJson));
 
-        hearingStructure.setListNote(evaluateListNoteText(hearingJson));
+        final String listNoteValue = formListNote(hearingJson);
+
+        if (StringUtils.isNotEmpty(listNoteValue)) {
+            hearingStructure.setListNote(listNoteValue);
+        }
 
         return hearingStructure;
     }
@@ -371,12 +384,21 @@ public class CourtServicesMapper {
 
         // Map applicant to defendant
         hearingStructure.setDefendants(generateHearingStructureDefendantsForCourtApplication(hearingJson));
-        final String listNote = evaluateListNoteText(hearingJson);
-        if (isNotBlank(listNote)) {
-            hearingStructure.setListNote(listNote);
+        final String listNoteValue = formListNote(hearingJson);
+
+        if (StringUtils.isNotEmpty(listNoteValue)) {
+            hearingStructure.setListNote(listNoteValue);
         }
 
+
         return hearingStructure;
+    }
+
+    private String formListNote(final JsonObject hearingJson) {
+        final String listNoteForReportingRestriction = evaluateReportingRestrictionPresent(hearingJson);
+        final String listNote = evaluateListNoteText(hearingJson);
+
+        return concatTextForListNote(listNoteForReportingRestriction, listNote);
     }
 
     private String evaluateListNoteText(final JsonObject hearingJson) {
@@ -384,6 +406,39 @@ public class CourtServicesMapper {
         final String publicListNote = hearingJson.containsKey(PUBLIC_LIST_NOTE) ? hearingJson.getString(PUBLIC_LIST_NOTE) : EMPTY;
         return getFormattedPublicListNote(publicListNote);
     }
+
+    private String evaluateReportingRestrictionPresent(final JsonObject hearingJson) {
+        final Set<String> values = new HashSet<>();
+        if (!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST) && hearingJson.getJsonArray(DEFENDANTS) != null) {
+            for (final JsonObject defendants : hearingJson.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class)) {
+                if (defendants.containsKey(OFFENCES)) {
+                    getReportingRestrictionLabel(defendants.getJsonArray(OFFENCES), values);
+                }
+            }
+        }
+        return CollectionUtils.isNotEmpty(values) ? String.join(COMMA, values) : "";
+    }
+
+    private Set<String> getReportingRestrictionLabel(final JsonArray offences, final Set<String> values) {
+
+        for (final JsonObject offence : offences.getValuesAs(JsonObject.class)) {
+            if (offence.containsKey(REPORTING_RESTRICTIONS)) {
+                for (final JsonObject reportingRestriction : offence.getJsonArray(REPORTING_RESTRICTIONS).getValuesAs(JsonObject.class)) {
+                    values.add(reportingRestriction.getString(LABEL));
+                }
+            }
+        }
+        return values;
+    }
+
+    private String concatTextForListNote(final String reportingRestriction, final String videoLinkDetails) {
+        return Arrays.asList(reportingRestriction, videoLinkDetails)
+                .stream()
+                .map(StringUtils::trimToEmpty)
+                .filter(note -> !note.isEmpty())
+                .collect(Collectors.joining(COMMA));
+    }
+
 
     private HearingTypeStructure generateHearingTypeStructure(final JsonObject hearing) {
 
@@ -399,6 +454,12 @@ public class CourtServicesMapper {
         }
         hearingTypeStructure.setHearingType(getHearingTypeForHearing(hearing));
 
+        if (!hearing.getBoolean(RESTRICT_FROM_COURT_LIST)) {
+            final String listNoteForReportingRestriction = evaluateReportingRestrictionPresent(hearing).trim();
+            if (!listNoteForReportingRestriction.isEmpty()) {
+                hearingTypeStructure.setListNote(listNoteForReportingRestriction);
+            }
+        }
 
         return hearingTypeStructure;
     }
@@ -407,7 +468,7 @@ public class CourtServicesMapper {
 
         final ProsecutionStructure prosecutionStructure = objectFactory.createProsecutionStructure();
 
-        final String authorityType = listedCase.getJsonObject(CASE_IDENTIFIER).getString("authorityCode","");
+        final String authorityType = listedCase.getJsonObject(CASE_IDENTIFIER).getString("authorityCode", "");
 
         final ProsecutingAuthorityType prosecutingAuthorityType = authorityType.startsWith(CPS_PROSECUTOR_CODE)
                 ? CROWN_PROSECUTION_SERVICE
@@ -430,7 +491,7 @@ public class CourtServicesMapper {
 
         final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
 
-        for (final JsonObject defendant : listedCase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
+        for (final JsonObject defendant : listedCase.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class)) {
             defendants.getDefendant().add(generateDefendantStructureForDefendant(defendant,
                     listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE)));
         }
@@ -539,7 +600,7 @@ public class CourtServicesMapper {
         }
         citizenNameStructure.setCitizenNameSurname(lastName);
 
-        citizenNameStructure.setCitizenNameRequestedName(judicialRequestedName.getRequestedCitizenName(firstName,lastName));
+        citizenNameStructure.setCitizenNameRequestedName(judicialRequestedName.getRequestedCitizenName(firstName, lastName));
 
         return citizenNameStructure;
     }
@@ -651,7 +712,7 @@ public class CourtServicesMapper {
         casesStructureCase.setHearing(generateHearingTypeStructure(listedCase));
         casesStructureCase.setProsecution(generateProsecutionStructure(listedCase));
 
-        for (final JsonObject defendant : listedCase.getJsonArray("defendants").getValuesAs(JsonObject.class)) {
+        for (final JsonObject defendant : listedCase.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class)) {
             casesStructureCase.getDefendants().add(generateCaseStructureCaseDefendants(defendant, listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE)));
         }
 

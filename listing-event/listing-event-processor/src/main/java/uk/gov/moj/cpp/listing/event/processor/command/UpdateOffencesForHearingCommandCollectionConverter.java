@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.command;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.services.common.converter.Converter;
@@ -14,7 +15,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.inject.Inject;
+
+
 public class UpdateOffencesForHearingCommandCollectionConverter implements Converter<OffencesToBeUpdated, List<UpdateOffencesForHearingCommand> > {
+
+    @Inject
+    private CommonHearingCommandConverter commonHearingCommandConverter;
 
     @Override
     public List<UpdateOffencesForHearingCommand>  convert(final OffencesToBeUpdated event) {
@@ -31,16 +38,20 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
             final LocalDate endDate = offence.getEndDate().map(LocalDates::from).orElse(null);
             final StatementOfOffence soo = convertStatementOfOffence(offence.getStatementOfOffence());
             final String strEndDate = endDate==null ? null : endDate.toString();
-            return Offence.offence()
+            final Offence.Builder offenceBuilder = Offence.offence()
                     .withEndDate(Optional.ofNullable(strEndDate))
                     .withId(offence.getId())
                     .withOffenceCode(offence.getOffenceCode())
                     .withStartDate(offence.getStartDate())
                     .withStatementOfOffence(soo)
                     .withOffenceWording(offence.getOffenceWording())
-                    .withLaaApplnReference(offence.getLaaApplnReference().isPresent()? buildLaaReference(offence.getLaaApplnReference().get()):Optional.empty())
-                    .build();
+                    .withLaaApplnReference(offence.getLaaApplnReference().isPresent()? buildLaaReference(offence.getLaaApplnReference().get()):Optional.empty());
 
+            if (isNotEmpty(offence.getReportingRestrictions())) {
+                offenceBuilder.withReportingRestrictions(commonHearingCommandConverter.buildReportingRestrictions(offence.getReportingRestrictions()));
+            }
+
+            return offenceBuilder.build();
         }).collect(toList());
     }
 

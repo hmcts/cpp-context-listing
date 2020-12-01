@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.steps.data;
 
 import uk.gov.justice.core.courts.CustodyTimeLimit;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,13 +22,14 @@ public class OffenceData {
     private final Optional<LaaReferenceData> laaApplnReference;
     private final LocalDate laidDate;
     private Optional<Boolean> shadowListed;
+    private List<ReportingRestrictionData> reportingRestriction;
 
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                        final String statementOfOffenceTitleWelsh, final String offenceWording,
                        final int count, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit,
                        final Optional<LaaReferenceData> laaApplnReference, final LocalDate laidDate,
-                       final Optional<Boolean> shadowListed) {
+                       final Optional<Boolean> shadowListed,final List<ReportingRestrictionData> reportingRestrictionData) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
@@ -43,6 +45,7 @@ public class OffenceData {
         this.custodyTimeLimit =  custodyTimeLimit;
         this.laidDate = laidDate;
         this.shadowListed = shadowListed;
+        this.reportingRestriction = reportingRestrictionData;
     }
 
     public Optional<LaaReferenceData> getLaaApplnReference() {
@@ -89,5 +92,13 @@ public class OffenceData {
 
     public void setShadowListed(Optional<Boolean> shadowListed) {
         this.shadowListed = shadowListed;
+    }
+
+    public List<ReportingRestrictionData> getReportingRestrictionDataList() {
+        return reportingRestriction;
+    }
+
+    public void setReportingRestrictionDataList(final List<ReportingRestrictionData> reportingRestrictionDataList) {
+        this.reportingRestriction = reportingRestrictionDataList;
     }
 }

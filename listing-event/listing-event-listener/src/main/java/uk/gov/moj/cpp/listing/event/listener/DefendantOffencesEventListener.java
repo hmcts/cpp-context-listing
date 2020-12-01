@@ -133,6 +133,7 @@ public class DefendantOffencesEventListener {
                 .withRestrictFromCourtList(restrictCourtList)
                 .withLaaApplnReference(updatedOffence.getLaaApplnReference())
                 .withShadowListed(originalOffence.isPresent() ? originalOffence.get().getShadowListed() : Optional.of(Boolean.FALSE))
+                .withReportingRestrictions(updatedOffence.getReportingRestrictions())
                 .build();
     }
 

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
@@ -11,6 +12,7 @@ import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.domain.LaaReference;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
+import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
 
 import java.util.List;
 import java.util.Optional;
@@ -66,7 +68,8 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
     private uk.gov.moj.cpp.listing.domain.Offence buildOffence(final Offence o) {
         final Optional<uk.gov.justice.listing.events.LaaReference> laaApplnReference =
                 o.getLaaApplnReference();
-        return uk.gov.moj.cpp.listing.domain.Offence.offence()
+
+        final uk.gov.moj.cpp.listing.domain.Offence.Builder builder = uk.gov.moj.cpp.listing.domain.Offence.offence()
                 .withId(o.getId())
                 .withEndDate(o.getEndDate())
                 .withStartDate(o.getStartDate())
@@ -75,8 +78,16 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
                 .withStatementOfOffence(buildStatementOfOffence(o))
                 .withLaaApplnReference(laaApplnReference.isPresent() ?
                         buildLaaReference(laaApplnReference.get()) :
-                        empty())
-                .build();
+                        empty());
+
+        if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
+            builder.withReportingRestrictions(o.getReportingRestrictions().stream()
+                    .map(ReportingRestrictionConverter::eventsToDomain)
+                    .collect(toList())
+            );
+        }
+
+        return builder.build();
     }
 
     private StatementOfOffence buildStatementOfOffence(final Offence offence) {

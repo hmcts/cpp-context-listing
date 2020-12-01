@@ -38,6 +38,14 @@
     "isIntroduceAfterInitialProceedings": {
       "description": "Determines that the offence has been introduced by the prosecutor after proceeedings have already been initiated",
       "type": "boolean"
+    },
+    "reportingRestrictions": {
+      "description": "Reporting restrictions",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/reportingRestriction.json"
+      }
     }
   },
   "required": [

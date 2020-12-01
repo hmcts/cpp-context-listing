@@ -48,6 +48,7 @@
                             <cs:HearingDetails HearingType="TRL">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
                                 <cs:HearingDate>2019-12-10</cs:HearingDate>
+                                <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
                             </cs:HearingDetails>
                             <cs:TimeMarkingNote>NOT BEFORE 2:58 PM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
@@ -62,6 +63,7 @@
                                 <cs:CourtHouseCode>000</cs:CourtHouseCode>
                                 <cs:CourtHouseName>Lancashire Magistrates' Court</cs:CourtHouseName>
                             </cs:CommittingCourt>
+                            <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>

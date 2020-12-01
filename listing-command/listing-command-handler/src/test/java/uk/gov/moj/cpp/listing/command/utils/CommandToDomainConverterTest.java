@@ -252,6 +252,27 @@ public class CommandToDomainConverterTest {
         assertThat(defendant2.getOffences().get(1).getShadowListed(), is(of(false)));
     }
 
+    @Test
+    public void shouldPopulateReportingRestrictions(){
+        //given
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingWithReportingRestrictions();
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing, Collections.emptyList(), Collections.emptyList());
+
+        //then
+        final Defendant defendant1 = actual.getListedCases().get(0).getDefendants().get(0);
+
+        assertThat(defendant1.getOffences().get(0).getReportingRestrictions().get(0).getId(), notNullValue());
+        assertThat(defendant1.getOffences().get(0).getReportingRestrictions().get(0).getJudicialResultId(), notNullValue());
+        assertThat(defendant1.getOffences().get(0).getReportingRestrictions().get(0).getLabel(), is("RR Label 1"));
+        assertThat(defendant1.getOffences().get(0).getReportingRestrictions().get(0).getOrderedDate(), notNullValue());
+        assertThat(defendant1.getOffences().get(0).getReportingRestrictions().get(1).getId(), notNullValue());
+        assertThat(defendant1.getOffences().get(0).getReportingRestrictions().get(1).getJudicialResultId(), notNullValue());
+        assertThat(defendant1.getOffences().get(0).getReportingRestrictions().get(1).getLabel(), is("RR Label 2"));
+        assertThat(defendant1.getOffences().get(0).getReportingRestrictions().get(1).getOrderedDate(), is(of(LocalDate.of(2020, 10, 10))));
+    }
+
     private void assertCourtApplications(HearingListingNeeds commandHearing, uk.gov.moj.cpp.listing.domain.Hearing actual) {
         CourtApplication actualCourtApplication = actual.getCourtApplications().get(0);
         assertThat(commandHearing.getCourtApplications().size(), is(actual.getCourtApplications().size()));

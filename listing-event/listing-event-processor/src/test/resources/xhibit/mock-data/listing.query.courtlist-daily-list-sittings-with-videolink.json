@@ -129,7 +129,25 @@
                         "welshTitle": "Wounding with intent",
                         "legislation": "legislation"
                       },
-                      "restrictFromCourtList": false
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        },{
+                          "id": "35e35356-3ef5-4b45-94c5-7e0b2212310a",
+                          "label": "ReportingRestriction Applied",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "4f38ebe7-4d26-44e4-b8f2-c26739b9a542d"
+                        },{
+                          "id": "ebae8284-960a-4cd7-9f76-85b28337edf6",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "2fd90e66-319e-43a5-9c02-c005fa412b93"
+                        }
+                        ],
+                        "restrictFromCourtList": false
                     }
                   ],
                   "firstName": "Laura",
@@ -187,6 +205,14 @@
                         "welshTitle": "Wounding with intent",
                         "legislation": "legislation"
                       },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
                       "restrictFromCourtList": false
                     }
                   ],
@@ -243,6 +269,14 @@
                         "welshTitle": "Wounding with intent",
                         "legislation": "legislation"
                       },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
                       "restrictFromCourtList": false
                     }
                   ],
@@ -298,6 +332,14 @@
                         "welshTitle": "Wounding with intent",
                         "legislation": "legislation"
                       },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
                       "restrictFromCourtList": false
                     }
                   ],
@@ -322,6 +364,14 @@
                         "welshTitle": "Wounding with intent",
                         "legislation": "legislation"
                       },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
                       "restrictFromCourtList": false
                     }
                   ],
@@ -369,6 +419,14 @@
                         "welshTitle": "Wounding with intent",
                         "legislation": "legislation"
                       },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
                       "restrictFromCourtList": false
                     },
                     {
@@ -382,6 +440,14 @@
                         "welshTitle": "Harrassment",
                         "legislation": "legislation"
                       },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
                       "restrictFromCourtList": false
                     },
                     {
@@ -395,6 +461,14 @@
                         "welshTitle": "Armed robbery",
                         "legislation": "legislation"
                       },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
                       "restrictFromCourtList": false
                     }
                   ],
@@ -443,6 +517,15 @@
                         "welshTitle": "Wounding with intent",
                         "legislation": "legislation"
                       },
+                      "reportingRestrictions": [
+                        {
+                          "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                          "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                          "orderedDate": "2020-11-10",
+                          "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+                        }
+                      ],
+
                       "restrictFromCourtList": false
                     }
                   ],

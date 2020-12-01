@@ -18,6 +18,15 @@
               "welshTitle": "Wounding with intent",
               "legislation": "legislation"
             },
+            "reportingRestrictions": [
+              {
+                "id": "c9829c79-17d7-40d2-8332-e67860d385bd",
+                "label": "Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999",
+                "orderedDate": "2020-11-10",
+                "judicialResultId": "ea33d32b-c0fc-4052-aef9-f224bd46c29d"
+              }
+            ],
+
             "restrictFromCourtList": false,
             "committingCourt" : {
               "courtCentreId" : "f34a5dba-8c4b-4ec8-8b9a-6af405c00ebf",

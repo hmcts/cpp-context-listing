@@ -57,6 +57,11 @@ public class CommandBuilder {
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
     }
 
+    public HearingListingNeeds buildCommandHearingWithReportingRestrictions() {
+        JsonObject hearingJsonObject = givenPayload("/test-data/listing.commands.hearing-reporting-restrictions.json");
+        return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
+    }
+
     public CourtApplication buildCourtApplication() {
         JsonObject courtApplication = givenPayload("/test-data/listing.court-application-applicant-respondent.json");
         return jsonObjectToObjectConverter.convert(courtApplication, CourtApplication.class);

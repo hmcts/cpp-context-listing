@@ -21,6 +21,7 @@ import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.StatementOfOffence;
+import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
 
 import java.util.List;
 import java.util.Optional;
@@ -121,7 +122,7 @@ public class CourtToEventConverter {
     }
 
     private static Offence buildOffence(final uk.gov.justice.core.courts.Offence o, final List<UUID> shadowListedOffences) {
-        return Offence.offence()
+        final Offence.Builder builder = Offence.offence()
                 .withId(o.getId())
                 .withEndDate(o.getEndDate())
                 .withStartDate(o.getStartDate())
@@ -131,8 +132,16 @@ public class CourtToEventConverter {
                 .withRestrictFromCourtList(of(Boolean.FALSE))
                 .withLaaApplnReference(buildLaaReference(o.getLaaApplnReference()))
                 .withLaidDate(o.getLaidDate())
-                .withShadowListed(of(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId())))
-                .build();
+                .withShadowListed(of(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId())));
+
+        if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
+            builder.withReportingRestrictions(o.getReportingRestrictions().stream()
+                    .map(ReportingRestrictionConverter::courtsToEvents)
+                    .collect(toList())
+            );
+        }
+
+        return builder.build();
     }
 
     @SuppressWarnings({"squid:S3655"})

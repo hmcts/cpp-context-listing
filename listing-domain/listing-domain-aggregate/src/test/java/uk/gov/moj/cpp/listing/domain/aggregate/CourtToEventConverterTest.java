@@ -6,7 +6,6 @@ import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.nullValue;
 
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.BailStatus;
@@ -20,10 +19,12 @@ import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
+import uk.gov.justice.core.courts.ReportingRestriction;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.StatementOfOffence;
 
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -79,6 +80,10 @@ public class CourtToEventConverterTest {
     private static final String ORGANIZATION_NAME = "Organization Name";
     private static final int DAYS_SPENT = 1;
     private static final String TIME_LIMIT = "Time Limit";
+    private static final UUID RR_ID = UUID.randomUUID();
+    private static final UUID RR_JUDICIAL_RESULT_ID = UUID.randomUUID();
+    private static final String RR_LABEL = "RR Label 1";
+    private static final LocalDate RR_ORDERED_DATE = LocalDate.now();
 
     @Test
     public void shouldConvert() {
@@ -182,8 +187,18 @@ public class CourtToEventConverterTest {
         assertThat(defendant2.getOffences().get(1).getShadowListed(), is(Optional.of(Boolean.FALSE)));
     }
 
-    private ProsecutionCase getSampleProsecutionCase() {
+    @Test
+    public void shouldPopulateReportingRestrictions() {
+        final ListedCase listedCase = CourtToEventConverter.buildListedCase(getSampleProsecutionCase(), Arrays.asList(OFFENCE_ID));
+        final uk.gov.justice.listing.events.ReportingRestriction rr = listedCase.getDefendants().get(0).getOffences().get(0).getReportingRestrictions().get(0);
 
+        assertThat(rr.getId(), is(RR_ID));
+        assertThat(rr.getJudicialResultId(), is(of(RR_JUDICIAL_RESULT_ID)));
+        assertThat(rr.getLabel(), is(RR_LABEL));
+        assertThat(rr.getOrderedDate(), is(of(RR_ORDERED_DATE)));
+    }
+
+    private ProsecutionCase getSampleProsecutionCase() {
         return ProsecutionCase.prosecutionCase()
                 .withId(CASE_ID)
                 .withProsecutionCaseIdentifier(getSampleCaseIdentifier())
@@ -221,6 +236,7 @@ public class CourtToEventConverterTest {
                 .withOffenceTitleWelsh(of(WELSH_TITLE))
                 .withLaaApplnReference(of(getSampleLaaReference()))
                 .withLaidDate(of(LAID_DATE))
+                .withReportingRestrictions(getSampleReportingRestrictions())
                 .build());
     }
 
@@ -335,5 +351,14 @@ public class CourtToEventConverterTest {
                 .withLaaApplnReference(of(getSampleLaaReference()))
                 .withLaidDate(of(LAID_DATE))
                 .build();
+    }
+
+    private List<ReportingRestriction> getSampleReportingRestrictions() {
+        return Arrays.asList(ReportingRestriction.reportingRestriction()
+                .withId(RR_ID)
+                .withJudicialResultId(RR_JUDICIAL_RESULT_ID)
+                .withLabel(RR_LABEL)
+                .withOrderedDate(RR_ORDERED_DATE.toString())
+                .build());
     }
 }

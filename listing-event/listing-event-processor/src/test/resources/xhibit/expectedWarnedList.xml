@@ -33,6 +33,7 @@
                             <cs:Hearing HearingType="TRL">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
                                 <cs:HearingDate>2020-03-30</cs:HearingDate>
+                                <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
                             </cs:Hearing>
                             <cs:Defendants>
                                 <cs:Defendant>

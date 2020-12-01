@@ -2,7 +2,11 @@ package uk.gov.moj.cpp.listing.steps.data;
 
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
+import uk.gov.justice.core.courts.ReportingRestriction;
+
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,11 +23,13 @@ public class UpdatedOffenceData {
     private final String legislation;
     private final String legislationWelsh;
     private final Optional<LaaReferenceData> laaApplnReference;
+    private List<ReportingRestrictionData> reportingRestriction;
 
     private UpdatedOffenceData(final UUID offenceId, final String offenceCode,
                                final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                                final String statementOfOffenceTitleWelsh, final String offenceWording,
-                               final String legislation, final String legislationWelsh, final Optional<LaaReferenceData> laaReferences) {
+                               final String legislation, final String legislationWelsh, final Optional<LaaReferenceData> laaReferences,
+                               final List<ReportingRestrictionData> reportingRestriction) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
@@ -36,6 +42,7 @@ public class UpdatedOffenceData {
         this.statementOfOffenceTitle = statementOfOffenceTitle;
         this.legislation = legislation;
         this.legislationWelsh = legislationWelsh;
+        this.reportingRestriction = reportingRestriction;
     }
 
     public static final Builder builder() {
@@ -55,6 +62,7 @@ public class UpdatedOffenceData {
                 .withLegislation(STRING.next())
                 .withLegislationWelsh(STRING.next())
                 .withLaaApplnReference((offenceData.getLaaApplnReference()))
+                .withReportingRestriction(offenceData.getReportingRestrictionDataList().subList(1, 2))
                 .build();
     }
 
@@ -84,6 +92,10 @@ public class UpdatedOffenceData {
 
     public String getLegislationWelsh() { return legislationWelsh; }
 
+    public List<ReportingRestrictionData> getReportingRestriction() {
+        return reportingRestriction;
+    }
+
     private static class Builder {
         private UUID offenceId;
         private String offenceCode;
@@ -95,6 +107,7 @@ public class UpdatedOffenceData {
         private String legislation;
         private String legislationWelsh;
         private Optional<LaaReferenceData> laaApplnReference;
+        private List<ReportingRestrictionData> reportingRestriction;
 
         public Builder withOffenceId(final UUID offenceId) {
             this.offenceId = offenceId;
@@ -146,10 +159,15 @@ public class UpdatedOffenceData {
             return this;
         }
 
+        public Builder withReportingRestriction(final List<ReportingRestrictionData> reportingRestriction) {
+            this.reportingRestriction = reportingRestriction;
+            return this;
+        }
+
         public UpdatedOffenceData build() {
             return new UpdatedOffenceData(offenceId, offenceCode, startDate, endDate,
                     statementOfOffenceTitle, statementOfOffenceTitleWelsh, offenceWording,
-                    legislation, legislationWelsh, laaApplnReference);
+                    legislation, legislationWelsh, laaApplnReference, reportingRestriction);
         }
     }
 }

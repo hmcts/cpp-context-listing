@@ -1,10 +1,11 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S1067", "squid:S00121", "pmd:BeanMembersShouldSerialize", "squid:S00107", "squid:S00122"})
+@SuppressWarnings({"squid:S1067", "squid:S00121", "pmd:BeanMembersShouldSerialize", "squid:S00107", "squid:S00122", "squid:S2384"})
 public class Offence {
     private final Optional<String> endDate;
 
@@ -28,7 +29,12 @@ public class Offence {
 
     private final Optional<CommittingCourt> committingCourt;
 
-    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording, final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit, final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate, final Optional<Boolean> shadowListed, final Optional<CommittingCourt> committingCourt) {
+    private final List<ReportingRestriction> reportingRestrictions;
+
+    public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording,
+                   final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit,
+                   final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate, final Optional<Boolean> shadowListed,
+                   final Optional<CommittingCourt> committingCourt, final List<ReportingRestriction> reportingRestrictions) {
         this.endDate = endDate;
         this.id = id;
         this.offenceCode = offenceCode;
@@ -40,6 +46,7 @@ public class Offence {
         this.laidDate = laidDate;
         this.shadowListed = shadowListed;
         this.committingCourt = committingCourt;
+        this.reportingRestrictions = reportingRestrictions;
     }
 
     public Optional<String> getEndDate() {
@@ -86,6 +93,10 @@ public class Offence {
         return committingCourt;
     }
 
+    public List<ReportingRestriction> getReportingRestrictions() {
+        return reportingRestrictions;
+    }
+
     public static Builder offence() {
         return new Offence.Builder();
     }
@@ -109,12 +120,13 @@ public class Offence {
                 Objects.equals(laaApplnReference, offence.laaApplnReference) &&
                 Objects.equals(laidDate, offence.laidDate) &&
                 Objects.equals(shadowListed, offence.shadowListed) &&
-                Objects.equals(committingCourt, offence.committingCourt);
+                Objects.equals(committingCourt, offence.committingCourt) &&
+                Objects.equals(reportingRestrictions, offence.reportingRestrictions);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed);
+        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions);
     }
 
     @Override
@@ -131,6 +143,7 @@ public class Offence {
                 ", laidDate=" + laidDate +
                 ", shadowListed=" + shadowListed +
                 ", committingCourt=" + committingCourt +
+                ", reportingRestrictions=" + reportingRestrictions +
                 '}';
     }
 
@@ -157,6 +170,8 @@ public class Offence {
         private Optional<Boolean> shadowListed;
 
         private Optional<CommittingCourt> committingCourt;
+
+        private List<ReportingRestriction> reportingRestrictions;
 
         public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
@@ -213,8 +228,13 @@ public class Offence {
             return this;
         }
 
+        public Builder withReportingRestrictions(final List<ReportingRestriction> reportingRestrictions) {
+            this.reportingRestrictions = reportingRestrictions;
+            return this;
+        }
+
         public Offence build() {
-            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions);
         }
     }
 }

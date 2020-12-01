@@ -2,13 +2,17 @@ package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasNoJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -40,6 +44,7 @@ import javax.ws.rs.core.Response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
 import com.jayway.restassured.path.json.JsonPath;
+import org.hamcrest.core.IsNull;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +136,38 @@ public class RestrictCourtListSteps extends AbstractIT implements AutoCloseable 
                                         equalTo(restrictCourtListingOfDefendant)),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[0].restrictFromCourtList",
                                         equalTo(restrictCourtListingOfOffence))
+                        )));
+    }
+
+    public void verifyListingRestrictedInHearing(Boolean restrictCourtListingOfCase, Boolean restrictCourtListingOfDefendant, Boolean restrictCourtListingOfOffence ) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), true));
+
+        final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
+        final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
+
+        final RequestParamsBuilder requestParamsBuilder = requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser());
+        poll(requestParamsBuilder)
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath(hearingIdFilter),
+                                withJsonPath("$.hearings[0].id",
+                                        equalTo(hearingsData.getHearingData().get(0).getId().toString())),
+                                withJsonPath("$.hearings[0].listedCases[0].id",
+                                        equalTo(hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId().toString())),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].id",
+                                        equalTo(hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0).getDefendantId().toString())),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[0].id",
+                                        equalTo(hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getOffenceId().toString())),
+                                withJsonPath("$.hearings[0].listedCases[0].restrictFromCourtList",
+                                        equalTo(restrictCourtListingOfCase)),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].restrictFromCourtList",
+                                        equalTo(restrictCourtListingOfDefendant)),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[0].restrictFromCourtList",
+                                        equalTo(restrictCourtListingOfOffence)),
+                               hasNoJsonPath("hearing.listedCases[0].defendants[0].offences[0].reportingRestrictions[0]")
+
                         )));
     }
 

@@ -27,6 +27,7 @@ import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
+import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
 
 import java.util.List;
 import java.util.Optional;
@@ -165,11 +166,19 @@ public class NewDomainToEventConverter {
                 .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference(o.getLaaApplnReference().get()) : empty())
                 .withLaidDate(o.getLaidDate())
                 .withShadowListed(o.getShadowListed());
+
         if (nonNull(o.getCommittingCourt()) && o.getCommittingCourt().isPresent()) {
             builder.withCommittingCourt(buildCommittingCourt(o.getCommittingCourt().get()));
         }
-        return builder
-                .build();
+
+        if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
+            builder.withReportingRestrictions(o.getReportingRestrictions().stream()
+                    .map(ReportingRestrictionConverter::domainToEvents)
+                    .collect(toList())
+            );
+        }
+
+        return builder.build();
     }
 
     private static Optional<uk.gov.justice.core.courts.BailStatus> buildBailStatusEvent(final Optional<uk.gov.moj.cpp.listing.domain.BailStatus> bailStatus) {

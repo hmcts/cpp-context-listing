@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.command;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.services.common.converter.Converter;
@@ -12,7 +13,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class AddOffencesForHearingCommandCollectionConverter implements Converter<OffencesToBeAdded, List<AddOffencesForHearingCommand> > {
+import javax.inject.Inject;
+
+public class AddOffencesForHearingCommandCollectionConverter implements Converter<OffencesToBeAdded, List<AddOffencesForHearingCommand> >{
+
+    @Inject
+    private CommonHearingCommandConverter commonHearingCommandConverter;
 
     @Override
     public List<AddOffencesForHearingCommand>  convert(final OffencesToBeAdded event) {
@@ -27,16 +33,20 @@ public class AddOffencesForHearingCommandCollectionConverter implements Converte
     private List<Offence> convertOffences(List<uk.gov.justice.listing.events.Offence> offences) {
         return offences.stream().map(offence -> {
             final StatementOfOffence soo = convertStatementOfOffence(offence.getStatementOfOffence());
-            return Offence.offence()
+            final Offence.Builder offenceBuilder = Offence.offence()
                     .withEndDate(offence.getEndDate())
                     .withId(offence.getId())
                     .withOffenceCode(offence.getOffenceCode())
                     .withStartDate(offence.getStartDate())
                     .withStatementOfOffence(soo)
                     .withOffenceWording(offence.getOffenceWording())
-                    .withLaaApplnReference(offence.getLaaApplnReference().isPresent() ? convertLaaReference(offence.getLaaApplnReference().get()) : Optional.empty())
-                    .build();
+                    .withLaaApplnReference(offence.getLaaApplnReference().isPresent() ? convertLaaReference(offence.getLaaApplnReference().get()) : Optional.empty());
 
+            if (isNotEmpty(offence.getReportingRestrictions())) {
+                offenceBuilder.withReportingRestrictions(commonHearingCommandConverter.buildReportingRestrictions(offence.getReportingRestrictions()));
+            }
+
+            return offenceBuilder.build();
         }).collect(toList());
     }
 

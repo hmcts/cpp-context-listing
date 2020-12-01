@@ -37,6 +37,14 @@
     "committingCourt": {
       "description": "Sending court details",
       "$ref": "http://justice.gov.uk/listing/events/committingCourt.json"
+    },
+    "reportingRestrictions": {
+      "description": "Reporting restrictions",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/reportingRestriction.json"
+      }
     }
   },
   "required": [

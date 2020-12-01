@@ -96,6 +96,7 @@ public class PublicCourtListAssemblerTest {
     private static final String DEFENDANT_STRING = "Defendant";
     private static final String APPLICATION_TYPE = STRING.next();
     private static final String APPLICATION_PARTICULARS = STRING.next();
+    private static final String REPORTING_RESTRICTION="RestrictionApplied";
 
     @Mock
     private CourtCentreFactory courtCentreFactory;
@@ -172,10 +173,16 @@ public class PublicCourtListAssemblerTest {
         assertThat(defendant.getString("firstName"), is(EMPTY));
         assertThat(defendant.getString("surname"), is(DEFENDANT_STRING));
         assertThat(defendant.getJsonArray("offences").size(), is(1));
+        assertThat(defendant.getJsonArray("reportingRestrictions").size(),is(1));
+        JsonObject reportingRestriction = defendant.getJsonArray("reportingRestrictions").getJsonObject(0);
+        assertThat(reportingRestriction.getString("label"),is(REPORTING_RESTRICTION));
         defendant = hearing.getJsonArray("defendants").getJsonObject(1);
         assertThat(defendant.getString("firstName"), is(FIRST_NAME1));
         assertThat(defendant.getString("surname"), is(LAST_NAME1));
-        assertThat(defendant.getJsonArray("offences").size(), is(1));
+        assertThat(defendant.getJsonArray("offences").size(), is(2));
+        assertThat(defendant.getJsonArray("reportingRestrictions").size(),is(2));
+        JsonObject reportingRestriction1 = defendant.getJsonArray("reportingRestrictions").getJsonObject(0);
+        assertThat(reportingRestriction1.getString("label"),is(REPORTING_RESTRICTION));
 
     }
 

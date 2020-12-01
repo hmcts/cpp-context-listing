@@ -148,6 +148,7 @@ public class StandardCourtListTemplateAssemblerTest {
     private static final String ADDRESS_01 = "22 Liverpool Street";
     private static final String POST_CODE = "LV12 9XA";
     private static final String ADDRESS_1_WELSH = "22 Welsh Street";
+    private static final String REPORTING_RESTRICTION="RestrictionApplied";
 
     @Mock
     private CourtCentreFactory courtCentreFactory;
@@ -404,9 +405,14 @@ public class StandardCourtListTemplateAssemblerTest {
         Hearing actualHearing = actualTimeslot.getHearings().get(0);
 
         Defendant actualDefendant = actualHearing.getDefendants().get(0);
-        assertDefendant(actualDefendant,1);
-        assertOffence(actualDefendant.getOffences().get(0));
-
+        assertDefendant(actualDefendant,2);
+        assertOffence(actualDefendant.getOffences().get(1));
+        if (CourtListType.STANDARD.equals(courtListType) || CourtListType.PUBLIC.equals(courtListType)) {
+            assertThat(actualDefendant.getReportingRestrictions().size(), is(1));
+            assertThat(actualDefendant.getReportingRestrictions().stream().findFirst().get(), is(REPORTING_RESTRICTION));
+        } else {
+            assertThat(actualDefendant.getReportingRestrictions(), is(nullValue()));
+        }
         CourtRoom actualCourtRoom1 = actualHearingDate.getCourtRooms().get(0);
         assertThat(actualCourtRoom1.getCourtRoomName(), is(COURT_ROOM_NAME_1));
     }

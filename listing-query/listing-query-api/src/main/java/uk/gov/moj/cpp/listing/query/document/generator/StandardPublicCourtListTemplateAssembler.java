@@ -13,6 +13,7 @@ import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -22,10 +23,12 @@ import static org.apache.commons.lang3.StringUtils.upperCase;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.ORGANISATION;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.BENCH;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.STANDARD;
 import static uk.gov.moj.cpp.listing.domain.utils.JsonUtils.getString;
 import static uk.gov.moj.cpp.listing.domain.utils.ZonedDateTimeFormatter.adjustDateTime;
 import static uk.gov.moj.cpp.listing.query.document.generator.courtlist.Offence.offence;
+import static uk.gov.moj.cpp.listing.query.document.generator.courtlist.ReportingRestriction.reportingRestriction;
 import static uk.gov.moj.cpp.listing.query.document.generator.courtlist.Timeslot.timeslot;
 
 import uk.gov.justice.services.common.converter.LocalDates;
@@ -45,6 +48,8 @@ import uk.gov.moj.cpp.listing.query.document.generator.courtlist.CourtRoom;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Defendant;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Hearing;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.HearingDate;
+import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Offence;
+import uk.gov.moj.cpp.listing.query.document.generator.courtlist.ReportingRestriction;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.StandardCourtList;
 import uk.gov.moj.cpp.listing.query.document.generator.courtlist.Timeslot;
 
@@ -57,6 +62,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -76,7 +82,6 @@ import javax.json.JsonValue;
 import javax.validation.constraints.NotNull;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,6 +151,8 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String SHADOWLISTED ="shadowListed";
     private static final String PROSECUTION_COUNSELS = "prosecutionCounsels";
     private static final String DEFENCE_COUNSELS = "defenceCounsels";
+    private static final String REPORTING_RESTRICTIONS = "reportingRestrictions";
+    private static final String LABEL = "label";
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
@@ -295,7 +302,7 @@ public class StandardPublicCourtListTemplateAssembler {
         final List<Timeslot> timeslots = sortedListMultimap.keySet().stream().map(key -> timeslot()
                 .withHearings(sortedListMultimap.get(key))
                 .build())
-                .filter(timeslot -> CollectionUtils.isNotEmpty(timeslot.getHearings()))
+                .filter(timeslot -> isNotEmpty(timeslot.getHearings()))
                 .collect(toList());
 
         return CourtRoom.courtRoom()
@@ -311,7 +318,7 @@ public class StandardPublicCourtListTemplateAssembler {
         if (hearingJson.containsKey(LISTED_CASES)) {
             final List<Hearing> hearings = hearingJson.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class).stream()
                     .map(listedCase -> createHearingFromListedCase(hearingJson, hearingStartTime, sequence, listedCase, restrictedListRequired, courtListType))
-                    .filter(hearing -> CollectionUtils.isNotEmpty(hearing.getDefendants()))
+                    .filter(hearing -> isNotEmpty(hearing.getDefendants()))
                     .collect(toList());
             unsortedListMultimap.computeIfAbsent(startTimestamp.toLocalDateTime(), k -> new ArrayList<>()).addAll(hearings);
         }
@@ -427,7 +434,7 @@ public class StandardPublicCourtListTemplateAssembler {
                     return createDefendant(hearingJson, defendant, dateOfBirth, defendantRestricted,
                             defendantRestricted ? getNameSuffixForRestrictedCase(restrictedDefendantCount, namePositionOnRestricted) : EMPTY, restrictedListRequired, courtListType, listedCase.getString(ID));
                 })
-                .filter(defendant -> restrictedListRequired && (STANDARD.equals(courtListType) || BENCH.equals(courtListType)) ? CollectionUtils.isNotEmpty(defendant.getOffences()) : TRUE)
+                .filter(defendant -> restrictedListRequired && (STANDARD.equals(courtListType) || BENCH.equals(courtListType)) ? isNotEmpty(defendant.getOffences()) : TRUE)
                 .collect(toList());
     }
 
@@ -467,6 +474,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private Defendant createDefendant(final JsonObject hearingJson, final JsonObject defendant, final String dateOfBirth, final boolean defendantRestricted,
                                       final String defendantSuffix, final boolean restrictedListRequired, final CourtListType courtListType, final String caseId) {
         final Defendant.Builder builder = Defendant.defendant();
+        final Set<ReportingRestriction> reportingRestrictions = new HashSet<>();
         final String legalEntityDefendant = defendant.getString(ORGANISATION_NAME, BLANK_STRING);
         if (defendantRestricted) {
             if (!StringUtils.isBlank(legalEntityDefendant)) {
@@ -490,24 +498,61 @@ public class StandardPublicCourtListTemplateAssembler {
                 builder.withAddress(buildAddress(defendant.getJsonObject(ADDRESS)));
             }
         }
+
         builder.withOffences(defendant.getJsonArray(OFFENCES).getValuesAs(JsonObject.class).stream()
-                .filter(offence -> !isRestricted(restrictedListRequired, courtListType, offence))
-                .map(offence -> offence()
-                        .withOffenceTitle(offence.getJsonObject(STATEMENT_OF_OFFENCE).getString(TITLE))
-                        .withWelshOffenceTitle(offence.getJsonObject(STATEMENT_OF_OFFENCE).getString(WELSH_TITLE, BLANK_STRING))
-                        .withOffenceWording(offence.getString(OFFENCE_WORDING, BLANK_STRING))
-                        .build())
+                .map(offences -> {
+                    reportingRestrictions.addAll(getReportingRestriction(offences)
+                            .stream()
+                            .filter(Objects::nonNull)
+                            .map(reporting -> reportingRestriction()
+                                    .withLabel(reporting.getLabel())
+                                    .build())
+                            .collect(Collectors.toList()));
+                    final boolean offenceRestricted = isRestricted(restrictedListRequired, courtListType, offences);
+                    return createOffence(offences, offenceRestricted);
+                })
                 .collect(toList()));
-        if(BENCH == courtListType) {
-            if(hearingJson.containsKey(DEFENCE_COUNSELS)) {
-                builder.withDefenceCounsels(extractCounsels(hearingJson.getJsonArray(DEFENCE_COUNSELS), defendant.getString(ID), DEFENDANTS));
-            }
-            if(hearingJson.containsKey(PROSECUTION_COUNSELS)) {
-                builder.withProsecutionCounsels(extractCounsels(hearingJson.getJsonArray(PROSECUTION_COUNSELS), caseId, PROSECUTION_CASES));
-            }
+
+        if (PUBLIC.equals(courtListType) || STANDARD.equals(courtListType)) {
+            builder.withReportingRestrictions(reportingRestrictions);
+        }
+
+        if (BENCH.equals(courtListType)) {
+            addDefenceAndProsecutionCounsels(hearingJson, defendant, caseId, builder);
         }
 
         return  builder.build();
+    }
+
+    private void addDefenceAndProsecutionCounsels(final JsonObject hearingJson, final JsonObject defendant, final String caseId, final Defendant.Builder builder) {
+        if(hearingJson.containsKey(DEFENCE_COUNSELS)) {
+            builder.withDefenceCounsels(extractCounsels(hearingJson.getJsonArray(DEFENCE_COUNSELS), defendant.getString(ID), DEFENDANTS));
+        }
+        if(hearingJson.containsKey(PROSECUTION_COUNSELS)) {
+            builder.withProsecutionCounsels(extractCounsels(hearingJson.getJsonArray(PROSECUTION_COUNSELS), caseId, PROSECUTION_CASES));
+        }
+    }
+
+
+    private Offence createOffence(final JsonObject offence, final boolean offenceRestricted) {
+        final Offence.Builder builder = Offence.offence();
+        if (!offenceRestricted) {
+            builder.withOffenceTitle(offence.getJsonObject(STATEMENT_OF_OFFENCE).getString(TITLE));
+            builder.withWelshOffenceTitle(offence.getJsonObject(STATEMENT_OF_OFFENCE).getString(WELSH_TITLE, BLANK_STRING));
+            builder.withOffenceWording(offence.getString(OFFENCE_WORDING, BLANK_STRING));
+        }
+
+        return builder.build();
+    }
+
+    private List<ReportingRestriction> getReportingRestriction(final JsonObject offences){
+        final Set<ReportingRestriction> reportingRestrictions = new HashSet<>();
+        if(offences.containsKey(REPORTING_RESTRICTIONS)){
+            for (final JsonObject reportingRestriction : offences.getJsonArray(REPORTING_RESTRICTIONS).getValuesAs(JsonObject.class)) {
+                reportingRestrictions.add(reportingRestriction().withLabel(reportingRestriction.getString(LABEL)).build());
+            }
+        }
+        return isNotEmpty(reportingRestrictions) ? reportingRestrictions.stream().filter(Objects::nonNull).collect(Collectors.toList()) : emptyList();
     }
 
     private List<Counsel> extractCounsels(final JsonArray requestCounsels, final String id, final String type) {

@@ -43,6 +43,7 @@ import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.Type;
+import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
 import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
 
 import java.time.LocalDate;
@@ -380,11 +381,18 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withStatementOfOffence(buildStatementOfOffence(o))
                 .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference((o.getLaaApplnReference().get())) : empty())
                 .withShadowListed(of(shadowListed));
+
         if (nonNull(o.getCommittingCourt()) && o.getCommittingCourt().isPresent()) {
             builder.withCommittingCourt(buildCommittingCourt(o.getCommittingCourt().get()));
         }
-        return builder
-                .build();
+        if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
+            builder.withReportingRestrictions(o.getReportingRestrictions().stream()
+                    .map(ReportingRestrictionConverter::courtsToDomain)
+                    .collect(toList())
+            );
+        }
+
+        return builder.build();
     }
 
     private static Optional<uk.gov.moj.cpp.listing.domain.CommittingCourt> buildCommittingCourt(final uk.gov.justice.core.courts.CommittingCourt committingCourt) {
