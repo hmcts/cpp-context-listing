@@ -19,7 +19,6 @@ import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMapping;
-import uk.gov.moj.cpp.listing.domain.referencedata.CourtMappingsList;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMappingsList;
 import uk.gov.moj.cpp.listing.domain.referencedata.HearingType;
 import uk.gov.moj.cpp.listing.domain.referencedata.Judiciary;
@@ -70,7 +69,7 @@ public class CommonXhibitReferenceDataServiceTest {
     }
 
     @Test
-    public void shouldGetCourtDetails() {
+    public void shouldGetCrownCourtDetails() {
 
         final UUID courtCentreId = randomUUID();
         final String ouCode = "OUCODE";
@@ -80,7 +79,7 @@ public class CommonXhibitReferenceDataServiceTest {
         final String courtSiteName = "BLACKFRIARS";
         final String courtShortName = "BLF";
         final String courtSiteCode = "B";
-        final String courtType = "MAGISTRATE";
+        final String courtType = "CROWN_COURT";
 
         final CourtMapping courtMapping = new CourtMapping.Builder()
                 .withOucode(ouCode)
@@ -93,9 +92,46 @@ public class CommonXhibitReferenceDataServiceTest {
                 .withCourtType(courtType)
                 .build();
 
-        when(referenceDataCache.getCourtMappingsMapCache(courtCentreId)).thenReturn(Optional.of(Arrays.asList(courtMapping)));
+        when(referenceDataCache.getCrownCourtMappingsMapCache(courtCentreId)).thenReturn(Optional.of(Arrays.asList(courtMapping)));
 
-        final CourtLocation courtDetails = commonXhibitReferenceDataService.getCourtDetails(courtCentreId);
+        final CourtLocation courtDetails = commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId);
+
+        assertEquals(courtDetails.getOuCode(), ouCode);
+        assertEquals(courtDetails.getCrestCourtId(), courtId);
+        assertEquals(courtDetails.getCrestCourtSiteId(), courtSiteId);
+        assertEquals(courtDetails.getCourtSiteName(), courtSiteName);
+        assertEquals(courtDetails.getCourtShortName(), courtShortName);
+        assertEquals(courtDetails.getCourtSiteCode(), courtSiteCode);
+        assertEquals(courtDetails.getCourtType(), courtType);
+    }
+
+    @Test
+    public void shouldGetMagsCourtDetails() {
+
+        final UUID courtCentreId = randomUUID();
+        final String ouCode = "OUCODE";
+        final String courtId = "432";
+        final String courtSiteId = "433";
+        final String crestCourtName = "BLACKFRIARS";
+        final String courtSiteName = "BLACKFRIARS";
+        final String courtShortName = "BLF";
+        final String courtSiteCode = "B";
+        final String courtType = "MAGISTRATES_COURT";
+
+        final CourtMapping courtMapping = new CourtMapping.Builder()
+                .withOucode(ouCode)
+                .withCrestCourtId(courtId)
+                .withCrestCourtSiteId(courtSiteId)
+                .withCrestCourtName(crestCourtName)
+                .withCrestCourtSiteName(courtSiteName)
+                .withCrestCourtShortName(courtShortName)
+                .withCrestCourtSiteCode(courtSiteCode)
+                .withCourtType(courtType)
+                .build();
+
+        when(referenceDataCache.getMagsCourtMappingsMapCache(courtCentreId)).thenReturn(Optional.of(Arrays.asList(courtMapping)));
+
+        final CourtLocation courtDetails = commonXhibitReferenceDataService.getMagsCourtDetails(courtCentreId);
 
         assertEquals(courtDetails.getOuCode(), ouCode);
         assertEquals(courtDetails.getCrestCourtId(), courtId);
@@ -205,10 +241,10 @@ public class CommonXhibitReferenceDataServiceTest {
                 .build();
 
         when(referenceDataCache.getOrganisationUnitMapCache(ouCode)).thenReturn(Optional.of(organisationUnit));
-        when(referenceDataCache.getCourtLocationsCache(crownCourtCrestId))
+        when(referenceDataCache.getCrownCourtLocationsCache(crownCourtCrestId))
                 .thenReturn(Arrays.asList(courtMapping).stream().map(this::createCourtLocation).collect(Collectors.toList()));
 
-        final List<UUID> courtCentreIds = commonXhibitReferenceDataService.getCourtCentreIdsForCrestId(crownCourtCrestId);
+        final List<UUID> courtCentreIds = commonXhibitReferenceDataService.getCrownCourtCentreIdsForCrestId(crownCourtCrestId);
 
         assertThat(courtCentreIds.size(), is(equalTo(1)));
         assertThat(courtCentreIds.get(0), is(Matchers.equalTo(ouId)));
@@ -227,10 +263,10 @@ public class CommonXhibitReferenceDataServiceTest {
                 .withOucode(ouCode)
                 .build();
 
-        when(referenceDataCache.getCourtLocationsCache(crownCourtCrestId))
+        when(referenceDataCache.getCrownCourtLocationsCache(crownCourtCrestId))
                 .thenReturn(Arrays.asList(courtMapping).stream().map(this::createCourtLocation).collect(Collectors.toList()));
 
-        final List<UUID> courtCentreIds = commonXhibitReferenceDataService.getCourtCentreIdsForCrestId(crownCourtCrestId);
+        final List<UUID> courtCentreIds = commonXhibitReferenceDataService.getCrownCourtCentreIdsForCrestId(crownCourtCrestId);
 
         assertThat(courtCentreIds.size(), is(equalTo(1)));
         assertThat(courtCentreIds.get(0), is(Matchers.equalTo(ouId)));
@@ -247,7 +283,7 @@ public class CommonXhibitReferenceDataServiceTest {
         final String courtSiteName = "BLACKFRIARS";
         final String courtShortName = "BLF";
         final String courtSiteCode = "B";
-        final String courtType = "MAGISTRATE";
+        final String courtType = "MAGISTRATES_COURT";
 
         final CourtMapping courtMapping = new CourtMapping.Builder()
                 .withOucode(ouCode)
@@ -260,9 +296,9 @@ public class CommonXhibitReferenceDataServiceTest {
                 .withCourtType(courtType)
                 .build();
 
-        when(referenceDataCache.getCourtMappingsMapCache(courtCentreId)).thenReturn(Optional.of(Arrays.asList(courtMapping)));
+        when(referenceDataCache.getCrownCourtMappingsMapCache(courtCentreId)).thenReturn(Optional.of(Arrays.asList(courtMapping)));
 
-        final List<JsonObject> crestCourtSites = commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId);
+        final List<JsonObject> crestCourtSites = commonXhibitReferenceDataService.getCrestCourtSitesForCrownCourtCentre(courtCentreId);
 
         assertThat(crestCourtSites.size(), is(equalTo(1)));
         assertThat(crestCourtSites.get(0).getString("oucode"), is(ouCode));

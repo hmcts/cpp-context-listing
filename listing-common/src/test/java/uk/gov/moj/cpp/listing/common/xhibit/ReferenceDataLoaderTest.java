@@ -129,7 +129,7 @@ public class ReferenceDataLoaderTest {
         final String courtSiteName = "BLACKFRIARS";
         final String courtShortName = "BLF";
         final String courtSiteCode = "B";
-        final String courtType = "MAGISTRATE";
+        final String courtType = "CROWN";
 
         final CourtMapping courtMapping = new CourtMapping.Builder()
                 .withOucode(ouCode)
@@ -144,7 +144,39 @@ public class ReferenceDataLoaderTest {
 
         when(requester.requestAsAdmin(any(), eq(CourtMappingsList.class)).payload()).thenReturn(new CourtMappingsList(Arrays.asList(courtMapping)));
 
-        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitCourtMappings();
+        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitCrownCourtMappings();
+
+        assertThat(true, equalTo(courtMappingsList.isPresent()));
+        assertThat(1, is(equalTo(courtMappingsList.get().getCpXhibitCourtMappings().size())));
+        assertThat(ouCode, is(courtMappingsList.get().getCpXhibitCourtMappings().get(0).getOucode()));
+        assertThat(courtId, is(courtMappingsList.get().getCpXhibitCourtMappings().get(0).getCrestCourtId()));
+    }
+
+    @Test
+    public void shouldGetXhibitMagsCourtMappings() {
+        final String ouCode = "OUCODE";
+        final String courtId = "432";
+        final String courtSiteId = "433";
+        final String crestCourtName = "BLACKFRIARS";
+        final String courtSiteName = "BLACKFRIARS";
+        final String courtShortName = "BLF";
+        final String courtSiteCode = "B";
+        final String courtType = "MAGISTRATE";
+
+        final CourtMapping courtMapping = new CourtMapping.Builder()
+                .withOucode(ouCode)
+                .withCrestCourtId(courtId)
+                .withCrestCourtSiteId(courtSiteId)
+                .withCrestCourtName(crestCourtName)
+                .withCrestCourtSiteName(courtSiteName)
+                .withCrestCourtShortName(courtShortName)
+                .withCrestCourtSiteCode(courtSiteCode)
+                .withCourtType(courtType)
+                .build();
+
+        when(requester.requestAsAdmin(any(), eq(CourtMapping.class)).payload()).thenReturn(courtMapping);
+
+        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitMagsCourtMappings(ouCode);
 
         assertThat(true, equalTo(courtMappingsList.isPresent()));
         assertThat(1, is(equalTo(courtMappingsList.get().getCpXhibitCourtMappings().size())));

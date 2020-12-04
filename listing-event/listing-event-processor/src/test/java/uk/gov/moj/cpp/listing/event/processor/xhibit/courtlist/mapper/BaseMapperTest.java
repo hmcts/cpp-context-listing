@@ -50,7 +50,7 @@ public abstract class BaseMapperTest {
 
         MockitoAnnotations.initMocks(this);
 
-        final CourtLocation courtLocation = new CourtLocation(
+        final CourtLocation crownCourtLocation = new CourtLocation(
                 "OUCODE",
                 "000",
                 "001",
@@ -60,7 +60,18 @@ public abstract class BaseMapperTest {
                 "MOCKSITECODE",
                 "CROWN_COURT");
 
-        when(commonXhibitReferenceDataService.getCourtDetails(any())).thenReturn(courtLocation);
+        final CourtLocation magsCourtLocation = new CourtLocation(
+                "OUCODE",
+                "000",
+                "001",
+                "MOCK_MAGISTRATES_COURTNAME",
+                "MOCK",
+                "MOCKCOURTNAME",
+                "000",
+                "MAGISTRATES_COURT");
+
+        when(commonXhibitReferenceDataService.getCrownCourtDetails(any())).thenReturn(crownCourtLocation);
+        when(commonXhibitReferenceDataService.getMagsCourtDetails(any())).thenReturn(magsCourtLocation);
 
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.json");
         when(commonXhibitReferenceDataService.getJudiciary(any())).thenReturn(judiciary);

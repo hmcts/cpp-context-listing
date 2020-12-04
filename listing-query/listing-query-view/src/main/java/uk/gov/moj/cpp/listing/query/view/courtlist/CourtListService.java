@@ -49,7 +49,7 @@ public class CourtListService {
 
     public JsonObject emptyCourtList(final UUID courtCentreId) {
 
-        final List<JsonObject> courtSites = commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId);
+        final List<JsonObject> courtSites = commonXhibitReferenceDataService.getCrestCourtSitesForCrownCourtCentre(courtCentreId);
 
         final JsonArrayBuilder courtListsBuilder = Json.createArrayBuilder();
 

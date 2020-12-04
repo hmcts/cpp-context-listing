@@ -35,9 +35,11 @@ public class ReferenceDataCache {
     @Inject
     private ReferenceDataLoader referenceDataLoader;
 
-    private Map<String, List<CourtLocation>> courtLocationListMapCache = new HashMap<>();
+    private Map<String, List<CourtLocation>> crownCourtLocationListMapCache = new HashMap<>();
 
-    private Map<String, List<CourtMapping>> courtMappingListMapCache = new HashMap<>();
+    private Map<String, List<CourtMapping>> crownCourtMappingListMapCache = new HashMap<>();
+
+    private Map<String, List<CourtMapping>> magsCourtMappingListMapCache = new HashMap<>();
 
     private Map<UUID, HearingType> hearingTypesMapCache = new HashMap<>();
 
@@ -55,17 +57,33 @@ public class ReferenceDataCache {
 
     @PostConstruct
     public void initReferenceData() {
-        initCourtMappingsList();
+        initCrownCourtMappingsList();
         initHearingTypes();
         initOrganisationUnitList();
     }
 
-    public Optional<List<CourtMapping>> getCourtMappingsMapCache(final UUID courtCentreId) {
+    public Optional<List<CourtMapping>> getCrownCourtMappingsMapCache(final UUID courtCentreId) {
         final OrganisationUnit organisationUnit = organisationUnitMapByIdCache.get(courtCentreId);
         if (Objects.isNull(organisationUnit)) {
             return empty();
         }
-        return ofNullable(courtMappingListMapCache.get(organisationUnit.getOucode()));
+        return ofNullable(crownCourtMappingListMapCache.get(organisationUnit.getOucode()));
+    }
+
+    public Optional<List<CourtMapping>> getMagsCourtMappingsMapCache(final UUID courtCentreId) {
+        final OrganisationUnit organisationUnit = organisationUnitMapByIdCache.get(courtCentreId);
+        if (Objects.isNull(organisationUnit)) {
+            return empty();
+        }
+
+        final String oucode = organisationUnit.getOucode();
+
+        if (!magsCourtMappingListMapCache.containsKey(oucode)) {
+            referenceDataLoader.getXhibitMagsCourtMappings(oucode)
+                    .ifPresent(courtMappingsList -> magsCourtMappingListMapCache.put(oucode, courtMappingsList.getCpXhibitCourtMappings()));
+        }
+
+        return ofNullable(magsCourtMappingListMapCache.get(organisationUnit.getOucode()));
     }
 
     public Optional<Judiciary> getJudiciariesMapCache(final UUID judiciaryId) {
@@ -104,25 +122,24 @@ public class ReferenceDataCache {
         return Optional.of(hearingTypesMapCache.get(hearingTypeId));
     }
 
-    public List<CourtLocation> getCourtLocationsCache(final String crestCourtId) {
-        if (courtLocationListMapCache.isEmpty()) {
-            initCourtMappingsList();
+    public List<CourtLocation> getCrownCourtLocationsCache(final String crestCourtId) {
+        if (crownCourtLocationListMapCache.isEmpty()) {
+            initCrownCourtMappingsList();
         }
-        return courtLocationListMapCache.get(crestCourtId);
+        return crownCourtLocationListMapCache.get(crestCourtId);
     }
 
-    private void initCourtMappingsList() {
-        referenceDataLoader.getXhibitCourtMappings().ifPresent(courtMappingsList -> {
-                    courtLocationListMapCache = courtMappingsList.getCpXhibitCourtMappings()
+    private void initCrownCourtMappingsList() {
+        referenceDataLoader.getXhibitCrownCourtMappings().ifPresent(courtMappingsList -> {
+                    crownCourtLocationListMapCache = courtMappingsList.getCpXhibitCourtMappings()
                             .stream()
                             .map(this::createCourtLocation)
                             .collect(Collectors.groupingBy(CourtLocation::getCrestCourtId));
 
-                    courtMappingListMapCache = courtMappingsList.getCpXhibitCourtMappings()
+                    crownCourtMappingListMapCache = courtMappingsList.getCpXhibitCourtMappings()
                             .stream()
                             .collect(Collectors.groupingBy(CourtMapping::getOucode));
                 }
-
         );
     }
 
@@ -131,8 +148,7 @@ public class ReferenceDataCache {
     }
 
     protected void initOrganisationUnitList() {
-        referenceDataLoader.getOrganisationUnitList().ifPresent(this::getOrganisationUnits
-        );
+        referenceDataLoader.getOrganisationUnitList().ifPresent(this::getOrganisationUnits);
     }
 
     private CourtLocation createCourtLocation(final CourtMapping courtMapping) {

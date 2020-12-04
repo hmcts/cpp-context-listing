@@ -44,6 +44,6 @@ public class CourtListMetadataGenerator {
     }
 
     private String getCrownCourtCode(final UUID courtCentreId) {
-        return commonXhibitReferenceDataService.getCourtDetails(courtCentreId).getCrestCourtId();
+        return commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId).getCrestCourtId();
     }
 }

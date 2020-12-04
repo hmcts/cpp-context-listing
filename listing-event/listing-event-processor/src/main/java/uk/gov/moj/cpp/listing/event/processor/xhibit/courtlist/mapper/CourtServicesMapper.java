@@ -140,7 +140,7 @@ public class CourtServicesMapper {
 
     public CourtHouseStructure generateCrownCourtStructure(final UUID courtCentreId) {
 
-        final CourtLocation courtLocation = commonXhibitReferenceDataService.getCourtDetails(courtCentreId);
+        final CourtLocation courtLocation = commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId);
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
@@ -153,7 +153,7 @@ public class CourtServicesMapper {
 
     public CourtHouseStructure generateCourtHouseStructure(final UUID courtCentreId) {
 
-        final CourtLocation courtLocation = commonXhibitReferenceDataService.getCourtDetails(courtCentreId);
+        final CourtLocation courtLocation = commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId);
 
         final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
@@ -356,7 +356,7 @@ public class CourtServicesMapper {
 
             final CourtHouseStructure courtHouseStructure = objectFactory.createCourtHouseStructure();
 
-            final String crestCourtId = commonXhibitReferenceDataService.getCourtDetails(fromString(committingCourt.getString("courtCentreId"))).getCrestCourtId();
+            final String crestCourtId = commonXhibitReferenceDataService.getMagsCourtDetails(fromString(committingCourt.getString("courtCentreId"))).getCourtSiteCode();
 
             courtHouseStructure.setCourtHouseType(CourtType.MAGISTRATES_COURT);
             courtHouseStructure.setCourtHouseCode(generateCourtHouseCode(crestCourtId));

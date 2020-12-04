@@ -28,6 +28,7 @@ public class CommonXhibitReferenceDataService {
     private static final String DEFAULT_CREST_COURT_SITE_CODE = "A";
 
     private XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
+    private static final String COURT_DETAILS_NOT_FOUND = "Cannot find court details with courtCentre %s";
 
     @Inject
     private ReferenceDataCache referenceDataCache;
@@ -35,8 +36,8 @@ public class CommonXhibitReferenceDataService {
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
-    public List<UUID> getCourtCentreIdsForCrestId(final String crownCourtCrestId) {
-        final List<CourtLocation> courtLocations = referenceDataCache.getCourtLocationsCache(crownCourtCrestId);
+    public List<UUID> getCrownCourtCentreIdsForCrestId(final String crownCourtCrestId) {
+        final List<CourtLocation> courtLocations = referenceDataCache.getCrownCourtLocationsCache(crownCourtCrestId);
         courtLocations.forEach(courtLocation -> xhibitReferenceDataValidator.validate("crestCourtSiteId", courtLocation.getCrestCourtSiteId()));
 
         return courtLocations.stream()
@@ -47,34 +48,45 @@ public class CommonXhibitReferenceDataService {
 
     public String getDefaultCrestCourtSiteCode(final UUID courtCentreId) {
 
-        return getCrestCourtSitesForCourtCentre(courtCentreId)
+        return getCrestCourtSitesForCrownCourtCentre(courtCentreId)
                 .stream()
                 .map(courtSite -> courtSite.getString(CREST_COURT_SITE_CODE))
                 .sorted()
                 .findFirst().orElse(DEFAULT_CREST_COURT_SITE_CODE);
     }
 
-    public CourtLocation getCourtDetails(final UUID courtCentreId) {
+    public CourtLocation getCrownCourtDetails(final UUID courtCentreId) {
 
-        final CourtMapping court = referenceDataCache.getCourtMappingsMapCache(courtCentreId)
-                .orElseThrow(() -> new InvalidReferenceDataException(format("Cannot find court details with courtCentre %s", courtCentreId)))
+        final CourtMapping court = referenceDataCache.getCrownCourtMappingsMapCache(courtCentreId)
+                .orElseThrow(() -> new InvalidReferenceDataException(format(COURT_DETAILS_NOT_FOUND, courtCentreId)))
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> new InvalidReferenceDataException(format("Cannot find court details with courtCentre %s", courtCentreId)));
+                .orElseThrow(() -> new InvalidReferenceDataException(format(COURT_DETAILS_NOT_FOUND, courtCentreId)));
 
-        return createCourtLocation(court);
+        return createCrownCourtLocation(court);
     }
 
-    public List<JsonObject> getCrestCourtSitesForCourtCentre(final UUID courtCentreId) {
-        final List<JsonObject> courtMappingJsonObjectList = new ArrayList<>();
+    public CourtLocation getMagsCourtDetails(final UUID courtCentreId) {
 
-        final Optional<List<CourtMapping>> courtMappingList = referenceDataCache.getCourtMappingsMapCache(courtCentreId);
+        final CourtMapping court = referenceDataCache.getMagsCourtMappingsMapCache(courtCentreId)
+                .orElseThrow(() -> new InvalidReferenceDataException(format(COURT_DETAILS_NOT_FOUND, courtCentreId)))
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new InvalidReferenceDataException(format(COURT_DETAILS_NOT_FOUND, courtCentreId)));
 
-        courtMappingList.ifPresent(courtMappings -> courtMappings.forEach(courtMapping ->
-                courtMappingJsonObjectList.add(objectToJsonObjectConverter.convert(courtMapping)))
+        return createMagsCourtLocation(court);
+    }
+
+    public List<JsonObject> getCrestCourtSitesForCrownCourtCentre(final UUID courtCentreId) {
+        final List<JsonObject> crownCourtMappingJsonObjectList = new ArrayList<>();
+
+        final Optional<List<CourtMapping>> cownCourtMappingList = referenceDataCache.getCrownCourtMappingsMapCache(courtCentreId);
+
+        cownCourtMappingList.ifPresent(courtMappings -> courtMappings.forEach(courtMapping ->
+                crownCourtMappingJsonObjectList.add(objectToJsonObjectConverter.convert(courtMapping)))
         );
 
-        return courtMappingJsonObjectList;
+        return crownCourtMappingJsonObjectList;
     }
 
     public Optional<CourtRoomMapping> getCourtRoom(final UUID courtCentreId, final UUID courtRoomUUID) {
@@ -142,7 +154,7 @@ public class CommonXhibitReferenceDataService {
         return Integer.parseInt(splitName[splitName.length-1]);
     }
 
-    private CourtLocation createCourtLocation(final CourtMapping courtMapping) {
+    private CourtLocation createCrownCourtLocation(final CourtMapping courtMapping) {
         xhibitReferenceDataValidator.validate("crestCourtSiteId", courtMapping.getCrestCourtSiteId());
 
         return new CourtLocation(
@@ -156,4 +168,17 @@ public class CommonXhibitReferenceDataService {
                 courtMapping.getCourtType());
     }
 
+    private CourtLocation createMagsCourtLocation(final CourtMapping courtMapping) {
+        xhibitReferenceDataValidator.validate(CREST_COURT_SITE_CODE, courtMapping.getCrestCourtSiteCode());
+
+        return new CourtLocation(
+                courtMapping.getOucode(),
+                courtMapping.getCrestCourtId(),
+                courtMapping.getCrestCourtSiteId(),
+                courtMapping.getCrestCourtName(),
+                courtMapping.getCrestCourtShortName(),
+                courtMapping.getCrestCourtSiteName(),
+                courtMapping.getCrestCourtSiteCode(),
+                courtMapping.getCourtType());
+    }
 }

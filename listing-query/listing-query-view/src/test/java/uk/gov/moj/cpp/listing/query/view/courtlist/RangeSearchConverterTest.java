@@ -92,7 +92,7 @@ public class RangeSearchConverterTest {
         final LocalDate startDate = LocalDate.parse("2019-12-16");
         final String pEndDate = StringUtils.isNotBlank(endDate) ? endDate : StringUtils.EMPTY;
 
-        when(commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)).thenReturn(courtSites);
+        when(commonXhibitReferenceDataService.getCrestCourtSitesForCrownCourtCentre(courtCentreId)).thenReturn(courtSites);
         when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(COURT_SITE_A_COURT_ROOM_ID))).thenReturn(courtRoom1);
         when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(COURT_SITE_B_COURT_ROOM_ID))).thenReturn(courtRoom2);
         when(commonXhibitReferenceDataService.getCourtRoom(eq(courtCentreId), eq(UNKNOWN_COURT_SITE_COURT_ROOM_ID))).thenReturn(Optional.empty());

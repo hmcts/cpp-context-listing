@@ -85,7 +85,7 @@ public class CourtListServiceTest {
 
         final JsonObject courtSite1 = mock(JsonObject.class);
         final List<JsonObject> crestCourtSitesJson = Collections.singletonList(courtSite1);
-        when(commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)).thenReturn(crestCourtSitesJson);
+        when(commonXhibitReferenceDataService.getCrestCourtSitesForCrownCourtCentre(courtCentreId)).thenReturn(crestCourtSitesJson);
 
         final JsonObject courtList = courtListService.emptyCourtList(courtCentreId);
 

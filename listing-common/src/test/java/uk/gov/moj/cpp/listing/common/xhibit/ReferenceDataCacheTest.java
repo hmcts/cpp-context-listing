@@ -5,10 +5,11 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.getValueOfField;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
@@ -57,7 +58,8 @@ public class ReferenceDataCacheTest {
     private JsonObjectToObjectConverter jsonObjectConverter;
 
     private static Optional<HearingTypesList> hearingTypesList;
-    private static Optional<CourtMappingsList> courtMappingsList;
+    private static Optional<CourtMappingsList> crownCourtMappingsList;
+    private static Optional<CourtMappingsList> magsCourtMappingsList;
     private static Optional<OrganisationUnitList> organisationUnitList;
 
     private static final String courtId = "432";
@@ -76,7 +78,8 @@ public class ReferenceDataCacheTest {
         initializeTestData();
 
         when(referenceDataLoader.getHearingTypesList()).thenReturn(hearingTypesList);
-        when(referenceDataLoader.getXhibitCourtMappings()).thenReturn(courtMappingsList);
+        when(referenceDataLoader.getXhibitCrownCourtMappings()).thenReturn(crownCourtMappingsList);
+        when(referenceDataLoader.getXhibitMagsCourtMappings(any())).thenReturn(magsCourtMappingsList);
         when(referenceDataLoader.getOrganisationUnitList()).thenReturn(organisationUnitList);
 
         referenceDataCache.initReferenceData();
@@ -97,8 +100,8 @@ public class ReferenceDataCacheTest {
 
     @Test
     public void shouldPopulateCourtMappingsCache() {
-        final CourtMapping expectedCourtMapping = getCourtMapping();
-        assertThat(referenceDataCache.getCourtLocationsCache(courtId).get(0).getCourtSiteCode(), is(expectedCourtMapping.getCrestCourtSiteCode()));
+        final CourtMapping expectedCourtMapping = getCourtMapping("CROWN_COURT");
+        assertThat(referenceDataCache.getCrownCourtLocationsCache(courtId).get(0).getCourtSiteCode(), is(expectedCourtMapping.getCrestCourtSiteCode()));
     }
 
     @Test
@@ -167,10 +170,22 @@ public class ReferenceDataCacheTest {
     }
 
     @Test
-    public void shouldPopulateCourtMappingsMapCache() {
-        final List<CourtMapping> expectedCourtMappingList = asList(getCourtMapping());
+    public void shouldPopulateCrownCourtMappingsMapCache() {
+        final List<CourtMapping> expectedCourtMappingList = asList(getCourtMapping("CROWN_COURT"));
 
-        final Optional<List<CourtMapping>> actualCourtMappingList = referenceDataCache.getCourtMappingsMapCache(courtCentreId);
+        final Optional<List<CourtMapping>> actualCourtMappingList = referenceDataCache.getCrownCourtMappingsMapCache(courtCentreId);
+
+        assertThat(actualCourtMappingList.isPresent(), is(true));
+        assertThat(actualCourtMappingList.get().size(), is(expectedCourtMappingList.size()));
+        assertThat(actualCourtMappingList.get().get(0).getId(), is(expectedCourtMappingList.get(0).getId()));
+        assertThat(actualCourtMappingList.get().get(0).getOucode(), is(expectedCourtMappingList.get(0).getOucode()));
+    }
+
+    @Test
+    public void shouldPopulateMagsCourtMappingsMapCache() {
+        final List<CourtMapping> expectedCourtMappingList = asList(getCourtMapping("MAGISTRATES_COURT"));
+
+        final Optional<List<CourtMapping>> actualCourtMappingList = referenceDataCache.getMagsCourtMappingsMapCache(courtCentreId);
 
         assertThat(actualCourtMappingList.isPresent(), is(true));
         assertThat(actualCourtMappingList.get().size(), is(expectedCourtMappingList.size()));
@@ -272,16 +287,16 @@ public class ReferenceDataCacheTest {
     }
 
     private void courtMappingsListTestData() {
-        courtMappingsList = Optional.of(new CourtMappingsList(asList(getCourtMapping())));
+        crownCourtMappingsList = Optional.of(new CourtMappingsList(asList(getCourtMapping("CROWN_COURT"))));
+        magsCourtMappingsList = Optional.of(new CourtMappingsList(asList(getCourtMapping("MAGISTRATES_COURT"))));
     }
 
-    private CourtMapping getCourtMapping() {
+    private CourtMapping getCourtMapping(final String courtType) {
         final String courtSiteId = "433";
         final String crestCourtName = "BLACKFRIARS";
         final String courtSiteName = "BLACKFRIARS";
         final String courtShortName = "BLF";
         final String courtSiteCode = "B";
-        final String courtType = "MAGISTRATE";
 
         return new CourtMapping.Builder()
                 .withOucode(ouCode)

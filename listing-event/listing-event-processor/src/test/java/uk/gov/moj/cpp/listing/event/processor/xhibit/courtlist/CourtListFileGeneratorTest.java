@@ -122,9 +122,11 @@ public class CourtListFileGeneratorTest {
 
         final List<UUID> courtCentreIds = Arrays.asList(courtCentreId1, courtCentreId2);
 
-        when(commonXhibitReferenceDataService.getCourtDetails(courtCentreId1)).thenReturn(courtLocation1);
-        when(commonXhibitReferenceDataService.getCourtDetails(courtCentreId2)).thenReturn(courtLocation2);
-        when(commonXhibitReferenceDataService.getCourtCentreIdsForCrestId(crestCourtId)).thenReturn(courtCentreIds);
+        when(commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId1)).thenReturn(courtLocation1);
+        when(commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId2)).thenReturn(courtLocation2);
+        when(commonXhibitReferenceDataService.getMagsCourtDetails(courtCentreId1)).thenReturn(courtLocation1);
+        when(commonXhibitReferenceDataService.getMagsCourtDetails(courtCentreId2)).thenReturn(courtLocation2);
+        when(commonXhibitReferenceDataService.getCrownCourtCentreIdsForCrestId(crestCourtId)).thenReturn(courtCentreIds);
         when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(10);
         when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d"))).thenReturn(20);
         when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("64b0f4cf-2dde-310b-b7da-cab57b285b6f"))).thenReturn(4);
@@ -179,7 +181,7 @@ public class CourtListFileGeneratorTest {
                 "MOCK_CROWN_COURTNAME",
                 "MOCK",
                 "MOCKCOURTNAME" + nameSuffix,
-                "MOCKSITECODE" + nameSuffix,
+                "000",
                 "CROWN_COURT");
     }
 

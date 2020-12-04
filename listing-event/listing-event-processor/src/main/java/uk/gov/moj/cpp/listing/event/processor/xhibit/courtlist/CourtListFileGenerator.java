@@ -39,9 +39,9 @@ public class CourtListFileGenerator {
         final CourtListGenerationContext context =
                 new CourtListGenerationContext(envelope, requestParameters, courtListMetadata);
 
-        final String crownCourtCrestId = commonXhibitReferenceDataService.getCourtDetails(requestParameters.getCourtCentreId()).getCrestCourtId();
+        final String crownCourtCrestId = commonXhibitReferenceDataService.getCrownCourtDetails(requestParameters.getCourtCentreId()).getCrestCourtId();
 
-        final List<UUID> courtCentreIds = commonXhibitReferenceDataService.getCourtCentreIdsForCrestId(crownCourtCrestId);
+        final List<UUID> courtCentreIds = commonXhibitReferenceDataService.getCrownCourtCentreIdsForCrestId(crownCourtCrestId);
 
         final List<JsonObject> publishedCourtListsJson = courtCentreIds.stream()
                 .filter(courtCentreId -> !courtCentreId.equals(requestParameters.getCourtCentreId()))

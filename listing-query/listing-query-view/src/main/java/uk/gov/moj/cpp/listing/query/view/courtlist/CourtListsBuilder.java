@@ -41,7 +41,7 @@ public class CourtListsBuilder {
 
     public CourtListsBuilder prepareEmptyCourtSiteHearings() {
 
-        commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)
+        commonXhibitReferenceDataService.getCrestCourtSitesForCrownCourtCentre(courtCentreId)
                 .forEach(courtSite -> crestCourtSiteCodeHearingsMap.put(courtSite.getString(CREST_COURT_SITE_CODE),
                         new ArrayList<>()));
 
@@ -95,7 +95,7 @@ public class CourtListsBuilder {
 
     private JsonObject getCrestCourtSiteJson(final String crestCourtSiteCode) {
 
-        return commonXhibitReferenceDataService.getCrestCourtSitesForCourtCentre(courtCentreId)
+        return commonXhibitReferenceDataService.getCrestCourtSitesForCrownCourtCentre(courtCentreId)
                 .stream().filter(courtSite -> crestCourtSiteCode.equals(courtSite.getString(CREST_COURT_SITE_CODE)))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Cannot find site"));

@@ -134,11 +134,11 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "(id in (SELECT distinct(id) " +
             "   FROM ( " +
             "   SELECT id FROM ( " +
-            "   SELECT id, JSONB_ARRAY_ELEMENTS(properties -> 'listedCases') -> 'caseIdentifier' AS linkedCaseIdentifier FROM hearing) a " +
+            "   SELECT id, jsonb_array_elements(properties -> 'listedCases') -> 'caseIdentifier' AS linkedCaseIdentifier FROM hearing) a " +
             "   WHERE UPPER(linkedCaseIdentifier ->> 'caseReference') IN ( " +
             "   SELECT linkedCaseUrn FROM ( " +
-            "   SELECT id, properties, JSONB_ARRAY_ELEMENTS(JSONB_ARRAY_ELEMENTS(properties -> 'listedCases') -> 'linkedCases') ->> 'caseUrn' AS linkedCaseUrn " +
-            "   FROM (SELECT id, properties, JSONB_ARRAY_ELEMENTS(properties -> 'listedCases') -> 'caseIdentifier' AS linkedCaseIdentifier FROM hearing) allLinkedCaseIdentifier " +
+            "   SELECT id, properties, jsonb_array_elements(jsonb_array_elements(properties -> 'listedCases') -> 'linkedCases') ->> 'caseUrn' AS linkedCaseUrn " +
+            "   FROM (SELECT id, properties, jsonb_array_elements(properties -> 'listedCases') -> 'caseIdentifier' AS linkedCaseIdentifier FROM hearing) allLinkedCaseIdentifier " +
             "   WHERE UPPER(linkedCaseIdentifier ->> 'caseReference') = CAST(?7 as text) " +
             "   ) AS allLinkedCaseReference " +
             "   )) linkedCaseHearing)) " +
@@ -157,7 +157,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "OR " +
             "(id in (select distinct( id ) from (" +
             "SELECT id FROM ( " +
-            "SELECT id, Jsonb_array_elements(  properties -> 'listedCases')  -> 'caseIdentifier' AS linkedCaseIdentifier FROM   hearing) allLinkedCaseIdentifier " +
+            "SELECT id, properties, jsonb_array_elements(  properties -> 'listedCases')  -> 'caseIdentifier' AS linkedCaseIdentifier FROM   hearing) allLinkedCaseIdentifier " +
             "WHERE UPPER(linkedCaseIdentifier ->> 'caseReference') IN (?6) " +
             "and (?3 is null or properties ->> 'id' != cast(?3 as text))) allLinkedCaseReference) " +
             "))) "

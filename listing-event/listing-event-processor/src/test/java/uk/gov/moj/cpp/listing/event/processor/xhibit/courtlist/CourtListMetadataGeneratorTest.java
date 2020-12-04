@@ -47,7 +47,7 @@ public class CourtListMetadataGeneratorTest {
                 null,
                 "CROWN_COURT");
 
-        when(commonXhibitReferenceDataService.getCourtDetails(courtCentreId)).thenReturn(courtLocation);
+        when(commonXhibitReferenceDataService.getCrownCourtDetails(courtCentreId)).thenReturn(courtLocation);
 
         final PublishCourtListRequestParameters requestParameters = PublishCourtListRequestParametersBuilder
                 .withDefaults()
