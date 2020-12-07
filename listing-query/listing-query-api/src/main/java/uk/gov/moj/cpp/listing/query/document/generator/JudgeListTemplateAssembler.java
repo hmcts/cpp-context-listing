@@ -59,6 +59,7 @@ public class JudgeListTemplateAssembler {
     public static final String LISTED_CASES = "listedCases";
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
+    private static final String ORGANISATION_NAME = "organisationName";
     private static final String MIDDLE_NAME = "middleName";
     private static final String TITLE = "title";
     private static final String PROSECUTION_COUNSELS = "prosecutionCounsels";
@@ -226,10 +227,17 @@ public class JudgeListTemplateAssembler {
 
     private List<Defendant> buildDefendants(final JsonArray defendants) {
         return defendants.getValuesAs(JsonObject.class).stream()
-                .map(defendant ->
-                        Defendant.defendant()
-                                .withSurname(defendant.getString(LAST_NAME))
-                                .withFirstName(defendant.getString(FIRST_NAME)).build())
+                .map(defendant -> {
+                            final Defendant.Builder defendantBuilder = Defendant.defendant();
+                            if (defendant.containsKey(ORGANISATION_NAME)) {
+                                defendantBuilder.withOrganisationName(defendant.getString(ORGANISATION_NAME));
+                            } else {
+                                defendantBuilder.withSurname(defendant.getString(LAST_NAME))
+                                                .withFirstName(defendant.getString(FIRST_NAME));
+                            }
+                            return defendantBuilder.build();
+                        }
+                )
                 .collect(toList());
     }
 

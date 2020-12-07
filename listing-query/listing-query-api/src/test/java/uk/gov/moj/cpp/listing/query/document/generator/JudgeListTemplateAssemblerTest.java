@@ -302,6 +302,22 @@ public class JudgeListTemplateAssemblerTest {
     }
 
 
+    @Test
+    public void shouldReturnOneSittingHearingWhenOneHearingExistForGivenCourtRoomAndHearingDateForLegalEntityDefendant() {
+
+
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails());
+        when(referenceDataCache.getJudiciariesMapCache(eq(JUDICIARY_ID)))
+                .thenReturn(generateJudiciary(JUDICIARY_ID, "Sarah", "Her Majesty", "Court Judge", "Mr"));
+
+        Optional<JsonObject> judgeList = assembler.assemble(buildRequestEnvelope(buildHearingDataForJudgeListWithLegalEntityDefendant()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.JUDGE, START_DATE);
+        final JsonObject expectedList = returnAsJsonObject("expected/list.of.judgesList.for.single.hearing.with.legal.entity.defendant.json");
+        assertThat(judgeList.isPresent(), is(true));
+        assertThat(judgeList.get(), equalTo(expectedList));
+    }
+
+
     private Optional<Judiciary> generateJudiciary(final UUID judiciaryId, final String surName, final String requestedName, final String judiciaryType, final String title) {
         Judiciary.Builder builder = new Judiciary.Builder();
         return Optional.of(builder.withId(judiciaryId).withSurname(surName).withJudiciaryType(judiciaryType).withRequestedName(requestedName).withTitlePrefix(title).build());
@@ -333,6 +349,21 @@ public class JudgeListTemplateAssemblerTest {
             return jsonReader.readObject();
         }
     }
+
+    private JsonObject buildHearingDataForJudgeListWithLegalEntityDefendant() {
+        String jsonString = FileUtil.getPayload("stubbed.hearingRepository.findHearingsForJudgeListScenario-LegalEntityDefendant.json")
+                .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
+                .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
+                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("HEARING_ID1", HEARING_ID.toString())
+                .replaceAll("CASE_ID1", CASE_ID1.toString())
+                .replaceAll("CASE_ID2", CASE_ID1.toString())
+                .replaceAll("HEARING_ID2", HEARING_ID2.toString());
+        try (JsonReader jsonReader = createReader(new StringReader(jsonString))) {
+            return jsonReader.readObject();
+        }
+    }
+
 
     private JsonObject buildHearingDataForMultipleJudgeList() {
         String jsonString = FileUtil.getPayload("stubbed.findHearings.ForMultiJudciariesListSortScenario.json")
