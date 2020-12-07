@@ -6,11 +6,15 @@ import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ASSOCIATE;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_CLERKS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.CPS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.CROWN_COURT_ADMIN;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.DEPUTIES;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.DJMC;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.GROUP_POLICE_ADMIN;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.JUDGE;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LEGAL_ADVISERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LISTING_OFFICERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.NPS;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.RECORDERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.SYSTEM_USERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.YOTS;
 
@@ -32,6 +36,7 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_QUERY_SEARCH = "listing.search.hearings";
     private static final String ACTION_QUERY_UNSCHEDULED_SEARCH = "listing.unscheduled.search.hearings";
     private static final String RANDOM_GROUP = "Random group";
+    private static final String ACTION_ALLOCATED_AND_UNALLOCATED_HEARINGS = "listing.allocated.and.unallocated.hearings";
 
     @Mock
     private UserAndGroupProvider userAndGroupProvider;
@@ -99,6 +104,24 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     public void shouldBeAsExpectedForListingSearchHearing() {
         assertAccessAsExpected("listing.search.hearing",
                 COURT_CLERKS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, LISTING_OFFICERS, LEGAL_ADVISERS, SYSTEM_USERS, COURT_ASSOCIATE);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToGetAllocatedAndUnallocatedHearings() {
+        final Action action = createActionFor(ACTION_ALLOCATED_AND_UNALLOCATED_HEARINGS);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, YOTS, CPS, NPS, COURT_ASSOCIATE, GROUP_POLICE_ADMIN, GROUP_VICTIMS_WITNESS_CARE_ADMIN, JUDGE, DJMC, DEPUTIES, RECORDERS)).willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowUnauthorisedUserToGetAllocatedAndUnallocatedHearings() {
+        final Action action = createActionFor(ACTION_ALLOCATED_AND_UNALLOCATED_HEARINGS);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+        assertFailureOutcome(results);
     }
 
     private void assertAccessAsExpected(String actionName, String... expectedGroups) {
