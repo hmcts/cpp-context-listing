@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.listing.query.view.hearing;
 import static java.lang.String.format;
 import static java.time.ZonedDateTime.parse;
 import static java.util.Objects.isNull;
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static javax.json.Json.createArrayBuilder;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
@@ -20,12 +19,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.Objects;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -64,6 +61,7 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String COURT_ROOM_ID = "courtRoomId";
     private static final String SEARCH_DATE = "searchDate";
+    private final ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
 
     @Override
     public JsonArray convert(final List<Hearing> hearings) {
@@ -89,7 +87,7 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
     @Override
     public JsonArray convertHearingResultForAlphabeticalList(final List<Hearing> hearings) {
         return hearings.stream()
-                .map(Hearing::getProperties)
+                .map(this::deepCopyProperties)
                 .map(this::filterEjectedCasesAndCourtApplicationsForAlphabeticalList)
                 .map(this::removeHearingsWhenBothCasesAndApplicationsAreEmpty)
                 .filter(Objects::nonNull)
@@ -294,7 +292,6 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
 
     @SuppressWarnings({"squid:S1166", "squid:S2139"})
     private JsonValue filterEjectCaseAndCourtApplicationFromHearing(final JsonValue hearingsByCourtCentreId) {
-        final ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
         final JsonNode hearingByCourtCenterIdNode = mapper.valueToTree(hearingsByCourtCentreId);
         if (hearingByCourtCenterIdNode.isArray()) {
             final ArrayNode hearingByCourtCenterArrayNode = (ArrayNode) hearingByCourtCenterIdNode;
@@ -317,5 +314,19 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
             throw new IllegalStateException(format(ERROR_MESSAGE_FORMAT, hearingByCourtCenterIdNode.toString(), e.getMessage()));
         }
 
+    }
+
+    @SuppressWarnings({"squid:S1166", "squid:S2139"})
+    private JsonNode deepCopyProperties(Hearing hearing) {
+        final JsonNode properties = hearing.getProperties();
+        if (isNull(properties)) {
+            return null;
+        }
+        try {
+            return mapper.readTree(properties.toString());
+        } catch (IOException e) {
+            LOGGER.error(format(ERROR_MESSAGE_FORMAT, properties.toString(), e.getMessage()), e.getCause());
+            throw new IllegalStateException(format(ERROR_MESSAGE_FORMAT, properties.toString(), e.getMessage()));
+        }
     }
 }

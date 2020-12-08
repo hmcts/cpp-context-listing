@@ -41,8 +41,6 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.junit.Test;
-import org.skyscreamer.jsonassert.JSONAssert;
-import org.skyscreamer.jsonassert.JSONCompareMode;
 
 public class HearingJsonListConverterFilterEjectCasesTest {
 
@@ -461,6 +459,26 @@ public class HearingJsonListConverterFilterEjectCasesTest {
         final Hearing hearing = createHearing(ALPHABETICAL_LIST);
 
         final JsonArray hearingJsonArrayAlphabeticalList = converter.convertHearingResultForAlphabeticalList(ImmutableList.of(hearing));
+
+        assertThat(hearingJsonArrayAlphabeticalList.toString(), isJson(allOf(
+                withJsonPath("$", hasSize(1)),
+                withJsonPath("$[0].hearingsByHearingDate", hasSize(2)),
+                withJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases", hasSize(1)),
+                withJsonPath("$[0].hearingsByHearingDate[0].hearing.listedCases[0].isEjected", equalTo(false)),
+                withJsonPath("$[0].hearingsByHearingDate[1].hearing.courtApplications", hasSize(1)),
+                withJsonPath("$[0].hearingsByHearingDate[1].hearing.courtApplications[0].isEjected", equalTo(false))
+        )));
+    }
+
+    @Test
+    public void shouldDeepCopyHearingAndConvertHearingResultForAlphabeticalList() throws IOException {
+        final Hearing hearing = createHearing(ALPHABETICAL_LIST);
+
+        final JsonArray hearingJsonArrayAlphabeticalList = converter.convertHearingResultForAlphabeticalList(ImmutableList.of(hearing));
+
+        assertThat(hearing.getProperties().get(0).toString(), isJson(allOf(
+                withJsonPath("$.hearingsByHearingDate", hasSize(5))
+        )));
 
         assertThat(hearingJsonArrayAlphabeticalList.toString(), isJson(allOf(
                 withJsonPath("$", hasSize(1)),
