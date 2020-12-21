@@ -71,13 +71,13 @@
     "judiciary",
     "hearingLanguage",
     "courtCentreId",
-    "nonDefaultDays",
-    "nonSittingDays"
+    "nonDefaultDays"
   ],
   "oneOf": [
     {
       "required": [
-        "startDate"
+        "startDate",
+        "nonSittingDays"
       ]
     },
     {

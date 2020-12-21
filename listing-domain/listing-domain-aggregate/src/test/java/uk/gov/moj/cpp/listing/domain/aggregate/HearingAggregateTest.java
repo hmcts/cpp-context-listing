@@ -267,4 +267,45 @@ public class HearingAggregateTest {
         assertThat(listedHearing.findFirst().isPresent(), is(false));
     }
 
+
+    @Test
+    public void shouldNotRaiseNotSittingDaysEventWhenCurrentAndPreviousNonSittingDaysEmptyOrNull(){
+
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+        final UUID defendant1Id = randomUUID();
+        final UUID defendant2Id = randomUUID();
+        final UUID offence1Id = randomUUID();
+        final UUID offence2Id = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.listing.events.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(Arrays.asList(Defendant.defendant()
+                                                .withId(defendant1Id)
+                                                .withOffences(Arrays.asList(Offence.offence().withId(offence1Id).build()))
+                                                .build()))
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(Arrays.asList(Defendant.defendant()
+                                                .withId(defendant2Id)
+                                                .withOffences(Arrays.asList(Offence.offence().withId(offence2Id).build()))
+                                                .build()))
+                                        .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> nonSittingDays = hearing.assignNonSittingDays(null, hearingId);
+
+        assertThat(nonSittingDays.collect(Collectors.toList()), is(emptyList()));
+
+    }
+
 }

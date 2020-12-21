@@ -687,6 +687,10 @@ public class Hearing implements Aggregate {
             return Stream.empty();
         }
 
+        if(isEmpty(nonSittingDays) && isEmpty(this.nonSittingDays)) {
+            return Stream.empty();
+        }
+
         if (notCurrentlyAssigned(this.nonSittingDays) || this.nonSittingDays.isEmpty()) {
             return apply(Stream.of(nonSittingDaysAssignedToHearing()
                     .withNonSittingDays(nonSittingDays)
