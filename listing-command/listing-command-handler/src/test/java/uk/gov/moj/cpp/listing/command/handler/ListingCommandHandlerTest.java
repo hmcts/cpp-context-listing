@@ -896,7 +896,6 @@ public class ListingCommandHandlerTest {
         verify(hearing).assignHearingDays(null, null, NON_SITTING_DAYS1, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);
         verify(hearing).changeWeekCommencingDate(WEEK_COMMENCING_START_DATE, WEEK_COMMENCING_END_DATE, WEEK_COMMENCING_DURATION, HEARING_ID_1);
-        verify(hearing).assignPublicListNote(any(), eq(HEARING_ID_1));
         verify(hearing).assignVideoLink(anyBoolean(), eq(HEARING_ID_1));
     }
 

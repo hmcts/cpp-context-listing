@@ -1,13 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static java.util.UUID.randomUUID;
-import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
-import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
-import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
-import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAvailableHearingSlotsService;
-import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
-import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
-
+import org.junit.Test;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.SequenceHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
@@ -20,7 +13,13 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
-import org.junit.Test;
+import static java.util.UUID.randomUUID;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
+import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAvailableHearingSlotsService;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 
 @SuppressWarnings("squid:S1607")
 public class HearingIT extends AbstractIT {
@@ -97,6 +96,7 @@ public class HearingIT extends AbstractIT {
     @Test
     public void removePublicListNoteInAllocatedListing() {
         final HearingsData hearingsData = HearingsData.hearingsData();
+
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();

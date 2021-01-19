@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Stream.concat;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
@@ -515,7 +516,7 @@ public class Hearing implements Aggregate {
             return Stream.empty();
         }
 
-        if (isNotEmpty(this.publicListNote) && isEmpty(publicListNote)) {
+        if (isNotEmpty(this.publicListNote) && isBlank(publicListNote)) {
             return apply(Stream.of(PublicListNoteRemovedFromHearing.publicListNoteRemovedFromHearing()
                     .withHearingId(hearingId)
                     .build()));

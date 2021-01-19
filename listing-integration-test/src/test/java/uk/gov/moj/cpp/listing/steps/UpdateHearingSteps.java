@@ -212,6 +212,9 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
                 .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDays(updatedHearingData.getNonDefaultDays()))
                 .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()));
+        if (nonNull(updatedHearingData.getPublicListNote())) {
+            builder.add(FIELD_PUBLIC_LIST_NOTE, updatedHearingData.getPublicListNote());
+        }
 
         addNullableStringField(builder, FIELD_END_DATE, updatedHearingData.getEndDate());
         addNullableStringField(builder, FIELD_COURT_ROOM_ID, getStringOrNull(updatedHearingData.getCourtRoomId()));
@@ -816,7 +819,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private void verifyPublicListNoteRemovedEvent() {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerPublicListNoteRemoved);
         LOGGER.info("jsonResponse from privateMessageConsumerVideoLinkDetailsRemoved: {}", jsonResponse.prettify());
-        assertThat(jsonResponse.get("publicListNote"), is(updatedHearingData.getPublicListNote()));
+        assertThat(jsonResponse.get("publicListNote"), is(nullValue()));
     }
 
     private void verifyTypeChangedEvent() {

@@ -1,10 +1,5 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
-import static java.util.Arrays.asList;
-import static java.util.Optional.of;
-import static java.util.Optional.ofNullable;
-import static java.util.UUID.randomUUID;
-
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 
 import java.time.DayOfWeek;
@@ -18,6 +13,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import static java.util.Arrays.asList;
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
+import static java.util.UUID.randomUUID;
 
 
 public class UpdatedHearingData {
@@ -122,11 +122,11 @@ public class UpdatedHearingData {
 
         final String endDate = startDate.plusDays(2).toString();
         final Boolean hasVideoLink = true;
-        final String videoLinkDetails = "videoLinkDetails";
+        final String publicListNote = "publicListNote";
 
         return new UpdatedHearingData(hearingId, courtCentreId, RandomGenerator.STRING.next(), roomId, SENTENCE_HEARING_TYPE,
                 startDate.toString(), endDate, nonDefaultDays,
-                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, hasVideoLink, videoLinkDetails);
+                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, hasVideoLink, publicListNote);
     }
 
     public static UpdatedHearingData updatedHearingDataForPublicListNote(final HearingData hearingData, final Boolean hasVideoLink, final String publicListNote) {
@@ -205,7 +205,7 @@ public class UpdatedHearingData {
 
         //changed values
         final Boolean hasVideoLink = null;
-        final String videoLinkDetails = null;
+        final String videoLinkDetails = "";
         return new UpdatedHearingData(hearingData.getHearingId(), hearingData.getCourtCentreId(), hearingData.getName(), hearingData.getCourtRoomId(), SENTENCE_HEARING_TYPE,
                 hearingData.getStartDate(), hearingData.getEndDate(), hearingData.getNonDefaultDays(),
                 Collections.emptyList(), HEARING_LANGUAGE_WELSH, hearingData.getJudiciary(), hearingData.getJurisdictionType(), null, null, null, hasVideoLink, videoLinkDetails);
