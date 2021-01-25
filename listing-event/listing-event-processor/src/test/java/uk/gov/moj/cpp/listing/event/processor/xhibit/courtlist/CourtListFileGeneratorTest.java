@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.time.ZonedDateTime.parse;
 import static java.util.Arrays.asList;
+import static java.util.Collections.*;
 import static java.util.UUID.fromString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -21,10 +22,16 @@ import uk.gov.moj.cpp.listing.domain.referencedata.HearingType;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 
+import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -127,11 +134,11 @@ public class CourtListFileGeneratorTest {
         when(commonXhibitReferenceDataService.getMagsCourtDetails(courtCentreId1)).thenReturn(courtLocation1);
         when(commonXhibitReferenceDataService.getMagsCourtDetails(courtCentreId2)).thenReturn(courtLocation2);
         when(commonXhibitReferenceDataService.getCrownCourtCentreIdsForCrestId(crestCourtId)).thenReturn(courtCentreIds);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(10);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d"))).thenReturn(20);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("64b0f4cf-2dde-310b-b7da-cab57b285b6f"))).thenReturn(4);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("28813316-35dc-30b7-a94f-07aeec664d9f"))).thenReturn(3);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1,UUID.fromString("1f9630dc-e4ba-3378-8880-2369883394b2"))).thenReturn(1);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1, UUID.fromString("6508af42-e4d4-396d-a752-d676ebd38f6d"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1, UUID.fromString("64b0f4cf-2dde-310b-b7da-cab57b285b6f"))).thenReturn(4);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1, UUID.fromString("28813316-35dc-30b7-a94f-07aeec664d9f"))).thenReturn(3);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId1, UUID.fromString("1f9630dc-e4ba-3378-8880-2369883394b2"))).thenReturn(1);
 
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.json");
         when(commonXhibitReferenceDataService.getJudiciary(any())).thenReturn(judiciary);
@@ -207,10 +214,12 @@ public class CourtListFileGeneratorTest {
 
     @Test
     public void shouldGenerateXml() throws Exception {
+        ZonedDateTime timeStamp = ZonedDateTime.now();
         final PublishCourtListRequestParameters requestParameters = withDefaults()
                 .withCourtCentreId(courtCentreId1)
                 .publishCourtListType(publishCourtListType)
                 .withStartDate(startDate)
+                .withRequestedTime(timeStamp)
                 .build();
 
         final CourtListMetadata metadata = new CourtListMetadata(publishCourtListType.name() + "-FILENAME",
@@ -221,8 +230,6 @@ public class CourtListFileGeneratorTest {
         LOGGER.info("generatedXml:\n{}", generatedXml);
 
         xmlUtils.validate(generatedXml, "xhibit/xsd/" + publishCourtListType.getSchemaName());
-
-        assertXmlEquals(generatedXml, expectedXmlFile);
+        assertXmlEquals(generatedXml, expectedXmlFile, singletonMap("#TIME_STAMP#", requestParameters.getRequestedTime().toLocalDateTime().toString()));
     }
-
 }

@@ -6,7 +6,6 @@ import static java.util.UUID.fromString;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.CROWN_PROSECUTION_SERVICE;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.OTHER_PROSECUTOR;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils.convertDate;
@@ -60,6 +59,9 @@ import java.util.stream.Collectors;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
 
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
@@ -69,6 +71,7 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * Map to elements defined in CourtServices.xsd
  */
+@SuppressWarnings("squid:S00112")
 public class CourtServicesMapper {
 
     public static final String MASKED_VALUE = "******";
@@ -98,7 +101,7 @@ public class CourtServicesMapper {
     private static final String REPORTING_RESTRICTIONS = "reportingRestrictions";
     private static final String LABEL = "label";
     private static final String DEFENDANTS = "defendants";
-    private static final String COMMA =", ";
+    private static final String COMMA = ", ";
 
     private RequestedNameMapper judicialRequestedName = new RequestedNameMapper();
 
@@ -120,8 +123,17 @@ public class CourtServicesMapper {
         documentIDstructure.setDocumentName(context.getMetadata().getFilename());
         documentIDstructure.setDocumentType(context.getParameters().getPublishCourtListType().getDocumentType());
         documentIDstructure.setUniqueID(context.getMetadata().getDocumentUniqueId());
+        documentIDstructure.setTimeStamp(buildTimeStamp());
 
         return documentIDstructure;
+    }
+
+    private XMLGregorianCalendar buildTimeStamp() {
+        try {
+            return DatatypeFactory.newInstance().newXMLGregorianCalendar(context.getParameters().getRequestedTime().toLocalDateTime().toString());
+        } catch (DatatypeConfigurationException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     public ListHeaderStructure generateListHeader() {
@@ -181,7 +193,8 @@ public class CourtServicesMapper {
         return courtHouseStructure;
     }
 
-    private CourtHouseStructure.CourtHouseCode generateCrownCourtCode(final CourtLocation courtLocation) {
+    private CourtHouseStructure.CourtHouseCode generateCrownCourtCode(
+            final CourtLocation courtLocation) {
         final CourtHouseStructure.CourtHouseCode courtHouseCode = objectFactory.createCourtHouseStructureCourtHouseCode();
         courtHouseCode.setValue(courtLocation.getCrestCourtId());
         courtHouseCode.setCourtHouseShortName(courtLocation.getCourtShortName());
@@ -189,7 +202,8 @@ public class CourtServicesMapper {
         return courtHouseCode;
     }
 
-    private CourtHouseStructure.CourtHouseCode generateCourtHouseCode(final String crestCourtSiteId) {
+    private CourtHouseStructure.CourtHouseCode generateCourtHouseCode(
+            final String crestCourtSiteId) {
 
         final CourtHouseStructure.CourtHouseCode courtHouseCode = objectFactory.createCourtHouseStructureCourtHouseCode();
         courtHouseCode.setValue(crestCourtSiteId);
@@ -197,7 +211,8 @@ public class CourtServicesMapper {
         return courtHouseCode;
     }
 
-    public SittingStructure generateSittingStructure(final JsonObject sittingJson, final int sittingSequenceNumber) {
+    public SittingStructure generateSittingStructure(final JsonObject sittingJson,
+                                                     final int sittingSequenceNumber) {
 
         final SittingStructure sittingStructure = objectFactory.createSittingStructure();
 
@@ -294,7 +309,8 @@ public class CourtServicesMapper {
         return justice;
     }
 
-    public SittingStructure.Hearings generateSittingStructureHearings(final JsonObject sittingJson) {
+    public SittingStructure.Hearings generateSittingStructureHearings(
+            final JsonObject sittingJson) {
 
         final SittingStructure.Hearings sittingStructureHearings = objectFactory.createSittingStructureHearings();
         final boolean weekCommencing = sittingJson.getBoolean("weekCommencing");
@@ -323,9 +339,10 @@ public class CourtServicesMapper {
         return sittingStructureHearings;
     }
 
-    private HearingStructure generateHearingStructureForListedCase(final JsonObject hearingJson,
-                                                                   final int hearingSequenceNumber,
-                                                                   final boolean weekCommencing) {
+    private HearingStructure generateHearingStructureForListedCase(
+            final JsonObject hearingJson,
+            final int hearingSequenceNumber,
+            final boolean weekCommencing) {
 
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
@@ -369,9 +386,10 @@ public class CourtServicesMapper {
 
     }
 
-    private HearingStructure generateHearingStructureForCourtApplication(final JsonObject hearingJson,
-                                                                         final int hearingSequenceNumber,
-                                                                         final boolean weekCommencing) {
+    private HearingStructure generateHearingStructureForCourtApplication(
+            final JsonObject hearingJson,
+            final int hearingSequenceNumber,
+            final boolean weekCommencing) {
         final HearingStructure hearingStructure = objectFactory.createHearingStructure();
 
         hearingStructure.setHearingSequenceNumber(hearingSequenceNumber);
@@ -419,7 +437,8 @@ public class CourtServicesMapper {
         return CollectionUtils.isNotEmpty(values) ? String.join(COMMA, values) : "";
     }
 
-    private Set<String> getReportingRestrictionLabel(final JsonArray offences, final Set<String> values) {
+    private Set<String> getReportingRestrictionLabel(final JsonArray offences,
+                                                     final Set<String> values) {
 
         for (final JsonObject offence : offences.getValuesAs(JsonObject.class)) {
             if (offence.containsKey(REPORTING_RESTRICTIONS)) {
@@ -431,7 +450,8 @@ public class CourtServicesMapper {
         return values;
     }
 
-    private String concatTextForListNote(final String reportingRestriction, final String videoLinkDetails) {
+    private String concatTextForListNote(final String reportingRestriction,
+                                         final String videoLinkDetails) {
         return Arrays.asList(reportingRestriction, videoLinkDetails)
                 .stream()
                 .map(StringUtils::trimToEmpty)
@@ -481,13 +501,15 @@ public class CourtServicesMapper {
         return prosecutionStructure;
     }
 
-    private OrganisationStructure generateProsecutingOrganisation(final ProsecutingAuthorityType prosecutingAuthorityType) {
+    private OrganisationStructure generateProsecutingOrganisation(
+            final ProsecutingAuthorityType prosecutingAuthorityType) {
         final OrganisationStructure organisationStructure = objectFactory.createOrganisationStructure();
         organisationStructure.setOrganisationName(prosecutingAuthorityType.value());
         return organisationStructure;
     }
 
-    private HearingStructure.Defendants generateHearingStructureDefendantsForCase(final JsonObject listedCase) {
+    private HearingStructure.Defendants generateHearingStructureDefendantsForCase(
+            final JsonObject listedCase) {
 
         final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
 
@@ -499,7 +521,8 @@ public class CourtServicesMapper {
         return defendants;
     }
 
-    private HearingStructure.Defendants generateHearingStructureDefendantsForCourtApplication(final JsonObject courtApplication) {
+    private HearingStructure.Defendants generateHearingStructureDefendantsForCourtApplication(
+            final JsonObject courtApplication) {
 
         final HearingStructure.Defendants defendants = objectFactory.createHearingStructureDefendants();
 
@@ -509,7 +532,8 @@ public class CourtServicesMapper {
         return defendants;
     }
 
-    private DefendantStructure generateDefendantStructureForDefendant(final JsonObject defendant, final String caseUrn) {
+    private DefendantStructure generateDefendantStructureForDefendant(
+            final JsonObject defendant, final String caseUrn) {
 
         final DefendantStructure defendantStructure = objectFactory.createDefendantStructure();
 
@@ -556,7 +580,8 @@ public class CourtServicesMapper {
         return partyStructure;
     }
 
-    private DefendantStructure generateDefendantStructureForApplicant(final JsonObject applicant, final String urn) {
+    private DefendantStructure generateDefendantStructureForApplicant(
+            final JsonObject applicant, final String urn) {
 
         final DefendantStructure defendantStructure = objectFactory.createDefendantStructure();
 
@@ -566,7 +591,8 @@ public class CourtServicesMapper {
         return defendantStructure;
     }
 
-    private PersonalDetailsStructure generatePersonalDetailsStructure(final JsonObject defendant) {
+    private PersonalDetailsStructure generatePersonalDetailsStructure(
+            final JsonObject defendant) {
 
         final PersonalDetailsStructure personalDetailsStructure = objectFactory.createPersonalDetailsStructure();
 
@@ -605,7 +631,8 @@ public class CourtServicesMapper {
         return citizenNameStructure;
     }
 
-    private DefendantStructure.Charges generateDefendantStructureCharges(final JsonArray offences) {
+    private DefendantStructure.Charges generateDefendantStructureCharges(
+            final JsonArray offences) {
 
         final DefendantStructure.Charges charges = objectFactory.createDefendantStructureCharges();
 
@@ -657,7 +684,8 @@ public class CourtServicesMapper {
         return commonXhibitReferenceDataService.getXhibitHearingType(cppHearingId).getExhibitHearingCode();
     }
 
-    public FixtureStructure generateFixtureStructure(final JsonObject sittingJson, final UUID hearingTypeId) {
+    public FixtureStructure generateFixtureStructure(final JsonObject sittingJson,
+                                                     final UUID hearingTypeId) {
 
         final FixtureStructure fixtureStructure = objectFactory.createFixtureStructure();
 
@@ -671,7 +699,8 @@ public class CourtServicesMapper {
         return fixtureStructure;
     }
 
-    private CasesStructure generateCasesStructure(final JsonObject sittingJson, final UUID pHearingTypeId) {
+    private CasesStructure generateCasesStructure(final JsonObject sittingJson,
+                                                  final UUID pHearingTypeId) {
 
         final List<UUID> processedHearingTypes = new ArrayList<>();
         final CasesStructure casesStructure = objectFactory.createCasesStructure();
@@ -684,7 +713,9 @@ public class CourtServicesMapper {
         return casesStructure;
     }
 
-    private void verifyCaseStructureGeneration(final UUID pHearingTypeId, final List<UUID> processedHearingTypes, final CasesStructure casesStructure, final JsonObject hearingJson, final UUID hearingTypeId) {
+    private void verifyCaseStructureGeneration(final UUID pHearingTypeId,
+                                               final List<UUID> processedHearingTypes, final CasesStructure casesStructure,
+                                               final JsonObject hearingJson, final UUID hearingTypeId) {
         if (hearingTypeId.equals(pHearingTypeId)) {
             processedHearingTypes.add(hearingTypeId);
 
@@ -694,7 +725,8 @@ public class CourtServicesMapper {
         }
     }
 
-    private void generateCaseStructureForCaseOrCourtApplication(final CasesStructure casesStructure, final JsonObject hearingJson) {
+    private void generateCaseStructureForCaseOrCourtApplication(
+            final CasesStructure casesStructure, final JsonObject hearingJson) {
         if (hearingJson.containsKey(CASE_IDENTIFIER)) {
             casesStructure.getCase().add(generateCaseStructureForCase(hearingJson));
         }
@@ -719,7 +751,8 @@ public class CourtServicesMapper {
         return casesStructureCase;
     }
 
-    private CasesStructure.Case generateCaseStructureForCourtApplication(final JsonObject courtApplication) {
+    private CasesStructure.Case generateCaseStructureForCourtApplication(
+            final JsonObject courtApplication) {
         final CasesStructure.Case casesStructureCase = objectFactory.createCasesStructureCase();
 
         casesStructureCase.setCaseNumber(CPP_CASE_NUMBER);
@@ -732,7 +765,8 @@ public class CourtServicesMapper {
         return casesStructureCase;
     }
 
-    private CasesStructure.Case.Defendants generateCaseStructureCaseDefendants(final JsonObject defendant, final String caseUrn) {
+    private CasesStructure.Case.Defendants generateCaseStructureCaseDefendants(
+            final JsonObject defendant, final String caseUrn) {
 
         final CasesStructure.Case.Defendants caseStructureCaseDefendants = objectFactory.createCasesStructureCaseDefendants();
 
@@ -742,7 +776,8 @@ public class CourtServicesMapper {
     }
 
 
-    private void generateAndSetTimeMarkingNote(final JsonObject hearingJson, final HearingStructure hearingStructure) {
+    private void generateAndSetTimeMarkingNote(final JsonObject hearingJson,
+                                               final HearingStructure hearingStructure) {
         final ZonedDateTime localTime = DateAndTimeUtils.convertUTCToLocalTime(LocalDateTime.parse(hearingJson.getString("startTime")));
         hearingStructure.setTimeMarkingNote(format(TIME_MARKING_NOTE_TEXT, localTime.format(timeFormatter)));
     }

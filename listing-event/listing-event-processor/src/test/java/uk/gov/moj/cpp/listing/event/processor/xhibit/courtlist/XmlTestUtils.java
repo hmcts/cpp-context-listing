@@ -6,7 +6,9 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -19,8 +21,18 @@ public class XmlTestUtils {
     private static final Logger LOGGER = getLogger(XmlTestUtils.class);
 
     public static void assertXmlEquals(final String actualXml, final String expectedXmlResourceName) throws IOException {
+        assertXmlEquals(actualXml, expectedXmlResourceName, Collections.emptyMap());
+    }
 
-        final String expectedXml = loadResourceFile(expectedXmlResourceName);
+    public static void assertXmlEquals(final String actualXml, final String expectedXmlResourceName,
+                                       final Map<String, String> replaceables) throws IOException {
+
+        String expectedXml = loadResourceFile(expectedXmlResourceName);
+        Iterator<Map.Entry<String, String>> iterator = replaceables.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, String> next = iterator.next();
+            expectedXml = expectedXml.replaceAll(next.getKey(), next.getValue());
+        }
 
         final Diff xmlDiff = DiffBuilder.compare(expectedXml).withTest(actualXml).build();
 

@@ -4,6 +4,7 @@
         <cs:DocumentName>WARN-FILENAME</cs:DocumentName>
         <cs:UniqueID>UNIQUEID</cs:UniqueID>
         <cs:DocumentType>WL</cs:DocumentType>
+        <cs:TimeStamp>#TIME_STAMP#</cs:TimeStamp>
     </cs:DocumentID>
     <cs:ListHeader>
         <cs:ListCategory>Criminal</cs:ListCategory>

@@ -1,9 +1,11 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
+import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersBuilder.withDefaults;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
@@ -11,12 +13,17 @@ import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtHouseStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.DocumentIDstructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.ListHeaderStructure;
 
+import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlTestUtils;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.InvalidDataException;
 
@@ -28,7 +35,10 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
     @Before
     public void before() {
-
+        requestParameters = withDefaults()
+                .withRequestedTime(ZonedDateTime.now())
+                .build();
+        context = new CourtListGenerationContext(envelope, requestParameters, metadata);
         courtServicesMapper = new CourtServicesMapper(context, commonXhibitReferenceDataService);
     }
 
@@ -40,6 +50,8 @@ public class CourtServicesMapperTest extends BaseMapperTest {
         assertThat(documentIDstructure.getUniqueID(), is("UNIQUEID"));
         assertThat(documentIDstructure.getDocumentType(), is("FL"));
         assertThat(documentIDstructure.getDocumentName(), is("FIRM-FILENAME"));
+        assertThat(LocalDateTime.parse(documentIDstructure.getTimeStamp().toString()), is(requestParameters.getRequestedTime().toLocalDateTime()));
+
     }
 
     @Test
@@ -71,9 +83,9 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -84,7 +96,7 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FIRM.getSchemaName());
 
-        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingMapperTest.xml");
+        assertXml(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingMapperTest.xml");
     }
 
     @Test
@@ -92,9 +104,9 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-videolink.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -105,7 +117,7 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FIRM.getSchemaName());
 
-        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingWithVideoLinkMapperTest.xml");
+        assertXml(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingWithVideoLinkMapperTest.xml");
     }
 
 
@@ -114,9 +126,9 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-videolink.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -127,7 +139,7 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.DRAFT.getSchemaName());
 
-        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedDraftListSortedSittingWithVideoLinkMapperTest.xml");
+        assertXml(generatedXml, "xhibit/mapper/expectedDraftListSortedSittingWithVideoLinkMapperTest.xml");
     }
 
 
@@ -136,9 +148,9 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-videolink.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -149,7 +161,7 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FINAL.getSchemaName());
 
-        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedDraftListSortedSittingWithVideoLinkMapperTest.xml");
+        assertXml(generatedXml, "xhibit/mapper/expectedDraftListSortedSittingWithVideoLinkMapperTest.xml");
     }
 
     @Test
@@ -157,9 +169,9 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
         final JsonObject judiciary = givenPayload("/xhibit/mock-data/referencedata.query.judiciaries.titleJudicialPrefixNotThere.json");
         when(commonXhibitReferenceDataService.getJudiciary(any())).thenReturn(judiciary);
 
@@ -172,7 +184,7 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FIRM.getSchemaName());
 
-        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingJudgeTitleJudicialEmptyMapperTest.xml");
+        assertXml(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingJudgeTitleJudicialEmptyMapperTest.xml");
     }
 
     @Test
@@ -180,9 +192,9 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-defendant-firstname-not-provided.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -193,7 +205,7 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FINAL.getSchemaName());
 
-        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListWhenDefendantFirstNameNotProvided.xml");
+        assertXml(generatedXml, "xhibit/mapper/expectedFirmListWhenDefendantFirstNameNotProvided.xml");
     }
 
     @Test(expected = InvalidDataException.class)
@@ -201,9 +213,9 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
-        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId,UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-defendant-surname-not-provided.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -212,6 +224,10 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final String generatedXml = xmlUtils.convertToXml(dailyListMapper.generate());
 
-        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListWhenDefendantFirstNameNotProvided.xml");
+        assertXml(generatedXml, "xhibit/mapper/expectedFirmListWhenDefendantFirstNameNotProvided.xml");
+    }
+
+    private void assertXml(final String generatedXml, final String expectedXmlResourceName) throws IOException {
+        XmlTestUtils.assertXmlEquals(generatedXml, expectedXmlResourceName, singletonMap("#TIME_STAMP#", requestParameters.getRequestedTime().toLocalDateTime().toString()));
     }
 }

@@ -296,6 +296,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 .replaceElementValue("cs:DocumentName", "FILENAME")
                 .replaceElementValue("cs:UniqueID", "UNIQUEID")
                 .replaceElementValue("cs:PublishedTime", "PUBLISHEDTIME")
+                .replaceElementValue("cs:TimeStamp", "TIMESTAMP")
                 .save();
     }
 
