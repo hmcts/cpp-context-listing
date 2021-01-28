@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.domain;
 
 import java.io.Serializable;
+import java.util.Optional;
 import java.util.UUID;
 
 @SuppressWarnings({"squid:S00107", "squid:S00121"})
@@ -11,9 +12,12 @@ public class Type implements Serializable {
 
   private final UUID id;
 
-  public Type(final String description, final UUID id) {
+  private final String welshDescription;
+
+  public Type(final String description, final UUID id, final String welshDescription) {
     this.description = description;
     this.id = id;
+    this.welshDescription = welshDescription;
   }
 
   public String getDescription() {
@@ -22,6 +26,10 @@ public class Type implements Serializable {
 
   public UUID getId() {
     return id;
+  }
+
+  public String getWelshDescription() {
+      return welshDescription;
   }
 
   public static Builder type() {
@@ -35,18 +43,21 @@ public class Type implements Serializable {
     final Type that = (Type) obj;
 
     return java.util.Objects.equals(this.description, that.description) &&
-    java.util.Objects.equals(this.id, that.id);
+            java.util.Objects.equals(this.id, that.id) &&
+            java.util.Objects.equals(this.welshDescription, that.welshDescription);
   }
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(description, id);}
+    return java.util.Objects.hash(description, id, welshDescription);
+  }
 
   @Override
   public String toString() {
     return "Type{" +
-    	"description='" + description + "'," +
-    	"id='" + id + "'" +
+            "description='" + description + "'," +
+            "id='" + id + "'," +
+            "welshDescription='" + welshDescription + "'" +
     "}";
   }
 
@@ -54,6 +65,8 @@ public class Type implements Serializable {
     private String description;
 
     private UUID id;
+
+    private String welshDescription;
 
     public Builder withDescription(final String description) {
       this.description = description;
@@ -65,8 +78,18 @@ public class Type implements Serializable {
       return this;
     }
 
+    public Builder withWelshDescription(final String welshDescription) {
+      this.welshDescription = welshDescription;
+      return this;
+    }
+
+    public Builder withWelshDescription(final Optional<String> welshDescription) {
+        this.welshDescription = welshDescription.orElse(null);
+      return this;
+    }
+
     public Type build() {
-      return new Type(description, id);
+      return new Type(description, id, welshDescription);
     }
   }
 }

@@ -50,7 +50,7 @@ public class HearingsDataFactory {
     public static final String CROWN_JURISDICTION = "CROWN";
     public static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
     private static final int HEARING_ESTIMATE_MINUTES = 30;
-    private static final HearingTypeData PTP_HEARING_TYPE = new HearingTypeData(UUID.fromString("52edf232-3c09-4c74-a6ad-737985c2e662"), "PTP");
+    private static final HearingTypeData PTP_HEARING_TYPE = new HearingTypeData(UUID.fromString("52edf232-3c09-4c74-a6ad-737985c2e662"), "PTP", "welshPTP");
     private static final BailStatus BAIL_CONDITIONAL = new BailStatus.Builder().withId(fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).withCode("P").withDescription("Custody or remanded into custody").build();
 
     public static final ZonedDateTime SLOT_START_TIME = ZonedDateTime.now();

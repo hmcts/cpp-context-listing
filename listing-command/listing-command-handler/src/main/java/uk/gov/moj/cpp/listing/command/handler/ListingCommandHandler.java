@@ -1442,6 +1442,7 @@ public class ListingCommandHandler {
         return Type.type()
                 .withId(hearingType.getId())
                 .withDescription(hearingType.getDescription())
+                .withWelshDescription(hearingType.getWelshDescription())
                 .build();
     }
 

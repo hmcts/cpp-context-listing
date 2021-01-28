@@ -60,6 +60,9 @@
         },
         "description": {
           "type": "string"
+        },
+        "welshDescription" : {
+          "type": "string"
         }
       },
       "required": [

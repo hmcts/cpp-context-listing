@@ -24,7 +24,7 @@ public class UpdatedHearingData {
 
     protected static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     protected static final LocalTime DEFAULT_START_TIME_1 = LocalTime.of(17, 00);
-    private static final HearingTypeData SENTENCE_HEARING_TYPE = new HearingTypeData(randomUUID(), "Sentence");
+    private static final HearingTypeData SENTENCE_HEARING_TYPE = new HearingTypeData(randomUUID(), "Sentence", "welshSentence");
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final String HEARING_LANGUAGE_WELSH = "WELSH";
     private static final String HEARING_LANGUAGE_ENGLISH = "ENGLISH";

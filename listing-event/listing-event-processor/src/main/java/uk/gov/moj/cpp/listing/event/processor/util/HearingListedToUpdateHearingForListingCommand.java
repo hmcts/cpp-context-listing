@@ -41,6 +41,7 @@ public class HearingListedToUpdateHearingForListingCommand implements Converter<
                         .withType(HearingType.hearingType()
                                 .withId(hearing.getType().getId())
                                 .withDescription(hearing.getType().getDescription())
+                                .withWelshDescription(hearing.getType().getWelshDescription())
                                 .build())
                         .withWeekCommencingDurationInWeeks(hearing.getWeekCommencingDurationInWeeks())
                         .withWeekCommencingEndDate(hearing.getWeekCommencingEndDate())

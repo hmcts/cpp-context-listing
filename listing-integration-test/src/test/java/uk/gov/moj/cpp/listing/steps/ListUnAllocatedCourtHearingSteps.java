@@ -152,6 +152,7 @@ public class ListUnAllocatedCourtHearingSteps extends ListCourtHearingSteps {
 
                                 .withType(HearingType.hearingType()
                                         .withDescription(hearingData.getHearingTypeData().getTypeDescription())
+                                        .withWelshDescription(hearingData.getHearingTypeData().getWelshDescription())
                                         .withId(hearingData.getHearingTypeData().getTypeId())
                                         .build())
                                 .withReportingRestrictionReason(of(hearingData.getReportingRestrictionReason()))
@@ -349,6 +350,7 @@ public class ListUnAllocatedCourtHearingSteps extends ListCourtHearingSteps {
                         .withJurisdictionType(hearingData.getJurisdictionType() != null ? JurisdictionType.valueFor(hearingData.getJurisdictionType()).get() : null)
                         .withType(HearingType.hearingType()
                                 .withDescription(hearingData.getHearingTypeData().getTypeDescription())
+                                .withWelshDescription(hearingData.getHearingTypeData().getWelshDescription())
                                 .withId(hearingData.getHearingTypeData().getTypeId())
                                 .build())
                         .withReportingRestrictionReason(of(hearingData.getReportingRestrictionReason()))

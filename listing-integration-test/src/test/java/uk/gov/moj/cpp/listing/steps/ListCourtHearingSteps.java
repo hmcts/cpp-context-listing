@@ -1528,6 +1528,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private HearingType getHearingType(final HearingData hearingData) {
         return HearingType.hearingType()
                 .withDescription(hearingData.getHearingTypeData().getTypeDescription())
+                .withWelshDescription(hearingData.getHearingTypeData().getWelshDescription())
                 .withId(hearingData.getHearingTypeData().getTypeId())
                 .build();
     }

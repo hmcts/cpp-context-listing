@@ -270,6 +270,7 @@ public class Hearing implements Aggregate {
                     .withType(uk.gov.justice.listing.events.Type.type()
                             .withId(type.getId())
                             .withDescription(type.getDescription())
+                            .withWelshDescription(type.getWelshDescription())
                             .build())
                     .withAllocated(false)
                     .withAdjournedFromDate(adjournedFromDate)
@@ -390,6 +391,7 @@ public class Hearing implements Aggregate {
                         .withType(uk.gov.justice.listing.events.Type.type()
                                 .withId(type.getId())
                                 .withDescription(type.getDescription())
+                                .withWelshDescription(type.getWelshDescription())
                                 .build())
                         .withAllocated(false)
                         .withUnscheduled(of(true))
@@ -563,6 +565,7 @@ public class Hearing implements Aggregate {
             return apply(Stream.of(typeChangedForHearing()
                     .withType(uk.gov.justice.listing.events.Type.type()
                             .withId(type.getId())
+                            .withWelshDescription(type.getWelshDescription())
                             .withDescription(type.getDescription()).build())
                     .withHearingId(hearingId)
                     .build()));
@@ -1314,6 +1317,7 @@ public class Hearing implements Aggregate {
         return uk.gov.justice.listing.events.Type.type()
                 .withId(this.type.getId())
                 .withDescription(this.type.getDescription())
+                .withWelshDescription(this.type.getWelshDescription())
                 .build();
     }
 
@@ -1472,6 +1476,7 @@ public class Hearing implements Aggregate {
         this.type = Type.type()
                 .withId(hearing.getType().getId())
                 .withDescription(hearing.getType().getDescription())
+                .withWelshDescription(hearing.getType().getWelshDescription())
                 .build();
         this.startDate = hearing.getStartDate().isPresent() ? hearing.getStartDate().get() : null;
         this.endDate = hearing.getEndDate().isPresent() ? hearing.getEndDate().get() : null;
@@ -1558,7 +1563,7 @@ public class Hearing implements Aggregate {
     }
 
     private void onTypeChangedForHearing(final TypeChangedForHearing event) {
-        this.type = Type.type().withId(event.getType().getId()).withDescription(event.getType().getDescription()).build();
+        this.type = Type.type().withId(event.getType().getId()).withDescription(event.getType().getDescription()).withWelshDescription(event.getType().getWelshDescription()).build();
     }
 
     private void onStartDateChangedForHearing(final StartDateChangedForHearing event) {
@@ -1971,6 +1976,7 @@ public class Hearing implements Aggregate {
         this.type = Type.type()
                 .withId(hearing.getType().getId())
                 .withDescription(hearing.getType().getDescription())
+                .withWelshDescription(hearing.getType().getDescription())
                 .build();
         this.startDate = hearing.getStartDate().isPresent() ? hearing.getStartDate().get() : null;
         this.endDate = hearing.getEndDate().isPresent() ? hearing.getEndDate().get() : null;

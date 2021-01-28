@@ -1115,7 +1115,7 @@ public class StandardCourtListTemplateAssemblerTest {
         }
 
         objectBuilder.add("judiciary", createArrayBuilder().add(createObjectBuilder().add("judicialId", randomUUID().toString())));
-        objectBuilder.add("type", createObjectBuilder().add("id", randomUUID().toString()).add("description", "Plea & Trial Preparation"));
+        objectBuilder.add("type", createObjectBuilder().add("id", randomUUID().toString()).add("description", "Plea & Trial Preparation").add("welshDescription", "Welsh Plea & Trial Preparation"));
         return objectBuilder;
     }
 

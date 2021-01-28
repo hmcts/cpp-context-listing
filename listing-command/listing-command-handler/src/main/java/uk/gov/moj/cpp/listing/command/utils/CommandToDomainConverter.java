@@ -178,6 +178,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
         return Type.type()
                 .withId(type.getId())
                 .withDescription(type.getDescription())
+                .withWelshDescription(type.getWelshDescription())
                 .build();
     }
 

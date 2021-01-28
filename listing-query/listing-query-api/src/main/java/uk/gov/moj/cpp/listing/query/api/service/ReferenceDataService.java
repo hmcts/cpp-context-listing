@@ -10,8 +10,12 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -20,11 +24,16 @@ import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
+@SuppressWarnings({"squid:CallToDeprecatedMethod"})
 public class ReferenceDataService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReferenceDataService.class);
     private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
     private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
     private static final  String IS_WELSH = "isWelsh";
+    private static final String HEARING_TYPES_ARRAY = "hearingTypes";
+    private static final String HEARING_TYPE_ID = "id";
+    private static final String REFERENCEDATA_QUERY_HEARING_TYPES = "referencedata.query.hearing-types";
+    private static final String WELSH_HEARING_DESCRIPTION = "welshHearingDescription";
 
     @Inject
     private Enveloper enveloper;
@@ -62,5 +71,23 @@ public class ReferenceDataService {
         return Optional.ofNullable(welsh);
     }
 
+    public Map<String, String> getHearingTypesIdWelshDescriptionMap(JsonEnvelope envelope) {
+        LOGGER.info("'referencedata.query.hearing-types' request");
+
+        final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(createObjectBuilder().build())
+                .withName(REFERENCEDATA_QUERY_HEARING_TYPES)
+                .withMetadataFrom(envelope);
+
+        final JsonEnvelope hearingTypesEnvelope =    requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
+        final JsonObject jsonObject = hearingTypesEnvelope.payloadAsJsonObject();
+        final Map<String, String> hearingTypesMap = new HashMap<>();
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("hearingTypes envelope response: {}", jsonObject);
+        }
+        final JsonArray hearingTypes = jsonObject.getJsonArray(HEARING_TYPES_ARRAY);
+        hearingTypes.getValuesAs(JsonObject.class).stream().forEach(hearingType ->
+                hearingTypesMap.put(hearingType.getString(HEARING_TYPE_ID), hearingType.getString(WELSH_HEARING_DESCRIPTION)));
+        return hearingTypesMap;
+    }
 
 }

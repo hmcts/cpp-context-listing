@@ -40,6 +40,7 @@ public class PublicHearingFactory {
     protected HearingType buildType(uk.gov.justice.listing.events.Type type) {
         return HearingType.hearingType()
                 .withDescription(type.getDescription())
+                .withWelshDescription(type.getWelshDescription())
                 .withId(type.getId())
                 .build();
     }
