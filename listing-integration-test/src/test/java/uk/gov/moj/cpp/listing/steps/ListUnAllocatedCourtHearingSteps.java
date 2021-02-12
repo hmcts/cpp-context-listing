@@ -41,7 +41,7 @@ import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.listing.courts.ApplicationJurisdictionType;
 import uk.gov.justice.listing.courts.ApplicationStatus;
 import uk.gov.justice.listing.courts.Gender;
-import uk.gov.justice.listing.courts.InitiationCode;
+import uk.gov.justice.core.courts.InitiationCode;
 import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.courts.LinkType;
 import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
