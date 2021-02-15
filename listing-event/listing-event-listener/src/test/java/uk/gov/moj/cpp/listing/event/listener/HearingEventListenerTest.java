@@ -1,28 +1,31 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
+import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.getStringFromResource;
-import static org.hamcrest.MatcherAssert.assertThat;
 
-import org.hamcrest.CoreMatchers;
 import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdated;
+import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.TrialVacated;
-import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
@@ -35,6 +38,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -143,8 +147,8 @@ public class HearingEventListenerTest {
 
     @Test
     public void shouldHandleDefendantProceedingsConcluded() throws Exception {
-        final UUID CASE_ID = UUID.fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
-        final UUID DEFENDANT_ID = UUID.fromString("ddc332a5-c141-40e2-b50f-94ab7552b763");
+        final UUID CASE_ID = fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final UUID DEFENDANT_ID = fromString("ddc332a5-c141-40e2-b50f-94ab7552b763");
         final String testCases1 = getStringFromResource("defendant-proceedings-concluded.json");
         final ObjectMapper objectMapper = new ObjectMapper();
         final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
@@ -176,8 +180,8 @@ public class HearingEventListenerTest {
 
     @Test
     public void shouldUpdateDefendantCourtProceedingsWhenDefendantIsPresent() throws Exception {
-        final UUID CASE_ID = UUID.fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
-        final UUID DEFENDANT_ID = UUID.fromString("ddc332a5-c141-40e2-b50f-94ab7552b763");
+        final UUID CASE_ID = fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final UUID DEFENDANT_ID = fromString("ddc332a5-c141-40e2-b50f-94ab7552b763");
         final String testCases1 = getStringFromResource("defendant-proceedings-concluded.json");
         final ObjectMapper objectMapper = new ObjectMapper();
         final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
@@ -186,7 +190,7 @@ public class HearingEventListenerTest {
         final DefendantCourtProceedingsUpdated defendantCourtProceedingsUpdated = DefendantCourtProceedingsUpdated
                 .defendantCourtProceedingsUpdated()
                 .withHearingId(HEARING_ID)
-                .withProsecutionCase(ProsecutionCase.prosecutionCase()
+                .withProsecutionCase(uk.gov.justice.listing.events.ProsecutionCase.prosecutionCase()
                         .withId(CASE_ID)
                         .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
                                 .withId(DEFENDANT_ID)
@@ -208,9 +212,42 @@ public class HearingEventListenerTest {
     }
 
     @Test
+    public void shouldUpdateDefendantCourtProceedingsV2WhenDefendantIsPresent() throws Exception {
+        final UUID CASE_ID = fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final UUID DEFENDANT_ID = fromString("ddc332a5-c141-40e2-b50f-94ab7552b763");
+        final String testCases1 = getStringFromResource("defendant-proceedings-concluded.json");
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
+        final Envelope<DefendantCourtProceedingsUpdatedV2> envelope = (Envelope<DefendantCourtProceedingsUpdatedV2>) mock(Envelope.class);
+
+        final DefendantCourtProceedingsUpdatedV2 defendantCourtProceedingsUpdated = DefendantCourtProceedingsUpdatedV2
+                .defendantCourtProceedingsUpdatedV2()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCase(ProsecutionCase.prosecutionCase()
+                        .withId(CASE_ID)
+                        .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
+                                .withId(DEFENDANT_ID)
+                                .withProceedingsConcluded(of(Boolean.TRUE))
+                                .build()))
+                        .build())
+                .build();
+        given(envelope.payload()).willReturn(defendantCourtProceedingsUpdated);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        hearingEventListener.updateDefendantCourtProceedingsV2(envelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
     public void shouldNotUpdateDefendantCourtProceedingsWhenDefendantIsNotPresent() throws Exception {
-        final UUID CASE_ID = UUID.fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
-        final UUID DEFENDANT_ID_NOT_MATCHED_IN_THE_EVENT = UUID.fromString("11c332a5-c141-40e2-b50f-94ab7552b722");
+        final UUID CASE_ID = fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final UUID DEFENDANT_ID_NOT_MATCHED_IN_THE_EVENT = fromString("11c332a5-c141-40e2-b50f-94ab7552b722");
         final String testCases1 = getStringFromResource("defendant-proceedings-concluded.json");
         final ObjectMapper objectMapper = new ObjectMapper();
         final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
@@ -219,7 +256,7 @@ public class HearingEventListenerTest {
         final DefendantCourtProceedingsUpdated defendantCourtProceedingsUpdated = DefendantCourtProceedingsUpdated
                 .defendantCourtProceedingsUpdated()
                 .withHearingId(HEARING_ID)
-                .withProsecutionCase(ProsecutionCase.prosecutionCase()
+                .withProsecutionCase(uk.gov.justice.listing.events.ProsecutionCase.prosecutionCase()
                         .withId(CASE_ID)
                         .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
                                 .withId(DEFENDANT_ID_NOT_MATCHED_IN_THE_EVENT)
@@ -239,6 +276,26 @@ public class HearingEventListenerTest {
 
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldNotUpdateDefendantCourtProceedingsWhenDefendantListIsEmpty() throws Exception {
+        final UUID CASE_ID = fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final Envelope<DefendantCourtProceedingsUpdated> envelope = (Envelope<DefendantCourtProceedingsUpdated>) mock(Envelope.class);
+
+        final DefendantCourtProceedingsUpdated defendantCourtProceedingsUpdated = DefendantCourtProceedingsUpdated
+                .defendantCourtProceedingsUpdated()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCase(uk.gov.justice.listing.events.ProsecutionCase.prosecutionCase()
+                        .withId(CASE_ID)
+                        .withDefendants(asList())
+                        .build())
+                .build();
+        given(envelope.payload()).willReturn(defendantCourtProceedingsUpdated);
+
+        hearingEventListener.updateDefendantCourtProceedings(envelope);
+
+        verify(hearingRepository, never()).save(hearing);
     }
 
     @Test
@@ -298,7 +355,7 @@ public class HearingEventListenerTest {
 
     @Test
     public void shouldHandleCaseIdentifierProceedingsConcluded() throws Exception {
-        final UUID CASE_ID = UUID.fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
+        final UUID CASE_ID = fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
         final String testCases1 = getStringFromResource("defendant-proceedings-concluded.json");
         final ObjectMapper objectMapper = new ObjectMapper();
         final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
@@ -308,7 +365,7 @@ public class HearingEventListenerTest {
                 .withProsecutionCaseId(CASE_ID)
                 .withHearingId(HEARING_ID)
                 .withProsecutionAuthorityCode("btx4uyUfIb")
-                .withProsecutionAuthorityId(UUID.fromString("f0ddeecf-fda8-46f8-a293-c1813e58b479"))
+                .withProsecutionAuthorityId(fromString("f0ddeecf-fda8-46f8-a293-c1813e58b479"))
                 .build();
 
         given(envelope.payload()).willReturn(updateCaseIdentifier);

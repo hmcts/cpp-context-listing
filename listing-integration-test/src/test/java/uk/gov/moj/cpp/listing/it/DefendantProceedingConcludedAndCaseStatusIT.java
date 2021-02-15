@@ -1,9 +1,13 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.util.UUID.randomUUID;
+
+import uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil;
 import uk.gov.moj.cpp.listing.steps.CaseUpdatedAndDefendantProceedingsConcludedSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 
 import java.util.UUID;
 
@@ -26,6 +30,31 @@ public class DefendantProceedingConcludedAndCaseStatusIT extends AbstractIT {
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventCaseResultedDefendantProceedingsUpdatedInActiveMQ();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventDefendantCourtProceedingsUpdatedInActiveMQ();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPI(UNALLOCATED);
+        }
+
+    }
+
+
+    @Test
+    public void shouldNotUpdateDefendantProceedingConcludedAndCaseStatusEventFromProgressionWhenIncorrectDefandantIsSupplied() {
+        HearingsData hearingsData = HearingsData.singleHearingDataMultipleCasesWithSingleOffence();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
+        final UUID caseId = listedCaseData.getCaseId();
+
+        // Using a different defendant ID so that we land in the situation where defendant list is empty
+        ReflectionUtil.setField(listedCaseData.getDefendants().get(0), "defendantId", randomUUID());
+
+        try (final CaseUpdatedAndDefendantProceedingsConcludedSteps caseUpdatedAndDefendantProceedingsConcludedSteps = new CaseUpdatedAndDefendantProceedingsConcludedSteps(caseId, hearingData)) {
+            caseUpdatedAndDefendantProceedingsConcludedSteps.whenPublicEventCaseUpdatedAndHearingResultedIsPublished();
+            caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventCaseResultedDefendantProceedingsUpdatedInActiveMQ();
+            caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventDefendantCourtProceedingsUpdatedIsNotInActiveMQ();
+            caseUpdatedAndDefendantProceedingsConcludedSteps.verifyHearingForCaseStatusAndDefendantProceedingsConcludedNotSetFromAPI(UNALLOCATED);
         }
 
     }

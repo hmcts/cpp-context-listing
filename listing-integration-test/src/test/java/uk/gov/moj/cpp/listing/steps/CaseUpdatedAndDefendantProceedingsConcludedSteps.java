@@ -1,10 +1,13 @@
 package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -24,7 +27,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import javax.jms.JMSException;
@@ -33,7 +35,6 @@ import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 
 import com.jayway.restassured.path.json.JsonPath;
-import org.hamcrest.CoreMatchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,8 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
     private static final Logger LOGGER = LoggerFactory.getLogger(CaseUpdatedAndDefendantProceedingsConcludedSteps.class);
     private static final String PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED = "public.progression.hearing-resulted-case-updated";
     private static final String LISTING_EVENTS_CASE_RESULTED_AND_DEFENDANT_PROCEEDINGS_CONCLUDED = "listing.events.case-resulted-defendant-proceedings-updated";
-    private static final String LISTING_EVENT_DEFENDANT_COURT_PROCEEDINGS_UPDATED = "listing.events.defendant-court-proceedings-updated";
+    private static final String LISTING_EVENTS_DEFENDANT_COURT_PROCEEDINGS_UPDATED_V_2 = "listing.events.defendant-court-proceedings-updated-v2";
+
     private static final String MEDIA_TYPE_HEARING_RESULTED_CASE_UPDATED_JSON = "application/vnd" +
             ".public.progression.hearing-resulted-case-updated+json";
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
@@ -51,7 +53,7 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
     private MessageProducer publicEventCaseUpdatedAndHearingResulted;
     private MessageConsumer publicEventMessageConsumerCaseUpdatedAndHearingResulted;
     private MessageConsumer privateEventMessageConsumerCaseUpdatedAndHearingResulted;
-    private MessageConsumer privateEventMessageConsumerDefendantCourtProceedingsUpdated;
+    private MessageConsumer privateEventMessageConsumerDefendantCourtProceedingsUpdatedV2;
     private final UUID metadataId;
     private final UUID userId;
     private final UUID caseId;
@@ -70,7 +72,7 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         this.publicEventMessageConsumerCaseUpdatedAndHearingResulted = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED);
         this.privateEventMessageConsumerCaseUpdatedAndHearingResulted = privateEvents.createConsumer(LISTING_EVENTS_CASE_RESULTED_AND_DEFENDANT_PROCEEDINGS_CONCLUDED);
-        this.privateEventMessageConsumerDefendantCourtProceedingsUpdated = privateEvents.createConsumer(LISTING_EVENT_DEFENDANT_COURT_PROCEEDINGS_UPDATED);
+        this.privateEventMessageConsumerDefendantCourtProceedingsUpdatedV2 = privateEvents.createConsumer(LISTING_EVENTS_DEFENDANT_COURT_PROCEEDINGS_UPDATED_V_2);
     }
 
     public void whenPublicEventCaseUpdatedAndHearingResultedIsPublished() {
@@ -99,17 +101,26 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerCaseUpdatedAndHearingResulted);
         LOGGER.debug("jsonResponse from privateEventMessageConsumerCaseUpdatedAndHearingResulted: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.get("prosecutionCase"), CoreMatchers.notNullValue());
+        assertThat(jsonResponse.get("prosecutionCase"), notNullValue());
     }
 
     public void verifyPrivateEventDefendantCourtProceedingsUpdatedInActiveMQ() {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerDefendantCourtProceedingsUpdated);
-        LOGGER.debug("jsonResponse from privateEventMessageConsumerDefendantCourtProceedingsUpdated: {}", jsonResponse.prettify());
+        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerDefendantCourtProceedingsUpdatedV2);
+        LOGGER.debug("jsonResponse from privateEventMessageConsumerDefendantCourtProceedingsUpdatedV2: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.get("prosecutionCase"), CoreMatchers.notNullValue());
+        assertThat(jsonResponse.get("prosecutionCase"), notNullValue());
+    }
+
+    public void verifyPrivateEventDefendantCourtProceedingsUpdatedIsNotInActiveMQ() {
+        JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerDefendantCourtProceedingsUpdatedV2);
+
+        assertThat(jsonResponse, nullValue());
     }
 
     public void verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPI(boolean isAllocated) {
@@ -126,13 +137,25 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
                         )));
     }
 
+    public void verifyHearingForCaseStatusAndDefendantProceedingsConcludedNotSetFromAPI(boolean isAllocated) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withoutJsonPath("$.hearings[0].listedCases[0].defendants[0].proceedingsConcluded"),
+                                withoutJsonPath("$.hearings[0].listedCases[0].caseStatus")
+                        )));
+    }
+
     @Override
     public void close() {
         try {
             this.publicEventCaseUpdatedAndHearingResulted.close();
             this.publicEventMessageConsumerCaseUpdatedAndHearingResulted.close();
             this.privateEventMessageConsumerCaseUpdatedAndHearingResulted.close();
-            this.privateEventMessageConsumerDefendantCourtProceedingsUpdated.close();
+            this.privateEventMessageConsumerDefendantCourtProceedingsUpdatedV2.close();
         } catch (JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);

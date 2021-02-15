@@ -2,13 +2,17 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.CaseIdentifierUpdated;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdated;
+import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingRescheduled;
@@ -25,7 +29,6 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder;
-import uk.gov.justice.listing.events.CaseIdentifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -146,21 +149,36 @@ public class HearingEventListener {
         final UUID hearingId = caseUpdateDefendantProceedingsUpdated.getHearingId();
         final ProsecutionCase prosecutionCase = caseUpdateDefendantProceedingsUpdated.getProsecutionCase();
 
-        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
-        };
-
-        using(hearingRepository)
-                .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseWithDefendantProceedingsFunction(prosecutionCase))
-                .save();
+        saveHearing(hearingId, prosecutionCase);
     }
 
     @Handles("listing.events.defendant-court-proceedings-updated")
     public void updateDefendantCourtProceedings(final Envelope<DefendantCourtProceedingsUpdated> event) {
         final DefendantCourtProceedingsUpdated defendantCourtProceedingsUpdated = event.payload();
         final UUID hearingId = defendantCourtProceedingsUpdated.getHearingId();
+        final uk.gov.justice.listing.events.ProsecutionCase prosecutionCase = defendantCourtProceedingsUpdated.getProsecutionCase();
+
+        if (isEmpty(prosecutionCase.getDefendants())) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("No defendant provided for case {}, returning...", prosecutionCase.getId());
+            }
+
+            return;
+        }
+
+        saveHearing(hearingId, convertToCourtProsecutionCase(prosecutionCase));
+    }
+
+    @Handles("listing.events.defendant-court-proceedings-updated-v2")
+    public void updateDefendantCourtProceedingsV2(final Envelope<DefendantCourtProceedingsUpdatedV2> event) {
+        final DefendantCourtProceedingsUpdatedV2 defendantCourtProceedingsUpdated = event.payload();
+        final UUID hearingId = defendantCourtProceedingsUpdated.getHearingId();
         final ProsecutionCase prosecutionCase = defendantCourtProceedingsUpdated.getProsecutionCase();
 
+        saveHearing(hearingId, prosecutionCase);
+    }
+
+    private void saveHearing(final UUID hearingId, final ProsecutionCase prosecutionCase) {
         final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
         };
 
@@ -171,7 +189,7 @@ public class HearingEventListener {
     }
 
     @Handles("listing.events.case-identifier-updated")
-    public void updateCaseIdentifier(final Envelope<CaseIdentifierUpdated> event){
+    public void updateCaseIdentifier(final Envelope<CaseIdentifierUpdated> event) {
         final CaseIdentifierUpdated updateCaseIdentifier = event.payload();
         final UUID hearingId = updateCaseIdentifier.getHearingId();
         final UUID prosecutionCaseId = updateCaseIdentifier.getProsecutionCaseId();
@@ -295,4 +313,25 @@ public class HearingEventListener {
         return mapper.valueToTree(source);
     }
 
+    private ProsecutionCase convertToCourtProsecutionCase(final uk.gov.justice.listing.events.ProsecutionCase listingProsecutionCase) {
+
+        return prosecutionCase()
+                .withId(listingProsecutionCase.getId())
+                .withProsecutionCaseIdentifier(listingProsecutionCase.getProsecutionCaseIdentifier())
+                .withOriginatingOrganisation(listingProsecutionCase.getOriginatingOrganisation())
+                .withCpsOrganisation(listingProsecutionCase.getCpsOrganisation())
+                .withInitiationCode(listingProsecutionCase.getInitiationCode())
+                .withCaseStatus(listingProsecutionCase.getCaseStatus())
+                .withPoliceOfficerInCase(listingProsecutionCase.getPoliceOfficerInCase())
+                .withStatementOfFacts(listingProsecutionCase.getStatementOfFacts())
+                .withStatementOfFactsWelsh(listingProsecutionCase.getStatementOfFactsWelsh())
+                .withBreachProceedingsPending(listingProsecutionCase.getBreachProceedingsPending())
+                .withRemovalReason(listingProsecutionCase.getRemovalReason())
+                .withAppealProceedingsPending(listingProsecutionCase.getAppealProceedingsPending())
+                .withDefendants(listingProsecutionCase.getDefendants())
+                .withCaseMarkers(listingProsecutionCase.getCaseMarkers())
+                .withClassOfCase(listingProsecutionCase.getClassOfCase())
+                .withIsCpsOrgVerifyError(listingProsecutionCase.getIsCpsOrgVerifyError())
+                .build();
+    }
 }

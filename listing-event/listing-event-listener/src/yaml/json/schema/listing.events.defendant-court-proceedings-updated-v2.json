@@ -1,13 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://justice.gov.uk/listing/events/listing.events.defendant-court-proceedings-updated.json",
+  "id": "http://justice.gov.uk/listing/events/listing.events.defendant-court-proceedings-updated-v2.json",
   "type": "object",
   "properties": {
     "hearingId": {
       "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/uuid"
     },
     "prosecutionCase": {
-      "$ref": "http://justice.gov.uk/listing/events/prosecutionCase.json"
+      "$ref": "http://justice.gov.uk/core/courts/prosecutionCase.json"
     }
   },
   "required": [

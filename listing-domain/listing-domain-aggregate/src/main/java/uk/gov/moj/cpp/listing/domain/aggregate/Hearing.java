@@ -14,7 +14,6 @@ import static java.util.stream.Stream.concat;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
@@ -23,6 +22,7 @@ import static uk.gov.justice.listing.events.AllocatedHearingExtendedForListing.a
 import static uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing.allocatedHearingUpdatedForListing;
 import static uk.gov.justice.listing.events.AvailableSlotsForHearingFreed.availableSlotsForHearingFreed;
 import static uk.gov.justice.listing.events.CourtRoomChangedForHearing.courtRoomChangedForHearing;
+import static uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2.defendantCourtProceedingsUpdatedV2;
 import static uk.gov.justice.listing.events.EndDateChangedForHearing.endDateChangedForHearing;
 import static uk.gov.justice.listing.events.EndDateRemovedFromHearing.endDateRemovedFromHearing;
 import static uk.gov.justice.listing.events.HearingAllocatedForListing.hearingAllocatedForListing;
@@ -61,7 +61,6 @@ import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
 import uk.gov.justice.listing.events.CourtRoomChangedForHearing;
 import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
-import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdated;
 import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
 import uk.gov.justice.listing.events.EndDateChangedForHearing;
 import uk.gov.justice.listing.events.EndDateRemovedFromHearing;
@@ -159,7 +158,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 9042562079574322885L;
+    private static final long serialVersionUID = 9042562079574322886L;
 
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
@@ -691,7 +690,7 @@ public class Hearing implements Aggregate {
             return Stream.empty();
         }
 
-        if(isEmpty(nonSittingDays) && isEmpty(this.nonSittingDays)) {
+        if (isEmpty(nonSittingDays) && isEmpty(this.nonSittingDays)) {
             return Stream.empty();
         }
 
@@ -1114,7 +1113,15 @@ public class Hearing implements Aggregate {
 
         final List<UUID> defendantIds = this.prosecutionCaseDefendants.get(prosecutionCase.getId());
         prosecutionCase.getDefendants().removeIf(defendant -> !defendantIds.contains(defendant.getId()));
-        return apply(Stream.of(DefendantCourtProceedingsUpdated.defendantCourtProceedingsUpdated()
+
+        if (isEmpty(prosecutionCase.getDefendants())) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("No more defendant left ... returning");
+            }
+            return Stream.empty();
+        }
+
+        return apply(Stream.of(defendantCourtProceedingsUpdatedV2()
                 .withHearingId(hearingId)
                 .withProsecutionCase(prosecutionCase)
                 .build()));

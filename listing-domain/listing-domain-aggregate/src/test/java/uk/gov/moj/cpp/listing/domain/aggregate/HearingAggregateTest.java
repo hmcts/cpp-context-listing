@@ -10,8 +10,10 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
 
+import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
 import uk.gov.justice.listing.events.DefendantOffenceIds;
@@ -308,4 +310,16 @@ public class HearingAggregateTest {
 
     }
 
+    @Test
+    public void shouldReturnNothingWhenDefendantListIsEmptyForUpdateDefendantCourtProceedingForHearing2() {
+        final UUID case1Id = randomUUID();
+        final ProsecutionCase prosecutionCase = prosecutionCase().
+                withId(case1Id).
+                withDefendants(emptyList()).
+                build();
+
+        final Stream<Object> listedHearing = hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase);
+
+        assertThat(listedHearing.count(), is(0L));
+    }
 }
