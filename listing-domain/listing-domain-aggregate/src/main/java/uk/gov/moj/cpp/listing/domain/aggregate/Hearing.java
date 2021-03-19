@@ -1543,10 +1543,6 @@ public class Hearing implements Aggregate {
 
         this.hasAdjournmentDate = hearing.getAdjournedFromDate().isPresent();
 
-        this.weekCommencingStartDate = hearing.getWeekCommencingStartDate().orElse(null);
-        this.weekCommencingEndDate = hearing.getWeekCommencingEndDate().orElse(null);
-        this.weekCommencingDurationInWeeks = hearing.getWeekCommencingDurationInWeeks().orElse(null);
-
     }
 
     private List<uk.gov.justice.listing.events.HearingDay> mergeHearingDaySequences(final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, final Map<ZonedDateTime, HearingDay> existingHearingDays) {
