@@ -158,7 +158,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 9042562079574322886L;
+    private static final long serialVersionUID = 4401532074124929479L;
 
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
@@ -1542,6 +1542,10 @@ public class Hearing implements Aggregate {
         }
 
         this.hasAdjournmentDate = hearing.getAdjournedFromDate().isPresent();
+
+        this.weekCommencingStartDate = hearing.getWeekCommencingStartDate().orElse(null);
+        this.weekCommencingEndDate = hearing.getWeekCommencingEndDate().orElse(null);
+        this.weekCommencingDurationInWeeks = hearing.getWeekCommencingDurationInWeeks().orElse(null);
 
     }
 

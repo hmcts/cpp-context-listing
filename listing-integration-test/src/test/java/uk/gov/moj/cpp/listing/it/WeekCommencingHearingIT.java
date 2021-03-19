@@ -26,7 +26,7 @@ public class WeekCommencingHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         }
 
-        final UpdatedHearingData updatedHearingDataWithWeekCommencingDate = updatedHearingDataWithWeekCommencingDate(hearingsData.getHearingData().get(0), now().toString(), now().plusDays(7l).toString(), 1);
+        final UpdatedHearingData updatedHearingDataWithWeekCommencingDate = updatedHearingDataWithWeekCommencingDate(hearingsData.getHearingData().get(0), now().plusDays(1).toString(), now().plusDays(7l).toString(), 1);
 
         try (final WeekCommencingHearingSteps weekCommencingHearingSteps = new WeekCommencingHearingSteps(updatedHearingDataWithWeekCommencingDate)) {
             weekCommencingHearingSteps.whenHearingIsUpdatedForListingForWeekCommencingDate();
@@ -46,7 +46,7 @@ public class WeekCommencingHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         }
 
-        final UpdatedHearingData updatedHearingDataWithWeekCommencingDate = updatedHearingDataWithWeekCommencingDate(hearingsData.getHearingData().get(0), now().toString(), now().plusDays(7l).toString(), 1);
+        final UpdatedHearingData updatedHearingDataWithWeekCommencingDate = updatedHearingDataWithWeekCommencingDate(hearingsData.getHearingData().get(0), now().plusDays(1).toString(), now().plusDays(7l).toString(), 1);
 
         try (final WeekCommencingHearingSteps weekCommencingHearingSteps = new WeekCommencingHearingSteps(updatedHearingDataWithWeekCommencingDate)) {
             weekCommencingHearingSteps.whenHearingIsUpdatedForListingForWeekCommencingDate();
