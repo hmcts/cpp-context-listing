@@ -16,9 +16,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -33,18 +31,10 @@ public class HearingDaysCalculator {
     private HearingDaysCalculator() {
     }
 
-    public static List<HearingDay> calculate(final LocalDate startDate, final LocalDate endDate, final List<LocalDate> nonSittingDays,
-                                             final List<NonDefaultDay> nonDefaultDays, final LocalTime defaultStartTime,
-                                             final Integer defaultDuration, final CourtCentre defaultCourtCentre) {
-
-        return calculate(startDate, endDate, nonSittingDays, nonDefaultDays, defaultStartTime, defaultDuration, false, defaultCourtCentre);
-    }
-
     @SuppressWarnings({"squid:S3358", "squid:S3776"})
     public static List<HearingDay> calculate(final LocalDate startDate, final LocalDate endDate, final List<LocalDate> nonSittingDays,
                                              final List<NonDefaultDay> nonDefaultDays, final LocalTime defaultStartTime,
-                                             final Integer defaultDuration, final Boolean isCountBasedSlotSelected,
-                                             final CourtCentre defaultCourtCentre) {
+                                             final Integer defaultDuration, final CourtCentre defaultCourtCentre) {
 
         if (startDate == null || endDate == null) {
             return emptyList();
@@ -56,12 +46,12 @@ public class HearingDaysCalculator {
         nonDefaultDays.stream().forEach(ndd -> {
             final LocalDate nonDefaultDate = ndd.getStartTime().toLocalDate();
             if (!nonSittingDays.contains(nonDefaultDate)) {
-                hearingDayList.add(buildNonDefaultHearingDay(ndd, isCountBasedSlotSelected ? 1 : (ndd.getDuration().isPresent() ? ndd.getDuration().get() : defaultDuration)));
+                hearingDayList.add(buildNonDefaultHearingDay(ndd, (ndd.getDuration().isPresent() ? ndd.getDuration().get() : defaultDuration)));
             }
             nonDefaultDates.add(nonDefaultDate);
         });
 
-        hearingDayList.addAll(buildSequentialHearingDays(startDate, endDate, nonSittingDays, nonDefaultDates, defaultStartTime, defaultDuration, isCountBasedSlotSelected, defaultCourtCentre));
+        hearingDayList.addAll(buildSequentialHearingDays(startDate, endDate, nonSittingDays, nonDefaultDates, defaultStartTime, defaultDuration, defaultCourtCentre));
         Collections.sort(hearingDayList, Comparator.comparing(HearingDay::getStartTime));
         return hearingDayList;
 
@@ -70,15 +60,14 @@ public class HearingDaysCalculator {
     @SuppressWarnings({"squid:S3358"})
     private static List<HearingDay> buildSequentialHearingDays(final LocalDate startDate, final LocalDate endDate, final List<LocalDate> nonSittingDays,
                                                                final List<LocalDate> nonDefaultDates, final LocalTime defaultStartTime,
-                                                               final Integer defaultDuration, final Boolean isCountBasedSlotSelected,
-                                                               final CourtCentre defaultCourtCentre) {
+                                                               final Integer defaultDuration, final CourtCentre defaultCourtCentre) {
 
         final long noOfDaysBetween = ChronoUnit.DAYS.between(startDate, endDate);
 
         return IntStream.rangeClosed(0, (int) noOfDaysBetween)
                 .mapToObj(startDate::plusDays)
                 .filter(d -> !nonSittingDays.contains(d) && !nonDefaultDates.contains(d))
-                .map(date -> buildDefaultHearingDay(defaultStartTime, isCountBasedSlotSelected ? 1 : defaultDuration, date, defaultCourtCentre))
+                .map(date -> buildDefaultHearingDay(defaultStartTime, defaultDuration, date, defaultCourtCentre))
                 .collect(Collectors.toList());
 
     }

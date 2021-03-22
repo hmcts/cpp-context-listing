@@ -75,7 +75,6 @@ public class HearingAggregateTest {
     private final Optional<LocalDate> weekCommencingStartDate = empty();
     private final Optional<LocalDate> weekCommencingEndDate = empty();
     private final Optional<Integer> weekCommencingDurationInWeeks = empty();
-    private final Boolean isCountBasedSlotSelected = false;
     private final Boolean isSlotsBooked = false;
 
     private ZonedDateTime startDate;
@@ -95,7 +94,7 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isCountBasedSlotSelected, isSlotsBooked);
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -128,7 +127,7 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isCountBasedSlotSelected, isSlotsBooked);
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -150,7 +149,7 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isCountBasedSlotSelected, isSlotsBooked);
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked);
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();

@@ -1,8 +1,31 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.time.LocalDate.parse;
+import static java.time.ZonedDateTime.now;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
+import static java.util.stream.Collectors.toList;
+import static javax.json.JsonValue.NULL;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
+import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
+import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
+import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
+import static uk.gov.justice.services.eventsourcing.source.core.Events.streamOf;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.JsonObjects.getString;
+import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.asJson;
+import static uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay;
+import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkingDay;
+import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
+
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingListingNeeds;
@@ -120,11 +143,6 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil;
 
-import javax.inject.Inject;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonValue;
-import javax.ws.rs.core.Response;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -139,34 +157,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.time.LocalDate.parse;
-import static java.time.ZonedDateTime.now;
-import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
-import static java.util.stream.Collectors.toList;
-import static javax.json.JsonValue.NULL;
-import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
-import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
-import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
-import static uk.gov.justice.services.eventsourcing.source.core.Events.streamOf;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.JsonObjects.getString;
-import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.asJson;
-import static uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay;
-import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
-import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
-import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
-import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkingDay;
+import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonValue;
+import javax.ws.rs.core.Response;
+
+import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServiceComponent(COMMAND_HANDLER)
 @SuppressWarnings({"squid:S1188", "squid:CallToDeprecatedMethod", "squid:S2629"})
@@ -291,8 +295,7 @@ public class ListingCommandHandler {
         for (final HearingListingNeeds commandHearing : listCourtHearing.getHearings()) {
 
             List<uk.gov.justice.listing.commands.NonDefaultDay> nonDefaultDaysList = new ArrayList<>();
-            Optional<UUID> bookingReference = Optional.empty();
-            final AtomicBoolean countBasedSlots = new AtomicBoolean(false);
+            Optional<UUID> bookingReference = empty();
             final boolean isSlotsBooked = isNotEmpty(commandHearing.getBookedSlots());
 
             final CourtCentre defaultCourtCentre = commandHearing.getCourtCentre();
@@ -307,12 +310,11 @@ public class ListingCommandHandler {
                     bookingReference = commandHearing.getBookingReference();
                     final List<CourtSchedule> courtScheduleList = getCourtSchedules(bookingReference.get().toString());
                     Collections.sort(courtScheduleList);
-                    countBasedSlots.set(!courtScheduleList.get(0).getMaxSlots().equals(0));
-                    generateNonDefaultDays(nonDefaultDaysList, courtScheduleList, countBasedSlots.get(), commandHearing);
+                    generateNonDefaultDays(nonDefaultDaysList, courtScheduleList, commandHearing);
                 }
 
                 if (isSchedulingAndListingUpdateRequired(commandHearing.getJurisdictionType(), nonDefaultDaysList)) {
-                    nonDefaultDaysList = nonDefaultDayDurationBuilder.updateNonDefaultDayWithNewDuration(nonDefaultDaysList, countBasedSlots.get(), commandHearing.getEstimatedMinutes());
+                    nonDefaultDaysList = nonDefaultDayDurationBuilder.updateNonDefaultDayWithNewDuration(nonDefaultDaysList, commandHearing.getEstimatedMinutes());
                 }
             }
             final uk.gov.moj.cpp.listing.domain.Hearing domainHearing = commandToDomainConverter.convert(commandHearing, convertNonDefaultDaysToDomain(nonDefaultDaysList), listCourtHearing.getShadowListedOffences());
@@ -348,11 +350,10 @@ public class ListingCommandHandler {
                         domainHearing.getWeekCommencingEndDate(),
                         domainHearing.getWeekCommencingDurationInWeeks(),
                         domainHearing.getNonDefaultDays(),
-                        countBasedSlots.get(),
                         isSlotsBooked
                 );
 
-                final Stream<Object> allocationEvents = hearing.applyAllocationRules(finalBookingReference, countBasedSlots.get());
+                final Stream<Object> allocationEvents = hearing.applyAllocationRules(finalBookingReference);
 
                 return Stream.of(listingEvents, allocationEvents).flatMap(i -> i);
             });
@@ -415,8 +416,7 @@ public class ListingCommandHandler {
 
         final CourtCentreDetails courtCentre = updateHearingForListingEnriched.getCourtCentreDetails();
         if (isSchedulingAndListingUpdateRequired(updateHearingForListing.getJurisdictionType(), updateHearingForListing.getNonDefaultDays())) {
-            final Boolean isCountBasedSlots = updateHearingForListing.getNonDefaultDays().get(0).getDuration().equals(Optional.of(1));
-            updateHearingForListing = nonDefaultDayDurationBuilder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, updateHearingForListing.getNonDefaultDays(), isCountBasedSlots);
+            updateHearingForListing = nonDefaultDayDurationBuilder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, updateHearingForListing.getNonDefaultDays());
 
         }
 
@@ -556,7 +556,7 @@ public class ListingCommandHandler {
                         final LocalTime defaultStartTime = LocalTime.parse(courtCentreObj.getString("defaultStartTime"));
                         final ZonedDateTime hearingStartTime = ZonedDateTime.of(date, defaultStartTime, BST).withZoneSameInstant(UTC);
 
-                        final NonDefaultDay nonDefaultDay = getNonDefaultDay(Optional.of(defaultDuration), selectedCourtCentreId, selectedCourtRoomId,
+                        final NonDefaultDay nonDefaultDay = getNonDefaultDay(of(defaultDuration), selectedCourtCentreId, selectedCourtRoomId,
                                 courtCentreObj, hearingStartTime);
                         filteredNonDefaultDays.add(nonDefaultDay);
                     });
@@ -574,10 +574,10 @@ public class ListingCommandHandler {
                 .withDuration(defaultDuration)
                 .withStartTime(hearingStartTime)
                 .withOucode(ouCode)
-                .withCourtCentreId(Optional.of(courtCentreId.toString()))
+                .withCourtCentreId(of(courtCentreId.toString()))
                 .withCourtRoomId(courtRoomNumber)
-                .withSession(Optional.of(MeridianUtil.getMeridian(hearingStartTime)))
-                .withRoomId(Optional.of(courtRoomId.toString())).build();
+                .withSession(of(MeridianUtil.getMeridian(hearingStartTime)))
+                .withRoomId(of(courtRoomId.toString())).build();
     }
 
     private UUID getCourtRoomId(final UpdateHearingForListing updateHearingForListing) {
@@ -1391,7 +1391,7 @@ public class ListingCommandHandler {
                 .withStartDate(nextWorkingDay)
                 .withEndDate(nextWorkingDay)
                 .withPublishCourtListType(PublishCourtListType.FINAL)
-                .withRequestedTime(Optional.of(zonedNow))
+                .withRequestedTime(of(zonedNow))
                 .build();
     }
 
@@ -1451,7 +1451,7 @@ public class ListingCommandHandler {
         if (commandDefaultDays != null && !commandDefaultDays.isEmpty()) {
             domainDefaultDays = commandDefaultDays.stream().map(ndd -> NonDefaultDay.nonDefaultDay()
                     .withStartTime(ndd.getStartTime())
-                    .withDuration(ndd.getDuration())
+                    .withDuration(of(getAdjustedDuration(ndd.getDuration().isPresent() ? ndd.getDuration().get() : null)))
                     .withCourtScheduleId(ndd.getCourtScheduleId())
                     .withCourtRoomId(ndd.getCourtRoomId())
                     .withOucode(ndd.getOucode())
@@ -1553,8 +1553,7 @@ public class ListingCommandHandler {
     }
 
     private void generateNonDefaultDays(final List<uk.gov.justice.listing.commands.NonDefaultDay> nonDefaultDaysList,
-                                        final List<CourtSchedule> courtScheduleList,
-                                        final Boolean isCountBasedSlot, final HearingListingNeeds commandHearing) {
+                                        final List<CourtSchedule> courtScheduleList, final HearingListingNeeds commandHearing) {
         final OffsetDateTime startDate = CommandToDomainConverter.getStartDateTime(commandHearing)
                 .toInstant().atOffset(ZoneOffset.UTC);
         final int hour = startDate.getHour();
@@ -1562,11 +1561,11 @@ public class ListingCommandHandler {
         courtScheduleList.forEach(cs ->
                 nonDefaultDaysList.add(
                         uk.gov.justice.listing.commands.NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(Optional.of(cs.getCourtScheduleId()))
-                                .withOucode(Optional.of(cs.getOuCode()))
-                                .withSession(Optional.of(cs.getCourtSession()))
-                                .withDuration(isCountBasedSlot ? Optional.of(1) : Optional.of(commandHearing.getEstimatedMinutes()))
-                                    .withCourtRoomId(Optional.of(cs.getCourtRoomNumber())) // for prospect developers, names mismatch but fields point to the same context
+                                .withCourtScheduleId(of(cs.getCourtScheduleId()))
+                                .withOucode(of(cs.getOuCode()))
+                                .withSession(of(cs.getCourtSession()))
+                                .withDuration(getAdjustedDuration(commandHearing.getEstimatedMinutes()))
+                                .withCourtRoomId(of(cs.getCourtRoomNumber())) // for prospect developers, names mismatch but fields point to the same context
                                 .withStartTime(isBlank(cs.getHearingStartTime()) ? cs.getSessionDate().atStartOfDay(UTC).withHour(hour).minusMinutes(minute) : ZonedDateTime.parse(cs.getHearingStartTime()))
                                 .withRoomId(cs.getCourtRoomId())
                                 .withCourtCentreId(cs.getCourtHouseId())

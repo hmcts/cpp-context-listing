@@ -42,6 +42,9 @@ import static uk.gov.justice.listing.events.TypeChangedForHearing.typeChangedFor
 import static uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing.weekCommencingDateChangedForHearing;
 import static uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing.weekCommencingDateRemovedForHearing;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
+import static uk.gov.moj.cpp.listing.domain.aggregate.HearingDaysCalculator.calculate;
+import static uk.gov.moj.cpp.listing.domain.aggregate.HearingDaysCalculator.calculateNewNonDefaultDaysForUnscheduled;
+import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.ProsecutionCase;
@@ -135,7 +138,6 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -158,7 +160,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 4401532074124929479L;
+    private static final long serialVersionUID = 9042562079574322892L;
 
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
@@ -252,7 +254,7 @@ public class Hearing implements Aggregate {
                                final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds,
                                final Integer hearingTypeDuration, final Optional<String> adjournedFromDate, final Optional<LocalDate> weekCommencingStartDate,
                                final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks, final List<NonDefaultDay> nonDefaultDays,
-                               final Boolean isCountBasedSlotSelected, final Boolean isSlotsBooked) {
+                               final Boolean isSlotsBooked) {
 
         if (this.duplicate) {
             return Stream.empty();
@@ -298,7 +300,7 @@ public class Hearing implements Aggregate {
             if (nonNull(startDate)) {
                 builder.withStartDate(of(startDate.toLocalDate()));
                 final Optional<LocalDate> hearingEndDate = Optional.of(HearingEndDateRule.apply(endDate, startDate.toLocalDate()));
-                final List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = generateNewNonDefaultDays(estimateMinutes, startDate, hearingTypeDuration, nonDefaultDays, isCountBasedSlotSelected, courtCentreId, courtRoomId);
+                final List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = generateNewNonDefaultDays(estimateMinutes, startDate, hearingTypeDuration, nonDefaultDays, courtCentreId, courtRoomId);
                 final LocalTime defaultStartTime = nonNull(courtCentreDefaults) ? courtCentreDefaults.getDefaultStartTime() : null;
                 builder.withNonDefaultDays(newNonDefaultDays);
 
@@ -319,7 +321,7 @@ public class Hearing implements Aggregate {
 
                 builder.withNonSittingDays(allNonSittingDays);
 
-                final List<uk.gov.justice.listing.events.HearingDay> hearingDaysCalculated = HearingDaysCalculator.calculate(startDate.toLocalDate(), enddDate, allNonSittingDays, convertEventToDomain(newNonDefaultDays), defaultStartTime, hearingTypeDuration, defaultCourtCentre);
+                final List<uk.gov.justice.listing.events.HearingDay> hearingDaysCalculated = calculate(startDate.toLocalDate(), enddDate, allNonSittingDays, convertEventToDomain(newNonDefaultDays), defaultStartTime, hearingTypeDuration, defaultCourtCentre);
                 builder.withHearingDays(hearingDaysCalculated);
             } else {
                 builder.withHearingDays(emptyList());
@@ -376,7 +378,7 @@ public class Hearing implements Aggregate {
 
         final LocalDate localStartDate = newStartDate.toLocalDate();
 
-        final List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = HearingDaysCalculator.calculateNewNonDefaultDaysForUnscheduled(
+        final List<uk.gov.justice.listing.events.NonDefaultDay> newNonDefaultDays = calculateNewNonDefaultDaysForUnscheduled(
                 hearingTypeDuration, newStartDate, courtCentreDefaults.getDefaultStartTime(), courtCentre);
 
         final CourtCentre defaultCourtCentre = CourtCentre.courtCentre()
@@ -414,7 +416,7 @@ public class Hearing implements Aggregate {
                         .withEndDate(ofNullable(endDate))
                         .withNonDefaultDays(newNonDefaultDays)
                         .withNonSittingDays(emptyList())
-                        .withHearingDays(HearingDaysCalculator.calculate(localStartDate, endDate, emptyList(), convertEventToDomain(newNonDefaultDays), courtCentreDefaults.getDefaultStartTime(), hearingTypeDuration, false, defaultCourtCentre))
+                        .withHearingDays(calculate(localStartDate, endDate, emptyList(), convertEventToDomain(newNonDefaultDays), courtCentreDefaults.getDefaultStartTime(), hearingTypeDuration, defaultCourtCentre))
                         .withCourtApplications(courtApplications.stream()
                                 .map(NewDomainToEventConverter::buildCourtApplications)
                                 .collect((toList())))
@@ -430,7 +432,6 @@ public class Hearing implements Aggregate {
                                                                                         final ZonedDateTime startDate,
                                                                                         final Integer hearingTypeDuration,
                                                                                         final List<NonDefaultDay> nonDefaultDays,
-                                                                                        final Boolean isCountBasedSlotSelected,
                                                                                         final UUID courtCentreId,
                                                                                         final UUID courtRoomId) {
         final List<uk.gov.justice.listing.events.NonDefaultDay> newList = new ArrayList<>();
@@ -439,7 +440,7 @@ public class Hearing implements Aggregate {
                     .withCourtScheduleId(empty())
                     .withCourtCentreId(ofNullable(courtCentreId).map(UUID::toString).orElse(null))
                     .withRoomId(ofNullable(courtRoomId).map(UUID::toString).orElse(null))
-                    .withDuration(of(isCountBasedSlotSelected ? 1 : (estimateMinutes > 0 ? estimateMinutes : hearingTypeDuration)))
+                    .withDuration(of(estimateMinutes > 0 ? estimateMinutes : getAdjustedDuration(hearingTypeDuration)))
                     .withStartTime(startDate)
                     .build()));
         } else {
@@ -448,7 +449,7 @@ public class Hearing implements Aggregate {
                             .withCourtScheduleId(ndd.getCourtScheduleId())
                             .withOucode(ndd.getOucode())
                             .withSession(ndd.getSession())
-                            .withDuration(of(isCountBasedSlotSelected ? 1 : (estimateMinutes > 0 ? ndd.getDuration().get() : hearingTypeDuration)))
+                            .withDuration(of(estimateMinutes > 0 ? ndd.getDuration().get() : getAdjustedDuration(hearingTypeDuration)))
                             .withCourtRoomId(ndd.getCourtRoomId())
                             .withStartTime(ndd.getStartTime())
                             .withRoomId(ndd.getRoomId())
@@ -820,7 +821,7 @@ public class Hearing implements Aggregate {
         }
 
         final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing
-                = HearingDaysCalculator.calculate(startDate, endDate, nonSittingDays, nonDefaultDays, defaultStartTime, defaultDuration, defaultCourtCentre);
+                = calculate(startDate, endDate, nonSittingDays, nonDefaultDays, defaultStartTime, defaultDuration, defaultCourtCentre);
 
         if (!this.hearingDays.isEmpty()) {
             final Map<ZonedDateTime, HearingDay> existingHearingDays = this.hearingDays.stream()
@@ -841,13 +842,13 @@ public class Hearing implements Aggregate {
     }
 
 
-    public Stream<Object> applyAllocationRules(final Optional<UUID> bookingReference, final Boolean isCountBasedSLotsSelected) {
+    public Stream<Object> applyAllocationRules(final Optional<UUID> bookingReference) {
         if (this.duplicate) {
             return Stream.empty();
         }
 
         if (canAllocate()) {
-            return onAllocationEvents(bookingReference, isCountBasedSLotsSelected, Collections.emptyList());
+            return onAllocationEvents(bookingReference, emptyList());
         } else if (canUnallocate()) {
             return onUnallocationEvents();
         } else {
@@ -861,7 +862,7 @@ public class Hearing implements Aggregate {
         }
 
         if (canAllocate()) {
-            return onAllocationEvents(Optional.empty(), false, prosecutionCaseDefendantOffenceIds);
+            return onAllocationEvents(Optional.empty(), prosecutionCaseDefendantOffenceIds);
         } else if (canUnallocate()) {
             return onUnallocationEvents();
         } else {
@@ -1236,11 +1237,11 @@ public class Hearing implements Aggregate {
         return this.endDate != null && LocalDate.now().isAfter(this.endDate);
     }
 
-    private Stream<Object> onAllocationEvents(final Optional<UUID> bookingReference, final Boolean isCountBasedSLotsSelected, final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds) {
+    private Stream<Object> onAllocationEvents(final Optional<UUID> bookingReference, final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds) {
         if (allocated) {
             return apply(Stream.of(allocatedHearingUpdatedForListingEvent()));
         }
-        return apply(Stream.of(hearingAllocatedForListingEvent(bookingReference, isCountBasedSLotsSelected, prosecutionCaseDefendantOffenceIds)));
+        return apply(Stream.of(hearingAllocatedForListingEvent(bookingReference, prosecutionCaseDefendantOffenceIds)));
     }
 
     private Stream<Object> onUnallocationEvents() {
@@ -1284,7 +1285,7 @@ public class Hearing implements Aggregate {
 
     // Helper methods to create events
 
-    private HearingAllocatedForListing hearingAllocatedForListingEvent(final Optional<UUID> bookingReference, final Boolean isCountBasedSlotSelected, List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds) {
+    private HearingAllocatedForListing hearingAllocatedForListingEvent(final Optional<UUID> bookingReference, List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds) {
 
         if (isEmpty(prosecutionCaseDefendantOffenceIds)) {
             prosecutionCaseDefendantOffenceIds = this.prosecutionCaseDefendantOffenceIds;
@@ -1304,7 +1305,7 @@ public class Hearing implements Aggregate {
                         .orElseThrow(IllegalArgumentException::new))
                 .withReportingRestrictionReason(ofNullable(this.reportingRestrictionReason))
                 .withCourtRoomId(this.courtRoomId)
-                .withHearingDays(convertHearingDaysToEvent(this.hearingDays, isCountBasedSlotSelected))
+                .withHearingDays(convertHearingDaysToEvent(this.hearingDays))
                 .withProsecutionCaseDefendantsOffenceIds(isNull(prosecutionCaseDefendantOffenceIds) ? null : prosecutionCaseDefendantOffenceIds.stream()
                         .map(lc -> uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                                 .withId(lc.getId())
@@ -1816,14 +1817,10 @@ public class Hearing implements Aggregate {
     }
 
     private List<uk.gov.justice.listing.events.HearingDay> convertHearingDaysToEvent(final List<HearingDay> hearingDays) {
-        return convertHearingDaysToEvent(hearingDays, false);
-    }
-
-    private List<uk.gov.justice.listing.events.HearingDay> convertHearingDaysToEvent(final List<HearingDay> hearingDays, final Boolean isCountBaseSlotSelected) {
         return hearingDays.stream()
                 .map(cd -> uk.gov.justice.listing.events.HearingDay.hearingDay()
                         .withCourtScheduleId(cd.getCourtScheduleId())
-                        .withDurationMinutes(isCountBaseSlotSelected ? 1 : cd.getDurationMinutes())
+                        .withDurationMinutes(getAdjustedDuration(cd.getDurationMinutes()))
                         .withEndTime(cd.getEndTime())
                         .withSequence(cd.getSequence())
                         .withStartTime(cd.getStartTime())

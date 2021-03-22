@@ -45,7 +45,7 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(asList(allDaySession));
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, Arrays.asList(allDaySession), false);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, Arrays.asList(allDaySession));
 
         assertThat(updateHearingForListing, equalTo(newUpdateHearingForListing));
     }
@@ -56,7 +56,7 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(asList(countBasedSession));
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, Arrays.asList(countBasedSession), false);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, Arrays.asList(countBasedSession));
 
         assertThat(updateHearingForListing, equalTo(newUpdateHearingForListing));
     }
@@ -67,7 +67,7 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays, false);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays);
 
         assertHearingContentMatchesOldHearing(updateHearingForListing, newUpdateHearingForListing);
 
@@ -82,7 +82,7 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays, false);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays);
 
         assertHearingContentMatchesOldHearing(updateHearingForListing, newUpdateHearingForListing);
 
@@ -97,7 +97,7 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays, false);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays);
 
         assertHearingContentMatchesOldHearing(updateHearingForListing, newUpdateHearingForListing);
 
@@ -112,7 +112,7 @@ public class NonDefaultDayDurationBuilderTest {
 
         final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
 
-        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays, false);
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays);
 
         assertHearingContentMatchesOldHearing(updateHearingForListing, newUpdateHearingForListing);
 
