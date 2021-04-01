@@ -36,121 +36,46 @@
               "middleName": "Test"
             }
           },
-          "applicationOutcome": {
-            "applicationId": "bf5e2df3-0c37-490e-8b92-f2ebdd5f6723",
-            "applicationOutcomeDate": "2020-06-24",
-            "applicationOutcomeType": {
-              "description": "Granted",
-              "id": "c322f934-6b70-3fdd-b196-8628d5ee68db",
-              "sequence": 10
-            },
-            "originatingHearingId": "5075f973-0ec3-491c-91ad-b8a1d75dded3"
-          },
           "applicationReceivedDate": "2020-06-22",
           "applicationReference": "QCIUATYHQN",
           "applicationStatus": "FINALISED",
           "id": "bf5e2df3-0c37-490e-8b92-f2ebdd5f6723",
-          "judicialResults": [
-            {
-              "alwaysPublished": false,
-              "category": "INTERMEDIARY",
-              "cjsCode": "4576",
-              "courtClerk": {
-                "firstName": "Robert",
-                "lastName": "Barnes",
-                "userId": "8959b8b5-92bd-4ada-96f4-7ac9d482671a"
-              },
-              "d20": false,
-              "delegatedPowers": {
-                "firstName": "Robert",
-                "lastName": "Barnes",
-                "userId": "8959b8b5-92bd-4ada-96f4-7ac9d482671a"
-              },
-              "excludedFromResults": false,
-              "isAdjournmentResult": false,
-              "isAvailableForCourtExtract": true,
-              "isConvictedResult": false,
-              "isDeleted": false,
-              "isFinancialResult": false,
-              "isUnscheduled": true,
-              "judicialResultId": "7b1a9865-50a8-4254-a0e6-86d58232b8bf",
-              "judicialResultPrompts": [
-                {
-                  "courtExtract": "Y",
-                  "isFinancialImposition": false,
-                  "judicialResultPromptTypeId": "4630968a-0e3f-42a6-bde0-55a0c4f2e92e",
-                  "label": "Grounds for warrant",
-                  "promptSequence": 100,
-                  "type": "FIXL",
-                  "usergroups": [
-                    "Court Clerks",
-                    "Legal Advisers"
-                  ],
-                  "value": "new evidence is available (serious offence retrial provisions)",
-                  "welshLabel": ""
-                },
-                {
-                  "courtExtract": "Y",
-                  "isFinancialImposition": false,
-                  "judicialResultPromptTypeId": "4c8bd45c-e0c7-456c-8104-d1ce3ac0419e",
-                  "label": "Process server name",
-                  "promptSequence": 300,
-                  "type": "TXT",
-                  "usergroups": [
-                    "Court Clerks",
-                    "Legal Advisers"
-                  ],
-                  "value": "Testing",
-                  "welshLabel": ""
-                }
-              ],
-              "judicialResultTypeId": "c98cb51f-8639-49c1-91f0-a7e820c34355",
-              "label": "Warrant for arrest without bail",
-              "lastSharedDateTime": "2020-06-24",
-              "lifeDuration": false,
-              "orderedDate": "2020-06-24",
-              "orderedHearingId": "5075f973-0ec3-491c-91ad-b8a1d75dded3",
-              "postHearingCustodyStatus": "A",
-              "publishedAsAPrompt": false,
-              "rank": 37100,
-              "resultDefinitionGroup": "Warrants of arrest",
-              "resultText": "Warrant for arrest without bail\nGrounds for warrant new evidence is available (serious offence retrial provisions)\nProcess server name Testing",
-              "terminatesOffenceProceedings": false,
-              "urgent": true,
-              "usergroups": []
-            }
-          ],
           "respondents": [
             {
-              "partyDetails": {
-                "id": "2ada34cf-5fbf-4526-974e-feb073b032bf",
-                "personDetails": {
-                  "address": {
-                    "address1": "56 Gottlieb Court",
-                    "address2": "Welch Islands",
-                    "address3": "Bristol",
-                    "postcode": "BA9 2AS"
-                  },
-                  "firstName": "Renna",
-                  "gender": "NOT_SPECIFIED",
-                  "lastName": "Jaskolski",
-                  "middleName": "Ruecker"
-                }
+              "id": "2ada34cf-5fbf-4526-974e-feb073b032bf",
+              "personDetails": {
+                "address": {
+                  "address1": "56 Gottlieb Court",
+                  "address2": "Welch Islands",
+                  "address3": "Bristol",
+                  "postcode": "BA9 2AS"
+                },
+                "firstName": "Renna",
+                "gender": "NOT_SPECIFIED",
+                "lastName": "Jaskolski",
+                "middleName": "Ruecker"
               }
             }
           ],
           "type": {
-            "applicantSynonym": "Applicant",
-            "applicationCategory": "VP",
-            "applicationCode": "SX03531",
-            "applicationJurisdictionType": "MAGISTRATES",
-            "applicationLegislation": "In accordance with section 104(5) of the Sexual Offences Act 2003.",
-            "applicationType": "Application for a sexual offences prevention order",
+            "categoryCode": "VP",
+            "code": "SX03531",
+            "jurisdiction": "MAGISTRATES",
+            "legislation": "In accordance with section 104(5) of the Sexual Offences Act 2003.",
+            "type": "Application for a sexual offences prevention order",
             "id": "0826fc90-6c49-3a1f-9fc6-b0547679f348",
-            "isAppealApplication": false,
-            "isBreachApplication": false,
             "linkType": "STANDALONE",
-            "respondentSynonym": "Respondent"
+            "summonsTemplateType": "NOT_APPLICABLE",
+            "breachType": "GENERIC_BREACH",
+            "appealFlag": false,
+            "applicantAppellantFlag": false,
+            "pleaApplicableFlag": false,
+            "commrOfOathFlag": false,
+            "courtOfAppealFlag": false,
+            "courtExtractAvlFlag": false,
+            "prosecutorThirdPartyFlag": false,
+            "spiOutApplicableFlag": false,
+            "offenceActiveOrder": "NOT_APPLICABLE"
           }
         }
       ],

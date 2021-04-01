@@ -30,7 +30,7 @@
                   "address3": "Address3",
                   "address4": "Address4",
                   "address5": "Address5",
-                  "postCode": "SW13 0AA"
+                  "postcode": "SW13 0AA"
                 }
               }
             },
@@ -40,46 +40,56 @@
             "applicationStatus": "LISTED",
             "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
             "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
-            "linkedCaseId": "19e9d562-6abb-4871-bfb3-2d777aa90371",
             "respondents": [
               {
-                "partyDetails": {
-                  "id": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
-                  "personDetails": {
-                    "firstName": "Dan",
-                    "gender": "MALE",
-                    "lastName": "Brown",
-                    "address": {
-                      "address1": "Address1",
-                      "address2": "Address2",
-                      "address3": "Address3",
-                      "address4": "Address4",
-                      "address5": "Address5",
-                      "postCode": "SW13 0AA"
-                    }
+                "id": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
+                "personDetails": {
+                  "firstName": "Dan",
+                  "gender": "MALE",
+                  "lastName": "Brown",
+                  "address": {
+                    "address1": "Address1",
+                    "address2": "Address2",
+                    "address3": "Address3",
+                    "address4": "Address4",
+                    "address5": "Address5",
+                    "postcode": "SW13 0AA"
                   }
                 }
               }
             ],
-            "respondentsNA": true,
             "type": {
-              "applicationCategory": "KsZPM4vFrU",
-              "applicationCode": "A9mRuXXZ9Q",
-              "applicationJurisdictionType": "CROWN",
-              "applicationLegislation": "UoLO7ofTVm",
-              "applicationType": "App Type",
+              "categoryCode": "KsZPM4vFrU",
+              "code": "A9mRuXXZ9Q",
+              "jurisdiction": "CROWN",
+              "legislation": "UoLO7ofTVm",
+              "type": "App Type",
               "id": "46171453-3b64-4a43-91af-cfc09e6d8889",
-              "linkType": "EITHER",
-              "requiresCourtHearing": false,
-              "requiresResponse": true
-            }
+              "linkType": "LINKED",
+              "summonsTemplateType": "NOT_APPLICABLE",
+              "breachType": "GENERIC_BREACH",
+              "appealFlag": false,
+              "applicantAppellantFlag": false,
+              "pleaApplicableFlag": false,
+              "commrOfOathFlag": false,
+              "courtOfAppealFlag": false,
+              "courtExtractAvlFlag": false,
+              "prosecutorThirdPartyFlag": false,
+              "spiOutApplicableFlag": false,
+              "offenceActiveOrder": "NOT_APPLICABLE"
+            },
+            "courtApplicationCases": [
+              {
+                "prosecutionCaseId": "19e9d562-6abb-4871-bfb3-2d777aa90371"
+              }
+            ]
           }
         ],
-        "courtApplicationPartyListingNeeds":[
+        "courtApplicationPartyListingNeeds": [
           {
             "courtApplicationId": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
-            "courtApplicationPartyId":  "26b856a8-ae01-4aad-814c-7cdff8db19bf",
-            "hearingLanguageNeeds":  "ENGLISH"
+            "courtApplicationPartyId": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
+            "hearingLanguageNeeds": "ENGLISH"
           }
         ],
         "earliestStartDateTime": "EARLIEST_START_TIME",
@@ -113,7 +123,7 @@
             "caseMarkers": [
               {
                 "id": "6e1bef55-7e13-4615-b3ba-8663f4438e17",
-                "markerTypeCode":"01",
+                "markerTypeCode": "01",
                 "markerTypeDescription": "Murder",
                 "markerTypeid": "7e1bef55-7e13-4615-b3ba-8663f4438e17"
               }
@@ -122,7 +132,7 @@
               {
                 "id": "DEFENDANT_ID",
                 "masterDefendantId": "DEFENDANT_ID",
-                "courtProceedingsInitiated":"2020-03-05T14:24:03.148Z",
+                "courtProceedingsInitiated": "2020-03-05T14:24:03.148Z",
                 "prosecutionCaseId": "CASE_ID",
                 "numberOfPreviousConvictionsCited": 5,
                 "prosecutionAuthorityReference": "TFL12345-ABC",
@@ -243,9 +253,9 @@
                     }
                   },
                   "bailStatus": {
-                    "id":"12e69486-4d01-3403-a50a-7419ca040635",
-                    "code":"C",
-                    "description":"Custody or remanded into custody"
+                    "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                    "code": "C",
+                    "description": "Custody or remanded into custody"
                   },
                   "custodyTimeLimit": "CUSTODY_TIME_LIMIT",
                   "perceivedBirthYear": 2015,

@@ -9,6 +9,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
@@ -109,7 +110,7 @@ public class CourtApplicationEventListenerTest {
         CourtApplicationUpdatedForHearing hearingData = CourtApplicationUpdatedForHearing.courtApplicationUpdatedForHearing()
                 .withHearingId(HEARING_ID)
                 .withCourtApplication(CourtApplication.courtApplication()
-                        .withLinkedCaseId(of(LINKED_CASE_ID))
+                        .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
                         .withParentApplicationId(of(LINKED_APPLICATION_ID))
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
@@ -147,7 +148,49 @@ public class CourtApplicationEventListenerTest {
     }
 
     @Test
-    public void shouldAddCourtApplicationForHearing() throws IOException {
+    public void shouldAddCourtApplicationForHearing() {
+        Envelope<CourtApplicationAddedForHearing> envelope = (Envelope<CourtApplicationAddedForHearing>) mock(Envelope.class);
+        CourtApplicationAddedForHearing hearingData = CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
+                .withHearingId(HEARING_ID)
+                .withCourtApplication(CourtApplication.courtApplication()
+                        .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
+                        .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                        .withId(ID)
+                        .withApplicationType(APPLICATION_TYPE)
+                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                        .withApplicant(ApplicantRespondent.applicantRespondent()
+                                .withFirstName(of(FIRST_NAME))
+                                .withLastName(LAST_NAME)
+                                .withIsRespondent(false)
+                                .withAddress(of(APPLICANT_ADDRESS))
+                                .build())
+                        .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
+                                .withFirstName(of(FIRST_NAME))
+                                .withLastName(LAST_NAME)
+                                .withIsRespondent(true)
+                                .withAddress(of(RESPONDENT_ADDRESS))
+                                .build()))
+                        .build())
+                .build();
+        given(envelope.payload()).willReturn(hearingData);
+        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(COURT_APPLICATIONS)).willReturn(null);
+
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        courtApplicationEventListener.courtApplicationAdded(envelope);
+
+        verify(properties).set(anyObject(), objectNodeCaptor.capture());
+        validateApplicantAndRespondents(objectNodeCaptor, FIRST_NAME, LAST_NAME);
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldTestAddCourtApplicationForExistingApplicationInHearing() throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         List<CourtApplication> testCases = createCourtApplications();
         String testCasesString =  mapper.writeValueAsString(testCases);
@@ -156,7 +199,7 @@ public class CourtApplicationEventListenerTest {
         CourtApplicationAddedForHearing hearingData = CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
                 .withHearingId(HEARING_ID)
                 .withCourtApplication(CourtApplication.courtApplication()
-                        .withLinkedCaseId(of(LINKED_CASE_ID))
+                        .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
                         .withParentApplicationId(of(LINKED_APPLICATION_ID))
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
@@ -182,6 +225,51 @@ public class CourtApplicationEventListenerTest {
         given(hearing.getProperties()).willReturn(properties);
         given(properties.get(COURT_APPLICATIONS)).willReturn(testCasesProperties);
 
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        courtApplicationEventListener.courtApplicationAdded(envelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldTestManyAddCourtApplicationForHearing() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<CourtApplication> testCases = createCourtApplications();
+        String testCasesString =  mapper.writeValueAsString(testCases);
+        JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+        Envelope<CourtApplicationAddedForHearing> envelope = (Envelope<CourtApplicationAddedForHearing>) mock(Envelope.class);
+        CourtApplicationAddedForHearing hearingData = CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
+                .withHearingId(HEARING_ID)
+                .withCourtApplication(CourtApplication.courtApplication()
+                        .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
+                        .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                        .withId(ID)
+                        .withApplicationType(APPLICATION_TYPE)
+                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                        .withApplicant(ApplicantRespondent.applicantRespondent()
+                                .withFirstName(of(UPDATED_FIRST_NAME))
+                                .withLastName(UPDATED_LAST_NAME)
+                                .withIsRespondent(false)
+                                .withAddress(of(APPLICANT_ADDRESS))
+                                .build())
+                        .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
+                                .withFirstName(of(FIRST_NAME))
+                                .withLastName(LAST_NAME)
+                                .withIsRespondent(true)
+                                .withAddress(of(RESPONDENT_ADDRESS))
+                                .build()))
+                        .build())
+                .build();
+
+        given(envelope.payload()).willReturn(hearingData);
+        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(hearingData);
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(COURT_APPLICATIONS)).willReturn(testCasesProperties);
 
         final ArgumentCaptor<ArrayNode> objectNodeCaptor =
                 ArgumentCaptor.forClass(ArrayNode.class);
@@ -189,8 +277,40 @@ public class CourtApplicationEventListenerTest {
         courtApplicationEventListener.courtApplicationAdded(envelope);
 
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
-        validateApplicantAndRespondents(objectNodeCaptor, FIRST_NAME, LAST_NAME);
+        validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
+
+        CourtApplicationAddedForHearing newHearingData = CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
+                .withHearingId(HEARING_ID)
+                .withCourtApplication(CourtApplication.courtApplication()
+                        .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
+                        .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                        .withId(randomUUID())
+                        .withApplicationType(APPLICATION_TYPE)
+                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                        .withApplicant(ApplicantRespondent.applicantRespondent()
+                                .withFirstName(of(UPDATED_FIRST_NAME))
+                                .withLastName(UPDATED_LAST_NAME)
+                                .withIsRespondent(false)
+                                .withAddress(of(APPLICANT_ADDRESS))
+                                .build())
+                        .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
+                                .withFirstName(of(FIRST_NAME))
+                                .withLastName(LAST_NAME)
+                                .withIsRespondent(true)
+                                .withAddress(of(RESPONDENT_ADDRESS))
+                                .build()))
+                        .build())
+                .build();
+
+        given(envelope.payload()).willReturn(newHearingData);
+        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(newHearingData);
+        given(properties.get(COURT_APPLICATIONS)).willReturn(testCasesProperties);
+
+        courtApplicationEventListener.courtApplicationAdded(envelope);
+        verify(properties, times(2)).replace(anyObject(), objectNodeCaptor.capture());
+        validateApplicantAndRespondents(objectNodeCaptor, FIRST_NAME, LAST_NAME);
+        verify(hearingRepository,times(2)).save(hearing);
     }
 
     @Test
@@ -199,7 +319,7 @@ public class CourtApplicationEventListenerTest {
         CourtApplicationAddedForHearing hearingData = CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
                 .withHearingId(HEARING_ID)
                 .withCourtApplication(CourtApplication.courtApplication()
-                        .withLinkedCaseId(of(LINKED_CASE_ID))
+                        .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
                         .withParentApplicationId(of(LINKED_APPLICATION_ID))
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
@@ -238,7 +358,7 @@ public class CourtApplicationEventListenerTest {
 
     private List<CourtApplication> createCourtApplications() {
         return singletonList(CourtApplication.courtApplication()
-                .withLinkedCaseId(of(LINKED_CASE_ID))
+                .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
                 .withParentApplicationId(of(LINKED_APPLICATION_ID))
                 .withId(ID)
                 .withApplicationType(APPLICATION_TYPE)

@@ -12,8 +12,10 @@ import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.time.LocalDate;
 
+
 import org.junit.Test;
 
+@SuppressWarnings({"squid:S1607"})
 public class WeekCommencingHearingIT extends AbstractIT {
 
     @Test

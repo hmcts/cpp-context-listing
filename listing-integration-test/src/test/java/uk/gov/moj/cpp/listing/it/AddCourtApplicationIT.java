@@ -6,6 +6,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import org.junit.Test;
 
+
 public class AddCourtApplicationIT extends AbstractIT {
 
     @Test

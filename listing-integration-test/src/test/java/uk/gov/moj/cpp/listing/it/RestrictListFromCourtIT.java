@@ -6,6 +6,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import org.junit.Test;
 
+@SuppressWarnings({"squid:UnusedPrivateMethod", "squid:S1607"})
 public class RestrictListFromCourtIT extends AbstractIT {
 
     @Test
@@ -92,7 +93,4 @@ public class RestrictListFromCourtIT extends AbstractIT {
 
         }
     }
-
-
-
 }

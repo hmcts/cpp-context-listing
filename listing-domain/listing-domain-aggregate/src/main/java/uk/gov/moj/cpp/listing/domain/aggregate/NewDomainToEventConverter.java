@@ -220,7 +220,7 @@ public class NewDomainToEventConverter {
     public static uk.gov.justice.listing.events.CourtApplication buildCourtApplications(final CourtApplication courtApplication) {
         return uk.gov.justice.listing.events.CourtApplication.courtApplication()
                 .withId(courtApplication.getId())
-                .withLinkedCaseId(courtApplication.getLinkedCaseId())
+                .withLinkedCaseIds(courtApplication.getLinkedCaseIds())
                 .withParentApplicationId(courtApplication.getParentApplicationId())
                 .withApplicationType(courtApplication.getApplicationType())
                 .withApplicant(buildApplicantRespondent(courtApplication.getApplicant()))

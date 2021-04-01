@@ -165,8 +165,11 @@ public class Case implements Aggregate {
 
         final Set<UUID> mergedHearingIds = new HashSet<>(this.hearingIds);
         if (Objects.nonNull(hearingIdOfEjectCase)) {
-            mergedHearingIds.addAll(hearingIdOfEjectCase);
-        }
+            if(!hearingIds.isEmpty()) {
+                hearingIdOfEjectCase.retainAll(hearingIds);
+            }
+                mergedHearingIds.addAll(hearingIdOfEjectCase);
+            }
 
         final String ejectReason = removalReason.isPresent() ? removalReason.get() : null;
         return mergedHearingIds.isEmpty() ? Stream.empty() : apply(Stream.of(CaseEjectedForHearings.caseEjectedForHearings()

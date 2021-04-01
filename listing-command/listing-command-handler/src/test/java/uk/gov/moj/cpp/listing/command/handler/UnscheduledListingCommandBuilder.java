@@ -239,7 +239,7 @@ public class UnscheduledListingCommandBuilder {
 
     static CourtApplication getCourtApplication() {
         return CourtApplication.courtApplication()
-                .withLinkedCaseId(fromString("19e9d562-6abb-4871-bfb3-2d777aa90371"))
+                .withLinkedCaseIds(singletonList(fromString("19e9d562-6abb-4871-bfb3-2d777aa90371")))
                 .withParentApplicationId(fromString("9d9a431a-0f12-4386-878a-2bf6c4a0877e"))
                 .withApplicationType("App Type")
                 .withId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
@@ -268,6 +268,7 @@ public class UnscheduledListingCommandBuilder {
         return CourtApplication.courtApplication()
                 .withApplicationType("Application for a sexual offences prevention order")
                 .withId(fromString("bf5e2df3-0c37-490e-8b92-f2ebdd5f6723"))
+                .withLinkedCaseIds(Collections.emptyList())
                 .withApplicant(ApplicantRespondent.applicantRespondent()
                         .withIsRespondent(false)
                         .withId(fromString("9f85ccfb-e57d-4339-adb2-4764f5cd1e5f"))

@@ -97,7 +97,7 @@ public class EjectEventListener {
     }
 
     private List<CourtApplication> getAndUpdateCourtApplicationWithLinkedCaseIdToEject(UUID linkedCaseId, List<CourtApplication> courtApplications) {
-        final List<CourtApplication> courtApplicationEntities = courtApplications.stream().filter(ca -> ca.getLinkedCaseId().equals(Optional.of(linkedCaseId))).collect(Collectors.toList());
+        final List<CourtApplication> courtApplicationEntities = courtApplications.stream().filter(ca -> ca.getLinkedCaseIds().contains(linkedCaseId)).collect(Collectors.toList());
         courtApplicationEntities.forEach(
                 courtApplication -> {
                     final UUID courtApplicationId = courtApplication.getId();
@@ -116,7 +116,7 @@ public class EjectEventListener {
                 .withApplicationType(courtApplication.getApplicationType())
                 .withId(courtApplication.getId())
                 .withParentApplicationId(courtApplication.getParentApplicationId())
-                .withLinkedCaseId(courtApplication.getLinkedCaseId())
+                .withLinkedCaseIds(courtApplication.getLinkedCaseIds())
                 .withRestrictFromCourtList((courtApplication.getRestrictFromCourtList()))
                 .withRestrictCourtApplicationType(courtApplication.getRestrictCourtApplicationType())
                 .withApplicationReference(courtApplication.getApplicationReference())

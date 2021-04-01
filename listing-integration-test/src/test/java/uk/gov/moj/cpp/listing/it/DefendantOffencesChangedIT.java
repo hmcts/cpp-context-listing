@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 @SuppressWarnings("squid:S2925") //TODO Remove once issuse of timeout identified in jenkins
 public class DefendantOffencesChangedIT extends AbstractIT {
 
@@ -37,7 +38,9 @@ public class DefendantOffencesChangedIT extends AbstractIT {
     }
 
     @After
-    public void tearDown() { publicMessageConsumer.close(); }
+    public void tearDown() {
+        publicMessageConsumer.close();
+    }
 
     @Test
     public void shouldUpdateDefendantOffencesFollowingPublicDefendantOffencesChangedEventFromProgression() throws Exception {
@@ -64,6 +67,7 @@ public class DefendantOffencesChangedIT extends AbstractIT {
             steps.verifyEventOffenceAddedInActiveMQ();
         }
     }
+
     @Test
     public void shouldUpdateDefendantOffencesWithCustodyTimeLimit() throws Exception {
         HearingsData hearingsData = listCourtHearing();

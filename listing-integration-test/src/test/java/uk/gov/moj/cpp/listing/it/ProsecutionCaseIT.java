@@ -16,7 +16,6 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
-import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
 
 public class ProsecutionCaseIT extends AbstractIT{
     private static final String PUBLIC_EVENT_CPS_PROSECUTOR_UPDATED = "public.progression.events.cps-prosecutor-updated";

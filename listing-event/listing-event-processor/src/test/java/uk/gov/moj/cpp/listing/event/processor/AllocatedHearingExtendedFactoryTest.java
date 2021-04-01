@@ -1,10 +1,16 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.FUTURE_LOCAL_DATE;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+
 import uk.gov.justice.core.courts.ConfirmedDefendant;
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
@@ -33,17 +39,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.FUTURE_LOCAL_DATE;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
+@SuppressWarnings({"squid:S1607"})
 @RunWith(MockitoJUnitRunner.class)
 public class AllocatedHearingExtendedFactoryTest {
 
@@ -73,7 +76,6 @@ public class AllocatedHearingExtendedFactoryTest {
     @Mock
     private ReferenceDataService referenceDataService;
 
-
     @Test
     public void shouldCreateExtendedHearingForHearing() {
         //given
@@ -90,7 +92,7 @@ public class AllocatedHearingExtendedFactoryTest {
         final List<ListedCase> listedCaseList = new ArrayList<>();
         listedCaseList.add(listedCase);
 
-        final AllocatedHearingExtendedForListing  allocatedHearingExtendedForListing = allocatedHearingExtendedForListing(judiciary, listedCaseList);
+        final AllocatedHearingExtendedForListing allocatedHearingExtendedForListing = allocatedHearingExtendedForListing(judiciary, listedCaseList);
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
         when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
 

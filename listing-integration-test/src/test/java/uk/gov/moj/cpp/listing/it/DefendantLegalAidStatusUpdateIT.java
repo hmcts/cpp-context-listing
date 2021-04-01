@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.it;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
 import uk.gov.moj.cpp.listing.steps.DefendantLegalAidStatusUpdateSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;

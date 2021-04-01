@@ -291,7 +291,7 @@ public class RestrictCourtListEventListenerTest {
 
     private List<uk.gov.justice.listing.events.CourtApplication> createCourtApplications() {
         return singletonList(courtApplication()
-                .withLinkedCaseId(of(randomUUID()))
+                .withLinkedCaseIds(singletonList(randomUUID()))
                 .withParentApplicationId(of(randomUUID()))
                 .withId(COURT_APPLICATIONS_ID)
                 .withApplicationType(COURT_APPLICATION_TYPE)

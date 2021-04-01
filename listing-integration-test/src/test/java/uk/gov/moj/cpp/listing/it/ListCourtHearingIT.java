@@ -33,7 +33,6 @@ public class ListCourtHearingIT extends AbstractIT {
         databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
     }
 
-
     @Test
     public void shouldListHearingWithUnallocatedData() {
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsData())) {
@@ -159,7 +158,6 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyNonExistentHearingById();
         }
     }
-
 
     @Test
     public void shouldListHearingByIdWhenIdIsInvalid() {

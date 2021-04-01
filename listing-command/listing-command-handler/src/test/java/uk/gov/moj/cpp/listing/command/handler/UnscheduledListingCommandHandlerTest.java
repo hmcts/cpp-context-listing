@@ -65,13 +65,14 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
-
+@SuppressWarnings({"squid:S1607"})
 @RunWith(MockitoJUnitRunner.class)
 public class UnscheduledListingCommandHandlerTest {
 
@@ -195,7 +196,6 @@ public class UnscheduledListingCommandHandlerTest {
 
     }
 
-
     @Test
     public void shouldListUnscheduledCourtHearingForApplications() throws EventStreamException {
 
@@ -269,9 +269,5 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_END_DATE)),
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST));
-
-
     }
-
-
 }

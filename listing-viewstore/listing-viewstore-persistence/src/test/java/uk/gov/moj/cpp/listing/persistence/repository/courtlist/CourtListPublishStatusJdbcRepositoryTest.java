@@ -316,7 +316,6 @@ public class CourtListPublishStatusJdbcRepositoryTest extends BaseTransactionalT
         final String courtListFileName = "c1";
         final CourtListPublishStatus courtListPublishStatus = new CourtListPublishStatus(randomUUID(), courtCentreId, publishCourtListType, publishStatus, lastUpdated,
                 courtListFileId, courtListFileName, "", publishDate, weekCommencing);
-        System.out.println(courtListPublishStatus.toString());
         courtListRepository.save(courtListPublishStatus, connection);
     }
 }

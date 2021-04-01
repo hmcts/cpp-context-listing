@@ -42,6 +42,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 public class CaseLinkedIT extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(CaseLinkedIT.class);
     private static final UUID CASE_TO_BE_LINKED_1 = randomUUID();

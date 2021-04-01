@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Collections.singletonList;
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.CourtApplication;
@@ -12,15 +14,14 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
 import javax.inject.Inject;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.Iterables;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class CourtApplicationEventListener {
@@ -41,17 +42,18 @@ public class CourtApplicationEventListener {
         };
 
         final Hearing hearing = hearingRepository.findBy(hearingId);
-        if(null != hearing.getProperties().get(COURT_APPLICATION_FIELD)) {
-            using(hearingRepository)
-                    .find(hearingId)
-                    .putSubList(COURT_APPLICATION_FIELD, typeRef, getCourtApplicationsAddFunction(courtApplication))
-                    .save();
-        }
-        else {
-            using(hearingRepository)
-                    .find(hearingId)
-                    .putObject(COURT_APPLICATION_FIELD, Collections.singletonList(courtApplication))
-                    .save();
+        if(nonNull(courtApplication)) {
+            if (nonNull(hearing) && nonNull(hearing.getProperties()) && nonNull(hearing.getProperties().get(COURT_APPLICATION_FIELD))) {
+                using(hearingRepository)
+                        .find(hearingId)
+                        .putSubList(COURT_APPLICATION_FIELD, typeRef, getCourtApplicationsFunction(courtApplication))
+                        .save();
+            } else {
+                using(hearingRepository)
+                        .find(hearingId)
+                        .putObject(COURT_APPLICATION_FIELD, singletonList(courtApplication))
+                        .save();
+            }
         }
     }
 
@@ -77,38 +79,27 @@ public class CourtApplicationEventListener {
     private List<CourtApplication> getUpdatedCourtApplications(CourtApplication updateCourtApplication,
                                                                List<CourtApplication> courtApplications) {
 
-        final CourtApplication origCourtApplication = Iterables.find(courtApplications, ca -> ca.getId()
-                .equals(updateCourtApplication.getId()));
-        final CourtApplication newCourtApplication = CourtApplication.courtApplication()
-                .withApplicant(updateCourtApplication.getApplicant())
-                .withRespondents(updateCourtApplication.getRespondents())
-                .withApplicationType(updateCourtApplication.getApplicationType())
-                .withId(origCourtApplication.getId())
-                .withParentApplicationId(updateCourtApplication.getParentApplicationId())
-                .withLinkedCaseId(updateCourtApplication.getLinkedCaseId())
-                .withRestrictCourtApplicationType(updateCourtApplication.getRestrictCourtApplicationType())
-                .withRestrictFromCourtList(updateCourtApplication.getRestrictFromCourtList())
-                .withApplicationReference(updateCourtApplication.getApplicationReference())
-                .withApplicationParticulars(updateCourtApplication.getApplicationParticulars())
-                .build();
+        final Optional<CourtApplication> origCourtApplication = courtApplications.stream().filter(ca -> ca.getId().equals(updateCourtApplication.getId())).findFirst();
 
-        courtApplications.replaceAll(courtApplication -> courtApplication.getId()
-                .equals(newCourtApplication.getId()) ? newCourtApplication : courtApplication);
+        if(origCourtApplication.isPresent()) {
+            final CourtApplication newCourtApplication = CourtApplication.courtApplication()
+                    .withApplicant(updateCourtApplication.getApplicant())
+                    .withRespondents(updateCourtApplication.getRespondents())
+                    .withApplicationType(updateCourtApplication.getApplicationType())
+                    .withId(updateCourtApplication.getId())
+                    .withParentApplicationId(updateCourtApplication.getParentApplicationId())
+                    .withLinkedCaseIds(updateCourtApplication.getLinkedCaseIds())
+                    .withRestrictCourtApplicationType(updateCourtApplication.getRestrictCourtApplicationType())
+                    .withRestrictFromCourtList(updateCourtApplication.getRestrictFromCourtList())
+                    .withApplicationReference(updateCourtApplication.getApplicationReference())
+                    .withApplicationParticulars(updateCourtApplication.getApplicationParticulars())
+                    .build();
+
+            courtApplications.replaceAll(courtApplication -> courtApplication.getId()
+                    .equals(newCourtApplication.getId()) ? newCourtApplication : courtApplication);
+        } else {
+            courtApplications.add(updateCourtApplication);
+        }
         return courtApplications;
     }
-
-    private Function<List<CourtApplication>, List<CourtApplication>> getCourtApplicationsAddFunction(CourtApplication courtApplication) {
-        return courtApplications -> getCourtApplications(courtApplication, courtApplications);
-    }
-
-
-    private List<CourtApplication> getCourtApplications(CourtApplication addCourtApplication,
-                                                        List<CourtApplication> courtApplications) {
-
-        courtApplications.add(addCourtApplication);
-        return courtApplications;
-    }
-
-
-
 }

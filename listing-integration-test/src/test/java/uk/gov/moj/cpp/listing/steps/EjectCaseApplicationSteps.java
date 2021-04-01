@@ -34,6 +34,7 @@ import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -109,6 +110,18 @@ public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseab
         whenEjectCaseOrApplicationPublicEventIsPublished(ejectCaseApplicationData);
     }
 
+    public UUID buildEjectApplicationDataWithRandomHearingID() {
+        UUID hearingId = randomUUID();
+        CourtApplicationData courtApplicationData = hearingsData.getHearingData().get(0).getCourtApplications().get(0);
+        ApplicationEjectedData ejectCaseApplicationData = ApplicationEjectedData.applicationEjected()
+                .withHearingIds(Arrays.asList(hearingId))
+                .withApplicationId(courtApplicationData.getId())
+                .withRemovalReason("SomeReason")
+                .build();
+        whenEjectCaseOrApplicationPublicEventIsPublished(ejectCaseApplicationData);
+        return hearingId;
+    }
+
     public void whenEjectCaseOrApplicationPublicEventIsPublished(Object ejectCaseApplicationData) {
 
         final JsonObject ejectCaseDataObject = (JsonObject) objectToJsonValueConverter.convert(ejectCaseApplicationData);
@@ -144,6 +157,18 @@ public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseab
         assertThat(jsonResponse.getString("hearingId"), is(jsRequest.getString("hearingIds[0]")));
         assertThat(jsonResponse.getString("applicationId"), is(jsRequest.getString("applicationId")));
     }
+
+    public void verifyEventApplicationEjectedInActiveMQ(UUID hearingId) {
+        JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventsMessageApplicationEjected);
+        LOGGER.debug("jsonResponse from privateEventsMessageApplicationEjected: {}", jsonResponse.prettify());
+
+        assertThat(hearingId.toString(), is(jsRequest.getString("hearingIds[0]")));
+        assertThat(jsonResponse.getString("applicationId"), is(jsRequest.getString("applicationId")));
+    }
+
 
 
     public void verifyListedCasesInHearings(boolean isAllocated, int numberOfListedCases) {

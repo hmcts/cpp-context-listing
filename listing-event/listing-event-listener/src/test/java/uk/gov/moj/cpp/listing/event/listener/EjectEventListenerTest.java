@@ -215,7 +215,7 @@ public class EjectEventListenerTest {
 
     private List<CourtApplication> createCourtApplications() {
        CourtApplication parentCourtApplication = CourtApplication.courtApplication()
-                .withLinkedCaseId(of(CASE_ID))
+                .withLinkedCaseIds(singletonList(CASE_ID))
                 .withParentApplicationId(of(randomUUID()))
                 .withId(COURT_APPLICATIONS_ID)
                 .withApplicationType(COURT_APPLICATION_TYPE)
@@ -236,6 +236,7 @@ public class EjectEventListenerTest {
                         .build()))
                 .build();
         CourtApplication childApplication = CourtApplication.courtApplication()
+                .withLinkedCaseIds(singletonList(CASE_ID))
                 .withParentApplicationId(of(COURT_APPLICATIONS_ID))
                 .withId(randomUUID())
                 .withApplicationType(COURT_APPLICATION_TYPE)
@@ -256,6 +257,7 @@ public class EjectEventListenerTest {
                         .build()))
                 .build();
         CourtApplication noChildApplication = CourtApplication.courtApplication()
+                .withLinkedCaseIds(singletonList(CASE_ID))
                 .withParentApplicationId(of(randomUUID()))
                 .withId(randomUUID())
                 .withApplicationType(COURT_APPLICATION_TYPE)

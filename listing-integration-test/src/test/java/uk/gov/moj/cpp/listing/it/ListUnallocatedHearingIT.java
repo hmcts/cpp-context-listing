@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.it;
 
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListUnAllocatedCourtHearingSteps;
-import uk.gov.moj.cpp.listing.steps.ListUnscheduledCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import org.junit.Before;
@@ -22,7 +21,6 @@ public class ListUnallocatedHearingIT extends AbstractIT {
         databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
         databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
     }
-
 
     @Test
     public void shouldListHearingWithUnallocatedData() {

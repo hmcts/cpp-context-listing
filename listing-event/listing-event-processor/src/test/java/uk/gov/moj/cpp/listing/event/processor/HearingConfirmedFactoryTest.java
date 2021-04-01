@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -42,7 +43,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.FUTURE_LOCAL_DATE;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-
+@SuppressWarnings({"squid:S1607"})
 @RunWith(MockitoJUnitRunner.class)
 public class HearingConfirmedFactoryTest {
 
@@ -71,7 +72,6 @@ public class HearingConfirmedFactoryTest {
 
     @Mock
     private ReferenceDataService referenceDataService;
-
 
     @Test
     public void shouldCreateAHearingConfirmedWithJudiciary() {

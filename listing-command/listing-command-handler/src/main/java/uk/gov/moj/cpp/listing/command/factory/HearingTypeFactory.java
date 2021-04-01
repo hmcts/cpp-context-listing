@@ -30,7 +30,7 @@ public class HearingTypeFactory {
             LOGGER.info("hearingTypes envelope response: {}", jsonObject);
         }
         final JsonArray hearingTypes = jsonObject.getJsonArray(HEARING_TYPES_ARRAY);
-        hearingTypes.getValuesAs(JsonObject.class).stream().forEach(hearingType ->
+        hearingTypes.getValuesAs(JsonObject.class).forEach(hearingType ->
                 hearingTypesMap.put(hearingType.getString(HEARING_TYPE_ID), hearingType.getInt(HEARING_TYPE_DEFAULT_DURATION_MIN)));
         return hearingTypesMap;
     }

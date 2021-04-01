@@ -54,7 +54,7 @@ public class ExtendHearingIT extends AbstractIT {
     public void shouldExtendHearingPartially() throws IOException {
 
         final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, UUID.randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE,
-                null ,null);
+                null, null);
 
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(allocatedHearingCaseAndDefendantData))) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();

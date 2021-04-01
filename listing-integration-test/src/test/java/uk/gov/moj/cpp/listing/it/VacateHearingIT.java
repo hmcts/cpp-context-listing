@@ -16,6 +16,7 @@ import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@SuppressWarnings({"squid:S1607"})
 @RunWith(DataProviderRunner.class)
 public class VacateHearingIT extends AbstractIT {
 

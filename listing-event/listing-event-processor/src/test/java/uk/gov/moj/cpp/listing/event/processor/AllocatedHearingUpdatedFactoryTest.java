@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -41,7 +42,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.FUTURE_LOCAL_DATE;
-
+@SuppressWarnings({"squid:S1607"})
 @RunWith(MockitoJUnitRunner.class)
 public class AllocatedHearingUpdatedFactoryTest {
     private static final UUID CASE_ID = UUID.randomUUID();

@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.steps.data.factory;
 
 import static java.time.LocalDate.now;
 import static java.util.Collections.singletonList;
+import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
@@ -664,7 +665,7 @@ public class HearingsDataFactory {
     }
 
     private static CourtApplicationPartyListingNeeds randomCourtApplicationPartyNeed() {
-        return new CourtApplicationPartyListingNeeds(randomUUID(), randomUUID(), of(HearingLanguageNeeds.ENGLISH));
+        return new CourtApplicationPartyListingNeeds(randomUUID(), randomUUID(), null, of(HearingLanguageNeeds.ENGLISH), empty(), empty());
     }
 
     private static OrganisationData getOrganisationData() {

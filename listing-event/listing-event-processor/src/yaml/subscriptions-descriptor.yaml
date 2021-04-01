@@ -98,6 +98,9 @@ subscriptions_descriptor:
         - name: listing.events.hearing-marked-as-duplicate
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-marked-as-duplicate
 
+        - name: listing.events.new-defendant-added-for-court-proceedings
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.new-defendant-added-for-court-proceedings.json
+
       event_source_name: listing
 
     - name: public event subscription

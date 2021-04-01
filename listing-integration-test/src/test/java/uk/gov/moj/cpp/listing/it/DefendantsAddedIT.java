@@ -38,13 +38,14 @@ public class DefendantsAddedIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         }
 
-      UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
-      HearingData hearingData = hearingsData.getHearingData().get(0);
-       try (final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData)) {
+        UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
+        HearingData hearingData = hearingsData.getHearingData().get(0);
+        try (final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData)) {
             addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
             addDefendantSteps.verifyEventDefendantAddedInActiveMQ();
             addDefendantSteps.verifyEventDefendantsToBeAddedInActiveMQ();
             addDefendantSteps.verifyEventDefendantDetailsAddedInActiveMQ();
+            addDefendantSteps.verifyPublicEventDefendantAddedInActiveMQ();
             addDefendantSteps.verifyHearingListedFromAPI(false);
         }
     }

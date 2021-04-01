@@ -49,6 +49,9 @@ public class Application implements Aggregate {
 
         final Set<UUID> mergedHearingIds = new HashSet<>(this.hearingIds);
         if(Objects.nonNull(hearingIdForApplicationToBeEjected)){
+            if(!hearingIds.isEmpty()) {
+                hearingIdForApplicationToBeEjected.retainAll(hearingIds);
+            }
             mergedHearingIds.addAll(hearingIdForApplicationToBeEjected);
         }
         final String ejectReason = removalReason.isPresent()? removalReason.get() : null;

@@ -9,6 +9,7 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
@@ -20,6 +21,7 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtCentre;
@@ -64,6 +66,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS = "public.progression.defendants-added-to-court-proceedings";
     private static final String EVENT_SELECTOR_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS = "listing.events.defendants-to-be-added-for-court-proceedings";
     private static final String EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS = "listing.events.new-defendant-added-for-court-proceedings";
+    private static final String PUBLIC_EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS = "public.listing.new-defendant-added-for-court-proceedings";
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
@@ -77,6 +80,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     private final MessageConsumer publicEventMessageConsumerDefendantAdded;
     private final MessageConsumer privateEventMessageDefendantsToBeAdded;
     private final MessageConsumer privateEventsMessageDefendantDetailsAdded;
+    private final MessageConsumer publicEventsMessageNewDefendantAdded;
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
     private String request;
@@ -90,6 +94,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         publicEventMessageConsumerDefendantAdded = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS);
         privateEventMessageDefendantsToBeAdded = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS);
         privateEventsMessageDefendantDetailsAdded = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS);
+        publicEventsMessageNewDefendantAdded = publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -159,6 +164,20 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("defendant.firstName"), is(jsRequest.getString("defendants[0].personDefendant.personDetails.firstName")));
         assertThat(jsonResponse.get("defendant.specificRequirements"), is(jsRequest.getString("defendants[0].personDefendant.personDetails.specificRequirements")));
         assertThat(jsonResponse.get("defendant.organisationName"), is(jsRequest.getString("defendants[0].legalEntityDefendant.organisation.name")));
+    }
+
+    public void verifyPublicEventDefendantAddedInActiveMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventsMessageNewDefendantAdded);
+
+        assertThat(jsonResponse.get("caseId"), is(caseId.toString()));
+        assertThat(jsonResponse.get("hearingId"), is(hearingData.getId().toString()));
+        assertThat(jsonResponse.get("defendantId"), is(jsRequest.getString("defendants[0].id")));
+        assertThat(jsonResponse.get("courtCentre.id"), is(hearingData.getCourtCentreId().toString()));
+        assertThat(jsonResponse.get("courtCentre.roomId"), is(hearingData.getCourtRoomId()));
+        assertThat(jsonResponse.get("hearingDateTime"), notNullValue());
     }
 
     public void verifyHearingListedFromAPI(final boolean isAllocated) {

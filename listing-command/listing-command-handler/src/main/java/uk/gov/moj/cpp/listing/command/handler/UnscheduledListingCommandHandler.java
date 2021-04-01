@@ -55,7 +55,6 @@ public class UnscheduledListingCommandHandler {
     public void handleListUnscheduledCourtHearing(final JsonEnvelope command) throws EventStreamException {
         final JsonObject payload = command.payloadAsJsonObject();
 
-
         final ListUnscheduledCourtHearingEnriched listCourtHearingEnriched = jsonObjectConverter.convert(payload, ListUnscheduledCourtHearingEnriched.class);
 
         LOGGER.info("'listing.command.list-unscheduled-court-hearing-enriched' listCourtHearing: {}", listCourtHearingEnriched);

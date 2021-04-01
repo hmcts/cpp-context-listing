@@ -54,7 +54,7 @@
         "applicationLegislation": "UoLO7ofTVm",
         "applicationType": "9vBchM49Go",
         "id": "46171453-3b64-4a43-91af-cfc09e6d8889",
-        "linkType": "EITHER",
+        "linkType": "LINKED",
         "requiresCourtHearing": false,
         "requiresResponse": true
       }

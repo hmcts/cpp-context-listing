@@ -17,13 +17,13 @@
         "address3": "Address3",
         "address4": "Address4",
         "address5": "Address5",
-        "postCode": "SW13 0AA"
+        "postcode": "SW13 0AA"
       }
     },
     "applicationType": "App Type",
     "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
     "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
-    "linkedCaseId": "19e9d562-6abb-4871-bfb3-2d777aa90371",
+    "linkedCaseIds": ["19e9d562-6abb-4871-bfb3-2d777aa90371"],
     "applicationReference": "REF-1",
     "applicationParticulars": "Application particulars",
     "respondents": [
@@ -39,10 +39,9 @@
           "address3": "Address3",
           "address4": "Address4",
           "address5": "Address5",
-          "postCode": "SW13 0AA"
+          "postcode": "SW13 0AA"
         }
       }
     ]
-
   }
 }

@@ -57,6 +57,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings({"squid:S1607"})
 public class ListingNoteIT extends AbstractIT {
 
     private static final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
@@ -88,7 +89,7 @@ public class ListingNoteIT extends AbstractIT {
         notesSteps.createNoteForListing(courtRoomId, date.toString(), NOTE_DESCRIPTION);
         final UUID noteId = verifyNoteExists(courtRoomId, date);
         Assert.assertThat(noteId.toString(), CoreMatchers.is(notNullValue()));
-        verifyInMessagingQueueForCreateRole(noteId.toString(),courtRoomId.toString(),date,NOTE_DESCRIPTION);
+        verifyInMessagingQueueForCreateRole(noteId.toString(), courtRoomId.toString(), date, NOTE_DESCRIPTION);
     }
 
     @Test

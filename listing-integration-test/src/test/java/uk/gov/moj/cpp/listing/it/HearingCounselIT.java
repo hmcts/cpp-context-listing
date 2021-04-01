@@ -24,7 +24,6 @@ import javax.json.JsonObject;
 import org.junit.After;
 import org.junit.Test;
 
-
 public class HearingCounselIT extends AbstractIT {
 
     private static final String PUBLIC_HEARING_DEFENCE_COUNSEL_ADDED = "public.hearing.defence-counsel-added";

@@ -1306,7 +1306,7 @@ public class Hearing implements Aggregate {
                 .withReportingRestrictionReason(ofNullable(this.reportingRestrictionReason))
                 .withCourtRoomId(this.courtRoomId)
                 .withHearingDays(convertHearingDaysToEvent(this.hearingDays))
-                .withProsecutionCaseDefendantsOffenceIds(isNull(prosecutionCaseDefendantOffenceIds) ? null : prosecutionCaseDefendantOffenceIds.stream()
+                .withProsecutionCaseDefendantsOffenceIds(isEmpty(prosecutionCaseDefendantOffenceIds) ? null : prosecutionCaseDefendantOffenceIds.stream()
                         .map(lc -> uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                                 .withId(lc.getId())
                                 .withDefendants(lc.getDefendants().stream()
@@ -1346,7 +1346,7 @@ public class Hearing implements Aggregate {
                 .withReportingRestrictionReason(ofNullable(this.reportingRestrictionReason))
                 .withCourtRoomId(this.courtRoomId)
                 .withHearingDays(convertHearingDaysToEvent(this.hearingDays))
-                .withProsecutionCaseDefendantsOffenceIds(isNull(this.prosecutionCaseDefendantOffenceIds) ? null : this.prosecutionCaseDefendantOffenceIds.stream()
+                .withProsecutionCaseDefendantsOffenceIds(isEmpty(this.prosecutionCaseDefendantOffenceIds) ? null : this.prosecutionCaseDefendantOffenceIds.stream()
                         .map(lc -> uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                                 .withId(lc.getId())
                                 .withDefendants(lc.getDefendants().stream()
@@ -1375,10 +1375,15 @@ public class Hearing implements Aggregate {
     }
 
     private NewDefendantAddedForCourtProceedings defendantsAddedForCourtProceedings(final UUID caseId, final Defendant defendant) {
+        final ZonedDateTime hearingDateTime = getEarliestStartDate();
+
         return NewDefendantAddedForCourtProceedings.newDefendantAddedForCourtProceedings()
                 .withCaseId(caseId)
                 .withDefendant(NewDomainToEventConverter.buildDefendant(defendant))
                 .withHearingId(this.hearingId)
+                .withCourtCentreId(this.courtCentreId)
+                .withCourtRoomId(this.courtRoomId)
+                .withHearingDateTime(hearingDateTime)
                 .build();
     }
 
@@ -2149,11 +2154,11 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> updateCaseIdentifier(UUID prosecutionAuthorityId, String prosecutionAuthorityCode, UUID prosecutionCaseId) {
         final Stream<Object> eventStream = Stream.of(CaseIdentifierUpdated.caseIdentifierUpdated()
-        .withHearingId(this.hearingId)
-        .withProsecutionAuthorityCode(prosecutionAuthorityCode)
-        .withProsecutionAuthorityId(prosecutionAuthorityId)
-        .withProsecutionCaseId(prosecutionCaseId)
-        .build());
+                .withHearingId(this.hearingId)
+                .withProsecutionAuthorityCode(prosecutionAuthorityCode)
+                .withProsecutionAuthorityId(prosecutionAuthorityId)
+                .withProsecutionCaseId(prosecutionCaseId)
+                .build());
         return apply(eventStream);
     }
 
@@ -2232,6 +2237,16 @@ public class Hearing implements Aggregate {
         return Stream.of(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate()
                 .withHearingId(hearingId)
                 .build());
+    }
+
+    private ZonedDateTime getEarliestStartDate() {
+        if(CollectionUtils.isEmpty(hearingDays)) {
+            return null;
+        }
+        return hearingDays.stream()
+                .map(HearingDay::getStartTime)
+                .sorted()
+                .findFirst().orElse(null);
     }
 
 }

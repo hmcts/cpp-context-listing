@@ -7,7 +7,8 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BookedSlotIT extends AbstractIT{
+
+public class BookedSlotIT extends AbstractIT {
 
     private static final String CONTEXT_NAME = "listing";
     private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();

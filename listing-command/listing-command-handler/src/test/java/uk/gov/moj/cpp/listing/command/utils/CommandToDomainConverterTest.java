@@ -372,8 +372,8 @@ public class CommandToDomainConverterTest {
         assertThat(actual.getNonDefaultDays().get(0).getCourtCentreId(), notNullValue());
         assertThat(actual.getJurisdictionType().name(), is(commandHearing.getJurisdictionType().name()));
         assertCourtApplications(commandHearing, actual);
-        assertThat(actual.getCourtApplications().get(0).getApplicant().getLastName(),
-                is(commandHearing.getCourtApplications().get(0).getApplicant().getDefendant().get().getLegalEntityDefendant().get().getOrganisation().getName()));
+        assertThat(actual.getCourtApplications().get(0).getApplicant().getId(),
+                is(commandHearing.getCourtApplications().get(0).getApplicant().getId()));
         assertThat(actual.getListedCases().get(0).getDefendants().get(0).getOrganisationName().get(),
                 is(commandHearing.getProsecutionCases().get(0).getDefendants().get(0).getLegalEntityDefendant().get().getOrganisation().getName()));
 

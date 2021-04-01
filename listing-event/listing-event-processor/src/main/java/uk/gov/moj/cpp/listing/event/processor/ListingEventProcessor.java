@@ -2,7 +2,9 @@ package uk.gov.moj.cpp.listing.event.processor;
 
 
 import static javax.json.Json.createObjectBuilder;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProceedings.publicListingNewDefendantAddedForCourtProceedings;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -10,6 +12,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
+import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.commands.LinkedToCases;
@@ -31,9 +34,11 @@ import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
+import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
+import uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.progression.courts.HearingExtended;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -61,6 +66,7 @@ import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCo
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.util.HearingListedToUpdateHearingForListingCommand;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -166,6 +172,8 @@ public class ListingEventProcessor {
     private static final String PROSECUTION_CASE = "prosecutionCase";
     private static final String PROSECUTION_CASE_IDS = "prosecutionCaseIds";
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
+    private static final String PRIVATE_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS = "listing.events.new-defendant-added-for-court-proceedings";
+    private static final String PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS = "public.listing.new-defendant-added-for-court-proceedings";
 
     @Inject
     private Sender sender;
@@ -436,19 +444,23 @@ public class ListingEventProcessor {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PUBLIC_EVENT_PROGRESSION_EXTEND_LISTED_HEARING_FOR_COURT_APPLICATION, envelope.toObfuscatedDebugString());
         }
-
         final JsonObject payload = envelope.payloadAsJsonObject();
         final HearingExtended hearingExtended = jsonObjectConverter.convert(payload, HearingExtended.class);
-
-        if (isNotEmpty(hearingExtended.getProsecutionCases())) {
-            sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PRIVATE_COMMAND_ADD_CASES_FOR_HEARING),
-                    envelope.payloadAsJsonObject()));
-            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_COMMAND_ADD_CASES_FOR_HEARING, envelope.toObfuscatedDebugString());
-        } else {
-            sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING),
-                    envelope.payloadAsJsonObject()));
-            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING, envelope.toObfuscatedDebugString());
+        if(isNotBoxWorkRequest(hearingExtended)){
+            if (isNotEmpty(hearingExtended.getProsecutionCases()) && !hearingExtended.getCourtApplication().isPresent()) {
+                sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PRIVATE_COMMAND_ADD_CASES_FOR_HEARING),
+                        envelope.payloadAsJsonObject()));
+                LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_COMMAND_ADD_CASES_FOR_HEARING, envelope.toObfuscatedDebugString());
+            } else {
+                sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING),
+                        envelope.payloadAsJsonObject()));
+                LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING, envelope.toObfuscatedDebugString());
+            }
         }
+    }
+
+    private boolean isNotBoxWorkRequest(final HearingExtended hearingExtended) {
+        return !hearingExtended.getIsBoxWorkRequest().isPresent();
     }
 
     @Handles(PUBLIC_EVENT_PROGRESSION_DEFENDANTS_ADDED_TO_COURT_PROCEEDINGS)
@@ -635,6 +647,38 @@ public class ListingEventProcessor {
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_MARK_HEARING_AS_DUPLICATE),
                 generatePayloadForCommandMarkHearingAsDuplicate(envelope)));
+
+    }
+
+    /**
+     * Added specifically to complete the loop w.r.t progression service being able to generate
+     * summons of the back of anew defendant getting successfully added to an existing hearing.
+     * <p>
+     * Defensively coded to only raise the event if court centre and hearing start time available
+     *
+     * @param envelope
+     */
+    @Handles(PRIVATE_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS)
+    public void handleNewDefendantAddedForCourtProceedings(final JsonEnvelope envelope) {
+        LOGGER.info("Processing event '{}'", PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS);
+
+        final NewDefendantAddedForCourtProceedings payload = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), NewDefendantAddedForCourtProceedings.class);
+        final Optional<UUID> optionalCourtCentreId = payload.getCourtCentreId();
+        final Optional<ZonedDateTime> hearingDateTime = payload.getHearingDateTime();
+        if (optionalCourtCentreId.isPresent() && hearingDateTime.isPresent()) {
+            final CourtCentre courtCentre = hearingConfirmedFactory.buildCourtCentre(optionalCourtCentreId.get(), payload.getCourtRoomId(), envelope);
+            final PublicListingNewDefendantAddedForCourtProceedings payloadForPublicEvent = publicListingNewDefendantAddedForCourtProceedings()
+                    .withDefendantId(payload.getDefendant().getId())
+                    .withCourtCentre(courtCentre)
+                    .withCaseId(payload.getCaseId())
+                    .withHearingId(payload.getHearingId())
+                    .withHearingDateTime(hearingDateTime.get())
+                    .build();
+            sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS), objectToJsonObjectConverter.convert(payloadForPublicEvent)));
+        } else {
+            LOGGER.info("No court centre ID present for hearing '{}'.  Not raising public event '{}'", payload.getHearingId(), PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS);
+        }
+
 
     }
 
@@ -912,7 +956,7 @@ public class ListingEventProcessor {
 
     private void sendUpdateCaseWithDuplicateHearing(final JsonEnvelope envelope, final UUID hearingId, final UUID caseId) {
         final JsonObject hearingMarkedAsDuplicateForCase = createObjectBuilder()
-                .add(HEARING_ID,hearingId.toString())
+                .add(HEARING_ID, hearingId.toString())
                 .add(CASE_ID, caseId.toString())
                 .build();
 

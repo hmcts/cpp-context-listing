@@ -28,7 +28,6 @@
   "applicationParticulars": "Application particulars",
   "respondents": [
     {
-      "partyDetails": {
         "id": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
         "personDetails": {
           "firstName": "Luise",
@@ -43,7 +42,6 @@
             "postcode": "DI5 9EY"
           }
         }
-      }
     }
   ]
 }

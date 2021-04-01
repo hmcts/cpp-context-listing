@@ -9,20 +9,25 @@ import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.event.processor.service.ReferenceDataService;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
-
+@SuppressWarnings({"squid:S1172", "squid:CommentedOutCodeLine"})
 public class PublicHearingFactory {
 
     @Inject
     ReferenceDataService referenceDataService;
 
     protected CourtCentre buildCourtCentre(UUID courtCentreId, UUID courtRoomId, final JsonEnvelope envelope) {
+        return buildCourtCentre(courtCentreId, Optional.of(courtRoomId), envelope);
+    }
+
+    protected CourtCentre buildCourtCentre(UUID courtCentreId, Optional<UUID> courtRoomId, final JsonEnvelope envelope) {
         return CourtCentre.courtCentre()
                 .withId(courtCentreId)
                 .withName(referenceDataService.getOrganizationUnitById(courtCentreId, envelope).getOucodeL3Name().orElse(null))
-                .withRoomId(of(courtRoomId))
+                .withRoomId(courtRoomId)
                 .build();
     }
 

@@ -31,6 +31,7 @@ import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CommittingCourt;
+import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.Hearing;
@@ -56,7 +57,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@SuppressWarnings({"squid:S3655", "squid:S1067", "squid:MethodCyclomaticComplexity"})
+import org.apache.commons.collections.CollectionUtils;
+
+@SuppressWarnings({"pmd:NullAssignment", "squid:S2583", "squid:S1172", "squid:CommentedOutCodeLine", "pmd:NullAssignment", "squid:MethodCyclomaticComplexity", "squid:S3655", "squid:S1067"})
 public class CommandToDomainConverter implements Converter<HearingListingNeeds, Hearing> {
 
     @SuppressWarnings({"squid:S3655"})
@@ -98,7 +101,9 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
         final Optional<LocalDate> weekCommencingStartDate = commandHearing.getWeekCommencingDate().isPresent() && nonNull(commandHearing.getWeekCommencingDate().get().getStartDate()) ?
                 of(LocalDate.parse(commandHearing.getWeekCommencingDate().get().getStartDate())) : empty();
+
         final Optional<Integer> weekCommencingDurationInWeeks = commandHearing.getWeekCommencingDate().isPresent() ? commandHearing.getWeekCommencingDate().get().getDuration() : empty();
+
         final Optional<LocalDate> weekCommencingEndDate = weekCommencingStartDate.isPresent() && weekCommencingDurationInWeeks.isPresent() ?
                 of(weekCommencingStartDate.get().plusWeeks(weekCommencingDurationInWeeks.get())) : empty();
 
@@ -121,7 +126,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withNonSittingDays(emptyList())
                 .withNonDefaultDays(nonDefaultDays)
                 .withHearingDays(emptyList())
-                .withCourtApplication(isNull(commandHearing.getCourtApplications()) ? emptyList() : commandHearing.getCourtApplications()
+                .withCourtApplication(isEmpty(commandHearing.getCourtApplications()) ? emptyList() : commandHearing.getCourtApplications()
                         .stream().map(ca -> new CourtApplicationToDomainConverter().convert(ca)).collect(toList()))
                 .withCourtApplicationPartyNeeds(isNull(commandHearing.getCourtApplicationPartyListingNeeds())
                         ? emptyList() : commandHearing.getCourtApplicationPartyListingNeeds().stream()
@@ -134,7 +139,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     @SuppressWarnings("squid:S1168")
     public List<ListedCase> mapToListedCases(final HearingUnscheduledListingNeeds commandHearing, final List<ProsecutionCase> prosecutionCases) {
-        if (prosecutionCases == null || prosecutionCases.isEmpty()) {
+        if (isEmpty(prosecutionCases)) {
             return Collections.emptyList();
         } else {
             return prosecutionCases.stream().map(prosecutionCase ->
@@ -193,8 +198,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     }
 
     private boolean linkedCourtApplications(final HearingListingNeeds hearingListingNeeds) {
-        return hearingListingNeeds.getCourtApplications().stream()
-                .anyMatch(courtApplication -> courtApplication.getLinkedCaseId().isPresent());
+        return isNotEmpty(hearingListingNeeds.getProsecutionCases());
     }
 
     public JudicialRole buildJudiciary(final uk.gov.justice.core.courts.JudicialRole judicialRole) {
@@ -519,7 +523,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     }
 
     public List<uk.gov.moj.cpp.listing.domain.CourtApplication> getCourtApplications(final HearingUnscheduledListingNeeds commandHearing) {
-        return isNull(commandHearing.getCourtApplications()) ? emptyList() : commandHearing.getCourtApplications()
+        return isEmpty(commandHearing.getCourtApplications()) ? emptyList() : commandHearing.getCourtApplications()
                 .stream().map(ca -> new CourtApplicationToDomainConverter().convert(ca)).collect(toList());
     }
 

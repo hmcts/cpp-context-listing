@@ -557,7 +557,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         verifyFirstHearingDay(jsonResponse);
 
         //test usage of reference data courtcentre default startTime and duration
-        final ZonedDateTime lastHearingDayStartDateTime = ZonedDateTime.of(LocalDate.parse(updatedHearingData.getEndDate()), DEFAULT_START_TIME, BST)
+        final ZonedDateTime lastHearingDayStartDateTime = ZonedDateTime.of(LocalDate.parse(updatedHearingData.getEndDate()), DEFAULT_START_TIME, UTC)
                 .withZoneSameInstant(UTC);
         assertThat(jsonResponse.get("hearingDays[1].startTime"), is(lastHearingDayStartDateTime.format(ZONED_DATE_TIME_FORMAT)));
         assertThat(jsonResponse.get("hearingDays[1].durationMinutes"), is(DEFAULT_DURATION_MINS));

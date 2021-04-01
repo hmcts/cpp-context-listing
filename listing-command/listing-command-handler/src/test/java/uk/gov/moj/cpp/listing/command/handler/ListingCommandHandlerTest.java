@@ -239,7 +239,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-
 @SuppressWarnings({"squid:S1607"})
 @RunWith(MockitoJUnitRunner.class)
 public class ListingCommandHandlerTest {
@@ -691,7 +690,7 @@ public class ListingCommandHandlerTest {
 
     private CourtApplication getCourtApplication() {
         return CourtApplication.courtApplication()
-                .withLinkedCaseId(fromString("19e9d562-6abb-4871-bfb3-2d777aa90371"))
+                .withLinkedCaseIds(singletonList(fromString("19e9d562-6abb-4871-bfb3-2d777aa90371")))
                 .withParentApplicationId(fromString("9d9a431a-0f12-4386-878a-2bf6c4a0877e"))
                 .withApplicationType("App Type")
                 .withId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))
@@ -720,10 +719,10 @@ public class ListingCommandHandlerTest {
         return Address
                 .address()
                 .withAddress1("Address1")
-                .withAddress2(of("Address1"))
-                .withAddress3(of("Address1"))
-                .withAddress4(of("Address1"))
-                .withAddress5(of("Address1"))
+                .withAddress2(of("Address2"))
+                .withAddress3(of("Address3"))
+                .withAddress4(of("Address4"))
+                .withAddress5(of("Address5"))
                 .withPostcode(of("SW13 0AA"))
                 .build();
     }
@@ -745,10 +744,10 @@ public class ListingCommandHandlerTest {
         assertThat(judicialRoleArguments.get(0).get(1).getJudicialId(), equalTo(JUDICIAL_ID_2));
         assertThat(judicialRoleArguments.get(1).get(0).getJudicialId(), equalTo(JUDICIAL_ID_1));
         assertThat(judicialRoleArguments.get(1).get(1).getJudicialId(), equalTo(JUDICIAL_ID_2));
-        assertThat(judicialRoleArguments.get(0).get(0).getUserId(),equalTo(USER_ID_1));
-        assertThat(judicialRoleArguments.get(0).get(1).getUserId(),equalTo(USER_ID_2));
-        assertThat(judicialRoleArguments.get(1).get(0).getUserId(),equalTo(USER_ID_1));
-        assertThat(judicialRoleArguments.get(1).get(1).getUserId(),equalTo(USER_ID_2));
+        assertThat(judicialRoleArguments.get(0).get(0).getUserId(), equalTo(USER_ID_1));
+        assertThat(judicialRoleArguments.get(0).get(1).getUserId(), equalTo(USER_ID_2));
+        assertThat(judicialRoleArguments.get(1).get(0).getUserId(), equalTo(USER_ID_1));
+        assertThat(judicialRoleArguments.get(1).get(1).getUserId(), equalTo(USER_ID_2));
 
         final List<UUID> hearingIdArguments = hearingIdCaptor.getAllValues();
 
@@ -1405,6 +1404,7 @@ public class ListingCommandHandlerTest {
         assertThat(hearingIdArguments.get(0), equalTo(HEARING_ID_1));
         assertThat(hearingIdArguments.get(1), equalTo(HEARING_ID_2));
     }
+
 
     @Test
     public void shouldAddApplicationToHearing() throws Exception {
@@ -2232,8 +2232,8 @@ public class ListingCommandHandlerTest {
                 .replace("HEARING_ID_2", HEARING_ID_2.toString())
                 .replace("JUDICIAL_ID_1", JUDICIAL_ID_1.toString())
                 .replace("JUDICIAL_ID_2", JUDICIAL_ID_2.toString())
-                .replace("USER_ID_1",USER_ID_1.toString())
-                .replace("USER_ID_2",USER_ID_2.toString());
+                .replace("USER_ID_1", USER_ID_1.toString())
+                .replace("USER_ID_2", USER_ID_2.toString());
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.change-judiciary-for-hearing", jsonReader.readObject());
@@ -2946,8 +2946,12 @@ public class ListingCommandHandlerTest {
                         .withCaseReference("TFL12345")
                         .withAuthorityId(AUTHORITY_ID)
                         .build())
-                .withDefendants(Arrays.asList(createDomainDefendant())
-                )
+                .withDefendants(Arrays.asList(createDomainDefendant()))
+                .withCaseMarkers(Arrays.asList(CaseMarker.caseMarker()
+                        .withId(fromString("6e1bef55-7e13-4615-b3ba-8663f4438e17"))
+                        .withMarkerTypeCode("01")
+                        .withMarkerTypeDescription("Murder")
+                        .withMarkerTypeid(fromString("7e1bef55-7e13-4615-b3ba-8663f4438e17")).build()))
                 .withShadowListed(of(Boolean.FALSE))
                 .build();
     }
@@ -2968,6 +2972,16 @@ public class ListingCommandHandlerTest {
                 .withOrganisationName(empty())
                 .withSpecificRequirements(of("Screen"))
                 .withIsYouth(empty())
+                .withNationalityDescription(empty())
+                .withAddress(of(Address
+                        .address()
+                        .withAddress1("22")
+                        .withAddress2(of("Acacia Avenue"))
+                        .withAddress3(of("Acacia Town"))
+                        .withAddress4(of("Acacia City"))
+                        .withAddress5(of("Acacia Country"))
+                        .withPostcode(of("GIR 0AA"))
+                        .build()))
                 .withOffences(Arrays.asList(Offence.offence()
                         .withId(OFFENCE_ID1)
                         .withOffenceCode("AAA")
@@ -2983,7 +2997,6 @@ public class ListingCommandHandlerTest {
                                 .withTitle("a title")
                                 .build())
                         .withShadowListed(of(Boolean.FALSE))
-
                         .build()))
                 .build();
     }
@@ -3069,7 +3082,7 @@ public class ListingCommandHandlerTest {
 
     private CourtApplication getNewCourtApplication() {
         return CourtApplication.courtApplication()
-                .withLinkedCaseId(fromString("19e9d562-6abb-4871-bfb3-2d777aa90371"))
+                .withLinkedCaseIds(singletonList(fromString("19e9d562-6abb-4871-bfb3-2d777aa90371")))
                 .withParentApplicationId(fromString("9d9a431a-0f12-4386-878a-2bf6c4a0877e"))
                 .withApplicationType("9vBchM49Go")
                 .withId(fromString("26b856a8-ae01-4aad-814c-7cdff8db19bf"))

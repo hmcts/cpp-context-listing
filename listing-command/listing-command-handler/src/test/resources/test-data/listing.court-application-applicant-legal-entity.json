@@ -4,7 +4,7 @@
   },
   "applicant": {
     "id": "22b1078b-9430-4cef-ba46-eea40a129ca8",
-    "defendant": {
+    "masterDefendant": {
       "prosecutionCaseId": "b09d95d7-01a1-40a7-96c3-04c52f2f2a29",
       "id": "c668d5ee-cb38-4f00-bdf0-be82a8bd7606",
       "masterDefendantId": "c668d5ee-cb38-4f00-bdf0-be82a8bd7606",
@@ -48,7 +48,6 @@
   "applicationParticulars": "Application particulars",
   "respondents": [
     {
-      "partyDetails": {
         "id": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
         "personDetails": {
           "firstName": "Luise",
@@ -61,10 +60,8 @@
             "address4": "Paris",
             "address5": "France",
             "postcode": "DI5 9EY"
-          }
         }
       }
-
     }
   ]
 }

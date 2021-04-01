@@ -29,7 +29,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
+@SuppressWarnings({"squid:S1607"})
 @RunWith(MockitoJUnitRunner.class)
 public class PublicHearingFactoryTest  {
 

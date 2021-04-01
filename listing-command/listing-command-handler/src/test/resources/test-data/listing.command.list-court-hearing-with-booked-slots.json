@@ -30,7 +30,7 @@
                   "address3": "Address3",
                   "address4": "Address4",
                   "address5": "Address5",
-                  "postCode": "SW13 0AA"
+                  "postcode": "SW13 0AA"
                 }
               }
             },
@@ -39,11 +39,8 @@
             "applicationParticulars": "Application particulars",
             "applicationStatus": "LISTED",
             "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
-            "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
-            "linkedCaseId": "19e9d562-6abb-4871-bfb3-2d777aa90371",
             "respondents": [
               {
-                "partyDetails": {
                   "id": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
                   "personDetails": {
                     "firstName": "Dan",
@@ -55,24 +52,37 @@
                       "address3": "Address3",
                       "address4": "Address4",
                       "address5": "Address5",
-                      "postCode": "SW13 0AA"
+                      "postcode": "SW13 0AA"
                     }
-                  }
                 }
               }
             ],
-            "respondentsNA": true,
             "type": {
-              "applicationCategory": "KsZPM4vFrU",
-              "applicationCode": "A9mRuXXZ9Q",
-              "applicationJurisdictionType": "CROWN",
-              "applicationLegislation": "UoLO7ofTVm",
-              "applicationType": "App Type",
+              "categoryCode": "KsZPM4vFrU",
+              "code": "A9mRuXXZ9Q",
+              "jurisdiction": "CROWN",
+              "legislation": "UoLO7ofTVm",
+              "type": "App Type",
               "id": "46171453-3b64-4a43-91af-cfc09e6d8889",
-              "linkType": "EITHER",
-              "requiresCourtHearing": false,
-              "requiresResponse": true
-            }
+              "linkType": "LINKED",
+              "summonsTemplateType": "NOT_APPLICABLE",
+              "breachType" : "GENERIC_BREACH",
+              "appealFlag": false,
+              "applicantAppellantFlag" : false,
+              "pleaApplicableFlag" : false,
+              "commrOfOathFlag" : false,
+              "courtOfAppealFlag" : false,
+              "courtExtractAvlFlag" : false,
+              "prosecutorThirdPartyFlag" : false,
+              "spiOutApplicableFlag" : false,
+              "offenceActiveOrder" : "NOT_APPLICABLE"
+            },
+            "parentApplicationId": "9d9a431a-0f12-4386-878a-2bf6c4a0877e",
+            "courtApplicationCases": [
+              {
+              "prosecutionCaseId": "19e9d562-6abb-4871-bfb3-2d777aa90371"
+              }
+            ]
           }
         ],
         "courtApplicationPartyListingNeeds":[

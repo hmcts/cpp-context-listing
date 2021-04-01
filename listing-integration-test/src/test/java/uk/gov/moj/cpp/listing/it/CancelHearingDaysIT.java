@@ -19,12 +19,8 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import uk.gov.moj.cpp.listing.steps.data.HearingDay;
-import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-
-import java.util.List;
-
 import org.junit.Test;
+
 
 public class CancelHearingDaysIT extends AbstractIT {
 

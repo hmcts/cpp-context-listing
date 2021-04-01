@@ -26,6 +26,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -48,6 +49,7 @@ public class HearingDaysCorrectedEventListenerTest {
 
     private static final LocalDate NOW_DATE = LocalDate.now();
     private static final ZonedDateTime NOW_DATE_TIME = ZonedDateTime.now();
+    private static final DateTimeFormatter ISO_8601_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
     @Mock
     Hearing hearing;
@@ -95,7 +97,7 @@ public class HearingDaysCorrectedEventListenerTest {
         assertThat(properties.toString(), isJson(allOf(
                 withJsonPath("$.hearingDays", hasSize(1)),
                 withJsonPath("$.hearingDays[0].hearingDate", equalTo(LocalDates.to(NOW_DATE))),
-                withJsonPath("$.hearingDays[0].startTime", equalTo(ZonedDateTimes.toString(NOW_DATE_TIME))),
+                withJsonPath("$.hearingDays[0].startTime", equalTo(ISO_8601_FORMATTER.format(NOW_DATE_TIME))),
                 withJsonPath("$.hearingDays[0].isCancelled", equalTo(false))
         )));
     }

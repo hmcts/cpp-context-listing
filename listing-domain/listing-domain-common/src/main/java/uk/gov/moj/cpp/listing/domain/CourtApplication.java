@@ -10,7 +10,7 @@ import java.util.UUID;
 public class CourtApplication {
   private final UUID id;
 
-  private final UUID linkedCaseId;
+  private final List<UUID> linkedCaseIds;
 
   private final UUID parentApplicationId;
 
@@ -26,11 +26,11 @@ public class CourtApplication {
 
   private final Optional<String> applicationParticulars;
 
-  public CourtApplication(final UUID id, final UUID linkedCaseId, final UUID parentApplicationId, final ApplicantRespondent applicant,
+  public CourtApplication(final UUID id, final List<UUID> linkedCaseIds, final UUID parentApplicationId, final ApplicantRespondent applicant,
                           final String applicationType, final List<ApplicantRespondent> respondents, final Boolean requiresResponse,
                           final Optional<String> applicationReference, final Optional<String> applicationParticulars) {
     this.id = id;
-    this.linkedCaseId = linkedCaseId;
+    this.linkedCaseIds = linkedCaseIds;
     this.parentApplicationId = parentApplicationId;
     this.applicant = applicant;
     this.applicationType = applicationType;
@@ -56,8 +56,8 @@ public class CourtApplication {
     return respondents;
   }
 
-  public Optional<UUID> getLinkedCaseId() {
-    return ofNullable(linkedCaseId);
+  public List<UUID> getLinkedCaseIds() {
+    return linkedCaseIds;
   }
 
   public Optional<UUID> getParentApplicationId() {
@@ -94,7 +94,7 @@ public class CourtApplication {
     java.util.Objects.equals(this.applicationType, that.applicationType) &&
     java.util.Objects.equals(this.id, that.id) &&
     java.util.Objects.equals(this.respondents, that.respondents) &&
-    java.util.Objects.equals(this.linkedCaseId, that.linkedCaseId) &&
+    java.util.Objects.equals(this.linkedCaseIds, that.linkedCaseIds) &&
     java.util.Objects.equals(this.parentApplicationId, that.parentApplicationId)&&
     java.util.Objects.equals(this.requiresResponse, that.requiresResponse) &&
     java.util.Objects.equals(this.applicationReference, that.applicationReference) &&
@@ -103,7 +103,7 @@ public class CourtApplication {
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(applicant, applicationType, id, respondents, linkedCaseId, parentApplicationId, requiresResponse, applicationReference, applicationParticulars);
+    return java.util.Objects.hash(applicant, applicationType, id, respondents, linkedCaseIds, parentApplicationId, requiresResponse, applicationReference, applicationParticulars);
   }
 
   @Override
@@ -113,7 +113,7 @@ public class CourtApplication {
     	"applicationType='" + applicationType + "'," +
     	"id='" + id + "'," +
     	"respondents='" + respondents + "'" +
-        "linkedCaseId='" + linkedCaseId + "'" +
+        "linkedCaseIds='" + linkedCaseIds + "'" +
         "parentApplicationId='" + parentApplicationId + "'" +
         "requiresResponse='" + requiresResponse + "'" +
         "applicationReference='" + applicationReference + "'" +
@@ -130,7 +130,7 @@ public class CourtApplication {
 
     private List<ApplicantRespondent> respondents;
 
-    private UUID linkedCaseId;
+    private List<UUID> linkedCaseIds;
 
     private UUID parentApplicationId;
 
@@ -160,8 +160,8 @@ public class CourtApplication {
       return this;
     }
 
-    public Builder withLinkedCaseId(final UUID linkedCaseId) {
-      this.linkedCaseId = linkedCaseId;
+    public Builder withLinkedCaseIds(final List<UUID> linkedCaseIds) {
+      this.linkedCaseIds = linkedCaseIds;
       return this;
     }
     public Builder withParentApplicationId(final UUID parentApplicationId) {
@@ -185,7 +185,7 @@ public class CourtApplication {
     }
 
     public CourtApplication build() {
-      return new CourtApplication(id, linkedCaseId, parentApplicationId,  applicant, applicationType,  respondents, requiresResponse, applicationReference, applicationParticulars);
+      return new CourtApplication(id, linkedCaseIds, parentApplicationId,  applicant, applicationType,  respondents, requiresResponse, applicationReference, applicationParticulars);
     }
   }
 }

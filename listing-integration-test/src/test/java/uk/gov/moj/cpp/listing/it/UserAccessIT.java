@@ -7,6 +7,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import org.junit.Test;
 
+@SuppressWarnings({"squid:S1607"})
 public class UserAccessIT extends AbstractIT {
 
     @Test

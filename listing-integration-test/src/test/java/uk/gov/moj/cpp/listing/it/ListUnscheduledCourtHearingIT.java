@@ -12,7 +12,6 @@ import uk.gov.moj.cpp.listing.steps.VacatingTrialSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import com.jayway.jsonpath.ReadContext;
@@ -21,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 @SuppressWarnings("squid:S1607")
+
 public class ListUnscheduledCourtHearingIT extends AbstractIT {
 
     private static final String CONTEXT_NAME = "listing";

@@ -22,6 +22,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 
 @SuppressWarnings("squid:S1607")
+
 public class HearingIT extends AbstractIT {
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";

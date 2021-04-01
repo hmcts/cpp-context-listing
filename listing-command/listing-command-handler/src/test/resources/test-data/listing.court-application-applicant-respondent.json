@@ -17,8 +17,7 @@
         "address5": "Acacia Country",
         "postcode": "GIR 0AA"
       }
-    },
-    "courtApplicationPartyType": "PERSON"
+    }
   },
   "applicationReceivedDate": "2019-03-04",
   "id": "26b856a8-ae01-4aad-814c-7cdff8db19bf",
@@ -26,7 +25,6 @@
   "linkedCaseId": "19e9d562-6abb-4871-bfb3-2d777aa90371",
   "respondents": [
     {
-      "partyDetails": {
         "id": "48ddbd0a-31db-4814-b052-aa3ba9afb800",
         "personDetails": {
           "firstName": "Luise",
@@ -40,12 +38,9 @@
             "address5": "France",
             "postcode": "DI5 9EY"
           }
-        }
-      },
-      "courtApplicationPartyType": "PERSON"
+      }
     },
     {
-      "partyDetails": {
         "id": "49ddbd0a-31db-4814-b052-aa3ba9afb800",
         "prosecutingAuthority":{
           "prosecutionAuthorityId":"31af405e-7b60-4dd8-a244-c24c2d3fa595",
@@ -56,13 +51,10 @@
             "address3": "England",
             "address4": "UK",
             "postCode": "W1T 1JY"
-          }
         }
-      },
-      "courtApplicationPartyType": "PERSON"
+      }
     },
     {
-      "partyDetails": {
         "id": "50ddbd0a-31db-4814-b052-aa3ba9afb800",
         "organisation":{
           "name":"Defence",
@@ -73,15 +65,12 @@
             "address4": "East Croydon",
             "address5": "SouthLondon",
             "postcode": "LN72 9NG"
-          }
         }
-      },
-      "courtApplicationPartyType": "ORGANISATION"
+      }
     },
     {
-      "partyDetails": {
         "id": "51ddbd0a-31db-4814-b052-aa3ba9afb800",
-        "defendant":{
+        "masterDefendant":{
           "personDefendant": {
             "personDetails": {
               "firstName": "Jack",
@@ -95,10 +84,8 @@
                 "address5": "Daisy Country",
                 "postcode": "SW13 0AA"
               }
-            }
           }
-        },
-        "courtApplicationPartyType": "PERSON"
+        }
       }
     }
   ]
