@@ -1333,6 +1333,34 @@ public class ListingEventProcessorTest {
     }
 
     @Test
+    public void shouldHandleNewDefendantAddedForCourtProceedings_NoPublicEventRaisedAsMissingCourtRoomId() {
+        setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
+
+        final UUID courtCentreId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final ZonedDateTime hearingDateTime = ZonedDateTime.now();
+
+        final NewDefendantAddedForCourtProceedings privateEventPayload = newDefendantAddedForCourtProceedings()
+                .withDefendant(uk.gov.justice.listing.events.Defendant.defendant().withId(defendantId).build())
+                .withCourtCentreId(courtCentreId)
+                .withCaseId(caseId)
+                .withHearingDateTime(hearingDateTime)
+                .withHearingId(hearingId)
+                .build();
+
+        given(jsonObjectConverter.convert(payload, NewDefendantAddedForCourtProceedings.class)).willReturn(privateEventPayload);
+
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.new-defendant-added-for-court-proceedings"), payload);
+
+        listingEventProcessor.handleNewDefendantAddedForCourtProceedings(event);
+
+        verify(sender, never()).send(this.senderJsonEnvelopeCaptor.capture());
+        verify(hearingConfirmedFactory, never()).buildCourtCentre(any(), any(Optional.class), (any(JsonEnvelope.class)));
+    }
+
+    @Test
     public void shouldHandleNewDefendantAddedForCourtProceedings_NoPublicEventRaisedAsMissingHearingDateTime() {
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
 

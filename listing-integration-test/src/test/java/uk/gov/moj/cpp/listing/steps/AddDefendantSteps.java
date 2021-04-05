@@ -57,6 +57,7 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.restassured.path.json.JsonPath;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,8 +177,17 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("hearingId"), is(hearingData.getId().toString()));
         assertThat(jsonResponse.get("defendantId"), is(jsRequest.getString("defendants[0].id")));
         assertThat(jsonResponse.get("courtCentre.id"), is(hearingData.getCourtCentreId().toString()));
-        assertThat(jsonResponse.get("courtCentre.roomId"), is(hearingData.getCourtRoomId()));
+        assertThat(jsonResponse.get("courtCentre.roomId"), is(hearingData.getCourtRoomId().toString()));
         assertThat(jsonResponse.get("hearingDateTime"), notNullValue());
+    }
+
+    public void verifyPublicEventDefendantAddedNotRaisedInActiveMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventsMessageNewDefendantAdded);
+
+        Assert.assertNull("Event should not be raised", jsonResponse);
     }
 
     public void verifyHearingListedFromAPI(final boolean isAllocated) {

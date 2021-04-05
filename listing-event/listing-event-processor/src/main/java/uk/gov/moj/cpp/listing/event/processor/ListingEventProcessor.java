@@ -664,8 +664,10 @@ public class ListingEventProcessor {
 
         final NewDefendantAddedForCourtProceedings payload = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), NewDefendantAddedForCourtProceedings.class);
         final Optional<UUID> optionalCourtCentreId = payload.getCourtCentreId();
+        final Optional<UUID> optionalCourtRoomId = payload.getCourtRoomId();
         final Optional<ZonedDateTime> hearingDateTime = payload.getHearingDateTime();
-        if (optionalCourtCentreId.isPresent() && hearingDateTime.isPresent()) {
+        final boolean hearingAllocated = optionalCourtCentreId.isPresent() && optionalCourtRoomId.isPresent() && hearingDateTime.isPresent();
+        if (hearingAllocated) {
             final CourtCentre courtCentre = hearingConfirmedFactory.buildCourtCentre(optionalCourtCentreId.get(), payload.getCourtRoomId(), envelope);
             final PublicListingNewDefendantAddedForCourtProceedings payloadForPublicEvent = publicListingNewDefendantAddedForCourtProceedings()
                     .withDefendantId(payload.getDefendant().getId())
@@ -676,7 +678,7 @@ public class ListingEventProcessor {
                     .build();
             sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS), objectToJsonObjectConverter.convert(payloadForPublicEvent)));
         } else {
-            LOGGER.info("No court centre ID present for hearing '{}'.  Not raising public event '{}'", payload.getHearingId(), PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS);
+            LOGGER.info("Hearing '{}' is not allocated as its missing either court centre / room / date+time.  Not raising public event '{}'", payload.getHearingId(), PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS);
         }
 
 

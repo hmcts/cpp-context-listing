@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
+
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
 import uk.gov.moj.cpp.listing.steps.AddDefendantSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -30,7 +32,7 @@ public class DefendantsAddedIT extends AbstractIT {
     }
 
     @Test
-    public void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgression() {
+    public void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsUnallocated() {
         HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -45,8 +47,28 @@ public class DefendantsAddedIT extends AbstractIT {
             addDefendantSteps.verifyEventDefendantAddedInActiveMQ();
             addDefendantSteps.verifyEventDefendantsToBeAddedInActiveMQ();
             addDefendantSteps.verifyEventDefendantDetailsAddedInActiveMQ();
-            addDefendantSteps.verifyPublicEventDefendantAddedInActiveMQ();
+            addDefendantSteps.verifyPublicEventDefendantAddedNotRaisedInActiveMQ();
             addDefendantSteps.verifyHearingListedFromAPI(false);
+        }
+    }
+
+    @Test
+    public void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsAllocated() {
+        HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+
+        UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
+        HearingData hearingData = hearingsData.getHearingData().get(0);
+        try (final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData)) {
+            addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
+            addDefendantSteps.verifyEventDefendantAddedInActiveMQ();
+            addDefendantSteps.verifyEventDefendantsToBeAddedInActiveMQ();
+            addDefendantSteps.verifyEventDefendantDetailsAddedInActiveMQ();
+            addDefendantSteps.verifyPublicEventDefendantAddedInActiveMQ();
         }
     }
 
