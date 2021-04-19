@@ -239,6 +239,7 @@ public class Hearing implements Aggregate {
                 when(ApplicationEjected.class).apply(e -> onApplicationEjected()),
                 when(HearingDaysWithoutCourtCentreCorrected.class).apply(this::onHearingDaysWithoutCourtCentreCorrected),
                 when(HearingMarkedAsDuplicate.class).apply(this::onHearingMarkedAsDuplicate),
+                when(AddedCasesForHearing.class).apply(this::onAddedCasesForHearing),
                 otherwiseDoNothing());
     }
 
@@ -1555,6 +1556,15 @@ public class Hearing implements Aggregate {
 
     }
 
+    private void onAddedCasesForHearing(AddedCasesForHearing event) {
+        if (nonNull(event.getUnAllocatedListedCases())) {
+            event.getUnAllocatedListedCases().forEach(
+                    listedCase -> prosecutionCaseDefendants.put(listedCase.getId(), listedCase.getDefendants().stream()
+                            .map(uk.gov.justice.listing.events.Defendant::getId)
+                            .collect(toList())));
+        }
+    }
+
     private List<uk.gov.justice.listing.events.HearingDay> mergeHearingDaySequences(final List<uk.gov.justice.listing.events.HearingDay> hearingDaysChangedForHearing, final Map<ZonedDateTime, HearingDay> existingHearingDays) {
         return hearingDaysChangedForHearing.stream()
                 .map(cd -> uk.gov.justice.listing.events.HearingDay.hearingDay()
@@ -2240,7 +2250,7 @@ public class Hearing implements Aggregate {
     }
 
     private ZonedDateTime getEarliestStartDate() {
-        if(CollectionUtils.isEmpty(hearingDays)) {
+        if (CollectionUtils.isEmpty(hearingDays)) {
             return null;
         }
         return hearingDays.stream()
