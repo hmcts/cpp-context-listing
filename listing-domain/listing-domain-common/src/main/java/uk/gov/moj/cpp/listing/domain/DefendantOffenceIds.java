@@ -11,9 +11,9 @@ public class DefendantOffenceIds implements Serializable {
 
   private final UUID id;
 
-  private final List<UUID> offences;
+  private final List<OffenceIds> offences;
 
-  public DefendantOffenceIds(final UUID id, final List<UUID> offences) {
+  public DefendantOffenceIds(final UUID id, final List<OffenceIds> offences) {
     this.id = id;
     this.offences = offences;
   }
@@ -22,7 +22,7 @@ public class DefendantOffenceIds implements Serializable {
     return id;
   }
 
-  public List<UUID> getOffences() {
+  public List<OffenceIds> getOffences() {
     return offences;
   }
 
@@ -55,14 +55,14 @@ public class DefendantOffenceIds implements Serializable {
   public static class Builder {
     private UUID id;
 
-    private List<UUID> offences;
+    private List<OffenceIds> offences;
 
     public Builder withId(final UUID id) {
       this.id = id;
       return this;
     }
 
-    public Builder withOffences(final List<UUID> offences) {
+    public Builder withOffences(final List<OffenceIds> offences) {
       this.offences = offences;
       return this;
     }

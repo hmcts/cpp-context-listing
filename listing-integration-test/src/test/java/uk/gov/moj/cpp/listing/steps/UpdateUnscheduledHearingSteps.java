@@ -53,7 +53,7 @@ public class UpdateUnscheduledHearingSteps extends UpdateHearingSteps {
         assertThat(jsonResponse.get("prosecutionCaseDefendantsOffenceIds[0].defendants[0].id"),
                 is(hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString()));
 
-        assertThat(jsonResponse.get("prosecutionCaseDefendantsOffenceIds[0].defendants[0].offenceIds[0]"),
+        assertThat(jsonResponse.get("prosecutionCaseDefendantsOffenceIds[0].defendants[0].offenceIds[0].id"),
                 is(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getOffenceId().toString()));
 
     }

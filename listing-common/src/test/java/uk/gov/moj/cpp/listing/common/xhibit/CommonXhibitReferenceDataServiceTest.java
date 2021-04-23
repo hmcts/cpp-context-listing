@@ -273,6 +273,54 @@ public class CommonXhibitReferenceDataServiceTest {
     }
 
     @Test
+    public void shouldGetCourtCentreIdsWhenCallToGetMagsCourtCentreIdsForCrestId() {
+        final UUID magsCourtCrestId = randomUUID();
+        final String crestCourtSiteId = "426";
+        final UUID ouId = randomUUID();
+        final String ouCode = "C01BL00";
+
+        final CourtMapping courtMapping = new CourtMapping.Builder()
+                .withCrestCourtId(magsCourtCrestId.toString())
+                .withCrestCourtSiteId(crestCourtSiteId)
+                .withOucode(ouCode)
+                .build();
+
+        final OrganisationUnit organisationUnit = new OrganisationUnit.Builder()
+                .withId(ouId)
+                .withOucode(ouCode)
+                .build();
+
+        when(referenceDataCache.getOrganisationUnitMapCache(ouCode)).thenReturn(Optional.of(organisationUnit));
+        when(referenceDataCache.getMagsCourtMappingsMapCache(magsCourtCrestId))
+                .thenReturn(Optional.of(Arrays.asList(courtMapping)));
+
+        final List<UUID> courtCentreIds = commonXhibitReferenceDataService.getMagsCourtCentreIdsForCrestId(magsCourtCrestId.toString());
+
+        assertThat(courtCentreIds.size(), is(equalTo(1)));
+        assertThat(courtCentreIds.get(0), is(Matchers.equalTo(ouId)));
+    }
+
+    @Test(expected = InvalidReferenceDataException.class)
+    public void shouldThrowInValidReferenceDataExceptionWhenCallToGetMagsCourtCentreIdsForCrestId() {
+        final UUID magsCourtCrestId = randomUUID();
+        final String crestCourtSiteId = "426";
+        final String ouCode = "C01BL00";
+
+        final CourtMapping courtMapping = new CourtMapping.Builder()
+                .withCrestCourtId(magsCourtCrestId.toString())
+                .withCrestCourtSiteId(crestCourtSiteId)
+                .withOucode(ouCode)
+                .build();
+
+        when(referenceDataCache.getOrganisationUnitMapCache(ouCode)).thenReturn(Optional.empty());
+        when(referenceDataCache.getMagsCourtMappingsMapCache(magsCourtCrestId))
+                .thenReturn(Optional.of(Arrays.asList(courtMapping)));
+
+        commonXhibitReferenceDataService.getMagsCourtCentreIdsForCrestId(magsCourtCrestId.toString());
+
+    }
+
+    @Test
     public void shouldGetCrestCourtSitesForCourtCentre() {
         final UUID courtCentreId = randomUUID();
         final String ouCode = "C01BL00";

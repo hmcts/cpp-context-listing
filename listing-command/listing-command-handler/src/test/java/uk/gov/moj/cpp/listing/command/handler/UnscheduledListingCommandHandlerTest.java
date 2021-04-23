@@ -3,10 +3,16 @@ package uk.gov.moj.cpp.listing.command.handler;
 import static java.time.ZonedDateTime.parse;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
+import static javax.json.Json.createObjectBuilder;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
+import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.COURT_CENTRE_ID;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.COURT_ROOM_ID;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.DEFAULT_DURATION;
@@ -18,6 +24,8 @@ import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBu
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.LISTING_DIRECTIONS;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.PROSECUTOR_DATES_TO_AVOID;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.REPORTING_RESTRICTIONS;
+import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.SEED_HEARING_ID_1;
+import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.SITTING_DAY;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.TYPE_OF_LIST;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.WEEK_COMMENCING_DURATION;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.WEEK_COMMENCING_END_DATE;
@@ -28,8 +36,16 @@ import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBu
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.getCourtApplicationForApplicationOnly;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.listUnscheduledCourtHearingCommandEnvelope;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.listUnscheduledCourtHearingForApplicationsCommandEnvelope;
+import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.listUnscheduledNextHearingCommandEnvelope;
 
+import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.SeedingHearing;
+import uk.gov.justice.listing.commands.CourtCentreDetails;
+import uk.gov.justice.listing.courts.ListUnscheduledNextHearing;
+import uk.gov.justice.listing.courts.ListUnscheduledNextHearingsEnriched;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.UnscheduledNextHearingRequested;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -52,22 +68,25 @@ import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
-import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
+import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -103,19 +122,27 @@ public class UnscheduledListingCommandHandlerTest {
     @Mock
     private Hearing hearing;
 
+    @Spy
+    private SeedHearingAggregate seedHearingAggregate;
+
     @Mock
     private Stream<Object> events;
 
     @Spy
     private Clock clock = new StoppedClock(parse("2018-01-02T13:04:05+00:00[Europe/London]"));
 
+    @Captor
+    private ArgumentCaptor<List<HearingUnscheduledListingNeeds>> unscheduledHearingsArgumentCaptor;
+
     @Before
     public void setup() {
+        EnveloperFactory.createEnveloperWithEvents(HearingListed.class, UnscheduledNextHearingRequested.class);
 
-        this.clock = new StoppedClock(ZonedDateTime.ofInstant(Instant.now(), DateAndTimeUtils.BST));
-
-        EnveloperFactory.createEnveloperWithEvents(HearingListed.class);
-
+        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
+        when(eventSource.getStreamById(SEED_HEARING_ID_1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(aggregateService.get(eventStream, SeedHearingAggregate.class)).thenReturn(seedHearingAggregate);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
     }
 
     @Test
@@ -128,11 +155,7 @@ public class UnscheduledListingCommandHandlerTest {
         final List<ListedCase> listedCases = Arrays.asList(createdListedCase());
         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicalRoles = createJudicalRoles();
 
-        final CourtCentreDefaults courtCentreDefaults = CourtCentreDefaults.courtCentreDefaults()
-                .withDefaultDuration(Integer.valueOf(DEFAULT_DURATION))
-                .withDefaultStartTime(LocalTime.parse(DEFAULT_START_TIME))
-                .withCourtCentreId(COURT_CENTRE_ID)
-                .build();
+        final CourtCentreDefaults courtCentreDefaults = createCourtCentreDefaults();
 
         final List<CourtApplication> courtApplications = Collections.singletonList(getCourtApplication());
 
@@ -143,9 +166,6 @@ public class UnscheduledListingCommandHandlerTest {
                         .withHearingLanguageNeeds(HearingLanguageNeeds.ENGLISH)
                         .build());
 
-        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
         when(hearing.listUnscheduled(
                 eq(HEARING_ID_1),
                 eq(HEARING_TYPE),
@@ -192,8 +212,6 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_END_DATE)),
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST));
-
-
     }
 
     @Test
@@ -205,11 +223,7 @@ public class UnscheduledListingCommandHandlerTest {
 
         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicalRoles = createJudicalRoles();
 
-        final CourtCentreDefaults courtCentreDefaults = CourtCentreDefaults.courtCentreDefaults()
-                .withDefaultDuration(Integer.valueOf(DEFAULT_DURATION))
-                .withDefaultStartTime(LocalTime.parse(DEFAULT_START_TIME))
-                .withCourtCentreId(COURT_CENTRE_ID)
-                .build();
+        final CourtCentreDefaults courtCentreDefaults = createCourtCentreDefaults();
 
         final List<CourtApplication> courtApplications = Collections.singletonList(getCourtApplicationForApplicationOnly());
 
@@ -220,9 +234,6 @@ public class UnscheduledListingCommandHandlerTest {
                         .withHearingLanguageNeeds(HearingLanguageNeeds.ENGLISH)
                         .build());
 
-        when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
-        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
-        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
         when(hearing.listUnscheduled(
                 eq(HEARING_ID_1),
                 eq(HEARING_TYPE),
@@ -270,4 +281,129 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST));
     }
+
+    @Test
+    public void shouldListUnscheduledNextHearings() throws EventStreamException {
+        final JsonEnvelope commandEnvelope = buildListUnscheduledNextHearingsEnvelope();
+
+        unscheduledListingCommandHandler.handleListUnscheduledNextHearings(commandEnvelope);
+
+        final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());
+        assertThat(events.size(), is(1));
+        final JsonEnvelope nextHearingRequestedEventProduced = events.get(0);
+
+        assertThat(nextHearingRequestedEventProduced.metadata().name(), is("listing.events.unscheduled-next-hearing-requested"));
+        assertThat(nextHearingRequestedEventProduced.payloadAsJsonObject().getJsonObject("hearing").getString("id"), is(HEARING_ID_1.toString()));
+        assertThat(nextHearingRequestedEventProduced.payloadAsJsonObject().getString("hearingDay"), is(SITTING_DAY));
+
+    }
+
+    @Test
+    public void shouldListUnscheduledNextHearing() throws EventStreamException {
+        final JsonEnvelope commandEnvelope = listUnscheduledNextHearingCommandEnvelope();
+
+        final LocalDate endDate = null;
+        final List<ListedCase> listedCases = Arrays.asList(createdListedCase());
+        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicalRoles = createJudicalRoles();
+        final CourtCentreDefaults courtCentreDefaults = createCourtCentreDefaults();
+
+        when(hearing.listUnscheduled(
+                eq(HEARING_ID_1),
+                eq(HEARING_TYPE),
+                eq(listedCases),
+                eq(COURT_CENTRE_ID),
+                eq(judicalRoles),
+                eq(COURT_ROOM_ID),
+                eq(LISTING_DIRECTIONS),
+                eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID),
+                eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)),
+                eq(endDate),
+                eq(courtCentreDefaults),
+                anyList(),
+                anyList(),
+                eq(30),
+                eq(of(WEEK_COMMENCING_START_DATE)),
+                eq(of(WEEK_COMMENCING_END_DATE)),
+                eq(of(WEEK_COMMENCING_DURATION)),
+                eq(TYPE_OF_LIST)
+        )).thenReturn(events);
+
+        unscheduledListingCommandHandler.handleListUnscheduledNextHearing(commandEnvelope);
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1),
+                eq(HEARING_TYPE),
+                eq(listedCases),
+                eq(COURT_CENTRE_ID),
+                eq(judicalRoles),
+                eq(COURT_ROOM_ID),
+                eq(LISTING_DIRECTIONS),
+                eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID),
+                eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)),
+                eq(endDate),
+                eq(courtCentreDefaults),
+                anyList(),
+                anyList(),
+                eq(30),
+                eq(of(WEEK_COMMENCING_START_DATE)),
+                eq(of(WEEK_COMMENCING_END_DATE)),
+                eq(of(WEEK_COMMENCING_DURATION)),
+                eq(TYPE_OF_LIST));
+    }
+
+    private JsonEnvelope buildListUnscheduledNextHearingsEnvelope() {
+        final ListUnscheduledNextHearingsEnriched listUnscheduledNextHearingsEnriched = listUnscheduledNextHearingsCommandPayload();
+        final JsonObject commandPayload = createObjectBuilder().build();
+        when(jsonObjectConverter.convert(commandPayload, ListUnscheduledNextHearingsEnriched.class)).thenReturn(listUnscheduledNextHearingsEnriched);
+        return createEnvelope("listing.command.list-unscheduled-next-hearings-enriched", commandPayload);
+    }
+
+    private JsonEnvelope buildListUnscheduledNextHearingEnvelope() {
+        final ListUnscheduledNextHearing listUnscheduledNextHearing = listUnscheduledNextHearingCommandPayload();
+        final JsonObject commandPayload = createObjectBuilder().build();
+        when(jsonObjectConverter.convert(commandPayload, ListUnscheduledNextHearing.class)).thenReturn(listUnscheduledNextHearing);
+        return createEnvelope("listing.command.list-unscheduled-next-hearing", commandPayload);
+    }
+
+    private ListUnscheduledNextHearingsEnriched listUnscheduledNextHearingsCommandPayload() {
+        return ListUnscheduledNextHearingsEnriched.listUnscheduledNextHearingsEnriched()
+                .withHearings(Arrays.asList(HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
+                        .withId(HEARING_ID_1).build()))
+                .withCourtCentresDetails(Arrays.asList((CourtCentreDetails.courtCentreDetails()
+                        .withId(COURT_CENTRE_ID)
+                        .withDefaultDuration(6)
+                        .withDefaultStartTime(LocalTime.parse(DEFAULT_START_TIME))
+                        .build())))
+                .withSeedingHearing(SeedingHearing.seedingHearing()
+                        .withSeedingHearingId(SEED_HEARING_ID_1)
+                        .withSittingDay(SITTING_DAY)
+                        .withJurisdictionType(JurisdictionType.CROWN)
+                        .build())
+                .build();
+    }
+
+    private ListUnscheduledNextHearing listUnscheduledNextHearingCommandPayload() {
+        return ListUnscheduledNextHearing.listUnscheduledNextHearing()
+                .withHearing(HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
+                        .withId(HEARING_ID_1).build())
+                .withCourtCentresDetails(Arrays.asList((CourtCentreDetails.courtCentreDetails()
+                        .withId(COURT_CENTRE_ID)
+                        .withDefaultDuration(6)
+                        .withDefaultStartTime(LocalTime.parse(DEFAULT_START_TIME))
+                        .build())))
+                .build();
+    }
+
+    private CourtCentreDefaults createCourtCentreDefaults() {
+        return CourtCentreDefaults.courtCentreDefaults()
+                .withDefaultDuration(Integer.valueOf(DEFAULT_DURATION))
+                .withDefaultStartTime(LocalTime.parse(DEFAULT_START_TIME))
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .build();
+    }
+
 }

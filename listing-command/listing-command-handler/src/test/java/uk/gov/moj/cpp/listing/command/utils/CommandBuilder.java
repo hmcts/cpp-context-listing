@@ -33,6 +33,11 @@ public class CommandBuilder {
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
     }
 
+    public HearingListingNeeds buildCommandHearingWithMandatorySeedingHearing() {
+        JsonObject hearingJsonObject = givenPayload("/test-data/listing.commands.hearing-with-mandatory-seedingHearing-fields.json");
+        return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);
+    }
+
     public HearingListingNeeds buildCommandHearingForBookedSlots() {
         JsonObject hearingJsonObject = givenPayload("/test-data/listing.commands.hearing-booked-slots.json");
         return jsonObjectToObjectConverter.convert(hearingJsonObject, HearingListingNeeds.class);

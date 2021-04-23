@@ -2070,9 +2070,9 @@ public class ListingCommandHandlerTest {
     public void handleAddCasesForHearing() throws Exception {
         final JsonEnvelope commandEnvelope = getJsonEnvelopeForAddCaseForHearing();
 
-        listingCommandHandler.handleAddCasesForHearing(commandEnvelope);
+        listingCommandHandler.handleAddCasesToHearing(commandEnvelope);
 
-        verify(hearing, times(1)).addCasesForHearing(any(List.class), anyList());
+        verify(hearing, times(1)).addCasesToHearing(any(List.class), anyList(), any());
     }
 
     private JsonEnvelope getEnvelopeForVacateTrial(final UUID reason) {
@@ -2105,10 +2105,10 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope getJsonEnvelopeForAddCaseForHearing() {
-        final String jsonString = FileUtil.givenPayload("/test-data/listing.command.add-cases-for-hearing.json").toString();
+        final String jsonString = FileUtil.givenPayload("/test-data/listing.command.add-cases-to-hearing.json").toString();
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
-            return createEnvelope("listing.command.add-cases-for-hearing", jsonReader.readObject());
+            return createEnvelope("listing.command.add-cases-to-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
@@ -2990,6 +2990,7 @@ public class ListingCommandHandlerTest {
                         .withLaidDate(Optional.of("2019-05-01"))
                         .withOffenceWording("No Travel Card")
                         .withLaaApplnReference(empty())
+                        .withSeedingHearing(empty())
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withWelshTitle("a title in Welsh")
                                 .withWelshLegislation(of("legislation in Welsh"))
@@ -3047,6 +3048,7 @@ public class ListingCommandHandlerTest {
                         .withEndDate(empty())
                         .withLaaApplnReference(empty())
                         .withLaidDate(Optional.of("2019-05-01"))
+                        .withSeedingHearing(empty())
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withWelshTitle("TFL Ticket Dodger")
                                 .withWelshLegislation(empty())

@@ -19,6 +19,7 @@ subscriptions_descriptor:
 
         - name: public.listing.created-listing-note
           schema_uri: http://justice.gov.uk/listing/courts/created-listing-note.json
+
         - name: public.listing.deleted-listing-note
           schema_uri: http://justice.gov.uk/listing/courts/deleted-listing-note.json
 
@@ -30,5 +31,30 @@ subscriptions_descriptor:
 
         - name: public.listing.new-defendant-added-for-court-proceedings
           schema_uri: http://justice.gov.uk/listing/events/listing.events.new-defendant-added-for-court-proceedings.json
+
+        - name: public.events.listing.allocated-hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.allocated-hearing-deleted.json
+
+        - name: public.events.listing.unallocated-hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.unallocated-hearing-deleted.json
+
+        - name: public.events.listing.hearing-unallocated
+          schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.hearing-unallocated.json
+
+        - name: public.events.listing.offences-removed-from-unallocated-hearing
+          schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.offences-removed-from-unallocated-hearing.json
+
+        - name: public.events.listing.next-hearing-day-changed
+          schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.next-hearing-day-changed.json
+
+        - name: public.events.listing.offences-removed-from-existing-unallocated-hearing
+          schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.offences-removed-from-existing-unallocated-hearing.json
+
+        - name: public.events.listing.offences-removed-from-existing-allocated-hearing
+          schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.offences-removed-from-existing-allocated-hearing.json
+
+        - name: public.events.listing.cases-added-for-updated-related-hearing
+          schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.cases-added-for-updated-related-hearing.json
+
 
       event_source_name: public.event.source

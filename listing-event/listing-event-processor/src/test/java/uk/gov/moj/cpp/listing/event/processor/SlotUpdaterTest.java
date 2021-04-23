@@ -31,6 +31,7 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import javax.json.JsonObjectBuilder;
@@ -61,6 +62,8 @@ public class SlotUpdaterTest {
     private static final String CIRCUIT_JUDGE = "CIRCUIT_JUDGE";
     private static final String TEST_OUTPUT = "sample";
     private String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
+    private final List<uk.gov.justice.listing.events.HearingDay> hearingDays = Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay()
+            .withHearingDate(START_DATE).withDurationMinutes(10).build());
 
     @Mock
     private SlotsToJsonStringConverter slotsToJsonStringConverter;
@@ -78,7 +81,7 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false)).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false, hearingDays)).willReturn(TEST_OUTPUT);
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
@@ -86,7 +89,7 @@ public class SlotUpdaterTest {
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
-        slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false);
+        slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
 
         verify(hearingSlotsService).update(TEST_OUTPUT);
     }
@@ -98,7 +101,7 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false)).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false, hearingDays)).willReturn(TEST_OUTPUT);
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
@@ -106,7 +109,7 @@ public class SlotUpdaterTest {
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
-        slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), true, false);
+        slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), true, false, hearingDays);
 
         verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
     }
@@ -118,7 +121,7 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false)).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false, hearingDays)).willReturn(TEST_OUTPUT);
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
@@ -126,7 +129,7 @@ public class SlotUpdaterTest {
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
-        slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false);
+        slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
 
         verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
     }
@@ -138,7 +141,7 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false)).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false, hearingDays)).willReturn(TEST_OUTPUT);
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
@@ -146,7 +149,7 @@ public class SlotUpdaterTest {
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
-        slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false);
+        slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
 
         verify(hearingSlotsService).update(TEST_OUTPUT);
     }
@@ -158,7 +161,7 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), true)).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), true, hearingDays)).willReturn(TEST_OUTPUT);
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
@@ -166,7 +169,7 @@ public class SlotUpdaterTest {
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
-        slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), true, false);
+        slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), true, false, hearingDays);
 
         verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
     }
@@ -178,7 +181,7 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false)).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false, hearingDays)).willReturn(TEST_OUTPUT);
 
         final Response response = mock(Response.class);
         given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
@@ -186,7 +189,7 @@ public class SlotUpdaterTest {
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
-        slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false);
+        slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
 
         verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
     }

@@ -9,6 +9,7 @@ import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
+import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.CommittingCourt;
 import uk.gov.justice.listing.events.CourtApplicationPartyType;
@@ -20,6 +21,7 @@ import uk.gov.justice.listing.events.LinkedToCases;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NewBaseDefendant;
 import uk.gov.justice.listing.events.Offence;
+import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.SimpleOffence;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
@@ -165,6 +167,7 @@ public class NewDomainToEventConverter {
                 .withRestrictFromCourtList(of(FALSE))
                 .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference(o.getLaaApplnReference().get()) : empty())
                 .withLaidDate(o.getLaidDate())
+                .withSeedingHearing(nonNull(o.getSeedingHearing()) && o.getSeedingHearing().isPresent() ? buildSeedingHearing(o.getSeedingHearing().get()) : empty())
                 .withShadowListed(o.getShadowListed());
 
         if (nonNull(o.getCommittingCourt()) && o.getCommittingCourt().isPresent()) {
@@ -274,6 +277,14 @@ public class NewDomainToEventConverter {
                 .withCourtHouseCode(committingCourt.getCourtHouseCode())
                 .withCourtHouseName(committingCourt.getCourtHouseName())
                 .withCourtHouseShortName(committingCourt.getCourtHouseShortName())
+                .build());
+    }
+
+    public static Optional<SeedingHearing> buildSeedingHearing(final uk.gov.moj.cpp.listing.domain.SeedingHearing seedingHearing) {
+        return of(SeedingHearing.seedingHearing()
+                .withSeedingHearingId(seedingHearing.getSeedingHearingId())
+                .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
+                .withSittingDay(seedingHearing.getSittingDay())
                 .build());
     }
 }

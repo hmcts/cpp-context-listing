@@ -21,13 +21,16 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.json.JsonObject;
 
+import com.google.common.collect.ImmutableList;
+
 public class CommonXhibitReferenceDataService {
 
     private static final String UNMAPPED_COURT_ROOM_NAME = "Court -99";
     private static final String CREST_COURT_SITE_CODE = "crestCourtSiteCode";
     private static final String DEFAULT_CREST_COURT_SITE_CODE = "A";
+    private static final String CREST_COURT_SITE_ID = "crestCourtSiteId";
 
-    private XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
+    private final XhibitReferenceDataValidator xhibitReferenceDataValidator = new XhibitReferenceDataValidator();
     private static final String COURT_DETAILS_NOT_FOUND = "Cannot find court details with courtCentre %s";
 
     @Inject
@@ -38,12 +41,24 @@ public class CommonXhibitReferenceDataService {
 
     public List<UUID> getCrownCourtCentreIdsForCrestId(final String crownCourtCrestId) {
         final List<CourtLocation> courtLocations = referenceDataCache.getCrownCourtLocationsCache(crownCourtCrestId);
-        courtLocations.forEach(courtLocation -> xhibitReferenceDataValidator.validate("crestCourtSiteId", courtLocation.getCrestCourtSiteId()));
+        courtLocations.forEach(courtLocation -> xhibitReferenceDataValidator.validate(CREST_COURT_SITE_ID, courtLocation.getCrestCourtSiteId()));
 
         return courtLocations.stream()
                 .map(courtLocation -> getOrganisationUnitIdByOuCode(courtLocation.getOuCode()))
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+
+    public List<UUID> getMagsCourtCentreIdsForCrestId(final String magsCourtCrestId) {
+        final Optional<List<CourtMapping>> courtMappingsOptional = referenceDataCache.getMagsCourtMappingsMapCache(UUID.fromString(magsCourtCrestId));
+        courtMappingsOptional.ifPresent(courtMappings ->
+            courtMappings.forEach(courtMapping -> xhibitReferenceDataValidator.validate(CREST_COURT_SITE_ID, courtMapping.getCrestCourtSiteId()))
+        );
+        return courtMappingsOptional.map(courtMappings -> courtMappings.stream()
+                .map(courtMapping -> getOrganisationUnitIdByOuCode(courtMapping.getOucode()))
+                .distinct()
+                .collect(Collectors.toList())).orElseGet(ImmutableList::of);
     }
 
     public String getDefaultCrestCourtSiteCode(final UUID courtCentreId) {
@@ -155,7 +170,7 @@ public class CommonXhibitReferenceDataService {
     }
 
     private CourtLocation createCrownCourtLocation(final CourtMapping courtMapping) {
-        xhibitReferenceDataValidator.validate("crestCourtSiteId", courtMapping.getCrestCourtSiteId());
+        xhibitReferenceDataValidator.validate(CREST_COURT_SITE_ID, courtMapping.getCrestCourtSiteId());
 
         return new CourtLocation(
                 courtMapping.getOucode(),

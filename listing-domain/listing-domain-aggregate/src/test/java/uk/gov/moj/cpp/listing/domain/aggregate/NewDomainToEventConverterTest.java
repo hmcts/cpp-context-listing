@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
+import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -13,7 +14,20 @@ import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
 import static uk.gov.moj.cpp.listing.domain.aggregate.NewDomainToEventConverter.buildCourtApplications;
 
 import uk.gov.moj.cpp.listing.domain.Address;
+import uk.gov.moj.cpp.listing.domain.CommittingCourt;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
+import uk.gov.moj.cpp.listing.domain.CourtHouseType;
+import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
+import uk.gov.moj.cpp.listing.domain.LaaReference;
+import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.ReportingRestriction;
+import uk.gov.moj.cpp.listing.domain.SeedingHearing;
+import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
+
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.UUID;
 
 import org.junit.Test;
 
@@ -31,6 +45,195 @@ public class NewDomainToEventConverterTest {
         assertThat(courtApplication.getRespondents().size(), equalTo(courtApplicationBuilt.getRespondents().size()));
         assertThat(courtApplicationBuilt.getRespondents().get(0).getAddress().isPresent(), is(true));
         checkAddress(courtApplication.getRespondents().get(0).getAddress(), courtApplicationBuilt.getRespondents().get(0).getAddress().get());
+    }
+
+    @Test
+    public void shouldConvertOffence() {
+        final UUID seedingHearingId = randomUUID();
+        final String sittingDay = LocalDate.now().toString();
+        final String startDate = LocalDate.now().toString();
+        final String courtHouseCode = "ABCD-1234";
+        final String courtHouseShortName = "ABC";
+        final String courtHouseName = "court house name";
+        final UUID courtCentreId = randomUUID();
+        final String laidDate = LocalDate.now().plusDays(1).toString();
+        final String endDate = LocalDate.now().plusDays(3).toString();
+        final UUID offenceId = randomUUID();
+        final String wording = "wording";
+        final String offenceCode = "offence-code";
+        final String welshTitle = "welsh-title";
+        final String welshLegislation = "welsh legislation";
+        final String title = "title";
+        final String legislation = "legislation";
+        final UUID statusId = randomUUID();
+        final String statusDescription = "status-description";
+        final String statusDate = LocalDate.now().toString();
+        final String statusCode = "status-code";
+        final String effectiveStartDate = LocalDate.now().plusDays(1).toString();
+        final String effectiveEndDate = LocalDate.now().plusDays(3).toString();
+        final String applicationReference = "application-reference";
+        final UUID reportingRestrictionId = randomUUID();
+        final UUID judicialResultId = randomUUID();
+        final String label = "label";
+        final LocalDate orderedDate = LocalDate.now().plusDays(-1);
+        final Offence offence = Offence.offence()
+                .withLaidDate(of(laidDate))
+                .withId(offenceId)
+                .withOffenceWording(wording)
+                .withEndDate(of(endDate))
+                .withOffenceCode(offenceCode)
+                .withStartDate(startDate)
+                .withSeedingHearing(of(SeedingHearing.seedingHearing()
+                        .withJurisdictionType(JurisdictionType.CROWN)
+                        .withSeedingHearingId(seedingHearingId)
+                        .withSittingDay(sittingDay)
+                        .build()))
+                .withCommittingCourt(of(CommittingCourt.committingCourt()
+                        .withCourtHouseCode(courtHouseCode)
+                        .withCourtHouseShortName(courtHouseShortName)
+                        .withCourtHouseName(courtHouseName)
+                        .withCourtCentreId(courtCentreId)
+                        .withCourtHouseType(CourtHouseType.CROWN)
+                        .build()))
+                .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                        .withWelshTitle(welshTitle)
+                        .withWelshLegislation(of(welshLegislation))
+                        .withTitle(title)
+                        .withLegislation(of(legislation))
+                        .build())
+                .withLaaApplnReference(of(LaaReference.laaReference()
+                        .withStatusId(statusId)
+                        .withStatusDescription(statusDescription)
+                        .withStatusDate(statusDate)
+                        .withStatusCode(statusCode)
+                        .withEffectiveStartDate(of(effectiveStartDate))
+                        .withEffectiveEndDate(of(effectiveEndDate))
+                        .withApplicationReference(applicationReference)
+                        .build()))
+                .withReportingRestrictions(Arrays.asList(ReportingRestriction.reportingRestriction()
+                        .withId(reportingRestrictionId)
+                        .withJudicialResultId(of(judicialResultId))
+                        .withLabel(label)
+                        .withOrderedDate(of(orderedDate))
+                        .build()))
+                .build();
+
+        final uk.gov.justice.listing.events.Offence eventOffence = NewDomainToEventConverter.buildOffence(offence);
+
+        final uk.gov.justice.listing.events.SeedingHearing seedingHearing = eventOffence.getSeedingHearing().get();
+        assertThat(seedingHearing.getJurisdictionType().toString(), is("CROWN"));
+        assertThat(seedingHearing.getSeedingHearingId(), is(seedingHearingId));
+        assertThat(seedingHearing.getSittingDay().get(), is(sittingDay));
+
+        assertThat(eventOffence.getStartDate(), is(startDate));
+        assertThat(eventOffence.getLaidDate().get(), is(laidDate));
+        assertThat(eventOffence.getOffenceWording(), is(wording));
+        assertThat(eventOffence.getId(), is(offenceId));
+        assertThat(eventOffence.getEndDate().get(), is(endDate));
+        assertThat(eventOffence.getOffenceCode(), is(offenceCode));
+
+        final uk.gov.justice.listing.events.CommittingCourt committingCourt = eventOffence.getCommittingCourt().get();
+        assertThat(committingCourt.getCourtCentreId(), is(courtCentreId));
+        assertThat(committingCourt.getCourtHouseCode().get(), is(courtHouseCode));
+        assertThat(committingCourt.getCourtHouseName(), is(courtHouseName));
+        assertThat(committingCourt.getCourtHouseShortName().get(), is(courtHouseShortName));
+//        assertThat(committingCourt.getCourtHouseType(), is(uk.gov.justice.listing.events.CourtHouseType.CROWN));
+
+        final uk.gov.justice.listing.events.StatementOfOffence statementOfOffence = eventOffence.getStatementOfOffence();
+        assertThat(statementOfOffence.getWelshLegislation().get(), is(welshLegislation));
+        assertThat(statementOfOffence.getWelshTitle(), is(welshTitle));
+        assertThat(statementOfOffence.getLegislation().get(), is(legislation));
+        assertThat(statementOfOffence.getTitle(), is(title));
+
+        final uk.gov.justice.listing.events.LaaReference laaReference = eventOffence.getLaaApplnReference().get();
+        assertThat(laaReference.getStatusId(), is(statusId));
+        assertThat(laaReference.getStatusDate(), is(statusDate));
+        assertThat(laaReference.getStatusDescription(), is(statusDescription));
+        assertThat(laaReference.getStatusCode(), is(statusCode));
+        assertThat(laaReference.getEffectiveStartDate().get(), is(effectiveStartDate));
+        assertThat(laaReference.getEffectiveEndDate().get(), is(effectiveEndDate));
+        assertThat(laaReference.getApplicationReference(), is(applicationReference));
+
+        assertThat(eventOffence.getReportingRestrictions().size(), is(1));
+        final uk.gov.justice.listing.events.ReportingRestriction reportingRestriction = eventOffence.getReportingRestrictions().get(0);
+        assertThat(reportingRestriction.getId(), is(reportingRestrictionId));
+        assertThat(reportingRestriction.getJudicialResultId().get(), is(judicialResultId));
+        assertThat(reportingRestriction.getLabel(), is(label));
+        assertThat(reportingRestriction.getOrderedDate().get(), is(orderedDate));
+
+    }
+
+    @Test
+    public void shouldConvertOffenceWhenOnlyMandatoryFieldsFilled() {
+
+        final String startDate = LocalDate.now().toString();
+        final String laidDate = LocalDate.now().plusDays(1).toString();
+        final String endDate = LocalDate.now().plusDays(3).toString();
+        final UUID offenceId = randomUUID();
+        final String wording = "wording";
+        final String offenceCode = "offence-code";
+        final String welshTitle = "welsh-title";
+        final String welshLegislation = "welsh legislation";
+        final String title = "title";
+        final String legislation = "legislation";
+        final UUID statusId = randomUUID();
+        final String statusDescription = "status-description";
+        final String statusDate = LocalDate.now().toString();
+        final String statusCode = "status-code";
+        final String effectiveStartDate = LocalDate.now().plusDays(1).toString();
+        final String effectiveEndDate = LocalDate.now().plusDays(3).toString();
+        final String applicationReference = "application-reference";
+
+        final Offence offence = Offence.offence()
+                .withLaidDate(of(laidDate))
+                .withId(offenceId)
+                .withOffenceWording(wording)
+                .withEndDate(of(endDate))
+                .withOffenceCode(offenceCode)
+                .withStartDate(startDate)
+                .withLaaApplnReference(of(LaaReference.laaReference()
+                        .withStatusId(statusId)
+                        .withStatusDescription(statusDescription)
+                        .withStatusDate(statusDate)
+                        .withStatusCode(statusCode)
+                        .withEffectiveStartDate(of(effectiveStartDate))
+                        .withEffectiveEndDate(of(effectiveEndDate))
+                        .withApplicationReference(applicationReference)
+                        .build()))
+                .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                        .withWelshTitle(welshTitle)
+                        .withWelshLegislation(of(welshLegislation))
+                        .withTitle(title)
+                        .withLegislation(of(legislation))
+                        .build())
+                .build();
+
+        final uk.gov.justice.listing.events.Offence eventOffence = NewDomainToEventConverter.buildOffence(offence);
+
+        final uk.gov.justice.listing.events.StatementOfOffence statementOfOffence = eventOffence.getStatementOfOffence();
+        assertThat(statementOfOffence.getWelshLegislation().get(), is(welshLegislation));
+        assertThat(statementOfOffence.getWelshTitle(), is(welshTitle));
+        assertThat(statementOfOffence.getLegislation().get(), is(legislation));
+        assertThat(statementOfOffence.getTitle(), is(title));
+
+        assertThat(eventOffence.getStartDate(), is(startDate));
+        assertThat(eventOffence.getLaidDate().get(), is(laidDate));
+        assertThat(eventOffence.getOffenceWording(), is(wording));
+        assertThat(eventOffence.getId(), is(offenceId));
+        assertThat(eventOffence.getEndDate().get(), is(endDate));
+        assertThat(eventOffence.getOffenceCode(), is(offenceCode));
+
+        final uk.gov.justice.listing.events.LaaReference laaReference = eventOffence.getLaaApplnReference().get();
+        assertThat(laaReference.getStatusId(), is(statusId));
+        assertThat(laaReference.getStatusDate(), is(statusDate));
+        assertThat(laaReference.getStatusDescription(), is(statusDescription));
+        assertThat(laaReference.getStatusCode(), is(statusCode));
+        assertThat(laaReference.getEffectiveStartDate().get(), is(effectiveStartDate));
+        assertThat(laaReference.getEffectiveEndDate().get(), is(effectiveEndDate));
+        assertThat(laaReference.getApplicationReference(), is(applicationReference));
+
+
+
     }
 
     private CourtApplication createCourtApplication() {

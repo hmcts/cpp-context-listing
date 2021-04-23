@@ -14,12 +14,14 @@ import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.Organisation;
 import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.LaaReference;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.Offence;
+import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
 
@@ -121,6 +123,7 @@ public class CourtToEventConverter {
 
     }
 
+    @SuppressWarnings({"squid:S3655"})
     private static Offence buildOffence(final uk.gov.justice.core.courts.Offence o, final List<UUID> shadowListedOffences) {
         final Offence.Builder builder = Offence.offence()
                 .withId(o.getId())
@@ -132,6 +135,7 @@ public class CourtToEventConverter {
                 .withRestrictFromCourtList(of(Boolean.FALSE))
                 .withLaaApplnReference(buildLaaReference(o.getLaaApplnReference()))
                 .withLaidDate(o.getLaidDate())
+                .withSeedingHearing(o.getSeedingHearing().isPresent() ? buildSeedingHearing(o.getSeedingHearing().get()) : null)
                 .withShadowListed(of(isNotEmpty(shadowListedOffences) && shadowListedOffences.contains(o.getId())));
 
         if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
@@ -174,6 +178,14 @@ public class CourtToEventConverter {
                     .build());
         }
         return empty();
+    }
+
+    private static SeedingHearing buildSeedingHearing(final uk.gov.justice.core.courts.SeedingHearing seedingHearing) {
+        return SeedingHearing.seedingHearing()
+                .withSeedingHearingId(seedingHearing.getSeedingHearingId())
+                .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().toString()))
+                .withSittingDay(seedingHearing.getSittingDay())
+                .build();
     }
 
 }

@@ -82,6 +82,18 @@ protocols: [ HTTP, HTTPS ]
       (mapping):
         requestType: application/vnd.listing.duplicate-unallocated-hearing+json
         name: listing.mark-unallocated-hearing-as-duplicate
+      (mapping):
+        requestType: application/vnd.listing.next-hearings-v2+json
+        name: listing.list-next-hearings-v2
+      (mapping):
+        requestType: application/vnd.listing.list-unscheduled-next-hearings+json
+        name: listing.list-unscheduled-next-hearings
+      (mapping):
+        requestType: application/vnd.listing.related-hearing+json
+        name: listing.update-related-hearing
+      (mapping):
+        requestType: application/vnd.listing.delete-next-hearings+json
+        name: listing.delete-next-hearings
       ...
     body:
       application/vnd.listing.command.update-hearing-for-listing+json:
@@ -106,6 +118,18 @@ protocols: [ HTTP, HTTPS ]
         example: !include json/listing.command.vacate-trial.json
         schema: !include json/schema/listing.command.vacate-trial.json
       application/vnd.listing.duplicate-unallocated-hearing+json: !!null
+      application/vnd.listing.next-hearings-v2+json:
+        example: !include json/listing.list-next-hearings-v2.json
+        schema: !include json/schema/listing.list-next-hearings-v2.json
+      application/vnd.listing.list-unscheduled-next-hearings+json:
+        example: !include json/listing.list-unscheduled-next-hearings.json
+        schema: !include json/schema/listing.list-unscheduled-next-hearings.json
+      application/vnd.listing.related-hearing+json:
+        example: !include json/listing.update-related-hearing.json
+        schema: !include json/schema/listing.update-related-hearing.json
+      application/vnd.listing.delete-next-hearings+json:
+        example: !include json/listing.delete-next-hearings.json
+        schema: !include json/schema/listing.delete-next-hearings.json
     responses:
       202:
         description: Request accepted

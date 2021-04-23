@@ -12,6 +12,11 @@
         "legislation": "legislation",
         "welshTitle": "Wounding with intent in welsh",
         "welshLegislation": "legislation in welsh"
+      },
+      "seedingHearing": {
+        "seedingHearingId": "97834953-3f0e-4290-9cef-9e6c0a218469",
+        "sittingDay": "2016-06-22",
+        "jurisdictionType": "CROWN"
       }
     }
   ]

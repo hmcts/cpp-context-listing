@@ -145,6 +145,8 @@ public final class EventAggregateConverter {
                 .build();
     }
 
+
+
     public static uk.gov.justice.listing.events.LaaReference buildEventLaaReference(final LaaReference laaReference) {
         return uk.gov.justice.listing.events.LaaReference.laaReference()
                 .withStatusId(laaReference.getStatusId())
@@ -334,4 +336,5 @@ public final class EventAggregateConverter {
                 .withCaseReference(caseIdentifier.getCaseReference())
                 .build();
     }
+
 }

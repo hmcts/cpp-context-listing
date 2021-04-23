@@ -130,7 +130,7 @@
   },
   {
     "_metadata": {
-      "name": "listing.events.hearing-allocated-for-listing"
+      "name": "listing.events.hearing-allocated-for-listing-v2"
     },
     "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
     "courtRoomId": "ad80a0b4-d285-4496-a514-43cb8d500051",
@@ -162,7 +162,10 @@
           {
             "id": "0baecac5-222b-402d-9047-84803679edac",
             "offenceIds": [
-              "0baecac5-222b-402d-9047-84803679edad"
+              {
+                "id": "0baecac5-222b-402d-9047-84803679edad"
+              }
+
             ]
           }
         ],

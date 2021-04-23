@@ -1,6 +1,6 @@
 {
   "_metadata": {
-    "name": "listing.events.hearing-allocated-for-listing"
+    "name": "listing.events.hearing-allocated-for-listing-v2"
   },
   "courtApplicationIds": [
     "26b856a8-ae01-4aad-814c-7cdff8db19bf"
@@ -30,7 +30,9 @@
         {
           "id": "0baecac5-222b-402d-9047-84803679edac",
           "offenceIds": [
-            "0baecac5-222b-402d-9047-84803679edad"
+            {
+              "id":  "0baecac5-222b-402d-9047-84803679edad"
+            }
           ]
         }
       ],

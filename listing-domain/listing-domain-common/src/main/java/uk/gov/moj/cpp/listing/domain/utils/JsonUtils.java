@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.domain.utils;
 
+import static java.util.Objects.nonNull;
+
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 
@@ -10,6 +12,7 @@ import java.util.Optional;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
 import org.slf4j.Logger;
@@ -68,4 +71,17 @@ public final class JsonUtils {
     private static boolean valueExists(final JsonObject jsonObject, final String key) {
         return jsonObject.containsKey(key) && !Objects.equals(jsonObject.get(key), JsonValue.NULL);
     }
+
+    public static void addJsonValueToJsonObjectNullSafe(final JsonObjectBuilder jsonObjectBuilder, final String key, final JsonValue value) {
+        if (nonNull(value)) {
+            jsonObjectBuilder.add(key, value);
+        }
+    }
+
+    public static void addStringToJsonObjectNullSafe(final JsonObjectBuilder jsonObjectBuilder, final String key, final Optional<String> value) {
+        if (value.isPresent()) {
+            jsonObjectBuilder.add(key, value.get());
+        }
+    }
+
 }

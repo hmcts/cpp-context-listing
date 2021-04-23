@@ -45,6 +45,7 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
                     .withStartDate(offence.getStartDate())
                     .withStatementOfOffence(soo)
                     .withOffenceWording(offence.getOffenceWording())
+                    .withSeedingHearing(offence.getSeedingHearing().isPresent() ? SeedingHearingConverter.convertSeedingHearing(offence.getSeedingHearing().get()) : Optional.empty())
                     .withLaaApplnReference(offence.getLaaApplnReference().isPresent()? buildLaaReference(offence.getLaaApplnReference().get()):Optional.empty());
 
             if (isNotEmpty(offence.getReportingRestrictions())) {
@@ -77,4 +78,5 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
                 .withStatusId(laaReference.getStatusId())
                 .build());
     }
+
 }

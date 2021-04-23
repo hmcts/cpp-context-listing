@@ -22,7 +22,6 @@ public class EventAggregateConverterTest {
     private final UUID masterDefendantId = UUID.randomUUID();
     private final UUID bailStatusId = UUID.randomUUID();
     private final UUID listedCaseId = UUID.randomUUID();
-    private final UUID linkedCaseId = UUID.randomUUID();
     private final UUID authorityId = UUID.randomUUID();
     private final UUID markedId = UUID.randomUUID();
     private final UUID markerTypeId = UUID.randomUUID();

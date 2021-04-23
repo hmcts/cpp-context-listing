@@ -8,12 +8,10 @@ import static uk.gov.moj.cpp.listing.event.processor.azure.util.HearingDayDetail
 
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.CourtCentre;
-import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.HearingDayDetail;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
@@ -47,7 +45,7 @@ public class SlotsToJsonStringConverter {
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
 
-    public String getSlotDetailFromHearingConfirmed(final JsonEnvelope jsonEnvelope, final ConfirmedHearing confirmedHearing, final boolean isForAdjournmentHearing) {
+    public String getSlotDetailFromHearingConfirmed(final JsonEnvelope jsonEnvelope, final ConfirmedHearing confirmedHearing, final boolean isForAdjournmentHearing, final List<HearingDay> hearingDays) {
 
         final CourtCentre courtCentre = confirmedHearing.getCourtCentre();
 
@@ -61,9 +59,6 @@ public class SlotsToJsonStringConverter {
 
         final Map<UUID, JsonEnvelope> courtRoomPayloadMap = new HashMap<>();
         courtRoomPayloadMap.put(courtCentre.getId(), listingReferenceDataService.getPayLoadForCourtRoom(jsonEnvelope, courtCentre.getId().toString()));
-
-        final HearingAllocatedForListing allocatedForListing = jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(), HearingAllocatedForListing.class);
-        final List<HearingDay> hearingDays = allocatedForListing.getHearingDays();
 
         final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(hearingDays, isForAdjournmentHearing);
 

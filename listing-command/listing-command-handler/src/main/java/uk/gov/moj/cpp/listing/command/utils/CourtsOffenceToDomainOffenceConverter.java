@@ -5,8 +5,10 @@ import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.core.courts.LaaReference;
+import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
@@ -16,8 +18,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 
+
 @SuppressWarnings({"squid:S3655"})
 public abstract class CourtsOffenceToDomainOffenceConverter {
+
 
     protected CaseOffences createOffences(UUID caseId, UUID defendantId, List<uk.gov.justice.core.courts.Offence> offencesToBeConverted) {
 
@@ -64,7 +68,9 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
                 .withStatementOfOffence(statement)
                 .withOffenceWording(courtOffence.getWording())
                 .withCustodyTimeLimit(custodyTimeLimit)
+                .withSeedingHearing(courtOffence.getSeedingHearing().isPresent() ? buildSeedingHearing(courtOffence.getSeedingHearing().get()) : empty())
                 .withLaaApplnReference(laaReference.isPresent() ? buildLaaReference((laaReference.get())) : empty());
+
 
         if (!isNull(courtOffence.getReportingRestrictions()) && !courtOffence.getReportingRestrictions().isEmpty()) {
             builder.withReportingRestrictions(courtOffence.getReportingRestrictions().stream()
@@ -86,6 +92,15 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
                 .withStatusDate(laaReference.getStatusDate())
                 .withStatusDescription(laaReference.getStatusDescription())
                 .withStatusId(laaReference.getStatusId())
+                .build());
+    }
+
+    private Optional<uk.gov.moj.cpp.listing.domain.SeedingHearing> buildSeedingHearing(final SeedingHearing seedingHearing) {
+
+        return Optional.of(uk.gov.moj.cpp.listing.domain.SeedingHearing.seedingHearing()
+                .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
+                .withSittingDay(seedingHearing.getSittingDay())
+                .withSeedingHearingId(seedingHearing.getSeedingHearingId())
                 .build());
     }
 

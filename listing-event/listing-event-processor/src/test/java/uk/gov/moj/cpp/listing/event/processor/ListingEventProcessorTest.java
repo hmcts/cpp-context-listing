@@ -18,6 +18,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -81,24 +82,31 @@ import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdatedOffences;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
+import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
 import uk.gov.justice.listing.events.CaseResultedDefendantProceedingsConcluded;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
 import uk.gov.justice.listing.events.CourtListRestricted;
+import uk.gov.justice.listing.events.DefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.Hearing;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
+import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRescheduled;
+import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
 import uk.gov.justice.listing.events.LinkedToCases;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
+import uk.gov.justice.listing.events.OffenceIds;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
+import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
+import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.listing.events.TrialVacated;
@@ -184,8 +192,11 @@ public class ListingEventProcessorTest {
     private static final String HEARING_IDS = "hearingIds";
     private static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
     private static final String REMOVAL_REASON = "removalReason";
+    private final List<uk.gov.justice.listing.events.HearingDay> hearingDays = Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).build());
+
 
     private static final String COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
+    private static final String COMMAND_CHANGE_NEXT_HEARING_DAY = "listing.command.change-next-hearing-day";
 
     @Spy
     private final Enveloper enveloper = createEnveloper();
@@ -228,7 +239,11 @@ public class ListingEventProcessorTest {
     @Mock
     private HearingAllocatedForListing hearingAllocatedForListing;
     @Mock
+    private HearingAllocatedForListingV2 hearingAllocatedForListingV2;
+    @Mock
     private AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing;
+    @Mock
+    private AllocatedHearingUpdatedForListingV2 allocatedHearingUpdatedForListingV2;
     @Mock
     private TrialVacated trialVacated;
     @Mock
@@ -465,16 +480,85 @@ public class ListingEventProcessorTest {
         given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
         when(hearingAllocatedForListing.getUpdateSlot()).thenReturn(Optional.of(false));
         when(hearingAllocatedForListing.getHasAdjournmentDate()).thenReturn(Optional.of(false));
+        when(hearingAllocatedForListing.getHearingDays()).thenReturn(hearingDays);
         //when
         listingEventProcessor.handleHearingAllocatedForListingMessage(event);
 
         //then
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
 
-        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false);
+        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
+        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
 
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+
+    }
+
+    @Test
+    public void shouldHandleHearingAllocatedForListingV2Message() {
+        //given
+        final JsonEnvelope event = hearingAllocatedEvent();
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListingV2.class)).willReturn(hearingAllocatedForListingV2);
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed();
+        given(hearingConfirmedFactory.createV2(hearingAllocatedForListingV2, event)).willReturn(hearingConfirmed);
+        when(hearingAllocatedForListingV2.getUpdateSlot()).thenReturn(Optional.of(false));
+        when(hearingAllocatedForListingV2.getHasAdjournmentDate()).thenReturn(Optional.of(false));
+        when(hearingAllocatedForListingV2.getHearingDays()).thenReturn(hearingDays);
+        //when
+        listingEventProcessor.handleHearingAllocatedForListingV2Message(event);
+
+        //then
+        verify(sender).send(senderJsonEnvelopeCaptor.capture());
+
+        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
+        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
+
+        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+
+    }
+
+    @Test
+    public void shouldHandleHearingAllocatedForListingV2MessageWhenHearingIsSeeded() {
+        //given
+        final UUID hearingId = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+        final JsonEnvelope event = hearingAllocatedEvent();
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListingV2.class)).willReturn(hearingAllocatedForListingV2);
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed();
+        given(hearingConfirmedFactory.createV2(hearingAllocatedForListingV2, event)).willReturn(hearingConfirmed);
+        when(hearingAllocatedForListingV2.getUpdateSlot()).thenReturn(Optional.of(false));
+        when(hearingAllocatedForListingV2.getHasAdjournmentDate()).thenReturn(Optional.of(false));
+        when(hearingAllocatedForListingV2.getHearingDays()).thenReturn(hearingDays);
+        when(hearingAllocatedForListingV2.getHearingId()).thenReturn(hearingId);
+
+        when(hearingAllocatedForListingV2.getProsecutionCaseDefendantsOffenceIds()).thenReturn(Arrays.asList(
+                ProsecutionCaseDefendantOffenceIdsV2.prosecutionCaseDefendantOffenceIdsV2()
+                        .withId(randomUUID())
+                        .withDefendants(asList(DefendantOffenceIdsV2.defendantOffenceIdsV2()
+                                .withId(randomUUID())
+                                .withOffenceIds(Arrays.asList(OffenceIds.offenceIds()
+                                        .withId(randomUUID())
+                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                .withSeedingHearingId(seedingHearingId)
+                                                .build())
+                                        .build()))
+                                .build()))
+                        .build()));
+        //when
+        listingEventProcessor.handleHearingAllocatedForListingV2Message(event);
+
+        //then
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+
+        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
+        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
+
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(COMMAND_CHANGE_NEXT_HEARING_DAY));
+        final JsonObject jsonObject = senderJsonEnvelopeCaptor.getAllValues().get(1).payloadAsJsonObject();
+        assertThat(jsonObject.getString("hearingId"), is(hearingId.toString()));
 
     }
 
@@ -490,18 +574,91 @@ public class ListingEventProcessorTest {
                 .willReturn(hearingUpdated);
 
         when(allocatedHearingUpdatedForListing.getUpdateSlot()).thenReturn(Optional.of(false));
+        when(allocatedHearingUpdatedForListing.getHearingDays()).thenReturn(hearingDays);
         //when
         listingEventProcessor.handleAllocatedHearingUpdatedForListingMessage(event);
 
         //then
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
 
-        verify(slotUpdater).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false);
-        verify(slotUpdater, times(1)).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false);
+        verify(slotUpdater).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
+        verify(slotUpdater, times(1)).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
 
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(PUBLIC_EVENT_HEARING_UPDATED));
 
     }
+
+    @Test
+    public void shouldHandleAllocatedHearingUpdatedForListingV2Message() {
+        //given
+        final JsonEnvelope event = hearingAllocatedEvent();
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(),
+                AllocatedHearingUpdatedForListingV2.class)).willReturn(allocatedHearingUpdatedForListingV2);
+
+        final HearingUpdated hearingUpdated = hearingUpdated();
+        given(allocatedHearingUpdatedFactory.createV2(allocatedHearingUpdatedForListingV2, event))
+                .willReturn(hearingUpdated);
+
+        when(allocatedHearingUpdatedForListingV2.getUpdateSlot()).thenReturn(Optional.of(false));
+        when(allocatedHearingUpdatedForListingV2.getHearingDays()).thenReturn(hearingDays);
+        //when
+        listingEventProcessor.handleAllocatedHearingUpdatedForListingV2Message(event);
+
+        //then
+        verify(sender).send(senderJsonEnvelopeCaptor.capture());
+
+        verify(slotUpdater).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
+        verify(slotUpdater, times(1)).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
+
+        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(PUBLIC_EVENT_HEARING_UPDATED));
+
+    }
+
+    @Test
+    public void shouldHandleAllocatedHearingUpdatedForListingV2MessageWhenHearingIsSeeded() {
+        //given
+        final UUID seedingHearingId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final JsonEnvelope event = hearingAllocatedEvent();
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(),
+                AllocatedHearingUpdatedForListingV2.class)).willReturn(allocatedHearingUpdatedForListingV2);
+
+        final HearingUpdated hearingUpdated = hearingUpdated();
+        given(allocatedHearingUpdatedFactory.createV2(allocatedHearingUpdatedForListingV2, event))
+                .willReturn(hearingUpdated);
+
+        when(allocatedHearingUpdatedForListingV2.getUpdateSlot()).thenReturn(Optional.of(false));
+        when(allocatedHearingUpdatedForListingV2.getHearingDays()).thenReturn(hearingDays);
+        when(allocatedHearingUpdatedForListingV2.getHearingId()).thenReturn(hearingId);
+
+        when(allocatedHearingUpdatedForListingV2.getProsecutionCaseDefendantsOffenceIds()).thenReturn(Arrays.asList(ProsecutionCaseDefendantOffenceIdsV2.prosecutionCaseDefendantOffenceIdsV2()
+                .withId(randomUUID())
+                .withDefendants(asList(DefendantOffenceIdsV2.defendantOffenceIdsV2()
+                        .withId(randomUUID())
+                        .withOffenceIds(asList(OffenceIds.offenceIds()
+                                .withId(randomUUID())
+                                .withSeedingHearing(SeedingHearing.seedingHearing()
+                                        .withSeedingHearingId(seedingHearingId)
+                                        .build())
+                                .build()))
+                        .build()))
+                .build()));
+        //when
+        listingEventProcessor.handleAllocatedHearingUpdatedForListingV2Message(event);
+
+        //then
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+
+        verify(slotUpdater).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
+        verify(slotUpdater, times(1)).updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
+
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(PUBLIC_EVENT_HEARING_UPDATED));
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(COMMAND_CHANGE_NEXT_HEARING_DAY));
+        final JsonObject jsonObject = senderJsonEnvelopeCaptor.getAllValues().get(1).payloadAsJsonObject();
+        assertThat(jsonObject.getString("hearingId"), is(hearingId.toString()));
+
+    }
+
 
 
     @Test
@@ -912,7 +1069,7 @@ public class ListingEventProcessorTest {
         //then
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
 
-        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.add-cases-for-hearing"));
+        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.add-cases-to-hearing"));
         final HearingExtended hearingExtendedResult = jsonObjectConverter
                 .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), HearingExtended.class);
 
@@ -1260,6 +1417,54 @@ public class ListingEventProcessorTest {
         assertThat(secondCommandEvent.payload().toString(), isJson(allOf(
                 withJsonPath("$.hearingId", equalTo(hearingId.toString())),
                 withJsonPath("$.caseId", equalTo(case2Id.toString())))));
+    }
+
+    @Test
+    public void shouldHearingUnallocatedForListingWhenHearingIsNotSeeded() {
+        final UUID hearingId = randomUUID();
+        final JsonObject hearingUnallocatedForListing = createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .build();
+
+        final JsonEnvelope envelope = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-unallocated-for-listing.json"),
+                hearingUnallocatedForListing);
+
+        when(jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingUnallocatedForListing.class))
+                .thenReturn(HearingUnallocatedForListing.hearingUnallocatedForListing()
+                        .withHearingId(hearingId)
+                        .build());
+
+        listingEventProcessor.handleHearingUnallocatedForListing(envelope);
+
+        verify(this.sender, never()).send(this.senderJsonEnvelopeCaptor.capture());
+    }
+
+    @Test
+    public void shouldHearingUnallocatedForListingWhenHearingIsSeeded() {
+        final UUID hearingId = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+        final JsonObject hearingUnallocatedForListing = createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .add("seedingHearingId", seedingHearingId.toString())
+                .build();
+
+        final JsonEnvelope envelope = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-unallocated-for-listing.json"),
+                hearingUnallocatedForListing);
+
+        when(jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingUnallocatedForListing.class))
+                .thenReturn(HearingUnallocatedForListing.hearingUnallocatedForListing()
+                        .withHearingId(hearingId)
+                        .withSeededHearing(of(true))
+                        .build());
+
+        listingEventProcessor.handleHearingUnallocatedForListing(envelope);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(COMMAND_CHANGE_NEXT_HEARING_DAY));
+        final JsonObject jsonObject = senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject();
+        assertThat(jsonObject.getString("hearingId"), is(hearingId.toString()));
+
     }
 
     @Test

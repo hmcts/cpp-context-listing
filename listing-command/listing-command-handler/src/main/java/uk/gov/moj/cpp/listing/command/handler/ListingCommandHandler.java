@@ -49,7 +49,7 @@ import uk.gov.justice.listing.commands.RecordCourtListProduced;
 import uk.gov.justice.listing.commands.SimpleOffence;
 import uk.gov.justice.listing.commands.StorePublishedCourtList;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
-import uk.gov.justice.listing.courts.AddCasesForHearing;
+import uk.gov.justice.listing.courts.AddCasesToHearing;
 import uk.gov.justice.listing.courts.AddCourtApplicationForHearing;
 import uk.gov.justice.listing.courts.AddCourtApplicationToHearingCommand;
 import uk.gov.justice.listing.courts.AddDefendantsToCourtProceedings;
@@ -672,18 +672,18 @@ public class ListingCommandHandler {
         }
     }
 
-    @Handles("listing.command.add-cases-for-hearing")
-    public void handleAddCasesForHearing(final JsonEnvelope command) throws EventStreamException {
+    @Handles("listing.command.add-cases-to-hearing")
+    public void handleAddCasesToHearing(final JsonEnvelope command) throws EventStreamException {
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("'listing.command.add-cases-for-hearing' received with payload {}", command.toObfuscatedDebugString());
+            LOGGER.debug("'listing.command.add-cases-to-hearing' received with payload {}", command.toObfuscatedDebugString());
         }
 
-        final AddCasesForHearing addCasesForHearing = jsonObjectConverter.convert
-                (command.payloadAsJsonObject(), AddCasesForHearing.class);
+        final AddCasesToHearing addCasesToHearing = jsonObjectConverter.convert
+                (command.payloadAsJsonObject(), AddCasesToHearing.class);
 
-        updateHearingEventStream(command, addCasesForHearing.getHearingId(), (Hearing hearing) -> {
-            final Stream<Object> addedCases = hearing.addCasesForHearing(addCasesForHearing.getProsecutionCases(), addCasesForHearing.getShadowListedOffences());
+        updateHearingEventStream(command, addCasesToHearing.getHearingId(), (Hearing hearing) -> {
+            final Stream<Object> addedCases = hearing.addCasesToHearing(addCasesToHearing.getProsecutionCases(), addCasesToHearing.getShadowListedOffences(), addCasesToHearing.getSeedingHearingId());
             return Stream.of(addedCases).flatMap(i -> i);
         });
     }

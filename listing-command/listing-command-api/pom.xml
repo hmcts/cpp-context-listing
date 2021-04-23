@@ -104,6 +104,11 @@
     <dependencies>
 
         <dependency>
+            <groupId>uk.gov.justice.framework-api</groupId>
+            <artifactId>framework-api-core</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>uk.gov.moj.cpp.common</groupId>
             <artifactId>command-api</artifactId>
         </dependency>

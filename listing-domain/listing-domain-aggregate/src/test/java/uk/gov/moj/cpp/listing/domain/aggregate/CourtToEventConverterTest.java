@@ -11,6 +11,7 @@ import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CustodyTimeLimit;
 import uk.gov.justice.core.courts.Defendant;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.core.courts.Offence;
@@ -20,6 +21,7 @@ import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.core.courts.ReportingRestriction;
+import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.StatementOfOffence;
@@ -84,6 +86,8 @@ public class CourtToEventConverterTest {
     private static final UUID RR_JUDICIAL_RESULT_ID = UUID.randomUUID();
     private static final String RR_LABEL = "RR Label 1";
     private static final LocalDate RR_ORDERED_DATE = LocalDate.now();
+    private static final UUID SEEDING_HEARING_ID = UUID.randomUUID();
+    private static final String SITTING_DAY = LocalDate.now().toString();
 
     @Test
     public void shouldConvert() {
@@ -157,6 +161,12 @@ public class CourtToEventConverterTest {
         assertThat(OFFENCE_TITLE, is(statementOfOffence.getTitle()));
         assertThat(WELSH_TITLE, is(statementOfOffence.getWelshTitle()));
         assertThat(of(LEGISLATION_WELSH), is(statementOfOffence.getWelshLegislation()));
+
+        final uk.gov.justice.listing.events.SeedingHearing seedingHearing = offence.getSeedingHearing().get();
+        assertThat(seedingHearing.getSeedingHearingId(), is(SEEDING_HEARING_ID));
+        assertThat(seedingHearing.getJurisdictionType(), is(uk.gov.justice.listing.courts.JurisdictionType.CROWN));
+        assertThat(seedingHearing.getSittingDay().get(), is(SITTING_DAY));
+
     }
 
     @Test
@@ -237,6 +247,7 @@ public class CourtToEventConverterTest {
                 .withLaaApplnReference(of(getSampleLaaReference()))
                 .withLaidDate(of(LAID_DATE))
                 .withReportingRestrictions(getSampleReportingRestrictions())
+                .withSeedingHearing(getSampleSeedingHearing())
                 .build());
     }
 
@@ -360,5 +371,13 @@ public class CourtToEventConverterTest {
                 .withLabel(RR_LABEL)
                 .withOrderedDate(RR_ORDERED_DATE.toString())
                 .build());
+    }
+
+    private SeedingHearing getSampleSeedingHearing(){
+        return SeedingHearing.seedingHearing()
+                .withSeedingHearingId(SEEDING_HEARING_ID)
+                .withJurisdictionType(JurisdictionType.CROWN)
+                .withSittingDay(SITTING_DAY)
+                .build();
     }
 }

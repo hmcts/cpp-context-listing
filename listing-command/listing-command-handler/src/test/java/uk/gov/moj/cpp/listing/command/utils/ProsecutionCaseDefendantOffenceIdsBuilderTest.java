@@ -42,7 +42,7 @@ public class ProsecutionCaseDefendantOffenceIdsBuilderTest {
 
         assertThat(caseId, is(prosecutionCaseDefendantOffenceIds.get(0).getId()));
         assertThat(defendantId, is(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().get(0).getId()));
-        assertThat(offenceId, is(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().get(0)));
+        assertThat(offenceId, is(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().get(0).getId()));
         assertThat(prosecutionCaseDefendantOffenceIds.size(),equalTo(1));
         assertThat(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().size(),equalTo(1));
         assertThat(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().size(),equalTo(1));
@@ -100,16 +100,16 @@ public class ProsecutionCaseDefendantOffenceIdsBuilderTest {
 
         assertThat(caseId1, is(prosecutionCaseDefendantOffenceIds.get(0).getId()));
         assertThat(case1DefendantId1, is(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().get(0).getId()));
-        assertThat(case1Defendant1OffenceId1, is(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().get(0)));
-        assertThat(case1Defendant1OffenceId2, is(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().get(1)));
+        assertThat(case1Defendant1OffenceId1, is(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().get(0).getId()));
+        assertThat(case1Defendant1OffenceId2, is(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().get(0).getOffences().get(1).getId()));
 
         assertThat(caseId_2, is(prosecutionCaseDefendantOffenceIds.get(1).getId()));
         assertThat(case2DefendantId1, is(prosecutionCaseDefendantOffenceIds.get(1).getDefendants().get(0).getId()));
-        assertThat(case2DefendantId1Offence1, is(prosecutionCaseDefendantOffenceIds.get(1).getDefendants().get(0).getOffences().get(0)));
+        assertThat(case2DefendantId1Offence1, is(prosecutionCaseDefendantOffenceIds.get(1).getDefendants().get(0).getOffences().get(0).getId()));
         assertThat(case2DefendantId2, is(prosecutionCaseDefendantOffenceIds.get(1).getDefendants().get(1).getId()));
-        assertThat(case2DefendantId1Offence1, is(prosecutionCaseDefendantOffenceIds.get(1).getDefendants().get(0).getOffences().get(0)));
-        assertThat(case2DefendantId2Offence1, is(prosecutionCaseDefendantOffenceIds.get(1).getDefendants().get(1).getOffences().get(0)));
-        assertThat(case2DefendantId2Offence2, is(prosecutionCaseDefendantOffenceIds.get(1).getDefendants().get(1).getOffences().get(1)));
+        assertThat(case2DefendantId1Offence1, is(prosecutionCaseDefendantOffenceIds.get(1).getDefendants().get(0).getOffences().get(0).getId()));
+        assertThat(case2DefendantId2Offence1, is(prosecutionCaseDefendantOffenceIds.get(1).getDefendants().get(1).getOffences().get(0).getId()));
+        assertThat(case2DefendantId2Offence2, is(prosecutionCaseDefendantOffenceIds.get(1).getDefendants().get(1).getOffences().get(1).getId()));
 
         assertThat(prosecutionCaseDefendantOffenceIds.size(),equalTo(2));
         assertThat(prosecutionCaseDefendantOffenceIds.get(0).getDefendants().size(),equalTo(1));

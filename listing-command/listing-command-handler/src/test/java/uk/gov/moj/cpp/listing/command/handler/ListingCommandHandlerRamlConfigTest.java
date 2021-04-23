@@ -31,7 +31,9 @@ public class ListingCommandHandlerRamlConfigTest {
         handlerMethodsToHandlerNames = handlerMethodsToHandlerNames(ListingCommandHandler.class,
                 UnscheduledListingCommandHandler.class,
                 ListingNoteCommandHandler.class,
-                HearingMarkedAsDuplicateCommandHandler.class);
+                HearingMarkedAsDuplicateCommandHandler.class,
+                ListNextHearingCommandHandler.class,
+                UpdateExistingHearingCommandHandler.class);
     }
 
     @Test

@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.remove-offences-from-existing-hearing-requested.json",
+  "type": "object",
+  "properties": {
+    "seedingHearingId": {
+      "description": "Remove all offences seeded by the provided seedingHearingId from the existing hearing hearingId.",
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "hearingId": {
+      "description": "Existing hearing from where the offences to be removed.",
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "hearingId",
+    "seedingHearingId"
+  ],
+  "additionalProperties": false
+}

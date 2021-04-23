@@ -54,6 +54,11 @@ public class AddOffencesForHearingCommandCollectionConverterTest {
                         "          \"title\": \"Wounding with intent\",\n" +
                         "          \"welshLegislation\": \"legislation in welsh\",\n" +
                         "          \"welshTitle\": \"Wounding with intent in welsh\"\n" +
+                        "        },\n" +
+                        "        \"seedingHearing\": {\n" +
+                        "          \"seedingHearingId\": \"97834953-3f0e-4290-9cef-9e6c0a218469\",\n" +
+                        "          \"jurisdictionType\": \"CROWN\",\n" +
+                        "          \"sittingDay\": \"2016-06-22\"\n" +
                         "        }\n" +
                         "      }\n" +
                         "    ],\n" +

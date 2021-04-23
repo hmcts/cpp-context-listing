@@ -13,6 +13,14 @@ baseUri: message://command/handler/message/listing
         example: !include json/listing.command.list-unscheduled-court-hearing-enriched.json
         schema:  !include json/schema/listing.command.list-unscheduled-court-hearing-enriched.json
 
+      application/vnd.listing.command.list-unscheduled-next-hearings-enriched+json:
+        example: !include json/listing.command.list-unscheduled-next-hearings-enriched.json
+        schema:  !include json/schema/listing.command.list-unscheduled-next-hearings-enriched.json
+
+      application/vnd.listing.command.list-unscheduled-next-hearing+json:
+        example: !include json/listing.command.list-unscheduled-next-hearing.json
+        schema: !include json/schema/listing.command.list-unscheduled-next-hearing.json
+
       application/vnd.listing.command.update-hearing-for-listing-enriched+json:
         example: !include json/listing.command.update-hearing-for-listing-enriched.json
         schema: !include json/schema/listing.command.update-hearing-for-listing-enriched.json
@@ -153,9 +161,9 @@ baseUri: message://command/handler/message/listing
         example: !include json/listing.command.extend-hearing-for-hearing-enriched.json
         schema:  !include json/schema/listing.command.extend-hearing-for-hearing-enriched.json
 
-      application/vnd.listing.command.add-cases-for-hearing+json:
-        example: !include json/listing.command.add-cases-for-hearing.json
-        schema:  !include json/schema/listing.command.add-cases-for-hearing.json
+      application/vnd.listing.command.add-cases-to-hearing+json:
+        example: !include json/listing.command.add-cases-to-hearing.json
+        schema:  !include json/schema/listing.command.add-cases-to-hearing.json
 
 
       application/vnd.listing.command.update-linked-cases+json:
@@ -213,3 +221,31 @@ baseUri: message://command/handler/message/listing
       application/vnd.listing.command.mark-unallocated-hearing-as-duplicate+json:
         example: !include json/listing.command.mark-unallocated-hearing-as-duplicate.json
         schema: !include json/schema/listing.command.mark-unallocated-hearing-as-duplicate.json
+
+      application/vnd.listing.command.list-next-hearing+json:
+        example: !include json/listing.command.list-next-hearing.json
+        schema: !include json/schema/listing.command.list-next-hearing.json
+
+      application/vnd.listing.command.list-next-hearings-enriched-v2+json:
+        example: !include json/listing.command.list-next-hearings-enriched-v2.json
+        schema:  !include json/schema/listing.command.list-next-hearings-enriched-v2.json
+
+      application/vnd.listing.command.delete-seeded-hearing+json:
+          example: !include json/listing.command.delete-seeded-hearing.json
+          schema:  !include json/schema/listing.command.delete-seeded-hearing.json
+
+      application/vnd.listing.command.update-existing-hearing+json:
+        example: !include json/listing.command.update-existing-hearing.json
+        schema:  !include json/schema/listing.command.update-existing-hearing.json
+
+      application/vnd.listing.command.delete-next-hearings+json:
+        example: !include json/listing.command.delete-next-hearings.json
+        schema:  !include json/schema/listing.command.delete-next-hearings.json
+
+      application/vnd.listing.command.change-next-hearing-day+json:
+        example: !include json/listing.command.change-next-hearing-day.json
+        schema:  !include json/schema/listing.command.change-next-hearing-day.json
+
+      application/vnd.listing.command.remove-offences-from-existing-hearing+json:
+        example: !include json/listing.command.remove-offences-from-existing-hearing.json
+        schema:  !include json/schema/listing.command.remove-offences-from-existing-hearing.json

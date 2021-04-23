@@ -1,8 +1,10 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static java.util.Objects.nonNull;
 import static java.util.Optional.of;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 
@@ -20,20 +22,15 @@ import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.SeedingHearing;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
-import uk.gov.moj.cpp.listing.domain.CourtApplication;
-import uk.gov.moj.cpp.listing.domain.Defendant;
-import uk.gov.moj.cpp.listing.domain.JudicialRole;
-import uk.gov.moj.cpp.listing.domain.ListedCase;
-import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
-import uk.gov.moj.cpp.listing.domain.Offence;
-import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -93,6 +90,20 @@ public class CommandToDomainConverterTest {
     }
 
     @Test
+    public void shouldConvertHearingCommandToHearingDomainWithMandatorySeedingHearingFields() {
+
+        //given
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingWithMandatorySeedingHearing();
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing);
+
+        assertListedCases(commandHearing, actual);
+
+    }
+
+
+        @Test
     public void shouldConvertHearingCommandToHearingDomainForBookedSlots() {
 
         //given
@@ -273,13 +284,13 @@ public class CommandToDomainConverterTest {
         assertThat(defendant1.getOffences().get(0).getReportingRestrictions().get(1).getOrderedDate(), is(of(LocalDate.of(2020, 10, 10))));
     }
 
-    private void assertCourtApplications(HearingListingNeeds commandHearing, uk.gov.moj.cpp.listing.domain.Hearing actual) {
+    private void assertCourtApplications(final HearingListingNeeds commandHearing, final uk.gov.moj.cpp.listing.domain.Hearing actual) {
         CourtApplication actualCourtApplication = actual.getCourtApplications().get(0);
         assertThat(commandHearing.getCourtApplications().size(), is(actual.getCourtApplications().size()));
         assertThat(commandHearing.getCourtApplications().get(0).getId(), is(actualCourtApplication.getId()));
     }
 
-    private void assertListedCases(HearingListingNeeds commandHearing, uk.gov.moj.cpp.listing.domain.Hearing actual) {
+    private void assertListedCases(final HearingListingNeeds commandHearing, final uk.gov.moj.cpp.listing.domain.Hearing actual) {
         ListedCase actualListedCase = actual.getListedCases().get(0);
         ProsecutionCase commandProsecutionCase = commandHearing.getProsecutionCases().get(0);
         DefendantListingNeeds commandListDefendantRequests = commandHearing.getDefendantListingNeeds().get(0);
@@ -292,7 +303,7 @@ public class CommandToDomainConverterTest {
 
     }
 
-    private void assertDefendant(ListedCase actualListedCase, ProsecutionCase commandProsecutionCase, DefendantListingNeeds commandListDefendantRequests) {
+    private void assertDefendant(final ListedCase actualListedCase, final ProsecutionCase commandProsecutionCase, final DefendantListingNeeds commandListDefendantRequests) {
         Defendant actualDefendant = actualListedCase.getDefendants().get(0);
         uk.gov.justice.core.courts.Defendant commandDefendant = commandProsecutionCase.getDefendants().get(0);
 
@@ -319,33 +330,48 @@ public class CommandToDomainConverterTest {
         assertOffence(actualDefendant, commandDefendant);
     }
 
-    private void assertOffence(Defendant actualDefendant, uk.gov.justice.core.courts.Defendant commandDefendant) {
+    private void assertOffence(final Defendant actualDefendant, final uk.gov.justice.core.courts.Defendant commandDefendant) {
         Offence actualOffence = actualDefendant.getOffences().get(0);
-        uk.gov.justice.core.courts.Offence commandoffence = commandDefendant.getOffences().get(0);
+        uk.gov.justice.core.courts.Offence commandOffence = commandDefendant.getOffences().get(0);
 
-        assertThat(actualOffence.getId(), is(commandoffence.getId()));
-        assertThat(actualOffence.getStartDate(), is(commandoffence.getStartDate()));
-        assertThat(actualOffence.getEndDate(), is(commandoffence.getEndDate()));
-        assertThat(actualOffence.getOffenceCode(), is(commandoffence.getOffenceCode()));
+        assertThat(actualOffence.getId(), is(commandOffence.getId()));
+        assertThat(actualOffence.getStartDate(), is(commandOffence.getStartDate()));
+        assertThat(actualOffence.getEndDate(), is(commandOffence.getEndDate()));
+        assertThat(actualOffence.getOffenceCode(), is(commandOffence.getOffenceCode()));
 
-        assertStatementOfOFfence(actualOffence, commandoffence);
+        assertStatementOfOffence(actualOffence, commandOffence);
+        assertSeedingHearing(actualOffence, commandOffence);
     }
 
-    private void assertStatementOfOFfence(Offence actualOffence, uk.gov.justice.core.courts.Offence commandoffence) {
+    private void assertStatementOfOffence(final Offence actualOffence, final uk.gov.justice.core.courts.Offence commandOffence) {
         StatementOfOffence actualStatementOfOffence = actualOffence.getStatementOfOffence();
-        assertThat(actualStatementOfOffence.getTitle(), is(commandoffence.getOffenceTitle()));
-        assertThat(actualStatementOfOffence.getWelshTitle(), is(commandoffence.getOffenceTitleWelsh().get()));
-        assertThat(actualStatementOfOffence.getLegislation().get(), is(commandoffence.getOffenceLegislation().get()));
-        assertThat(actualStatementOfOffence.getWelshLegislation().get(), is(commandoffence.getOffenceLegislationWelsh().get()));
+        assertThat(actualStatementOfOffence.getTitle(), is(commandOffence.getOffenceTitle()));
+        assertThat(actualStatementOfOffence.getWelshTitle(), is(commandOffence.getOffenceTitleWelsh().get()));
+        assertThat(actualStatementOfOffence.getLegislation().get(), is(commandOffence.getOffenceLegislation().get()));
+        assertThat(actualStatementOfOffence.getWelshLegislation().get(), is(commandOffence.getOffenceLegislationWelsh().get()));
     }
 
-    private void assertListedCaseIdentifier(ListedCase actualListedCase, ProsecutionCase commandProsecutionCases) {
+    private void assertSeedingHearing(final Offence actualOffence, final uk.gov.justice.core.courts.Offence commandOffence) {
+        final SeedingHearing actualSeedingHearing = actualOffence.getSeedingHearing().get();
+        final uk.gov.justice.core.courts.SeedingHearing seedingHearing = commandOffence.getSeedingHearing().get();
+        assertThat(actualSeedingHearing.getSeedingHearingId(), is(seedingHearing.getSeedingHearingId()));
+        assertThat(actualSeedingHearing.getJurisdictionType().name(), is(seedingHearing.getJurisdictionType().name()));
+        if(nonNull(seedingHearing.getSittingDay())) {
+            assertThat(actualSeedingHearing.getSittingDay(), is(seedingHearing.getSittingDay()));
+        }
+        else{
+            assertThat(actualSeedingHearing.getSittingDay(), is(nullValue()));
+        }
+
+    }
+
+    private void assertListedCaseIdentifier(final ListedCase actualListedCase, final ProsecutionCase commandProsecutionCases) {
         assertThat(actualListedCase.getCaseIdentifier().getAuthorityCode(), is(commandProsecutionCases.getProsecutionCaseIdentifier().getProsecutionAuthorityCode()));
         assertThat(actualListedCase.getCaseIdentifier().getAuthorityId(), is(commandProsecutionCases.getProsecutionCaseIdentifier().getProsecutionAuthorityId()));
         assertThat(actualListedCase.getCaseIdentifier().getCaseReference(), is(commandProsecutionCases.getProsecutionCaseIdentifier().getProsecutionAuthorityReference()));
     }
 
-    private void assertJudicialRole(HearingListingNeeds commandHearing, uk.gov.moj.cpp.listing.domain.Hearing actual) {
+    private void assertJudicialRole(final HearingListingNeeds commandHearing, final uk.gov.moj.cpp.listing.domain.Hearing actual) {
         JudicialRole actualJudicialRole = actual.getJudiciary().get(0);
         uk.gov.justice.core.courts.JudicialRole commandJudicialRole = commandHearing.getJudiciary().get(0);
 

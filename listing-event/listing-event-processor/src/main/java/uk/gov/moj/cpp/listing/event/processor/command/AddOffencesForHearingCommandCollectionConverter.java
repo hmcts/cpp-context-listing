@@ -40,6 +40,7 @@ public class AddOffencesForHearingCommandCollectionConverter implements Converte
                     .withStartDate(offence.getStartDate())
                     .withStatementOfOffence(soo)
                     .withOffenceWording(offence.getOffenceWording())
+                    .withSeedingHearing(offence.getSeedingHearing().isPresent() ? SeedingHearingConverter.convertSeedingHearing(offence.getSeedingHearing().get()) : Optional.empty())
                     .withLaaApplnReference(offence.getLaaApplnReference().isPresent() ? convertLaaReference(offence.getLaaApplnReference().get()) : Optional.empty());
 
             if (isNotEmpty(offence.getReportingRestrictions())) {

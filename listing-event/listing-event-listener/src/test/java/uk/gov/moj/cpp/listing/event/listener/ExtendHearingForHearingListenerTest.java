@@ -14,6 +14,7 @@ import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.buildHear
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.createListedCases;
 
 import uk.gov.justice.listing.events.AddedCasesForHearing;
+import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.HearingPartiallyUpdated;
@@ -110,6 +111,50 @@ public class ExtendHearingForHearingListenerTest {
                 ArgumentCaptor.forClass(ArrayNode.class);
 
         extendHearingForHearingListener.hearingAddedCasesForHearing(envelope);
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(hearingRepository).save(any(uk.gov.moj.cpp.listing.persistence.entity.Hearing.class));
+    }
+
+    @Test
+    public void shouldHandleCasesAddedToHearing() throws IOException {
+
+        final UUID caseId1 = randomUUID();
+        final UUID caseId2 = randomUUID();
+        final UUID caseId3 = randomUUID();
+        final UUID defId1 = randomUUID();
+        final UUID defId2 = randomUUID();
+        final UUID defId3 = randomUUID();
+        final UUID defId4 = randomUUID();
+        final UUID offId1 = randomUUID();
+        final UUID offId2 = randomUUID();
+        final UUID offId3 = randomUUID();
+        final UUID offId4 = randomUUID();
+        final UUID offId5 = randomUUID();
+        final UUID offId6 = randomUUID();
+
+        final Envelope<CasesAddedToHearing> envelope = (Envelope<CasesAddedToHearing>) mock(Envelope.class);
+
+        final List<ListedCase> listedCasesToAdd = createListedCasesToAdd(caseId2, caseId3, defId2, defId3, defId4, offId4, offId5, offId6);
+
+        final CasesAddedToHearing casesAddedToHearing = CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(UUID.randomUUID())
+                .withUnAllocatedListedCases(listedCasesToAdd)
+                .build();
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<uk.gov.justice.listing.events.ListedCase> testCases = createListedCases(caseId1, caseId2, defId1, defId2, offId1, offId2, offId3);
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        given(envelope.payload()).willReturn(casesAddedToHearing);
+        given(hearingRepository.findBy(any((UUID.class)))).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES_FIELD)).willReturn(testCasesProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        extendHearingForHearingListener.handleCasesAddedToHearingEvent(envelope);
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         verify(hearingRepository).save(any(uk.gov.moj.cpp.listing.persistence.entity.Hearing.class));
     }

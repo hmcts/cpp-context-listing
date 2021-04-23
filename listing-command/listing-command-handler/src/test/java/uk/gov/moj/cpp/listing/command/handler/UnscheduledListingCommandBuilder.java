@@ -59,6 +59,7 @@ public class UnscheduledListingCommandBuilder {
     static final UUID DELETED_OFFENCE_ID2 = randomUUID();
     static final UUID DELETED_OFFENCE_ID3 = randomUUID();
     static final UUID DELETED_OFFENCE_ID4 = randomUUID();
+    static final UUID SEED_HEARING_ID_1 = randomUUID();
     static final UUID HEARING_ID_1 = randomUUID();
     static final UUID HEARING_ID_2 = randomUUID();
     static final UUID CASE_ID = randomUUID();
@@ -143,6 +144,7 @@ public class UnscheduledListingCommandBuilder {
     static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
     static final String FIELD_APPLICATION_ID = "applicationId";
     static final String REMOVAL_REASON = "removalReason";
+    static final String SITTING_DAY = "2021-02-21";
     static final TypeOfList TYPE_OF_LIST = TypeOfList.typeOfList()
             .withId(fromString("0b1e1e98-a5b2-460a-a851-17dd6f47c1a7"))
             .withDescription("Warrant for arrest without bail").build();
@@ -152,6 +154,10 @@ public class UnscheduledListingCommandBuilder {
 
     static JsonEnvelope listUnscheduledCourtHearingCommandEnvelope() {
         return listUnscheduledCourtHearingCommandEnvelopeFor("/test-data/listing.command.list-unscheduled-court-hearing.json");
+    }
+
+    static JsonEnvelope listUnscheduledNextHearingCommandEnvelope() {
+        return listUnscheduledNextHearingCommandEnvelopeFor("/test-data/listing.command.list-unscheduled-next-hearing.json");
     }
 
     static JsonEnvelope listUnscheduledCourtHearingCommandEnvelopeFor(final String testDataFileLocation) {
@@ -178,6 +184,35 @@ public class UnscheduledListingCommandBuilder {
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.list-unscheduled-court-hearing", jsonReader.readObject());
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static JsonEnvelope listUnscheduledNextHearingCommandEnvelopeFor(final String testDataFileLocation) {
+        final String jsonString = FileUtil.givenPayload(testDataFileLocation).toString()
+                .replace("HEARING_ID", HEARING_ID_1.toString())
+                .replace("OFFENCE_ID", OFFENCE_ID1.toString())
+                .replace("REPORTING_RESTRICTIONS", REPORTING_RESTRICTIONS)
+                .replace("PROSECUTOR_DATES_TO_AVOID", PROSECUTOR_DATES_TO_AVOID)
+                .replace("JURISDICTION_TYPE", JURISDICTION_TYPE.toString())
+                .replace("JUDICIAL_ID", JUDICIAL_ID_1.toString())
+                .replace("AUTHORITY_ID", AUTHORITY_ID.toString())
+                .replace("CUSTODY_TIME_LIMIT", CUSTODY_TIME_LIMIT)
+                .replace("DEFAULT_DURATION", DEFAULT_DURATION)
+                .replace("DEFAULT_START_TIME", DEFAULT_START_TIME)
+                .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
+                .replace("COURT_ROOM_ID", COURT_ROOM_ID.toString())
+                .replace("LISTING_DIRECTIONS", LISTING_DIRECTIONS)
+                .replace("DATE_OF_BIRTH", DATE_OF_BIRTH)
+                .replaceAll("DEFENDANT_ID", DEFENDANT_ID1.toString())
+                .replaceAll("CASE_ID", CASE_ID.toString())
+                .replace("EARLIEST_START_TIME", EARLIEST_START_TIME)
+                .replace("WEEK_COMMENCING_START_DATE", WEEK_COMMENCING_START_DATE.toString())
+                .replace("WEEK_COMMENCING_DURATION", WEEK_COMMENCING_DURATION.toString());
+        try {
+            final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+            return createEnvelope("listing.command.list-unscheduled-next-hearing", jsonReader.readObject());
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
@@ -225,6 +260,7 @@ public class UnscheduledListingCommandBuilder {
                         .withOffenceWording("No Travel Card")
                         .withLaaApplnReference(Optional.empty())
                         .withShadowListed(of(Boolean.FALSE))
+                        .withSeedingHearing(empty())
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withWelshTitle("a title in Welsh")
                                 .withWelshLegislation(of("legislation in Welsh"))

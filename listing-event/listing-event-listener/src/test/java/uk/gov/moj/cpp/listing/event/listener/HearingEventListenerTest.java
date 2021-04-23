@@ -2,9 +2,12 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyObject;
@@ -21,15 +24,23 @@ import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdated;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
+import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.TrialVacated;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.domain.Defendant;
+import uk.gov.moj.cpp.listing.domain.HearingDay;
+import uk.gov.moj.cpp.listing.domain.ListedCase;
+import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.SeedingHearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
+import java.util.Arrays;
 import java.util.UUID;
 
 import javax.json.JsonObject;
@@ -64,6 +75,9 @@ public class HearingEventListenerTest {
 
     @Mock
     private HearingAllocatedForListing hearingAllocated;
+
+    @Mock
+    private HearingAllocatedForListingV2 hearingAllocatedV2;
 
     @Mock
     private Hearing hearing;
@@ -102,7 +116,6 @@ public class HearingEventListenerTest {
 
         given(envelope.payload()).willReturn(hearingAllocated);
         given(hearingAllocated.getHearingId()).willReturn(HEARING_ID);
-        given(jsonObject.toString()).willReturn("\"hello\": \"world\"");
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
@@ -114,20 +127,57 @@ public class HearingEventListenerTest {
     }
 
     @Test
-    public void shouldUnallocateHearingForListing() {
-        final Envelope<HearingUnallocatedForListing> envelope = (Envelope<HearingUnallocatedForListing>) mock(Envelope.class);
+    public void shouldAllocateHearingForListingV2() {
+        final Envelope<HearingAllocatedForListingV2> envelope = (Envelope<HearingAllocatedForListingV2>) mock(Envelope.class);
 
-        given(envelope.payload()).willReturn(hearingUnallocated);
-        given(hearingUnallocated.getHearingId()).willReturn(HEARING_ID);
-        given(jsonObject.toString()).willReturn("\"hello\": \"world\"");
+        given(envelope.payload()).willReturn(hearingAllocatedV2);
+        given(hearingAllocatedV2.getHearingId()).willReturn(HEARING_ID);
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
 
+        hearingEventListener.hearingAllocatedV2(envelope);
+
+        verify(properties).put(eq("allocated"), eq(true));
+        verify(hearingRepository).save(hearing);
+    }
+
+    @Test
+    public void shouldUnallocateHearingForListing() {
+        final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+        final Envelope<HearingUnallocatedForListing> envelope = (Envelope<HearingUnallocatedForListing>) mock(Envelope.class);
+        final UUID courtCentreId = randomUUID();
+
+        final uk.gov.moj.cpp.listing.domain.Hearing domainHearing = uk.gov.moj.cpp.listing.domain.Hearing.hearing()
+                .withId(HEARING_ID)
+                .withAllocated(true)
+                .withCourtRoomId(of(randomUUID()))
+                .withHearingDays(Arrays.asList(HearingDay.hearingDay()
+                        .withCourtCentreId(of(courtCentreId))
+                        .withCourtRoomId(of(randomUUID()))
+                        .build()))
+                .build();
+        final JsonNode hearingProperties = objectMapper.valueToTree(domainHearing);
+        final Hearing hearing = Hearing.createHearingBuilder().setId(HEARING_ID)
+                .setProperties(hearingProperties)
+                .build();
+
+        given(envelope.payload()).willReturn(hearingUnallocated);
+        given(hearingUnallocated.getHearingId()).willReturn(HEARING_ID);
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        final ArgumentCaptor<Hearing> argumentCaptor = ArgumentCaptor.forClass(Hearing.class);
+
         hearingEventListener.hearingUnallocated(envelope);
 
-        verify(properties).put(eq("allocated"), eq(false));
-        verify(hearingRepository).save(hearing);
+        verify(hearingRepository).save(argumentCaptor.capture());
+
+        final Hearing savedHearing = argumentCaptor.getValue();
+        assertThat(savedHearing.getProperties().get("allocated").asBoolean(), is(false));
+        assertThat(savedHearing.getProperties().get("courtRoomId"), nullValue());
+        assertThat(savedHearing.getProperties().get("hearingDays").get(0).get("courtRoomId"), nullValue());
+        assertThat(savedHearing.getProperties().get("hearingDays").get(0).get("courtCentreId").asText(), is(courtCentreId.toString()));
+
     }
 
     @Test

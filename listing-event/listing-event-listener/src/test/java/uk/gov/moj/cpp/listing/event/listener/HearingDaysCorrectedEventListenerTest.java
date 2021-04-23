@@ -19,6 +19,7 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
@@ -48,7 +49,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class HearingDaysCorrectedEventListenerTest {
 
     private static final LocalDate NOW_DATE = LocalDate.now();
-    private static final ZonedDateTime NOW_DATE_TIME = ZonedDateTime.now();
+    private final ZonedDateTime NOW_DATE_TIME = new UtcClock().now();
     private static final DateTimeFormatter ISO_8601_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
     @Mock

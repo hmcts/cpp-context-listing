@@ -11,8 +11,14 @@ subscriptions_descriptor:
         - name: listing.events.hearing-allocated-for-listing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-allocated-for-listing.json
 
+        - name: listing.events.hearing-allocated-for-listing-v2
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-allocated-for-listing-v2.json
+
         - name: listing.events.allocated-hearing-updated-for-listing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.allocated-hearing-updated-for-listing.json
+
+        - name: listing.events.allocated-hearing-updated-for-listing-v2
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.allocated-hearing-updated-for-listing-v2.json
 
         - name: listing.events.trial-vacated
           schema_uri: http://justice.gov.uk/listing/events/listing.events.trial-vacated.json
@@ -100,6 +106,45 @@ subscriptions_descriptor:
 
         - name: listing.events.new-defendant-added-for-court-proceedings
           schema_uri: http://justice.gov.uk/listing/events/listing.events.new-defendant-added-for-court-proceedings.json
+
+        - name: listing.events.next-hearing-requested
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.next-hearing-requested
+
+        - name: listing.events.unscheduled-next-hearing-requested
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.unscheduled-next-hearing-requested
+
+        - name: listing.events.delete-next-hearing-requested
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.delete-next-hearing-requested.json
+
+        - name: listing.events.allocated-hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.allocated-hearing-deleted.json
+
+        - name: listing.events.unallocated-hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.unallocated-hearing-deleted.json
+
+        - name: listing.events.update-existing-hearing-requested
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.update-existing-hearing-requested.json
+
+        - name: listing.events.offences-removed-from-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offences-removed-from-hearing.json
+
+        - name: listing.events.next-hearing-day-changed
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.next-hearing-day-changed.json
+
+        - name: listing.events.hearing-unallocated-for-listing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-unallocated-for-listing.json
+
+        - name: listing.events.remove-offences-from-existing-hearing-requested
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.remove-offences-from-existing-hearing-requested.json
+
+        - name: listing.events.offences-removed-from-existing-allocated-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offences-removed-from-existing-allocated-hearing.json
+
+        - name: listing.events.offences-removed-from-existing-unallocated-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.offences-removed-from-existing-unallocated-hearing.json
+
+        - name: listing.event.cases-added-to-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.event.cases-added-to-hearing.json
 
       event_source_name: listing
 

@@ -11,13 +11,18 @@ import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.events.DefendantOffenceIds;
+import uk.gov.justice.listing.events.DefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
+import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingLanguage;
 import uk.gov.justice.listing.events.JudicialRole;
 import uk.gov.justice.listing.events.JurisdictionType;
+import uk.gov.justice.listing.events.OffenceIds;
 import uk.gov.justice.listing.events.OrganisationUnit;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds;
+import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
+import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.Type;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
@@ -51,6 +56,7 @@ public class HearingConfirmedFactoryTest {
     private static final UUID OFFENCE_ID = UUID.randomUUID();
     private static final UUID HEARING_ID = UUID.randomUUID();
     private static final UUID DEFENDANT_ID = UUID.randomUUID();
+    private static final UUID SEEDING_HEARING_ID = UUID.randomUUID();
     private static final String TYPE = RandomGenerator.STRING.next();
     private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
     private static final UUID COURT_ROOM_ID = UUID.randomUUID();
@@ -135,13 +141,51 @@ public class HearingConfirmedFactoryTest {
 
     }
 
+    @Test
+    public void shouldCreateAHearingConfirmedV2() {
+        //given
+        final HearingAllocatedForListingV2 hearingAllocated = hearingAllocatedForListingV2();
+        final JsonEnvelope envelope = mock(JsonEnvelope.class);
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
+
+
+        //when
+        final HearingConfirmed actual = hearingConfirmedFactory.createV2(hearingAllocated, envelope);
+
+        //then
+        final ConfirmedHearing listedHearing = actual.getConfirmedHearing();
+        assertThat(listedHearing.getId(), is(listedHearing.getId()));
+
+        assertThat(listedHearing.getHearingDays().get(0).getSittingDay().toInstant().toString(),
+                is(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME, BST).withZoneSameInstant(UTC).toInstant().toString()));
+        assertThat(listedHearing.getHearingDays().get(0).getIsCancelled().get(), is(true));
+        assertThat(listedHearing.getType().getDescription(), is(TYPE));
+        assertThat(listedHearing.getType().getId(), is(TYPE_ID));
+        assertThat(listedHearing.getCourtCentre().getId(), is(COURT_CENTRE_ID));
+        assertThat(listedHearing.getCourtCentre().getRoomId().get(), is(COURT_ROOM_ID));
+        assertThat(listedHearing.getJudiciary().get(0).getJudicialId(), is(JUDICIAL_ID));
+        assertThat(listedHearing.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType(), is(JUDICIAL_ROLE_TYPE));
+        assertThat(listedHearing.getReportingRestrictionReason().get(), is(REPORTING_RESTRICTION_REASON));
+        assertThat(listedHearing.getHearingLanguage().get().toString(), is(HEARING_LANGUAGE.toString()));
+        assertThat(listedHearing.getJurisdictionType().toString(), is(JURISDICTION_TYPE.toString()));
+
+        final ConfirmedProsecutionCase prosecutionCaseDefendantOffenceIds = listedHearing.getProsecutionCases().get(0);
+        assertThat(prosecutionCaseDefendantOffenceIds.getId(), is(CASE_ID));
+        final ConfirmedDefendant defendantOffenceIds = prosecutionCaseDefendantOffenceIds.getDefendants().get(0);
+        assertThat(defendantOffenceIds.getId(), is(DEFENDANT_ID));
+        assertThat(defendantOffenceIds.getOffences().get(0).getId(), is(OFFENCE_ID));
+        final uk.gov.justice.core.courts.SeedingHearing seedingHearing = defendantOffenceIds.getOffences().get(0).getSeedingHearing().get();
+        assertThat(seedingHearing.getSeedingHearingId(), is(SEEDING_HEARING_ID));
+        assertThat(seedingHearing.getJurisdictionType(), is(uk.gov.justice.core.courts.JurisdictionType.CROWN));
+    }
+
 
     private static HearingAllocatedForListing hearingAllocatedForListing(final List<JudicialRole> judiciary) {
         final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds = Collections.singletonList(
                 ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                         .withId(CASE_ID)
                         .withDefendants(Collections.singletonList(DefendantOffenceIds.defendantOffenceIds()
-                                .withOffenceIds(Arrays.asList(OFFENCE_ID))
+                                .withOffenceIds(Arrays.asList((OFFENCE_ID)))
                                 .withId(DEFENDANT_ID)
                                 .build()))
                         .build()
@@ -172,4 +216,56 @@ public class HearingConfirmedFactoryTest {
                 .withJudiciary(judiciary)
                 .build();
     }
+
+    private static HearingAllocatedForListingV2 hearingAllocatedForListingV2() {
+        final List<ProsecutionCaseDefendantOffenceIdsV2> prosecutionCaseDefendantOffenceIds = Collections.singletonList(
+                ProsecutionCaseDefendantOffenceIdsV2.prosecutionCaseDefendantOffenceIdsV2()
+                        .withId(CASE_ID)
+                        .withDefendants(Collections.singletonList(DefendantOffenceIdsV2.defendantOffenceIdsV2()
+                                .withOffenceIds(Arrays.asList((OffenceIds.offenceIds()
+                                        .withId(OFFENCE_ID)
+                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                .withSeedingHearingId(SEEDING_HEARING_ID)
+                                                .withJurisdictionType(uk.gov.justice.listing.courts.JurisdictionType.CROWN)
+                                                .build())
+                                        .build())))
+                                .withId(DEFENDANT_ID)
+                                .build()))
+                        .build()
+        );
+
+        final List<HearingDay> hearingDays = Arrays.asList(HearingDay.hearingDay()
+                .withSequence(0)
+                .withDurationMinutes(DURATION_MINUTES)
+                .withStartTime(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME, BST).withZoneSameInstant(UTC))
+                .withEndTime(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME.plusMinutes(DURATION_MINUTES), BST).withZoneSameInstant(UTC))
+                .withIsCancelled(true)
+                .build());
+
+
+        return HearingAllocatedForListingV2.hearingAllocatedForListingV2()
+                .withHearingDays(hearingDays)
+                .withCourtApplicationIds(Collections.singletonList(UUID.randomUUID()))
+                .withHearingLanguage(HEARING_LANGUAGE)
+                .withReportingRestrictionReason(of(REPORTING_RESTRICTION_REASON))
+                .withCourtCentreId(COURT_CENTRE_ID)
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withHearingId(HEARING_ID)
+                .withProsecutionCaseDefendantsOffenceIds(prosecutionCaseDefendantOffenceIds)
+                .withJurisdictionType(JURISDICTION_TYPE)
+                .withType(Type.type()
+                        .withDescription(TYPE)
+                        .withId(TYPE_ID)
+                        .build())
+                .withJudiciary(Arrays.asList(JudicialRole.judicialRole()
+                        .withJudicialId(JUDICIAL_ID)
+                        .withJudicialRoleType(uk.gov.justice.listing.events.JudicialRoleType.judicialRoleType()
+                                .withJudiciaryType(JUDICIAL_ROLE_TYPE)
+                                .build())
+                        .withIsDeputy(empty())
+                        .withIsBenchChairman(empty())
+                        .build()))
+                .build();
+    }
 }
+

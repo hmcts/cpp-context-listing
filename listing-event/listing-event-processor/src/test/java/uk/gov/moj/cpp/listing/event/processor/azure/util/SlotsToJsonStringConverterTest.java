@@ -122,8 +122,9 @@ public class SlotsToJsonStringConverterTest {
 
     @Test
     public void getSlotDetailFromHearingConfirmed() {
-
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing);
+        final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
+        final List<uk.gov.justice.listing.events.HearingDay> hearingDays = Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).withStartTime(DATE_TIME).build());
+        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
 
         assertNotNull(slotDetailFromHearingConfirmed);
         with(slotDetailFromHearingConfirmed)
@@ -138,8 +139,10 @@ public class SlotsToJsonStringConverterTest {
 
     @Test
     public void shouldGetSlotDetailFromHearingConfirmedWhenAllDayAndIsAdjournmentHearing() {
+        final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
+        final List<uk.gov.justice.listing.events.HearingDay> hearingDays = Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).withStartTime(DATE_TIME).build());
 
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing);
+        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
 
         with(slotDetailFromHearingConfirmed)
                 .assertThat("$[0].courtRoomId", equalTo(courtRoomId))
@@ -152,14 +155,10 @@ public class SlotsToJsonStringConverterTest {
 
     @Test
     public void shouldReturnEmptyStringFromGetSlotDetailFromHearingConfirmed() {
+        final List<uk.gov.justice.listing.events.HearingDay> hearingDays = emptyList();
 
-        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class))
-                .willReturn(HearingAllocatedForListing
-                        .hearingAllocatedForListing()
-                        .withHearingDays(emptyList())
-                        .build());
 
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing);
+        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
         assertNotNull(slotDetailFromHearingConfirmed);
         assertThat(slotDetailFromHearingConfirmed.isEmpty(), equalTo(true));
     }

@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Objects.nonNull;
+import static java.util.UUID.fromString;
+import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
@@ -15,22 +17,29 @@ import uk.gov.justice.listing.courts.ExtendHearingForHearing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearingEnriched;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
+import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
+import uk.gov.justice.listing.courts.ListNextHearingsV2;
 import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
 import uk.gov.justice.listing.courts.ListUnscheduledCourtHearingEnriched;
+import uk.gov.justice.listing.courts.ListUnscheduledNextHearings;
+import uk.gov.justice.listing.courts.ListUnscheduledNextHearingsEnriched;
 import uk.gov.justice.listing.courts.ProsecutionCases;
 import uk.gov.justice.listing.courts.SelectedCourtCentre;
+import uk.gov.justice.listing.courts.UpdateExistingHearing;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
+import uk.gov.justice.listing.courts.UpdateRelatedHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.core.annotation.FeatureControl;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
-import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -49,20 +58,22 @@ public class ListingCommandApi {
 
     private static final String LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED = "listing.command.update-hearing-for-listing-enriched";
     private static final String LISTING_COMMAND_LIST_COURT_HEARING_ENRICHED = "listing.command.list-court-hearing-enriched";
+    private static final String LISTING_COMMAND_LIST_NEXT_HEARINGS_ENRICHED = "listing.command.list-next-hearings-enriched-v2";
     private static final String LISTING_COMMAND_LIST_UNSCHEDULED_COURT_HEARING_ENRICHED = "listing.command.list-unscheduled-court-hearing-enriched";
+    private static final String LISTING_COMMAND_LIST_UNSCHEDULED_NEXT_HEARINGS_ENRICHED = "listing.command.list-unscheduled-next-hearings-enriched";
     private static final String LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING_ENRICHED = "listing.command.extend-hearing-for-hearing-enriched";
     private static final String LISTING_COMMAND_VACATE_TRIAL = "listing.command.vacate-trial-enriched";
     private static final String LISTING_COMMAND_CORRECT_HEARING_DAYS_WO_CC = "listing.command.correct-hearing-days-without-court-centre";
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.command.mark-unallocated-hearing-as-duplicate";
+    private static final String LISTING_COMMAND_UPDATE_EXISTING_HEARING = "listing.command.update-existing-hearing";
+    private static final String LISTING_COMMAND_DELETE_NEXT_HEARINGS = "listing.command.delete-next-hearings";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     private static final String PROSECUTION_CASES = "prosecutionCases";
+    private static final String HEARING_ID = "hearingId";
 
     @Inject
     private Sender sender;
-
-    @Inject
-    private Enveloper enveloper;
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
@@ -77,15 +88,12 @@ public class ListingCommandApi {
     public void handleListCourtHearing(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
 
-        LOGGER.info("'listing.command.list-court-hearing' received with payload {}", envelope);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.list-court-hearing' received with payload {}", envelope.toObfuscatedDebugString());
+        }
 
         final ListCourtHearing listCourtHearing = jsonObjectConverter.convert(payload, ListCourtHearing.class);
-        LOGGER.info("'listing.command.list-court-hearing' listCourtHearing: {}", listCourtHearing);
-        final Set<CourtCentreDetails> courtCentres = new HashSet<>();
-
-        for (final HearingListingNeeds commandHearing : listCourtHearing.getHearings()) {
-            courtCentres.add(courtCentreFactory.getCourtCentre(commandHearing.getCourtCentre().getId(), envelope));
-        }
+        final Set<CourtCentreDetails> courtCentres = getCourtCentreDetails(envelope, listCourtHearing.getHearings());
         final ListCourtHearingEnriched listCourtHearingEnriched = ListCourtHearingEnriched.listCourtHearingEnriched()
                 .withCourtCentresDetails(new ArrayList<>(courtCentres))
                 .withListCourtHearing(listCourtHearing)
@@ -96,14 +104,60 @@ public class ListingCommandApi {
                 objectToJsonValueConverter.convert(listCourtHearingEnriched)));
     }
 
+    @Handles("listing.list-next-hearings-v2")
+    @FeatureControl("amendReshare")
+    public void listNextHearings(final JsonEnvelope envelope) {
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.list-next-hearings-v2' received with payload {}", envelope.toObfuscatedDebugString());
+        }
+
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        final ListNextHearingsV2 listNextHearings = jsonObjectConverter.convert(payload, ListNextHearingsV2.class);
+        final Set<CourtCentreDetails> courtCentres = getCourtCentreDetails(envelope, listNextHearings.getHearings());
+
+        final ListNextHearingsEnrichedV2 listNextHearingsEnriched = ListNextHearingsEnrichedV2.listNextHearingsEnrichedV2()
+                .withCourtCentresDetails(new ArrayList<>(courtCentres))
+                .withListNextHearings(listNextHearings)
+                .withAdjournedFromDate(listNextHearings.getAdjournedFromDate())
+                .withSeedingHearing(listNextHearings.getSeedingHearing())
+                .build();
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_LIST_NEXT_HEARINGS_ENRICHED),
+                objectToJsonValueConverter.convert(listNextHearingsEnriched)));
+    }
+
+    @Handles("listing.update-related-hearing")
+    @FeatureControl("amendReshare")
+    public void updateRelatedHearing(final JsonEnvelope envelope) {
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.update-related-hearing' received with payload {}", envelope.toObfuscatedDebugString());
+        }
+
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        final UpdateRelatedHearing updateRelatedHearing = jsonObjectConverter.convert(payload, UpdateRelatedHearing.class);
+        final UUID hearingId = fromString(payload.getString(HEARING_ID));
+
+        final UpdateExistingHearing updateExistingHearing = UpdateExistingHearing.updateExistingHearing()
+                .withHearingId(hearingId)
+                .withSeedingHearing(updateRelatedHearing.getSeedingHearing())
+                .withProsecutionCases(updateRelatedHearing.getProsecutionCases())
+                .withShadowListedOffences(updateRelatedHearing.getShadowListedOffences())
+                .build();
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_UPDATE_EXISTING_HEARING), objectToJsonValueConverter.convert(updateExistingHearing)));
+    }
+
     @Handles("listing.command.list-unscheduled-court-hearing")
     public void handleListUnscheduledCourtHearing(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
 
-        LOGGER.info("'listing.command.list-unscheduled-court-hearing' received with payload {}", envelope.toObfuscatedDebugString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.list-unscheduled-court-hearing' received with payload {}", envelope.toObfuscatedDebugString());
+        }
 
         final ListUnscheduledCourtHearing listCourtHearing = jsonObjectConverter.convert(payload, ListUnscheduledCourtHearing.class);
-        LOGGER.info("'listing.command.list-unscheduled-court-hearing' listCourtHearing: {}", listCourtHearing);
 
         final Set<CourtCentreDetails> courtCentres = new HashSet<>();
 
@@ -119,11 +173,52 @@ public class ListingCommandApi {
                 .withMetadataFrom(envelope));
     }
 
+    @Handles("listing.list-unscheduled-next-hearings")
+    @FeatureControl("amendReshare")
+    public void handleListUnscheduledNextCourtHearings(final JsonEnvelope envelope) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.list-unscheduled-next-hearings' received with payload {}", envelope.toObfuscatedDebugString());
+        }
+
+        final ListUnscheduledNextHearings unscheduledNextHearings = jsonObjectConverter.convert(payload, ListUnscheduledNextHearings.class);
+
+        final Set<CourtCentreDetails> courtCentres = new HashSet<>();
+
+        for (final HearingUnscheduledListingNeeds commandHearing : unscheduledNextHearings.getHearings()) {
+            courtCentres.add(courtCentreFactory.getCourtCentre(commandHearing.getCourtCentre().getId(), envelope));
+        }
+        final ListUnscheduledNextHearingsEnriched listCourtHearingEnriched = ListUnscheduledNextHearingsEnriched.listUnscheduledNextHearingsEnriched()
+                .withCourtCentresDetails(new ArrayList<>(courtCentres))
+                .withHearings(unscheduledNextHearings.getHearings())
+                .withSeedingHearing(unscheduledNextHearings.getSeedingHearing())
+                .build();
+
+        sender.send(envelop(objectToJsonValueConverter.convert(listCourtHearingEnriched)).withName(LISTING_COMMAND_LIST_UNSCHEDULED_NEXT_HEARINGS_ENRICHED)
+                .withMetadataFrom(envelope));
+    }
+
+    @Handles("listing.delete-next-hearings")
+    @FeatureControl("amendReshare")
+    public void handleDeleteNextHearings(final JsonEnvelope envelope) {
+        final JsonObject payload = envelope.payloadAsJsonObject();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.delete-next-hearings' received with payload {}", envelope.toObfuscatedDebugString());
+        }
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_DELETE_NEXT_HEARINGS),
+                createObjectBuilder()
+                        .add("seedingHearing",payload.getJsonObject("seedingHearing"))
+                        .build()
+        ));
+    }
+
     @Handles("listing.command.update-hearing-for-listing")
     public void handleUpdateHearingForListing(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("'listing.command.update-hearing-for-listing' received with payload {}", envelope.toObfuscatedDebugString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.update-hearing-for-listing' received with payload {}", envelope.toObfuscatedDebugString());
         }
 
         final UpdateHearingForListing updateHearingForListing = jsonObjectConverter.convert(payload, UpdateHearingForListing.class);
@@ -156,7 +251,9 @@ public class ListingCommandApi {
     @Handles("listing.command.vacate-trial")
     public void handleVacateTrial(final JsonEnvelope envelope) {
 
-        LOGGER.info("'listing.command.vacate-trial' received with payload {}", envelope.toObfuscatedDebugString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.vacate-trial' received with payload {}", envelope.toObfuscatedDebugString());
+        }
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_VACATE_TRIAL),
                 envelope.payload()));
@@ -166,10 +263,10 @@ public class ListingCommandApi {
     public void handleExtendHearingForHearing(final JsonEnvelope envelope) {
 
         final JsonObject payload = envelope.payloadAsJsonObject();
-        final String unAllocatedHearingId = payload.getString("hearingId", null);
+        final String unAllocatedHearingId = payload.getString(HEARING_ID, null);
 
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("'listing.command.extend-hearing-for-hearing' received with payload {}", envelope.toObfuscatedDebugString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("'listing.command.extend-hearing-for-hearing' received with payload {}", envelope.toObfuscatedDebugString());
         }
 
         final ExtendHearingForHearing extendHearingForHearing = jsonObjectConverter.convert(payload, ExtendHearingForHearing.class);
@@ -179,7 +276,7 @@ public class ListingCommandApi {
 
         final ExtendHearingForHearingEnriched.Builder builder = ExtendHearingForHearingEnriched
                 .extendHearingForHearingEnriched().withAllocatedHearingId(allocatedHearingId)
-                .withUnAllocatedHearingId(UUID.fromString(unAllocatedHearingId));
+                .withUnAllocatedHearingId(fromString(unAllocatedHearingId));
 
         if (extendHearingForHearing.getProsecutionCases() != null) {
             builder.withProsecutionCases(extendHearingForHearing.getProsecutionCases());
@@ -253,4 +350,13 @@ public class ListingCommandApi {
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING),
                 envelope.payload()));
     }
+
+    private Set<CourtCentreDetails> getCourtCentreDetails(final JsonEnvelope envelope, final List<HearingListingNeeds> hearingListingNeeds) {
+        final Set<CourtCentreDetails> courtCentres = new HashSet<>();
+        hearingListingNeeds.forEach(
+                hln -> courtCentres.add(courtCentreFactory.getCourtCentre(hln.getCourtCentre().getId(), envelope))
+        );
+        return courtCentres;
+    }
+
 }

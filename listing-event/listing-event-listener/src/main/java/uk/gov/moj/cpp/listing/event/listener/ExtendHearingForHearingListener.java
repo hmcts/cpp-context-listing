@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.listener;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.AddedCasesForHearing;
+import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.Defendants;
 import uk.gov.justice.listing.events.HearingDeleted;
@@ -109,14 +110,26 @@ public class ExtendHearingForHearingListener {
         }
     }
 
+    /**
+     *  This method handles 'listing.event.added-cases-for-hearing'.
+     *  The event 'listing.event.added-cases-for-hearing' has been renamed to 'listing.event.cases-added-to-hearing'
+     *  and is handled in this method {@link ExtendHearingForHearingListener#handleCasesAddedToHearingEvent(Envelope)}
+     * @param event listing.event.added-cases-for-hearing
+     */
     @Handles("listing.event.added-cases-for-hearing")
     public void hearingAddedCasesForHearing(final Envelope<AddedCasesForHearing> event) {
         final AddedCasesForHearing addedCasesForHearing = event.payload();
-        final UUID hearingId = addedCasesForHearing.getHearingId();
-        final List<ListedCase> listedCasesToAdd = addedCasesForHearing.getUnAllocatedListedCases();
+        updateHearingWithCases(addedCasesForHearing.getHearingId(), addedCasesForHearing.getUnAllocatedListedCases());
+    }
 
-        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
-        };
+    @Handles("listing.event.cases-added-to-hearing")
+    public void handleCasesAddedToHearingEvent(final Envelope<CasesAddedToHearing> event) {
+        final CasesAddedToHearing casesAddedToHearing = event.payload();
+        updateHearingWithCases(casesAddedToHearing.getHearingId(), casesAddedToHearing.getUnAllocatedListedCases());
+    }
+
+    private void updateHearingWithCases(final UUID hearingId, final List<ListedCase> listedCasesToAdd) {
+        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {};
 
         final Hearing hearing = hearingRepository.findBy(hearingId);
 

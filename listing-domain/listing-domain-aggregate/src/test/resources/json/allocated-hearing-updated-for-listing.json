@@ -1,6 +1,6 @@
 {
   "_metadata": {
-    "name": "listing.events.allocated-hearing-updated-for-listing"
+    "name": "listing.events.allocated-hearing-updated-for-listing-v2"
   },
   "courtApplicationIds": ["26b856a8-ae01-4aad-814c-7cdff8db19bf"],
   "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
@@ -21,7 +21,11 @@
   "prosecutionCaseDefendantsOffenceIds": [{
     "defendants": [{
       "id": "0baecac5-222b-402d-9047-84803679edac",
-      "offenceIds": ["0baecac5-222b-402d-9047-84803679edad"]
+      "offenceIds": [
+        {
+          "id": "0baecac5-222b-402d-9047-84803679edad"
+        }
+       ]
     }],
     "id": "31bf5d91-f90e-4117-a018-d1290e107692"
   }],

@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
@@ -14,6 +16,8 @@ import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdated;
 import uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
+import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
+import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingTrialVacated;
@@ -56,6 +60,8 @@ public class HearingEventListener {
     private static final String LISTED_CASES_FIELD = "listedCases";
     private static final String FIELD_VACATE_TRIAL_REASON = "vacatedTrialReasonId";
     private static final String FIELD_IS_VACATED_TRIAL = "isVacatedTrial";
+    private static final String FIELD_ALLOCATED = "allocated";
+    private static final String FIELD_COURT_ROOM_ID = "courtRoomId";
     private final JsonEntityFinder jsonEntityFinder;
     private final HearingRepository hearingRepository;
     private final ObjectMapper mapper;
@@ -86,20 +92,38 @@ public class HearingEventListener {
 
     @Handles("listing.events.hearing-allocated-for-listing")
     public void hearingAllocated(final Envelope<HearingAllocatedForListing> event) {
-        final long startTime = System.currentTimeMillis();
         final HearingAllocatedForListing hearingAllocatedForListing = event.payload();
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
-        jsonEntityFinder.find(hearingId).put("allocated", ALLOCATED).remove("unscheduled").save();
-        LOGGER.info("'listing.events.hearing-allocated-for-listing' received hearingId {} in {}", hearingId, System.currentTimeMillis() - startTime);
+        jsonEntityFinder.find(hearingId).put(FIELD_ALLOCATED, ALLOCATED).remove("unscheduled").save();
+        LOGGER.info("'listing.events.hearing-allocated-for-listing' received hearingId {} ", hearingId);
     }
 
+    @Handles("listing.events.hearing-allocated-for-listing-v2")
+    public void hearingAllocatedV2(final Envelope<HearingAllocatedForListingV2> event) {
+        final HearingAllocatedForListingV2 hearingAllocatedForListing = event.payload();
+        final UUID hearingId = hearingAllocatedForListing.getHearingId();
+        jsonEntityFinder.find(hearingId).put(FIELD_ALLOCATED, ALLOCATED).remove("unscheduled").save();
+        LOGGER.info("'listing.events.hearing-allocated-for-listing-v2' received hearingId {}", hearingId);
+    }
+
+    /**
+     * CourtRoom id fields needs to be clean up like allocated field when the hearing is
+     * unallocated. Manage Hearing links in the UI  appears regarding whether courtRoomId field  is
+     * null or not null in both hearing and hearingDays.
+     */
     @Handles("listing.events.hearing-unallocated-for-listing")
     public void hearingUnallocated(final Envelope<HearingUnallocatedForListing> event) {
-        final long startTime = System.currentTimeMillis();
         final HearingUnallocatedForListing hearingUnallocatedForListing = event.payload();
         final UUID hearingId = hearingUnallocatedForListing.getHearingId();
-        jsonEntityFinder.find(hearingId).put("allocated", !ALLOCATED).save();
-        LOGGER.info("'listing.events.hearing-unallocated-for-listing' received hearingId {} in {}", hearingId, System.currentTimeMillis() - startTime);
+        final TypeReference<List<HearingDay>> typeHearingDayRef = new TypeReference<List<HearingDay>>() {
+        };
+        jsonEntityFinder.find(hearingId)
+                .put(FIELD_ALLOCATED, !ALLOCATED)
+                .remove(FIELD_COURT_ROOM_ID)
+                .putSubList("hearingDays", typeHearingDayRef,getHearingDaysWithRemoveCourtRoomIdFunction())
+                .save();
+        LOGGER.info("'listing.events.hearing-unallocated-for-listing' received hearingId {} ", hearingId);
+
     }
 
     @Handles("listing.events.trial-vacated")
@@ -205,6 +229,17 @@ public class HearingEventListener {
                 .find(hearingId)
                 .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseWithProsecutorProceedingsFunction(prosecutionCaseId, caseIdentifier))
                 .save();
+    }
+
+    private Function<List<HearingDay>, List<HearingDay>> getHearingDaysWithRemoveCourtRoomIdFunction() {
+        return this::getHearingDaysWithRemoveCourtRoomId;
+    }
+
+    private List<HearingDay> getHearingDaysWithRemoveCourtRoomId(final List<HearingDay> hearingDays) {
+        return new ArrayList<>(hearingDays.stream()
+                .map(hearingDay -> HearingDay.hearingDay().withValuesFrom(hearingDay).withCourtRoomId(ofNullable(null)).build())
+                .collect(toList()));
+
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getUpdatedListedCaseWithProsecutorProceedingsFunction(final UUID prosecutionCaseId,

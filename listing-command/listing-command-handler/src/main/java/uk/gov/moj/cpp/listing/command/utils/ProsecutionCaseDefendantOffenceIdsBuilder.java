@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.courts.ProsecutionCases;
 import uk.gov.moj.cpp.listing.domain.DefendantOffenceIds;
+import uk.gov.moj.cpp.listing.domain.OffenceIds;
 import uk.gov.moj.cpp.listing.domain.ProsecutionCaseDefendantOffenceIds;
 
 import java.util.Collections;
@@ -21,7 +22,9 @@ public class ProsecutionCaseDefendantOffenceIdsBuilder {
                                         .map(d -> DefendantOffenceIds.defendantOffenceIds()
                                                 .withId(d.getDefendantId().orElseThrow(IllegalArgumentException::new))
                                                 .withOffences(d.getOffences().stream()
-                                                        .map(uk.gov.justice.listing.courts.Offences::getOffenceId).collect(toList()))
+                                                        .map(o -> OffenceIds.offenceIds()
+                                                                .withId(o.getOffenceId())
+                                                                .build()).collect(toList()))
                                                 .build()).collect(toList()))
                                 .build())
                         .collect(toList());
