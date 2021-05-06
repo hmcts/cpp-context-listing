@@ -406,7 +406,7 @@ public class HearingEventListenerTest {
     @Test
     public void shouldHandleCaseIdentifierProceedingsConcluded() throws Exception {
         final UUID CASE_ID = fromString("4ec3cbb8-2fb7-447c-9949-ad71436911f1");
-        final String testCases1 = getStringFromResource("defendant-proceedings-concluded.json");
+        final String testCases1 = getStringFromResource("defendant-proceedings-concluded-with-prosecutor.json");
         final ObjectMapper objectMapper = new ObjectMapper();
         final JsonNode testCasesProperties = objectMapper.readTree(testCases1);
         final Envelope<CaseIdentifierUpdated> envelope = (Envelope<CaseIdentifierUpdated>) mock(Envelope.class);

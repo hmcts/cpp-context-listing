@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersBuilder.withDefaults;
@@ -23,6 +24,8 @@ import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType;
+import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlTestUtils;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.exception.InvalidDataException;
@@ -64,6 +67,34 @@ public class CourtServicesMapperTest extends BaseMapperTest {
         assertThat(listHeaderStructure.getStartDate(), is(LocalDate.parse("2019-11-04")));
         assertThat(listHeaderStructure.getEndDate(), is(LocalDate.parse("2019-11-05")));
         assertThat(listHeaderStructure.getPublishedTime().toString(), is("2018-01-02T13:04:05Z"));
+    }
+
+    @Test
+    public void generateSittingStructure() {
+
+        final JsonObject sitting = givenPayload("/xhibit/mock-data/listing.query.sittings.json")
+                .getJsonArray("sittings").getValuesAs(JsonObject.class).get(0);
+
+
+        SittingStructure listHeaderStructure = courtServicesMapper.generateSittingStructure(sitting, 1);
+
+        assertThat(listHeaderStructure.getHearings(), is(notNullValue()));
+        assertThat(listHeaderStructure.getHearings().getHearing().get(0).getProsecution(), is(notNullValue()));
+        assertThat(listHeaderStructure.getHearings().getHearing().get(0).getProsecution().getProsecutingAuthority(), is(ProsecutingAuthorityType.OTHER_PROSECUTOR));
+    }
+
+    @Test
+    public void generateSittingStructureForProsecutor() {
+
+        final JsonObject sitting = givenPayload("/xhibit/mock-data/listing.query.sittings.json")
+                .getJsonArray("sittings").getValuesAs(JsonObject.class).get(1);
+
+
+        SittingStructure listHeaderStructure = courtServicesMapper.generateSittingStructure(sitting, 1);
+
+        assertThat(listHeaderStructure.getHearings(), is(notNullValue()));
+        assertThat(listHeaderStructure.getHearings().getHearing().get(0).getProsecution(), is(notNullValue()));
+        assertThat(listHeaderStructure.getHearings().getHearing().get(0).getProsecution().getProsecutingAuthority(), is(ProsecutingAuthorityType.CROWN_PROSECUTION_SERVICE));
     }
 
     @Test

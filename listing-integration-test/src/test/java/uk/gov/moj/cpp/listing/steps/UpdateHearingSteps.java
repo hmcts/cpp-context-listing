@@ -1093,12 +1093,12 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                         status().is(OK),
                         payload().isJson(allOf(
                                 withJsonPath("$.listedCases[0].id", equalTo(payload.getString("prosecutionCaseId"))),
-                                withJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(payload.getString("prosecutionAuthorityId"))),
-                                withJsonPath("$.listedCases[0].caseIdentifier.authorityCode", equalTo(payload.getString("prosecutionAuthorityCode"))),
-                                withJsonPath("$.listedCases[0].caseIdentifier.caseReference", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseReference())),
+                                withJsonPath("$.listedCases[0].prosecutor.prosecutorId", equalTo(payload.getString("prosecutionAuthorityId"))),
+                                withJsonPath("$.listedCases[0].prosecutor.prosecutorCode", equalTo(payload.getString("prosecutionAuthorityCode"))),
                                 withJsonPath("$.listedCases[1].caseIdentifier.authorityId", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(1).getAuthorityId().toString())),
                                 withJsonPath("$.listedCases[1].caseIdentifier.authorityCode", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(1).getAuthorityCode())),
                                 withJsonPath("$.listedCases[1].caseIdentifier.caseReference", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(1).getCaseReference()))
+
                         )));
     }
 

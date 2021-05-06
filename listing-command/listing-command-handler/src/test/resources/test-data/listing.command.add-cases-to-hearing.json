@@ -7,6 +7,15 @@
         "authorityId": "a81ebac0-0160-4ca7-abd4-ee58781851ea",
         "caseReference": "VpQV3976109"
       },
+      "prosecutor": {
+        "prosecutorCode": "prosecutorCode",
+        "prosecutorId": "badaef85-7d26-45eb-9c09-9c7e12e16088",
+        "prosecutorName": "prosecutorName",
+        "address": {
+          "address1": "address1",
+          "address2": "address2"
+        }
+      },
       "defendants": [
         {
           "address": {
@@ -185,6 +194,11 @@
         "authorityCode": "KAJmzzPWt5",
         "authorityId": "9162ed3c-6b1d-47b7-8229-7720d0655290",
         "caseReference": "3Zqu2600203"
+      },
+      "prosecutor": {
+        "prosecutorCode": "prosecutorCode",
+        "prosecutorId": "badaef85-7d26-45eb-9c09-9c7e12e16088",
+        "prosecutorName": "prosecutorName"
       },
       "defendants": [
         {

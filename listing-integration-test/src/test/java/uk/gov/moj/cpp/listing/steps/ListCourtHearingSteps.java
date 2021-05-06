@@ -66,6 +66,7 @@ import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
+import uk.gov.justice.core.courts.Prosecutor;
 import uk.gov.justice.core.courts.ReportingRestriction;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.core.courts.BreachType;
@@ -1222,7 +1223,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 .collect(Collectors.toList());
 
         return ListCourtHearing.listCourtHearing()
-                .withAdjournedFromDate(Optional.of(LocalDate.now().toString()))
+                .withAdjournedFromDate(of(LocalDate.now().toString()))
                 .withShadowListedOffences(shadowListedOffences)
                 .withHearings(singletonList(HearingListingNeeds.hearingListingNeeds()
                         .withCourtCentre(CourtCentre.courtCentre()
@@ -1230,7 +1231,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 .withName(hearingData.getName())
                                 .withRoomId(ofNullable(hearingData.getCourtRoomId()))
                                 .build())
-                        .withBookingReference(Optional.of(randomUUID()))
+                        .withBookingReference(of(randomUUID()))
                         .withCourtApplications(singletonList(CourtApplication.courtApplication()
                                 .withId(hearingData.getCourtApplications().get(0).getId())
                                 .withCourtApplicationCases(singletonList(CourtApplicationCase.courtApplicationCase()
@@ -1273,7 +1274,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                         .withWeekCommencingDate(hearingData.getWeekCommencingStartDate() == null ? Optional.empty() :
                                 of(WeekCommencingDate.weekCommencingDate()
                                         .withStartDate(FORMATTER.format(hearingData.getWeekCommencingStartDate()))
-                                        .withDuration(Optional.of(hearingData.getWeekCommencingDuration()))
+                                        .withDuration(of(hearingData.getWeekCommencingDuration()))
                                         .build()))
                         .withProsecutionCases(hearingData.getListedCases().stream()
                                 .map(lc -> ProsecutionCase.prosecutionCase().withId(lc.getCaseId())
@@ -1283,6 +1284,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                 .withProsecutionAuthorityId(lc.getAuthorityId())
                                                 .withProsecutionAuthorityReference(lc.getCaseReference())
                                                 .build())
+                                        .withProsecutor(Prosecutor.prosecutor().withProsecutorId(lc.getAuthorityId()).withProsecutorCode(lc.getAuthorityCode()).build())
                                         .withCaseMarkers(singletonList(Marker.marker()
                                                 .withId(randomUUID())
                                                 .withMarkerTypeCode("C")
@@ -1300,7 +1302,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                         .build()))
                                                 .withOffences(d.getOffences().stream()
                                                         .map(o -> Offence.offence()
-                                                                .withCount(Optional.of(INTEGER.next()))
+                                                                .withCount(of(INTEGER.next()))
                                                                 .withId(o.getOffenceId())
                                                                 .withOffenceCode(STRING.next())
                                                                 .withOffenceDefinitionId(randomUUID())

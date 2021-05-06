@@ -81,6 +81,7 @@ public class CourtServicesMapper {
     public static final String FORENAMES = "forenames";
     public static final String SURNAME = "surname";
     private static final String CASE_IDENTIFIER = "caseIdentifier";
+    private static final String PROSECUTOR = "prosecutor";
     private static final String CASE_REFERENCE = "caseReference";
     private static final String APPLICATION_REFERENCE = "applicationReference";
     private static final String JUDICIAL_ID = "judicialId";
@@ -326,7 +327,7 @@ public class CourtServicesMapper {
         for (final JsonObject hearingJson : hearingJsonList) {
 
             if (!hearingJson.getBoolean(RESTRICT_FROM_COURT_LIST)) {
-                if (hearingJson.containsKey(CASE_IDENTIFIER)) {
+                if (hearingJson.containsKey(CASE_IDENTIFIER) || hearingJson.containsKey(PROSECUTOR)) {
                     sittingStructureHearings.getHearing().add(generateHearingStructureForListedCase(hearingJson, hearingSequenceNumber++, weekCommencing));
                 }
 
@@ -488,11 +489,19 @@ public class CourtServicesMapper {
 
         final ProsecutionStructure prosecutionStructure = objectFactory.createProsecutionStructure();
 
-        final String authorityType = listedCase.getJsonObject(CASE_IDENTIFIER).getString("authorityCode", "");
+        final JsonObject prosecutor = listedCase.getJsonObject(PROSECUTOR);
 
-        final ProsecutingAuthorityType prosecutingAuthorityType = authorityType.startsWith(CPS_PROSECUTOR_CODE)
-                ? CROWN_PROSECUTION_SERVICE
-                : OTHER_PROSECUTOR;
+        final ProsecutingAuthorityType prosecutingAuthorityType;
+
+        if (prosecutor != null){
+            prosecutingAuthorityType = CROWN_PROSECUTION_SERVICE;
+        } else {
+            final String authorityType = listedCase.getJsonObject(CASE_IDENTIFIER).getString("authorityCode", "");
+            prosecutingAuthorityType = authorityType.startsWith(CPS_PROSECUTOR_CODE)
+                    ? CROWN_PROSECUTION_SERVICE
+                    : OTHER_PROSECUTOR;
+        }
+
 
         prosecutionStructure.setProsecutingAuthority(prosecutingAuthorityType);
         prosecutionStructure.setProsecutingReference(prosecutingAuthorityType.value());

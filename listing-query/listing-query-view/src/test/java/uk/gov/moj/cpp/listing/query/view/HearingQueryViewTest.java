@@ -122,6 +122,7 @@ public class HearingQueryViewTest {
     private static final String ID_PARAMETER = "id";
     private static final String AUTHORITY_ID = "efa4e01b-1dc5-48c5-80b5-c3858a7622d6";
     private static final String AUTHORITY_ID_SEARCH = String.format(HearingRepository.AUTHORITY_ID_SEARCH, AUTHORITY_ID);
+    private static final String PROSECUTOR_ID_SEARCH = String.format(HearingRepository.PROSECUTOR_ID_SEARCH, AUTHORITY_ID);
     private static final UUID HEARING_TYPE_ID = randomUUID();
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
     private static final LocalDate SEARCH_DATE = LocalDate.now();
@@ -250,6 +251,7 @@ public class HearingQueryViewTest {
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_ID_SEARCH,
+                PROSECUTOR_ID_SEARCH,
                 HEARING_TYPE_ID.toString(),
                 JURISDICTION_TYPE.toString(),
                 SEARCH_DATE.toString(),
@@ -280,7 +282,7 @@ public class HearingQueryViewTest {
                 ))
         ));
         verify(hearingRepository).findHearings(eq(ALLOCATED), eq(COURT_CENTRE_ID.toString()), eq(COURT_ROOM_ID.toString()),
-                eq(AUTHORITY_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
+                eq(AUTHORITY_ID_SEARCH), eq(PROSECUTOR_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
                 eq(SEARCH_DATE.atTime(LocalTime.MIN).toString()), eq(SEARCH_DATE.atTime(END_TIME).toString()));
         verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMapOf(String.class, String.class));
     }
@@ -301,6 +303,7 @@ public class HearingQueryViewTest {
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_ID_SEARCH,
+                PROSECUTOR_ID_SEARCH,
                 HEARING_TYPE_ID.toString(),
                 JURISDICTION_TYPE.toString(),
                 SEARCH_DATE.toString(),
@@ -333,7 +336,7 @@ public class HearingQueryViewTest {
                 ))
         ));
         verify(hearingRepository).findHearings(eq(ALLOCATED), eq(COURT_CENTRE_ID.toString()), eq(COURT_ROOM_ID.toString()),
-                eq(AUTHORITY_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
+                eq(AUTHORITY_ID_SEARCH), eq(PROSECUTOR_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
                 eq(SEARCH_DATE.atTime(START_TIME).toString()), eq(SEARCH_DATE.atTime(END_TIME).toString()));
         verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMapOf(String.class, String.class));
         verify(notesService, times(1)).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class));
@@ -679,6 +682,7 @@ public class HearingQueryViewTest {
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_ID_SEARCH,
+                PROSECUTOR_ID_SEARCH,
                 HEARING_TYPE_ID.toString(),
                 JURISDICTION_TYPE.toString(),
                 SEARCH_DATE.toString(),
@@ -707,7 +711,7 @@ public class HearingQueryViewTest {
         assertThat(results.payloadAsJsonObject().getJsonArray("hearings").size(), is(0));
 
         verify(hearingRepository).findHearings(eq(ALLOCATED), eq(COURT_CENTRE_ID.toString()), eq(COURT_ROOM_ID.toString()),
-                eq(AUTHORITY_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
+                eq(AUTHORITY_ID_SEARCH), eq(PROSECUTOR_ID_SEARCH), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE.toString()),
                 eq(SEARCH_DATE.atTime(START_TIME).toString()), eq(SEARCH_DATE.atTime(END_TIME).toString()));
 
         verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMapOf(String.class, String.class));

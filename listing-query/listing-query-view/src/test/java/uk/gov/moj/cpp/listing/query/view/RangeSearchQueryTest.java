@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
+import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -58,6 +59,7 @@ public class RangeSearchQueryTest {
     private static final String JURISDICTION_TYPE_QUERY_PARAMETER = "jurisdictionType";
     private static final String AUTHORITY_ID = "efa4e01b-1dc5-48c5-80b5-c3858a7622d6";
     private static final String AUTHORITY_ID_SEARCH = String.format(HearingRepository.AUTHORITY_ID_SEARCH, AUTHORITY_ID);
+    private static final String PROSECUTOR_ID_SEARCH = String.format(HearingRepository.PROSECUTOR_ID_SEARCH, AUTHORITY_ID);
     private static final UUID HEARING_TYPE_ID = randomUUID();
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
     private static final LocalDate SEARCH_DATE = LocalDate.now();
@@ -108,6 +110,7 @@ public class RangeSearchQueryTest {
                 COURT_CENTRE_ID.toString(),
                 COURT_ROOM_ID.toString(),
                 AUTHORITY_ID_SEARCH,
+                PROSECUTOR_ID_SEARCH,
                 HEARING_TYPE_ID.toString(),
                 JURISDICTION_TYPE.toString(),
                 SEARCH_DATE.toString(),
@@ -145,6 +148,7 @@ public class RangeSearchQueryTest {
                 null,
                 null,
                 AUTHORITY_ID_SEARCH,
+                PROSECUTOR_ID_SEARCH,
                 null,
                 null,
                 WEEK_COMMENCING_START_DATE.toString(),
@@ -178,6 +182,7 @@ public class RangeSearchQueryTest {
                 null,
                 null,
                 AUTHORITY_ID_SEARCH,
+                PROSECUTOR_ID_SEARCH,
                 null,
                 null,
                 EARLIEST_SEARCH_DATE,
@@ -213,7 +218,8 @@ public class RangeSearchQueryTest {
                 ALLOCATEDSTR,
                 null,
                 null,
-                HearingRepository.ALL_AUTHORITY_CODES_SEARCH,
+                ALL_AUTHORITY_CODES_SEARCH,
+                ALL_AUTHORITY_CODES_SEARCH,
                 null,
                 null,
                 EARLIEST_SEARCH_DATE,

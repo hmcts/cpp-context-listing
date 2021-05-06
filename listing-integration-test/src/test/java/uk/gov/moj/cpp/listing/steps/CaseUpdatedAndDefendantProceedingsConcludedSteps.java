@@ -6,6 +6,7 @@ import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -102,6 +103,11 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         LOGGER.debug("jsonResponse from privateEventMessageConsumerCaseUpdatedAndHearingResulted: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("prosecutionCase"), notNullValue());
+        assertThat(jsonResponse.get("prosecutionCase.prosecutor.prosecutorCode"),is("prosecutorCode") );
+        assertThat(jsonResponse.get("prosecutionCase.prosecutor.prosecutorName"),is("prosecutorName") );
+        assertThat(jsonResponse.get("prosecutionCase.prosecutor.address.address1"),is("address1") );
+        assertThat(jsonResponse.get("prosecutionCase.prosecutor.address.address2"),is("address2") );
+
     }
 
     public void verifyPrivateEventDefendantCourtProceedingsUpdatedInActiveMQ() {

@@ -38,6 +38,10 @@
                 "authorityCode": "TFL",
                 "caseReference": "TFL9592853682"
               },
+              "prosecutor": {
+                "prosecutorId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+                "prosecutorCode": "CPS"
+              },
               "defendants": [
                 {
                   "id": "61195a9e-273a-452f-9fad-680130178bfb",

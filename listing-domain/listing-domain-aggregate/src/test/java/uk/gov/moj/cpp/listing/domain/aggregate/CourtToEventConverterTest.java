@@ -5,6 +5,7 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import uk.gov.justice.core.courts.Address;
@@ -20,6 +21,7 @@ import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
+import uk.gov.justice.core.courts.Prosecutor;
 import uk.gov.justice.core.courts.ReportingRestriction;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.events.CaseIdentifier;
@@ -88,6 +90,12 @@ public class CourtToEventConverterTest {
     private static final LocalDate RR_ORDERED_DATE = LocalDate.now();
     private static final UUID SEEDING_HEARING_ID = UUID.randomUUID();
     private static final String SITTING_DAY = LocalDate.now().toString();
+
+
+    private static final String PROSECUTOR_NAME = "prosecutorName";
+    private static final String PROSECUTOR_CODE = "prosecutorCode";
+    private static final String ADDRESS1 = "address1";
+    private static final String ADDRESS2 = "address2";
 
     @Test
     public void shouldConvert() {
@@ -162,6 +170,14 @@ public class CourtToEventConverterTest {
         assertThat(WELSH_TITLE, is(statementOfOffence.getWelshTitle()));
         assertThat(of(LEGISLATION_WELSH), is(statementOfOffence.getWelshLegislation()));
 
+        final Optional<uk.gov.justice.listing.events.Prosecutor> prosecutor = listedCase.getProsecutor();
+        assertThat(prosecutor.get().getProsecutorId(), is(notNullValue()));
+        assertThat(PROSECUTOR_NAME, is(prosecutor.get().getProsecutorName().get()));
+        assertThat(PROSECUTOR_CODE, is(prosecutor.get().getProsecutorCode()));
+        assertThat(ADDRESS1, is(prosecutor.get().getAddress().get().getAddress1()));
+        assertThat(ADDRESS2, is(prosecutor.get().getAddress().get().getAddress2().get()));
+        assertThat(prosecutor.get().getAddress().get().getAddress3(), is(Optional.empty()));
+
         final uk.gov.justice.listing.events.SeedingHearing seedingHearing = offence.getSeedingHearing().get();
         assertThat(seedingHearing.getSeedingHearingId(), is(SEEDING_HEARING_ID));
         assertThat(seedingHearing.getJurisdictionType(), is(uk.gov.justice.listing.courts.JurisdictionType.CROWN));
@@ -175,6 +191,17 @@ public class CourtToEventConverterTest {
 
         assertThat(listedCase.getShadowListed(), is(Optional.of(Boolean.TRUE)));
         assertThat(listedCase.getDefendants().get(0).getOffences().get(0).getShadowListed(), is(Optional.of(Boolean.TRUE)));
+    }
+
+    @Test
+    public void shouldSetProsecutorObject() {
+        final ListedCase listedCase = CourtToEventConverter.buildListedCase(getSampleProsecutionCaseWithProsecutorMadatoryFields(), Arrays.asList(OFFENCE_ID));
+
+        final Optional<uk.gov.justice.listing.events.Prosecutor> prosecutor = listedCase.getProsecutor();
+        assertThat(prosecutor.get().getProsecutorId(), is(notNullValue()));
+        assertThat(prosecutor.get().getProsecutorName(), is(Optional.empty()));
+        assertThat(PROSECUTOR_CODE, is(prosecutor.get().getProsecutorCode()));
+        assertThat(prosecutor.get().getAddress(), is(Optional.empty()));
     }
 
     @Test
@@ -215,8 +242,40 @@ public class CourtToEventConverterTest {
                 .withCaseMarkers(getSampleCaseMarkers())
                 .withDefendants(getSampleDefendants())
                 .withCaseStatus(of(CASE_STATUS))
+                .withProsecutor(getProsecutor())
                 .build();
 
+    }
+
+    private ProsecutionCase getSampleProsecutionCaseWithProsecutorMadatoryFields() {
+        return ProsecutionCase.prosecutionCase()
+                .withId(CASE_ID)
+                .withProsecutionCaseIdentifier(getSampleCaseIdentifier())
+                .withCaseMarkers(getSampleCaseMarkers())
+                .withDefendants(getSampleDefendants())
+                .withCaseStatus(of(CASE_STATUS))
+                .withProsecutor(getProsecutorWithMandatoryFields())
+                .build();
+
+    }
+
+    private uk.gov.justice.core.courts.Prosecutor getProsecutor(){
+        return Prosecutor.prosecutor()
+                .withProsecutorId(UUID.randomUUID())
+                .withProsecutorName(PROSECUTOR_NAME)
+                .withProsecutorCode(PROSECUTOR_CODE)
+                .withAddress(Address.address()
+                        .withAddress1(ADDRESS1)
+                        .withAddress2(ADDRESS2)
+                        .build())
+                .build();
+    }
+
+    private uk.gov.justice.core.courts.Prosecutor getProsecutorWithMandatoryFields(){
+        return Prosecutor.prosecutor()
+                .withProsecutorId(UUID.randomUUID())
+                .withProsecutorCode(PROSECUTOR_CODE)
+                .build();
     }
 
     private List<Defendant> getSampleDefendants() {

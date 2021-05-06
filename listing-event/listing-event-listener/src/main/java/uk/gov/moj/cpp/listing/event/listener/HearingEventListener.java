@@ -23,6 +23,7 @@ import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.ListedCase;
+import uk.gov.justice.listing.events.Prosecutor;
 import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
@@ -252,12 +253,12 @@ public class HearingEventListener {
                                                                                final List<ListedCase> cases){
         final List<ListedCase> listedCases = new ArrayList<>(cases);
         final ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(prosecutionCaseID));
-        final CaseIdentifier orgCaseIdentifier = listedCase.getCaseIdentifier();
-        final CaseIdentifier updatedCaseIdentifier = CaseIdentifier.caseIdentifier().withValuesFrom(caseIdentifier)
-                .withCaseReference(orgCaseIdentifier.getCaseReference())
-                .build();
+        final Prosecutor prosecutor = Prosecutor.prosecutor()
+                .withProsecutorCode(caseIdentifier.getAuthorityCode())
+                .withProsecutorId(caseIdentifier.getAuthorityId()).build();
         final ListedCase updatedListedCase = ListedCase.listedCase().withValuesFrom(listedCase)
-                .withCaseIdentifier(updatedCaseIdentifier).build();
+                .withProsecutor(prosecutor)
+                .build();
 
         listedCases.replaceAll(
                 listedCase1 -> listedCase1.getId().equals(updatedListedCase.getId()) ? updatedListedCase : listedCase1);
@@ -283,6 +284,7 @@ public class HearingEventListener {
     private void updateCaseStatus(final ProsecutionCase prosecutionCase, final List<ListedCase> listedCases, final ListedCase listedCase) {
         final ListedCase newListedCase = ListedCase.listedCase()
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
+                .withProsecutor(listedCase.getProsecutor())
                 .withCaseStatus(prosecutionCase.getCaseStatus())
                 .withDefendants(listedCase.getDefendants())
                 .withIsEjected(listedCase.getIsEjected())

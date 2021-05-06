@@ -86,6 +86,10 @@ public class SittingsJsonGenerator {
             hearingJsonBuilder
                     .add("caseIdentifier", caseDetails.getCaseIdentifier())
                     .add("defendants", caseDetails.getDefendants());
+            if (nonNull(caseDetails.getProsecutor())) {
+                hearingJsonBuilder.add("prosecutor", caseDetails.getProsecutor());
+
+            }
         } else {
 
             final CourtApplicationDetails courtApplicationDetails = hearing.getCourtApplicationDetails().orElseThrow(IllegalStateException::new);

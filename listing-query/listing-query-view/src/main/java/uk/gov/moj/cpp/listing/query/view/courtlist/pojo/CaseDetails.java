@@ -9,6 +9,8 @@ public class CaseDetails {
 
     private JsonArray defendants;
 
+    private JsonObject prosecutor;
+
     public JsonObject getCaseIdentifier() {
         return caseIdentifier;
     }
@@ -23,5 +25,13 @@ public class CaseDetails {
 
     public void setDefendants(final JsonArray defendants) {
         this.defendants = defendants;
+    }
+
+    public JsonObject getProsecutor() {
+        return prosecutor;
+    }
+
+    public void setProsecutor(final JsonObject prosecutor) {
+        this.prosecutor = prosecutor;
     }
 }

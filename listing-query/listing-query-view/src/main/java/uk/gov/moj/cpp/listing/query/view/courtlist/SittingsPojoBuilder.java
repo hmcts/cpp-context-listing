@@ -246,7 +246,7 @@ public class SittingsPojoBuilder {
         final CaseDetails caseDetails = new CaseDetails();
 
         caseDetails.setCaseIdentifier(caseDetailsJson.getJsonObject("caseIdentifier"));
-
+        caseDetails.setProsecutor(caseDetailsJson.getJsonObject("prosecutor"));
         caseDetails.setDefendants(caseDetailsJson.getJsonArray("defendants"));
 
         return Optional.of(caseDetails);

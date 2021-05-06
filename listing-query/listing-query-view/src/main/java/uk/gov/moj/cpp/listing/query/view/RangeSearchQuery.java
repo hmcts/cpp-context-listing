@@ -11,6 +11,7 @@ import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AL
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
+import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.PROSECUTOR_ID_SEARCH;
 
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -66,7 +67,7 @@ public class RangeSearchQuery {
                         "endDate: {}, "
                 , courtCentreId, courtRoomId, startDate, endDate);
 
-        final List<Hearing> hearings = findHearings(true, courtCentreId, courtRoomId, ALL_AUTHORITY_CODES_SEARCH, null, null, startDate, endDate);
+        final List<Hearing> hearings = findHearings(true, courtCentreId, courtRoomId, ALL_AUTHORITY_CODES_SEARCH, ALL_AUTHORITY_CODES_SEARCH, null, null, startDate, endDate);
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.range.search.hearings.for.judge"),
                 createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings)));
@@ -80,6 +81,7 @@ public class RangeSearchQuery {
         final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
         final String authorityId = query.payloadAsJsonObject().getString(AUTHORITY_ID, null);
         final String authorityIdSearchString = getAuthorityIdSearchString(authorityId);
+        final String prosecutorIdSearchString = getProsecutorIdSearchString(authorityId);
         final String hearingTypeId = query.payloadAsJsonObject().getString(HEARING_TYPE, null);
         final String jurisdictionType = query.payloadAsJsonObject().getString(JURISDICTION_TYPE, null);
         final String startDate = query.payloadAsJsonObject().getString(START_DATE, EARLIEST_SEARCH_DATE);
@@ -102,19 +104,28 @@ public class RangeSearchQuery {
                 allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate);
 
         final List<Hearing> hearings = !weekCommencingStartDate.isEmpty() ?
-                findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate) :
-                findHearings(allocated, courtCentreId, courtRoomId, authorityIdSearchString, hearingTypeId, jurisdictionType, startDate, endDate);
+                findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityIdSearchString, prosecutorIdSearchString, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate) :
+                findHearings(allocated, courtCentreId, courtRoomId, authorityIdSearchString, prosecutorIdSearchString, hearingTypeId, jurisdictionType, startDate, endDate);
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings)));
     }
 
-    private List<Hearing> findHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate) {
+    private String getProsecutorIdSearchString(final String authorityId) {
+        if (authorityId != null) {
+            return format(PROSECUTOR_ID_SEARCH, authorityId);
+        } else {
+            return ALL_AUTHORITY_CODES_SEARCH;
+        }
+    }
+
+    private List<Hearing> findHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String prosecutorIdSearchString, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate) {
         return isFalse(allocated) ?
                 repository.findUnallocatedHearingsByWeekCommencingRange(
                         courtCentreId,
                         courtRoomId,
                         authorityIdSearchString,
+                        prosecutorIdSearchString,
                         hearingTypeId,
                         jurisdictionType,
                         EARLIEST_SEARCH_DATE,
@@ -124,18 +135,20 @@ public class RangeSearchQuery {
                         courtCentreId,
                         courtRoomId,
                         authorityIdSearchString,
+                        prosecutorIdSearchString,
                         hearingTypeId,
                         jurisdictionType,
                         weekCommencingDate,
                         weekCommencingEndDate);
     }
 
-    private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate) {
+    private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityIdSearchString, final String prosecutorIdSearchString, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate) {
         return repository.findHearings(
                 String.valueOf(allocated),
                 ofNullable(courtCentreId).orElse(null),
                 ofNullable(courtRoomId).orElse(null),
                 authorityIdSearchString,
+                prosecutorIdSearchString,
                 ofNullable(hearingTypeId).orElse(null),
                 ofNullable(jurisdictionType).orElse(null),
                 startDate,

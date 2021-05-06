@@ -9,6 +9,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
+import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.AssociatedDefenceOrganisation;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.Organisation;
@@ -21,6 +22,7 @@ import uk.gov.justice.listing.events.LaaReference;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.Offence;
+import uk.gov.justice.listing.events.Prosecutor;
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
@@ -46,6 +48,7 @@ public class CourtToEventConverter {
         return ListedCase.listedCase()
                 .withId(pc.getId())
                 .withCaseIdentifier(buildCaseIdentifier(pc))
+                .withProsecutor(buildProsecutor(pc.getProsecutor()))
                 .withMarkers(isNull(pc.getCaseMarkers()) ? emptyList() : pc.getCaseMarkers().stream()
                         .map(CourtToEventConverter::convertCaseMarkersToMarkers)
                         .collect(toList()))
@@ -63,6 +66,40 @@ public class CourtToEventConverter {
                 .withCaseReference(ofNullable(pc.getProsecutionCaseIdentifier().getCaseURN()).orElse(pc.getProsecutionCaseIdentifier().getProsecutionAuthorityReference()))
                 .build();
     }
+
+    private static Prosecutor buildProsecutor(final Optional<uk.gov.justice.core.courts.Prosecutor> prosecutor) {
+        if (prosecutor.isPresent()) {
+            return Prosecutor.prosecutor()
+                    .withProsecutorCode(prosecutor.get().getProsecutorCode())
+                    .withAddress(buildAddress(prosecutor.get().getAddress()))
+                    .withProsecutorId(prosecutor.get().getProsecutorId())
+                    .withProsecutorName(prosecutor.get().getProsecutorName())
+                    .build();
+        } else {
+            return null;
+        }
+    }
+
+    private static uk.gov.justice.listing.events.Address buildAddress(final Optional<Address> address) {
+        if (address.isPresent()) {
+            return uk.gov.justice.listing.events.Address.address()
+                    .withAddress1(address.get().getAddress1())
+                    .withAddress2(address.get().getAddress2())
+                    .withAddress3(address.get().getAddress3())
+                    .withAddress4(address.get().getAddress4())
+                    .withAddress5(address.get().getAddress5())
+                    .withPostcode(address.get().getPostcode())
+                    .withWelshAddress1(address.get().getWelshAddress1())
+                    .withWelshAddress2(address.get().getWelshAddress2())
+                    .withWelshAddress3(address.get().getWelshAddress3())
+                    .withWelshAddress4(address.get().getWelshAddress4())
+                    .withWelshAddress5(address.get().getWelshAddress5())
+                    .build();
+        } else {
+            return null;
+        }
+    }
+
 
     private static Marker convertCaseMarkersToMarkers(final uk.gov.justice.core.courts.Marker caseMarker) {
         return Marker.marker().withId(caseMarker.getId())

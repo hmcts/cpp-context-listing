@@ -23,6 +23,7 @@ import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.valueFor;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
 import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
+import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.PROSECUTOR_ID_SEARCH;
 import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
@@ -154,6 +155,7 @@ public class HearingQueryView {
         final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
         final String authorityId = query.payloadAsJsonObject().getString(AUTHORITY_ID, null);
         final String authorityIdSearchString = getAuthorityIdSearchString(authorityId);
+        final String prosecutorIdSearchString = getProsecutorIdSearchString(authorityId);
         final String hearingTypeId = query.payloadAsJsonObject().getString(HEARING_TYPE, null);
         final String jurisdictionType = query.payloadAsJsonObject().getString(JURISDICTION_TYPE, null);
         final String searchDate = query.payloadAsJsonObject().getString(SEARCH_DATE);
@@ -170,20 +172,25 @@ public class HearingQueryView {
                         "jurisdictionType: {}, " +
                         "startDate: {}, " +
                         "startTime: {}, " +
-                        "endTime: {}",
-                allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, searchDate, startTime, endTime);
+                        "endTime: {}" +
+                        "authorityIdSearchString: {}" +
+                        "prosecutorIdSearchString: {}",
+                allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, searchDate, startTime, endTime, authorityIdSearchString, prosecutorIdSearchString);
 
         final List<Hearing> hearings = repository.findHearings(
                 allocated,
                 courtCentreId,
                 courtRoomId,
                 authorityIdSearchString,
+                prosecutorIdSearchString,
                 hearingTypeId,
                 jurisdictionType,
                 searchDate,
                 startTime,
                 endTime
         );
+
+        LOGGER.info("number of records from query -  {}" , hearings.size());
 
         final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, searchDate, hearings);
 
@@ -194,6 +201,14 @@ public class HearingQueryView {
                         .add(NOTES, listToJsonArrayConverter.convert(notes))
                         .build()
         );
+    }
+
+    private String getProsecutorIdSearchString(final String authorityId) {
+        if (authorityId != null) {
+            return format(PROSECUTOR_ID_SEARCH, authorityId);
+        } else {
+            return ALL_AUTHORITY_CODES_SEARCH;
+        }
     }
 
     private Map<String, String> getHearingDayMatchedCriteriaMap(final String courtCentreId, final String courtRoomId, final String searchDate, final String startTime, final String endTime) {

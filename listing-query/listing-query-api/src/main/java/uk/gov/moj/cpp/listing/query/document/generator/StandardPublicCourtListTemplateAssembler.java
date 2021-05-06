@@ -94,6 +94,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String HEARING_DATE = "hearingDate";
     private static final String START_TIME = "startTime";
     private static final String CASE_IDENTIFIER = "caseIdentifier";
+    private static final String PROSECUTOR = "prosecutor";
     private static final String CASE_REFERENCE = "caseReference";
     private static final String COURT_ROOM_ID = "courtRoomId";
     private static final String COURT_CENTRE_ID = "courtCentreId";
@@ -115,6 +116,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String DATE_OF_BIRTH = "dateOfBirth";
     private static final String NATIONALITY_DESCRIPTION = "nationalityDescription";
     private static final String AUTHORITY_CODE = "authorityCode";
+    private static final String PROSECUTOR_CODE = "prosecutorCode";
     private static final String OFFENCE_WORDING = "offenceWording";
     private static final String TITLE = "title";
     private static final String STATEMENT_OF_OFFENCE = "statementOfOffence";
@@ -390,7 +392,7 @@ public class StandardPublicCourtListTemplateAssembler {
                 .withCaseNumber(caseRestricted ? EMPTY : listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE))
                 .withHearingType(caseRestricted ? HEARING_STRING : hearingType)
                 .withWelshHearingType(caseRestricted ? HEARING_STRING : (StringUtils.isEmpty(hearingWelshType) ? hearingType : hearingWelshType))
-                .withProsecutorType(caseRestricted ? EMPTY : listedCase.getJsonObject(CASE_IDENTIFIER).getString(AUTHORITY_CODE))
+                .withProsecutorType(caseRestricted ? EMPTY : getProsecutorType(listedCase))
                 .withSequence(sequence)
                 .withReportingRestrictionReason(caseRestricted ? EMPTY : reportingRestrictionReason)
                 .withWelshReportingRestrictionReason(caseRestricted ? EMPTY : welshReportingRestrictionReason)
@@ -398,6 +400,13 @@ public class StandardPublicCourtListTemplateAssembler {
                 .withStartTime(hearingStartTime)
                 .withAdjournedHearingDate(adjournedHearingDate)
                 .build();
+    }
+
+    private String getProsecutorType(final JsonObject listedCase) {
+        if(listedCase.containsKey(PROSECUTOR)){
+            return listedCase.getJsonObject(PROSECUTOR).getString(PROSECUTOR_CODE);
+        }
+        return listedCase.getJsonObject(CASE_IDENTIFIER).getString(AUTHORITY_CODE);
     }
 
     private Hearing createHearingFromCourtApplication(final JsonObject hearingJson, final String hearingStartTime, final Integer sequence,

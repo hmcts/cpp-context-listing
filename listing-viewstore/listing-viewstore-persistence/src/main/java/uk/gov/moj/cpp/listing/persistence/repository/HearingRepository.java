@@ -41,14 +41,22 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
     String ALL_AUTHORITY_CODES_SEARCH = "[ ]";
 
     String WEEK_COMMENCING_CORE_QUERY = "(properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)" +
-            "and (?3 = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?3 as jsonb))  " +
-            "and (?4 is null or properties -> 'type' ->> 'id' = cast(?4 as text))  " +
-            "and (?5 is null or properties ->> 'jurisdictionType' = cast(?5 as text))  " +
+            "and (" +
+            "  ?3  = '" + ALL_AUTHORITY_CODES_SEARCH + "' " +
+            "  or properties -> 'listedCases' @> cast(?4 as jsonb) " +
+            "  or ( " +
+            "       properties -> 'listedCases' @> cast(?3 as jsonb) " +
+            "       and" +
+            "       not properties ->> 'listedCases' like '%prosecutor%'" +
+            "     )" +
+            ") " +
+            "and (?5 is null or properties -> 'type' ->> 'id' = cast(?5 as text))  " +
+            "and (?6 is null or properties ->> 'jurisdictionType' = cast(?6 as text))  " +
             "and ( " +
-            "   ( cast(properties ->> 'weekCommencingStartDate' as date) >= cast(?6 as date) and cast(properties ->> 'weekCommencingStartDate' as date) <= cast(?7 as date) ) or " +
-            "   ( cast(properties ->> 'weekCommencingEndDate' as date) >= cast(?6 as date) and cast(properties ->> 'weekCommencingEndDate' as date) <= cast(?7 as date) ) or " +
-            "   ( cast(properties ->> 'startDate' as date) >= cast(?6 as date) and cast(properties ->> 'startDate' as date) <= cast(?7 as date) )  or " +
-            "   ( cast(properties ->> 'endDate' as date) >= cast(?6 as date) and cast(properties ->> 'endDate' as date) <= cast(?7 as date) ) ) " +
+            "   ( cast(properties ->> 'weekCommencingStartDate' as date) >= cast(?7 as date) and cast(properties ->> 'weekCommencingStartDate' as date) <= cast(?8 as date) ) or " +
+            "   ( cast(properties ->> 'weekCommencingEndDate' as date) >= cast(?7 as date) and cast(properties ->> 'weekCommencingEndDate' as date) <= cast(?8 as date) ) or " +
+            "   ( cast(properties ->> 'startDate' as date) >= cast(?7 as date) and cast(properties ->> 'startDate' as date) <= cast(?8 as date) )  or " +
+            "   ( cast(properties ->> 'endDate' as date) >= cast(?7 as date) and cast(properties ->> 'endDate' as date) <= cast(?8 as date) ) ) " +
             "group by id, properties " +
             "order by cast(properties ->> 'startDate' as date)," +
             "cast(properties ->> 'endDate' as date)," +
@@ -56,6 +64,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "cast(properties ->> 'weekCommencingEndDate' as date )";
 
     String AUTHORITY_ID_SEARCH = "[ { \"caseIdentifier\": { \"authorityId\": \"%s\" } } ]";
+    String PROSECUTOR_ID_SEARCH = "[ { \"prosecutor\": { \"prosecutorId\": \"%s\" } } ]";
     String EARLIEST_SEARCH_DATE = "1900-01-01";
     String LATEST_SEARCH_DATE = "9999-01-01";
 
@@ -82,17 +91,26 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
             "and (?2 is null or coalesce(hearingDays ->> 'courtCentreId', properties ->> 'courtCentreId') = cast(?2 as text))  " +
             "and (?3 is null or coalesce(hearingDays ->> 'courtRoomId', properties ->> 'courtRoomId') = cast(?3 as text))  " +
-            "and (?4  = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?4 as jsonb))  " +
-            "and (?5 is null or properties -> 'type' ->> 'id' = cast(?5 as text))  " +
-            "and (?6 is null or properties ->> 'jurisdictionType' = cast(?6 as text))  " +
-            "and cast(?7 as date) between cast(properties ->> 'startDate' as date) and cast(properties ->> 'endDate' as date)  " +
-            "and cast(hearingDays ->> 'startTime' as timestamp) >= cast(?8 as timestamp)  " +
-            "and cast(hearingDays ->> 'startTime' as timestamp) <= cast(?9 as timestamp)"
+            "and (" +
+            "  ?4  = '" + ALL_AUTHORITY_CODES_SEARCH + "' " +
+            "  or properties -> 'listedCases' @> cast(?5 as jsonb) " +
+            "  or ( " +
+            "       properties -> 'listedCases' @> cast(?4 as jsonb) " +
+            "       and" +
+            "       not properties ->> 'listedCases' like '%prosecutor%'" +
+            "     )" +
+            ") " +
+            "and (?6 is null or properties -> 'type' ->> 'id' = cast(?6 as text))  " +
+            "and (?7 is null or properties ->> 'jurisdictionType' = cast(?7 as text))  " +
+            "and cast(?8 as date) between cast(properties ->> 'startDate' as date) and cast(properties ->> 'endDate' as date)  " +
+            "and cast(hearingDays ->> 'startTime' as timestamp) >= cast(?9 as timestamp)  " +
+            "and cast(hearingDays ->> 'startTime' as timestamp) <= cast(?10 as timestamp)"
             , isNative = true)
     List<Hearing> findHearings(final boolean allocated,
                                final String courtCentreId,
                                final String courtRoomId,
                                final String authorityCode,
+                               final String prosecutorCode,
                                final String hearingTypeId,
                                final String jurisdictionType,
                                final String searchDate,
@@ -193,18 +211,27 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
             "and (?2 is null or coalesce(hearingDays ->> 'courtCentreId', properties ->> 'courtCentreId') = cast(?2 as text))  " +
             "and (?3 is null or coalesce(hearingDays ->> 'courtRoomId', properties ->> 'courtRoomId') = cast(?3 as text))  " +
-            "and (?4 = '" + ALL_AUTHORITY_CODES_SEARCH + "' or properties -> 'listedCases' @> cast(?4 as jsonb))  " +
-            "and (?5 is null or properties -> 'type' ->> 'id' = cast(?5 as text) )  " +
-            "and (?6 is null or properties ->> 'jurisdictionType' = cast(?6 as text))  " +
+            "and (" +
+            "  ?4  = '" + ALL_AUTHORITY_CODES_SEARCH + "' " +
+            "  or properties -> 'listedCases' @> cast(?5 as jsonb) " +
+            "  or ( " +
+            "       properties -> 'listedCases' @> cast(?4 as jsonb) " +
+            "       and" +
+            "       not properties ->> 'listedCases' like '%prosecutor%'" +
+            "     )" +
+            ") " +
+            "and (?6 is null or properties -> 'type' ->> 'id' = cast(?6 as text) )  " +
+            "and (?7 is null or properties ->> 'jurisdictionType' = cast(?7 as text))  " +
             "and ( " +
-            "   cast(properties ->> 'startDate' as date) between cast(?7 as date) and cast(?8 as date) or  " +
-            "   cast(properties ->> 'endDate' as date) between cast(?7 as date) and cast(?8 as date) or  " +
-            "   ( cast(properties ->> 'startDate' as date) <= cast(?7 as date) and cast(properties ->> 'endDate' as date) >= cast(?8 as date) )  " +
+            "   cast(properties ->> 'startDate' as date) between cast(?8 as date) and cast(?9 as date) or  " +
+            "   cast(properties ->> 'endDate' as date) between cast(?8 as date) and cast(?9 as date) or  " +
+            "   ( cast(properties ->> 'startDate' as date) <= cast(?8 as date) and cast(properties ->> 'endDate' as date) >= cast(?9 as date) )  " +
             ")", isNative = true)
     List<Hearing> findHearings(final String allocated,
                                final String courtCentreId,
                                final String courtRoomId,
                                final String authorityCode,
+                               final String prosecutorCode,
                                final String hearingTypeId,
                                final String jurisdictionType,
                                final String startDate,
@@ -240,6 +267,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             final String courtCentreId,
             final String courtRoomId,
             final String authorityCode,
+            final String prosecutorCode,
             final String hearingTypeId,
             final String jurisdictionType,
             final String weekCommencingStartDate,
@@ -267,7 +295,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "from hearing  " +
             "where  " +
             "(properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) and " +
-            "cast(properties ->> 'allocated' as boolean) = ?8  " +
+            "cast(properties ->> 'allocated' as boolean) = ?9  " +
             "and " +
             "(?1 is null or (properties ->> 'courtCentreId' = cast(?1 as text)))  " +
             "and (?2 is null or (properties ->> 'courtRoomId' = cast(?2 as text)))  " +
@@ -278,6 +306,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             final String courtCentreId,
             final String courtRoomId,
             final String authorityCode,
+            final String prosecutorCode,
             final String hearingTypeId,
             final String jurisdictionType,
             final String weekCommencingStartDate,

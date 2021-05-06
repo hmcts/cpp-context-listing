@@ -197,7 +197,9 @@ public class StandardCourtListTemplateAssemblerTest {
         Optional<JsonObject> standardListData = assembler.assemble(buildRequestEnvelope(buildHearingData()), COURT_CENTRE_ID.toString(), null, courtListType, FALSE);
         final StandardCourtList actualCourtList = jsonObjectToObjectConverter.convert(standardListData.get(), StandardCourtList.class);
 
-        assertThat(actualCourtList.getListType(), is(courtListType.toString().toLowerCase()));
+        //verify prosecutor is picked for prosecutorType if prosecutor is present
+        assertThat(actualCourtList.getHearingDates().get(0).getCourtRooms().get(0).getTimeslots().get(0).getHearings().get(1).getProsecutorType(), is("TFL"));
+        assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreName(), is(COURT_CENTRE_NAME));
         assertThat(actualCourtList.getCourtCentreAddress1(), is(notNullValue()));
@@ -1123,6 +1125,7 @@ public class StandardCourtListTemplateAssemblerTest {
         return createArrayBuilder().add(createObjectBuilder()
                 .add("id", randomUUID().toString())
                 .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN_1).add("authorityCode", "B01YB"))
+                .add("prosecutor", createObjectBuilder().add("prosecutorId", randomUUID().toString()).add("prosecutorCode", "CPS"))
                 .add("restrictFromCourtList", FALSE)
                 .add("defendants", createArrayBuilder()
                         .add(createObjectBuilder()
@@ -1141,6 +1144,7 @@ public class StandardCourtListTemplateAssemblerTest {
                 .add(createObjectBuilder()
                         .add("id", randomUUID().toString())
                         .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN_2).add("authorityCode", "B01YB"))
+                        .add("prosecutor", createObjectBuilder().add("prosecutorId", randomUUID().toString()).add("prosecutorCode", "CPS"))
                         .add("restrictFromCourtList", caseRestricted ? TRUE : FALSE)
                         .add("offences", createArrayBuilder().add(createObjectBuilder().add("id", randomUUID().toString())
                                 .add("offenceWording", "Wording").add("statementOfOffence", createObjectBuilder().add("title", "Title"))))
