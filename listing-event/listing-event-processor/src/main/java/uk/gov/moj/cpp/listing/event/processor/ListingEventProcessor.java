@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
 
+import static javax.json.Json.createArrayBuilder;
 import static java.util.Objects.nonNull;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
@@ -38,6 +39,8 @@ import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
+import uk.gov.justice.listing.events.JudicialRole;
+import uk.gov.justice.listing.events.JurisdictionType;
 import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
 import uk.gov.justice.listing.events.OffenceIds;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
@@ -56,6 +59,9 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
+import uk.gov.moj.cpp.listing.common.converter.JudicialRoleDomainToEventConverter;
+import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommandCollectionConverter;
@@ -81,6 +87,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
@@ -185,6 +192,7 @@ public class ListingEventProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
     private static final String PRIVATE_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS = "listing.events.new-defendant-added-for-court-proceedings";
     private static final String PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS = "public.listing.new-defendant-added-for-court-proceedings";
+    static final String COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
 
     @Inject
     private Sender sender;
@@ -242,6 +250,9 @@ public class ListingEventProcessor {
 
     @Inject
     private SlotUpdater slotUpdater;
+
+    @Inject
+    private RotaSLServiceAdapter rotaSLServiceAdapter;
 
     @Handles(PRIVATE_EVENT_HEARING_LISTED)
     public void handleHearingListedMessage(final JsonEnvelope envelope) {
@@ -363,7 +374,7 @@ public class ListingEventProcessor {
 
         LOGGER.debug("HearingConfirmed confirmedHearing used for slot update: {}", hearingConfirmed.getConfirmedHearing());
 
-        slotUpdater.updateSlot(envelope, hearingConfirmed.getConfirmedHearing(), isSlotUpdated, isForAdjournmentHearing, hearingDays);
+        updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(envelope, hearingConfirmed, isSlotUpdated, isForAdjournmentHearing, hearingDays, hearingAllocatedForListing.getJurisdictionType(), hearingAllocatedForListing.getJudiciary());
 
         publishHearingConfirmedPublicEvent(envelope, hearingConfirmed);
     }
@@ -384,7 +395,7 @@ public class ListingEventProcessor {
 
         LOGGER.debug("HearingConfirmed confirmedHearing used for slot update: {}", hearingConfirmed.getConfirmedHearing());
 
-        slotUpdater.updateSlot(envelope, hearingConfirmed.getConfirmedHearing(), isSlotUpdated, isForAdjournmentHearing, hearingDays);
+        updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(envelope, hearingConfirmed, isSlotUpdated, isForAdjournmentHearing, hearingDays, hearingAllocatedForListing.getJurisdictionType(), hearingAllocatedForListing.getJudiciary());
 
         publishHearingConfirmedPublicEvent(envelope, hearingConfirmed);
         sendChangeNextHearingDayIfHearingIsSeeded(envelope, prosecutionCaseDefendantOffenceIds, hearingId);
@@ -1074,6 +1085,49 @@ public class ListingEventProcessor {
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_MARK_HEARING_AS_DUPLICATE_FOR_CASE),
                 hearingMarkedAsDuplicateForCase));
+    }
+
+    private void updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(final JsonEnvelope envelope,
+                                                                                 final HearingConfirmed hearingConfirmed,
+                                                                                 final boolean isSlotUpdated,
+                                                                                 final boolean isForAdjournmentHearing,
+                                                                                 final List<HearingDay> hearingDays,
+                                                                                 final JurisdictionType jurisdictionType,
+                                                                                 final List<JudicialRole> judiciary) {
+        final Optional<List<SlotDetail>> slotDetailsOptional = slotUpdater.updateSlot(envelope, hearingConfirmed.getConfirmedHearing(), isSlotUpdated, isForAdjournmentHearing, hearingDays);
+
+        if (isForAdjournmentHearing && JurisdictionType.MAGISTRATES.equals(jurisdictionType) && isEmpty(judiciary)) {
+            slotDetailsOptional.ifPresent(slotDetails ->
+                    slotDetails.forEach(slotDetail -> {
+                        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciariesFromRota = rotaSLServiceAdapter.getJudicialRoles(slotDetail.getSessionDate(),
+                                slotDetail.getOuCode(),
+                                Optional.of(slotDetail.getSession()),
+                                hearingConfirmed.getConfirmedHearing().getCourtCentre().getRoomId().get().toString());
+
+
+                        if (isNotEmpty(judiciariesFromRota)) {
+                            sendChangeJudiciaryForHearings(envelope,
+                                    hearingConfirmed.getConfirmedHearing().getId(),
+                                    JudicialRoleDomainToEventConverter.convertToEvents(judiciariesFromRota));
+                        }
+                    })
+            );
+        }
+    }
+
+    private void sendChangeJudiciaryForHearings(final JsonEnvelope envelope, final UUID hearingId, final List<JudicialRole> judicialRoles) {
+        final JsonArrayBuilder jsonArrayBuilder = createArrayBuilder();
+        judicialRoles.forEach(judicialRole -> jsonArrayBuilder.add(objectToJsonObjectConverter.convert(judicialRole)));
+
+        final JsonObject changeJudiciaryForHearingsJsonObject = createObjectBuilder()
+                .add("hearings", createArrayBuilder().add(hearingId.toString()).build())
+                .add("judiciary",jsonArrayBuilder)
+                .build();
+
+        LOGGER.info(LOG_PUBLISHING, COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS, changeJudiciaryForHearingsJsonObject);
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS),
+                changeJudiciaryForHearingsJsonObject));
     }
 
 }

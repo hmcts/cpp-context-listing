@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -856,6 +857,20 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("jsonResponse from privateMessageConsumerCourtCentreChanged: {}", jsonResponse.prettify());
         assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
         assertThat(jsonResponse.get("courtCentreId"), is(updatedHearingData.getCourtCentreId().toString()));
+    }
+
+    public void verifyJudiciaryChangedEventWithRotaSLJudiciaries(final List<JudicialRoleData> judicialRoleDataList) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerJudiciaryChanged);
+        LOGGER.info("jsonResponse from privateMessageConsumerJudiciaryChanged: {}", jsonResponse.prettify());
+        assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
+        IntStream.range(0, judicialRoleDataList.size())
+                .forEach(judiciaryIndex -> {
+                    final String baseJudiciaryPath = String.format("judiciary[%d]", judiciaryIndex);
+                    assertThat(jsonResponse.get(baseJudiciaryPath + ".judicialId"), is(judicialRoleDataList.get(judiciaryIndex).getJudicialId().toString()));
+                    assertThat(jsonResponse.get(baseJudiciaryPath + ".judicialRoleType.judiciaryType"), is(judicialRoleDataList.get(judiciaryIndex).getJudicialRoleType().getJudiciaryType()));
+                    assertThat(jsonResponse.getBoolean(baseJudiciaryPath + ".isBenchChairman"), is(judicialRoleDataList.get(judiciaryIndex).getIsBenchChairman().get()));
+                    assertThat(jsonResponse.get(baseJudiciaryPath + ".isDeputy"), is(judicialRoleDataList.get(judiciaryIndex).getIsDeputy().get()));
+                });
     }
 
     private void verifyJudiciaryChangedEvent() {

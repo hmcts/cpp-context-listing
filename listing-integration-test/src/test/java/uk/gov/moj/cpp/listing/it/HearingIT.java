@@ -1,25 +1,36 @@
 package uk.gov.moj.cpp.listing.it;
 
-import org.junit.Test;
+import static java.util.UUID.randomUUID;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
+import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAvailableHearingSlotsService;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
+
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.SequenceHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.VacatingTrialSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
+import uk.gov.moj.cpp.listing.steps.data.JudicialRoleTypeData;
 import uk.gov.moj.cpp.listing.steps.data.SequenceHearingData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-import static java.util.UUID.randomUUID;
-import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
-import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
-import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
-import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAvailableHearingSlotsService;
-import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
-import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+
+import org.junit.Test;
 
 @SuppressWarnings("squid:S1607")
 
@@ -46,7 +57,7 @@ public class HearingIT extends AbstractIT {
         }
     }
 
-  @Test
+    @Test
     public void assignPublicListNoteInAllocatedListing() {
         final HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
@@ -64,7 +75,6 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
         }
     }
-
 
 
     @Test
@@ -94,6 +104,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
         }
     }
+
     @Test
     public void removePublicListNoteInAllocatedListing() {
         final HearingsData hearingsData = HearingsData.hearingsData();
@@ -194,6 +205,27 @@ public class HearingIT extends AbstractIT {
     }
 
     @Test
+    public void shouldRaisePublicHearingConfirmedPublicEventAndReturnSlotDetailsForAdjournmentHearingWithoutJudiciary() throws IOException {
+        stubUpdateAvailableHearingSlotsService();
+
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndAdjournmentFromDateWithoutJudiciary(1);
+
+        final JsonObject getHearingSlotsJsonObject = stubGetAvailableHearingSlotsWithQueryParams(false,
+                hearingsData.getHearingData().get(0).getCourtRoomId().toString(),
+                "C55BN00",
+                hearingsData.getHearingData().get(0).getHearingStartDate().toString(),
+                hearingsData.getHearingData().get(0).getHearingStartDate().toString());
+
+        final List<JudicialRoleData> judicialRoleDataList = getJudicialRoleDataFromRotaSLHearingSlots(getHearingSlotsJsonObject);
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingWithJudicialId(judicialRoleDataList.get(0).getJudicialId());
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyJudiciaryAssignedEventWithRotaSLJudiciaries(judicialRoleDataList);
+        }
+    }
+
+    @Test
     public void updateHearingResultsInAllocatedListingAndRaisesPublicHearingConfirmedPublicEventWithNoJudiciary() {
         final HearingsData hearingsData = hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
@@ -250,6 +282,61 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingDaysWhenQueryFromAPI();
         }
+    }
+
+    @Test
+    public void updateHearingResultsInUpdatedListingAndUpdateSlotDetailsWithNoJudiciaryAndGetJudiciaryInfoFromRotaSL() throws IOException {
+        final UUID courtCentreId = randomUUID();
+        stubGetReferenceDataCourtCentreById(courtCentreId);
+
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+
+        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocationWithoutJudiciary(hearingId);
+
+        final String sessionStartDate = updatedHearingDataForAllocation.getStartDate();
+
+        final JsonObject getHearingSlotsJsonObject = stubGetAvailableHearingSlotsWithQueryParams(false,
+                updatedHearingDataForAllocation.getCourtRoomId().toString(),
+                "C55BN00",
+                sessionStartDate,
+                sessionStartDate);
+
+        final List<JudicialRoleData> judicialRoleDataList = getJudicialRoleDataFromRotaSLHearingSlots(getHearingSlotsJsonObject);
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListing();
+            updateHearingSteps.verifyJudiciaryChangedEventWithRotaSLJudiciaries(judicialRoleDataList);
+            updateHearingSteps.verifyHearingDaysWhenQueryFromAPI();
+        }
+    }
+
+    private List<JudicialRoleData> getJudicialRoleDataFromRotaSLHearingSlots(final JsonObject getHearingSlotsJsonObject) {
+        final List<JudicialRoleData> judicialRoleDataList = new ArrayList<>();
+        getHearingSlotsJsonObject.getJsonArray("hearingSlots")
+                .stream()
+                .map(JsonObject.class::cast)
+                .forEach(hearingSlotJsonObject -> {
+                    final JsonArray judiciariesJsonArray = hearingSlotJsonObject.getJsonArray("judiciaries");
+                    judiciariesJsonArray.stream()
+                            .map(JsonObject.class::cast)
+                            .forEach(rotaSlJudiciaryJsonObject ->
+                                    judicialRoleDataList.add(
+                                            new JudicialRoleData(Optional.of(rotaSlJudiciaryJsonObject.getBoolean("benchChairman")),
+                                                    Optional.of(rotaSlJudiciaryJsonObject.getBoolean("deputy")),
+                                                    UUID.fromString(rotaSlJudiciaryJsonObject.getString("judiciaryId")),
+                                                    null,
+                                                    new JudicialRoleTypeData(Optional.empty(), "MAGISTRATE"))
+                                    )
+                            );
+                });
+        return judicialRoleDataList;
     }
 
     @Test

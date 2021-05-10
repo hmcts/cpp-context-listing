@@ -5,8 +5,8 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil.getMeridian;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.HearingDayDetailConverter.getHearingDayDetails;
-import static uk.gov.moj.cpp.listing.event.processor.azure.util.HearingDayDetailConverter.getMeridian;
 
 import uk.gov.justice.core.courts.HearingDay;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
@@ -63,78 +63,6 @@ public class HearingDayDetailConverterTest {
         assertThat(hearingDayDetails.get(0).getDuration(), is(20));
         assertThat(hearingDayDetails.get(0).getHearingStartTime(), is("2019-12-02T04:15:30.000Z"));
 
-    }
-
-    @Test
-    public void shouldGetAmMeridian() {
-        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T11:15:30-05:00");
-
-        final String meridian = getMeridian(zonedDateTime);
-
-        assertThat(meridian, is("AM"));
-    }
-
-    @Test
-    public void shouldGetAmMeridianAt9am() {
-        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T09:15:30-05:00");
-
-        final String meridian = getMeridian(zonedDateTime);
-
-        assertThat(meridian, is("AM"));
-    }
-
-    @Test
-    public void shouldGetPmMeridianAt2pm() {
-        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T14:00:30-05:00");
-
-        final String meridian = getMeridian(zonedDateTime);
-
-        assertThat(meridian, is("PM"));
-    }
-
-    @Test
-    public void shouldGetPmMeridian() {
-        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T14:15:30-05:00");
-
-        final String meridian = getMeridian(zonedDateTime);
-
-        assertThat(meridian, is("PM"));
-    }
-
-    @Test
-    public void shouldGetPmMeridianBetween1PmAnd2Pm() {
-        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T13:15:30-05:00");
-
-        final String meridian = getMeridian(zonedDateTime);
-
-        assertThat(meridian, is("PM"));
-    }
-
-    @Test
-    public void shouldGetAdMeridianForBeforeAm() {
-        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T19:15:30-05:00");
-
-        final String meridian = getMeridian(zonedDateTime);
-
-        assertThat(meridian, is("AD"));
-    }
-
-    @Test
-    public void shouldGetAdMeridianWhenMeridianBefore9am() {
-        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T08:15:30-05:00");
-
-        final String meridian = getMeridian(zonedDateTime);
-
-        assertThat(meridian, is("AD"));
-    }
-
-    @Test
-    public void shouldGetAdMeridianForAfterPm() {
-        final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2019-12-02T02:15:30-05:00");
-
-        final String meridian = getMeridian(zonedDateTime);
-
-        assertThat(meridian, is("AD"));
     }
 
     private List<HearingDay> getHearingDayDetail() {

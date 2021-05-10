@@ -15,6 +15,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithDefaults;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
+import static uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil.getMeridian;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingDay;
@@ -30,6 +31,8 @@ import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
+import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
+import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -103,7 +106,7 @@ public class SlotsToJsonStringConverterTest {
         final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
         final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
-        expectedZoneDateTime = HearingDayDetailConverter.getMeridian(DATE_TIME);
+        expectedZoneDateTime = getMeridian(DATE_TIME);
 
         final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
 
@@ -124,16 +127,17 @@ public class SlotsToJsonStringConverterTest {
     public void getSlotDetailFromHearingConfirmed() {
         final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
         final List<uk.gov.justice.listing.events.HearingDay> hearingDays = Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).withStartTime(DATE_TIME).build());
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
+        final List<SlotDetail> slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
 
         assertNotNull(slotDetailFromHearingConfirmed);
-        with(slotDetailFromHearingConfirmed)
-//                .assertThat("$[0].courtRoomId", equalTo(courtRoomId))
-                .assertThat("$[0].ouCode", equalTo(ouCode))
-                .assertThat("$[0].sessionDate", equalTo(START_DATE.toString()))
-                .assertThat("$[0].session", equalTo(expectedZoneDateTime))
-                .assertThat("$[0].duration", equalTo(10))
-                .assertThat("$[0].hearingStartTime", equalTo(EXPECTED_HEARING_START_TIME));
+
+        final SlotDetail slotDetail = slotDetailFromHearingConfirmed.get(0);
+
+        assertThat(slotDetail.getOuCode(), equalTo(ouCode));
+        assertThat(slotDetail.getSessionDate(), equalTo(START_DATE.toString()));
+        assertThat(slotDetail.getSession(), equalTo(expectedZoneDateTime));
+        assertThat(slotDetail.getDuration(), equalTo(10));
+        assertThat(slotDetail.getHearingStartTime(), equalTo(EXPECTED_HEARING_START_TIME));
 
     }
 
@@ -142,15 +146,15 @@ public class SlotsToJsonStringConverterTest {
         final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
         final List<uk.gov.justice.listing.events.HearingDay> hearingDays = Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).withStartTime(DATE_TIME).build());
 
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
+        final List<SlotDetail> slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
 
-        with(slotDetailFromHearingConfirmed)
-                .assertThat("$[0].courtRoomId", equalTo(courtRoomId))
-                .assertThat("$[0].ouCode", equalTo(ouCode))
-                .assertThat("$[0].sessionDate", equalTo(START_DATE.toString()))
-                .assertThat("$[0].session", equalTo(expectedZoneDateTime))
-                .assertThat("$[0].duration", equalTo(10))
-                .assertThat("$[0].hearingStartTime", equalTo(EXPECTED_HEARING_START_TIME));
+        final SlotDetail slotDetail = slotDetailFromHearingConfirmed.get(0);
+
+        assertThat(slotDetail.getOuCode(), equalTo(ouCode));
+        assertThat(slotDetail.getSessionDate(), equalTo(START_DATE.toString()));
+        assertThat(slotDetail.getSession(), equalTo(expectedZoneDateTime));
+        assertThat(slotDetail.getDuration(), equalTo(10));
+        assertThat(slotDetail.getHearingStartTime(), equalTo(EXPECTED_HEARING_START_TIME));
     }
 
     @Test
@@ -158,7 +162,9 @@ public class SlotsToJsonStringConverterTest {
         final List<uk.gov.justice.listing.events.HearingDay> hearingDays = emptyList();
 
 
-        final String slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
+        final List<SlotDetail> slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
+
+
         assertNotNull(slotDetailFromHearingConfirmed);
         assertThat(slotDetailFromHearingConfirmed.isEmpty(), equalTo(true));
     }

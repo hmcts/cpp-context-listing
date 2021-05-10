@@ -1,22 +1,15 @@
 package uk.gov.moj.cpp.listing.event.processor.azure.util;
 
-import static java.lang.String.valueOf;
-import static java.util.EnumSet.range;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
+import static uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil.getMeridian;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.toIsoString;
-import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.FIVE_PM;
-import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.ONE_PM;
-import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.TWELVE_AM;
-import static uk.gov.moj.cpp.listing.event.processor.azure.util.Meridian.TWELVE_PM;
 
 import uk.gov.moj.cpp.listing.event.processor.azure.data.HearingDayDetail;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -28,8 +21,6 @@ import org.slf4j.LoggerFactory;
 
 public class HearingDayDetailConverter {
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingDayDetailConverter.class);
-    private static final EnumSet<Meridian> amMeridian = range(TWELVE_AM, TWELVE_PM);
-    private static final EnumSet<Meridian> pmMeridian = range(ONE_PM, FIVE_PM);
 
     private HearingDayDetailConverter() {
     }
@@ -40,32 +31,6 @@ public class HearingDayDetailConverter {
                 .map((uk.gov.justice.listing.events.HearingDay hearingDay) -> convertHearingDayToHearingDayDetail(hearingDay, isForAdjournmentHearing))
                 .filter(Objects::nonNull)
                 .collect(toList());
-    }
-
-    public static String getMeridian(final ZonedDateTime hearingDaySittingDay) {
-
-        final String pattern = "HH";
-
-        final String hour = hearingDaySittingDay.format(DateTimeFormatter.ofPattern(pattern));
-
-        final boolean isAmMeridian = amMeridian.stream().anyMatch(meridian -> checkMeridian(meridian.getValue(), hour));
-        final boolean isPmMeridian = pmMeridian.stream().anyMatch(meridian -> checkMeridian(meridian.getValue(), hour));
-
-        if (isAmMeridian) {
-            return "AM";
-        }
-
-        if (isPmMeridian) {
-            return "PM";
-        }
-
-        LOGGER.info("Session {} does not fall within AM or PM range", hour);
-
-        return "AD";
-    }
-
-    private static boolean checkMeridian(final String value, final String hour) {
-        return valueOf(value).equals(hour);
     }
 
     private static HearingDayDetail convertHearingDayToHearingDayDetail(final uk.gov.justice.listing.events.HearingDay hearingDay, final boolean isForAdjournmentHearing) {

@@ -2,12 +2,14 @@ package uk.gov.moj.cpp.listing.command.handler;
 
 import static java.time.LocalDate.parse;
 import static java.time.ZonedDateTime.now;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static javax.json.JsonValue.NULL;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
@@ -26,9 +28,6 @@ import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursA
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkingDay;
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingListingNeeds;
@@ -128,6 +127,7 @@ import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
 import uk.gov.moj.cpp.listing.command.utils.RotaSlotToNonDefaultDayConverter;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
 import uk.gov.moj.cpp.listing.common.azure.ProvisionalBookingService;
+import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
@@ -146,11 +146,6 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil;
 
-import javax.inject.Inject;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonValue;
-import javax.ws.rs.core.Response;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -160,6 +155,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -170,28 +166,15 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.time.LocalDate.parse;
-import static java.time.ZonedDateTime.now;
-import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
-import static java.util.stream.Collectors.toList;
-import static javax.json.JsonValue.NULL;
-import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
-import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
-import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
-import static uk.gov.justice.services.eventsourcing.source.core.Events.streamOf;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.JsonObjects.getString;
-import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.asJson;
-import static uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay;
-import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
-import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
-import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
-import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkingDay;
+import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonValue;
+import javax.ws.rs.core.Response;
+
+import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServiceComponent(COMMAND_HANDLER)
 @SuppressWarnings({"squid:S1188", "squid:CallToDeprecatedMethod", "squid:S2629"})
@@ -292,6 +275,9 @@ public class ListingCommandHandler {
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
+
+    @Inject
+    private RotaSLServiceAdapter rotaSLServiceAdapter;
 
     private static final String APPLICATION_ID = "applicationId";
     private static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
@@ -491,8 +477,10 @@ public class ListingCommandHandler {
 
             final Stream<Object> nonSittingDaysEvents = hearing.assignNonSittingDays(nonSittingDays, hearingId);
             final Stream<Object> courtCentreEvents = hearing.changeCourtCentre(courtCentreId, hearingId);
-            final Stream<Object> judiciaryEvents = judiciary != null ?
-                    hearing.assignJudiciary(judiciary, hearingId) : hearing.removeJudiciary(hearingId);
+
+            setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagisrates(command, courtCentreId, jurisdictionType, judiciary, courtRoomId, nonDefaultDays);
+
+            final Stream<Object> judiciaryEvents = getJudiciaryEvents(hearingId, judiciary, hearing);
 
 
             // Check endDate and court-room last as these are the key fields for allocation
@@ -525,6 +513,28 @@ public class ListingCommandHandler {
                     nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, hearingPartiallyEvents,
                     rescheduledEvents, videoLinkUpdateEvent, publicListNoteUpdateEvent).flatMap(i -> i);
         });
+    }
+
+    private void setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagisrates(final JsonEnvelope command, final UUID courtCentreId, final JurisdictionType jurisdictionType, final List<JudicialRole> judiciary, final UUID courtRoomId, final List<NonDefaultDay> nonDefaultDays) {
+        if (isEmpty(judiciary) && JurisdictionType.MAGISTRATES.equals(jurisdictionType)) {
+            final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
+
+            nonDefaultDays.stream()
+                    .filter(nonDefaultDay -> nonNull(nonDefaultDay.getStartTime()))
+                    .min(Comparator.comparing(NonDefaultDay::getStartTime))
+                    .ifPresent(firstStartTimeNonDefaultDay -> {
+                        final LocalDate firstStartDate = firstStartTimeNonDefaultDay.getStartTime().toLocalDate();
+
+                        judiciary.addAll(rotaSLServiceAdapter.getJudicialRoles(firstStartDate.toString(),
+                                organisationUnitJsonObject.getString("oucode"),
+                                Optional.of(MeridianUtil.getMeridian(firstStartTimeNonDefaultDay.getStartTime())),
+                                courtRoomId.toString()));
+                    });
+        }
+    }
+
+    private Stream<Object> getJudiciaryEvents(final UUID hearingId, final List<JudicialRole> judiciary, final Hearing hearing) {
+        return isNotEmpty(judiciary) ? hearing.assignJudiciary(judiciary, hearingId) : hearing.removeJudiciary(hearingId);
     }
 
     private List<NonDefaultDay> generateNewNonDefaultDays(final JsonEnvelope command, final UpdateHearingForListing updateHearingForListing,
@@ -1441,7 +1451,7 @@ public class ListingCommandHandler {
     }
 
     private List<JudicialRole> convertJudicialRolesToDomain(final List<uk.gov.justice.core.courts.JudicialRole> commandJudiciary) {
-        List<JudicialRole> domainJudiciary = Collections.emptyList();
+        List<JudicialRole> domainJudiciary = new ArrayList<>();
         if (commandJudiciary != null && !commandJudiciary.isEmpty()) {
             domainJudiciary = commandJudiciary.stream().map(jr -> JudicialRole.judicialRole()
                     .withIsBenchChairman(jr.getIsBenchChairman())
@@ -1531,7 +1541,7 @@ public class ListingCommandHandler {
         return jsonObject.getJsonArray("organisationunits")
                 .stream()
                 .filter(x -> x.getValueType() == JsonValue.ValueType.OBJECT)
-                .map(x -> (JsonObject) x)
+                .map(JsonObject.class::cast)
                 .map(this::toCourtCentreDetails)
                 .collect(toList());
     }

@@ -16,6 +16,7 @@ import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.HearingDayDetail;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -29,7 +30,6 @@ import javax.inject.Inject;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class SlotsToJsonStringConverter {
     @Inject
     private JsonObjectToObjectConverter jsonObjectConverter;
 
-    public String getSlotDetailFromHearingConfirmed(final JsonEnvelope jsonEnvelope, final ConfirmedHearing confirmedHearing, final boolean isForAdjournmentHearing, final List<HearingDay> hearingDays) {
+    public List<SlotDetail> getSlotDetailFromHearingConfirmed(final JsonEnvelope jsonEnvelope, final ConfirmedHearing confirmedHearing, final boolean isForAdjournmentHearing, final List<HearingDay> hearingDays) {
 
         final CourtCentre courtCentre = confirmedHearing.getCourtCentre();
 
@@ -63,7 +63,7 @@ public class SlotsToJsonStringConverter {
         final List<HearingDayDetail> hearingDayDetails = getHearingDayDetails(hearingDays, isForAdjournmentHearing);
 
         if (hearingDayDetails.isEmpty()) {
-            return StringUtils.EMPTY;
+            return Collections.emptyList();
         }
 
         final String hearingId = confirmedHearing.getId().toString();
@@ -80,7 +80,7 @@ public class SlotsToJsonStringConverter {
             }
         });
 
-        return toJSONString(hearingDayDetails.stream()
+        return hearingDayDetails.stream()
                 .map(hearingDayDetail -> {
                     final Predicate<HearingDayDetail> defaultCourtCentre = getHearingDayDetailPredicate();
                     final UUID courtCentreId = defaultCourtCentre.test(hearingDayDetail) ? courtCentre.getId() : hearingDayDetail.getCourtCentreId().map(UUID::fromString).orElse(null);
@@ -95,7 +95,7 @@ public class SlotsToJsonStringConverter {
                     return retrieveSlotDetail(hearingDayDetail, ouCode, courtRoomId, hearingId, bookingId);
                 })
                 .filter(Objects::nonNull)
-                .collect(toList()));
+                .collect(toList());
     }
 
     private Predicate<HearingDayDetail> getHearingDayDetailPredicate() {
@@ -147,7 +147,7 @@ public class SlotsToJsonStringConverter {
         return builder.build();
     }
 
-    private static String toJSONString(final List<SlotDetail> slotDetail) {
+    public static String toJSONString(final List<SlotDetail> slotDetail) {
 
         final JSONArray jsonSlotArray = buildJsonArray(slotDetail);
 

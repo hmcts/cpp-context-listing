@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.utils;
 
+import java.io.IOException;
 import java.time.LocalDate;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -14,15 +15,16 @@ import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
-import java.time.LocalDate;
 import java.util.Map;
+
+import javax.json.JsonObject;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 
 public class AzureScheduleServiceStub {
 
@@ -32,6 +34,7 @@ public class AzureScheduleServiceStub {
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
     private static final String HEARING_SLOTS = "/hearingSlots";
 
+    public static final String ROTASL_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES = "stub-data/rotasl.get.hearing.slots.with-judiciaries.json";
     public static final String LISTING_SEARCH_HEARING_SLOTS_JSON = "stub-data/listing.search.hearing.slots.json";
     public static final String LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON = "stub-data/listing.search.hearing.slots.empty.json";
     public static final String STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON = "stub-data/provisionalBookingSampleDataSingleCourtScheduleCountBased.json";
@@ -119,6 +122,32 @@ public class AzureScheduleServiceStub {
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
+    }
+
+    public static JsonObject stubGetAvailableHearingSlotsWithQueryParams(boolean isEmpty,
+                                                                         final String courtRoomId,
+                                                                         final String ouCode,
+                                                                         final String sessionStartDate,
+                                                                         final String sessionEndDate) throws IOException {
+        final String getHearingSlotsPayload = getPayload(isEmpty ? LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON :
+                ROTASL_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES)
+                .replaceAll("COURT_ROOM_ID", courtRoomId)
+                .replaceAll("OU_CODE", ouCode)
+                .replaceAll("SESSION_DATE", sessionStartDate);
+
+        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + HEARING_SLOTS)))
+                .withQueryParam("sessionStartDate", matching(sessionStartDate))
+                .withQueryParam("sessionEndDate", matching(sessionEndDate))
+                .withQueryParam("ouCode", matching(ouCode))
+                .withQueryParam("pageSize", matching("1"))
+                .withQueryParam("pageNumber", matching("1"))
+                .withQueryParam("courtRoomId", matching(courtRoomId))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getHearingSlotsPayload)
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+
+        return FileUtil.payloadToObject(getHearingSlotsPayload);
     }
 
     public static void stubSessionEndDateEmptyRequest() {

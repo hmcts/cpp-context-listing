@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static uk.gov.moj.cpp.listing.event.processor.azure.util.SlotsToJsonStringConverter.toJSONString;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -24,6 +25,8 @@ import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
+import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
+import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 import uk.gov.moj.cpp.listing.event.processor.azure.util.SlotsToJsonStringConverter;
 
 import java.time.LocalDate;
@@ -31,12 +34,14 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -81,17 +86,21 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false, hearingDays)).willReturn(TEST_OUTPUT);
+        final List<SlotDetail> sampleSlotDetails = Collections.singletonList(SlotDetailBuilder.slotDetail().build());
+        final String slotDetailsPayload = toJSONString(sampleSlotDetails);
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false, hearingDays))
+                .willReturn(sampleSlotDetails);
 
         final Response response = mock(Response.class);
-        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+        given(hearingSlotsService.update(slotDetailsPayload)).willReturn(response);
 
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
         slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
 
-        verify(hearingSlotsService).update(TEST_OUTPUT);
+        verify(hearingSlotsService).update(slotDetailsPayload);
     }
 
     @Test
@@ -101,17 +110,21 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false, hearingDays)).willReturn(TEST_OUTPUT);
+        final List<SlotDetail> sampleSlotDetails = Collections.singletonList(SlotDetailBuilder.slotDetail().build());
+        final String slotDetailsPayload = toJSONString(sampleSlotDetails);
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false, hearingDays))
+                .willReturn(Collections.singletonList(SlotDetailBuilder.slotDetail().build()));
 
         final Response response = mock(Response.class);
-        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+        given(hearingSlotsService.update(slotDetailsPayload)).willReturn(response);
 
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
         slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), true, false, hearingDays);
 
-        verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
+        verify(hearingSlotsService, times(0)).update(slotDetailsPayload);
     }
 
     @Test
@@ -121,17 +134,21 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false, hearingDays)).willReturn(TEST_OUTPUT);
+        final List<SlotDetail> sampleSlotDetails = Collections.singletonList(SlotDetailBuilder.slotDetail().build());
+        final String slotDetailsPayload = toJSONString(sampleSlotDetails);
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), false, hearingDays))
+                .willReturn(sampleSlotDetails);
 
         final Response response = mock(Response.class);
-        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+        given(hearingSlotsService.update(slotDetailsPayload)).willReturn(response);
 
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
         slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
 
-        verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
+        verify(hearingSlotsService, times(0)).update(slotDetailsPayload);
     }
 
     @Test
@@ -141,17 +158,21 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false, hearingDays)).willReturn(TEST_OUTPUT);
+        final List<SlotDetail> sampleSlotDetails = Collections.singletonList(SlotDetailBuilder.slotDetail().build());
+        final String slotDetailsPayload = toJSONString(sampleSlotDetails);
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false, hearingDays))
+                .willReturn(sampleSlotDetails);
 
         final Response response = mock(Response.class);
-        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+        given(hearingSlotsService.update(slotDetailsPayload)).willReturn(response);
 
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
         slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
 
-        verify(hearingSlotsService).update(TEST_OUTPUT);
+        verify(hearingSlotsService).update(slotDetailsPayload);
     }
 
     @Test
@@ -161,17 +182,21 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), true, hearingDays)).willReturn(TEST_OUTPUT);
+        final List<SlotDetail> sampleSlotDetails = Collections.singletonList(SlotDetailBuilder.slotDetail().build());
+        final String slotDetailsPayload = toJSONString(sampleSlotDetails);
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), true, hearingDays))
+                .willReturn(sampleSlotDetails);
 
         final Response response = mock(Response.class);
-        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+        given(hearingSlotsService.update(slotDetailsPayload)).willReturn(response);
 
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
         slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), true, false, hearingDays);
 
-        verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
+        verify(hearingSlotsService, times(0)).update(slotDetailsPayload);
     }
 
     @Test
@@ -181,17 +206,21 @@ public class SlotUpdaterTest {
 
         final JsonEnvelope event = hearingAllocatedEvent();
 
-        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false, hearingDays)).willReturn(TEST_OUTPUT);
+        final List<SlotDetail> sampleSlotDetails = Collections.singletonList(SlotDetailBuilder.slotDetail().build());
+        final String slotDetailsPayload = toJSONString(sampleSlotDetails);
+
+        given(slotsToJsonStringConverter.getSlotDetailFromHearingConfirmed(event, hearingUpdated.getUpdatedHearing(), false, hearingDays))
+                .willReturn(sampleSlotDetails);
 
         final Response response = mock(Response.class);
-        given(hearingSlotsService.update(TEST_OUTPUT)).willReturn(response);
+        given(hearingSlotsService.update(slotDetailsPayload)).willReturn(response);
 
         final String resp = "sample1";
         when(response.readEntity(String.class)).thenReturn(resp);
 
         slotUpdater.updateSlot(event, hearingUpdated.getUpdatedHearing(), false, false, hearingDays);
 
-        verify(hearingSlotsService, times(0)).update(TEST_OUTPUT);
+        verify(hearingSlotsService, times(0)).update(slotDetailsPayload);
     }
 
 

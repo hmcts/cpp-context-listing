@@ -8,12 +8,16 @@ import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
+import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 import uk.gov.moj.cpp.listing.event.processor.azure.util.SlotsToJsonStringConverter;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.inject.Inject;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +36,7 @@ public class SlotUpdater {
     private SlotUpdater() {
     }
 
-    public void updateSlot(final JsonEnvelope envelope, final ConfirmedHearing confirmedHearing, final boolean isSlotUpdated, final boolean isForAdjournmentHearing, final List<HearingDay> hearingDays) {
+    public Optional<List<SlotDetail>> updateSlot(final JsonEnvelope envelope, final ConfirmedHearing confirmedHearing, final boolean isSlotUpdated, final boolean isForAdjournmentHearing, final List<HearingDay> hearingDays) {
 
         LOGGER.debug("Processing slot for '{}' with payload {}", CONFIRMED_HEARING, confirmedHearing);
 
@@ -42,23 +46,27 @@ public class SlotUpdater {
             LOGGER.info("Azure update slot service is applicable only if isSlotUpdated is false. " +
                     "isSlotUpdated = {} ", isSlotUpdated);
         } else {
-            callHearingSlotServiceToUpdate(envelope, confirmedHearing, isForAdjournmentHearing, hearingDays);
+            return callHearingSlotServiceToUpdate(envelope, confirmedHearing, isForAdjournmentHearing, hearingDays);
         }
+        return Optional.empty();
     }
 
-    private void callHearingSlotServiceToUpdate(final JsonEnvelope envelope, final ConfirmedHearing confirmedHearing, final boolean isForAdjournmentHearing, final List<HearingDay> hearingDays) {
+    private Optional<List<SlotDetail>> callHearingSlotServiceToUpdate(final JsonEnvelope envelope, final ConfirmedHearing confirmedHearing, final boolean isForAdjournmentHearing, final List<HearingDay> hearingDays) {
         if (isMagistrates(confirmedHearing)) {
-            final String updateSlotsPayload = jsonStringConverter.getSlotDetailFromHearingConfirmed(envelope, confirmedHearing, isForAdjournmentHearing, hearingDays);
+            final List<SlotDetail> slotDetails = jsonStringConverter.getSlotDetailFromHearingConfirmed(envelope, confirmedHearing, isForAdjournmentHearing, hearingDays);
+            final String updateSlotsPayload = CollectionUtils.isNotEmpty(slotDetails) ? SlotsToJsonStringConverter.toJSONString(slotDetails) : StringUtils.EMPTY;
 
             LOGGER.info("Calling Azure update slot service with following request {}", updateSlotsPayload);
 
             if (isNotEmpty(updateSlotsPayload)) {
                 hearingSlotsService.update(updateSlotsPayload);
+                return Optional.of(slotDetails);
             }
         } else {
             LOGGER.info("Azure update slot service is applicable only when judiciary type is MAGISTRATES. " +
                     "Judiciary type provided is {}", confirmedHearing.getJurisdictionType());
         }
+        return Optional.empty();
     }
 
     private boolean isMagistrates(final ConfirmedHearing confirmedHearing) {

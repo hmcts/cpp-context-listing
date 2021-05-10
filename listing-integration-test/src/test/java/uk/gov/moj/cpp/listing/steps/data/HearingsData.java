@@ -63,6 +63,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(numberOfHearings));
     }
 
+    public static HearingsData hearingsDataWithAllocationDataAndAdjournmentFromDateWithoutJudiciary(final Integer numberOfHearings) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndAdjournmentFromDateWithoutJudiciary(numberOfHearings));
+    }
+
     public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final UUID courtCentreId) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(courtCentreId));
     }

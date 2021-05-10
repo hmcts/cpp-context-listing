@@ -41,6 +41,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -115,6 +116,10 @@ public class HearingsDataFactory {
         return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings);
     }
 
+    public static List<HearingData> hearingsDataWithAllocationDataAndAdjournmentFromDateWithoutJudiciary(final Integer numberOfHearings) {
+        return manyRandomHearingsWithAllocationDataAndIsAdjournmentWithoutJudiciary(numberOfHearings);
+    }
+
     public static List<HearingData> hearingsDataWithAllocationDataAndJudiciary(final UUID courtCentreId) {
         return manyRandomHearingsWithAllocationData(2, courtCentreId);
     }
@@ -159,12 +164,20 @@ public class HearingsDataFactory {
         return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings, UUID.randomUUID());
     }
 
+    private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournmentWithoutJudiciary(final Integer numberOfHearings) {
+        return manyRandomHearingsWithAllocationDataAndIsAdjournmentWithoutJudiciary(numberOfHearings, UUID.randomUUID());
+    }
+
     private static List<HearingData> manyRandomHearingsWithAllocationData(final Integer numberOfHearings, final UUID courtCentreId) {
         return manyRandomHearingsWithAllocationData(numberOfHearings, courtCentreId, "MAGISTRATE");
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournment(final Integer numberOfHearings, final UUID courtCentreId) {
         return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings, courtCentreId, "MAGISTRATE");
+    }
+
+    private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournmentWithoutJudiciary(final Integer numberOfHearings, final UUID courtCentreId) {
+        return manyRandomHearingsWithAllocationDataAndIsAdjournmentWithoutJudiciaries(numberOfHearings, courtCentreId);
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationData(final Integer numberOfHearings, final UUID courtCentreId, final String judiciaryType) {
@@ -189,6 +202,12 @@ public class HearingsDataFactory {
     private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournment(final Integer numberOfHearings, final UUID courtCentreId, final String judiciaryType) {
         return IntStream.range(0, numberOfHearings)
                 .mapToObj((int i) -> randomHearingWithAdjournmentFromDate(courtCentreId, singletonList(randomJudicialRole(judiciaryType))))
+                .collect(toList());
+    }
+
+    private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournmentWithoutJudiciaries(final Integer numberOfHearings, final UUID courtCentreId) {
+        return IntStream.range(0, numberOfHearings)
+                .mapToObj((int i) -> randomHearingWithAdjournmentFromDate(courtCentreId, Collections.emptyList()))
                 .collect(toList());
     }
 
