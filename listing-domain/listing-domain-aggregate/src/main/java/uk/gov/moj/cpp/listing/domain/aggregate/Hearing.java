@@ -173,7 +173,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 4401532074124929479L;
+    private static final long serialVersionUID = 4401532074124929480L;
 
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
@@ -1893,7 +1893,7 @@ public class Hearing implements Aggregate {
 
     @SuppressWarnings({"squid:S1172"})
     private void onJudiciaryRemovedFromHearing(final JudiciaryRemovedFromHearing event) {
-        this.judiciary = null;
+        this.judiciary = emptyList();
     }
 
     private void onCourtRoomAssignedToHearing(final CourtRoomAssignedToHearing event) {
