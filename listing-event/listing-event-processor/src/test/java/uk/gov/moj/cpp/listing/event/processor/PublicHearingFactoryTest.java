@@ -1,12 +1,11 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import static com.sun.org.apache.xerces.internal.util.PropertyState.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingType;
@@ -20,18 +19,17 @@ import uk.gov.moj.cpp.listing.event.processor.service.ReferenceDataService;
 
 import java.time.ZonedDateTime;
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
 
-import junit.framework.TestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+
 @SuppressWarnings({"squid:S1607"})
 @RunWith(MockitoJUnitRunner.class)
-public class PublicHearingFactoryTest  {
+public class PublicHearingFactoryTest {
 
     @Mock
     ReferenceDataService referenceDataService;
@@ -42,16 +40,21 @@ public class PublicHearingFactoryTest  {
     @Test
     public void shouldBuildCourtCentre() {
         final UUID courtCentreId = UUID.randomUUID();
+        final String courtCentreOucode = STRING.next();
         final UUID courtRoomId = UUID.randomUUID();
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
 
-        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit()
+                .withOucodeL3Name(Optional.of("test Court Centre"))
+                .withOucode(Optional.of(courtCentreOucode))
+                .build());
 
-        final CourtCentre actual =  publicHearingFactory.buildCourtCentre(courtCentreId,courtRoomId,envelope);
+        final CourtCentre actual = publicHearingFactory.buildCourtCentre(courtCentreId, courtRoomId, envelope);
 
-        assertEquals(courtCentreId,actual.getId());
-        assertEquals(Optional.of(courtRoomId),actual.getRoomId());
-        assertEquals("test Court Centre",actual.getName());
+        assertEquals(courtCentreId, actual.getId());
+        assertEquals(Optional.of(courtCentreOucode), actual.getCode());
+        assertEquals(Optional.of(courtRoomId), actual.getRoomId());
+        assertEquals("test Court Centre", actual.getName());
     }
 
     @Test
@@ -65,9 +68,9 @@ public class PublicHearingFactoryTest  {
                 .withStartTime(startTime)
                 .build();
         final uk.gov.justice.core.courts.HearingDay actual = publicHearingFactory.buildHearingDay(hd);
-        assertEquals(durationInMinutes,actual.getListedDurationMinutes());
-        assertEquals(Optional.of(sequence),actual.getListingSequence());
-        assertEquals(startTime,actual.getSittingDay());
+        assertEquals(durationInMinutes, actual.getListedDurationMinutes());
+        assertEquals(Optional.of(sequence), actual.getListingSequence());
+        assertEquals(startTime, actual.getSittingDay());
 
 
     }
@@ -79,8 +82,8 @@ public class PublicHearingFactoryTest  {
                 .withId(id).build();
 
         HearingType actual = publicHearingFactory.buildType(type);
-        assertEquals(id,actual.getId());
-        assertEquals("TypeDescription",actual.getDescription());
+        assertEquals(id, actual.getId());
+        assertEquals("TypeDescription", actual.getDescription());
     }
 
     @Test
@@ -96,8 +99,8 @@ public class PublicHearingFactoryTest  {
 
         final uk.gov.justice.core.courts.JudicialRole actual = publicHearingFactory.buildJudicialRole(judicialRole);
 
-        assertEquals(judicialId,actual.getJudicialId());
-        assertEquals(userId,actual.getUserId());
+        assertEquals(judicialId, actual.getJudicialId());
+        assertEquals(userId, actual.getUserId());
 
     }
 }

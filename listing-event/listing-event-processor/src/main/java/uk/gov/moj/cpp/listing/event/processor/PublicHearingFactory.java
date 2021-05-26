@@ -6,6 +6,7 @@ import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingDay;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.JudicialRole;
+import uk.gov.justice.listing.events.OrganisationUnit;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.event.processor.service.ReferenceDataService;
 
@@ -24,9 +25,11 @@ public class PublicHearingFactory {
     }
 
     protected CourtCentre buildCourtCentre(UUID courtCentreId, Optional<UUID> courtRoomId, final JsonEnvelope envelope) {
+        final OrganisationUnit organisationUnit = referenceDataService.getOrganizationUnitById(courtCentreId, envelope);
         return CourtCentre.courtCentre()
                 .withId(courtCentreId)
-                .withName(referenceDataService.getOrganizationUnitById(courtCentreId, envelope).getOucodeL3Name().orElse(null))
+                .withName(organisationUnit.getOucodeL3Name().orElse(null))
+                .withCode(organisationUnit.getOucode().orElse(null))
                 .withRoomId(courtRoomId)
                 .build();
     }

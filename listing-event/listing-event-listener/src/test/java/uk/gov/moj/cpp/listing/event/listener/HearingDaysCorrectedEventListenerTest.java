@@ -17,7 +17,6 @@ import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
-import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.messaging.Envelope;
