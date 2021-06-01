@@ -12,6 +12,7 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,6 +62,7 @@ public class JudiciaryForHearingEventListener {
         using(hearingRepository)
                 .find(hearingId)
                 .remove(JUDICIARY)
+                .putObjectList(JUDICIARY, new ArrayList<>())
                 .save();
     }
 }

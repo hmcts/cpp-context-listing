@@ -515,6 +515,7 @@ public class HearingQueryViewTest {
                 payloadIsJson(allOf(
                         withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
                         withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")),
+                        withJsonPath("$.hearings[0].judiciary", hasSize(0)),
                         getMatcherForNotes(notesExist))
                 ))
         ));

@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -124,11 +123,11 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
             final List<HearingDay> hearingDayList = new ArrayList<>();
             final Map<HearingDay, JsonNode> hearingDayJsonNodeMap = new HashMap<>();
             hearingDays.forEach(
-                hearingDayJson -> {
-                    final HearingDay hearingDay = createHearingDay(hearingDayJson);
-                    hearingDayList.add(hearingDay);
-                    hearingDayJsonNodeMap.put(hearingDay, hearingDayJson);
-                }
+                    hearingDayJson -> {
+                        final HearingDay hearingDay = createHearingDay(hearingDayJson);
+                        hearingDayList.add(hearingDay);
+                        hearingDayJsonNodeMap.put(hearingDay, hearingDayJson);
+                    }
             );
 
             final List<HearingDay> filteredHearingDayList = hearingDayList.stream()
@@ -269,15 +268,26 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
             object = jsonReader.readObject();
         }
 
-        return object;
+        final JsonObjectBuilder builder = Json.createObjectBuilder();
+        object.forEach((key, value) -> {
+            if (!object.isNull(key)) {
+                builder.add(key, object.get(key));
+            } else {
+                builder.addNull(key);
+            }
+        });
+
+        if (!object.containsKey(JUDICIARY)) {
+            builder.add(JUDICIARY, EMPTY_JSON_ARRAY);
+        }
+
+        return builder.build();
     }
 
     private JsonObject enrich(final JsonObject source, final String judiciaryKey, final JsonArray judiciaryValue) {
         final JsonObjectBuilder builder = Json.createObjectBuilder();
         builder.add(judiciaryKey, judiciaryValue);
-        final Iterator<String> keys = source.keySet().iterator();
-        while (keys.hasNext()) {
-            final String key = keys.next();
+        source.forEach((key, value) -> {
             if (!source.isNull(key)) {
                 if (key.equals(HEARINGS_BY_COURT_CENTRE_ID)) {
                     builder.add(key, filterEjectCaseAndCourtApplicationFromHearing(source.get(key)));
@@ -285,7 +295,7 @@ public class HearingJsonListConverterFilterEjectCases implements ListOfJsontoJso
                     builder.add(key, source.get(key));
                 }
             }
-        }
+        });
 
         return builder.build();
     }

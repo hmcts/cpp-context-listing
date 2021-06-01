@@ -129,6 +129,8 @@ public class JudiciaryForHearingEventListenerTest {
 
         given(envelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
         given(hearing.getProperties()).willReturn(properties);
 
         judiciaryForHearingEventListener.judiciaryRemovedFromHearing(envelope);
