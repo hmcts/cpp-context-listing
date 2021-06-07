@@ -68,8 +68,8 @@ public class VideoLinkDetailsEventListenerTest {
                 .build();
 
         given(envelope.payload()).willReturn(hearingData);
-        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.createHearingBuilder()
-                .setProperties(properties)
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.builder()
+                .withProperties(properties)
                 .build());
 
         videoLinkDetailsEventListener.videoLinkDetailsAssigned(envelope);
@@ -95,8 +95,8 @@ public class VideoLinkDetailsEventListenerTest {
                 .withHearingId(HEARING_ID)
                 .build();
         given(envelope.payload()).willReturn(hearingData);
-        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.createHearingBuilder()
-                .setProperties(properties)
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.builder()
+                .withProperties(properties)
                 .build());
 
         videoLinkDetailsEventListener.videoLinkDetailsChangedForHearing(envelope);
@@ -119,8 +119,8 @@ public class VideoLinkDetailsEventListenerTest {
                 .build();
 
         given(envelope.payload()).willReturn(hearingData);
-        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.createHearingBuilder()
-                .setProperties(properties)
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.builder()
+                .withProperties(properties)
                 .build());
 
         videoLinkDetailsEventListener.videoLinkDetailsRemovedFromHearing(envelope);
@@ -145,8 +145,8 @@ public class VideoLinkDetailsEventListenerTest {
                 .build();
         given(envelope.payload()).willReturn(hearingData);
 
-        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.createHearingBuilder()
-                .setProperties(properties)
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.builder()
+                .withProperties(properties)
                 .build());
 
 
@@ -171,8 +171,8 @@ public class VideoLinkDetailsEventListenerTest {
                 .build();
         given(envelope.payload()).willReturn(hearingData);
 
-        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.createHearingBuilder()
-                .setProperties(properties)
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.builder()
+                .withProperties(properties)
                 .build());
 
 
@@ -199,8 +199,8 @@ public class VideoLinkDetailsEventListenerTest {
                 .build();
         given(envelope.payload()).willReturn(hearingData);
 
-        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.createHearingBuilder()
-                .setProperties(properties)
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(Hearing.builder()
+                .withProperties(properties)
                 .build());
 
 

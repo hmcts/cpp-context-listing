@@ -31,6 +31,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder;
@@ -66,6 +67,7 @@ public class HearingEventListener {
     private final JsonEntityFinder jsonEntityFinder;
     private final HearingRepository hearingRepository;
     private final ObjectMapper mapper;
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @Inject
     private JsonObjectToObjectConverter jsonToObjectConverter;
@@ -75,19 +77,22 @@ public class HearingEventListener {
 
     @Inject
     public HearingEventListener(final HearingRepository hearingRepository,
-                                final ObjectMapper mapper) {
+                                final ObjectMapper mapper,
+                                final HearingSearchSyncService hearingSearchSyncService) {
         this.hearingRepository = hearingRepository;
         this.jsonEntityFinder = using(hearingRepository);
         this.mapper = mapper;
+        this.hearingSearchSyncService = hearingSearchSyncService;
     }
 
     @Handles("listing.events.hearing-listed")
     public void hearingListed(final Envelope<HearingListed> event) {
-        HearingListed hearingListed = event.payload();
+        final HearingListed hearingListed = event.payload();
         final JsonNode hearingJsonNode = convertToObject(hearingListed.getHearing());
-        UUID hearingId = hearingListed.getHearing().getId();
+        final UUID hearingId = hearingListed.getHearing().getId();
         LOGGER.info("'listing.events.hearing-listed' received hearingId {}", hearingId);
         final Hearing hearing = new Hearing(hearingId, hearingJsonNode);
+        hearingSearchSyncService.syncEntity(hearing);
         hearingRepository.save(hearing);
     }
 
@@ -97,6 +102,7 @@ public class HearingEventListener {
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
         jsonEntityFinder.find(hearingId).put(FIELD_ALLOCATED, ALLOCATED).remove("unscheduled").save();
         LOGGER.info("'listing.events.hearing-allocated-for-listing' received hearingId {} ", hearingId);
+        hearingSearchSyncService.sync(hearingId);
     }
 
     @Handles("listing.events.hearing-allocated-for-listing-v2")
@@ -105,6 +111,7 @@ public class HearingEventListener {
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
         jsonEntityFinder.find(hearingId).put(FIELD_ALLOCATED, ALLOCATED).remove("unscheduled").save();
         LOGGER.info("'listing.events.hearing-allocated-for-listing-v2' received hearingId {}", hearingId);
+        hearingSearchSyncService.sync(hearingId);
     }
 
     /**
@@ -124,7 +131,7 @@ public class HearingEventListener {
                 .putSubList("hearingDays", typeHearingDayRef,getHearingDaysWithRemoveCourtRoomIdFunction())
                 .save();
         LOGGER.info("'listing.events.hearing-unallocated-for-listing' received hearingId {} ", hearingId);
-
+        hearingSearchSyncService.sync(hearingId);
     }
 
     @Handles("listing.events.trial-vacated")
@@ -138,6 +145,7 @@ public class HearingEventListener {
                 .put(FIELD_VACATE_TRIAL_REASON, trialVacated.getVacatedTrialReasonId())
                 .save();
 
+        hearingSearchSyncService.sync(hearingId);
     }
 
     @Handles("listing.events.hearing-trial-vacated")
@@ -152,6 +160,7 @@ public class HearingEventListener {
                 .put(FIELD_VACATE_TRIAL_REASON, hearingTrialVacated.getVacatedTrialReasonId().orElse(null) == null ? "" : hearingTrialVacated.getVacatedTrialReasonId().get().toString())
                 .save();
 
+        hearingSearchSyncService.sync(hearingId);
     }
 
     @Handles("listing.events.hearing-rescheduled")
@@ -161,11 +170,15 @@ public class HearingEventListener {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("'listing.events.hearing-rescheduled' received hearingId {}", hearingId);
         }
-        jsonEntityFinder.find(hearingId)
-                .put(FIELD_IS_VACATED_TRIAL, !VACATED)
-                .put(FIELD_VACATE_TRIAL_REASON, "")
-                .save();
 
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            jsonEntityFinder.find(hearingId)
+                    .put(FIELD_IS_VACATED_TRIAL, !VACATED)
+                    .put(FIELD_VACATE_TRIAL_REASON, "")
+                    .save();
+
+            hearingSearchSyncService.sync(hearingId);
+        }
     }
 
     @Handles("listing.events.case-update-defendant-proceedings-updated")
@@ -211,6 +224,8 @@ public class HearingEventListener {
                 .find(hearingId)
                 .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseWithDefendantProceedingsFunction(prosecutionCase))
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     @Handles("listing.events.case-identifier-updated")
@@ -230,6 +245,8 @@ public class HearingEventListener {
                 .find(hearingId)
                 .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseWithProsecutorProceedingsFunction(prosecutionCaseId, caseIdentifier))
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     private Function<List<HearingDay>, List<HearingDay>> getHearingDaysWithRemoveCourtRoomIdFunction() {
@@ -244,13 +261,13 @@ public class HearingEventListener {
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getUpdatedListedCaseWithProsecutorProceedingsFunction(final UUID prosecutionCaseId,
-                                                                                                               final CaseIdentifier caseIdentifier){
+                                                                                                               final CaseIdentifier caseIdentifier) {
         return cases -> getUpdatedListedCaseWithCaseIdentifierProceedings(prosecutionCaseId, caseIdentifier, cases);
     }
 
     private List<ListedCase> getUpdatedListedCaseWithCaseIdentifierProceedings(final UUID prosecutionCaseID,
                                                                                final CaseIdentifier caseIdentifier,
-                                                                               final List<ListedCase> cases){
+                                                                               final List<ListedCase> cases) {
         final List<ListedCase> listedCases = new ArrayList<>(cases);
         final ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(prosecutionCaseID));
         final Prosecutor prosecutor = Prosecutor.prosecutor()
@@ -272,7 +289,7 @@ public class HearingEventListener {
 
     private List<ListedCase> getUpdatedListedCaseWithCaseStatusAndDefendantProceedings(
             final ProsecutionCase prosecutionCase,
-             final List<ListedCase> cases) {
+            final List<ListedCase> cases) {
         final List<ListedCase> listedCases = new ArrayList<>(cases);
         final ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(prosecutionCase.getId()));
         final List<uk.gov.justice.listing.events.Defendant> listedCaseDefendants = listedCase.getDefendants();

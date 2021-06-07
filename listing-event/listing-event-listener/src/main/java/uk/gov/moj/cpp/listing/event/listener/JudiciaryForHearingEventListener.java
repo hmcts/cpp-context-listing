@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.JudicialRole;
@@ -36,10 +37,12 @@ public class JudiciaryForHearingEventListener {
         final UUID hearingId = judiciaryAssignedToHearing.getHearingId();
         final List<JudicialRole> judicialRoles = judiciaryAssignedToHearing.getJudiciary();
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putObjectList(JUDICIARY, judicialRoles)
-                .save();
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putObjectList(JUDICIARY, judicialRoles)
+                    .save();
+        }
     }
 
     @Handles("listing.events.judiciary-changed-for-hearing")

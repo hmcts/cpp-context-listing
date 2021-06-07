@@ -8,6 +8,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.UUID;
@@ -21,9 +22,12 @@ public class JurisdictionEventListener {
 
     private HearingRepository hearingRepository;
 
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @Inject
-    public JurisdictionEventListener(final HearingRepository hearingRepository) {
+    public JurisdictionEventListener(final HearingRepository hearingRepository, final HearingSearchSyncService hearingSearchSyncService) {
         this.hearingRepository = hearingRepository;
+        this.hearingSearchSyncService = hearingSearchSyncService;
     }
 
     @Handles("listing.events.jurisdiction-changed-for-hearing")
@@ -35,5 +39,7 @@ public class JurisdictionEventListener {
                 .find(hearingId)
                 .put(JURISDICTION_TYPE_FIELD, jurisdictionType.toString())
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 }

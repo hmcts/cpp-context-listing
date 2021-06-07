@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.NonDefaultDay;
@@ -42,9 +43,11 @@ public class NonDefaultDaysForHearingEventListener {
         final List<NonDefaultDay> nonDefaultDays = nonDefaultDaysChangedForHearing.getNonDefaultDays();
         final UUID hearingId = nonDefaultDaysChangedForHearing.getHearingId();
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putObjectList(NON_DEFAULT_DAYS, nonDefaultDays)
-                .save();
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putObjectList(NON_DEFAULT_DAYS, nonDefaultDays)
+                    .save();
+        }
     }
 }

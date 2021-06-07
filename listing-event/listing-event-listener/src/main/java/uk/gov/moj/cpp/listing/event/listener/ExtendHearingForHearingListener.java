@@ -17,6 +17,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -48,12 +49,14 @@ public class ExtendHearingForHearingListener {
     private static final String LISTED_CASES_FIELD = "listedCases";
     private final JsonObjectToObjectConverter jsonObjectConverter;
     private final ObjectMapper objectMapper;
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @Inject
-    public ExtendHearingForHearingListener(final HearingRepository hearingRepository, final JsonObjectToObjectConverter jsonObjectConverter, final ObjectMapper objectMapper) {
+    public ExtendHearingForHearingListener(final HearingRepository hearingRepository, final JsonObjectToObjectConverter jsonObjectConverter, final ObjectMapper objectMapper, final HearingSearchSyncService hearingSearchSyncService) {
         this.hearingRepository = hearingRepository;
         this.jsonObjectConverter = jsonObjectConverter;
         this.objectMapper = objectMapper;
+        this.hearingSearchSyncService = hearingSearchSyncService;
     }
 
     @Handles("listing.events.hearing-deleted")
@@ -100,6 +103,8 @@ public class ExtendHearingForHearingListener {
                         .save();
                 LOGGER.info("Hearing with id {} has been updated", hearingIdToBeUpdated);
                 LOGGER.info("Hearing with id {} is now as {}", hearingIdToBeUpdated, hearingToBeUpdated);
+                hearingSearchSyncService.sync(hearingIdToBeUpdated);
+
             } else {
                 LOGGER.error("Hearing with id {} does not contain any listed cases to update.", hearingIdToBeUpdated);
             }
@@ -139,6 +144,7 @@ public class ExtendHearingForHearingListener {
                     .putSubList(LISTED_CASES_FIELD, typeRef, getListedCasesAddFunction(listedCasesToAdd))
                     .save();
             LOGGER.info("Hearing with id {} has been updated with new listed cases ", hearingId);
+            hearingSearchSyncService.sync(hearingId);
         }
     }
 

@@ -5,6 +5,7 @@ import uk.gov.moj.cpp.listing.domain.Type;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 public class HearingRepositoryContext {
@@ -39,8 +40,10 @@ public class HearingRepositoryContext {
     private final Boolean cancelledDay1;
     private final Boolean cancelledDay2;
     private final Boolean cancelledDay3;
+    private final Boolean unscheduled;
+    private final UUID typeOfListId;
 
-    public HearingRepositoryContext(final UUID hearingId, final UUID courtCentreId, final UUID courtRoomId, final Boolean allocated, final Boolean vacated, final UUID authorityId, final Type hearingType, final JurisdictionType jurisdictionType, final String judicialId, final LocalDate startDate, final LocalDate endDate, final LocalDateTime startTime, final LocalDateTime endTime, final LocalDate hearingDate, final LocalDate weekCommencingStartDate, final LocalDate weekCommencingEndDate, final String fileLocation, final boolean multidayHearing, final LocalDate hearingDateDay1, final LocalDate hearingDateDay2, final LocalDate hearingDateDay3, final LocalDateTime startTimeDay1, final LocalDateTime endTimeDay1, final LocalDateTime startTimeDay2, final LocalDateTime endTimeDay2, final LocalDateTime startTimeDay3, final LocalDateTime endTimeDay3, final Boolean cancelledDay1, final Boolean cancelledDay2, final Boolean cancelledDay3) {
+    public HearingRepositoryContext(final UUID hearingId, final UUID courtCentreId, final UUID courtRoomId, final Boolean allocated, final Boolean vacated, final UUID authorityId, final Type hearingType, final JurisdictionType jurisdictionType, final String judicialId, final LocalDate startDate, final LocalDate endDate, final LocalDateTime startTime, final LocalDateTime endTime, final LocalDate hearingDate, final LocalDate weekCommencingStartDate, final LocalDate weekCommencingEndDate, final String fileLocation, final boolean multidayHearing, final LocalDate hearingDateDay1, final LocalDate hearingDateDay2, final LocalDate hearingDateDay3, final LocalDateTime startTimeDay1, final LocalDateTime endTimeDay1, final LocalDateTime startTimeDay2, final LocalDateTime endTimeDay2, final LocalDateTime startTimeDay3, final LocalDateTime endTimeDay3, final Boolean cancelledDay1, final Boolean cancelledDay2, final Boolean cancelledDay3, final Boolean unscheduled, final UUID typeOfListId) {
         this.hearingId = hearingId;
         this.courtCentreId = courtCentreId;
         this.courtRoomId = courtRoomId;
@@ -71,6 +74,8 @@ public class HearingRepositoryContext {
         this.cancelledDay1 = cancelledDay1;
         this.cancelledDay2 = cancelledDay2;
         this.cancelledDay3 = cancelledDay3;
+        this.unscheduled = unscheduled;
+        this.typeOfListId = typeOfListId;
     }
 
     public UUID getHearingId() {
@@ -193,6 +198,13 @@ public class HearingRepositoryContext {
         return cancelledDay3;
     }
 
+    public Boolean isUnscheduled() {
+        return unscheduled;
+    }
+
+    public UUID getTypeOfListId() {
+        return typeOfListId;
+    }
 
     public static Builder hearingRepositoryContext() {
         return new HearingRepositoryContext.Builder();
@@ -229,6 +241,8 @@ public class HearingRepositoryContext {
         private Boolean cancelledDay1;
         private Boolean cancelledDay2;
         private Boolean cancelledDay3;
+        private Boolean unscheduled;
+        private UUID typeOfListId;
 
         private Builder() {
         }
@@ -383,8 +397,19 @@ public class HearingRepositoryContext {
             return this;
         }
 
+        public Builder withUnscheduled(Boolean unscheduled) {
+            this.unscheduled = unscheduled;
+            return this;
+        }
+
+        public Builder withTypeOfListId(UUID typeOfListId) {
+            this.typeOfListId = typeOfListId;
+            return this;
+        }
+
+
         public HearingRepositoryContext build() {
-            return new HearingRepositoryContext(hearingId, courtCentreId, courtRoomId, allocated, vacated, authorityId, hearingType, jurisdictionType, judicialId, startDate, endDate, startTime, endTime, hearingDate, weekCommencingStartDate, weekCommencingEndDate, fileLocation, multidayHearing, hearingDateDay1, hearingDateDay2, hearingDateDay3, startTimeDay1, endTimeDay1, startTimeDay2, endTimeDay2, startTimeDay3, endTimeDay3, cancelledDay1, cancelledDay2, cancelledDay3);
+            return new HearingRepositoryContext(hearingId, courtCentreId, courtRoomId, allocated, vacated, authorityId, hearingType, jurisdictionType, judicialId, startDate, endDate, startTime, endTime, hearingDate, weekCommencingStartDate, weekCommencingEndDate, fileLocation, multidayHearing, hearingDateDay1, hearingDateDay2, hearingDateDay3, startTimeDay1, endTimeDay1, startTimeDay2, endTimeDay2, startTimeDay3, endTimeDay3, cancelledDay1, cancelledDay2, cancelledDay3, unscheduled, typeOfListId);
         }
     }
 }

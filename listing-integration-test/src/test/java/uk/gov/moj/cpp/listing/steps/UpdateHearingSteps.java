@@ -1393,6 +1393,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     public JsonObject preparePayloadToUpdateHearing(final String fileName, final Map<String, String> values) throws IOException {
         String eventPayloadString = getStringFromResource(fileName)
                 .replaceAll("HEARING_ID", values.get("hearingId"))
+                .replaceAll("CASE_ID", values.get("caseId"))
                 .replaceAll("COURT_CENTRE_ID", values.get("courtCentreId"))
                 .replaceAll("COURT_ROOM_ID", values.get("courtRoomId"))
                 .replaceAll("START_DATE", values.get("startDate"))

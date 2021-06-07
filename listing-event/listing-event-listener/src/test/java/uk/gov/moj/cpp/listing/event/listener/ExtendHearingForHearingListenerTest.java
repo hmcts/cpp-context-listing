@@ -24,6 +24,7 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.io.IOException;
@@ -49,6 +50,8 @@ public class ExtendHearingForHearingListenerTest {
 
     @Mock
     private HearingRepository hearingRepository;
+    @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
     @Mock
     private uk.gov.moj.cpp.listing.persistence.entity.Hearing hearingEntity;
     @Mock
@@ -185,8 +188,8 @@ public class ExtendHearingForHearingListenerTest {
                 .withHearingIdToBeDeleted(HEARING_ID)
                 .build();
 
-        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.createHearingBuilder()
-                .setId(hearingDeleted.getHearingIdToBeDeleted()).build();
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingDeleted.getHearingIdToBeDeleted()).build();
 
         given(envelope.payload()).willReturn(hearingDeleted);
 
@@ -209,9 +212,9 @@ public class ExtendHearingForHearingListenerTest {
                 .withProsecutionCases(buildEventProsecutionCases())
                 .build();
 
-        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.createHearingBuilder()
-                .setId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
-                .setProperties(hearingObj).build();
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingObj).build();
 
         given(envelope.payload()).willReturn(hearingPartiallyUpdated);
 

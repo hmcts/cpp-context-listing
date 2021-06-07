@@ -10,12 +10,14 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.lang.String.format;
+import static java.util.Objects.isNull;
 
 public class JsonNodeUpdater {
 
@@ -123,6 +125,10 @@ public class JsonNodeUpdater {
     }
 
     private <T> List<T> getSubList(final ArrayNode fieldProperties, final TypeReference typeOfList) {
+        if (isNull(fieldProperties)){
+            return new ArrayList<>();
+        }
+
         try {
             return mapper.readValue(mapper.treeAsTokens(fieldProperties), mapper.getTypeFactory().constructType(typeOfList));
         } catch (IOException e) {

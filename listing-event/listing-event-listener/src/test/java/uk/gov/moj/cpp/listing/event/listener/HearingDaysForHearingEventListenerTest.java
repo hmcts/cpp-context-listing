@@ -11,6 +11,7 @@ import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.listing.events.HearingDay.hearingDay;
 import static uk.gov.justice.listing.events.HearingDaysCancelled.hearingDaysCancelled;
@@ -23,6 +24,7 @@ import uk.gov.justice.listing.events.HearingDaysSequenced;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -66,6 +68,9 @@ public class HearingDaysForHearingEventListenerTest {
 
     @Mock
     private HearingRepository hearingRepository;
+
+    @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @InjectMocks
     private HearingDaysForHearingEventListener hearingDaysForHearingEventListener;

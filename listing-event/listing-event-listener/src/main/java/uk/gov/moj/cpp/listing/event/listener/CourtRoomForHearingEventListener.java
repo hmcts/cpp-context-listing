@@ -9,6 +9,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.UUID;
@@ -21,10 +22,12 @@ public class CourtRoomForHearingEventListener {
     private static final String COURT_ROOM_ID_FIELD = "courtRoomId";
 
     private HearingRepository hearingRepository;
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @Inject
-    public CourtRoomForHearingEventListener(final HearingRepository hearingRepository) {
+    public CourtRoomForHearingEventListener(final HearingRepository hearingRepository, final HearingSearchSyncService hearingSearchSyncService) {
         this.hearingRepository = hearingRepository;
+        this.hearingSearchSyncService = hearingSearchSyncService;
     }
 
     @Handles("listing.events.court-room-assigned-to-hearing")
@@ -36,6 +39,8 @@ public class CourtRoomForHearingEventListener {
                 .find(hearingId)
                 .put(COURT_ROOM_ID_FIELD, courtRoomId)
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     @Handles("listing.events.court-room-changed-for-hearing")
@@ -47,6 +52,8 @@ public class CourtRoomForHearingEventListener {
                 .find(hearingId)
                 .put(COURT_ROOM_ID_FIELD, courtRoomId)
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     @Handles("listing.events.court-room-removed-from-hearing")
@@ -57,5 +64,7 @@ public class CourtRoomForHearingEventListener {
                 .find(hearingId)
                 .remove(COURT_ROOM_ID_FIELD)
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 }

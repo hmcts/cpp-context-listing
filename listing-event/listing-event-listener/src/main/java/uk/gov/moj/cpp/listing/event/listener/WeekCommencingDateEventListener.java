@@ -8,6 +8,7 @@ import uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.time.LocalDate;
@@ -25,6 +26,9 @@ public class WeekCommencingDateEventListener {
     @Inject
     private HearingRepository hearingRepository;
 
+    @Inject
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @Handles("listing.events.week-commencing-date-changed-for-hearing")
     public void weekCommencingAssignedForHearing(final Envelope<WeekCommencingDateChangedForHearing> event) {
         final WeekCommencingDateChangedForHearing weekCommencingDateChangedForHearing = event.payload();
@@ -39,6 +43,8 @@ public class WeekCommencingDateEventListener {
                 .put(WEEK_COMMENCING_END_DATE, weekCommencingEndDate)
                 .put(WEEK_COMMENCING_DURATION, weekCommencingDurationInWeeks.toString())
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     @Handles("listing.events.week-commencing-date-removed-for-hearing")
@@ -52,5 +58,7 @@ public class WeekCommencingDateEventListener {
                 .remove(WEEK_COMMENCING_END_DATE)
                 .remove(WEEK_COMMENCING_DURATION)
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 }

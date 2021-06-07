@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.PublicListNoteChangedForHearing;
@@ -84,10 +85,13 @@ public class VideoLinkDetailsEventListener {
     @Handles("listing.events.video-link-changed-for-hearing")
     public void videoLinkChangedForHearing(final Envelope<VideoLinkChangedForHearing> event) {
         final VideoLinkChangedForHearing payload = event.payload();
-        using(hearingRepository)
-                .find(payload.getHearingId())
-                .put(HAS_VIDEO_LINK, payload.getHasVideoLink())
-                .save();
+
+        if (nonNull(hearingRepository.findBy(payload.getHearingId()))) {
+            using(hearingRepository)
+                    .find(payload.getHearingId())
+                    .put(HAS_VIDEO_LINK, payload.getHasVideoLink())
+                    .save();
+        }
     }
 
 }

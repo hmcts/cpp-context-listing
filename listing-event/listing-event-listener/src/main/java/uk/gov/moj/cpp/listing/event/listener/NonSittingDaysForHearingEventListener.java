@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 @ServiceComponent(Component.EVENT_LISTENER)
@@ -30,10 +31,12 @@ public class NonSittingDaysForHearingEventListener {
         final List<LocalDate> nonSittingDays = nonSittingDaysAssignedToHearing.getNonSittingDays();
         final UUID hearingId = nonSittingDaysAssignedToHearing.getHearingId();
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putLocalDateList(NON_SITTING_DAYS, nonSittingDays)
-                .save();
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putLocalDateList(NON_SITTING_DAYS, nonSittingDays)
+                    .save();
+        }
     }
 
     @Handles("listing.events.non-sitting-days-changed-for-hearing")

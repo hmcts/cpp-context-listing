@@ -110,8 +110,7 @@ public class UpdatedHearingData {
         final UUID roomId = randomUUID();
 
         final LocalDate startDate = nextOrSameWorkingDay(LocalDate.now());
-        final LocalTime startTime = DEFAULT_START_TIME;
-        final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, LocalTime.parse(startTime.format(dtf)), UTC);
+        final ZonedDateTime startTimeWithZone = ZonedDateTime.of(startDate, DEFAULT_START_TIME, UTC);
 
         final List<String> nonSittingDays = asList(startDate.plusDays(1).toString());
 

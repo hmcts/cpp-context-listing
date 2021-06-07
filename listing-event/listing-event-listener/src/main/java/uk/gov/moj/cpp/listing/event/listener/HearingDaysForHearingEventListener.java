@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 import static utils.HearingDayUtil.getNotCancelledHearingDays;
-
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingDaysCancelled;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
@@ -11,6 +11,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.List;
@@ -27,16 +28,23 @@ public class HearingDaysForHearingEventListener {
     @Inject
     private HearingRepository hearingRepository;
 
+    @Inject
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @Handles("listing.events.hearing-days-changed-for-hearing")
     public void hearingDaysChangedForHearing(final Envelope<HearingDaysChangedForHearing> event) {
         final HearingDaysChangedForHearing hearingDaysChangedForHearing = event.payload();
         final List<HearingDay> hearingDays = hearingDaysChangedForHearing.getHearingDays();
         final UUID hearingId = hearingDaysChangedForHearing.getHearingId();
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putObjectList(HEARING_DAYS, hearingDays)
-                .save();
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putObjectList(HEARING_DAYS, hearingDays)
+                    .save();
+
+            hearingSearchSyncService.sync(hearingId);
+        }
     }
 
     @Handles("listing.events.hearing-days-sequenced")
@@ -46,10 +54,14 @@ public class HearingDaysForHearingEventListener {
         final List<HearingDay> hearingDays = sequencedHearing.getHearingDays();
         final UUID hearingId = sequencedHearing.getHearingId();
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putObjectList(HEARING_DAYS, getNotCancelledHearingDays(hearingDays))
-                .save();
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putObjectList(HEARING_DAYS, getNotCancelledHearingDays(hearingDays))
+                    .save();
+
+            hearingSearchSyncService.sync(hearingId);
+        }
     }
 
     @Handles(EVENT_HEARING_DAYS_CANCELLED)
@@ -58,9 +70,13 @@ public class HearingDaysForHearingEventListener {
         final List<HearingDay> hearingDays = payload.getHearingDays();
         final UUID hearingId = payload.getHearingId();
 
+        final List<HearingDay> nonCancelledHearingDays = getNotCancelledHearingDays(hearingDays);
+
         using(hearingRepository)
                 .find(hearingId)
-                .putObjectList(HEARING_DAYS, getNotCancelledHearingDays(hearingDays))
+                .putObjectList(HEARING_DAYS, nonCancelledHearingDays)
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 }

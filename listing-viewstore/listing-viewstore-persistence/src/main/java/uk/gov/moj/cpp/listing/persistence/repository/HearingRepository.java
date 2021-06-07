@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.listing.persistence.repository;
 
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -9,6 +11,7 @@ import java.util.UUID;
 import org.apache.deltaspike.data.api.EntityManagerDelegate;
 import org.apache.deltaspike.data.api.EntityRepository;
 import org.apache.deltaspike.data.api.Query;
+import org.apache.deltaspike.data.api.QueryParam;
 import org.apache.deltaspike.data.api.Repository;
 
 /**
@@ -63,6 +66,21 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "cast(properties ->> 'weekCommencingStartDate' as date)," +
             "cast(properties ->> 'weekCommencingEndDate' as date )";
 
+    String WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED = "(hearing.unscheduled is null or hearing.unscheduled = false)" +
+            "and (?3 is null or (listed_cases.authority_id = cast(cast(?3 as varchar) as uuid) or listed_cases.prosecutor_id = cast(cast(?3 as varchar) as uuid)))  " +
+            "and (?4 is null or hearing.type_id = cast(cast(?4 as varchar) as uuid))  " +
+            "and (?5 is null or hearing.jurisdiction_type = cast(?5 as text))  " +
+            "and ( " +
+            "   ( hearing.week_commencing_start_date >= ?6 and hearing.week_commencing_start_date <= ?7 ) or " +
+            "   ( hearing.week_commencing_end_date >= ?6 and hearing.week_commencing_end_date <= ?7 ) or " +
+            "   ( hearing.start_date >= ?6 and hearing.start_date <= ?7 )  or " +
+            "   ( hearing.end_date >= ?6 and hearing.end_date <= ?7 ) ) " +
+            "group by hearing.id, properties " +
+            "order by hearing.start_date," +
+            "hearing.end_date," +
+            "hearing.week_commencing_start_date," +
+            "hearing.week_commencing_end_date";
+
     String AUTHORITY_ID_SEARCH = "[ { \"caseIdentifier\": { \"authorityId\": \"%s\" } } ]";
     String PROSECUTOR_ID_SEARCH = "[ { \"prosecutor\": { \"prosecutorId\": \"%s\" } } ]";
     String EARLIEST_SEARCH_DATE = "1900-01-01";
@@ -74,7 +92,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param allocated        property to search for - mandatory.
      * @param courtCentreId    to search for or <code>null</code> for any courtCentreId - optional.
      * @param courtRoomId      to search for or <code>null</code> for any courtRoomId - optional.
-     * @param authorityCode    to search for or <code>null</code> for any authorityCode - optional.
+     * @param authorityId    to search for or <code>null</code> for any authorityCode - optional.
      * @param hearingTypeId    to search for or <code>null</code> for any hearingType - optional.
      * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType -
      *                         optional.
@@ -83,110 +101,43 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param endTime          to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select distinct id, properties  " +
-            "from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays  " +
+    @Query(value = "select distinct h.id, h.properties,  " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id " +
+            "from hearing h INNER JOIN hearing_days hd on hd.hearing_id = h.id  " +
+            "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
             "where  " +
-            "cast(properties ->> 'allocated' as boolean) = ?1  " +
-            "and (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)" +
-            "and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
-            "and (?2 is null or coalesce(hearingDays ->> 'courtCentreId', properties ->> 'courtCentreId') = cast(?2 as text))  " +
-            "and (?3 is null or coalesce(hearingDays ->> 'courtRoomId', properties ->> 'courtRoomId') = cast(?3 as text))  " +
-            "and (" +
-            "  ?4  = '" + ALL_AUTHORITY_CODES_SEARCH + "' " +
-            "  or properties -> 'listedCases' @> cast(?5 as jsonb) " +
-            "  or ( " +
-            "       properties -> 'listedCases' @> cast(?4 as jsonb) " +
-            "       and" +
-            "       not properties ->> 'listedCases' like '%prosecutor%'" +
-            "     )" +
-            ") " +
-            "and (?6 is null or properties -> 'type' ->> 'id' = cast(?6 as text))  " +
-            "and (?7 is null or properties ->> 'jurisdictionType' = cast(?7 as text))  " +
-            "and cast(?8 as date) between cast(properties ->> 'startDate' as date) and cast(properties ->> 'endDate' as date)  " +
-            "and cast(hearingDays ->> 'startTime' as timestamp) >= cast(?9 as timestamp)  " +
-            "and cast(hearingDays ->> 'startTime' as timestamp) <= cast(?10 as timestamp)"
+            "h.allocated = :allocated  " +
+            "and (h.unscheduled is null or h.unscheduled = false) " +
+            "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and (:courtCentreId is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(:courtCentreId as varchar) as uuid))  " +
+            "and (:courtRoomId is null or coalesce(hd.court_room_id, h.court_room_id) = cast(cast(:courtRoomId as varchar) as uuid))  " +
+            "and (:authorityId is null or (lc.authority_id = cast(cast(:authorityId as varchar) as uuid) or lc.prosecutor_id = cast(cast(:authorityId as varchar) as uuid)))  " +
+            "and (:typeId is null or h.type_id = cast(cast(:typeId as varchar) as uuid))  " +
+            "and (:jurisdictionType is null or h.jurisdiction_type = cast(:jurisdictionType as text))  " +
+            "and (:searchDate between h.start_date and h.end_date )  " +
+            "and (hd.start_time between :startTime and :endTime) "
             , isNative = true)
-    List<Hearing> findHearings(final boolean allocated,
-                               final String courtCentreId,
-                               final String courtRoomId,
-                               final String authorityCode,
-                               final String prosecutorCode,
-                               final String hearingTypeId,
-                               final String jurisdictionType,
-                               final String searchDate,
-                               final String startTime,
-                               final String endTime);
+    List<Hearing> findHearings(@QueryParam("allocated") final boolean allocated,
+                               @QueryParam("courtCentreId") final String courtCentreId,
+                               @QueryParam("courtRoomId") final String courtRoomId,
+                               @QueryParam("authorityId") final String authorityId,
+                               @QueryParam("typeId") final String hearingTypeId,
+                               @QueryParam("jurisdictionType") final String jurisdictionType,
+                               @QueryParam("searchDate") final LocalDate searchDate,
+                               @QueryParam("startTime") ZonedDateTime startTime,
+                               @QueryParam("endTime") final ZonedDateTime endTime);
 
-
-    /**
-     * Find {@link Hearing}s based on the following parameters
-     *
-     * @param allocated             property to search for - mandatory.
-     * @param jurisdictionTypes     to search for or <code>null</code> for any jurisdictionTypes.
-     * @param hearingId             property to search for - mandatory.
-     * @param caseUrnSet            to search for or <code>empty string</code> for any case urn.
-     * @param masterDefendantIdSet  to search for or <code>empty string</code> for any master
-     *                              defendant id.
-     * @param linkedCaseUrn         to search for or <code>empty string</code> for any linked case
-     *                              urn.
-     * @param caseUrnForLinkedCases to search for or <code>empty string</code> for any linked case
-     *                              urn.
-     * @return Hearings.
-     */
-    @Query(value = "select id, properties  " +
-            "from hearing  " +
-            "where  " +
-            "(cast(properties ->> 'allocated' as boolean) = ?1  " +
-            "and (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)" +
-            "and (properties ->> 'jurisdictionType' in (?2))  " +
-            "and (properties ->> 'endDate' is null or cast(properties ->> 'endDate' as date) >= CURRENT_DATE)  " +
-            "and (?3 is null or properties ->> 'id' != cast(?3 as text)))  " +
-            "AND " +
-            "(id in ( select distinct(b.id) from " +
-            " (select id, properties, jsonb_array_elements(properties->'listedCases') ->> 'id' as allCaseId from hearing ) as b " +
-            "where  allCaseId in (select cases ->> 'id' as caseId from " +
-            "  ( select jsonb_array_elements(properties -> 'listedCases') as cases from hearing ) " +
-            " as a where UPPER(cases ->'caseIdentifier' ->> 'caseReference') in (?4)) " +
-            " and (?3 is null or properties ->> 'id' != cast(?3 as text))) " +
-            "OR " +
-            "(id in (SELECT distinct(id) " +
-            "   FROM ( " +
-            "   SELECT id FROM ( " +
-            "   SELECT id, jsonb_array_elements(properties -> 'listedCases') -> 'caseIdentifier' AS linkedCaseIdentifier FROM hearing) a " +
-            "   WHERE UPPER(linkedCaseIdentifier ->> 'caseReference') IN ( " +
-            "   SELECT linkedCaseUrn FROM ( " +
-            "   SELECT id, properties, jsonb_array_elements(jsonb_array_elements(properties -> 'listedCases') -> 'linkedCases') ->> 'caseUrn' AS linkedCaseUrn " +
-            "   FROM (SELECT id, properties, jsonb_array_elements(properties -> 'listedCases') -> 'caseIdentifier' AS linkedCaseIdentifier FROM hearing) allLinkedCaseIdentifier " +
-            "   WHERE UPPER(linkedCaseIdentifier ->> 'caseReference') = CAST(?7 as text) " +
-            "   ) AS allLinkedCaseReference " +
-            "   )) linkedCaseHearing)) " +
-            "OR" +
-            " (id in ( select distinct(b.id) from " +
-            "(select id, properties, jsonb_array_elements(properties->'listedCases') ->> 'id' as matchingCaseId from hearing )as b where " +
-            "matchingCaseId in ((select listedCases ->> 'id' from " +
-            "(select jsonb_array_elements(listedCases -> 'defendants') as defendants, listedCases from " +
-            "(select jsonb_array_elements(properties -> 'listedCases') as listedCases from hearing) as hearings) as masterDefendantId " +
-            "where defendants ->> 'masterDefendantId' in  " +
-            "( select defendants ->> 'masterDefendantId' as masterDefendantIds from " +
-            "(select jsonb_array_elements(listedCases -> 'defendants') as defendants from " +
-            "(select jsonb_array_elements(properties -> 'listedCases') as listedCases from hearing)as defendants) as masterDefendantIds " +
-            " where defendants ->> 'masterDefendantId' in (?5)))) " +
-            " and (?3 is null or properties ->> 'id' != cast(?3 as text))) " +
-            "OR " +
-            "(id in (select distinct( id ) from (" +
-            "SELECT id FROM ( " +
-            "SELECT id, properties, jsonb_array_elements(  properties -> 'listedCases')  -> 'caseIdentifier' AS linkedCaseIdentifier FROM   hearing) allLinkedCaseIdentifier " +
-            "WHERE UPPER(linkedCaseIdentifier ->> 'caseReference') IN (?6) " +
-            "and (?3 is null or properties ->> 'id' != cast(?3 as text))) allLinkedCaseReference) " +
-            "))) "
-            , isNative = true)
-    List<Hearing> findHearings(final boolean allocated,
-                               final Set<String> jurisdictionTypes,
-                               final String hearingId,
-                               final Set<String> caseUrnSet,
-                               final Set<String> masterDefendantIdSet,
-                               final Set<String> linkedCaseUrn,
-                               final String caseUrnForLinkedCases);
 
 
     /**
@@ -203,39 +154,43 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param endDate          to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select distinct id, properties  " +
-            "from hearing LEFT JOIN jsonb_array_elements(properties -> 'hearingDays') hearingDays ON TRUE  " +
+    @Query(value = "select distinct hearing.id, hearing.properties,  " +
+            "hearing.court_centre_id, " +
+            "hearing.court_room_id, " +
+            "hearing.type_id, " +
+            "hearing.start_date, " +
+            "hearing.end_date, " +
+            "hearing.is_vacated_trial, " +
+            "hearing.jurisdiction_type, " +
+            "hearing.unscheduled, " +
+            "hearing.week_commencing_start_date, " +
+            "hearing.week_commencing_end_date, " +
+            "hearing.allocated, " +
+            "hearing.type_of_list_id " +
+            "from hearing LEFT JOIN hearing_days ON hearing_days.hearing_id = hearing.id  " +
+            "LEFT JOIN listed_cases ON listed_cases.hearing_id = hearing.id  " +
             "where  " +
-            "properties -> 'allocated'  @> cast(?1 as jsonb)  " +
-            "and (properties -> 'unscheduled' is null or properties -> 'unscheduled' @> cast('false' as jsonb))" +
-            "and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
-            "and (?2 is null or coalesce(hearingDays ->> 'courtCentreId', properties ->> 'courtCentreId') = cast(?2 as text))  " +
-            "and (?3 is null or coalesce(hearingDays ->> 'courtRoomId', properties ->> 'courtRoomId') = cast(?3 as text))  " +
-            "and (" +
-            "  ?4  = '" + ALL_AUTHORITY_CODES_SEARCH + "' " +
-            "  or properties -> 'listedCases' @> cast(?5 as jsonb) " +
-            "  or ( " +
-            "       properties -> 'listedCases' @> cast(?4 as jsonb) " +
-            "       and" +
-            "       not properties ->> 'listedCases' like '%prosecutor%'" +
-            "     )" +
-            ") " +
-            "and (?6 is null or properties -> 'type' ->> 'id' = cast(?6 as text) )  " +
-            "and (?7 is null or properties ->> 'jurisdictionType' = cast(?7 as text))  " +
+            "cast(hearing.allocated as varchar) = cast(?1 as varchar)  " +
+            "and (hearing.unscheduled is null or hearing.unscheduled = false) " +
+            "and (hearing.is_vacated_trial is null or hearing.is_vacated_trial != true) " +
+            "and (?2 is null or coalesce(hearing_days.court_centre_id, hearing.court_centre_id) = cast(cast(?2 as varchar) as uuid))  " +
+            "and (?3 is null or coalesce(hearing_days.court_room_id, hearing.court_room_id) = cast(cast(?3 as varchar) as uuid))  " +
+            "and (?4 is null or (listed_cases.authority_id = cast(cast(?4 as varchar) as uuid) or listed_cases.prosecutor_id = cast(cast(?4 as varchar) as uuid)))  " +
+            "and (?5 is null or hearing.type_id = cast(cast(?5 as varchar) as uuid))  " +
+            "and (?6 is null or hearing.jurisdiction_type = cast(?6 as text))  " +
             "and ( " +
-            "   cast(properties ->> 'startDate' as date) between cast(?8 as date) and cast(?9 as date) or  " +
-            "   cast(properties ->> 'endDate' as date) between cast(?8 as date) and cast(?9 as date) or  " +
-            "   ( cast(properties ->> 'startDate' as date) <= cast(?8 as date) and cast(properties ->> 'endDate' as date) >= cast(?9 as date) )  " +
+            "(hearing.start_date between ?7 and ?8 ) or " +
+            "(hearing.end_date between ?7 and ?8 ) or " +
+            "((hearing.start_date <= ?7 ) and (hearing.end_date >= ?8 ) )  " +
             ")", isNative = true)
     List<Hearing> findHearings(final String allocated,
                                final String courtCentreId,
                                final String courtRoomId,
                                final String authorityCode,
-                               final String prosecutorCode,
                                final String hearingTypeId,
                                final String jurisdictionType,
-                               final String startDate,
-                               final String endDate);
+                               final LocalDate startDate,
+                               final LocalDate endDate);
 
     /**
      * Find {@link Hearing}s based on the query parameters
@@ -254,24 +209,37 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param weekCommencingEndDate   to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select id, properties  " +
-            "from hearing LEFT JOIN jsonb_array_elements(properties -> 'hearingDays') hearingDays ON TRUE  " +
+    @Query(value = "select hearing.id, hearing.properties,  " +
+            "hearing.court_centre_id, " +
+            "hearing.court_room_id, " +
+            "hearing.type_id, " +
+            "hearing.start_date, " +
+            "hearing.end_date, " +
+            "hearing.is_vacated_trial, " +
+            "hearing.jurisdiction_type, " +
+            "hearing.unscheduled, " +
+            "hearing.week_commencing_start_date, " +
+            "hearing.week_commencing_end_date, " +
+            "hearing.allocated, " +
+            "hearing.type_of_list_id " +
+            "from hearing LEFT JOIN hearing_days ON hearing_days.hearing_id = hearing.id  " +
+            "LEFT JOIN listed_cases ON listed_cases.hearing_id = hearing.id  " +
             "where  " +
-            "(properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) and " +
-            "(?1 is null or coalesce(hearingDays ->> 'courtCentreId', properties ->> 'courtCentreId') = cast(?1 as text))  " +
-            "and (?2 is null or coalesce(hearingDays ->> 'courtRoomId', properties ->> 'courtRoomId') = cast(?2 as text))  " +
+            "(hearing.is_vacated_trial is null or hearing.is_vacated_trial != true) and " +
+            "(?1 is null or coalesce(hearing_days.court_centre_id, hearing.court_centre_id) = cast(cast(?1 as varchar) as uuid))  " +
+            "and (?2 is null or coalesce(hearing_days.court_room_id, hearing.court_room_id) = cast(cast(?2 as varchar) as uuid))  " +
             "and " +
-            WEEK_COMMENCING_CORE_QUERY
+            WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED
             , isNative = true)
     List<Hearing> findHearingsByWeekCommencingRange(
             final String courtCentreId,
             final String courtRoomId,
             final String authorityCode,
-            final String prosecutorCode,
             final String hearingTypeId,
             final String jurisdictionType,
-            final String weekCommencingStartDate,
-            final String weekCommencingEndDate);
+            final LocalDate weekCommencingStartDate,
+            final LocalDate weekCommencingEndDate);
+
 
     /**
      * Find {@link Hearing}s based on the query parameters
@@ -291,26 +259,37 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param weekCommencingEndDate   to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select id, properties  " +
-            "from hearing  " +
+    @Query(value = "select hearing.id, hearing.properties,  " +
+            "hearing.court_centre_id, " +
+            "hearing.court_room_id, " +
+            "hearing.type_id, " +
+            "hearing.start_date, " +
+            "hearing.end_date, " +
+            "hearing.is_vacated_trial, " +
+            "hearing.jurisdiction_type, " +
+            "hearing.unscheduled, " +
+            "hearing.week_commencing_start_date, " +
+            "hearing.week_commencing_end_date, " +
+            "hearing.allocated, " +
+            "hearing.type_of_list_id " +
+            "from hearing LEFT JOIN listed_cases ON listed_cases.hearing_id = hearing.id " +
             "where  " +
-            "(properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) and " +
-            "cast(properties ->> 'allocated' as boolean) = ?9  " +
+            "(hearing.is_vacated_trial is null or hearing.is_vacated_trial != true) and " +
+            "hearing.allocated = ?8  " +
             "and " +
-            "(?1 is null or (properties ->> 'courtCentreId' = cast(?1 as text)))  " +
-            "and (?2 is null or (properties ->> 'courtRoomId' = cast(?2 as text)))  " +
+            "(?1 is null or hearing.court_centre_id = cast(cast(?1 as varchar) as uuid))  " +
+            "and (?2 is null or hearing.court_room_id = cast(cast(?2 as varchar) as uuid))  " +
             "and " +
-            WEEK_COMMENCING_CORE_QUERY
+            WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED
             , isNative = true)
     List<Hearing> findUnallocatedHearingsByWeekCommencingRange(
             final String courtCentreId,
             final String courtRoomId,
             final String authorityCode,
-            final String prosecutorCode,
             final String hearingTypeId,
             final String jurisdictionType,
-            final String weekCommencingStartDate,
-            final String weekCommencingEndDate,
+            final LocalDate weekCommencingStartDate,
+            final LocalDate weekCommencingEndDate,
             final boolean allocated);
 
     /**
@@ -323,71 +302,41 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param endDate       to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id,\n" +
-            "(\n" +
-            "select row_to_json(combinedJudiciaryAndHearings) as properties\n" +
-            "    from\n" +
-            "    (\n" +
-            "        select *\n" +
-            "        from\n" +
-            "        (\n" +
-            "            select json_agg(uniqueJudiciary) as judiciary\n" +
-            "            from\n" +
-            "            (\n" +
-            "                select distinct judiciary -> 'judicialId' as \"judicialId\"\n" +
-            "                from\n" +
-            "                (\n" +
-            "                    select jsonb_array_elements(properties -> 'judiciary') judiciary\n" +
-            "                    from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays \n" +
-            "                    where coalesce(hearingDays ->> 'courtCentreId', properties ->> 'courtCentreId') = cast(?2 as text)\n" +
-            "                    and cast(properties ->> 'allocated' as boolean) = ?1\n" +
-            "                    and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
-            "                ) judicialId\n" +
-            "            ) uniqueJudiciary\n" +
-            "        ) a,\n" +
-            "        (\n" +
-            "            select json_agg(hrngByCourtCentreId) as hearings\n" +
-            "            from\n" +
-            "            (\n" +
-            "                select distinct on (hearingDays ->> 'courtCentreId') hearingDays ->> 'courtCentreId' as \"courtCentreId\",\n" +
-            "                (\n" +
-            "                    select json_agg(hbsd) as \"hearingsByCourtCentreId\"\n" +
-            "                    from\n" +
-            "                    (\n" +
-            "                        select hearingDate as \"hearingDate\",\n" +
-            "                        (\n" +
-            "                            select jsonb_agg(hearings) as \"hearingsByHearingDate\"\n" +
-            "                            from\n" +
-            "                            (\n" +
-            "                                select distinct properties as hearing\n" +
-            "                                from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays\n" +
-            "                                where coalesce(hearingDays ->> 'courtCentreId', properties ->> 'courtCentreId') = cast(?2 as text)\n" +
-            "                                and cast(properties ->> 'allocated' as boolean) = ?1\n" +
-            "                                and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
-            "                                and properties -> 'hearingDays' @> cast(concat('[{\"hearingDate\": \"', h3.hearingDate, '\"}]') as jsonb)\n" +
-            "                                and hearingDays ->> 'hearingDate' = h3.hearingDate\n" +
-            "                            ) hearings\n" +
-            "                        )\n" +
-            "                        from\n" +
-            "                        (\n" +
-            "                            select distinct hearingDays ->> 'hearingDate' as hearingDate\n" +
-            "                            from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays\n" +
-            "                            where coalesce(hearingDays ->> 'courtCentreId', properties ->> 'courtCentreId') = cast(?2 as text)\n" +
-            "                            and cast(properties ->> 'allocated' as boolean) = ?1\n" +
-            "                            and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
-            "                        ) as h3\n" +
-            "                    ) hbsd\n" +
-            "                    where cast(\"hearingDate\" as date) between cast(?3 as date) and cast(?4 as date)\n" +
-            "                ) from hearing h4, jsonb_array_elements(h4.properties -> 'hearingDays') hearingDays \n" +
-            "            ) hrngByCourtCentreId\n" +
-            "            where \"courtCentreId\" = cast(?2 as text)\n" +
-            "        ) b\n" +
-            "    ) combinedJudiciaryAndHearings\n" +
-            ")", isNative = true)
-    Hearing findHearingsForPublicStandardList(final boolean allocated,
-                                              final String courtCentreId,
-                                              final String startDate,
-                                              final String endDate);
+    @Query(value = "with filtered_hearings as (select distinct h.id, hd.hearing_date as hearingDate, h.properties as properties from hearing h " +
+            "inner join hearing_days hd on hd.hearing_id = h.id where coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(:courtCentreId as varchar) as uuid) " +
+            "and h.allocated = :allocated and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and hd.hearing_date between :startDate and :endDate) " +
+            "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id, " +
+            ":courtCentreId as court_centre_id, " +
+            "null as court_room_id, " +
+            "null as type_id, " +
+            "null as start_date, " +
+            "null as end_date, " +
+            "null as is_vacated_trial, " +
+            "null as jurisdiction_type, " +
+            "null as unscheduled, " +
+            "null as week_commencing_start_date, " +
+            "null as week_commencing_end_date, " +
+            "null as allocated, " +
+            "null as type_of_list_id, " +
+            "(select row_to_json(combinedJudiciaryAndHearings) as properties from " +
+            "   (select * from " +
+            "       (select json_agg(uniqueJudiciary) as judiciary from " +
+            "               (select distinct jsonb_array_elements(h.properties -> 'judiciary') ->> 'judicialId' as \"judicialId\" from filtered_hearings h) uniqueJudiciary) a, " +
+            "   (select json_agg(hrngByCourtCentreId) as hearings from " +
+            "       (select :courtCentreId as \"courtCentreId\", " +
+            "               (select json_agg(hbsd) as \"hearingsByCourtCentreId\" from " +
+            "                   (select h.hearingDate as \"hearingDate\", " +
+            "                           (select jsonb_agg(hearings) as \"hearingsByHearingDate\" from  " +
+            "                               (select distinct properties as hearing from filtered_hearings fh where fh.hearingDate = h.hearingDate) hearings) " +
+            "                   from (select distinct hearingDate from filtered_hearings) h) " +
+            "               hbsd)) " +
+            "   hrngByCourtCentreId) b) " +
+            "combinedJudiciaryAndHearings)", isNative = true)
+    Hearing findHearingsForPublicStandardList(@QueryParam("allocated") final boolean allocated,
+                                              @QueryParam("courtCentreId") final String courtCentreId,
+                                              @QueryParam("startDate") final LocalDate startDate,
+                                              @QueryParam("endDate") final LocalDate endDate);
 
     /**
      * Find {@link Hearing}s based on the query parameters. This query will be used by the
@@ -398,82 +347,150 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param hearingDate   to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id,\n" +
-            "(\n" +
-            "    select jsonb_agg(hrngByCourtCentreId) as properties\n" +
-            "    from\n" +
-            "    (\n" +
-            "        select hearingDate as \"hearingDate\",\n" +
-            "        (\n" +
-            "            select jsonb_agg(hearings) \"hearingsByHearingDate\"\n" +
-            "            from (\n" +
-            "                select distinct properties as hearing\n" +
-            "                from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays\n" +
-            "                where properties -> 'hearingDays' @> cast(concat('[{\"hearingDate\": \"', hrngByHearingDate.hearingDate, '\"}]') as jsonb)\n" +
-            "                and coalesce(hearingDays ->> 'courtCentreId', properties ->> 'courtCentreId') = cast(?2 as text)\n" +
-            "                and cast(properties ->> 'allocated' as boolean) = ?1\n" +
-            "                and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
-            "                and hearingDays ->> 'hearingDate' = hrngByHearingDate.hearingDate\n" +
-            "            ) hearings\n" +
-            "        )\n" +
-            "        from (\n" +
-            "                select distinct hearingDays ->> 'hearingDate' hearingDate\n" +
-            "                from hearing, jsonb_array_elements(properties -> 'hearingDays') hearingDays\n" +
-            "                where coalesce(hearingDays ->> 'courtCentreId', properties ->> 'courtCentreId') = cast(?2 as text)\n" +
-            "                and cast(properties ->> 'allocated' as boolean) = ?1\n" +
-            "                and (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true) " +
-            "        ) as hrngByHearingDate\n" +
-            "        where cast(hearingDate as date) = cast(?3 as date)\n" +
-            "    ) hrngByCourtCentreId\n" +
-            ")", isNative = true)
-    List<Hearing> findHearingsForAlphabeticalList(final boolean allocated,
-                                                  final String courtCentreId,
-                                                  final String hearingDate);
+    @Query(value = "with filtered_hearings as (select distinct h.id, hd.hearing_date as hearingDate, h.properties as properties from hearing h " +
+            "inner join hearing_days hd on hd.hearing_id = h.id where coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(:courtCentreId as varchar) as uuid) " +
+            "and h.allocated = :allocated and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and hd.hearing_date = :hearingDate) " +
+            "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id, " +
+            ":courtCentreId as court_centre_id, " +
+            "null as court_room_id, " +
+            "null as type_id, " +
+            "null as start_date, " +
+            "null as end_date, " +
+            "null as is_vacated_trial, " +
+            "null as jurisdiction_type, " +
+            "null as unscheduled, " +
+            "null as week_commencing_start_date, " +
+            "null as week_commencing_end_date, " +
+            "null as allocated, " +
+            "null as type_of_list_id, " +
+            "(select jsonb_agg(hrngByCourtCentreId) as properties from " +
+            "    (select h.hearingDate as \"hearingDate\", " +
+            "        (select jsonb_agg(hearings) as \"hearingsByHearingDate\" from  " +
+            "           (select distinct properties as hearing from filtered_hearings fh where fh.hearingDate = h.hearingDate) hearings) " +
+            "        from (select distinct hearingDate from filtered_hearings) h) " +
+            "hrngByCourtCentreId)", isNative = true)
+    List<Hearing> findHearingsForAlphabeticalList(@QueryParam("allocated") final boolean allocated,
+                                                  @QueryParam("courtCentreId") final String courtCentreId,
+                                                  @QueryParam("hearingDate") final LocalDate hearingDate);
 
 
-    @Query(value = "select distinct id, properties" +
-            " from hearing " +
-            " where (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true)" +
-            "  and cast(properties ->> 'allocated' as boolean) = false" +
-            "  and cast(properties ->> 'unscheduled' as boolean) = true" +
-            "  and ( ( properties -> 'listedCases' is null and ?1 is null ) " +
-            "           or id in (select hearingId" +
-            "             from (" +
-            "                      select id as hearingId, jsonb_array_elements(properties -> 'listedCases') as cases" +
-            "                      from hearing) as allCases" +
-            "             where ?1 is null" +
-            "                or UPPER(allCases.cases -> 'caseIdentifier' ->> 'caseReference') = cast(?1 as text))" +
-            "           or id in (select hearingId" +
-            "             from (" +
-            "                      select id as hearingId, jsonb_array_elements(properties -> 'courtApplications') as application" +
-            "                      from hearing) as allApplications" +
-            "             where ?1 is null" +
-            "                or UPPER(allApplications.application ->> 'applicationReference') = cast(?1 as text))" +
+    @Query(value = "select distinct h.id, properties, " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id " +
+            " from hearing h " +
+            " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
+            " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
+            " where (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "  and  h.allocated = false " +
+            "  and  h.unscheduled = true " +
+            "  and ( (lc.hearing_id is null and ?1 is null ) or (?1 is null or UPPER(lc.case_reference) = cast(?1 as varchar)) " +
+            "           or (?1 is null or UPPER(ca.application_reference) = cast(?1 as varchar)) " +
             "      ) " +
             "  and (?2 is null" +
-            "    or properties -> 'typeOfList' ->> 'id' = cast(?2 as text))"
+            "    or h.type_of_list_id = cast(cast(?2 as varchar) as uuid))"
             , isNative = true)
     List<Hearing> findHearings(String caseUrn, String typeOfList);
+
+    /**
+     * Find {@link Hearing}s based on the following parameters
+     *
+     * @param allocated             property to search for - mandatory.
+     * @param jurisdictionTypes     to search for or <code>null</code> for any jurisdictionTypes.
+     * @param hearingId             property to search for - mandatory.
+     * @param caseUrnSet            to search for or <code>empty string</code> for any case urn.
+     * @param masterDefendantIdSet  to search for or <code>empty string</code> for any master
+     *                              defendant id.
+     * @param linkedCaseUrn         to search for or <code>empty string</code> for any linked case
+     *                              urn.
+     * @param caseUrnForLinkedCases to search for or <code>empty string</code> for any linked case
+     *                              urn.
+     * @return Hearings.
+     */
+    @Query(value = "select h.id, h.properties, " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id " +
+            "from hearing h " +
+            "where " +
+            "h.allocated = :allocated " +
+            "and (h.unscheduled is null or h.unscheduled = false) " +
+            "and (h.jurisdiction_type in (:jurisdictionTypes)) " +
+            "and (h.end_date is null OR h.end_date >= :currentDate) " +
+            "and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid)) " +
+            "AND " +
+            "(h.id in (select distinct h.id from hearing h  " +
+            " inner join listed_cases lc on lc.hearing_id = h.id where UPPER(lc.case_reference) in (:caseUrnSet)  " +
+            " and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid))) " +
+            "OR " +
+            "(h.id in (SELECT distinct(hrng.id) FROM hearing hrng inner join listed_cases lc3 on lc3.hearing_id = hrng.id " +
+            "   WHERE lc3.case_reference IN (select lnkCase.case_urn as linkedCaseUrn from hearing h2  " +
+            "   inner join listed_cases listCase on listCase.hearing_id = h2.id  " +
+            "   inner join linked_case lnkCase on lnkCase.listed_case_id = listCase.id  " +
+            "   where listCase.case_reference = cast(:caseUrnForLinkedCases as text)))) " +
+            "OR " +
+            " (h.id in (select distinct h5.id from " +
+            "hearing h5 inner join listed_cases lc6 on lc6.hearing_id = h5.id where " +
+            "lc6.case_id in (select distinct lc5.case_id from hearing h4 inner join listed_cases lc5 on lc5.hearing_id = h4.id  " +
+            "inner join defendant d on d.listed_case_id = lc5.id where cast(d.master_defendant_id as varchar) in (:masterDefendantIdSet)) " +
+            " and (:hearingId is null or h5.id != cast(cast(:hearingId as varchar) as uuid))) " +
+            "OR " +
+            "(h.id in (select distinct h.id from hearing h  " +
+            " inner join listed_cases lc on lc.hearing_id = h.id where UPPER(lc.case_reference) in (:linkedCaseUrn)  " +
+            " and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid))) " +
+            ")))"
+            , isNative = true)
+    List<Hearing> findHearings(@QueryParam("allocated") final boolean allocated,
+                               @QueryParam("jurisdictionTypes") final Set<String> jurisdictionTypes,
+                               @QueryParam("hearingId") final String hearingId,
+                               @QueryParam("caseUrnSet") final Set<String> caseUrnSet,
+                               @QueryParam("masterDefendantIdSet") final Set<String> masterDefendantIdSet,
+                               @QueryParam("linkedCaseUrn") final Set<String> linkedCaseUrn,
+                               @QueryParam("caseUrnForLinkedCases") final String caseUrnForLinkedCases,
+                               @QueryParam("currentDate") final LocalDate currentDate);
 
     /**
      * @param caseUrn
      * @return
      */
-    @Query(value = "select distinct id, properties" +
-            " from hearing " +
-            " where (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)" +
-            "  and (  id in (select hearingId" +
-            "             from (" +
-            "                      select id as hearingId, jsonb_array_elements(properties -> 'listedCases') as cases" +
-            "                      from hearing) as allCases" +
-            "             where ?1 is null" +
-            "                or UPPER(allCases.cases -> 'caseIdentifier' ->> 'caseReference') = cast(?1 as text))" +
-            "           or id in (select hearingId" +
-            "             from (" +
-            "                      select id as hearingId, jsonb_array_elements(properties -> 'courtApplications') as application" +
-            "                      from hearing) as allApplications" +
-            "             where ?1 is null" +
-            "                or UPPER(allApplications.application ->> 'applicationReference') = cast(?1 as text))" +
+    @Query(value = "select distinct h.id, h.properties, " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id " +
+            " from hearing h " +
+            " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
+            " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
+            " where (h.unscheduled is null or h.unscheduled = false) " +
+            "  and ( (?1 is null or UPPER(cast(lc.case_reference as varchar)) = cast(?1 as varchar)) " +
+            "           or (?1 is null or UPPER(cast(ca.application_reference as varchar)) = cast(?1 as varchar))" +
             "      ) "
             , isNative = true)
     List<Hearing> findHearingsByCaseUrnAndAnyAllocationState(String caseUrn);
@@ -484,28 +501,31 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param courtCentreIds
      * @return
      */
-    @Query(value = "select distinct id, properties" +
-            " from hearing" +
-            " where (properties ->> 'isVacatedTrial' is null or cast(properties ->> 'isVacatedTrial' as boolean) != true)" +
-            "  and cast(properties ->> 'allocated' as boolean) = false" +
-            "  and cast(properties ->> 'unscheduled' as boolean) = true" +
-            "  and ( ( properties -> 'listedCases' is null and ?1 is null ) " +
-            "           or id in (select hearingId" +
-            "             from (" +
-            "                      select id as hearingId, jsonb_array_elements(properties -> 'listedCases') as cases" +
-            "                      from hearing) as allCases" +
-            "             where ?1 is null" +
-            "                or UPPER(allCases.cases -> 'caseIdentifier' ->> 'caseReference') = cast(?1 as text))" +
-            "           or id in (select hearingId" +
-            "             from (" +
-            "                      select id as hearingId, jsonb_array_elements(properties -> 'courtApplications') as application" +
-            "                      from hearing) as appApplications" +
-            "             where ?1 is null" +
-            "                or UPPER(appApplications.application ->> 'applicationReference') = cast(?1 as text))" +
+    @Query(value = "select distinct h.id, h.properties, " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id " +
+            " from hearing h" +
+            " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
+            " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
+            " where (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "  and  h.allocated = false " +
+            "  and  h.unscheduled = true " +
+            "  and ( (lc.hearing_id is null and ?1 is null ) or (?1 is null or UPPER(lc.case_reference) = cast(?1 as varchar)) " +
+            "           or (?1 is null or UPPER(ca.application_reference) = cast(?1 as varchar)) " +
             "      ) " +
             "  and (?2 is null" +
-            "    or properties -> 'typeOfList' ->> 'id' = cast(?2 as text))" +
-            "  and (properties ->> 'courtCentreId' in (?3))"
+            "    or h.type_of_list_id = cast(cast(?2 as varchar) as uuid))" +
+            "  and cast(h.court_centre_id as varchar) in (?3)"
             , isNative = true)
     List<Hearing> findHearings(String caseUrn, String typeOfList, Set<String> courtCentreIds);
 
@@ -513,36 +533,29 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param caseId
      * @return
      */
-    @Query(value =  "select id, properties from ( " +
-            "select distinct id, properties" +
-            " from hearing " +
-            "where " +
-            "cast(properties ->> 'allocated' as boolean) = false " +
-            "and ( ?1 is null or cast(?1 as text) IN " +
-            "(" +
-            "  SELECT jsonb_array_elements(properties -> 'listedCases') ->> 'id' " +
-            ") ) " +
-            "and ( ?2 is null or cast(?2 as text) IN " +
-            "(" +
-            "  SELECT jsonb_array_elements(properties -> 'courtApplications') ->> 'id' " +
-            ") ) " +
-            " UNION " +
-            "select distinct id, properties " +
-            "            from hearing " +
-            "            where " +
-            "            cast(properties ->> 'allocated' as boolean) = true " +
-            "            and (properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)  " +
-            "and (  ?1 is null or cast(?1 as text) IN " +
-            "(" +
-            "  SELECT jsonb_array_elements(properties -> 'listedCases') ->> 'id' " +
-            ") ) "+
-            "and ( ?2 is null or cast(?2 as text) IN " +
-            "(" +
-            "  SELECT jsonb_array_elements(properties -> 'courtApplications') ->> 'id' " +
-            ") ) " +
-            ") as all_hearing "+
-            "order by cast(all_hearing.properties ->> 'startDate' as date) desc," +
-            "cast(all_hearing.properties ->> 'endDate' as date) desc"
+    @Query(value = "select id, properties," +
+            "null as court_centre_id, " +
+            "null as court_room_id, " +
+            "null as type_id, " +
+            "null as start_date, " +
+            "null as end_date, " +
+            "null as is_vacated_trial, " +
+            "null as jurisdiction_type, " +
+            "null as unscheduled, " +
+            "null as week_commencing_start_date, " +
+            "null as week_commencing_end_date, " +
+            "null as allocated, " +
+            "null as type_of_list_id " +
+            " from ( " +
+            " select distinct h.id as id, h.properties as properties, h.start_date as startDate, h.end_date as endDate " +
+            " from hearing h " +
+            " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
+            " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
+            " where ((h.allocated is null or h.allocated = false) or (h.allocated = true and (h.unscheduled is null or h.unscheduled = false))) " +
+            " and (?1 is null or lc.case_id = cast(cast(?1 as varchar) as uuid)) " +
+            " and (?2 is null or ca.application_id = cast(cast(?2 as varchar) as uuid)) " +
+            " ) as all_hearing " +
+            " order by all_hearing.startDate desc, all_hearing.endDate desc "
             , isNative = true)
     List<Hearing> findAllocatedAndUnallocatedHearingsByCaseId(String caseId, String applicationId);
 

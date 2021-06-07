@@ -2135,6 +2135,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
         final String eventPayloadString = getStringFromResource(fileName)
                 .replaceAll("HEARING_ID", values.get("hearingId"))
+                .replaceAll("CASE_ID", values.get("caseId"))
                 .replaceAll("COURT_CENTRE_ID", values.get("courtCentreId"))
                 .replaceAll("CASE_URN", values.get("caseUrn"))
                 .replaceAll("EARLIEST_START_TIME", values.get("hearingStartTime"))

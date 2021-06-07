@@ -11,6 +11,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -44,6 +45,9 @@ public class HearingDaysCorrectedEventListener {
     @Inject
     private JsonObjectToObjectConverter jsonObjectToObjectConverter;
 
+    @Inject
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @Handles("listing.events.hearing-days-without-court-centre-corrected")
     public void hearingDaysWithoutCourtCentreCorrected(final Envelope<HearingDaysWithoutCourtCentreCorrected> event) throws JsonProcessingException {
         final HearingDaysWithoutCourtCentreCorrected hearingDaysWithoutCourtCentreCorrected =  event.payload();
@@ -66,13 +70,16 @@ public class HearingDaysCorrectedEventListener {
             nonDefaultDays = dbHearing.getNonDefaultDays();
         }
 
+        final List<HearingDay> nonCancelledHearingDays = getNotCancelledHearingDays(dbHearing.getHearingDays());
         using(hearingRepository)
                 .find(hearingId)
                 .remove(HEARING_DAYS)
                 .remove(NON_DEFAULT_DAYS)
-                .putObjectList(HEARING_DAYS, getNotCancelledHearingDays(dbHearing.getHearingDays()))
+                .putObjectList(HEARING_DAYS, nonCancelledHearingDays)
                 .putObjectList(NON_DEFAULT_DAYS, nonDefaultDays)
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     private void correctHearingDaysWithoutCourtCentre(final Optional<UUID> courtCentreId, final Optional<UUID> courtRoomId, final uk.gov.justice.listing.events.Hearing dbHearing) {
@@ -97,4 +104,5 @@ public class HearingDaysCorrectedEventListener {
         jsonReader.close();
         return object;
     }
+
 }

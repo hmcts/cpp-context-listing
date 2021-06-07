@@ -3,32 +3,32 @@ package uk.gov.moj.cpp.listing.query.view;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
+import static java.time.LocalDate.now;
 import static java.time.LocalDate.parse;
 import static java.time.LocalTime.MAX;
 import static java.time.LocalTime.MIN;
+import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
+import static java.util.Optional.ofNullable;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toSet;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.StringUtils.contains;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
+import static uk.gov.justice.services.common.converter.LocalDates.from;
 import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.JsonObjects.getString;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.valueFor;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.ALL_AUTHORITY_CODES_SEARCH;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.AUTHORITY_ID_SEARCH;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.PROSECUTOR_ID_SEARCH;
 import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
-import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.enveloper.Enveloper;
@@ -53,9 +53,10 @@ import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -154,10 +155,8 @@ public class HearingQueryView {
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
         final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
         final String authorityId = query.payloadAsJsonObject().getString(AUTHORITY_ID, null);
-        final String authorityIdSearchString = getAuthorityIdSearchString(authorityId);
-        final String prosecutorIdSearchString = getProsecutorIdSearchString(authorityId);
         final String hearingTypeId = query.payloadAsJsonObject().getString(HEARING_TYPE, null);
-        final String jurisdictionType = query.payloadAsJsonObject().getString(JURISDICTION_TYPE, null);
+        final String jurisdictionType = getString(query.payloadAsJsonObject(), JURISDICTION_TYPE).orElse(null);
         final String searchDate = query.payloadAsJsonObject().getString(SEARCH_DATE);
         final String startTime = getDateTimeAsString(searchDate, query.payloadAsJsonObject().getString(START_TIME, MIN.toString()), MIN.toString());
         final String endTime = getDateTimeAsString(searchDate, query.payloadAsJsonObject().getString(END_TIME, MAX.toString()), MAX.toString());
@@ -172,22 +171,19 @@ public class HearingQueryView {
                         "jurisdictionType: {}, " +
                         "startDate: {}, " +
                         "startTime: {}, " +
-                        "endTime: {}" +
-                        "authorityIdSearchString: {}" +
-                        "prosecutorIdSearchString: {}",
-                allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, searchDate, startTime, endTime, authorityIdSearchString, prosecutorIdSearchString);
+                        "endTime: {}",
+                allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, searchDate, startTime, endTime);
 
         final List<Hearing> hearings = repository.findHearings(
                 allocated,
                 courtCentreId,
                 courtRoomId,
-                authorityIdSearchString,
-                prosecutorIdSearchString,
+                authorityId,
                 hearingTypeId,
                 jurisdictionType,
-                searchDate,
-                startTime,
-                endTime
+                LocalDate.parse(searchDate),
+                ZonedDateTime.of(LocalDateTime.parse(startTime), UTC),
+                ZonedDateTime.of(LocalDateTime.parse(endTime), UTC)
         );
 
         LOGGER.info("number of records from query -  {}" , hearings.size());
@@ -197,18 +193,11 @@ public class HearingQueryView {
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
                         .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convertForSearchHearing(hearings,
-                                getHearingDayMatchedCriteriaMap(courtCentreId, courtRoomId, searchDate, startTimeForMatched, endTime)))
+                                getHearingDayMatchedCriteriaMap(courtCentreId,
+                                        courtRoomId, searchDate, startTimeForMatched, endTime)))
                         .add(NOTES, listToJsonArrayConverter.convert(notes))
                         .build()
         );
-    }
-
-    private String getProsecutorIdSearchString(final String authorityId) {
-        if (authorityId != null) {
-            return format(PROSECUTOR_ID_SEARCH, authorityId);
-        } else {
-            return ALL_AUTHORITY_CODES_SEARCH;
-        }
     }
 
     private Map<String, String> getHearingDayMatchedCriteriaMap(final String courtCentreId, final String courtRoomId, final String searchDate, final String startTime, final String endTime) {
@@ -223,8 +212,8 @@ public class HearingQueryView {
 
     @Handles("listing.unscheduled.search.hearings")
     public Envelope<JsonObject> searchUnscheduledHearings(final JsonEnvelope query) {
-        final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN, null);
         final String typeOfListQueryParam = query.payloadAsJsonObject().getString(TYPE_OF_LIST, null);
+        final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN, null);
         final String courtCentreIdQueryParam = query.payloadAsJsonObject().getString(COURT_CENTRE_IDS, null);
 
         LOGGER.info("listing.unscheduled.search.hearings Query params -  " +
@@ -235,8 +224,10 @@ public class HearingQueryView {
 
         final List<Hearing> hearings;
         if (!isNullOrEmpty(courtCentreIdQueryParam)) {
-            final Set<String> courtCentreIds = Arrays.stream(courtCentreIdQueryParam.split(",")).collect(toSet());
-            hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, courtCentreIds);
+            final Set<String> courtCentreIdSet = Stream.of(courtCentreIdQueryParam.split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toSet());
+            hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, courtCentreIdSet);
         } else {
             hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam);
         }
@@ -251,7 +242,7 @@ public class HearingQueryView {
         final List<Hearing> hearings;
         final String caseIdQueryParam = query.payloadAsJsonObject().getString(CASE_ID, null);
         final String applicationIdQueryParam = query.payloadAsJsonObject().getString(APPLICATION_ID, null);
-        if (isEmpty(caseIdQueryParam) && isEmpty(applicationIdQueryParam)) {
+        if (caseIdQueryParam == null && applicationIdQueryParam == null) {
             return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                     createObjectBuilder()
                             .add(HEARINGS, Json.createArrayBuilder().build())
@@ -294,9 +285,9 @@ public class HearingQueryView {
 
         final List<ListedCase> listedCases = new ArrayList<>();
 
-        if (nonNull(hearingId)) {
+        if (hearingId != null) {
             // search hearing by incoming hearing id
-            final Hearing hearing = repository.findBy(UUID.fromString(hearingId));
+            final Hearing hearing = repository.findBy(fromString(hearingId));
 
             if (nonNull(hearing)) {
                 final JsonNode listedCasesJsonNode = hearing.getProperties().findPath("listedCases");
@@ -326,7 +317,8 @@ public class HearingQueryView {
                 caseUrnSet,
                 masterDefendantSet,
                 linkedCaseUrnSet,
-                caseUrnForLinkedCases
+                caseUrnForLinkedCases,
+                now()
         );
 
         final List<Notes> notes = notesService.findNotes(true, null, null, hearings);
@@ -365,8 +357,8 @@ public class HearingQueryView {
 
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
         final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
-        final String startDate = query.payloadAsJsonObject().getString(START_DATE, null);
-        final String endDate = query.payloadAsJsonObject().getString(END_DATE, null);
+        final LocalDate startDate = ofNullable(query.payloadAsJsonObject().getString(START_DATE, null)).map(LocalDate::parse).orElse(null);
+        final LocalDate endDate = ofNullable(query.payloadAsJsonObject().getString(END_DATE, null)).map(LocalDate::parse).orElse(null);
         final String listId = query.payloadAsJsonObject().getString(LIST_ID);
         LOGGER.info("Parameters -  " +
                         COURT_CENTRE_ID + " : {}, " +
@@ -466,7 +458,7 @@ public class HearingQueryView {
     public JsonEnvelope getCourtListPublishStatus(final JsonEnvelope query) {
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID);
         final String publishCourtListTypes = query.payloadAsJsonObject().getString(PUBLISH_COURT_LIST_TYPES);
-        final LocalDate publishDate = LocalDates.from(query.payloadAsJsonObject().getString(PUBLISH_DATE));
+        final LocalDate publishDate = from(query.payloadAsJsonObject().getString(PUBLISH_DATE));
         final boolean weekCommencing = query.payloadAsJsonObject().getBoolean(WEEK_COMMENCING, false);
 
         LOGGER.info("Parameters -  " + COURT_CENTRE_ID + " : {}, " + PUBLISH_COURT_LIST_TYPES + " : {}, ", courtCentreId, publishCourtListTypes);
@@ -539,14 +531,6 @@ public class HearingQueryView {
         final LocalDate localDate = parse(date);
         final LocalTime localTime = LocalTime.parse(copyTime);
         return localDate.atTime(localTime).toString();
-    }
-
-    private String getAuthorityIdSearchString(String authorityId) {
-        if (authorityId != null) {
-            return format(AUTHORITY_ID_SEARCH, authorityId);
-        } else {
-            return ALL_AUTHORITY_CODES_SEARCH;
-        }
     }
 
     private void extractMasterDefendantId(String searchCriteria, List<ListedCase> listedCases, Set<String> masterDefendants) {

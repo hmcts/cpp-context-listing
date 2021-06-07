@@ -11,6 +11,7 @@ import uk.gov.justice.listing.events.Type;
 import uk.gov.justice.listing.events.TypeChangedForHearing;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -32,6 +33,9 @@ public class TypeForHearingEventListenerTest {
 
     @Mock
     private HearingRepository hearingRepository;
+
+    @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @InjectMocks
     private TypeForHearingEventListener typeForHearingEventListener;

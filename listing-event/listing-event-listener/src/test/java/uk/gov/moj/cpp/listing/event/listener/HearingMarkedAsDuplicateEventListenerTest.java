@@ -76,7 +76,7 @@ public class HearingMarkedAsDuplicateEventListenerTest {
     @Test
     public void shouldDeleteHearingWhenMarkedAsDuplicate() {
         final UUID hearingId = randomUUID();
-        final Hearing hearing = Hearing.createHearingBuilder().setId(hearingId).build();
+        final Hearing hearing = Hearing.builder().withId(hearingId).build();
 
         when(hearingMarkedAsDuplicateEnvelope.payload()).thenReturn(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate()
                 .withHearingId(hearingId)
@@ -93,7 +93,7 @@ public class HearingMarkedAsDuplicateEventListenerTest {
     public void shouldNotDeleteHearingWhenHearingNotExistsInViewStore() {
 
         final UUID hearingId = randomUUID();
-        final Hearing hearing = Hearing.createHearingBuilder().setId(hearingId).build();
+        final Hearing hearing = Hearing.builder().withId(hearingId).build();
 
         when(hearingMarkedAsDuplicateEnvelope.payload()).thenReturn(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate()
                 .withHearingId(hearingId)
@@ -110,7 +110,7 @@ public class HearingMarkedAsDuplicateEventListenerTest {
     public void shouldDeleteHearingWhenAllocatedHearingDeleted() {
 
         final UUID hearingId = randomUUID();
-        final Hearing hearing = Hearing.createHearingBuilder().setId(hearingId).build();
+        final Hearing hearing = Hearing.builder().withId(hearingId).build();
 
         when(allocatedHearingDeletedEnvelope.payload()).thenReturn(AllocatedHearingDeleted.allocatedHearingDeleted()
                 .withHearingId(hearingId)
@@ -128,7 +128,7 @@ public class HearingMarkedAsDuplicateEventListenerTest {
     public void shouldDeleteHearingWhenUnallocatedHearingDeleted() {
 
         final UUID hearingId = randomUUID();
-        final Hearing hearing = Hearing.createHearingBuilder().setId(hearingId).build();
+        final Hearing hearing = Hearing.builder().withId(hearingId).build();
 
         when(unallocatedHearingDeletedEnvelope.payload()).thenReturn(UnallocatedHearingDeleted.unallocatedHearingDeleted()
                 .withHearingId(hearingId)
@@ -187,8 +187,8 @@ public class HearingMarkedAsDuplicateEventListenerTest {
                 .build();
 
         final JsonNode hearingProperties = objectMapper.valueToTree(domainHearing);
-        final Hearing hearing = Hearing.createHearingBuilder().setId(hearingId)
-                .setProperties(hearingProperties)
+        final Hearing hearing = Hearing.builder().withId(hearingId)
+                .withProperties(hearingProperties)
                 .build();
 
         final ArgumentCaptor<Hearing> argumentCaptor = ArgumentCaptor.forClass(Hearing.class);
@@ -261,8 +261,8 @@ public class HearingMarkedAsDuplicateEventListenerTest {
                 .build();
 
         final JsonNode hearingProperties = objectMapper.valueToTree(domainHearing);
-        final Hearing hearing = Hearing.createHearingBuilder().setId(hearingId)
-                .setProperties(hearingProperties)
+        final Hearing hearing = Hearing.builder().withId(hearingId)
+                .withProperties(hearingProperties)
                 .build();
 
         final ArgumentCaptor<Hearing> argumentCaptor = ArgumentCaptor.forClass(Hearing.class);
@@ -330,8 +330,8 @@ public class HearingMarkedAsDuplicateEventListenerTest {
                 .build();
 
         final JsonNode hearingProperties = objectMapper.valueToTree(domainHearing);
-        final Hearing hearing = Hearing.createHearingBuilder().setId(hearingId)
-                .setProperties(hearingProperties)
+        final Hearing hearing = Hearing.builder().withId(hearingId)
+                .withProperties(hearingProperties)
                 .build();
 
         final ArgumentCaptor<Hearing> argumentCaptor = ArgumentCaptor.forClass(Hearing.class);

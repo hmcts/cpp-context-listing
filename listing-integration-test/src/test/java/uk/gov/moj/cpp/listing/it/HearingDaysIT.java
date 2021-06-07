@@ -55,6 +55,7 @@ public class HearingDaysIT extends AbstractIT {
     public static final String STANDARD = "Standard";
 
     private UUID hearingId;
+    private UUID caseId;
     private UUID courtCentreId;
     private UUID courtRoomId;
     private LocalDate startDate;
@@ -76,6 +77,7 @@ public class HearingDaysIT extends AbstractIT {
         endDate = LocalDate.now().plusDays(1);
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
         hearingId = randomUUID();
+        caseId = randomUUID();
         courtCentreId = randomUUID();
         courtRoomId = randomUUID();
         caseUrn = "TVL16116BT1UU";
@@ -159,6 +161,7 @@ public class HearingDaysIT extends AbstractIT {
     public void testHearingDaysCorrectedWithCourtCentre() throws IOException {
         startDate = LocalDate.now();
         hearingId = randomUUID();
+        caseId = randomUUID();
         courtCentreId = randomUUID();
         courtRoomId = randomUUID();
         caseUrn = "TVL16116BT1UU";
@@ -254,6 +257,7 @@ public class HearingDaysIT extends AbstractIT {
             case "listing":
                 return new HashMap<String, String>(){{
                     put("hearingId", hearingId.toString());
+                    put("caseId", caseId.toString());
                     put("courtCentreId", courtCentreId.toString());
                     put("startDate", startDate.toString());
                     put("hearingStartTime", hearingStartTime.format(formatter));
@@ -264,6 +268,7 @@ public class HearingDaysIT extends AbstractIT {
             case "allocating":
                 return new HashMap<String, String>(){{
                     put("hearingId", hearingId.toString());
+                    put("caseId", caseId.toString());
                     put("courtCentreId", courtCentreId.toString());
                     put("courtRoomId", courtRoomId.toString());
                     put("startDate", startDate.toString());
@@ -273,6 +278,7 @@ public class HearingDaysIT extends AbstractIT {
             case "updating":
                 return new HashMap<String, String>(){{
                     put("hearingId", hearingId.toString());
+                    put("caseId", caseId.toString());
                     put("courtCentreId", courtCentreId.toString());
                     put("courtRoomId", courtRoomId.toString());
                     put("startDate", startDate.toString());

@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.time.LocalDate.parse;
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.EndDateChangedForHearing;
@@ -9,6 +10,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.time.LocalDate;
@@ -23,9 +25,12 @@ public class EndDateForHearingEventListener {
 
     private HearingRepository hearingRepository;
 
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @Inject
-    public EndDateForHearingEventListener(final HearingRepository hearingRepository) {
+    public EndDateForHearingEventListener(final HearingRepository hearingRepository, final HearingSearchSyncService hearingSearchSyncService) {
         this.hearingRepository = hearingRepository;
+        this.hearingSearchSyncService = hearingSearchSyncService;
     }
 
     @Handles("listing.events.end-date-changed-for-hearing")
@@ -33,10 +38,14 @@ public class EndDateForHearingEventListener {
         final EndDateChangedForHearing endDateChangedForHearing = event.payload();
         final LocalDate endDate = parse(endDateChangedForHearing.getEndDate());
         final UUID hearingId = endDateChangedForHearing.getHearingId();
-        using(hearingRepository)
-                .find(hearingId)
-                .put(END_DATE_FIELD, endDate)
-                .save();
+
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .put(END_DATE_FIELD, endDate)
+                    .save();
+            hearingSearchSyncService.sync(hearingId);
+        }
     }
 
     @Handles("listing.events.end-date-removed-from-hearing")
@@ -47,6 +56,8 @@ public class EndDateForHearingEventListener {
                 .find(hearingId)
                 .remove(END_DATE_FIELD)
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 }
                                                                                                                                                                                            

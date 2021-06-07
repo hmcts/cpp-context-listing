@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.time.LocalDate.parse;
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
@@ -9,6 +10,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.time.LocalDate;
@@ -24,16 +26,23 @@ public class StartDateForHearingEventListener {
     @Inject
     private HearingRepository hearingRepository;
 
+    @Inject
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @Handles("listing.events.start-date-changed-for-hearing")
     public void startDateChangedForHearing(final Envelope<StartDateChangedForHearing> event) {
         final StartDateChangedForHearing startDateChangedForHearing = event.payload();
         final LocalDate startDate = parse(startDateChangedForHearing.getStartDate());
         final UUID hearingId = startDateChangedForHearing.getHearingId();
 
-        using(hearingRepository)
-                .find(hearingId)
-                .put(START_DATE, startDate)
-                .save();
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .put(START_DATE, startDate)
+                    .save();
+
+            hearingSearchSyncService.sync(hearingId);
+        }
     }
 
 
@@ -46,5 +55,7 @@ public class StartDateForHearingEventListener {
                 .find(hearingId)
                 .remove(START_DATE)
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 }

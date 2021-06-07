@@ -10,7 +10,7 @@
       "hearingLanguageNeeds": "ENGLISH",
       "isYouth": false,
       "listingReason": "For trial",
-      "prosecutionCaseId": "06076689-c0dc-42ad-9967-05e014a2bbf7"
+      "prosecutionCaseId": "CASE_ID"
     }
   ],
   "earliestStartDateTime": "EARLIEST_START_TIME",
@@ -80,12 +80,12 @@
               "title": "MR"
             }
           },
-          "prosecutionCaseId": "06076689-c0dc-42ad-9967-05e014a2bbf7",
+          "prosecutionCaseId": "CASE_ID",
           "masterDefendantId": "6bb8b459-96e3-4800-8f9f-975b72b0e01b",
           "courtProceedingsInitiated": "2020-09-18T09:04:57.169Z"
         }
       ],
-      "id": "06076689-c0dc-42ad-9967-05e014a2bbf7",
+      "id": "CASE_ID",
       "initiationCode": "J",
       "prosecutionCaseIdentifier": {
         "prosecutionAuthorityCode": "TVL",

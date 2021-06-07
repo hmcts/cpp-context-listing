@@ -10,6 +10,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.ArrayList;
@@ -33,6 +34,9 @@ public class LinkOrUnlinkCasesEventListener {
     public static final String UNLINK = "UNLINK";
 
     @Inject
+    private HearingSearchSyncService hearingSearchSyncService;
+
+    @Inject
     private HearingRepository hearingRepository;
 
     @Handles("listing.events.linked-cases-updated")
@@ -47,6 +51,8 @@ public class LinkOrUnlinkCasesEventListener {
                 .find(hearingId)
                 .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getLinkedToCasesAddFunction(linkActionType, prosecutionCaseId, linkedToCases))
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getLinkedToCasesAddFunction(final String linkActionType, final UUID caseId, final List<LinkedToCases> linkedToCases) {

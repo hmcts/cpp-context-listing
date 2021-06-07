@@ -45,10 +45,12 @@ public class DefendantEventListener {
         final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
         };
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseFunction(caseId, defendant))
-                .save();
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putSubList(LISTED_CASES_FIELD, typeRef, getUpdatedListedCaseFunction(caseId, defendant))
+                    .save();
+        }
     }
 
     @Handles("listing.events.new-defendant-added-for-court-proceedings")
@@ -78,9 +80,11 @@ public class DefendantEventListener {
         final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
         };
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD, typeRef, getListedCaseWithDefendantLegalAidStatusUpdate(caseId, defendantId, legalAidStatus)).save();
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putSubList(LISTED_CASES_FIELD, typeRef, getListedCaseWithDefendantLegalAidStatusUpdate(caseId, defendantId, legalAidStatus)).save();
+        }
 
     }
 

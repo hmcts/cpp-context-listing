@@ -14,6 +14,7 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.getStringFromResource;
@@ -32,6 +33,7 @@ import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.domain.Defendant;
 import uk.gov.moj.cpp.listing.domain.HearingDay;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
@@ -66,6 +68,9 @@ public class HearingEventListenerTest {
 
     @Mock
     private HearingRepository hearingRepository;
+
+    @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @Mock
     private ObjectMapper mapper;
@@ -158,8 +163,8 @@ public class HearingEventListenerTest {
                         .build()))
                 .build();
         final JsonNode hearingProperties = objectMapper.valueToTree(domainHearing);
-        final Hearing hearing = Hearing.createHearingBuilder().setId(HEARING_ID)
-                .setProperties(hearingProperties)
+        final Hearing hearing = Hearing.builder().withId(HEARING_ID)
+                .withProperties(hearingProperties)
                 .build();
 
         given(envelope.payload()).willReturn(hearingUnallocated);

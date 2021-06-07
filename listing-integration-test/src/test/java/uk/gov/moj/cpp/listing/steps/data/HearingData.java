@@ -31,7 +31,6 @@ public class HearingData {
     private int weekCommencingDuration;
     private Boolean hasVideoLink;
     private String publicListNote;
-
     private String adjournmentDate;
     private List<RotaSlot> bookedSlots;
 

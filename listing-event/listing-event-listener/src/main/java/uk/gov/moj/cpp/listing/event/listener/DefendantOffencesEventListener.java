@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.Defendant;
@@ -42,10 +43,12 @@ public class DefendantOffencesEventListener {
         final UUID defendantId = offenceUpdated.getDefendantId();
         final Offence offence = offenceUpdated.getOffence();
 
-        using(hearingRepository)
-                .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getUpdatedListedCaseFunction(caseId, defendantId, offence))
-                .save();
+        if (nonNull(hearingRepository.findBy(hearingId))) {
+            using(hearingRepository)
+                    .find(hearingId)
+                    .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getUpdatedListedCaseFunction(caseId, defendantId, offence))
+                    .save();
+        }
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getUpdatedListedCaseFunction(UUID caseId, UUID defendantId, Offence offence) {

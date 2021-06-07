@@ -10,8 +10,10 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -31,6 +33,9 @@ public class CaseMarkersEventListener {
     @Inject
     private HearingRepository hearingRepository;
 
+    @Inject
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @Handles("listing.events.new-case-marker-updated")
     public void handleCaseMarkersUpdated(final Envelope<NewCaseMarkerUpdated> event) {
         final NewCaseMarkerUpdated payload = event.payload();
@@ -42,6 +47,8 @@ public class CaseMarkersEventListener {
                 .find(hearingId)
                 .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getCaseMarkersAddFunction(prosecutionCaseId, caseMarkers))
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getCaseMarkersAddFunction(final UUID caseId, final List<Marker> caseMarkers) {
@@ -51,7 +58,7 @@ public class CaseMarkersEventListener {
     private List<ListedCase> getUpdatedListedCase(final UUID caseId,
                                                   final List<Marker> updatedCaseMarkers,
                                                   final List<ListedCase> cases) {
-        final List<ListedCase> listedCases = cases;
+        final List<ListedCase> listedCases = new ArrayList<>(cases);
         final ListedCase listedCase = find(listedCases, caze -> caze.getId().equals(caseId));
         final List<Marker> markers = listedCase.getMarkers();
         if(null != markers) {

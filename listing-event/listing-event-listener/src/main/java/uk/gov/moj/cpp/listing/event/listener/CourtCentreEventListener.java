@@ -7,6 +7,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.UUID;
@@ -20,9 +21,12 @@ public class CourtCentreEventListener {
 
     private HearingRepository hearingRepository;
 
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @Inject
-    public CourtCentreEventListener(final HearingRepository hearingRepository) {
+    public CourtCentreEventListener(final HearingRepository hearingRepository, final HearingSearchSyncService hearingSearchSyncService) {
         this.hearingRepository = hearingRepository;
+        this.hearingSearchSyncService = hearingSearchSyncService;
     }
 
     @Handles("listing.events.court-centre-changed-for-hearing")
@@ -30,9 +34,12 @@ public class CourtCentreEventListener {
         final CourtCentreChangedForHearing courtCentreChangedForHearing = event.payload();
         final UUID courtCentreId = courtCentreChangedForHearing.getCourtCentreId();
         final UUID hearingId = courtCentreChangedForHearing.getHearingId();
+
         using(hearingRepository)
                 .find(hearingId)
                 .put(COURT_CENTRE_ID_FIELD, courtCentreId)
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 }
