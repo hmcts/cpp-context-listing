@@ -53,6 +53,7 @@ public class NewDomainToEventConverter {
                         .collect(toList()))
                 .withRestrictFromCourtList(of(Boolean.FALSE))
                 .withShadowListed(lc.getShadowListed())
+                .withTrialReceiptType(lc.getTrialReceiptType())
                 .build();
     }
 

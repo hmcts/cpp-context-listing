@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S00107", "squid:S00121", "pmd:BeanMembersShouldSerialize"})
+@SuppressWarnings({"squid:S00107", "squid:S1067", "squid:S00121", "pmd:BeanMembersShouldSerialize"})
 public class ListedCase {
   private final CaseIdentifier caseIdentifier;
 
@@ -17,13 +17,16 @@ public class ListedCase {
 
   private final Optional<Boolean> shadowListed;
 
+  private final String trialReceiptType;
+
   @SuppressWarnings({"squid:S2384"})
-  public ListedCase(final CaseIdentifier caseIdentifier, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id, final Optional<Boolean> shadowListed) {
+  public ListedCase(final CaseIdentifier caseIdentifier, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id, final Optional<Boolean> shadowListed, final String trialReceiptType) {
     this.caseIdentifier = caseIdentifier;
     this.defendants = defendants;
     this.caseMarkers = caseMarkers;
     this.id = id;
     this.shadowListed = shadowListed;
+    this.trialReceiptType = trialReceiptType;
   }
 
   public CaseIdentifier getCaseIdentifier() {
@@ -48,6 +51,10 @@ public class ListedCase {
     return shadowListed;
   }
 
+  public String getTrialReceiptType() {
+    return trialReceiptType;
+  }
+
   public static Builder listedCase() {
     return new ListedCase.Builder();
   }
@@ -63,6 +70,7 @@ public class ListedCase {
     return java.util.Objects.equals(this.caseIdentifier, that.caseIdentifier) &&
     java.util.Objects.equals(this.defendants, that.defendants) &&
     java.util.Objects.equals(this.id, that.id) &&
+    java.util.Objects.equals(this.trialReceiptType, that.trialReceiptType) &&
     java.util.Objects.equals(this.shadowListed, that.shadowListed);
   }
 
@@ -79,6 +87,7 @@ public class ListedCase {
             ", caseMarkers=" + caseMarkers +
             ", id=" + id +
             ", shadowListed=" + shadowListed +
+            ", trialReceiptType=" + trialReceiptType +
             '}';
   }
 
@@ -93,6 +102,8 @@ public class ListedCase {
     private List<CaseMarker> caseMarkers;
 
     private Optional<Boolean> shadowListed;
+
+    private String trialReceiptType;
 
     public Builder withCaseIdentifier(final CaseIdentifier caseIdentifier) {
       this.caseIdentifier = caseIdentifier;
@@ -122,8 +133,13 @@ public class ListedCase {
       return this;
     }
 
+    public Builder withTrialReceiptType(final String trialReceiptType){
+      this.trialReceiptType = trialReceiptType;
+      return this;
+    }
+
     public ListedCase build() {
-      return new ListedCase(caseIdentifier, defendants, caseMarkers, id, shadowListed);
+      return new ListedCase(caseIdentifier, defendants, caseMarkers, id, shadowListed, trialReceiptType);
     }
   }
 }

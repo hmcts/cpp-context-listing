@@ -61,7 +61,7 @@ public class HearingsDataFactory {
     public static final String SLOT_SESSION = "AM";
     public static final String SLOT_OUCODE = "121RTY";
     public static final Integer SLOT_COURT_ROOM_ID = 123498;
-    private static final UUID JUDICIAL_RESULT_ID= UUID.fromString("065b6fcb-0787-4f0d-a9cd-af4b5c36e047");
+    private static final UUID JUDICIAL_RESULT_ID = UUID.fromString("065b6fcb-0787-4f0d-a9cd-af4b5c36e047");
 
 
     public static List<HearingData> hearingsData() {
@@ -132,7 +132,7 @@ public class HearingsDataFactory {
         return manyRandomHearingWithoutReportingRestriction(1, courtCentreId, courtRoomId, judiciaryType, "CROWN");
     }
 
-    public static List<HearingData> manyRandomHearingWithoutReportingRestriction(final Integer numberOfHearings, final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType, final String jurisdictionType){
+    public static List<HearingData> manyRandomHearingWithoutReportingRestriction(final Integer numberOfHearings, final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType, final String jurisdictionType) {
         return IntStream.range(0, numberOfHearings)
                 .mapToObj((int i) -> randomHearingWithoutReportingRestriction(courtCentreId, courtRoomId, singletonList(randomJudicialRole(judiciaryType)), jurisdictionType))
                 .collect(toList());
@@ -225,9 +225,9 @@ public class HearingsDataFactory {
                 .collect(toList());
     }
 
-    private static List<HearingData> manyRandomHearingWithRestriction(final Integer numberOfHearings,final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType, final String jurisdictionType) {
+    private static List<HearingData> manyRandomHearingWithRestriction(final Integer numberOfHearings, final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType, final String jurisdictionType) {
         return IntStream.range(0, numberOfHearings)
-                .mapToObj((int i) -> randomHearingWithoutReportingRestriction(courtCentreId,courtRoomId,singletonList(randomJudicialRole(judiciaryType)),jurisdictionType))
+                .mapToObj((int i) -> randomHearingWithoutReportingRestriction(courtCentreId, courtRoomId, singletonList(randomJudicialRole(judiciaryType)), jurisdictionType))
                 .collect(toList());
     }
 
@@ -422,12 +422,12 @@ public class HearingsDataFactory {
                 .collect(toList());
     }
 
-    private static ReportingRestrictionData randomReportingRestriction(){
-        return new ReportingRestrictionData(randomUUID(),Optional.of(JUDICIAL_RESULT_ID),"RestrictionApplied",Optional.of(LocalDate.now()));
+    private static ReportingRestrictionData randomReportingRestriction() {
+        return new ReportingRestrictionData(randomUUID(), Optional.of(JUDICIAL_RESULT_ID), "RestrictionApplied", Optional.of(LocalDate.now()));
     }
 
     private static CustodyTimeLimit randomCustodyTimeLimit() {
-        return new CustodyTimeLimit(Optional.of(1), "2020-01-06");
+        return new CustodyTimeLimit(Optional.of(1), Optional.of(false), "2020-01-06");
     }
 
     private static DefendantData randomDefendant() {
@@ -571,7 +571,7 @@ public class HearingsDataFactory {
                 singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court", LocalDate.now().toString());
     }
 
-    private static HearingData randomHearingWithAdjournmentFromDate(final UUID courtCentreId, final UUID courtRoomId,final List<JudicialRoleData> judicialRoles, final String jurisdictionType) {
+    private static HearingData randomHearingWithAdjournmentFromDate(final UUID courtCentreId, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles, final String jurisdictionType) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
         return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
                 LocalDate.now(), HEARING_ESTIMATE_MINUTES,
@@ -679,7 +679,7 @@ public class HearingsDataFactory {
     }
 
     private static JudicialRoleData randomJudicialRole(final String judiciaryType) {
-        return new JudicialRoleData(Optional.empty(), Optional.ofNullable(BOOLEAN.next()), randomUUID(),randomUUID(),
+        return new JudicialRoleData(Optional.empty(), Optional.ofNullable(BOOLEAN.next()), randomUUID(), randomUUID(),
                 new JudicialRoleTypeData(Optional.empty(), judiciaryType));
     }
 

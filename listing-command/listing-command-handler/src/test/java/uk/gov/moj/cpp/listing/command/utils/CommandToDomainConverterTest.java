@@ -195,6 +195,7 @@ public class CommandToDomainConverterTest {
         final Defendant defendant2 = actual.getListedCases().get(0).getDefendants().get(1);
 
         assertThat(actual.getListedCases().get(0).getShadowListed(), is(of(false)));
+        assertThat(actual.getListedCases().get(0).getTrialReceiptType(), is("Voluntary bill"));
         assertThat(defendant1.getOffences().get(0).getShadowListed(), is(of(true)));
         assertThat(defendant1.getOffences().get(1).getShadowListed(), is(of(false)));
         assertThat(defendant2.getOffences().get(0).getShadowListed(), is(of(true)));

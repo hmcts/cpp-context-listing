@@ -165,6 +165,7 @@ public class UpdateDefendantOffencesStepsWithCustodyTimeLimit extends AbstractIT
                         "          \"wording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
                         "    \"custodyTimeLimit\": {\n" +
                         "      \"timeLimit\": \"2020-01-06\",\n" +
+                        "      \"isCtlExtended\": false,\n" +
                         "      \"daysSpent\":1 \n" +
                         "      }\n" +
                         "        }\n" +
@@ -200,6 +201,7 @@ public class UpdateDefendantOffencesStepsWithCustodyTimeLimit extends AbstractIT
                         "          \"wording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
                         "    \"custodyTimeLimit\": {\n" +
                         "      \"timeLimit\": \"2020-01-06\",\n" +
+                        "      \"isCtlExtended\": false,\n" +
                         "      \"daysSpent\":1 \n" +
                         "      }\n" +
                         "        }\n" +

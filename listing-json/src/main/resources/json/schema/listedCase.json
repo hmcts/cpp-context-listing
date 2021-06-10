@@ -40,6 +40,10 @@
     "shadowListed": {
       "type": "boolean"
     },
+    "trialReceiptType": {
+      "type": "string",
+      "description": "Trial case type E.g Either way case, Indictable, Transfer, Voluntary bail"
+    },
     "prosecutor": {
       "$ref": "listing-definitions.json#/definitions/prosecutor"
 

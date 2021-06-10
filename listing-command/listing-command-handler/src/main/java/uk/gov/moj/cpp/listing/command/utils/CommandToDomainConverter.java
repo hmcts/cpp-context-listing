@@ -231,7 +231,8 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                                 : prosecutionCase.getProsecutionCaseIdentifier().getCaseURN())
                         .build())
                 .withDefendants(defendants)
-                .withShadowListed(of(caseShadowListed));
+                .withShadowListed(of(caseShadowListed))
+                .withTrialReceiptType(prosecutionCase.getTrialReceiptType().orElse(null));
 
         if (isNotEmpty(prosecutionCase.getCaseMarkers())) {
             builder.withCaseMarkers(prosecutionCase.getCaseMarkers().stream()
