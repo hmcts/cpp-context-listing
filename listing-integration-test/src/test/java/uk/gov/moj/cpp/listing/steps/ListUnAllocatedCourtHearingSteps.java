@@ -1,5 +1,56 @@
 package uk.gov.moj.cpp.listing.steps;
 
+import com.jayway.jsonpath.ReadContext;
+import org.hamcrest.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.gov.justice.core.courts.Address;
+import uk.gov.justice.core.courts.ApplicationStatus;
+import uk.gov.justice.core.courts.AssociatedPerson;
+import uk.gov.justice.core.courts.BailStatus;
+import uk.gov.justice.core.courts.BreachType;
+import uk.gov.justice.core.courts.CourtApplication;
+import uk.gov.justice.core.courts.CourtApplicationCase;
+import uk.gov.justice.core.courts.CourtApplicationParty;
+import uk.gov.justice.core.courts.CourtApplicationType;
+import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.justice.core.courts.Defendant;
+import uk.gov.justice.core.courts.DefendantListingNeeds;
+import uk.gov.justice.core.courts.Ethnicity;
+import uk.gov.justice.core.courts.Gender;
+import uk.gov.justice.core.courts.HearingType;
+import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.core.courts.InitiationCode;
+import uk.gov.justice.core.courts.JudicialRole;
+import uk.gov.justice.core.courts.JudicialRoleType;
+import uk.gov.justice.core.courts.Jurisdiction;
+import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.LaaReference;
+import uk.gov.justice.core.courts.LinkType;
+import uk.gov.justice.core.courts.Marker;
+import uk.gov.justice.core.courts.Offence;
+import uk.gov.justice.core.courts.OffenceActiveOrder;
+import uk.gov.justice.core.courts.Person;
+import uk.gov.justice.core.courts.PersonDefendant;
+import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
+import uk.gov.justice.core.courts.SummonsTemplateType;
+import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
+import uk.gov.justice.listing.courts.TypeOfList;
+import uk.gov.justice.listing.courts.WeekCommencingDate;
+import uk.gov.moj.cpp.listing.steps.data.DefendantData;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
+
+import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Arrays.asList;
@@ -16,59 +67,6 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import static uk.gov.moj.cpp.listing.endpoint.UnallocatedHearingsEndpoint.pollForUnallocatedHearings;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-
-import uk.gov.justice.core.courts.Address;
-import uk.gov.justice.core.courts.ApplicationStatus;
-import uk.gov.justice.core.courts.AssociatedPerson;
-import uk.gov.justice.core.courts.BailStatus;
-import uk.gov.justice.core.courts.CourtApplication;
-import uk.gov.justice.core.courts.CourtApplicationCase;
-import uk.gov.justice.core.courts.CourtApplicationParty;
-import uk.gov.justice.core.courts.CourtApplicationType;
-import uk.gov.justice.core.courts.CourtCentre;
-import uk.gov.justice.core.courts.Defendant;
-import uk.gov.justice.core.courts.DefendantListingNeeds;
-import uk.gov.justice.core.courts.Ethnicity;
-import uk.gov.justice.core.courts.HearingType;
-import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
-import uk.gov.justice.core.courts.JudicialRole;
-import uk.gov.justice.core.courts.JudicialRoleType;
-import uk.gov.justice.core.courts.LaaReference;
-import uk.gov.justice.core.courts.Marker;
-import uk.gov.justice.core.courts.Offence;
-import uk.gov.justice.core.courts.Person;
-import uk.gov.justice.core.courts.PersonDefendant;
-import uk.gov.justice.core.courts.ProsecutionCase;
-import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
-import uk.gov.justice.core.courts.BreachType;
-import uk.gov.justice.listing.courts.Jurisdiction;
-import uk.gov.justice.listing.courts.Gender;
-import uk.gov.justice.core.courts.InitiationCode;
-import uk.gov.justice.listing.courts.JurisdictionType;
-import uk.gov.justice.core.courts.LinkType;
-import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
-import uk.gov.justice.core.courts.OffenceActiveOrder;
-import uk.gov.justice.core.courts.SummonsTemplateType;
-import uk.gov.justice.listing.courts.TypeOfList;
-import uk.gov.justice.listing.courts.WeekCommencingDate;
-import uk.gov.moj.cpp.listing.steps.data.DefendantData;
-import uk.gov.moj.cpp.listing.steps.data.HearingData;
-import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
-
-import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import javax.json.JsonObject;
-import javax.ws.rs.core.Response;
-
-import com.jayway.jsonpath.ReadContext;
-import org.hamcrest.Matcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ListUnAllocatedCourtHearingSteps extends ListCourtHearingSteps {
 

@@ -1,21 +1,10 @@
 package uk.gov.moj.cpp.listing.steps.data.factory;
 
-import static java.time.LocalDate.now;
-import static java.util.Collections.singletonList;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
-import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
-import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOOLEAN;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
 import uk.gov.justice.core.courts.CustodyTimeLimit;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.RotaSlot;
-import uk.gov.justice.listing.courts.HearingLanguageNeeds;
 import uk.gov.justice.services.test.utils.core.random.BigDecimalGenerator;
 import uk.gov.justice.services.test.utils.core.random.StringGenerator;
 import uk.gov.moj.cpp.listing.domain.Address;
@@ -46,6 +35,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
+
+import static java.time.LocalDate.now;
+import static java.util.Collections.singletonList;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
+import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOOLEAN;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 public class HearingsDataFactory {
 
@@ -684,7 +684,7 @@ public class HearingsDataFactory {
     }
 
     private static CourtApplicationPartyListingNeeds randomCourtApplicationPartyNeed() {
-        return new CourtApplicationPartyListingNeeds(randomUUID(), randomUUID(), null, of(HearingLanguageNeeds.ENGLISH), empty(), empty());
+        return new CourtApplicationPartyListingNeeds(randomUUID(), randomUUID(), null, of(HearingLanguage.ENGLISH), empty(), empty());
     }
 
     private static OrganisationData getOrganisationData() {

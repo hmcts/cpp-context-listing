@@ -7,8 +7,8 @@ import static java.util.UUID.randomUUID;
 import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static uk.gov.justice.listing.courts.HearingLanguage.ENGLISH;
-import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
+import static uk.gov.justice.core.courts.HearingLanguage.ENGLISH;
+import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.JudicialRole;

@@ -4,9 +4,8 @@ import uk.gov.justice.core.courts.ConfirmedDefendant;
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedOffence;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.courts.HearingConfirmed;
-import uk.gov.justice.listing.courts.HearingLanguage;
-import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
 import uk.gov.justice.listing.events.Type;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -37,7 +36,7 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
                         .map(this::buildHearingDay)
                         .collect(toList()))
                 .withHearingLanguage(HearingLanguage.valueFor(hearingExtendedForListing.getHearingLanguage().toString()))
-                .withJurisdictionType(JurisdictionType.valueFor(hearingExtendedForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingExtendedForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withCourtApplicationIds(hearingExtendedForListing.getCourtApplicationIds())
                 .withReportingRestrictionReason(hearingExtendedForListing.getReportingRestrictionReason())
                 .withType(buildType(type));

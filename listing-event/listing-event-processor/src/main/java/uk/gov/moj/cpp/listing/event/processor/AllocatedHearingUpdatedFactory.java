@@ -7,9 +7,8 @@ import uk.gov.justice.core.courts.ConfirmedDefendant;
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedOffence;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
-import uk.gov.justice.listing.courts.HearingLanguage;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.courts.HearingUpdated;
-import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
 import uk.gov.justice.listing.events.Type;
@@ -50,7 +49,7 @@ public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
                         .map(this::buildHearingDay)
                         .collect(toList()))
                 .withHearingLanguage(HearingLanguage.valueFor(hearingUpdatedForListing.getHearingLanguage().toString()))
-                .withJurisdictionType(JurisdictionType.valueFor(hearingUpdatedForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingUpdatedForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withCourtApplicationIds(hearingUpdatedForListing.getCourtApplicationIds())
                 .withReportingRestrictionReason(hearingUpdatedForListing.getReportingRestrictionReason())
                 .withType(buildType(type));
@@ -90,7 +89,7 @@ public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
                         .map(this::buildHearingDay)
                         .collect(toList()))
                 .withHearingLanguage(HearingLanguage.valueFor(hearingUpdatedForListing.getHearingLanguage().toString()))
-                .withJurisdictionType(JurisdictionType.valueFor(hearingUpdatedForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingUpdatedForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withCourtApplicationIds(hearingUpdatedForListing.getCourtApplicationIds())
                 .withReportingRestrictionReason(hearingUpdatedForListing.getReportingRestrictionReason())
                 .withType(buildType(type));

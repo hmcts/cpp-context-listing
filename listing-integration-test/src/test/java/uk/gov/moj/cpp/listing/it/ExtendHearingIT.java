@@ -1,8 +1,9 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-
-import uk.gov.justice.progression.courts.JurisdictionType;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -13,9 +14,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 public class ExtendHearingIT extends AbstractIT {
 

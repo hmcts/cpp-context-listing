@@ -1,33 +1,8 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
-import static java.time.LocalDate.parse;
-import static java.time.ZonedDateTime.now;
-import static java.util.Objects.nonNull;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
-import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
-import static java.util.stream.Collectors.toList;
-import static javax.json.JsonValue.NULL;
-import static org.apache.commons.collections.CollectionUtils.isEmpty;
-import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
-import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
-import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
-import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
-import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
-import static uk.gov.justice.services.eventsourcing.source.core.Events.streamOf;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.JsonObjects.getString;
-import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.asJson;
-import static uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay;
-import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
-import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
-import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
-import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkingDay;
-import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
-
+import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingListingNeeds;
@@ -146,6 +121,11 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil;
 
+import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonValue;
+import javax.ws.rs.core.Response;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -166,15 +146,33 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonValue;
-import javax.ws.rs.core.Response;
-
-import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.time.LocalDate.parse;
+import static java.time.ZonedDateTime.now;
+import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
+import static java.util.stream.Collectors.toList;
+import static javax.json.JsonValue.NULL;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
+import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
+import static uk.gov.justice.listing.event.PublishCourtListType.valueOf;
+import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
+import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
+import static uk.gov.justice.services.eventsourcing.source.core.Events.streamOf;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.JsonObjects.getString;
+import static uk.gov.moj.cpp.listing.command.utils.json.PublishCourtListJsonSupport.asJson;
+import static uk.gov.moj.cpp.listing.domain.HearingDay.hearingDay;
+import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkingDay;
+import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 
 @ServiceComponent(COMMAND_HANDLER)
 @SuppressWarnings({"squid:S1188", "squid:CallToDeprecatedMethod", "squid:S2629"})
@@ -1604,7 +1602,7 @@ public class ListingCommandHandler {
         );
     }
 
-    private boolean isSchedulingAndListingUpdateRequired(final uk.gov.justice.listing.courts.JurisdictionType jurisdictionType, final List<uk.gov.justice.listing.commands.NonDefaultDay> nonDefaultDays) {
+    private boolean isSchedulingAndListingUpdateRequired(final uk.gov.justice.core.courts.JurisdictionType jurisdictionType, final List<uk.gov.justice.listing.commands.NonDefaultDay> nonDefaultDays) {
         return MAGISTRATES.equals(jurisdictionType)
                 && !nonDefaultDays.isEmpty()
                 && nonDefaultDays.stream().anyMatch(ndd -> ndd.getCourtScheduleId().isPresent());

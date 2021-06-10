@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.steps.data;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingType;
-import uk.gov.justice.listing.courts.JurisdictionType;
+import uk.gov.justice.core.courts.JurisdictionType;
 
 import java.util.List;
 

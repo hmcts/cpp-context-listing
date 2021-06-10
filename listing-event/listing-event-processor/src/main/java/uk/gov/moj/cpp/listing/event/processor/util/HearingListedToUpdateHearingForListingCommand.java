@@ -3,14 +3,14 @@ package uk.gov.moj.cpp.listing.event.processor.util;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
-import uk.gov.justice.listing.courts.HearingLanguage;
-import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.events.Hearing;
 import uk.gov.justice.services.common.converter.Converter;

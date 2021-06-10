@@ -6,13 +6,13 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
-import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
 import static uk.gov.moj.cpp.listing.it.util.ContextNameProvider.CONTEXT_NAME;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.loadFixedHearingData;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.updateLoadedFixedHearingToWeekCommencingHearing;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.updatedHearingListedData;
 import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommencing.verifyHearingListedForWeekCommencing;
 
+import uk.gov.justice.core.courts.Jurisdiction;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -107,7 +107,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
                 withJsonPath("$.hearings[6].weekCommencingEndDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
         };
 
-        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
+        verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
     }
 
     @Test
@@ -132,7 +132,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
                 withJsonPath("$.hearings[1].weekCommencingEndDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
         };
 
-        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
+        verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
     }
 
     @Test
@@ -157,7 +157,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
                 withJsonPath("$.hearings[1].weekCommencingEndDate", is(UpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
         };
 
-        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
+        verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
     }
 
     @Test
@@ -185,7 +185,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
                 withJsonPath("$.hearings[2].weekCommencingStartDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
                 withJsonPath("$.hearings[2].weekCommencingEndDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
         };
-        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, null, false, matchers);
+        verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, null, false, matchers);
     }
 
     @Test
@@ -197,7 +197,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
                 withJsonPath("$.hearings", empty()),
         };
 
-        verifyHearingListedForWeekCommencing(CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
+        verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
     }
 
     private static void cleanListingTables() {

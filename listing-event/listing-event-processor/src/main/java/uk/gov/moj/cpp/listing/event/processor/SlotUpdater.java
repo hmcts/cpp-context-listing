@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.event.processor;
 
 import static org.apache.commons.lang3.BooleanUtils.isTrue;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static uk.gov.justice.listing.courts.JurisdictionType.MAGISTRATES;
+import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.listing.events.HearingDay;

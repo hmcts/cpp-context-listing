@@ -9,10 +9,9 @@ import uk.gov.justice.core.courts.ConfirmedDefendant;
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedOffence;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.listing.courts.HearingConfirmed;
-import uk.gov.justice.listing.courts.HearingLanguage;
-import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.OffenceIds;
@@ -56,7 +55,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
                         .map(this::buildHearingDay)
                         .collect(toList()))
                 .withHearingLanguage(HearingLanguage.valueFor(hearingAllocated.getHearingLanguage().toString()))
-                .withJurisdictionType(JurisdictionType.valueFor(hearingAllocated.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingAllocated.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withProsecutionCases(isNull(hearingAllocated.getProsecutionCaseDefendantsOffenceIds()) ? null : hearingAllocated.getProsecutionCaseDefendantsOffenceIds().stream()
                         .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
                                 .withDefendants(pcdo.getDefendants().stream()
@@ -92,7 +91,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
                         .map(this::buildHearingDay)
                         .collect(toList()))
                 .withHearingLanguage(HearingLanguage.valueFor(hearingAllocated.getHearingLanguage().toString()))
-                .withJurisdictionType(JurisdictionType.valueFor(hearingAllocated.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingAllocated.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withProsecutionCases(isNull(hearingAllocated.getProsecutionCaseDefendantsOffenceIds()) ? null : hearingAllocated.getProsecutionCaseDefendantsOffenceIds().stream()
                         .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
                                 .withDefendants(pcdo.getDefendants().stream()

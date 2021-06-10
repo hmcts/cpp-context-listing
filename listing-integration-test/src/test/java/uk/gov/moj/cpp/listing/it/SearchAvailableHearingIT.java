@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-
-import uk.gov.justice.progression.courts.JurisdictionType;
+import org.junit.Before;
+import org.junit.Test;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
@@ -10,8 +10,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 @SuppressWarnings({"squid:S1607"})
 public class SearchAvailableHearingIT extends AbstractIT {

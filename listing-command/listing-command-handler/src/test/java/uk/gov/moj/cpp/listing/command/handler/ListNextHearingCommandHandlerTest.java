@@ -12,6 +12,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloperWithEvents;
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
@@ -19,10 +20,12 @@ import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBu
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Defendant;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
@@ -30,8 +33,6 @@ import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.listing.courts.ChangeNextHearingDay;
 import uk.gov.justice.listing.courts.DeleteNextHearings;
 import uk.gov.justice.listing.courts.DeleteSeededHearing;
-import uk.gov.justice.listing.courts.HearingLanguage;
-import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.courts.ListNextHearing;
 import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
 import uk.gov.justice.listing.courts.ListNextHearingsV2;
@@ -282,7 +283,7 @@ public class ListNextHearingCommandHandlerTest {
                                                 .withId(offenceId)
                                                 .withSeedingHearing(SeedingHearing.seedingHearing()
                                                         .withSeedingHearingId(seedingHearingId)
-                                                        .withJurisdictionType(JurisdictionType.CROWN)
+                                                        .withJurisdictionType(CROWN)
                                                         .build())
                                                 .build()))
                                         .build()))
@@ -339,13 +340,13 @@ public class ListNextHearingCommandHandlerTest {
                                                                 .withId(offenceId)
                                                                 .withSeedingHearing(of(SeedingHearing.seedingHearing()
                                                                         .withSeedingHearingId(seedingHearingId)
-                                                                        .withJurisdictionType(JurisdictionType.CROWN)
+                                                                        .withJurisdictionType(CROWN)
                                                                         .build()))
                                                                 .build(),
                                                         uk.gov.justice.listing.events.Offence.offence()
                                                                 .withSeedingHearing(of(SeedingHearing.seedingHearing()
                                                                         .withSeedingHearingId(seedingHearingId)
-                                                                        .withJurisdictionType(JurisdictionType.CROWN)
+                                                                        .withJurisdictionType(CROWN)
                                                                         .build()))
                                                                 .withId(offence2Id).build()
                                                 ))
@@ -359,13 +360,13 @@ public class ListNextHearingCommandHandlerTest {
                                                                 .withId(randomUUID())
                                                                 .withSeedingHearing(of(SeedingHearing.seedingHearing()
                                                                         .withSeedingHearingId(randomUUID())
-                                                                        .withJurisdictionType(JurisdictionType.CROWN)
+                                                                        .withJurisdictionType(CROWN)
                                                                         .build()))
                                                                 .build(),
                                                         uk.gov.justice.listing.events.Offence.offence()
                                                                 .withSeedingHearing(of(SeedingHearing.seedingHearing()
                                                                         .withSeedingHearingId(randomUUID())
-                                                                        .withJurisdictionType(JurisdictionType.CROWN)
+                                                                        .withJurisdictionType(CROWN)
                                                                         .build()))
                                                                 .withId(offence2Id).build()
                                                 ))
@@ -489,7 +490,7 @@ public class ListNextHearingCommandHandlerTest {
                                                 .withId(randomUUID())
                                                 .withSeedingHearing(SeedingHearing.seedingHearing()
                                                         .withSeedingHearingId(seedingHearingId)
-                                                        .withJurisdictionType(JurisdictionType.CROWN)
+                                                        .withJurisdictionType(CROWN)
                                                         .build())
                                                 .build()))
                                         .build()))
@@ -565,13 +566,13 @@ public class ListNextHearingCommandHandlerTest {
                                                         .withId(randomUUID())
                                                         .withSeedingHearing(SeedingHearing.seedingHearing()
                                                                 .withSeedingHearingId(seedingHearingId)
-                                                                .withJurisdictionType(JurisdictionType.CROWN)
+                                                                .withJurisdictionType(CROWN)
                                                                 .build())
                                                         .build(), uk.gov.justice.listing.events.Offence.offence()
                                                         .withId(randomUUID())
                                                         .withSeedingHearing(SeedingHearing.seedingHearing()
                                                                 .withSeedingHearingId(seedingHearingId)
-                                                                .withJurisdictionType(JurisdictionType.CROWN)
+                                                                .withJurisdictionType(CROWN)
                                                                 .build())
                                                         .build()))
                                                 .build()))
@@ -584,13 +585,13 @@ public class ListNextHearingCommandHandlerTest {
                                                         .withId(randomUUID())
                                                         .withSeedingHearing(SeedingHearing.seedingHearing()
                                                                 .withSeedingHearingId(seedingHearingId2)
-                                                                .withJurisdictionType(JurisdictionType.CROWN)
+                                                                .withJurisdictionType(CROWN)
                                                                 .build())
                                                         .build(), uk.gov.justice.listing.events.Offence.offence()
                                                         .withId(randomUUID())
                                                         .withSeedingHearing(SeedingHearing.seedingHearing()
                                                                 .withSeedingHearingId(seedingHearingId2)
-                                                                .withJurisdictionType(JurisdictionType.CROWN)
+                                                                .withJurisdictionType(CROWN)
                                                                 .build())
                                                         .build()))
                                                 .build()))
