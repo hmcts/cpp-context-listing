@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.reset;
-import static com.github.tomakehurst.wiremock.client.WireMock.reset;
 import static com.google.common.io.Resources.getResource;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.UUID.randomUUID;

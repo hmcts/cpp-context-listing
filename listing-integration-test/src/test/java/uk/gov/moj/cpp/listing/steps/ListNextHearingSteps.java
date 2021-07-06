@@ -1,36 +1,35 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.ReadContext;
-import com.jayway.restassured.path.json.JsonPath;
-import org.hamcrest.Matcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import uk.gov.justice.core.courts.Address;
-import uk.gov.justice.core.courts.AssociatedPerson;
-import uk.gov.justice.core.courts.BailStatus;
-import uk.gov.justice.core.courts.CourtApplicationParty;
-import uk.gov.justice.core.courts.CourtCentre;
-import uk.gov.justice.core.courts.Defendant;
-import uk.gov.justice.core.courts.DefendantListingNeeds;
-import uk.gov.justice.core.courts.Ethnicity;
-import uk.gov.justice.core.courts.Gender;
-import uk.gov.justice.core.courts.HearingListingNeeds;
-import uk.gov.justice.core.courts.HearingType;
-import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
-import uk.gov.justice.core.courts.InitiationCode;
-import uk.gov.justice.core.courts.JudicialRole;
-import uk.gov.justice.core.courts.JudicialRoleType;
-import uk.gov.justice.core.courts.JurisdictionType;
-import uk.gov.justice.core.courts.LaaReference;
-import uk.gov.justice.core.courts.Marker;
-import uk.gov.justice.core.courts.Offence;
-import uk.gov.justice.core.courts.Person;
-import uk.gov.justice.core.courts.PersonDefendant;
-import uk.gov.justice.core.courts.ProsecutionCase;
-import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
-import uk.gov.justice.core.courts.ReportingRestriction;
-import uk.gov.justice.core.courts.SeedingHearing;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.text.MessageFormat.format;
+import static java.util.Collections.singletonList;
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
+import static java.util.UUID.randomUUID;
+import static javax.ws.rs.core.Response.Status.OK;
+import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
+import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
+import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollForUnscheduledHearings;
+import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForCaseReference;
+import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForDefendantLastName;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
+import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+
+import uk.gov.justice.core.courts.*;
 import uk.gov.justice.listing.courts.TypeOfList;
 import uk.gov.justice.listing.courts.WeekCommencingDate;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -60,34 +59,12 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.text.MessageFormat.format;
-import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
-import static java.util.Optional.ofNullable;
-import static java.util.UUID.randomUUID;
-import static javax.ws.rs.core.Response.Status.OK;
-import static org.apache.http.HttpStatus.SC_ACCEPTED;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
-import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
-import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
-import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollForUnscheduledHearings;
-import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForCaseReference;
-import static uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps.getJsonPathQueryForDefendantLastName;
-import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
-import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.ReadContext;
+import com.jayway.restassured.path.json.JsonPath;
+import org.hamcrest.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
 
@@ -628,6 +605,7 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
 
                 .withType(getHearingType(hearingData))
                 .withReportingRestrictionReason(of(hearingData.getReportingRestrictionReason()))
+                .withCourtApplications(buildApplication(hearingData))
                 .build();
     }
 
@@ -675,6 +653,67 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
 
                 .withType(getHearingType(hearingData))
                 .withReportingRestrictionReason(of(hearingData.getReportingRestrictionReason()))
+                .build();
+    }
+
+    private final List<CourtApplication> buildApplication(final HearingData hearingData){
+        return hearingData.getCourtApplications().stream()
+                .map(applicationData -> CourtApplication.courtApplication()
+                        .withId(hearingData.getCourtApplications().get(0).getId())
+                        .withCourtApplicationCases(singletonList(CourtApplicationCase.courtApplicationCase()
+                                .withProsecutionCaseId(hearingData.getCourtApplications().get(0).getLinkedCaseId())
+                                .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
+                                        .withCaseURN(STRING.next())
+                                        .withProsecutionAuthorityId(randomUUID())
+                                        .withProsecutionAuthorityCode(STRING.next()).build())
+                                .withIsSJP(false)
+                                .withCaseStatus("ACTIVE")
+                                .withOffences(singletonList(Offence.offence().withId(hearingData.getCourtApplications().get(0).getOffenceId())
+                                        .withOffenceDefinitionId(randomUUID())
+                                        .withOffenceCode(STRING.next())
+                                        .withOffenceTitle(STRING.next())
+                                        .withWording(STRING.next())
+                                        .withStartDate(LocalDate.now().toString())
+                                        .build()))
+                                .build()))
+                        .withParentApplicationId(of(hearingData.getCourtApplications().get(0).getParentApplicationId()))
+                        .withType(getCourtApplicationType(hearingData, LinkType.LINKED, Jurisdiction.CROWN))
+                        .withApplicationReceivedDate(LocalDate.now().toString())
+                        .withApplicationReference(of(STRING.next()))
+                        .withApplicationParticulars(of(hearingData.getCourtApplications().get(0).getApplicationParticulars()))
+                        .withApplicationStatus(ApplicationStatus.LISTED)
+                        .withApplicant(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
+                        .withRespondents(getRespondents(hearingData))
+                        .withSubject(getApplicant(hearingData.getCourtApplications().get(0).getApplicant()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private List<CourtApplicationParty> getRespondents(final HearingData hearingData) {
+        return singletonList(
+                getApplicant(hearingData.getCourtApplications().get(0).getRespondent()));
+    }
+
+    private CourtApplicationType getCourtApplicationType(final HearingData hearingData, final LinkType either, final Jurisdiction crown) {
+        return CourtApplicationType.courtApplicationType()
+                .withId(randomUUID())
+                .withCode(of(STRING.next()))
+                .withType(hearingData.getCourtApplications().get(0).getType())
+                .withLegislation(of(STRING.next()))
+                .withCategoryCode(STRING.next())
+                .withLinkType(LinkType.LINKED)
+                .withJurisdiction(Jurisdiction.CROWN)
+                .withSummonsTemplateType(SummonsTemplateType.GENERIC_APPLICATION)
+                .withBreachType(BreachType.GENERIC_BREACH)
+                .withAppealFlag(false)
+                .withApplicantAppellantFlag(false)
+                .withPleaApplicableFlag(false)
+                .withCommrOfOathFlag(false)
+                .withCourtOfAppealFlag(false)
+                .withCourtExtractAvlFlag(false)
+                .withProsecutorThirdPartyFlag(false)
+                .withSpiOutApplicableFlag(false)
+                .withOffenceActiveOrder(OffenceActiveOrder.COURT_ORDER)
                 .build();
     }
 
@@ -807,6 +846,8 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
                         .withGender(Gender.FEMALE)
                         .withAddress(getAddress(applicant.getAddress()))
                         .build()))
+                .withSummonsRequired(false)
+                .withNotificationRequired(false)
                 .build();
     }
 

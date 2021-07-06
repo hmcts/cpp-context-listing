@@ -390,6 +390,7 @@ public class StandardPublicCourtListTemplateAssembler {
         final String adjournedHearingDate = hearingJson.getString(ADJOURNED_HEARING_DATE, BLANK_STRING);
         return Hearing.hearing()
                 .withCaseNumber(caseRestricted ? EMPTY : listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE))
+                .withCaseId(caseRestricted ? null : fromString(listedCase.getString(ID)))
                 .withHearingType(caseRestricted ? HEARING_STRING : hearingType)
                 .withWelshHearingType(caseRestricted ? HEARING_STRING : (StringUtils.isEmpty(hearingWelshType) ? hearingType : hearingWelshType))
                 .withProsecutorType(caseRestricted ? EMPTY : getProsecutorType(listedCase))
@@ -399,6 +400,8 @@ public class StandardPublicCourtListTemplateAssembler {
                 .withDefendants(caseRestricted ? emptyList() : createDefendantsFromListedCase(hearingJson, listedCase, restrictedListRequired, courtListType))
                 .withStartTime(hearingStartTime)
                 .withAdjournedHearingDate(adjournedHearingDate)
+                .withId(fromString(hearingJson.getString(ID)))
+                .withPanel(hearingJson.getString("panel", null))
                 .build();
     }
 
@@ -429,6 +432,15 @@ public class StandardPublicCourtListTemplateAssembler {
                 .withDefendants(caseRestricted ? emptyList() : createDefendantsEquivalentFromCourtApplication(courtApplication, restrictedListRequired))
                 .withStartTime(hearingStartTime)
                 .withAdjournedHearingDate(adjournedHearingDate)
+                .withId(fromString(hearingJson.getString(ID)))
+                .withPanel(hearingJson.getString("panel", null))
+                .withCourtApplicationId(fromString(courtApplication.getString("id")))
+                .withApplicationOffences(ofNullable(courtApplication.getJsonArray(OFFENCES))
+                        .map(offences ->  offences.getValuesAs(JsonObject.class).stream()
+                                .map(offence -> Offence.offence()
+                                        .withId(fromString(offence.getString(ID))).build())
+                                .collect(toList()))
+                        .orElse(null))
                 .build();
     }
 
@@ -485,6 +497,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private Defendant createDefendant(final JsonObject hearingJson, final JsonObject defendant, final String dateOfBirth, final boolean defendantRestricted,
                                       final String defendantSuffix, final boolean restrictedListRequired, final CourtListType courtListType, final String caseId) {
         final Defendant.Builder builder = Defendant.defendant();
+        builder.withId(fromString(defendant.getString(ID)));
         final Set<ReportingRestriction> reportingRestrictions = new HashSet<>();
         final String legalEntityDefendant = defendant.getString(ORGANISATION_NAME, BLANK_STRING);
         if (defendantRestricted) {
@@ -509,9 +522,9 @@ public class StandardPublicCourtListTemplateAssembler {
                 builder.withAddress(buildAddress(defendant.getJsonObject(ADDRESS)));
             }
         }
-
-        builder.withOffences(defendant.getJsonArray(OFFENCES).getValuesAs(JsonObject.class).stream()
-                .map(offences -> {
+        final List<Offence> offenceList = new ArrayList<>();
+        defendant.getJsonArray(OFFENCES).getValuesAs(JsonObject.class)
+                .forEach(offences -> {
                     reportingRestrictions.addAll(getReportingRestriction(offences)
                             .stream()
                             .filter(Objects::nonNull)
@@ -520,10 +533,13 @@ public class StandardPublicCourtListTemplateAssembler {
                                     .build())
                             .collect(Collectors.toList()));
                     final boolean offenceRestricted = isRestricted(restrictedListRequired, courtListType, offences);
-                    return createOffence(offences, offenceRestricted);
-                })
-                .collect(toList()));
-
+                    if(! offenceRestricted) {
+                        offenceList.add(createOffence(offences, offenceRestricted));
+                    }
+                });
+        if(!offenceList.isEmpty()) {
+            builder.withOffences(offenceList);
+        }
         if (PUBLIC.equals(courtListType) || STANDARD.equals(courtListType)) {
             builder.withReportingRestrictions(reportingRestrictions);
         }
@@ -551,6 +567,8 @@ public class StandardPublicCourtListTemplateAssembler {
             builder.withOffenceTitle(offence.getJsonObject(STATEMENT_OF_OFFENCE).getString(TITLE));
             builder.withWelshOffenceTitle(offence.getJsonObject(STATEMENT_OF_OFFENCE).getString(WELSH_TITLE, BLANK_STRING));
             builder.withOffenceWording(offence.getString(OFFENCE_WORDING, BLANK_STRING));
+            builder.withId(fromString(offence.getString(ID)));
+            builder.withListingNumber(offence.getInt("listingNumber"));
         }
 
         return builder.build();
@@ -633,6 +651,7 @@ public class StandardPublicCourtListTemplateAssembler {
         if (!nameRestricted && defendantEquivalent.containsKey(ADDRESS)) {
             builder.withAddress(buildAddress(defendantEquivalent.getJsonObject(ADDRESS)));
         }
+        builder.withId(fromString(defendantEquivalent.getString(ID)));
     }
 
 

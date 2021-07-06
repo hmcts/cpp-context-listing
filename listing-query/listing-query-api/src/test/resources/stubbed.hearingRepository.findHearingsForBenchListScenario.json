@@ -178,7 +178,8 @@
                               "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
                             }
                           ],
-                          "restrictFromCourtList": true
+                          "restrictFromCourtList": true,
+                          "listingNumber" : 1
                         },
                         {
                           "id": "77d5da0e-4d97-4668-8933-780e38b9dd98",
@@ -200,7 +201,8 @@
                               "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
                             }
                           ],
-                          "restrictFromCourtList": true
+                          "restrictFromCourtList": true,
+                          "listingNumber" : 1
                         }
                       ],
                       "firstName": "Cheyanne",
@@ -210,7 +212,7 @@
                         "description": "Unconditional Bail"
                       },
                       "dateOfBirth": "DATE_OF_BIRTH",
-                      "defenceOrganisation": "TestOne",
+                      "defenceOrganisation": "ABC LTD",
                       "restrictFromCourtList": true
                     },
                     {
@@ -237,7 +239,8 @@
                               "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
                             }
                           ],
-                          "restrictFromCourtList": true
+                          "restrictFromCourtList": true,
+                          "listingNumber" : 1
                         },
                         {
                           "id": "bfc5a983-a064-48c5-93b4-27d992308df0",
@@ -265,7 +268,8 @@
                               "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
                             }
                           ],
-                          "restrictFromCourtList": true
+                          "restrictFromCourtList": true,
+                          "listingNumber" : 1
                         }
                       ],
                       "firstName": "Rodger",
@@ -275,7 +279,7 @@
                         "description": "Unconditional Bail"
                       },
                       "dateOfBirth": "1980-10-12",
-                      "defenceOrganisation": "TestTwo",
+                      "defenceOrganisation": "ABC LTD",
                       "restrictFromCourtList": false
                     }
                   ],
@@ -307,7 +311,8 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
-                          "restrictFromCourtList": true
+                          "restrictFromCourtList": true,
+                          "listingNumber" : 1
                         },
                         {
                           "id": "2760edea-6e4d-46ba-ba55-62dbb177dd97",
@@ -321,7 +326,8 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
-                          "restrictFromCourtList": true
+                          "restrictFromCourtList": true,
+                          "listingNumber" : 1
                         }
                       ],
                       "firstName": "Mayyen",
@@ -331,7 +337,7 @@
                         "description": "Unconditional Bail"
                       },
                       "dateOfBirth": "DATE_OF_BIRTH",
-                      "defenceOrganisation": "TestOne",
+                      "defenceOrganisation": "ABC LTD",
                       "restrictFromCourtList": true
                     }
                   ],
@@ -359,7 +365,8 @@
               ],
               "hearingLanguage": "ENGLISH",
               "estimatedMinutes": 30,
-              "jurisdictionType": "CROWN"
+              "jurisdictionType": "CROWN",
+              "panel" : "ADULT"
             }
           }
         ]

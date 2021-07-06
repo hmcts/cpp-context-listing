@@ -2,6 +2,10 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.function.BiFunction;
 import uk.gov.justice.listing.events.AddedCasesForHearing;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.Defendant;
@@ -26,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -40,6 +43,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.moj.cpp.listing.persistence.repository.ListingNumbersRepository;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class ExtendHearingForHearingListener {
@@ -49,14 +53,16 @@ public class ExtendHearingForHearingListener {
     private static final String LISTED_CASES_FIELD = "listedCases";
     private final JsonObjectToObjectConverter jsonObjectConverter;
     private final ObjectMapper objectMapper;
+    private ListingNumbersRepository listingNumbersRepository;
     private HearingSearchSyncService hearingSearchSyncService;
 
     @Inject
-    public ExtendHearingForHearingListener(final HearingRepository hearingRepository, final JsonObjectToObjectConverter jsonObjectConverter, final ObjectMapper objectMapper, final HearingSearchSyncService hearingSearchSyncService) {
+    public ExtendHearingForHearingListener(final HearingRepository hearingRepository, final JsonObjectToObjectConverter jsonObjectConverter, final ObjectMapper objectMapper, final HearingSearchSyncService hearingSearchSyncService, final ListingNumbersRepository listingNumbersRepository) {
         this.hearingRepository = hearingRepository;
         this.jsonObjectConverter = jsonObjectConverter;
         this.objectMapper = objectMapper;
         this.hearingSearchSyncService = hearingSearchSyncService;
+        this.listingNumbersRepository = listingNumbersRepository;
     }
 
     @Handles("listing.events.hearing-deleted")
@@ -116,9 +122,10 @@ public class ExtendHearingForHearingListener {
     }
 
     /**
-     *  This method handles 'listing.event.added-cases-for-hearing'.
-     *  The event 'listing.event.added-cases-for-hearing' has been renamed to 'listing.event.cases-added-to-hearing'
-     *  and is handled in this method {@link ExtendHearingForHearingListener#handleCasesAddedToHearingEvent(Envelope)}
+     * This method handles 'listing.event.added-cases-for-hearing'. The event
+     * 'listing.event.added-cases-for-hearing' has been renamed to 'listing.event.cases-added-to-hearing'
+     * and is handled in this method {@link ExtendHearingForHearingListener#handleCasesAddedToHearingEvent(Envelope)}
+     *
      * @param event listing.event.added-cases-for-hearing
      */
     @Handles("listing.event.added-cases-for-hearing")
@@ -134,46 +141,65 @@ public class ExtendHearingForHearingListener {
     }
 
     private void updateHearingWithCases(final UUID hearingId, final List<ListedCase> listedCasesToAdd) {
-        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {};
+        final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
+        };
 
         final Hearing hearing = hearingRepository.findBy(hearingId);
 
         if (null != hearing.getProperties().get(LISTED_CASES_FIELD)) {
             using(hearingRepository)
                     .find(hearingId)
-                    .putSubList(LISTED_CASES_FIELD, typeRef, getListedCasesAddFunction(listedCasesToAdd))
+                    .putSubListWithCheckingValue(LISTED_CASES_FIELD, typeRef, getListedCasesAddFunction(listedCasesToAdd), "allocated")
                     .save();
             LOGGER.info("Hearing with id {} has been updated with new listed cases ", hearingId);
             hearingSearchSyncService.sync(hearingId);
         }
     }
 
-    private Function<List<ListedCase>, List<ListedCase>> getListedCasesAddFunction(final List<ListedCase> listedCasesToAdd) {
-        return dbListedCases -> updateListedCases(listedCasesToAdd, dbListedCases);
+    private BiFunction<List<ListedCase>, JsonNode, List<ListedCase>> getListedCasesAddFunction(final List<ListedCase> listedCasesToAdd) {
+        return (dbListedCases, allocated) -> updateListedCases(listedCasesToAdd, dbListedCases, allocated);
     }
 
     private List<ListedCase> updateListedCases(final List<ListedCase> listedCasesToAdd,
-                                               final List<ListedCase> dbListedCases) {
+                                               final List<ListedCase> dbListedCases,
+                                               final JsonNode allocated) {
 
         //create map from dbListedCases to compare against given request
         //but we will still modify the dbListedCases list
         final Map<UUID, Map<UUID, List<Offence>>> dbCaseDefendantOffenceMap = dbListedCases.stream().collect(Collectors.toMap(ListedCase::getId, listedCase -> listedCase.getDefendants().stream().collect(Collectors.toMap(Defendant::getId, Defendant::getOffences))));
-
-        listedCasesToAdd.forEach(c -> { //iterate over the requested cases
-            if (dbCaseDefendantOffenceMap.containsKey(c.getId())) { //if dbListedCases already has the same case
-                c.getDefendants().forEach(d -> {
-                    if (dbCaseDefendantOffenceMap.get(c.getId()).containsKey(d.getId())) { //if dbListedCases already has the same defendant
-                        compareCases(dbListedCases, c, d);
-                    } else { //if dbListedCase already has the case but not the defendant
-                        addDefendants(dbListedCases, c, d);
-                    }
-                });
-            } else { // if caseToAdd is not already in dbListedCases, add it directly
-                dbListedCases.add(c);
-            }
-        });
+        Optional.of(allocated.asBoolean()).map(allocatedValue -> allocatedValue ? getListedCaseWithListingNumbers(listedCasesToAdd) : listedCasesToAdd)
+                .map(Collection::stream)
+                .ifPresent(list ->
+                        list.forEach(c -> { //iterate over the requested cases
+                            if (dbCaseDefendantOffenceMap.containsKey(c.getId())) { //if dbListedCases already has the same case
+                                c.getDefendants().forEach(d -> {
+                                    if (dbCaseDefendantOffenceMap.get(c.getId()).containsKey(d.getId())) { //if dbListedCases already has the same defendant
+                                        compareCases(dbListedCases, c, d);
+                                    } else { //if dbListedCase already has the case but not the defendant
+                                        addDefendants(dbListedCases, c, d);
+                                    }
+                                });
+                            } else { // if caseToAdd is not already in dbListedCases, add it directly
+                                dbListedCases.add(c);
+                            }
+                        }));
 
         return dbListedCases;
+    }
+
+    private List<ListedCase> getListedCaseWithListingNumbers(final List<ListedCase> listedCasesToAdd) {
+        return listedCasesToAdd.stream().map(listedCase -> ListedCase.listedCase().withValuesFrom(listedCase)
+                .withDefendants(listedCase.getDefendants().stream()
+                        .map(defendant -> Defendant.defendant().withValuesFrom(defendant)
+                                .withOffences(defendant.getOffences().stream()
+                                        .map(offence -> Offence.offence().withValuesFrom(offence)
+                                                .withListingNumber(listingNumbersRepository.upset(offence.getId()).getListingNumber())
+                                                .build())
+                                        .collect(Collectors.toList()))
+                                .build())
+                        .collect(Collectors.toList()))
+                .build())
+                .collect(Collectors.toList());
     }
 
     private void compareCases(final List<ListedCase> dbListedCases, final ListedCase c, final Defendant d) {

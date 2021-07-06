@@ -64,6 +64,13 @@
     },
     "hasAdjournmentDate":{
       "type" : "boolean"
+    },
+    "applicationOffenceIds": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+      }
     }
   },
   "required": [

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
@@ -297,6 +298,7 @@ public class UnscheduledListingCommandBuilder {
                         .build()))
                 .withApplicationReference(Optional.of("REF-1"))
                 .withApplicationParticulars(APPLICATION_PARTICULARS)
+                .withOffences(emptyList())
                 .build();
     }
 
@@ -333,6 +335,7 @@ public class UnscheduledListingCommandBuilder {
                         .build()))
                 .withApplicationReference(of("QCIUATYHQN"))
                 .withApplicationParticulars(empty())
+                .withOffences(emptyList())
                 .build();
     }
 

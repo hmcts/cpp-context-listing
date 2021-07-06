@@ -3,6 +3,9 @@ package uk.gov.moj.cpp.listing.event.listener;
 import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
+
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.function.BiFunction;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Offence;
@@ -24,6 +27,7 @@ import javax.inject.Inject;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Iterables;
+import uk.gov.moj.cpp.listing.persistence.repository.ListingNumbersRepository;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class DefendantOffencesEventListener {
@@ -34,6 +38,9 @@ public class DefendantOffencesEventListener {
 
     @Inject
     private HearingRepository hearingRepository;
+
+    @Inject
+    private ListingNumbersRepository listingNumbersRepository;
 
     @Handles("listing.events.offence-updated")
     public void offenceUpdated(final Envelope<OffenceUpdated> event) {
@@ -84,12 +91,12 @@ public class DefendantOffencesEventListener {
 
         using(hearingRepository)
                 .find(hearingId)
-                .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getAddedListedCaseFunction(caseId, defendantId, offence))
+                .putSubListWithCheckingValue(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getAddedListedCaseFunction(caseId, defendantId, offence), "allocated")
                 .save();
     }
 
-    private Function<List<ListedCase>, List<ListedCase>> getAddedListedCaseFunction(UUID caseId, UUID defendantId, Offence offence) {
-        return cases -> getAddedListedCase(caseId, defendantId, offence, cases);
+    private BiFunction<List<ListedCase>, JsonNode, List<ListedCase>> getAddedListedCaseFunction(UUID caseId, UUID defendantId, Offence offence) {
+        return (cases, allocated) -> getAddedListedCase(caseId, defendantId, offence, cases, allocated);
     }
 
     private List<ListedCase> getUpdatedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases) {
@@ -101,12 +108,16 @@ public class DefendantOffencesEventListener {
         return listedCases;
     }
 
-    private List<ListedCase> getAddedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases) {
+    private List<ListedCase> getAddedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases, JsonNode allocated) {
         ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
         List<Defendant> defendants = listedCase.getDefendants();
         Defendant originalDefendant = Iterables.find(defendants, defendant -> defendant.getId().equals(defendantId));
 
-        originalDefendant.getOffences().add(updatedOffence);
+        if(allocated.asBoolean()){
+            originalDefendant.getOffences().add(Offence.offence().withValuesFrom(updatedOffence).withListingNumber(listingNumbersRepository.upset(updatedOffence.getId()).getListingNumber()).build());
+        }else {
+            originalDefendant.getOffences().add(updatedOffence);
+        }
         listedCases.replaceAll(
                 listedCase1 -> listedCase1.getId().equals(listedCase.getId()) ? updateShadowListedFlagForListedCase(listedCase) : listedCase1);
 
@@ -136,6 +147,7 @@ public class DefendantOffencesEventListener {
                 .withRestrictFromCourtList(restrictCourtList)
                 .withLaaApplnReference(updatedOffence.getLaaApplnReference())
                 .withShadowListed(originalOffence.isPresent() ? originalOffence.get().getShadowListed() : Optional.of(Boolean.FALSE))
+                .withListingNumber(originalOffence.map( Offence::getListingNumber).orElse(null))
                 .withReportingRestrictions(updatedOffence.getReportingRestrictions())
                 .build();
     }

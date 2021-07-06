@@ -6,9 +6,9 @@ import java.util.Optional;
 
 public enum CourtListType {
   ALPHABETICAL("ALPHABETICAL", "CourtList", "CourtListEnglishWelsh"),
-  PUBLIC("PUBLIC", "PublicStandardList", "BilingualPublicCourtList"),
-  STANDARD("STANDARD", "PublicStandardList", null),
-  BENCH("BENCH", "PublicStandardList", null),
+  PUBLIC("PUBLIC", "PublicCourtList", "PublicCourtListEnglishWelsh"),
+  STANDARD("STANDARD", "BenchAndStandardCourtList", null),
+  BENCH("BENCH", "BenchAndStandardCourtList", null),
   JUDGE("JUDGE", "JudgeList", null);
 
 

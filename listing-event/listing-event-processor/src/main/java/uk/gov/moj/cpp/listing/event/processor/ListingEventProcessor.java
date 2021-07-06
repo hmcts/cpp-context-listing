@@ -60,7 +60,7 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
-import uk.gov.moj.cpp.listing.common.converter.JudicialRoleDomainToEventConverter;
+import uk.gov.moj.cpp.listing.event.processor.converter.JudicialRoleDomainToEventConverter;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommand;

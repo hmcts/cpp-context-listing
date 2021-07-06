@@ -62,6 +62,10 @@
     },
     "selectedCourtCentre": {
       "$ref": "#/definitions/courtCentre"
+    },
+    "panel": {
+      "description": "it can be Adult/Youth ",
+      "type": "string"
     }
   },
   "required": [

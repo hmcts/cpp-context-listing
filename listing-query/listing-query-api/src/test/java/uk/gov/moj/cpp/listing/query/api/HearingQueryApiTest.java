@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.query.api;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.Arrays.stream;
+import static java.util.UUID.*;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static javax.json.Json.createObjectBuilder;
@@ -12,6 +13,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertSame;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -20,13 +22,19 @@ import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadata
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 
+
+import java.util.Optional;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
+import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
+import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 
 import java.io.File;
@@ -34,7 +42,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -67,6 +74,10 @@ public class HearingQueryApiTest {
     private static final String HEARING_SLOTS = "listing.search.hearing.slots";
     private static final String LISTING_AVAILABLE_HEARING_SEARCH = "listing.available";
 
+    private static final String COURT_CENTRE_ID = "courtCentreId";
+    private static final String COURT_ROOM_ID = "courtRoomId";
+    private static final String LIST_ID = "listId";
+
     private static final List<String> METHODS_WHICH_ARE_NOT_MERELY_PASS_THROUGH = ImmutableList.of(
             "searchForHearingById",
             "searchHearingSlots",
@@ -79,6 +90,12 @@ public class HearingQueryApiTest {
 
     @Mock
     private ReferenceDataLoader referenceDataLoader;
+
+    @Mock
+    private StandardPublicCourtListTemplateAssembler standardPublicCourtListAssembler;
+
+    @Mock
+    private ReferenceDataService referenceDataService;
 
     @InjectMocks
     private HearingQueryApi hearingQueryApi;
@@ -160,7 +177,7 @@ public class HearingQueryApiTest {
 
         final JsonEnvelope proposedQuery = envelopeFrom(
                 metadataBuilder()
-                        .withId(UUID.fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
                         .withName("listing.unscheduled.search.hearings"),
                 createObjectBuilder()
                         .add("courtCentreId", "a7e61b9a-f1c2-427a-845a-abebcf9068c4")
@@ -170,8 +187,8 @@ public class HearingQueryApiTest {
 
         when(referenceDataLoader.fetchOrganisationUnitsByOucodeL2Code(eq("OP565"))).thenReturn(
                 Arrays.asList(
-                        new OrganisationUnit(UUID.fromString("ab774cac-ffac-4bd8-8c94-4a422feb267c"), "OP565"),
-                        new OrganisationUnit(UUID.fromString("c9f485a3-dda3-4909-8a34-d599ae3316a4"), "OP565"))
+                        new OrganisationUnit(fromString("ab774cac-ffac-4bd8-8c94-4a422feb267c"), "OP565"),
+                        new OrganisationUnit(fromString("c9f485a3-dda3-4909-8a34-d599ae3316a4"), "OP565"))
         );
         ArgumentCaptor<JsonEnvelope> envelopeArgumentCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
         final Envelope<JsonObject> results = mock(Envelope.class);
@@ -183,7 +200,7 @@ public class HearingQueryApiTest {
         assertSame(returnedEnvelope, results);
         Assert.assertThat(envelopeArgumentCaptor.getValue(), is(jsonEnvelope(
                 metadata()
-                        .withId(UUID.fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
                         .withName("listing.unscheduled.search.hearings"),
                 payloadIsJson(
                         allOf(
@@ -201,7 +218,7 @@ public class HearingQueryApiTest {
 
         final JsonEnvelope proposedQuery = envelopeFrom(
                 metadataBuilder()
-                        .withId(UUID.fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
                         .withName("listing.unscheduled.search.hearings"),
                 createObjectBuilder()
                         .add("oucodeL2Code", "OP565")
@@ -211,8 +228,8 @@ public class HearingQueryApiTest {
 
         when(referenceDataLoader.fetchOrganisationUnitsByOucodeL2Code(eq("OP565"))).thenReturn(
                 Arrays.asList(
-                        new OrganisationUnit(UUID.fromString("ab774cac-ffac-4bd8-8c94-4a422feb267c"), "OP565"),
-                        new OrganisationUnit(UUID.fromString("c9f485a3-dda3-4909-8a34-d599ae3316a4"), "OP565"))
+                        new OrganisationUnit(fromString("ab774cac-ffac-4bd8-8c94-4a422feb267c"), "OP565"),
+                        new OrganisationUnit(fromString("c9f485a3-dda3-4909-8a34-d599ae3316a4"), "OP565"))
         );
         ArgumentCaptor<JsonEnvelope> envelopeArgumentCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
         final Envelope<JsonObject> results = mock(Envelope.class);
@@ -224,7 +241,7 @@ public class HearingQueryApiTest {
         assertSame(returnedEnvelope, results);
         Assert.assertThat(envelopeArgumentCaptor.getValue(), is(jsonEnvelope(
                 metadata()
-                        .withId(UUID.fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
                         .withName("listing.unscheduled.search.hearings"),
                 payloadIsJson(
                         allOf(
@@ -237,10 +254,50 @@ public class HearingQueryApiTest {
         ));
     }
 
+    @Test
+    public void shouldReturnPayloadWithTemplateNameWhenCallPayloadApi(){
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withName("listing.search.court.list.payload"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(LIST_ID, PUBLIC.toString())
+                        .build());
+
+        when(standardPublicCourtListAssembler.assemble(any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.empty());
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
+
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("id"), is("id1"));
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("PublicCourtList"));
+    }
+
+    @Test
+    public void shouldReturnPayloadWithBilingualTemplateNameWhenCallPayloadApi(){
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withName("listing.search.court.list.payload"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(LIST_ID, PUBLIC.toString())
+                        .build());
+
+        when(standardPublicCourtListAssembler.assemble(any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.of(true));
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
+
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("id"), is("id1"));
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("PublicCourtListEnglishWelsh"));
+    }
+
     private JsonEnvelope generateQuery(JsonValue jsonValue) {
         return envelopeFrom(
                 metadataBuilder()
-                        .withId(UUID.fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
                         .withName("_"), jsonValue);
 
     }

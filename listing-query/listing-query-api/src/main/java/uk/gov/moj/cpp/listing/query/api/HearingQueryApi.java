@@ -1,8 +1,13 @@
 package uk.gov.moj.cpp.listing.query.api;
 
+import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilderWithFilter;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 
+import java.util.Optional;
+import javax.json.Json;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -11,7 +16,10 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
+import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
+import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 
 import java.io.IOException;
@@ -34,6 +42,9 @@ public class HearingQueryApi {
 
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String COURT_CENTRE_IDS = "courtCentreIds";
+    private static final String COURT_ROOM_ID = "courtRoomId";
+    public static final String RESTRICTED = "restricted";
+    private static final String LIST_ID = "listId";
     private static final String OU_L2_CODE = "oucodeL2Code";
 
 
@@ -45,6 +56,12 @@ public class HearingQueryApi {
 
     @Inject
     private ReferenceDataLoader referenceDataLoader;
+
+    @Inject
+    private StandardPublicCourtListTemplateAssembler standardPublicCourtListAssembler;
+
+    @Inject
+    private ReferenceDataService referenceDataService;
 
     @Handles("listing.search.hearings")
     public JsonEnvelope searchHearings(final JsonEnvelope query) {
@@ -92,7 +109,31 @@ public class HearingQueryApi {
 
     @Handles("listing.search.court.list")
     public JsonEnvelope searchHearingsForCourtList(final JsonEnvelope query) {
-        return hearingQueryView.getCourtListContent(query);
+        return query;
+    }
+
+    @Handles("listing.search.court.list.payload")
+    public JsonEnvelope searchHearingsForCourtListPayload(final JsonEnvelope query) {
+        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
+        final String courtRoomId = query.payloadAsJsonObject().getString(COURT_ROOM_ID, null);
+        final String listId = query.payloadAsJsonObject().getString(LIST_ID);
+        final boolean restricted = Optional.ofNullable(query.payloadAsJsonObject().get(RESTRICTED)).map(restrictedJson -> Boolean.valueOf(restrictedJson.toString())).orElse(false);
+        final Optional<CourtListType> courtListType = CourtListType.valueFor(listId);
+
+        if(courtListType.isPresent()) {
+            final JsonEnvelope queryResponse = hearingQueryView.getCourtListContent(query);
+            final Optional<JsonObject> courtListData = standardPublicCourtListAssembler.assemble(queryResponse, courtCentreId, courtRoomId, courtListType.get(), restricted);
+            if (courtListData.isPresent()) {
+                final JsonObject courtListPayload = courtListData.get();
+                final boolean isWelsh = referenceDataService.isHearingLanguageWelsh(queryResponse, courtCentreId).orElse(false);
+                final String templateName = getTemplateName(courtListType.get(), isWelsh);
+                final JsonObjectBuilder builder = Json.createObjectBuilder();
+                courtListPayload.forEach(builder::add);
+                builder.add("templateName", templateName);
+                return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list.payload"), builder);
+            }
+        }
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.court.list.payload"), createObjectBuilder());
     }
 
     @Handles("listing.search.hearing")
@@ -118,5 +159,12 @@ public class HearingQueryApi {
     @Handles("listing.court.list.publish.status")
     public JsonEnvelope publishCourtListStatus(final JsonEnvelope query) {
         return hearingQueryView.getCourtListPublishStatus(query);
+    }
+
+    private String getTemplateName(final CourtListType courtListType, boolean welsh) {
+        if (PUBLIC.equals(courtListType) && welsh) {
+            return courtListType.getWelshTemplateName();
+        }
+        return courtListType.getTemplateName();
     }
 }

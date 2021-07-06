@@ -12,6 +12,7 @@ import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
@@ -72,7 +73,7 @@ public class HearingDaysIT extends AbstractIT {
 
     @Test
     public void testHearingDaysWithCourtCentre() throws IOException {
-
+        stubGetAvailableHearingSlots();
         startDate = LocalDate.now();
         endDate = LocalDate.now().plusDays(1);
         hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);

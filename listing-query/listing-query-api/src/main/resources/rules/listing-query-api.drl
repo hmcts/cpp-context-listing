@@ -60,7 +60,14 @@ rule "Query - API - listing.search.court.list"
   then
     $outcome.setSuccess(true);
 end
-
+rule "Query - API - listing.search.court.list.payload"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.search.court.list.payload");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN, RuleConstants.GROUP_POLICE_ADMIN, RuleConstants.COURT_ASSOCIATE, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end
 rule "Query - API - listing.search.hearing"
   when
     $outcome: Outcome();

@@ -43,6 +43,13 @@
     },
     "isEjected": {
       "type": "boolean"
+    },
+    "offences": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/offence.json"
+      }
     }
   },
   "required": [

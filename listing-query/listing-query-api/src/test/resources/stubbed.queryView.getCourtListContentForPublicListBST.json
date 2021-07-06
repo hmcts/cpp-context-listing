@@ -66,6 +66,7 @@
                               "id": "785c2a46-175c-4032-ad26-4c79642048ad",
                               "startDate": "2018-07-21",
                               "offenceCode": "yGRsfUEVpn",
+                              "listingNumber" : 1,
                               "statementOfOffence": {
                                 "title": "OFFENCE_TITLE",
                                 "welshTitle": "WelshOFFENCE_TITLE"
@@ -163,6 +164,7 @@
                             "id": "785c2a46-175c-4032-ad26-4c79642048ad",
                             "startDate": "2018-07-21",
                             "offenceCode": "yGRsfUEVpn",
+                            "listingNumber" : 1,
                             "statementOfOffence": {
                               "title": "OFFENCE_TITLE",
                               "welshTitle": "welshOFFENCE_TITLE"

@@ -2,9 +2,11 @@ package uk.gov.moj.cpp.listing.query.document.generator.courtlist;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
-@SuppressWarnings({"squid:S1067", "squid:S00107", "squid:S00121"})
+@SuppressWarnings({"squid:S1067", "squid:S00107", "squid:S00121", "squid:S2384"})
 public class Hearing {
+    private UUID id;
     private Integer sequence;
     private String reportingRestrictionReason;
     private String welshReportingRestrictionReason;
@@ -12,9 +14,13 @@ public class Hearing {
     private String hearingType;
     private String welshHearingType;
     private String caseNumber;
+    private UUID caseId;
     private String prosecutorType;
     private List<Defendant> defendants;
     private String adjournedHearingDate;
+    private String panel;
+    private UUID courtApplicationId;
+    private List<Offence> applicationOffences;
 
     public String getAdjournedHearingDate() {
         return adjournedHearingDate;
@@ -34,6 +40,10 @@ public class Hearing {
 
     public String getCaseNumber() {
         return caseNumber;
+    }
+
+    public UUID getCaseId() {
+        return caseId;
     }
 
     public String getProsecutorType() {
@@ -56,22 +66,41 @@ public class Hearing {
         return welshHearingType;
     }
 
+    public UUID getId() {
+        return id;
+    }
+
+    public String getPanel() {
+        return panel;
+    }
+
+    public UUID getCourtApplicationId() {
+        return courtApplicationId;
+    }
+
+    public List<Offence> getApplicationOffences() { return applicationOffences; }
+
     public static Builder hearing() {
         return new Hearing.Builder();
     }
 
 
     public static final class Builder {
+        private UUID id;
         private Integer sequence;
         private String startTime;
         private String hearingType;
         private String welshHearingType;
         private String caseNumber;
+        private UUID caseId;
         private String prosecutorType;
         private List<Defendant> defendants;
         private String reportingRestrictionReason;
         private String welshReportingRestrictionReason;
         private String adjournedHearingDate;
+        private String panel;
+        private UUID courtApplicationId;
+        private List<Offence> applicationOffences;
 
         private Builder() {
         }
@@ -98,6 +127,10 @@ public class Hearing {
             return this;
         }
 
+        public Builder withCaseId(UUID caseId) {
+            this.caseId = caseId;
+            return this;
+        }
 
         public Builder withStartTime(String startTime) {
             this.startTime = startTime;
@@ -130,6 +163,26 @@ public class Hearing {
             return this;
         }
 
+        public Builder withId(UUID id){
+            this.id = id;
+            return this;
+        }
+
+        public Builder withPanel(String panel){
+            this.panel = panel;
+            return this;
+        }
+
+        public Builder withCourtApplicationId(UUID courtApplicationId){
+            this.courtApplicationId = courtApplicationId;
+            return this;
+        }
+
+        public Builder withApplicationOffences(List<Offence> applicationOffences){
+            this.applicationOffences = applicationOffences;
+            return this;
+        }
+
         public Hearing build() {
             final Hearing hearing = new Hearing();
             hearing.sequence = this.sequence;
@@ -142,6 +195,11 @@ public class Hearing {
             hearing.reportingRestrictionReason = this.reportingRestrictionReason;
             hearing.welshReportingRestrictionReason = this.welshReportingRestrictionReason;
             hearing.adjournedHearingDate = this.adjournedHearingDate;
+            hearing.id = this.id;
+            hearing.caseId = this.caseId;
+            hearing.panel = this.panel;
+            hearing.courtApplicationId = this.courtApplicationId;
+            hearing.applicationOffences = this.applicationOffences;
             return hearing;
         }
     }
@@ -156,8 +214,13 @@ public class Hearing {
                 ", hearingType='" + hearingType + '\'' +
                 ", welshHearingType='" + welshHearingType + '\'' +
                 ", caseNumber='" + caseNumber + '\'' +
+                ", caseId='" + caseId + '\'' +
                 ", prosecutorType='" + prosecutorType + '\'' +
                 ", defendants=" + defendants +
+                ", id=" + id +
+                ", panel=" + panel +
+                ", courtApplicationId=" + courtApplicationId +
+                ", applicationOffences=" + applicationOffences +
                 '}';
     }
 
@@ -173,12 +236,17 @@ public class Hearing {
                 Objects.equals(hearingType, hearing.hearingType) &&
                 Objects.equals(welshHearingType, hearing.welshHearingType) &&
                 Objects.equals(caseNumber, hearing.caseNumber) &&
+                Objects.equals(caseId, hearing.caseId) &&
                 Objects.equals(prosecutorType, hearing.prosecutorType) &&
-                Objects.equals(defendants, hearing.defendants);
+                Objects.equals(defendants, hearing.defendants) &&
+                Objects.equals(id, hearing.id) &&
+                Objects.equals(panel, hearing.panel) &&
+                Objects.equals(courtApplicationId, hearing.courtApplicationId) &&
+                Objects.equals(applicationOffences, hearing.applicationOffences);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(sequence, reportingRestrictionReason, welshReportingRestrictionReason, startTime, hearingType, welshHearingType, caseNumber, prosecutorType, defendants);
+        return Objects.hash(sequence, reportingRestrictionReason, welshReportingRestrictionReason, startTime, hearingType, welshHearingType, caseNumber, caseId, prosecutorType, defendants, id, panel, courtApplicationId, applicationOffences);
     }
 }

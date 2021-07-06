@@ -32,7 +32,8 @@ import ru.yandex.qatools.embed.postgresql.ext.SubdirTempDir;
         HearingRepositoryTest.class,
         CourtListPublishStatusJdbcRepositoryTest.class,
         PublishedCourtListRepositoryTest.class,
-        NotesRepositoryTest.class
+        NotesRepositoryTest.class,
+        ListingNumbersRepositoryTest.class
 })
 public class PersistenceTestSuite {
 

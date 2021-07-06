@@ -25,7 +25,6 @@ import uk.gov.moj.cpp.listing.query.document.generator.DocumentGeneratorClient;
 import uk.gov.moj.cpp.listing.query.document.generator.JudgeListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
-import uk.gov.moj.cpp.systemusers.ServiceContextSystemUserProvider;
 
 import java.io.ByteArrayInputStream;
 import java.util.Optional;
@@ -58,8 +57,6 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
     private static final String EXTRACT_FILE_NAME = "CourtList.pdf";
     protected static final String DISPOSITION = "attachment; filename=\"" + EXTRACT_FILE_NAME + "\"";
 
-    @Inject
-    private ServiceContextSystemUserProvider serviceContextSystemUserProvider;
 
     @Inject
     private InterceptorChainProcessor interceptorChainProcessor;

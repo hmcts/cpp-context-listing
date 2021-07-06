@@ -48,6 +48,9 @@
     },
     "seedingHearing" : {
       "$ref": "http://justice.gov.uk/listing/events/seedingHearing.json"
+    },
+    "listingNumber" : {
+      "type": "integer"
     }
 
   },

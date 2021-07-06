@@ -12,6 +12,7 @@ import static org.apache.activemq.artemis.utils.JsonLoader.createReader;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
@@ -407,8 +408,8 @@ public class StandardCourtListTemplateAssemblerTest {
         Hearing actualHearing = actualTimeslot.getHearings().get(0);
 
         Defendant actualDefendant = actualHearing.getDefendants().get(0);
-        assertDefendant(actualDefendant,2);
-        assertOffence(actualDefendant.getOffences().get(1));
+        assertDefendant(actualDefendant,1);
+        assertOffence(actualDefendant.getOffences().get(0));
         if (CourtListType.STANDARD.equals(courtListType) || CourtListType.PUBLIC.equals(courtListType)) {
             assertThat(actualDefendant.getReportingRestrictions().size(), is(1));
             assertThat(actualDefendant.getReportingRestrictions().stream().findFirst().get(), is(REPORTING_RESTRICTION));
@@ -749,11 +750,14 @@ public class StandardCourtListTemplateAssemblerTest {
 
     private void assertHearing(Hearing actualHearing) {
         assertThat(actualHearing.getCaseNumber(), is(notNullValue()));
+        assertThat(actualHearing.getCaseId(), anyOf(is(CASE_ID1), is(CASE_ID2), is(fromString("6bfc68d4-5748-47de-9f7f-d7713c025d1a"))));
         assertThat(actualHearing.getHearingType(), is(notNullValue()));
         assertThat(actualHearing.getProsecutorType(), is(notNullValue()));
         assertThat(actualHearing.getSequence(), is(SEQUENCE_1));
         assertThat(actualHearing.getStartTime(), is(START_LOCAL_TIME.toString()));
         assertThat(actualHearing.getDefendants().size(), is(2));
+        assertThat(actualHearing.getId().toString(), anyOf(is("2b784cde-aec2-4998-b556-11f728cd13e5"), is("4c034f6c-bca3-4fe4-a5b3-9cdb0a25837b")));
+        assertThat(actualHearing.getPanel(), is("ADULT"));
     }
 
     private void assertDefendant(Defendant actualDefendant,int offencesCount) {
@@ -762,11 +766,14 @@ public class StandardCourtListTemplateAssemblerTest {
         assertThat(actualDefendant.getSurname(), is(notNullValue()));
         assertThat(actualDefendant.getAge(), is(notNullValue()));
         assertThat(actualDefendant.getOffences().size(), is(offencesCount));
+        assertThat(actualDefendant.getId(), anyOf(is(DEFENDANT_ID1), is(DEFENDANT_ID2), is(DEFENDANT_ID3), is(fromString("b5e9200e-6b2f-4197-95f1-1ccf578c599f")), is(fromString("6d98fd20-e994-477f-bc75-bb68ca3b29ca")) ));
     }
 
     private void assertOffence(Offence actualOffence) {
         assertThat(actualOffence.getOffenceTitle(), is(notNullValue()));
         assertThat(actualOffence.getOffenceWording(), is(notNullValue()));
+        assertThat(actualOffence.getId().toString(), anyOf(is("b5bfc980-2efb-4eb3-83af-033a77694f51"), is("09844038-4709-49c1-9c4f-2300c9be7b32"), is("77d5da0e-4d97-4668-8933-780e38b9dd98")));
+        assertThat(actualOffence.getListingNumber(), is(1));
     }
 
 
@@ -1129,17 +1136,21 @@ public class StandardCourtListTemplateAssemblerTest {
                 .add("restrictFromCourtList", FALSE)
                 .add("defendants", createArrayBuilder()
                         .add(createObjectBuilder()
+                                .add("id", DEFENDANT_ID1.toString())
                                 .add("firstName", FIRST_NAME_1)
                                 .add("lastName", LAST_NAME_1)
                                 .add("restrictFromCourtList", defendantRestricted ? TRUE : FALSE)
                                 .add("offences", createArrayBuilder().add(createObjectBuilder().add("id", randomUUID().toString())
-                                        .add("offenceWording", "Wording").add("statementOfOffence", createObjectBuilder().add("title", "Title")))))
+                                        .add("offenceWording", "Wording").add("statementOfOffence", createObjectBuilder().add("title", "Title"))
+                                        .add("listingNumber" , 1))))
                         .add(createObjectBuilder()
+                                .add("id", DEFENDANT_ID2.toString())
                                 .add("firstName", FIRST_NAME_2)
                                 .add("lastName", LAST_NAME_2)
                                 .add("restrictFromCourtList", FALSE)
                                 .add("offences", createArrayBuilder().add(createObjectBuilder().add("id", randomUUID().toString())
-                                        .add("offenceWording", "Wording").add("statementOfOffence", createObjectBuilder().add("title", "Title")))))
+                                        .add("offenceWording", "Wording").add("statementOfOffence", createObjectBuilder().add("title", "Title"))
+                                        .add("listingNumber" , 1))))
                 ))
                 .add(createObjectBuilder()
                         .add("id", randomUUID().toString())
@@ -1152,11 +1163,13 @@ public class StandardCourtListTemplateAssemblerTest {
                                 .add("organisationName", ORGANISATION_NAME_1)
                                 .add("restrictFromCourtList", FALSE)) :
                                 createArrayBuilder().add(createObjectBuilder()
+                                        .add("id", DEFENDANT_ID3.toString())
                                         .add("firstName", FIRST_NAME_3)
                                         .add("lastName", LAST_NAME_3)
                                         .add("restrictFromCourtList", defendantRestricted ? TRUE : FALSE)
                                         .add("offences", createArrayBuilder().add(createObjectBuilder().add("id", randomUUID().toString())
-                                                .add("offenceWording", "Wording").add("statementOfOffence", createObjectBuilder().add("title", "Title"))))
+                                                .add("offenceWording", "Wording").add("statementOfOffence", createObjectBuilder().add("title", "Title"))
+                                                .add("listingNumber" , 1)))
                                 )
                         )
                 );

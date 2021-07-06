@@ -18,6 +18,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
@@ -68,7 +69,6 @@ import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.core.courts.MasterDefendant;
 import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.core.courts.OffenceActiveOrder;
-import uk.gov.justice.core.courts.Organisation;
 import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
@@ -279,7 +279,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
-    public void whenProgressionHearingExtended() throws IOException {
+    public void whenProgressionHearingExtended() {
         final String eventPayloadString = getPayload("prosecution-case-with-shadow-listed-offences.json")
                 .replaceAll("HEARING_ID", hearingsData.getHearingData().get(0).getId().toString())
                 .replaceAll("CASE_ID_1", UUID.randomUUID().toString())
@@ -1304,6 +1304,13 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                                 .withProsecutionAuthorityCode(STRING.next()).build())
                                         .withIsSJP(false)
                                         .withCaseStatus("ACTIVE")
+                                        .withOffences(singletonList(Offence.offence().withId(hearingData.getCourtApplications().get(0).getOffenceId())
+                                                .withOffenceDefinitionId(randomUUID())
+                                                .withOffenceCode(STRING.next())
+                                                .withOffenceTitle(STRING.next())
+                                                .withWording(STRING.next())
+                                                .withStartDate(LocalDate.now().toString())
+                                                .build()))
                                         .build()))
                                 .withParentApplicationId(of(hearingData.getCourtApplications().get(0).getParentApplicationId()))
                                 .withType(getCourtApplicationType(hearingData, LinkType.LINKED, Jurisdiction.CROWN))
@@ -1463,7 +1470,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 .withMasterDefendant(of(MasterDefendant.masterDefendant()
                         .withMasterDefendantId(masterDefendantId)
                         .withLegalEntityDefendant(of(LegalEntityDefendant.legalEntityDefendant()
-                                .withOrganisation(Organisation.organisation()
+                                .withOrganisation(organisation()
                                         .withName(ORGANISATION_NAME)
                                         .withAddress(getAddress(hearingData.getCourtApplications().get(0).getApplicant().getAddress()))
                                         .build()).build()))
@@ -1562,7 +1569,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 .withMasterDefendantId(d.getMasterDefendantId())
                 .withCourtProceedingsInitiated(ZonedDateTime.now())
                 .withLegalEntityDefendant(of(LegalEntityDefendant.legalEntityDefendant()
-                        .withOrganisation(Organisation.organisation()
+                        .withOrganisation(organisation()
                                 .withName(ORGANISATION_NAME)
                                 .withAddress(buildAddress())
                                 .build()).build()))

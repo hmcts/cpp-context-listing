@@ -93,6 +93,7 @@ public class CourtApplicationEventListener {
                     .withRestrictFromCourtList(updateCourtApplication.getRestrictFromCourtList())
                     .withApplicationReference(updateCourtApplication.getApplicationReference())
                     .withApplicationParticulars(updateCourtApplication.getApplicationParticulars())
+                    .withOffences(updateCourtApplication.getOffences())
                     .build();
 
             courtApplications.replaceAll(courtApplication -> courtApplication.getId()

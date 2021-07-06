@@ -23,6 +23,7 @@
       }
     ],
     "restrictCourtApplicationType": false,
-    "restrictFromCourtList": false
+    "restrictFromCourtList": false,
+    "offences": []
   }
 }

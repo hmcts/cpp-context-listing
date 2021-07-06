@@ -4,6 +4,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
@@ -33,6 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
 @SuppressWarnings({"squid:UnusedPrivateMethod"})
 public class CourtApplicationToDomainConverter implements Converter<uk.gov.justice.core.courts.CourtApplication, CourtApplication> {
@@ -54,6 +56,7 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
                         .orElse(emptyList()))
                 .withApplicationReference(getApplicationReference(commandCourtApplication))
                 .withApplicationParticulars(getApplicationParticulars(commandCourtApplication))
+                .withOffences(buildOffences(commandCourtApplication))
                 .build();
     }
 
@@ -89,6 +92,7 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
                 .withApplicationType(listingCoreCourtApplication.getApplicationType())
                 .withApplicationReference(listingCoreCourtApplication.getApplicationReference())
                 .withApplicationParticulars(listingCoreCourtApplication.getApplicationParticulars())
+                .withOffences(isNotEmpty(listingCoreCourtApplication.getOffences()) ? listingCoreCourtApplication.getOffences().stream().map(this::getDomainOffence).collect(Collectors.toList()) : emptyList())
                 .build();
     }
 
@@ -225,6 +229,51 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
 
     private CourtApplicationPartyType buildCourtApplicationPartyType(uk.gov.justice.listing.courts.CourtApplicationPartyType courtApplicationPartyType) {
         return CourtApplicationPartyType.valueOf(courtApplicationPartyType.name());
+    }
+
+    private List<uk.gov.moj.cpp.listing.domain.Offence> buildOffences(uk.gov.justice.core.courts.CourtApplication commandCourtApplication) {
+        final ArrayList<uk.gov.moj.cpp.listing.domain.Offence> offences = new ArrayList<>();
+        if(isNotEmpty(commandCourtApplication.getCourtApplicationCases())) {
+            commandCourtApplication.getCourtApplicationCases().stream().filter(ca -> nonNull(ca.getOffences())).forEach(courtApplicationCase ->
+                offences.addAll(courtApplicationCase.getOffences().stream().map(this::getDomainOffence).collect(Collectors.toList()))
+            );
+        }
+        commandCourtApplication.getCourtOrder().ifPresent(co ->
+           co.getCourtOrderOffences().stream().filter(coo -> nonNull(coo.getOffence())).forEach(courtOrderOffence ->
+               offences.add(getDomainOffence(courtOrderOffence.getOffence()))
+           )
+        );
+
+        return offences;
+    }
+
+    private uk.gov.moj.cpp.listing.domain.Offence getDomainOffence(uk.gov.justice.core.courts.Offence offence) {
+        return uk.gov.moj.cpp.listing.domain.Offence.offence()
+                .withId(offence.getId())
+                .withStartDate(offence.getStartDate())
+                .withOffenceCode(offence.getOffenceCode())
+                .withOffenceWording(offence.getWording())
+                .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                        .withTitle(offence.getOffenceTitle())
+                        .withWelshTitle(offence.getOffenceTitleWelsh().orElse(offence.getOffenceTitle()))
+                        .withLegislation(offence.getOffenceLegislation())
+                        .withWelshLegislation(offence.getOffenceLegislationWelsh())
+                        .build())
+                .build();
+    }
+
+    private uk.gov.moj.cpp.listing.domain.Offence getDomainOffence(uk.gov.justice.listing.events.Offence offence) {
+        return uk.gov.moj.cpp.listing.domain.Offence.offence().withId(offence.getId())
+                .withStartDate(offence.getStartDate())
+                .withOffenceCode(offence.getOffenceCode())
+                .withOffenceWording(offence.getOffenceWording())
+                .withStatementOfOffence(StatementOfOffence.statementOfOffence()
+                        .withTitle(offence.getStatementOfOffence().getTitle())
+                        .withWelshTitle(offence.getStatementOfOffence().getWelshTitle())
+                        .withLegislation(offence.getStatementOfOffence().getLegislation())
+                        .withWelshLegislation(offence.getStatementOfOffence().getWelshLegislation())
+                        .build())
+                .build();
     }
 }
 

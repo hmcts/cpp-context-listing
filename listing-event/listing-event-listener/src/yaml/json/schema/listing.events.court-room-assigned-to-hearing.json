@@ -8,6 +8,10 @@
     },
     "hearingId": {
       "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "panel": {
+      "description": "it can be Adult/Youth ",
+      "type": "string"
     }
   },
   "required": [

@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.it;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAvailableHearingSlotsService;
@@ -59,6 +60,7 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void assignPublicListNoteInAllocatedListing() {
+        stubGetAvailableHearingSlots();
         final HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -79,6 +81,7 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void changePublicListNoteInAllocatedListing() {
+        stubGetAvailableHearingSlots();
         final HearingsData hearingsData = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
@@ -107,6 +110,7 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void removePublicListNoteInAllocatedListing() {
+        stubGetAvailableHearingSlots();
         final HearingsData hearingsData = HearingsData.hearingsData();
 
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
@@ -136,6 +140,7 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void shouldUpdateHearingResultsInPartialAllocatedListing() {
+        stubGetAvailableHearingSlots();
         HearingsData hearingsData = hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();

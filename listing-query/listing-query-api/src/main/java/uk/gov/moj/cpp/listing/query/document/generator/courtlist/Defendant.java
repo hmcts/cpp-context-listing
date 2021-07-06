@@ -3,9 +3,11 @@ package uk.gov.moj.cpp.listing.query.document.generator.courtlist;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 @SuppressWarnings({"squid:S1067", "squid:S00107", "squid:S00121", "squid:S2384"})
 public class Defendant {
+    private UUID id;
     private String organisationName;
 
     private String firstName;
@@ -68,6 +70,10 @@ public class Defendant {
         return defenceCounsels;
     }
 
+    public UUID getId() {
+        return id;
+    }
+
     public Set<ReportingRestriction> getReportingRestrictions() {
         return reportingRestrictions;
     }
@@ -77,6 +83,7 @@ public class Defendant {
     }
 
     public static final class Builder {
+        private UUID id;
         private String organisationName;
         private String firstName;
         private String surname;
@@ -146,6 +153,11 @@ public class Defendant {
             return this;
         }
 
+        public Defendant.Builder withId(final UUID id) {
+            this.id = id;
+            return this;
+        }
+
         public Defendant build() {
             final Defendant defendant = new Defendant();
             defendant.organisationName = organisationName;
@@ -159,6 +171,7 @@ public class Defendant {
             defendant.prosecutionCounsels = prosecutionCounsels;
             defendant.defenceCounsels = defenceCounsels;
             defendant.reportingRestrictions = reportingRestrictions;
+            defendant.id = id;
             return defendant;
         }
     }
@@ -173,12 +186,13 @@ public class Defendant {
                 Objects.equals(surname, defendant.surname) &&
                 Objects.equals(dateOfBirth, defendant.dateOfBirth) &&
                 Objects.equals(age, defendant.age) &&
-                Objects.equals(offences, defendant.offences);
+                Objects.equals(offences, defendant.offences) &&
+                Objects.equals(id, defendant.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(organisationName, firstName, surname, dateOfBirth, age, offences);
+        return Objects.hash(organisationName, firstName, surname, dateOfBirth, age, offences, id);
     }
 
     @Override
@@ -190,6 +204,7 @@ public class Defendant {
                 ", dateOfBirth='" + dateOfBirth + '\'' +
                 ", age='" + age + '\'' +
                 ", offences=" + offences +
+                ", id=" + id +
                 '}';
     }
 }

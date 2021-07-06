@@ -74,6 +74,10 @@
     "selectedCourtCentre": {
       "$ref": "#/definitions/courtCentre"
     },
+    "panel": {
+      "description": "it can be Adult/Youth ",
+      "type": "string"
+    },
     "prosecutionCases": {
       "description": "Prosecution cases to be added in allocated hearing",
       "type": "array",

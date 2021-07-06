@@ -108,6 +108,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String FIELD_HAS_VIDEO_LINK = "hasVideoLink";
     private static final String FIELD_PUBLIC_LIST_NOTE = "publicListNote";
     private static final String FIELD_USER_ID = "userId";
+    public static final String PANEL = "panel";
     public static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
     public static final String FIELD_HEARING_TYPE_ID = "id";
@@ -219,6 +220,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
 
         addNullableStringField(builder, FIELD_END_DATE, updatedHearingData.getEndDate());
         addNullableStringField(builder, FIELD_COURT_ROOM_ID, getStringOrNull(updatedHearingData.getCourtRoomId()));
+        addNullableStringField(builder, PANEL, updatedHearingData.getPanel());
 
         return builder.build().toString();
     }

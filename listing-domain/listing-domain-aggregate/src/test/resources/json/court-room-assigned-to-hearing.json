@@ -4,7 +4,8 @@
       "name": "listing.events.court-room-assigned-to-hearing"
     },
     "hearingId": "5c5a1d30-0414-11e7-93ae-92361f002671",
-    "courtRoomId": "ad80a0b4-d285-4496-a514-43cb8d500051"
+    "courtRoomId": "ad80a0b4-d285-4496-a514-43cb8d500051",
+    "panel": "ADULT"
   },
   {
     "_metadata": {

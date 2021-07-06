@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
+import static java.lang.String.format;
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.justice.core.courts.CourtApplication;
@@ -175,7 +177,7 @@ import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkin
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 
 @ServiceComponent(COMMAND_HANDLER)
-@SuppressWarnings({"squid:S1188", "squid:CallToDeprecatedMethod", "squid:S2629"})
+@SuppressWarnings({"squid:S1188", "squid:CallToDeprecatedMethod", "squid:S2629", "squid:S00112"})
 public class ListingCommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandHandler.class);
@@ -410,6 +412,7 @@ public class ListingCommandHandler {
                 hearing.hearingVacateTrial(hearingVacateTrial.getVacatedTrialReasonId()));
     }
 
+    @SuppressWarnings({"squid:S3776"})
     @Handles("listing.command.update-hearing-for-listing-enriched")
     public void updateHearingForListing(final JsonEnvelope command) throws EventStreamException {
 
@@ -459,6 +462,7 @@ public class ListingCommandHandler {
         final CourtCentre defaultCourtCentre = CourtCentre.courtCentre()
                 .withId(courtCentreId)
                 .withRoomId(courtRoomId).build();
+        final Optional<String> panelFromCommand = updateHearingForListing.getPanel();
 
         updateHearingEventStream(jsonEnvelope, hearingId, (Hearing hearing) -> {
             final Stream<Object> typeEvents = hearing.changeType(type, hearingId);
@@ -476,14 +480,19 @@ public class ListingCommandHandler {
             final Stream<Object> nonSittingDaysEvents = hearing.assignNonSittingDays(nonSittingDays, hearingId);
             final Stream<Object> courtCentreEvents = hearing.changeCourtCentre(courtCentreId, hearingId);
 
-            setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagisrates(command, courtCentreId, jurisdictionType, judiciary, courtRoomId, nonDefaultDays);
+            Optional<String> panel = Optional.empty();
+            if(JurisdictionType.MAGISTRATES.equals(jurisdictionType)) {
+                final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
+                final String ouCode = organisationUnitJsonObject.getString("oucode");
+                setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagistrates(judiciary, courtRoomId, nonDefaultDays, ouCode);
+                panel = Optional.of((panelFromCommand.isPresent() ? panelFromCommand.get() : getCourtPanelFromRota(startDate, endDate, courtRoomId, ouCode)));
+            }
 
             final Stream<Object> judiciaryEvents = getJudiciaryEvents(hearingId, judiciary, hearing);
 
-
             // Check endDate and court-room last as these are the key fields for allocation
             final Stream<Object> courtRoomEvents = courtRoomId != null ?
-                    hearing.assignCourtRoom(courtRoomId, hearingId) : hearing.removeCourtRoom(hearingId);
+                    hearing.assignCourtRoom(courtRoomId, hearingId, panel) : hearing.removeCourtRoom(hearingId);
 
 
             final Stream<Object> hearingDayEvents =
@@ -513,18 +522,16 @@ public class ListingCommandHandler {
         });
     }
 
-    private void setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagisrates(final JsonEnvelope command, final UUID courtCentreId, final JurisdictionType jurisdictionType, final List<JudicialRole> judiciary, final UUID courtRoomId, final List<NonDefaultDay> nonDefaultDays) {
-        if (isEmpty(judiciary) && JurisdictionType.MAGISTRATES.equals(jurisdictionType)) {
-            final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
-
+    private void setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagistrates(final List<JudicialRole> judiciary,
+             final UUID courtRoomId, final List<NonDefaultDay> nonDefaultDays, final String ouCode) {
+        if (isEmpty(judiciary)) {
             nonDefaultDays.stream()
                     .filter(nonDefaultDay -> nonNull(nonDefaultDay.getStartTime()))
                     .min(Comparator.comparing(NonDefaultDay::getStartTime))
                     .ifPresent(firstStartTimeNonDefaultDay -> {
                         final LocalDate firstStartDate = firstStartTimeNonDefaultDay.getStartTime().toLocalDate();
-
                         judiciary.addAll(rotaSLServiceAdapter.getJudicialRoles(firstStartDate.toString(),
-                                organisationUnitJsonObject.getString("oucode"),
+                                ouCode,
                                 Optional.of(MeridianUtil.getMeridian(firstStartTimeNonDefaultDay.getStartTime())),
                                 courtRoomId.toString()));
                     });
@@ -1400,7 +1407,7 @@ public class ListingCommandHandler {
             // This should be robust, so to allow subsequent attempts.
             if (LOGGER.isErrorEnabled()) {
                 final String message
-                        = String.format(
+                        = format(
                         "Exception thrown While trying to publish the final court list for Court Centre [%s]",
                         courtCentreDetails.getId());
                 LOGGER.error(message, e);
@@ -1626,6 +1633,26 @@ public class ListingCommandHandler {
         //prepare a deep copy of unallocated hearing's cases, so we can extract offences to allocate into allocatedHearing
         final List<ListedCase> listedCasesDeepCopy = jsonObjectConverter.convert(objectToJsonObjectConverter.convert(unAllocatedHearingPersisted), uk.gov.justice.listing.events.Hearing.class).getListedCases();
         return extendHearingUtils.extractCasesToMove(listedCasesDeepCopy, unallocatedHearingRequestCaseMap);
+    }
+
+    private String getCourtPanelFromRota(final LocalDate startDate, final LocalDate endDate, final UUID courtRoomId, final String ouCode) {
+        final Response hearingSlotResponse = rotaSLServiceAdapter.getHearingSlotResponse(startDate.toString(), endDate.toString(), ouCode, courtRoomId.toString());
+        if (HttpStatus.SC_OK != hearingSlotResponse.getStatus()) {
+            throw new RuntimeException(format("getHearingSlotResponse from rota returned an error : {%s} with status {%s}",
+                    (hearingSlotResponse.hasEntity() ?  hearingSlotResponse.getEntity().toString() : ""), hearingSlotResponse.getStatus()));
+        } else {
+            final JsonObject responseJson = objectToJsonObjectConverter.convert(hearingSlotResponse.getEntity());
+            final List<JsonObject> hearingSlots = responseJson.getJsonArray("hearingSlots")
+                    .stream()
+                    .map(JsonObject.class::cast).collect(Collectors.toList());
+
+            if(hearingSlots.isEmpty()) {
+                throw new RuntimeException(format("No hearingSlots found from rota with given filter, startDate {%s}, endDate {%s}, courtRoomId {%s}, ouCode {%s},",
+                        startDate, endDate,courtRoomId, ouCode));
+            } else {
+                return hearingSlots.get(0).getString("panel");
+            }
+        }
     }
 
 }

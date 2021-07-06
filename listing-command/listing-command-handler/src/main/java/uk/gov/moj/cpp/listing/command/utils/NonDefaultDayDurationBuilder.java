@@ -46,6 +46,7 @@ public class NonDefaultDayDurationBuilder {
                 .withHasVideoLink(hearing.getHasVideoLink())
                 .withPublicListNote(hearing.getPublicListNote())
                 .withSelectedCourtCentre(hearing.getSelectedCourtCentre())
+                .withPanel(hearing.getPanel())
                 .build();
     }
 

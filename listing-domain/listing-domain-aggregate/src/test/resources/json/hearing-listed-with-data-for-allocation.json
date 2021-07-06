@@ -22,7 +22,8 @@
             "lastName":"pGk5CoFbDb",
             "courtApplicationPartyType": "PERSON"
           }
-        ]
+        ],
+        "offenceIds": ["0baecac5-222b-402d-9047-84803679edad"]
       }
     ],
     "allocated": false,

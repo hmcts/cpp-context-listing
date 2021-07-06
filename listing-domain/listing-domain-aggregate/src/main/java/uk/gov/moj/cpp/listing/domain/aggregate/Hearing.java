@@ -78,10 +78,6 @@ import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
 import uk.gov.justice.listing.events.HearingDaysSequenced;
 import uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected;
 import uk.gov.justice.listing.events.HearingDeleted;
-import uk.gov.justice.listing.events.NextHearingDayChanged;
-import uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing;
-import uk.gov.justice.listing.events.OffencesRemovedFromExistingUnallocatedHearing;
-import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
 import uk.gov.justice.listing.events.HearingLanguageChangedForHearing;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingListedCaseUpdated;
@@ -99,6 +95,7 @@ import uk.gov.justice.listing.events.LinkedCasesUpdated;
 import uk.gov.justice.listing.events.NewCaseMarkerUpdated;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.NewDefendantDetailsUpdated;
+import uk.gov.justice.listing.events.NextHearingDayChanged;
 import uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing;
 import uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing;
 import uk.gov.justice.listing.events.NonSittingDaysAssignedToHearing;
@@ -107,7 +104,10 @@ import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.OffenceAdded;
 import uk.gov.justice.listing.events.OffenceDeleted;
 import uk.gov.justice.listing.events.OffenceUpdated;
+import uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing;
+import uk.gov.justice.listing.events.OffencesRemovedFromExistingUnallocatedHearing;
 import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
+import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.ProsecutionCases;
 import uk.gov.justice.listing.events.PublicListNoteChangedForHearing;
 import uk.gov.justice.listing.events.PublicListNoteRemovedFromHearing;
@@ -116,6 +116,7 @@ import uk.gov.justice.listing.events.StartDateChangedForHearing;
 import uk.gov.justice.listing.events.StartDateRemovedForHearing;
 import uk.gov.justice.listing.events.TypeChangedForHearing;
 import uk.gov.justice.listing.events.TypeOfList;
+import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
 import uk.gov.justice.listing.events.VideoLinkChangedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsAssignedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsChangedForHearing;
@@ -202,6 +203,7 @@ public class Hearing implements Aggregate {
     private String publicListNote;
     private boolean duplicate;
     private Map<UUID, List<UUID>> prosecutionCaseDefendants = new HashMap<>();
+    private Map<UUID, List<UUID>> applicationOffenceIds = new HashMap<>();
 
     @Override
     public Object apply(final Object event) {
@@ -788,7 +790,7 @@ public class Hearing implements Aggregate {
         }
     }
 
-    public Stream<Object> assignCourtRoom(final UUID courtRoomId, final UUID hearingId) {
+    public Stream<Object> assignCourtRoom(final UUID courtRoomId, final UUID hearingId, Optional<String> panel) {
         if (this.duplicate) {
             return Stream.empty();
         }
@@ -797,14 +799,14 @@ public class Hearing implements Aggregate {
             final SequencesResetOnHearingDays sequencesResetOnHearingDaysEvent = createSequencesResetOnHearingDaysEvent(hearingId);
             final Stream<Object> appliedCourtRoomEvent = apply(Stream.of(CourtRoomAssignedToHearing.courtRoomAssignedToHearing()
                     .withCourtRoomId(courtRoomId)
-                    .withHearingId(hearingId)
+                    .withHearingId(hearingId).withPanel(panel)
                     .build()));
             return concat(appliedCourtRoomEvent, apply(Stream.of(sequencesResetOnHearingDaysEvent)));
         } else if (hasChanged(this.courtRoomId, courtRoomId)) {
             final SequencesResetOnHearingDays sequencesResetOnHearingDaysEvent = createSequencesResetOnHearingDaysEvent(hearingId);
             final Stream<Object> appliedCourtRoomEvent = apply(Stream.of(courtRoomChangedForHearing()
                     .withCourtRoomId(courtRoomId)
-                    .withHearingId(hearingId)
+                    .withHearingId(hearingId).withPanel(panel)
                     .build()));
             return concat(appliedCourtRoomEvent, apply(Stream.of(sequencesResetOnHearingDaysEvent)));
         } else {
@@ -1514,7 +1516,7 @@ public class Hearing implements Aggregate {
         }
         return hearingAllocatedForListingV2()
                 .withHearingId(this.hearingId)
-                .withBookingId(Optional.of(bookingReference).get())
+                .withBookingId(of(bookingReference).get())
                 .withType(buildHearingType())
                 .withEstimatedMinutes(of(this.estimatedMinutes))
                 .withCourtCentreId(this.courtCentreId)
@@ -1529,7 +1531,7 @@ public class Hearing implements Aggregate {
                 .withCourtRoomId(this.courtRoomId)
                 .withHearingDays(convertHearingDaysToEvent(this.hearingDays))
                 .withProsecutionCaseDefendantsOffenceIds(isEmpty(prosecutionCaseDefendantOffenceIds) ? null : prosecutionCaseDefendantOffenceIds.stream()
-                        .map(lc -> uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2.prosecutionCaseDefendantOffenceIdsV2()
+                        .map(lc -> ProsecutionCaseDefendantOffenceIdsV2.prosecutionCaseDefendantOffenceIdsV2()
                                 .withId(lc.getId())
                                 .withDefendants(lc.getDefendants().stream()
                                         .map(this::buildEventDefendantOffenceIdsV2)
@@ -1538,7 +1540,8 @@ public class Hearing implements Aggregate {
                         ).collect(toList()))
                 .withCourtApplicationIds(this.confirmedCourtApplicationIds.isEmpty() ? null : this.confirmedCourtApplicationIds)
                 .withUpdateSlot(of(this.updateSlot))
-                .withHasAdjournmentDate(Optional.of(this.hasAdjournmentDate))
+                .withHasAdjournmentDate(of(this.hasAdjournmentDate))
+                .withApplicationOffenceIds(getAllOffenceIds())
                 .build();
     }
 
@@ -1781,6 +1784,8 @@ public class Hearing implements Aggregate {
         if (hearing.getCourtApplications() != null) {
             this.confirmedCourtApplicationIds = hearing.getCourtApplications().stream()
                     .map(uk.gov.justice.listing.events.CourtApplication::getId).collect(toList());
+            hearing.getCourtApplications().stream().filter(ca -> isNotEmpty(ca.getOffences())).forEach(courtApplication ->
+                            applicationOffenceIds.put(courtApplication.getId(), courtApplication.getOffences().stream().map(Offence::getId).collect(toList())));
         }
 
         this.hasAdjournmentDate = hearing.getAdjournedFromDate().isPresent();
@@ -2601,4 +2606,9 @@ public class Hearing implements Aggregate {
                 .findFirst().orElse(null);
     }
 
+    private List<UUID> getAllOffenceIds() {
+        final List<UUID> allOffenceIds = new ArrayList<>();
+        applicationOffenceIds.forEach((uuid, uuids) -> allOffenceIds.addAll(uuids));
+        return allOffenceIds;
+    }
 }

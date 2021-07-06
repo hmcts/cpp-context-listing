@@ -26,6 +26,8 @@ public class CourtRoomForHearingEventListenerTest {
     private static final UUID HEARING_ID = randomUUID();
     private static final UUID COURT_ROOM_ID = randomUUID();
     private static final String JSON_PATH = "";
+    private static final String PANEL = "panel";
+
 
     @Mock
     private HearingRepository hearingRepository;
@@ -47,7 +49,7 @@ public class CourtRoomForHearingEventListenerTest {
         Envelope<CourtRoomAssignedToHearing> envelope = (Envelope<CourtRoomAssignedToHearing>) mock(Envelope.class);
         CourtRoomAssignedToHearing hearingData = CourtRoomAssignedToHearing.courtRoomAssignedToHearing()
                 .withCourtRoomId(COURT_ROOM_ID)
-                .withHearingId(HEARING_ID)
+                .withHearingId(HEARING_ID).withPanel("ADULT")
                 .build();
         given(envelope.payload()).willReturn(hearingData);
 
@@ -59,6 +61,7 @@ public class CourtRoomForHearingEventListenerTest {
         courtRoomForHearingEventListener.courtRoomAssignedToHearing(envelope);
 
         verify(properties).put(eq("courtRoomId"), eq(COURT_ROOM_ID.toString()));
+        verify(properties).put(eq(PANEL), eq("ADULT"));
         verify(hearingRepository).save(hearing);
     }
 
@@ -67,7 +70,7 @@ public class CourtRoomForHearingEventListenerTest {
         Envelope<CourtRoomChangedForHearing> envelope = (Envelope<CourtRoomChangedForHearing>) mock(Envelope.class);
         CourtRoomChangedForHearing hearingData = CourtRoomChangedForHearing.courtRoomChangedForHearing()
                 .withCourtRoomId(COURT_ROOM_ID)
-                .withHearingId(HEARING_ID)
+                .withHearingId(HEARING_ID).withPanel("YOUTH")
                 .build();
         given(envelope.payload()).willReturn(hearingData);
 
@@ -78,6 +81,7 @@ public class CourtRoomForHearingEventListenerTest {
         courtRoomForHearingEventListener.courtRoomChangedForHearing(envelope);
 
         verify(properties).put(eq("courtRoomId"), eq(COURT_ROOM_ID.toString()));
+        verify(properties).put(eq(PANEL), eq("YOUTH"));
         verify(hearingRepository).save(hearing);
     }
 
@@ -96,6 +100,7 @@ public class CourtRoomForHearingEventListenerTest {
         courtRoomForHearingEventListener.courtRoomRemovedFromHearing(envelope);
 
         verify(properties).remove("courtRoomId");
+        verify(properties).remove(PANEL);
         verify(hearingRepository).save(hearing);
     }
 }

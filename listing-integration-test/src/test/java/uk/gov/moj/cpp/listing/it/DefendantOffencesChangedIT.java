@@ -66,6 +66,9 @@ public class DefendantOffencesChangedIT extends AbstractIT {
             steps.verifyEventOffenceDeletedInActiveMQ();
             steps.verifyEventOffenceAddedInActiveMQ();
         }
+
+
+
     }
 
     @Test

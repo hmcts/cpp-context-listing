@@ -133,6 +133,8 @@ public class RestrictCourtListEventListenerTest {
 
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
+        assertThat(objectNodeCaptor.getValue().toString(), isJson(allOf(
+                withJsonPath("$[0].defendants[0].offences[0].listingNumber", equalTo(1)))));
     }
 
     @Test
@@ -279,6 +281,7 @@ public class RestrictCourtListEventListenerTest {
                                 .withOffenceCode(STRING.next())
                                 .withShadowListed(Optional.of(Boolean.FALSE))
                                 .withStartDate(LocalDates.to(LocalDate.now()))
+                                .withListingNumber(1)
                                 .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                         .withTitle(STRING.next())
                                         .build())

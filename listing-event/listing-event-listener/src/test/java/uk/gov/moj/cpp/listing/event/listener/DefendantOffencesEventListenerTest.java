@@ -5,12 +5,20 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.junit.Before;
+import org.mockito.MockitoAnnotations;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
@@ -24,6 +32,7 @@ import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.ListingNumbers;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.time.LocalDate;
@@ -35,16 +44,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import uk.gov.moj.cpp.listing.persistence.repository.ListingNumbersRepository;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(DataProviderRunner.class)
 public class DefendantOffencesEventListenerTest {
 
     private static final String LISTED_CASES = "listedCases";
@@ -78,6 +86,22 @@ public class DefendantOffencesEventListenerTest {
 
     @Mock
     ObjectNode properties;
+
+    @Mock
+    private ListingNumbersRepository listingNumbersRepository;
+
+    @DataProvider
+    public static Object[][] listingNumberVariations() {
+        return new Object[][]{
+                {"true", 1},
+                {"false", 0}
+        };
+    }
+
+    @Before
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
+    }
 
     @Test
     public void shouldHandleOffenceUpdatedAndPersistSimpleOffence() throws Exception {
@@ -120,22 +144,26 @@ public class DefendantOffencesEventListenerTest {
                 .get(0).get("offenceCode").toString();
 
         int numberOffence = newListedCase.get("defendants").get(0).get("offences").size();
-        MatcherAssert.assertThat(numberOffence, equalTo(1));
-        MatcherAssert.assertThat(expectedOffenceCode, equalTo("\"" + EXPECTED_OFFENCE_CODE + "\""));
+        assertThat(numberOffence, equalTo(1));
+        assertThat(expectedOffenceCode, equalTo("\"" + EXPECTED_OFFENCE_CODE + "\""));
 
-        MatcherAssert.assertThat(newListedCase.get("shadowListed").asBoolean(), equalTo(testListedCase.getShadowListed().get()));
-        MatcherAssert.assertThat(newListedCase.get("defendants").get(0).get("offences").get(0).get("shadowListed").asBoolean(),
+        assertThat(newListedCase.get("shadowListed").asBoolean(), equalTo(testListedCase.getShadowListed().get()));
+        assertThat(newListedCase.get("defendants").get(0).get("offences").get(0).get("shadowListed").asBoolean(),
                 equalTo(testListedCase.getDefendants().get(0).getOffences().get(0).getShadowListed().get()));
-
         verify(hearingRepository).save(hearing);
+        assertThat(newListedCase.get("defendants").get(0).get("offences").get(0).get("listingNumber").asInt(), equalTo(1));
     }
 
     @Test
-    public void shouldHandleOffenceAdded() throws Exception {
+    @UseDataProvider("listingNumberVariations")
+    public void shouldHandleOffenceAdded(final String allocated, final int listingNumber) throws Exception {
         final ObjectMapper objectMapper = new ObjectMapper();
+        final JsonNode allocatedValue = objectMapper.readTree(allocated);
+
         final List<ListedCase> testCases = createListedCases();
         final String testCasesString = mapper.writeValueAsString(testCases);
         final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
 
         final OffenceAdded hearingData = OffenceAdded.offenceAdded()
                 .withHearingId(HEARING_ID)
@@ -158,6 +186,8 @@ public class DefendantOffencesEventListenerTest {
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
         given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+        given(properties.get("allocated")).willReturn(allocatedValue);
+        given(listingNumbersRepository.upset(OFFENCE_ID)).willReturn(new ListingNumbers(OFFENCE_ID, 1));
 
 
         final ArgumentCaptor<ArrayNode> objectNodeCaptur =
@@ -170,10 +200,19 @@ public class DefendantOffencesEventListenerTest {
                 .get(1).get("offenceCode").toString();
 
         int numberOffence = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").size();
-        MatcherAssert.assertThat(numberOffence, equalTo(2));
-        MatcherAssert.assertThat(expectedOffenceCode, equalTo("\"" + EXPECTED_OFFENCE_CODE + "\""));
+        assertThat(numberOffence, equalTo(2));
+        assertThat(expectedOffenceCode, equalTo("\"" + EXPECTED_OFFENCE_CODE + "\""));
         verify(hearingRepository).save(hearing);
+        assertThat(objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").get(0).get("listingNumber").asInt(), equalTo(1));
+        if(listingNumber > 0) {
+            assertThat(objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").get(1).get("listingNumber").asInt(), equalTo(listingNumber));
+        }else{
+            assertNull(objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").get(1).get("listingNumber"));
+        }
+
     }
+
+
 
     @Test
     public void shouldHandleOffenceDeleteAndDeleteSimpleOffence() throws Exception {
@@ -197,7 +236,7 @@ public class DefendantOffencesEventListenerTest {
         verify(properties).replace(anyObject(), objectNodeCaptur.capture());
 
         int numberOffence = objectNodeCaptur.getValue().get(0).get("defendants").get(0).get("offences").size();
-        MatcherAssert.assertThat(numberOffence, equalTo(0));
+        assertThat(numberOffence, equalTo(0));
         verify(hearingRepository).save(hearing);
     }
 
@@ -227,6 +266,7 @@ public class DefendantOffencesEventListenerTest {
                                 .withId(OFFENCE_ID)
                                 .withOffenceCode(STRING.next())
                                 .withStartDate(LocalDates.to(LocalDate.now()))
+                                .withListingNumber(1)
                                 .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                         .withLegislation(of(STRING.next()))
                                         .withTitle(STRING.next())

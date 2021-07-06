@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpStatus;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -377,6 +378,7 @@ public class ListingCommandHandlerTest {
     public static final String LINK_ACTION_TYPE = "LINK";
     private static final UUID COURT_SCHEDULE_ID_1 = randomUUID();
     private static final UUID COURT_SCHEDULE_ID_2 = randomUUID();
+    private static final String PANEL = "ADULT";
 
     @Mock
     CaseOffences caseOffences;
@@ -500,6 +502,8 @@ public class ListingCommandHandlerTest {
     @Spy
     private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CourtListExportRequested.class,
             HearingCounselModified.class);
+    @Mock
+    private Response getHearingSlotResponse;
 
     private final static LocalDate SUNDAY_25TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 25);
     private final static LocalDate MONDAY_26TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 26);
@@ -721,6 +725,7 @@ public class ListingCommandHandlerTest {
                         .build()))
                 .withApplicationReference(Optional.of("REF-1"))
                 .withApplicationParticulars(APPLICATION_PARTICULARS)
+                .withOffences(emptyList())
                 .build();
     }
 
@@ -803,7 +808,7 @@ public class ListingCommandHandlerTest {
 
 
         when(hearing.changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1, empty())).thenReturn(mock(Stream.class));
         when(hearing.changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignNonDefaultDays(nonDefaultDays, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1)).thenReturn(mock(Stream.class));
@@ -811,7 +816,6 @@ public class ListingCommandHandlerTest {
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignJudiciary(judicialRoles, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre)).thenReturn(mock(Stream.class));
@@ -821,11 +825,11 @@ public class ListingCommandHandlerTest {
         when(hearingFactory.getHearingById(any(), any())).thenReturn(getSampleStoredHearing());
         when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE,HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(HAS_VIDEO_LINK,HEARING_ID_1)).thenReturn(mock(Stream.class));
-
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
         verify(hearing).changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1);
-        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1);
+        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1, empty());
         verify(hearing).changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1);
         verify(hearing).assignNonDefaultDays(nonDefaultDays, HEARING_ID_1);
         verify(hearing).assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1);
@@ -833,7 +837,6 @@ public class ListingCommandHandlerTest {
         verify(hearing).changeStartDate(START_DATE, HEARING_ID_1);
         verify(hearing).changeType(HEARING_TYPE, HEARING_ID_1);
         verify(hearing).changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1);
-        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1);
         verify(hearing).assignJudiciary(judicialRoles, HEARING_ID_1);
         verify(hearing).applyRescheduledCheck(any());
         verify(hearing).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, nonDefaultDays,
@@ -895,7 +898,7 @@ public class ListingCommandHandlerTest {
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
         when(nonDefaultDayDurationBuilder.buildNewUpdateHearingForListingWithNewNonDefaultDays(any(), any())).thenReturn(updateHearingForListingEnriched.getUpdateHearingForListing());
         when(hearing.changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1, empty())).thenReturn(mock(Stream.class));
         when(hearing.changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignNonDefaultDays(nonDefaultDays, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1)).thenReturn(mock(Stream.class));
@@ -903,7 +906,6 @@ public class ListingCommandHandlerTest {
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JurisdictionType.MAGISTRATES, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignJudiciary(judicialRoles, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre)).thenReturn(mock(Stream.class));
@@ -914,10 +916,14 @@ public class ListingCommandHandlerTest {
         when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE,HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(HAS_VIDEO_LINK,HEARING_ID_1)).thenReturn(mock(Stream.class));
 
+        when(getHearingSlotResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(getHearingSlotResponse.getEntity()).thenReturn(hearingSlotsResponse);
+        when(rotaSLServiceAdapter.getHearingSlotResponse(anyString(), anyString(), anyString(), anyString())).thenReturn(getHearingSlotResponse);
+
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
         verify(hearing).changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1);
-        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1);
+        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1, of("YOUTH"));
         verify(hearing).changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1);
         verify(hearing).assignNonDefaultDays(nonDefaultDays, HEARING_ID_1);
         verify(hearing).assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1);
@@ -925,7 +931,6 @@ public class ListingCommandHandlerTest {
         verify(hearing).changeStartDate(START_DATE, HEARING_ID_1);
         verify(hearing).changeType(HEARING_TYPE, HEARING_ID_1);
         verify(hearing).changeJurisdictionType(JurisdictionType.MAGISTRATES, HEARING_ID_1);
-        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1);
         verify(hearing).assignJudiciary(judicialRoles, HEARING_ID_1);
         verify(hearing).applyRescheduledCheck(any());
         verify(hearing).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, nonDefaultDays,
@@ -963,7 +968,7 @@ public class ListingCommandHandlerTest {
 
 
         when(hearing.changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1, empty())).thenReturn(mock(Stream.class));
         when(hearing.changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignNonDefaultDays(nonDefaultDays, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1)).thenReturn(mock(Stream.class));
@@ -972,7 +977,7 @@ public class ListingCommandHandlerTest {
         when(hearing.removeEndDate(HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1, of(PANEL))).thenReturn(mock(Stream.class));
         when(hearing.assignJudiciary(judicialRoles, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignHearingDays(null, null, NON_SITTING_DAYS, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre)).thenReturn(mock(Stream.class));
@@ -981,11 +986,12 @@ public class ListingCommandHandlerTest {
         when(hearingFactory.getHearingById(any(), any())).thenReturn(getSampleStoredHearing());
         when(hearing.assignPublicListNote(any(), eq(HEARING_ID_1))).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(anyBoolean(), eq(HEARING_ID_1))).thenReturn(mock(Stream.class));
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
         verify(hearing).changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1);
-        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1);
+        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1, empty());
         verify(hearing).changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1);
         verify(hearing).assignNonDefaultDays(nonDefaultDays, HEARING_ID_1);
         verify(hearing).assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1);
@@ -993,7 +999,6 @@ public class ListingCommandHandlerTest {
         verify(hearing).removeStartDate(HEARING_ID_1);
         verify(hearing).changeType(HEARING_TYPE, HEARING_ID_1);
         verify(hearing).changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1);
-        verify(hearing).assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1);
         verify(hearing).assignJudiciary(judicialRoles, HEARING_ID_1);
         verify(hearing).assignHearingDays(null, null, NON_SITTING_DAYS1, nonDefaultDays,
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);
@@ -1011,6 +1016,7 @@ public class ListingCommandHandlerTest {
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -1067,6 +1073,7 @@ public class ListingCommandHandlerTest {
                 .build());
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
         verify(hearing, never()).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
@@ -3244,6 +3251,7 @@ public class ListingCommandHandlerTest {
                         .build()))
                 .withApplicationReference(Optional.of("REF-1"))
                 .withApplicationParticulars(APPLICATION_PARTICULARS)
+                .withOffences(emptyList())
                 .build();
     }
 

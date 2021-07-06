@@ -13,6 +13,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData nextHearingsData(final List<HearingData> hearings) {
+        return new HearingsData(HearingsDataFactory.hearingsData(hearings));
+    }
+
     public static HearingsData hearingsData(final String jurisdictionType) {
         return new HearingsData(HearingsDataFactory.hearingsData(jurisdictionType));
     }

@@ -8,6 +8,7 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
 import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.events.CaseIdentifier;
@@ -31,6 +32,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -225,6 +227,7 @@ public class NewDomainToEventConverter {
         return uk.gov.justice.listing.events.CourtApplication.courtApplication()
                 .withId(courtApplication.getId())
                 .withLinkedCaseIds(courtApplication.getLinkedCaseIds())
+                .withOffences(buildApplicationOffences(courtApplication.getOffences()))
                 .withParentApplicationId(courtApplication.getParentApplicationId())
                 .withApplicationType(courtApplication.getApplicationType())
                 .withApplicant(buildApplicantRespondent(courtApplication.getApplicant()))
@@ -287,5 +290,19 @@ public class NewDomainToEventConverter {
                 .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
                 .withSittingDay(seedingHearing.getSittingDay())
                 .build());
+    }
+
+    private static List<uk.gov.justice.listing.events.Offence> buildApplicationOffences(final List<uk.gov.moj.cpp.listing.domain.Offence> offences) {
+        final List<uk.gov.justice.listing.events.Offence> offencesEvents = new ArrayList<>();
+        if(isNotEmpty(offences)) {
+            offences.forEach(offence -> offencesEvents.add(uk.gov.justice.listing.events.Offence.offence()
+                    .withId(offence.getId())
+                    .withOffenceCode(offence.getOffenceCode())
+                    .withOffenceWording(offence.getOffenceWording())
+                    .withStartDate(offence.getStartDate())
+                    .withStatementOfOffence(buildStatementOfOffence(offence))
+                    .build()));
+        }
+        return offencesEvents;
     }
 }

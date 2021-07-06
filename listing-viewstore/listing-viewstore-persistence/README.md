@@ -1,4 +1,4 @@
-# Instructions for installing listing-viewstore-persistence for the *first time* only.
+    # Instructions for installing listing-viewstore-persistence for the *first time* only.
 
 Run with the following command:
     mvn clean install -DRUN_PERSISTENCE_TEST_IN_PIPELINE_KEY=false

@@ -53,7 +53,8 @@
                             "statementOfOffence": {
                               "title": "OFFENCE_TITLE",
                               "welshTitle": "2I30IaRyDJ"
-                            }
+                            },
+                            "listingNumber" : 1
                           }
                         ],
                         "firstName": "FIRST_NAME1",

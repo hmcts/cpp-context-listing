@@ -73,6 +73,7 @@
           "id":"26b856a8-ae01-4aad-814c-7cdff8db19bf",
           "parentApplicationId":"9d9a431a-0f12-4386-878a-2bf6c4a0877e",
           "linkedCaseId":"19e9d562-6abb-4871-bfb3-2d777aa90371",
+          "offences": [],
           "respondents":[
             {
               "firstName":"ijgX3B9Vy7",
@@ -163,6 +164,7 @@
     "type": {
       "id": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6",
       "description": "Trial"
-    }
+    },
+    "applicationOffenceIds": []
   }
 ]

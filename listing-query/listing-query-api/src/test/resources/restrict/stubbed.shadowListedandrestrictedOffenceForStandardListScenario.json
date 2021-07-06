@@ -103,7 +103,8 @@
                             }
                           ],
                           "restrictFromCourtList": false,
-                          "shadowListed" : true
+                          "shadowListed" : true,
+                          "listingNumber" : 1
                         },
                         {
                           "id": "77d5da0e-4d97-4668-8933-780e38b9dd98",
@@ -117,7 +118,8 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
-                          "restrictFromCourtList": false
+                          "restrictFromCourtList": false,
+                          "listingNumber" : 1
                         }
                       ],
                       "firstName": "Cheyanne",
@@ -127,7 +129,7 @@
                         "description": "Unconditional Bail"
                       },
                       "dateOfBirth": "DATE_OF_BIRTH",
-                      "defenceOrganisation": "TestOne",
+                      "defenceOrganisation": "ABC LTD",
                       "restrictFromCourtList": false
                     },
                     {
@@ -154,7 +156,8 @@
                               "judicialResultId": "065b6fcb-0787-4f0d-a9cd-af4b5c36e047"
                             }
                           ],
-                          "restrictFromCourtList": false
+                          "restrictFromCourtList": false,
+                          "listingNumber" : 1
                         },
                         {
                           "id": "bfc5a983-a064-48c5-93b4-27d992308df0",
@@ -168,7 +171,8 @@
                             "legislation": "Contrary to section 20 of the Offences Against the    Person Act 1861.",
                             "welshLegislation": "Yn groes i adran 20 Deddf Troseddau Corfforol 1861."
                           },
-                          "restrictFromCourtList": false
+                          "restrictFromCourtList": false,
+                          "listingNumber" : 1
                         }
                       ],
                       "firstName": "Rodger",
@@ -178,7 +182,7 @@
                         "description": "Unconditional Bail"
                       },
                       "dateOfBirth": "1980-10-12",
-                      "defenceOrganisation": "TestTwo",
+                      "defenceOrganisation": "ABC LTD",
                       "restrictFromCourtList": false
                     }
                   ],

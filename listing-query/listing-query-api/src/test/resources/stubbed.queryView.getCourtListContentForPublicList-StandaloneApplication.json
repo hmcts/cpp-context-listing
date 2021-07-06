@@ -65,6 +65,7 @@
                             "id": "785c2a46-175c-4032-ad26-4c79642048ad",
                             "startDate": "2018-11-21",
                             "offenceCode": "yGRsfUEVpn",
+                            "listingNumber" : 1,
                             "offenceWording": "On 01/11/2017 at Chelmsford intentionally obstructed a person authorised by the BBC in the exercise of a power conferred by virtue of a search warrant issued under section 366 of the Communications Act 2003 by Chelmsford Magistrates Court on 25/10/2017 ",
                             "statementOfOffence": {
                               "title": "OFFENCE_TITLE",
@@ -191,7 +192,13 @@
                     "applicationParticulars": "APPLICATION_PARTICULARS",
                     "applicationReference": "CASE_REFERENCE2",
                     "restrictFromCourtList": false,
-                    "restrictCourtApplicationType": false
+                    "restrictCourtApplicationType": false,
+                    "offences": [
+                      {
+                        "id": "785c2a46-175c-4032-ad26-4c79642048ad",
+                        "listingNumber" : 1
+                      }
+                    ]
                   }
                 ],
                 "type": {

@@ -119,7 +119,12 @@
             "courtApplicationPartyType": "PERSON"
           }
         ],
-        "restrictFromCourtList":false
+        "restrictFromCourtList":false,
+        "offences": [
+          {
+            "id": "0baecac5-222b-402d-9047-84803679edad"
+          }
+        ]
       }
     ],
     "type": {

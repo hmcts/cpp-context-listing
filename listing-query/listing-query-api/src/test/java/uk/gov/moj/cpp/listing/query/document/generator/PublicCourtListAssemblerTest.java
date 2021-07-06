@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.query.document.generator;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
@@ -179,7 +180,7 @@ public class PublicCourtListAssemblerTest {
         defendant = hearing.getJsonArray("defendants").getJsonObject(1);
         assertThat(defendant.getString("firstName"), is(FIRST_NAME1));
         assertThat(defendant.getString("surname"), is(LAST_NAME1));
-        assertThat(defendant.getJsonArray("offences").size(), is(2));
+        assertThat(defendant.getJsonArray("offences").size(), is(1));
         assertThat(defendant.getJsonArray("reportingRestrictions").size(),is(2));
         JsonObject reportingRestriction1 = defendant.getJsonArray("reportingRestrictions").getJsonObject(0);
         assertThat(reportingRestriction1.getString("label"),is(REPORTING_RESTRICTION));
@@ -244,7 +245,9 @@ public class PublicCourtListAssemblerTest {
                 withJsonPath("$.hearingDates[1].courtRooms[0].timeslots[0].hearings[0].defendants[0].firstName", equalTo(FIRST_NAME3)),
                 withJsonPath("$.hearingDates[1].courtRooms[0].timeslots[0].hearings[0].defendants[0].surname", equalTo(LAST_NAME3)),
                 withJsonPath("$.hearingDates[1].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[0].offenceTitle", equalTo(APPLICATION_TYPE)),
-                withJsonPath("$.hearingDates[1].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[0].offenceWording", equalTo(APPLICATION_PARTICULARS))
+                withJsonPath("$.hearingDates[1].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[0].offenceWording", equalTo(APPLICATION_PARTICULARS)),
+                withJsonPath("$.hearingDates[1].courtRooms[0].timeslots[0].hearings[0].applicationOffences[0].id", equalTo("785c2a46-175c-4032-ad26-4c79642048ad")),
+                withoutJsonPath("$.hearingDates[1].courtRooms[0].timeslots[0].hearings[0].applicationOffences[0].listingNumber")
         )));
         verify(judiciaryNameMapper, times(2)).getName(argumentCaptor.capture());
         final JsonObject judiciary = argumentCaptor.getValue();

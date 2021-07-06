@@ -29,7 +29,8 @@
           }
         ],
         "restrictCourtApplicationType": false,
-        "restrictFromCourtList": false
+        "restrictFromCourtList": false,
+        "offences": [ { "id": "0baecac5-222b-402d-9047-84803679edad"}]
       }
     ],
     "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",

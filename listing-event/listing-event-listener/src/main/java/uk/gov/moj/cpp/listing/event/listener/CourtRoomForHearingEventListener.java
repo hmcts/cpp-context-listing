@@ -11,6 +11,7 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 
 import java.util.UUID;
 
@@ -20,6 +21,8 @@ import javax.inject.Inject;
 public class CourtRoomForHearingEventListener {
 
     private static final String COURT_ROOM_ID_FIELD = "courtRoomId";
+
+    private static final String PANEL = "panel";
 
     private HearingRepository hearingRepository;
     private HearingSearchSyncService hearingSearchSyncService;
@@ -35,10 +38,10 @@ public class CourtRoomForHearingEventListener {
         final CourtRoomAssignedToHearing courtRoomAssignedToHearing = event.payload();
         final UUID courtRoomId = courtRoomAssignedToHearing.getCourtRoomId();
         final UUID hearingId = courtRoomAssignedToHearing.getHearingId();
-        using(hearingRepository)
-                .find(hearingId)
-                .put(COURT_ROOM_ID_FIELD, courtRoomId)
-                .save();
+        final JsonNodeUpdater hearing = using(hearingRepository).find(hearingId);
+        hearing.put(COURT_ROOM_ID_FIELD, courtRoomId);
+        courtRoomAssignedToHearing.getPanel().ifPresent( panel -> hearing.put(PANEL, panel));
+        hearing.save();
 
         hearingSearchSyncService.sync(hearingId);
     }
@@ -48,10 +51,10 @@ public class CourtRoomForHearingEventListener {
         final CourtRoomChangedForHearing courtRoomChangedForHearing = event.payload();
         final UUID courtRoomId = courtRoomChangedForHearing.getCourtRoomId();
         final UUID hearingId = courtRoomChangedForHearing.getHearingId();
-        using(hearingRepository)
-                .find(hearingId)
-                .put(COURT_ROOM_ID_FIELD, courtRoomId)
-                .save();
+        final JsonNodeUpdater hearing = using(hearingRepository).find(hearingId);
+        hearing.put(COURT_ROOM_ID_FIELD, courtRoomId);
+        courtRoomChangedForHearing.getPanel().ifPresent( panel -> hearing.put(PANEL, panel));
+        hearing.save();
 
         hearingSearchSyncService.sync(hearingId);
     }
@@ -63,6 +66,7 @@ public class CourtRoomForHearingEventListener {
         using(hearingRepository)
                 .find(hearingId)
                 .remove(COURT_ROOM_ID_FIELD)
+                .remove(PANEL)
                 .save();
 
         hearingSearchSyncService.sync(hearingId);

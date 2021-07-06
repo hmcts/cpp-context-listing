@@ -106,7 +106,43 @@ public class EjectEventListenerTest {
         ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
 
         List<ListedCase> testCases = createListedCases();
-        List<CourtApplication> testCourtApplications = createCourtApplications();
+        List<CourtApplication> testCourtApplications = createCourtApplications(singletonList(CASE_ID));
+
+        String testCasesString = objectMapper.writeValueAsString(testCases);
+        JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+
+        String testApplicationsString = mapper.writeValueAsString(testCourtApplications);
+        JsonNode testApplicationProperties = objectMapper.readTree(testApplicationsString);
+
+        final Envelope<CaseEjected> caseEjectedEnvelope = (Envelope<CaseEjected>) mock(Envelope.class);
+
+        CaseEjected ejectCase = CaseEjected.caseEjected()
+                .withHearingId(HEARING_ID)
+                .withProsecutionCaseId(CASE_ID)
+                .build();
+        given(caseEjectedEnvelope.payload()).willReturn(ejectCase);
+        given(ejectCaseEnvelopeForCase.payload()).willReturn(ejectCase);
+
+        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
+        given(properties.get(COURT_APPLICATION_FIELD)).willReturn(testApplicationProperties);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor =
+                ArgumentCaptor.forClass(ArrayNode.class);
+
+        ejectEventListener.caseEjected(ejectCaseEnvelopeForCase);
+        verify(properties, times(2)).replace(anyObject(), objectNodeCaptor.capture());
+        verify(hearingRepository, times(2)).save(hearing);
+
+    }
+
+    @Test
+    public void shouldEjectCaseForListingWithoutLinkedCaseId() throws IOException {
+        ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+
+        List<ListedCase> testCases = createListedCases();
+        List<CourtApplication> testCourtApplications = createCourtApplications(null);
 
         String testCasesString = objectMapper.writeValueAsString(testCases);
         JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
@@ -141,7 +177,7 @@ public class EjectEventListenerTest {
     public void shouldEjectApplicationForListing() throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        List<CourtApplication> testCourtApplications = createCourtApplications();
+        List<CourtApplication> testCourtApplications = createCourtApplications(singletonList(CASE_ID));
         String testApplicationsString = mapper.writeValueAsString(testCourtApplications);
         JsonNode testCasesProperties = objectMapper.readTree(testApplicationsString);
 
@@ -213,9 +249,9 @@ public class EjectEventListenerTest {
                 .build());
     }
 
-    private List<CourtApplication> createCourtApplications() {
+    private List<CourtApplication> createCourtApplications(final List<UUID> linkedCaseIds) {
        CourtApplication parentCourtApplication = CourtApplication.courtApplication()
-                .withLinkedCaseIds(singletonList(CASE_ID))
+                .withLinkedCaseIds(linkedCaseIds)
                 .withParentApplicationId(of(randomUUID()))
                 .withId(COURT_APPLICATIONS_ID)
                 .withApplicationType(COURT_APPLICATION_TYPE)

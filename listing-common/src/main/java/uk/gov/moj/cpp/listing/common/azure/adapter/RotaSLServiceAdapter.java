@@ -54,19 +54,12 @@ public class RotaSLServiceAdapter {
             queryParams.put("courtSession", courtSession);
         });
 
-        final Response hearingSlotResponse = hearingSlotsService.search(queryParams);
+        final Response hearingSlotResponse = hearingSlotsSearch(queryParams);
 
         if (HttpStatus.SC_OK == hearingSlotResponse.getStatus()) {
             return getJudiciariesFromRota(hearingSlotResponse);
         }
-
-        String responsePayload = "";
-        if (hearingSlotResponse.hasEntity()) {
-            responsePayload = hearingSlotResponse.getEntity().toString();
-        }
-        LOGGER.error("adding judiciaries from rota returned an error : {} with status {}", responsePayload, hearingSlotResponse.getStatus());
         return Collections.emptyList();
-
     }
 
     private List<JudicialRole> getJudiciariesFromRota(final Response response) {
@@ -93,5 +86,33 @@ public class RotaSLServiceAdapter {
                 });
 
         return judiciaries;
+    }
+
+    public Response getHearingSlotResponse(final String startDate, final String endDate,final String ouCode,final String courtRoomId) {
+        final Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("sessionStartDate", startDate);
+        queryParams.put("sessionEndDate", endDate);
+        queryParams.put("ouCode", ouCode);
+        queryParams.put("pageSize", "1");
+        queryParams.put("pageNumber", "1");
+        queryParams.put("courtRoomId", courtRoomId);
+        queryParams.put("panel", "ADULT,YOUTH");
+
+        return hearingSlotsSearch(queryParams);
+    }
+
+    private Response hearingSlotsSearch(final Map<String, String> queryParams) {
+        final Response hearingSlotResponse = hearingSlotsService.search(queryParams);
+
+        if (HttpStatus.SC_OK == hearingSlotResponse.getStatus()) {
+            return hearingSlotResponse;
+        }
+
+        String responsePayload = "";
+        if (hearingSlotResponse.hasEntity()) {
+            responsePayload = hearingSlotResponse.getEntity().toString();
+        }
+        LOGGER.error("hearingSlotsSearch from rota returned an error : {} with status {}", responsePayload, hearingSlotResponse.getStatus());
+        return hearingSlotResponse;
     }
 }

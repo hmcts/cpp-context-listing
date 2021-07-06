@@ -10,6 +10,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
@@ -23,8 +24,6 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import java.util.Map;
 
 import javax.json.JsonObject;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 
 public class AzureScheduleServiceStub {
 
@@ -62,6 +61,14 @@ public class AzureScheduleServiceStub {
                 .withQueryParam("sessionEndDate", matching("2020-10-11"))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(isEmpty ? LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : LISTING_SEARCH_HEARING_SLOTS_JSON))
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                ));
+    }
+
+    public static void stubGetAvailableHearingSlots() {
+        stubFor(get(urlPathEqualTo(format("%s", ROTA_SL_ENDPOINT_URL + HEARING_SLOTS)))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withBody(getPayload(LISTING_SEARCH_HEARING_SLOTS_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                 ));
     }

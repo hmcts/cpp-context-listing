@@ -163,6 +163,7 @@ public class RestrictCourtListEventListener {
                 .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
                 .withShadowListed(originalOffence.getShadowListed())
                 .withReportingRestrictions(originalOffence.getReportingRestrictions())
+                .withListingNumber(originalOffence.getListingNumber())
                 .build();
         originalDefendant.getOffences().replaceAll(offence -> offence.getId().equals(offencesId) ? newOffence : offence);
         return listedCases;

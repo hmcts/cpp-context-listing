@@ -96,4 +96,25 @@ public class RotaSLServiceAdapterTest {
 
         assertTrue(CollectionUtils.isEmpty(judicialRoleList));
     }
+
+    @Test
+    public void shouldGetHearingSlotResponse() {
+        final String startDate = LocalDate.now().toString();
+        final String ouCode = "B01LY00";
+        final String courtRoomId = "a91a93e6-d704-3cf1-9f20-e267b5a7eeeb";
+
+        final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/mock-data/azure.rotasl.getHearingSlots.stub-data.json");
+
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(hearingSlotsResponse);
+        when(hearingSlotsService.search(anyMap())).thenReturn(response);
+
+        final Response response = rotaSLServiceAdapter.getHearingSlotResponse(startDate, startDate, ouCode, courtRoomId);
+
+        final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
+        final JsonObject object = responseJson.getJsonArray("hearingSlots").getValuesAs(JsonObject.class).get(0);
+
+        assertThat(object.getString("panel"), is("YOUTH"));
+        assertThat(object.getString("courtRoomId"), is(courtRoomId));
+    }
 }

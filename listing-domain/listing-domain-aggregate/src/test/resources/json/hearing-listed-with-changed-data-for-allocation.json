@@ -5,6 +5,7 @@
   "hearing": {
     "courtApplications":[
       {
+        "offences": [],
         "applicant":{
           "firstName":"5o5NzB5ewT",
           "isRespondent":false,

@@ -1,19 +1,34 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static com.google.common.collect.ImmutableMap.of;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.UUID.fromString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
+import static uk.gov.moj.cpp.platform.test.feature.toggle.FeatureStubber.stubFeaturesFor;
 
+
+import com.google.common.collect.ImmutableMap;
+import org.hamcrest.Matcher;
+import uk.gov.moj.cpp.listing.steps.AddDefendantSteps;
 import uk.gov.moj.cpp.listing.steps.CourtListSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
+import uk.gov.moj.cpp.listing.steps.ListNextHearingSteps;
+import uk.gov.moj.cpp.listing.steps.UpdateDefendantOffencesSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
+import uk.gov.moj.cpp.listing.steps.data.DefendantData;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 
 public class CourtListIT extends AbstractIT {
 
@@ -26,18 +41,19 @@ public class CourtListIT extends AbstractIT {
     final UUID HEARING_TYPE_ID = fromString("52edf232-3c09-4c74-a6ad-737985c2e662");
 
     private CourtListSteps courtListSteps;
+    private HearingsData firstHearing;
 
     @Before
     public void setupStepsForCourtList() {
-        HearingsData hearingsData = HearingsData.hearingsData();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+        firstHearing = HearingsData.hearingsData();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearing)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         }
 
-        UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
+        UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(firstHearing.getHearingData().get(0).getId());
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(firstHearing, updatedHearingDataForAllocation)) {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
         }
@@ -52,12 +68,75 @@ public class CourtListIT extends AbstractIT {
 
     @Test
     public void generatePublicCourtList() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrect(PUBLIC);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", 1, new Matcher[0]);
     }
 
     @Test
+    public void generatePublicCourtWhenHearingAdjourned() {
+        final ImmutableMap<String, Boolean> features = of("amendReshare", true);
+        stubFeaturesFor("listing", features);
+        HearingsData nextHearing = HearingsData.nextHearingsData(firstHearing.getHearingData());
+        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearing.getHearingData().get(0))) {
+            listNextHearingSteps.whenNextHearingSubmittedForListing(nextHearing);
+            listNextHearingSteps.verifyNextHearingRequestedInActiveMQ(nextHearing);
+            listNextHearingSteps.verifyHearingListedInActiveMQ(nextHearing);
+            listNextHearingSteps.verifyHearingListedFromAPI(nextHearing);
+
+        }
+
+        UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(nextHearing.getHearingData().get(0).getId());
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(nextHearing, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListing();
+            updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+        }
+        courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
+
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", 2, new Matcher[0]);
+    }
+
+    @Test
+    public void generatePublicCourtWhenOffenceAddedToHearing() throws Exception {
+        DefendantData defendantData = firstHearing.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
+        UUID caseId = firstHearing.getHearingData().get(0).getListedCases().get(0).getCaseId();
+        HearingData hearingData = firstHearing.getHearingData().get(0);
+        OffenceData offenceData = defendantData.getOffences().get(0);
+        UpdatedOffenceData updatedOffenceData = UpdatedOffenceData.updateOffenceData(offenceData);
+
+        try (final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null)) {
+            steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
+            steps.verifyEventOffenceAddedInActiveMQ();
+        }
+        final Matcher[] allocatedMatchers = {
+                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[3].id", notNullValue()),
+                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[3].listingNumber", is(1)),
+        };
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", 1, allocatedMatchers);
+    }
+
+    @Test
+    public void generatePublicCourtWhenDefendantAdded(){
+
+        UUID caseId = firstHearing.getHearingData().get(0).getListedCases().get(0).getCaseId();
+        HearingData hearingData = firstHearing.getHearingData().get(0);
+        try (final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData)) {
+            addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
+            addDefendantSteps.verifyEventDefendantAddedInActiveMQ();
+            addDefendantSteps.verifyEventDefendantsToBeAddedInActiveMQ();
+            addDefendantSteps.verifyEventDefendantDetailsAddedInActiveMQ();
+        }
+
+        final Matcher[] allocatedMatchers = {
+                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[2].offences[0].id", notNullValue()),
+                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[2].offences[0].listingNumber", is(1)),
+        };
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", 1, allocatedMatchers);
+    }
+
+
+    @Test
     public void generateStandardCourtList() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrect(STANDARD);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(STANDARD, "BenchAndStandardCourtList",1, new Matcher[0] );
     }
 
     @Test
@@ -69,7 +148,7 @@ public class CourtListIT extends AbstractIT {
 
     @Test
     public void generateBenchList() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrect(BENCH);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(BENCH, "BenchAndStandardCourtList", 1, new Matcher[0] );
     }
 
 }

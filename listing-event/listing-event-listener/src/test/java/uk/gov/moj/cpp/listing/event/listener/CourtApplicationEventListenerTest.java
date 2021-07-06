@@ -18,6 +18,7 @@ import uk.gov.justice.listing.events.ApplicantRespondent;
 import uk.gov.justice.listing.events.CourtApplication;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
+import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -44,7 +45,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CourtApplicationEventListenerTest {
-
+    private static final UUID OFFENCE_ID = randomUUID();
     private static final String COURT_APPLICATIONS = "courtApplications";
     private static final UUID HEARING_ID = randomUUID();
     private static final UUID ID = randomUUID();
@@ -127,6 +128,7 @@ public class CourtApplicationEventListenerTest {
                                 .withIsRespondent(true)
                                 .withAddress(of(RESPONDENT_ADDRESS))
                                 .build()))
+                        .withOffences(Arrays.asList(Offence.offence().withId(OFFENCE_ID).build()))
                         .build())
                 .build();
 

@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.converter;
+package uk.gov.moj.cpp.listing.event.processor.converter;
 
 import static java.util.stream.Collectors.toList;
 

@@ -240,6 +240,46 @@ protocols: [ HTTP, HTTPS ]
         body:
           application/vnd.listing.search.court.list+json:
 
+/courtlistpayload:
+  description: get court list payload
+  get:
+    description: |
+      ...
+      (mapping):
+          responseType: application/vnd.listing.search.court.list.payload+json
+          name: listing.search.court.list.payload
+      ...
+    queryParameters:
+        courtCentreId:
+          description: reference data id for the court centre
+          type: string
+          required: true
+        courtRoomId:
+          description: reference data id for the court room
+          type: string
+          required: false
+        listId:
+          description: court list name to generate ( e.g. PUBLIC, STANDAND, ALPHABETICAL)
+          type: string
+          required: true
+        startDate:
+          description: hearing start date in format 'YYYY-MM-DD'.
+          type: date
+          required: true
+        endDate:
+          description: hearing end date in format 'YYYY-MM-DD'
+          type: date
+          required: true
+        restricted:
+          description: only applicable for standard courtlist. Set true to get restricted standard court list
+          type: boolean
+          required: false
+          default: false
+    responses:
+      200:
+        body:
+          application/vnd.listing.search.court.list.payload+json:
+
 /courtListPublishStatus/{courtCentreId}:
   description: get status of latest publish court list document
   get:

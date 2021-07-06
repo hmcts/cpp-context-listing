@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.function.BiFunction;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 
@@ -90,8 +91,18 @@ public class JsonNodeUpdater {
     public <T> JsonNodeUpdater putSubList(String fieldName, TypeReference subListType, Function<List<T>, List<T>> updateFunction) {
         final ArrayNode subListProperties = (ArrayNode) updatedProperties.get(fieldName);
         final List<T> subList = getSubList(subListProperties, subListType);
-        List<T> updatedSubList = updateFunction.apply(subList);
-        JsonNode newProperties = mapper.valueToTree(updatedSubList);
+        final List<T> updatedSubList = updateFunction.apply(subList);
+        final JsonNode newProperties = mapper.valueToTree(updatedSubList);
+        updatedProperties.replace(fieldName, newProperties);
+        return this;
+    }
+
+    public <T> JsonNodeUpdater putSubListWithCheckingValue(String fieldName, TypeReference subListType, BiFunction<List<T>, JsonNode, List<T>> updateFunction, String fieldNameForValue) {
+        final JsonNode value = updatedProperties.get(fieldNameForValue);
+        final ArrayNode subListProperties = (ArrayNode) updatedProperties.get(fieldName);
+        final List<T> subList = getSubList(subListProperties, subListType);
+        final List<T> updatedSubList = updateFunction.apply(subList, value);
+        final JsonNode newProperties = mapper.valueToTree(updatedSubList);
         updatedProperties.replace(fieldName, newProperties);
         return this;
     }
@@ -135,6 +146,7 @@ public class JsonNodeUpdater {
             throw new JsonUpdateException(format("Unable to convert properties %s to String", fieldProperties), e);
         }
     }
+
 
     private ArrayNode getJsonNodes(String fieldName, ObjectNode node) {
         return node.putArray(fieldName);

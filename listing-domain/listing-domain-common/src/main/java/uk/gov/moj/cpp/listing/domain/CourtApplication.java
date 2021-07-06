@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S1067", "squid:S00107" })
+@SuppressWarnings({"squid:S1067", "squid:S00107", "squid:S2384" })
 public class CourtApplication {
   private final UUID id;
 
@@ -26,9 +26,11 @@ public class CourtApplication {
 
   private final Optional<String> applicationParticulars;
 
+  private final List<Offence> offences;
+
   public CourtApplication(final UUID id, final List<UUID> linkedCaseIds, final UUID parentApplicationId, final ApplicantRespondent applicant,
                           final String applicationType, final List<ApplicantRespondent> respondents, final Boolean requiresResponse,
-                          final Optional<String> applicationReference, final Optional<String> applicationParticulars) {
+                          final Optional<String> applicationReference, final Optional<String> applicationParticulars, final List<Offence> offences) {
     this.id = id;
     this.linkedCaseIds = linkedCaseIds;
     this.parentApplicationId = parentApplicationId;
@@ -38,6 +40,7 @@ public class CourtApplication {
     this.requiresResponse = requiresResponse;
     this.applicationReference = applicationReference;
     this.applicationParticulars = applicationParticulars;
+    this.offences = offences;
   }
 
   public ApplicantRespondent getApplicant() {
@@ -80,6 +83,10 @@ public class CourtApplication {
     return new CourtApplication.Builder();
   }
 
+  public List<Offence> getOffences() {
+    return offences;
+  }
+
   @Override
   public boolean equals(final Object obj) {
     if (this == obj) {
@@ -94,7 +101,7 @@ public class CourtApplication {
     java.util.Objects.equals(this.applicationType, that.applicationType) &&
     java.util.Objects.equals(this.id, that.id) &&
     java.util.Objects.equals(this.respondents, that.respondents) &&
-    java.util.Objects.equals(this.linkedCaseIds, that.linkedCaseIds) &&
+    java.util.Objects.equals(this.linkedCaseIds, that.linkedCaseIds) && java.util.Objects.equals(this.offences, that.offences) &&
     java.util.Objects.equals(this.parentApplicationId, that.parentApplicationId)&&
     java.util.Objects.equals(this.requiresResponse, that.requiresResponse) &&
     java.util.Objects.equals(this.applicationReference, that.applicationReference) &&
@@ -103,7 +110,7 @@ public class CourtApplication {
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(applicant, applicationType, id, respondents, linkedCaseIds, parentApplicationId, requiresResponse, applicationReference, applicationParticulars);
+    return java.util.Objects.hash(applicant, applicationType, id, respondents, linkedCaseIds, parentApplicationId, requiresResponse, applicationReference, applicationParticulars, offences);
   }
 
   @Override
@@ -113,7 +120,7 @@ public class CourtApplication {
     	"applicationType='" + applicationType + "'," +
     	"id='" + id + "'," +
     	"respondents='" + respondents + "'" +
-        "linkedCaseIds='" + linkedCaseIds + "'" +
+        "linkedCaseIds='" + linkedCaseIds + "'" + "offences='" + offences + "'" +
         "parentApplicationId='" + parentApplicationId + "'" +
         "requiresResponse='" + requiresResponse + "'" +
         "applicationReference='" + applicationReference + "'" +
@@ -140,6 +147,8 @@ public class CourtApplication {
 
     private Optional<String> applicationParticulars;
 
+    private List<Offence> offences;
+
     public Builder withApplicant(final ApplicantRespondent applicant) {
       this.applicant = applicant;
       return this;
@@ -164,6 +173,12 @@ public class CourtApplication {
       this.linkedCaseIds = linkedCaseIds;
       return this;
     }
+
+    public Builder withOffences(final List<Offence> offences) {
+      this.offences = offences;
+      return this;
+    }
+
     public Builder withParentApplicationId(final UUID parentApplicationId) {
       this.parentApplicationId = parentApplicationId;
       return this;
@@ -185,7 +200,7 @@ public class CourtApplication {
     }
 
     public CourtApplication build() {
-      return new CourtApplication(id, linkedCaseIds, parentApplicationId,  applicant, applicationType,  respondents, requiresResponse, applicationReference, applicationParticulars);
+      return new CourtApplication(id, linkedCaseIds, parentApplicationId,  applicant, applicationType,  respondents, requiresResponse, applicationReference, applicationParticulars, offences);
     }
   }
 }

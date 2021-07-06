@@ -54,6 +54,7 @@ public class UpdatedHearingData {
     private final String jurisdictionType;
     private final Boolean hasVideoLink;
     private final String publicListNote;
+    private final String panel = "ADULT";
 
     public UpdatedHearingData(final UUID hearingId,
                               final UUID courtCentreId,
@@ -332,6 +333,10 @@ public class UpdatedHearingData {
 
     public String getPublicListNote() {
         return publicListNote;
+    }
+
+    public String getPanel() {
+        return panel;
     }
 }
 

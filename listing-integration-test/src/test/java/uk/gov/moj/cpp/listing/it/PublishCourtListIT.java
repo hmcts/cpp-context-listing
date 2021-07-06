@@ -10,6 +10,7 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCourtListCommandPayload;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingData;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingDataWithJudiciary;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetAllCrownCourtCentres;
@@ -148,6 +149,7 @@ public class PublishCourtListIT extends AbstractIT {
 
     @Test
     public void shouldPublishCourtListWithHearingsWithPublicListNoteForFirmPublishType() throws Exception {
+        stubGetAvailableHearingSlots();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
@@ -190,6 +192,7 @@ public class PublishCourtListIT extends AbstractIT {
 
     @Test
     public void shouldPublishCourtListWithHearingsWithOutPublicListNoteForFirmPublishType() throws Exception {
+        stubGetAvailableHearingSlots();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
@@ -232,6 +235,7 @@ public class PublishCourtListIT extends AbstractIT {
 
     @Test
     public void shouldPublishCourtListWithHearingsWithVideoLinkForDraftPublishTypeAndPublishPublicMessage() throws Exception {
+        stubGetAvailableHearingSlots();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
@@ -275,6 +279,7 @@ public class PublishCourtListIT extends AbstractIT {
 
     @Test
     public void shouldPublishCourtListWithHearingsWithPublicListNoteForFinalPublishType() throws Exception {
+        stubGetAvailableHearingSlots();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
@@ -333,6 +338,7 @@ public class PublishCourtListIT extends AbstractIT {
 
     @Test
     public void shouldPublishCourtListWithHearingsWithOutListNoteWhenRRNotPresentForFirmPublishType() throws Exception {
+        stubGetAvailableHearingSlots();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
@@ -373,6 +379,7 @@ public class PublishCourtListIT extends AbstractIT {
 
     @Test
     public void shouldRestrictListingCaseFromCourtForHearingId() throws Exception {
+        stubGetAvailableHearingSlots();
         final UUID courtCentreId = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
         final UUID courtRoomUUID = fromString("1d0199f8-8812-48a2-b13c-837e1c03ff19");
         final UUID courtListId = randomUUID();
