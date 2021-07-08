@@ -15,7 +15,6 @@ import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.Organisation;
 import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.ProsecutionCase;
-import uk.gov.justice.listing.courts.JurisdictionType;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.LaaReference;
@@ -220,7 +219,7 @@ public class CourtToEventConverter {
     private static SeedingHearing buildSeedingHearing(final uk.gov.justice.core.courts.SeedingHearing seedingHearing) {
         return SeedingHearing.seedingHearing()
                 .withSeedingHearingId(seedingHearing.getSeedingHearingId())
-                .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().toString()))
+                .withJurisdictionType(seedingHearing.getJurisdictionType())
                 .withSittingDay(seedingHearing.getSittingDay())
                 .build();
     }

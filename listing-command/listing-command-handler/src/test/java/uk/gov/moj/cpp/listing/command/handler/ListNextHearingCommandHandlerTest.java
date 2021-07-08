@@ -12,7 +12,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static uk.gov.justice.listing.courts.JurisdictionType.CROWN;
+import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
 import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloperWithEvents;
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
@@ -176,7 +176,7 @@ public class ListNextHearingCommandHandlerTest {
                         .withSeedingHearing(uk.gov.justice.core.courts.SeedingHearing.seedingHearing()
                                 .withSeedingHearingId(seedingHearingId)
                                 .withSittingDay(sittingDay)
-                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                                .withJurisdictionType(CROWN)
                                 .build())
                         .withListNextHearings(ListNextHearingsV2.listNextHearingsV2()
                                 .withHearings(hearings)
@@ -273,8 +273,8 @@ public class ListNextHearingCommandHandlerTest {
                                 .withDescription("type")
                                 .build())
                         .withHearingDays(emptyList())
-                        .withJurisdictionType(uk.gov.justice.listing.events.JurisdictionType.CROWN)
-                        .withHearingLanguage(uk.gov.justice.listing.events.HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN)
+                        .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.ENGLISH)
                         .withListedCases(Arrays.asList(ListedCase.listedCase()
                                 .withId(caseId)
                                 .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
@@ -330,8 +330,8 @@ public class ListNextHearingCommandHandlerTest {
                                 .withDescription("type")
                                 .build())
                         .withHearingDays(emptyList())
-                        .withJurisdictionType(uk.gov.justice.listing.events.JurisdictionType.CROWN)
-                        .withHearingLanguage(uk.gov.justice.listing.events.HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN)
+                        .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.ENGLISH)
                         .withListedCases(Arrays.asList(ListedCase.listedCase()
                                         .withId(caseId)
                                         .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
@@ -411,7 +411,7 @@ public class ListNextHearingCommandHandlerTest {
         final DeleteNextHearings deleteNextHearings = DeleteNextHearings.deleteNextHearings()
                 .withSeedingHearing(uk.gov.justice.core.courts.SeedingHearing.seedingHearing()
                         .withSeedingHearingId(seedingHearingId)
-                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                        .withJurisdictionType(CROWN)
                         .withSittingDay(sittingDay)
                         .build())
                 .build();
@@ -480,8 +480,8 @@ public class ListNextHearingCommandHandlerTest {
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withType(Type.type().build())
                         .withHearingDays(emptyList())
-                        .withHearingLanguage(uk.gov.justice.listing.events.HearingLanguage.ENGLISH)
-                        .withJurisdictionType(uk.gov.justice.listing.events.JurisdictionType.CROWN)
+                        .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN)
                         .withListedCases(Arrays.asList(ListedCase.listedCase()
                                 .withId(randomUUID())
                                 .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
@@ -556,8 +556,8 @@ public class ListNextHearingCommandHandlerTest {
                 .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
                         .withType(Type.type().build())
                         .withHearingDays(emptyList())
-                        .withHearingLanguage(uk.gov.justice.listing.events.HearingLanguage.ENGLISH)
-                        .withJurisdictionType(uk.gov.justice.listing.events.JurisdictionType.CROWN)
+                        .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN)
                         .withListedCases(Arrays.asList(ListedCase.listedCase()
                                         .withId(randomUUID())
                                         .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
@@ -646,7 +646,7 @@ public class ListNextHearingCommandHandlerTest {
         final UUID masterDefendantId = randomUUID();
         final ZonedDateTime courtProceedingsInitiated = ZonedDateTime.now();
 
-        final JurisdictionType jurisdictionType = JurisdictionType.CROWN;
+        final JurisdictionType jurisdictionType = CROWN;
         final String prosecutionAuthorityCode = "authority-code";
         final String prosecutionAuthorityReference = "authority-reference";
         final String weekCommencingStartDate = "2021-01-26";

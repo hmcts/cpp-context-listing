@@ -14,20 +14,6 @@
       "description": "BailStatus of core domain with property of id,code,description",
       "$ref": "http://justice.gov.uk/core/courts/bailStatus.json"
     },
-    "jurisdictionType": {
-      "type": "string",
-      "enum": [
-        "MAGISTRATES",
-        "CROWN"
-      ]
-    },
-    "hearingLanguage": {
-      "description": "The language of the hearing",
-      "enum": [
-        "ENGLISH",
-        "WELSH"
-      ]
-    },
     "positiveInteger": {
       "type": "integer",
       "minimum": 0

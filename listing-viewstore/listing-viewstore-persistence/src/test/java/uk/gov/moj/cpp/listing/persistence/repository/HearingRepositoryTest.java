@@ -33,13 +33,12 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOO
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.CROWN;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
 import static uk.gov.moj.cpp.listing.domain.Type.type;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.LATEST_SEARCH_DATE;
 import static uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext.hearingRepositoryContext;
 
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.test.utils.persistence.BaseTransactionalTest;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.Type;
@@ -85,6 +84,8 @@ import org.junit.runner.RunWith;
 @RunWith(CdiTestRunner.class)
 public class HearingRepositoryTest extends BaseTransactionalTest {
 
+
+    private static final UtcClock UTC_CLOCK = new UtcClock();
     private static final Boolean ALLOCATED = TRUE;
     private static final Boolean UNALLOCATED = FALSE;
     private static final Boolean RANDOM_ALLOCATED = BOOLEAN.next();
@@ -100,8 +101,6 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final UUID AUTHORITY_ID = randomUUID();
     private static final UUID OTHER_AUTHORITY_ID = randomUUID();
     private static final UUID TYPE_OF_LIST_ID = randomUUID();
-    private static final String AUTHORITY_CODE_SEARCH = String.format(HearingRepository.AUTHORITY_ID_SEARCH, AUTHORITY_ID);
-    private static final String PROSECUTOR_CODE_SEARCH = String.format(HearingRepository.PROSECUTOR_ID_SEARCH, AUTHORITY_ID);
     private static final Type HEARING_TYPE = type().withId(randomUUID()).withDescription("TRIAL").build();
     private static final Type OTHER_HEARING_TYPE = type().withId(randomUUID()).withDescription("SENTENCE").build();
     private static final JurisdictionType JURISDICTION_TYPE = CROWN;
@@ -114,20 +113,20 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final LocalDate END_DATE = now().plusDays(2);
     private static final LocalDate WEEK_COMMENCING_START_DATE = now();
     private static final LocalDate WEEK_COMMENCING_END_DATE = now().plusDays(7);
-    private static final LocalDateTime START_TIME = LocalDateTime.now();
-    private static final LocalDateTime END_TIME = LocalDateTime.now().plusHours(2);
-    private static final LocalDateTime EARLIEST_SEARCH_DATE_TIME = LocalDateTime.of(START_SEARCH_DATE, LocalTime.MIN);
-    private static final LocalDateTime LATEST_SEARCH_DATE_TIME = LocalDateTime.of(START_SEARCH_DATE, LocalTime.MAX);
-    private static final LocalDate HEARING_DATE = now();
-    private static final LocalDate DAY_1_HEARING_DATE = now();
-    private static final LocalDate DAY_2_HEARING_DATE = now().plusDays(1);
-    private static final LocalDate DAY_3_HEARING_DATE = now().plusDays(2);
-    private static final LocalDateTime DAY_1_START_TIME = LocalDateTime.now();
-    private static final LocalDateTime DAY_1_END_TIME = DAY_1_START_TIME.plusHours(2);
-    private static final LocalDateTime DAY_2_START_TIME = DAY_1_START_TIME.plusDays(1);
-    private static final LocalDateTime DAY_2_END_TIME = DAY_2_START_TIME.plusHours(2);
-    private static final LocalDateTime DAY_3_START_TIME = DAY_1_START_TIME.plusDays(2);
-    private static final LocalDateTime DAY_3_END_TIME = DAY_3_START_TIME.plusHours(2);
+    private static final ZonedDateTime START_TIME = UTC_CLOCK.now();
+    private static final ZonedDateTime END_TIME = UTC_CLOCK.now().plusHours(2);
+    private static final ZonedDateTime EARLIEST_SEARCH_DATE_TIME = ZonedDateTime.of(START_SEARCH_DATE, LocalTime.MIN, UTC);
+    private static final ZonedDateTime LATEST_SEARCH_DATE_TIME = ZonedDateTime.of(START_SEARCH_DATE, LocalTime.MAX, UTC);
+    private static final ZonedDateTime HEARING_DATE = UTC_CLOCK.now();
+    private static final ZonedDateTime DAY_1_HEARING_DATE = UTC_CLOCK.now();
+    private static final ZonedDateTime DAY_2_HEARING_DATE = UTC_CLOCK.now();
+    private static final ZonedDateTime DAY_3_HEARING_DATE = UTC_CLOCK.now();
+    private static final ZonedDateTime DAY_1_START_TIME = UTC_CLOCK.now();
+    private static final ZonedDateTime DAY_1_END_TIME = DAY_1_START_TIME.plusHours(2);
+    private static final ZonedDateTime DAY_2_START_TIME = DAY_1_START_TIME.plusDays(1);
+    private static final ZonedDateTime DAY_2_END_TIME = DAY_2_START_TIME.plusHours(2);
+    private static final ZonedDateTime DAY_3_START_TIME = DAY_1_START_TIME.plusDays(2);
+    private static final ZonedDateTime DAY_3_END_TIME = DAY_3_START_TIME.plusHours(2);
     private static final UUID LISTED_CASES_ID_1 = UUID.fromString("cd2a5c26-d2fd-40b3-a8be-6f1e578c5034");
     private static final UUID COURT_APPLICATION_ID_1 = UUID.fromString("a549f16a-100d-4dca-b206-1454947e20bb");
     private static final UUID LISTED_CASES_ID_2 = UUID.fromString("563d479b-7483-4216-9f13-aef8d87d68ae");
@@ -151,6 +150,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final String START_TIME_FIELD = "START_TIME_FIELD";
     private static final String END_TIME_FIELD = "END_TIME_FIELD";
     private static final String HEARING_DATE_FIELD = "HEARING_DATE_FIELD";
+    private static final String FIELD_2_HEARING_DATE = "FIELD_2_HEARING_DATE";
     private static final String CASE_REFERENCE = "45DI277164";
     private static final String MASTER_DEFENDANT_ID = "e2b13dc1-de95-11e8-9df5-e56feb0784f6";
     private static final String LINKED_CASE_URN = "45DI277164";
@@ -175,6 +175,11 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final String TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON = "test-data/sample-multiday-hearing.json";
     private static final String SAMPLE_UNALLOCATED_HEARING_FOR_WEEK_COMMENCING = "test-data/sample-unallocated-hearing-for-week-commencing.json";
     private static final String TEST_DATA_SAMPLE_HEARING_WITH_COURT_CENTRE_JSON = "test-data/hearing-with-court-centre-details.json";
+
+    public static final String EARLIEST_SEARCH_DATE = "1900-01-01";
+    public static final String LATEST_SEARCH_DATE = "9999-01-01";
+
+
 
     @Inject
     private HearingRepository hearingRepository;
@@ -206,7 +211,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 OTHER_JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         assertThat(actualHearings.size(), is(0));
     }
@@ -225,7 +230,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -249,7 +254,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 OTHER_HEARING_TYPE.getId().toString(),
                 OTHER_JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         assertThat(actualHearings, empty());
     }
@@ -268,7 +273,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         assertThat(actualHearings.size(), is(1));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(HEARING_ID.toString())));
@@ -281,7 +286,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 OTHER_HEARING_TYPE.getId().toString(),
                 OTHER_JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         assertThat(actualHearings.size(), is(1));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(OTHER_HEARING_ID.toString())));
@@ -307,7 +312,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 null,
                 CROWN.toString(),
                 WEEK_COMMENCING_START_DATE,
-                WEEK_COMMENCING_END_DATE);
+                WEEK_COMMENCING_END_DATE,
+                0, 10);
 
         //then
         assertThat(actualHearings.size(), is(2));
@@ -342,7 +348,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 CROWN.toString(),
                 parse(EARLIEST_SEARCH_DATE),
                 parse(LATEST_SEARCH_DATE),
-                false);
+                false, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(2));
@@ -369,7 +375,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 CROWN.toString(),
                 parse(EARLIEST_SEARCH_DATE),
                 parse(LATEST_SEARCH_DATE),
-                false);
+                false, 0, 10);
 
         assertThat(actualHearings, empty());
     }
@@ -387,7 +393,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 CROWN.toString(),
                 parse(EARLIEST_SEARCH_DATE),
                 parse(LATEST_SEARCH_DATE),
-                false);
+                false, 0, 10);
 
         assertThat(actualHearings.size(), is(1));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(HEARING_ID.toString())));
@@ -400,7 +406,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 CROWN.toString(),
                 parse(EARLIEST_SEARCH_DATE),
                 parse(LATEST_SEARCH_DATE),
-                false);
+                false, 0, 10);
 
         assertThat(actualHearings.size(), is(1));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(OTHER_HEARING_ID.toString())));
@@ -426,7 +432,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 null,
                 null,
                 WEEK_COMMENCING_START_DATE,
-                WEEK_COMMENCING_END_DATE);
+                WEEK_COMMENCING_END_DATE, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(2));
@@ -456,7 +462,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -480,7 +486,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -503,7 +509,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -526,7 +532,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 null,
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -549,7 +555,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 null,
                 null,
                 parse(EARLIEST_SEARCH_DATE),
-                parse(LATEST_SEARCH_DATE));
+                parse(LATEST_SEARCH_DATE), 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -572,8 +578,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 null,
                 null,
                 START_SEARCH_DATE,
-                EARLIEST_SEARCH_DATE_TIME.atZone(UTC),
-                LATEST_SEARCH_DATE_TIME.atZone(UTC));
+                EARLIEST_SEARCH_DATE_TIME,
+                LATEST_SEARCH_DATE_TIME);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -597,7 +603,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 null,
                 START_SEARCH_DATE,
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -621,7 +627,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 parse(EARLIEST_SEARCH_DATE),
-                parse(LATEST_SEARCH_DATE));
+                parse(LATEST_SEARCH_DATE), 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -645,8 +651,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                EARLIEST_SEARCH_DATE_TIME.atZone(UTC),
-                LATEST_SEARCH_DATE_TIME.atZone(UTC));
+                EARLIEST_SEARCH_DATE_TIME,
+                LATEST_SEARCH_DATE_TIME);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -670,8 +676,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                EARLIEST_SEARCH_DATE_TIME.atZone(UTC),
-                END_TIME.atZone(UTC));
+                EARLIEST_SEARCH_DATE_TIME,
+                END_TIME);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -695,8 +701,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                START_TIME.atZone(UTC),
-                LATEST_SEARCH_DATE_TIME.atZone(UTC));
+                START_TIME,
+                LATEST_SEARCH_DATE_TIME);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -720,8 +726,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                START_TIME.minusHours(5).atZone(UTC),
-                END_TIME.minusHours(5).atZone(UTC));
+                START_TIME.minusHours(5),
+                END_TIME.minusHours(5));
 
         //then
         assertThat(actualHearings.size(), is(0));
@@ -741,7 +747,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE.plusDays(10),
-                END_SEARCH_DATE.plusDays(10));
+                END_SEARCH_DATE.plusDays(10), 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(0));
@@ -761,7 +767,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE.minusDays(1),
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -785,7 +791,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE.plusDays(1),
-                END_SEARCH_DATE.plusDays(2));
+                END_SEARCH_DATE.plusDays(2), 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -809,7 +815,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE.plusDays(1),
-                END_SEARCH_DATE);
+                END_SEARCH_DATE, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -830,8 +836,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 OTHER_HEARING_TYPE.getId().toString(),
                 OTHER_JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                EARLIEST_SEARCH_DATE_TIME.atZone(UTC),
-                LATEST_SEARCH_DATE_TIME.atZone(UTC));
+                EARLIEST_SEARCH_DATE_TIME,
+                LATEST_SEARCH_DATE_TIME);
 
         assertThat(actualHearings, empty());
     }
@@ -847,8 +853,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 OTHER_HEARING_TYPE.getId().toString(),
                 OTHER_JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                EARLIEST_SEARCH_DATE_TIME.atZone(UTC),
-                LATEST_SEARCH_DATE_TIME.atZone(UTC));
+                EARLIEST_SEARCH_DATE_TIME,
+                LATEST_SEARCH_DATE_TIME);
 
 
         assertThat(actualHearings.size(), is(1));
@@ -868,8 +874,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 OTHER_HEARING_TYPE.getId().toString(),
                 OTHER_JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                EARLIEST_SEARCH_DATE_TIME.atZone(UTC),
-                LATEST_SEARCH_DATE_TIME.atZone(UTC));
+                EARLIEST_SEARCH_DATE_TIME,
+                LATEST_SEARCH_DATE_TIME);
 
         assertThat(actualHearings.size(), is(1));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(RANDOM_ALLOCATED)));
@@ -890,7 +896,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 CROWN.toString(),
                 WEEK_COMMENCING_START_DATE,
-                WEEK_COMMENCING_END_DATE
+                WEEK_COMMENCING_END_DATE, 0, 10
         );
 
         assertThat(actualHearings.size(), is(1));
@@ -903,7 +909,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 OTHER_HEARING_TYPE.getId().toString(),
                 CROWN.toString(),
                 WEEK_COMMENCING_START_DATE,
-                WEEK_COMMENCING_END_DATE);
+                WEEK_COMMENCING_END_DATE, 0, 10);
 
         assertThat(actualHearings.size(), is(1));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(OTHER_HEARING_ID.toString())));
@@ -921,7 +927,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 CROWN.toString(),
                 WEEK_COMMENCING_START_DATE,
-                WEEK_COMMENCING_END_DATE);
+                WEEK_COMMENCING_END_DATE, 0, 10);
 
         assertThat(actualHearings, empty());
     }
@@ -994,14 +1000,12 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
             final JsonNode hearingDay = hearingDaysIterator.next();
             final UUID courtCentreId = ofNullable(hearingDay.get("courtCentreId")).map(JsonNode::asText).map(UUID::fromString).orElse(null);
             final UUID courtRoomId = ofNullable(hearingDay.get("courtRoomId")).map(JsonNode::asText).map(UUID::fromString).orElse(null);
-            final LocalDate hearingDate = LocalDate.parse(hearingDay.get("hearingDate").asText());
-            final ZonedDateTime startTime = ZonedDateTime.of(hearingDate, LocalTime.now(), UTC);
-            final ZonedDateTime endTime = ZonedDateTime.of(hearingDate, LocalTime.now().plusMinutes(30), UTC);
+            final ZonedDateTime hearingDateTime = ZonedDateTime.parse(hearingDay.get("hearingDate").asText());
             hearingDays.add(HearingDays.builder().withId(randomUUID()).withHearing(hearing)
                         .withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId)
-                        .withHearingDate(hearingDate).withDurationMinutes(30)
-                        .withStartTime(startTime)
-                        .withEndTime(endTime)
+                        .withHearingDate(hearingDateTime.toLocalDate()).withDurationMinutes(30)
+                        .withStartTime(hearingDateTime)
+                        .withEndTime(hearingDateTime.plusMinutes(30))
                         .withSequence(0).build());
         }
         return hearingDays;
@@ -1029,7 +1033,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     public void shouldRetrieveHearingsWhenFindHearingsForAlphabeticalListInvoked() {
         givenHearingsExist();
 
-        final List<Hearing> foundHearings = hearingRepository.findHearingsForAlphabeticalList(UNALLOCATED, COURT_CENTRE_ID.toString(), HEARING_DATE);
+        final List<Hearing> foundHearings = hearingRepository.findHearingsForAlphabeticalList(UNALLOCATED, COURT_CENTRE_ID.toString(), HEARING_DATE.toLocalDate());
 
         assertThat(foundHearings.size(), is(1));
         assertThat(foundHearings.get(0).getProperties().toString(), hasJsonPath("$.size()", equalTo(1)));
@@ -1053,7 +1057,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         final List<Hearing> hearingsForAlphabeticalList = hearingRepository.findHearingsForAlphabeticalList(
                 RANDOM_ALLOCATED,
                 OTHER_COURT_CENTRE_ID.toString(),
-                HEARING_DATE);
+                HEARING_DATE.toLocalDate());
 
         //then
         assertThat(hearingsForAlphabeticalList.size(), is(1));
@@ -1312,7 +1316,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenUnscheduledHearings();
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(null, null);
+        final List<Hearing> actualHearings = hearingRepository.findHearings(null, null, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(3));
@@ -1331,7 +1335,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenUnscheduledHearings("46DI277164");
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings("46DI277164", null);
+        final List<Hearing> actualHearings = hearingRepository.findHearings("46DI277164", null, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(2));
@@ -1368,7 +1372,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenUnscheduledHearings();
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings("TFL7328425-1", null);
+        final List<Hearing> actualHearings = hearingRepository.findHearings("TFL7328425-1", null, 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -1386,7 +1390,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenUnscheduledHearingsWithTypeListId();
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(null, TYPE_OF_LIST_ID.toString());
+        final List<Hearing> actualHearings = hearingRepository.findHearings(null, TYPE_OF_LIST_ID.toString(), 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(2));
@@ -1404,7 +1408,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenUnscheduledHearings();
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(null, null, singleton(COURT_CENTRE_ID.toString()));
+        final List<Hearing> actualHearings = hearingRepository.findHearings(null, null, singleton(COURT_CENTRE_ID.toString()), 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(2));
@@ -1423,7 +1427,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 .put("isVacatedTrial", false)
                 .save();
 
-        final List<Hearing> actualHearingsPostUnsetStatus = hearingRepository.findHearings(null, null, singleton(COURT_CENTRE_ID.toString()));
+        final List<Hearing> actualHearingsPostUnsetStatus = hearingRepository.findHearings(null, null, singleton(COURT_CENTRE_ID.toString()), 0, 10);
         assertThat(actualHearingsPostUnsetStatus.size(), is(3));
         assertThat(extractFields(actualHearingsPostUnsetStatus, "$.id"), containsInAnyOrder(HEARING_ID.toString(), OTHER_HEARING_ID2.toString(), VACATED_HEARING_ID.toString()));
     }
@@ -1443,7 +1447,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenUnscheduledHearings("45DI277164");
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings("45DI277164", TYPE_OF_LIST_ID.toString(), singleton(COURT_CENTRE_ID.toString()));
+        final List<Hearing> actualHearings = hearingRepository.findHearings("45DI277164", TYPE_OF_LIST_ID.toString(), singleton(COURT_CENTRE_ID.toString()), 0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -2093,6 +2097,12 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 .withTypeOfListId(context.getTypeOfListId())
                 .withUnscheduled(context.isUnscheduled())
                 .build();
+        hearing.setHearingDays(getHearingDays(hearing));
+        final CaseIdentifier caseIdentifier = new CaseIdentifier();
+        caseIdentifier.setAuthorityId(context.getAuthorityId());
+        caseIdentifier.setCaseReference(LINKED_CASE_URN);
+        hearing.setListedCases(new HashSet<>(asList(getListedCases(hearing, caseIdentifier, randomUUID()))));
+        hearing.setCourtApplications(new HashSet<>(asList(new CourtApplications(randomUUID(), randomUUID(), hearing, "appType", randomUUID(), "appRef", "appParticulars", false))));
 
         return hearing;
     }
@@ -2122,12 +2132,12 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         caseIdentifier.setAuthorityId(context.getAuthorityId());
         caseIdentifier.setCaseReference(LINKED_CASE_URN);
         hearing.setListedCases(new HashSet<>(asList(getListedCases(hearing, caseIdentifier, randomUUID()))));
-        hearing.setCourtApplications(new HashSet<>(asList(new CourtApplications(randomUUID(), randomUUID(), hearing, "appType", randomUUID(), "appRef", "appParticulars"))));
+        hearing.setCourtApplications(new HashSet<>(asList(new CourtApplications(randomUUID(), randomUUID(), hearing, "appType", randomUUID(), "appRef", "appParticulars", false))));
         return hearing;
     }
 
     private ListedCases getListedCases(final Hearing hearing, final CaseIdentifier caseIdentifier, final UUID uuid) {
-        ListedCases listedCase = new ListedCases(randomUUID(), uuid, caseIdentifier, null, hearing, null, null);
+        ListedCases listedCase = new ListedCases(randomUUID(), uuid, caseIdentifier, null, hearing, null, null,null);
 
         final JsonNode properties = hearing.getProperties();
         if (properties.has("listedCases")) {
@@ -2203,7 +2213,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         caseIdentifier.setAuthorityId(context.getAuthorityId());
         caseIdentifier.setCaseReference(caseUrn);
         hearing.setListedCases(new HashSet<>(asList(getListedCases(hearing, caseIdentifier, randomUUID()))));
-        hearing.setCourtApplications(new HashSet<>(asList(new CourtApplications(randomUUID(), randomUUID(), hearing, "appType", randomUUID(), "appRef", "appParticulars"))));
+        hearing.setCourtApplications(new HashSet<>(asList(new CourtApplications(randomUUID(), randomUUID(), hearing, "appType", randomUUID(), "appRef", "appParticulars", false))));
         return hearing;
     }
 
@@ -2228,7 +2238,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         final CaseIdentifier caseIdentifier = new CaseIdentifier();
         caseIdentifier.setAuthorityId(context.getAuthorityId());
         hearing.setListedCases(new HashSet<>(asList(getListedCases(hearing, caseIdentifier, listedCaseId))));
-        hearing.setCourtApplications(new HashSet<>(asList(new CourtApplications(randomUUID(), applicationId, hearing, "appType", randomUUID(), "appRef", "appParticulars"))));
+        hearing.setCourtApplications(new HashSet<>(asList(new CourtApplications(randomUUID(), applicationId, hearing, "appType", randomUUID(), "appRef", "appParticulars", false))));
         return hearing;
     }
 
@@ -2292,6 +2302,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 .withTypeOfListId(TYPE_OF_LIST_ID)
                 .withFileLocation(TEST_DATA_SAMPLE_UNSCHEDULED_HEARING_JSON)
                 .build()));
+
 
         hearingsToBeCreated.add(getHearingJsonForUnscheduledWIthTypeListId(hearingRepositoryContext()
                 .withHearingId(OTHER_HEARING_ID)
@@ -2660,13 +2671,13 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                     .replaceAll(END_DATE_FIELD, to(context.getEndDate()));
             if (context.isMultidayHearing()) {
                 updatedHearingString = updatedHearingString
-                        .replaceAll(DAY_1_HEARING_DATE_FIELD, to(context.getHearingDateDay1()))
+                        .replaceAll(DAY_1_HEARING_DATE_FIELD, context.getHearingDateDay1().toString())
                         .replaceAll(DAY_1_START_TIME_FIELD, context.getStartTimeDay1().toString())
                         .replaceAll(DAY_1_END_TIME_FIELD, context.getEndTimeDay1().toString())
-                        .replaceAll(DAY_2_HEARING_DATE_FIELD, to(context.getHearingDateDay2()))
+                        .replaceAll(DAY_2_HEARING_DATE_FIELD, context.getHearingDateDay2().toString())
                         .replaceAll(DAY_2_START_TIME_FIELD, context.getStartTimeDay2().toString())
                         .replaceAll(DAY_2_END_TIME_FIELD, context.getEndTimeDay2().toString())
-                        .replaceAll(DAY_3_HEARING_DATE_FIELD, to(context.getHearingDateDay3()))
+                        .replaceAll(DAY_3_HEARING_DATE_FIELD, context.getHearingDateDay3().toString())
                         .replaceAll(DAY_3_START_TIME_FIELD, context.getStartTimeDay3().toString())
                         .replaceAll(DAY_3_END_TIME_FIELD, context.getEndTimeDay3().toString());
 
@@ -2691,7 +2702,8 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 updatedHearingString = updatedHearingString
                         .replaceAll(START_TIME_FIELD, context.getStartTime().toString())
                         .replaceAll(END_TIME_FIELD, context.getEndTime().toString())
-                        .replaceAll(HEARING_DATE_FIELD, to(context.getHearingDate()));
+                        .replaceAll(HEARING_DATE_FIELD, context.getHearingDate().toString())
+                        .replaceAll(FIELD_2_HEARING_DATE, UTC_CLOCK.now().minusDays(10).toString());
             }
         } else {
             updatedHearingString = updatedHearingString

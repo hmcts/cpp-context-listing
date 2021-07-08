@@ -12,6 +12,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.List;
@@ -35,6 +36,9 @@ public class EjectEventListener {
     @Inject
     private HearingRepository hearingRepository;
 
+    @Inject
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @Handles("listing.events.case-ejected")
     public void caseEjected(final Envelope<CaseEjected> event) {
         final CaseEjected caseEjected = event.payload();
@@ -51,6 +55,8 @@ public class EjectEventListener {
                     .find(hearingId)
                     .putSubList(COURT_APPLICATION_FIELD, typeRefCourtApplication, getCourtApplicationFunctionForLinkedCaseId(caseId)).save();
 
+        hearingSearchSyncService.sync(hearingId);
+
     }
 
     @Handles("listing.events.application-ejected")
@@ -64,6 +70,9 @@ public class EjectEventListener {
             using(hearingRepository)
                     .find(hearingId)
                     .putSubList(COURT_APPLICATION_FIELD, typeRefCourtApplication, getCourtApplicationFunction(applicationId)).save();
+
+        hearingSearchSyncService.sync(hearingId);
+
 
     }
 

@@ -16,7 +16,7 @@
       "type": "integer"
     },
     "jurisdictionType": {
-      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/jurisdictionType"
+      "$ref": "http://justice.gov.uk/core/courts/jurisdictionType.json"
     },
     "courtCentreId": {
       "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
@@ -34,7 +34,7 @@
       "type": "string"
     },
     "hearingLanguage": {
-      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/hearingLanguage"
+      "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
     },
     "estimatedMinutes": {
       "$ref": "listing-definitions.json#/definitions/positiveInteger"

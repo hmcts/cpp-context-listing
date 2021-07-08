@@ -5,7 +5,7 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import uk.gov.justice.listing.courts.JurisdictionType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.events.SeedingHearing;
 
 import java.time.LocalDate;

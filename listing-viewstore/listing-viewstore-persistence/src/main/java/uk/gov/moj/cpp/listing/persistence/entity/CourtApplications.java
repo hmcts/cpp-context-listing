@@ -41,11 +41,14 @@ import javax.persistence.Table;
     @Column(name = "application_particulars")
     private String applicationParticulars;
 
+    @Column(name="is_ejected")
+    private Boolean isEjected;
+
     public CourtApplications(){
 
     }
 
-    public CourtApplications(final UUID id, final UUID applicationId, final Hearing hearing, final String applicationType, final UUID parentApplicationId, final String applicationReference, final String applicationParticulars) {
+    public CourtApplications(final UUID id, final UUID applicationId, final Hearing hearing, final String applicationType, final UUID parentApplicationId, final String applicationReference, final String applicationParticulars, final Boolean isEjected) {
         this.id = id;
         this.applicationId = applicationId;
         this.hearing = hearing;
@@ -53,6 +56,7 @@ import javax.persistence.Table;
         this.parentApplicationId = parentApplicationId;
         this.applicationReference = applicationReference;
         this.applicationParticulars = applicationParticulars;
+        this.isEjected = isEjected;
     }
 
     public UUID getId() {
@@ -109,5 +113,13 @@ import javax.persistence.Table;
 
     public void setApplicationParticulars(final String applicationParticulars) {
         this.applicationParticulars = applicationParticulars;
+    }
+
+    public Boolean getEjected() {
+        return isEjected;
+    }
+
+    public void setEjected(final Boolean ejected) {
+        isEjected = ejected;
     }
 }

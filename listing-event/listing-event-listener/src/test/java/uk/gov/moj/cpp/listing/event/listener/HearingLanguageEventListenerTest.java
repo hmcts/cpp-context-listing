@@ -6,7 +6,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import uk.gov.justice.listing.events.HearingLanguage;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.events.HearingLanguageChangedForHearing;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;

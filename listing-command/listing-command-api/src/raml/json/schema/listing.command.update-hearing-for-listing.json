@@ -60,10 +60,10 @@
       }
     },
     "jurisdictionType": {
-      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/jurisdictionType"
+      "$ref": "http://justice.gov.uk/core/courts/jurisdictionType.json"
     },
     "hearingLanguage": {
-      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/hearingLanguage"
+      "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
     },
     "hasVideoLink": {
       "type": "boolean"

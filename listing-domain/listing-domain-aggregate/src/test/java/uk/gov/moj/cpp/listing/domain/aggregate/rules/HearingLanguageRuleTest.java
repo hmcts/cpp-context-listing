@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 import uk.gov.moj.cpp.listing.domain.Defendant;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
-import uk.gov.justice.listing.events.HearingLanguage;
+import uk.gov.justice.core.courts.HearingLanguage;
 
 import java.util.Arrays;
 import java.util.Collections;

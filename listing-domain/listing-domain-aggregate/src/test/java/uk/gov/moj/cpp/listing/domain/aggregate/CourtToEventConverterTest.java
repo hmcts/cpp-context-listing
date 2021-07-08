@@ -180,7 +180,7 @@ public class CourtToEventConverterTest {
 
         final uk.gov.justice.listing.events.SeedingHearing seedingHearing = offence.getSeedingHearing().get();
         assertThat(seedingHearing.getSeedingHearingId(), is(SEEDING_HEARING_ID));
-        assertThat(seedingHearing.getJurisdictionType(), is(uk.gov.justice.listing.courts.JurisdictionType.CROWN));
+        assertThat(seedingHearing.getJurisdictionType(), is(uk.gov.justice.core.courts.JurisdictionType.CROWN));
         assertThat(seedingHearing.getSittingDay().get(), is(SITTING_DAY));
 
     }

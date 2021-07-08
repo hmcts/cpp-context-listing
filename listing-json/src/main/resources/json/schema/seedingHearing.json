@@ -7,12 +7,7 @@
       "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
     "jurisdictionType": {
-      "id": "http://justice.gov.uk/listing/courts/jurisdictionType",
-      "type": "string",
-      "enum": [
-        "MAGISTRATES",
-        "CROWN"
-      ]
+      "$ref": "http://justice.gov.uk/core/courts/jurisdictionType.json"
     },
     "sittingDay": {
       "type": "string",

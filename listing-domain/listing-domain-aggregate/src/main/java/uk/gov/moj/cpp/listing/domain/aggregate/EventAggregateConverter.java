@@ -4,6 +4,7 @@ import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
 
 import java.util.Optional;
@@ -33,6 +34,7 @@ public final class EventAggregateConverter {
     }
 
     public static uk.gov.justice.listing.events.Defendant buildEventDefendant(final Defendant defendant) {
+        final HearingLanguage hearingLanguageNeeds = defendant.getHearingLanguageNeeds();
         return uk.gov.justice.listing.events.Defendant.defendant()
                 .withId(defendant.getId())
                 .withOffences(defendant.getOffences().stream().map(EventAggregateConverter::buildEventOffence).collect(toList()))
@@ -49,7 +51,7 @@ public final class EventAggregateConverter {
                 .withOrganisationName(defendant.getOrganisationName())
                 .withAddress(nonNull(defendant.getAddress()) ? buildEventAddress(defendant.getAddress()) : null)
                 .withRestrictFromCourtList(defendant.getRestrictFromCourtList())
-                .withHearingLanguageNeeds(nonNull(defendant.getHearingLanguageNeeds()) ? uk.gov.justice.listing.events.HearingLanguageNeeds.valueFor(defendant.getHearingLanguageNeeds().toString()) : Optional.empty())
+                .withHearingLanguageNeeds(nonNull(hearingLanguageNeeds) ? uk.gov.justice.core.courts.HearingLanguage.valueFor(hearingLanguageNeeds.toString()) : Optional.empty())
                 .withIsYouth(defendant.getIsYouth())
                 .withLegalAidStatus(defendant.getLegalAidStatus())
                 .withNationalityDescription(defendant.getNationalityDescription())

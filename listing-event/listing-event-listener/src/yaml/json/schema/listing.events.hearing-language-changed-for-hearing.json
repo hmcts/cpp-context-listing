@@ -7,7 +7,7 @@
       "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     },
     "hearingLanguage": {
-      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/hearingLanguage"
+      "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
     }
   },
   "required": [

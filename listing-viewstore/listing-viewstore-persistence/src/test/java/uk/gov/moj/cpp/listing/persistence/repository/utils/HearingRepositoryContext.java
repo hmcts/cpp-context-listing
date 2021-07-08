@@ -21,29 +21,29 @@ public class HearingRepositoryContext {
     private final String judicialId;
     private final LocalDate startDate;
     private final LocalDate endDate;
-    private final LocalDateTime startTime;
-    private final LocalDateTime endTime;
-    private final LocalDate hearingDate;
+    private final ZonedDateTime startTime;
+    private final ZonedDateTime endTime;
+    private final ZonedDateTime hearingDate;
     private final LocalDate weekCommencingStartDate;
     private final LocalDate weekCommencingEndDate;
     private final String fileLocation;
     private final boolean multidayHearing;
-    private final LocalDate hearingDateDay1;
-    private final LocalDate hearingDateDay2;
-    private final LocalDate hearingDateDay3;
-    private final LocalDateTime startTimeDay1;
-    private final LocalDateTime endTimeDay1;
-    private final LocalDateTime startTimeDay2;
-    private final LocalDateTime endTimeDay2;
-    private final LocalDateTime startTimeDay3;
-    private final LocalDateTime endTimeDay3;
+    private final ZonedDateTime hearingDateDay1;
+    private final ZonedDateTime hearingDateDay2;
+    private final ZonedDateTime hearingDateDay3;
+    private final ZonedDateTime startTimeDay1;
+    private final ZonedDateTime endTimeDay1;
+    private final ZonedDateTime startTimeDay2;
+    private final ZonedDateTime endTimeDay2;
+    private final ZonedDateTime startTimeDay3;
+    private final ZonedDateTime endTimeDay3;
     private final Boolean cancelledDay1;
     private final Boolean cancelledDay2;
     private final Boolean cancelledDay3;
     private final Boolean unscheduled;
     private final UUID typeOfListId;
 
-    public HearingRepositoryContext(final UUID hearingId, final UUID courtCentreId, final UUID courtRoomId, final Boolean allocated, final Boolean vacated, final UUID authorityId, final Type hearingType, final JurisdictionType jurisdictionType, final String judicialId, final LocalDate startDate, final LocalDate endDate, final LocalDateTime startTime, final LocalDateTime endTime, final LocalDate hearingDate, final LocalDate weekCommencingStartDate, final LocalDate weekCommencingEndDate, final String fileLocation, final boolean multidayHearing, final LocalDate hearingDateDay1, final LocalDate hearingDateDay2, final LocalDate hearingDateDay3, final LocalDateTime startTimeDay1, final LocalDateTime endTimeDay1, final LocalDateTime startTimeDay2, final LocalDateTime endTimeDay2, final LocalDateTime startTimeDay3, final LocalDateTime endTimeDay3, final Boolean cancelledDay1, final Boolean cancelledDay2, final Boolean cancelledDay3, final Boolean unscheduled, final UUID typeOfListId) {
+    public HearingRepositoryContext(final UUID hearingId, final UUID courtCentreId, final UUID courtRoomId, final Boolean allocated, final Boolean vacated, final UUID authorityId, final Type hearingType, final JurisdictionType jurisdictionType, final String judicialId, final LocalDate startDate, final LocalDate endDate, final ZonedDateTime startTime, final ZonedDateTime endTime, final ZonedDateTime hearingDate, final LocalDate weekCommencingStartDate, final LocalDate weekCommencingEndDate, final String fileLocation, final boolean multidayHearing, final ZonedDateTime hearingDateDay1, final ZonedDateTime hearingDateDay2, final ZonedDateTime hearingDateDay3, final ZonedDateTime startTimeDay1, final ZonedDateTime endTimeDay1, final ZonedDateTime startTimeDay2, final ZonedDateTime endTimeDay2, final ZonedDateTime startTimeDay3, final ZonedDateTime endTimeDay3, final Boolean cancelledDay1, final Boolean cancelledDay2, final Boolean cancelledDay3, final Boolean unscheduled, final UUID typeOfListId) {
         this.hearingId = hearingId;
         this.courtCentreId = courtCentreId;
         this.courtRoomId = courtRoomId;
@@ -122,15 +122,15 @@ public class HearingRepositoryContext {
         return endDate;
     }
 
-    public LocalDateTime getStartTime() {
+    public ZonedDateTime getStartTime() {
         return startTime;
     }
 
-    public LocalDateTime getEndTime() {
+    public ZonedDateTime getEndTime() {
         return endTime;
     }
 
-    public LocalDate getHearingDate() {
+    public ZonedDateTime getHearingDate() {
         return hearingDate;
     }
 
@@ -150,39 +150,39 @@ public class HearingRepositoryContext {
         return multidayHearing;
     }
 
-    public LocalDate getHearingDateDay1() {
+    public ZonedDateTime getHearingDateDay1() {
         return hearingDateDay1;
     }
 
-    public LocalDate getHearingDateDay2() {
+    public ZonedDateTime getHearingDateDay2() {
         return hearingDateDay2;
     }
 
-    public LocalDate getHearingDateDay3() {
+    public ZonedDateTime getHearingDateDay3() {
         return hearingDateDay3;
     }
 
-    public LocalDateTime getStartTimeDay1() {
+    public ZonedDateTime getStartTimeDay1() {
         return startTimeDay1;
     }
 
-    public LocalDateTime getEndTimeDay1() {
+    public ZonedDateTime getEndTimeDay1() {
         return endTimeDay1;
     }
 
-    public LocalDateTime getStartTimeDay2() {
+    public ZonedDateTime getStartTimeDay2() {
         return startTimeDay2;
     }
 
-    public LocalDateTime getEndTimeDay2() {
+    public ZonedDateTime getEndTimeDay2() {
         return endTimeDay2;
     }
 
-    public LocalDateTime getStartTimeDay3() {
+    public ZonedDateTime getStartTimeDay3() {
         return startTimeDay3;
     }
 
-    public LocalDateTime getEndTimeDay3() {
+    public ZonedDateTime getEndTimeDay3() {
         return endTimeDay3;
     }
 
@@ -222,22 +222,22 @@ public class HearingRepositoryContext {
         private String judicialId;
         private LocalDate startDate;
         private LocalDate endDate;
-        private LocalDateTime startTime;
-        private LocalDateTime endTime;
-        private LocalDate hearingDate;
+        private ZonedDateTime startTime;
+        private ZonedDateTime endTime;
+        private ZonedDateTime hearingDate;
         private LocalDate weekCommencingStartDate;
         private LocalDate weekCommencingEndDate;
         private String fileLocation;
         private boolean multidayHearing;
-        private LocalDate hearingDateDay1;
-        private LocalDate hearingDateDay2;
-        private LocalDate hearingDateDay3;
-        private LocalDateTime startTimeDay1;
-        private LocalDateTime endTimeDay1;
-        private LocalDateTime startTimeDay2;
-        private LocalDateTime endTimeDay2;
-        private LocalDateTime startTimeDay3;
-        private LocalDateTime endTimeDay3;
+        private ZonedDateTime hearingDateDay1;
+        private ZonedDateTime hearingDateDay2;
+        private ZonedDateTime hearingDateDay3;
+        private ZonedDateTime startTimeDay1;
+        private ZonedDateTime endTimeDay1;
+        private ZonedDateTime startTimeDay2;
+        private ZonedDateTime endTimeDay2;
+        private ZonedDateTime startTimeDay3;
+        private ZonedDateTime endTimeDay3;
         private Boolean cancelledDay1;
         private Boolean cancelledDay2;
         private Boolean cancelledDay3;
@@ -302,17 +302,17 @@ public class HearingRepositoryContext {
             return this;
         }
 
-        public Builder withStartTime(LocalDateTime startTime) {
+        public Builder withStartTime(ZonedDateTime startTime) {
             this.startTime = startTime;
             return this;
         }
 
-        public Builder withEndTime(LocalDateTime endTime) {
+        public Builder withEndTime(ZonedDateTime endTime) {
             this.endTime = endTime;
             return this;
         }
 
-        public Builder withHearingDate(LocalDate hearingDate) {
+        public Builder withHearingDate(ZonedDateTime hearingDate) {
             this.hearingDate = hearingDate;
             return this;
         }
@@ -337,47 +337,47 @@ public class HearingRepositoryContext {
             return this;
         }
 
-        public Builder withHearingDateDay1(LocalDate hearingDateDay1) {
+        public Builder withHearingDateDay1(ZonedDateTime hearingDateDay1) {
             this.hearingDateDay1 = hearingDateDay1;
             return this;
         }
 
-        public Builder withHearingDateDay2(LocalDate hearingDateDay2) {
+        public Builder withHearingDateDay2(ZonedDateTime hearingDateDay2) {
             this.hearingDateDay2 = hearingDateDay2;
             return this;
         }
 
-        public Builder withHearingDateDay3(LocalDate hearingDateDay3) {
+        public Builder withHearingDateDay3(ZonedDateTime hearingDateDay3) {
             this.hearingDateDay3 = hearingDateDay3;
             return this;
         }
 
-        public Builder withStartTimeDay1(LocalDateTime startTimeDay1) {
+        public Builder withStartTimeDay1(ZonedDateTime startTimeDay1) {
             this.startTimeDay1 = startTimeDay1;
             return this;
         }
 
-        public Builder withEndTimeDay1(LocalDateTime endTimeDay1) {
+        public Builder withEndTimeDay1(ZonedDateTime endTimeDay1) {
             this.endTimeDay1 = endTimeDay1;
             return this;
         }
 
-        public Builder withStartTimeDay2(LocalDateTime startTimeDay2) {
+        public Builder withStartTimeDay2(ZonedDateTime startTimeDay2) {
             this.startTimeDay2 = startTimeDay2;
             return this;
         }
 
-        public Builder withEndTimeDay2(LocalDateTime endTimeDay2) {
+        public Builder withEndTimeDay2(ZonedDateTime endTimeDay2) {
             this.endTimeDay2 = endTimeDay2;
             return this;
         }
 
-        public Builder withStartTimeDay3(LocalDateTime startTimeDay3) {
+        public Builder withStartTimeDay3(ZonedDateTime startTimeDay3) {
             this.startTimeDay3 = startTimeDay3;
             return this;
         }
 
-        public Builder withEndTimeDay3(LocalDateTime endTimeDay3) {
+        public Builder withEndTimeDay3(ZonedDateTime endTimeDay3) {
             this.endTimeDay3 = endTimeDay3;
             return this;
         }

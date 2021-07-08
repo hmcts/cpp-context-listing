@@ -6,7 +6,7 @@ import static org.hamcrest.core.Is.is;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.FundingType;
-import uk.gov.justice.listing.events.HearingLanguageNeeds;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 
@@ -97,7 +97,7 @@ public class EventAggregateConverterTest {
                 .withCourtProceedingsInitiated(ZonedDateTimes.fromString("2020-08-12T11:03:25.000Z"))
                 .withId(defendantId)
                 .withBailStatus(createAggregateBailStatus())
-                .withHearingLanguageNeeds(HearingLanguageNeeds.ENGLISH)
+                .withHearingLanguageNeeds(HearingLanguage.ENGLISH)
                 .withOffences(createAggregateOffences())
                 .build();
         return singletonList(defendant);
@@ -276,7 +276,7 @@ public class EventAggregateConverterTest {
                 .withCourtProceedingsInitiated(ZonedDateTimes.fromString("2020-08-12T11:03:25.000Z"))
                 .withId(defendantId)
                 .withBailStatus(createEventBailStatus())
-                .withHearingLanguageNeeds(HearingLanguageNeeds.ENGLISH)
+                .withHearingLanguageNeeds(HearingLanguage.ENGLISH)
                 .withOffences(createEventOffences())
                 .build();
         return singletonList(defendant);

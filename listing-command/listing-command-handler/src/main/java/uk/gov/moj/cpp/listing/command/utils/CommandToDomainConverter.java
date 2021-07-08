@@ -13,6 +13,7 @@ import static uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds.valueFor;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.DefendantListingNeeds;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
@@ -424,11 +425,12 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     @SuppressWarnings({"squid:S3655"})
     public CourtApplicationPartyListingNeeds buildCourtApplicationPartyNeeds(final uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds partyNeeds) {
+        final Optional<HearingLanguage> hearingLanguageNeeds = partyNeeds.getHearingLanguageNeeds();
         return CourtApplicationPartyListingNeeds.courtApplicationPartyListingNeeds()
                 .withCourtApplicationId(partyNeeds.getCourtApplicationId())
                 .withCourtApplicationPartyId(partyNeeds.getCourtApplicationPartyId())
                 .withHearingLanguageNeeds(HearingLanguageNeeds.valueFor(
-                        partyNeeds.getHearingLanguageNeeds().isPresent() ? partyNeeds.getHearingLanguageNeeds().get().toString() : null).orElse(null))
+                        hearingLanguageNeeds.isPresent() ? hearingLanguageNeeds.get().toString() : null).orElse(null))
                 .build();
     }
 

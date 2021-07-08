@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
-import uk.gov.justice.listing.events.HearingLanguageNeeds;
+import uk.gov.justice.core.courts.HearingLanguage;
 
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -27,7 +27,7 @@ public class Defendant implements Serializable {
 
     private final String firstName;
 
-    private final HearingLanguageNeeds hearingLanguageNeeds;
+    private final HearingLanguage hearingLanguageNeeds;
 
     private final UUID id;
 
@@ -51,7 +51,7 @@ public class Defendant implements Serializable {
 
     private final String specificRequirements;
 
-    public Defendant(final Address address, final AssociatedDefenceOrganisation associatedDefenceOrganisation, final BailStatus bailStatus, final ZonedDateTime courtProceedingsInitiated, final String custodyTimeLimit, final String dateOfBirth, final String datesToAvoid, final String defenceOrganisation, final String firstName, final HearingLanguageNeeds hearingLanguageNeeds, final UUID id, final Boolean isYouth, final String lastName, final String legalAidStatus, final UUID masterDefendantId, final String nationalityDescription, final List<Offence> offences, final String organisationName, final Boolean proceedingsConcluded, final Boolean restrictFromCourtList, final String specificRequirements) {
+    public Defendant(final Address address, final AssociatedDefenceOrganisation associatedDefenceOrganisation, final BailStatus bailStatus, final ZonedDateTime courtProceedingsInitiated, final String custodyTimeLimit, final String dateOfBirth, final String datesToAvoid, final String defenceOrganisation, final String firstName, final HearingLanguage hearingLanguageNeeds, final UUID id, final Boolean isYouth, final String lastName, final String legalAidStatus, final UUID masterDefendantId, final String nationalityDescription, final List<Offence> offences, final String organisationName, final Boolean proceedingsConcluded, final Boolean restrictFromCourtList, final String specificRequirements) {
         this.address = address;
         this.associatedDefenceOrganisation = associatedDefenceOrganisation;
         this.bailStatus = bailStatus;
@@ -111,7 +111,7 @@ public class Defendant implements Serializable {
         return firstName;
     }
 
-    public HearingLanguageNeeds getHearingLanguageNeeds() {
+    public HearingLanguage getHearingLanguageNeeds() {
         return hearingLanguageNeeds;
     }
 
@@ -249,7 +249,7 @@ public class Defendant implements Serializable {
 
         private String firstName;
 
-        private HearingLanguageNeeds hearingLanguageNeeds;
+        private HearingLanguage hearingLanguageNeeds;
 
         private UUID id;
 
@@ -318,7 +318,7 @@ public class Defendant implements Serializable {
             return this;
         }
 
-        public Builder withHearingLanguageNeeds(final HearingLanguageNeeds hearingLanguageNeeds) {
+        public Builder withHearingLanguageNeeds(final HearingLanguage hearingLanguageNeeds) {
             this.hearingLanguageNeeds = hearingLanguageNeeds;
             return this;
         }

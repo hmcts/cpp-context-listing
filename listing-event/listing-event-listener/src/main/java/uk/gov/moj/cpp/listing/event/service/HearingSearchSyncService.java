@@ -43,6 +43,7 @@ public class HearingSearchSyncService {
     public static final String ALLOCATED = "allocated";
     public static final String COURT_APPLICATIONS = "courtApplications";
     public static final String TYPE_OF_LIST ="typeOfList";
+    private static final String IS_EJECTED = "isEjected";
 
     @Inject
     private HearingRepository hearingRepository;
@@ -83,23 +84,24 @@ public class HearingSearchSyncService {
 
         for (int i = 0; i < size; i++){
             final UUID caseId = UUID.fromString(listedCasesNode.get(i).get("id").asText());
+            final Boolean isEjected = listedCasesNode.get(i).has(IS_EJECTED) ? listedCasesNode.get(i).get(IS_EJECTED).asBoolean() : null;
             final JsonNode caseIdentifierNode = listedCasesNode.get(i).get("caseIdentifier");
             final uk.gov.moj.cpp.listing.persistence.entity.CaseIdentifier caseIdentifier = new uk.gov.moj.cpp.listing.persistence.entity.CaseIdentifier();
             caseIdentifier.setAuthorityId(fromString(caseIdentifierNode.get("authorityId").asText()));
             caseIdentifier.setAuthorityCode(caseIdentifierNode.get("authorityCode").asText());
             caseIdentifier.setCaseReference(caseIdentifierNode.get("caseReference").asText());
 
-            result.add(getListedCase(listedCasesNode, hearing, i, caseId, caseIdentifier));
+            result.add(getListedCase(listedCasesNode, hearing, i, caseId, caseIdentifier, isEjected));
         }
 
         return result;
     }
 
-    private ListedCases getListedCase(final JsonNode listedCasesNode, final Hearing hearing, final int i, final UUID caseId, final CaseIdentifier caseIdentifier) {
+    private ListedCases getListedCase(final JsonNode listedCasesNode, final Hearing hearing, final int i, final UUID caseId, final CaseIdentifier caseIdentifier, final Boolean isEjected) {
         final Iterator<JsonNode> defendants = listedCasesNode.get(i).has("defendants") ? listedCasesNode.get(i).get("defendants").iterator() : Collections.emptyIterator();
         final Iterator<JsonNode> linkedCases = listedCasesNode.get(i).has("linkedCases") ? listedCasesNode.get(i).get("linkedCases").iterator() : Collections.emptyIterator();
 
-        final ListedCases listedCase = new ListedCases(randomUUID(), caseId, caseIdentifier, null, hearing, null, null);
+        final ListedCases listedCase = new ListedCases(randomUUID(), caseId, caseIdentifier, null, hearing, null, null, isEjected);
 
         if (listedCasesNode.get(i).has("prosecutor")) {
             final JsonNode prosecutorNode = listedCasesNode.get(i).get("prosecutor");
@@ -175,6 +177,7 @@ public class HearingSearchSyncService {
             courtApplications.setApplicationReference(reader.getText("applicationReference"));
             courtApplications.setApplicationParticulars(reader.getText("applicationParticulars"));
             courtApplications.setHearing(hearing);
+            courtApplications.setEjected(reader.getBoolean(IS_EJECTED));
             result.add(courtApplications);
         }
 

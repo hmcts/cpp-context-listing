@@ -12,7 +12,7 @@ import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
 import uk.gov.justice.core.courts.ProsecutionCase;
-import uk.gov.justice.listing.courts.JurisdictionType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
 import uk.gov.justice.listing.events.NextHearingRequested;
 import uk.gov.justice.listing.events.UpdateExistingHearingRequested;

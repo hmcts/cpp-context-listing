@@ -25,6 +25,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.getString;
 import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.valueFor;
+import static uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory.newPaginationParameter;
 import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
@@ -46,6 +47,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtLis
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.dto.LinkedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
+import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
@@ -74,6 +76,7 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.persistence.NoResultException;
 import javax.ws.rs.NotFoundException;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -84,7 +87,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-@SuppressWarnings({"squid:S1192", "squid:S00107"})
+@SuppressWarnings({"squid:S1192", "squid:S00107", "squid:S1166"})
 public class HearingQueryView {
     private static final String PUBLISH_COURT_LIST_TYPES = "publishCourtListTypes";
     private static final String PUBLISH_COURT_LIST_TYPE = "publishCourtListType";
@@ -186,7 +189,7 @@ public class HearingQueryView {
                 ZonedDateTime.of(LocalDateTime.parse(endTime), UTC)
         );
 
-        LOGGER.info("number of records from query -  {}" , hearings.size());
+        LOGGER.info("number of records from query -  {}", hearings.size());
 
         final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, searchDate, hearings);
 
@@ -215,26 +218,37 @@ public class HearingQueryView {
         final String typeOfListQueryParam = query.payloadAsJsonObject().getString(TYPE_OF_LIST, null);
         final String caseUrnQueryParam = query.payloadAsJsonObject().getString(CASE_URN, null);
         final String courtCentreIdQueryParam = query.payloadAsJsonObject().getString(COURT_CENTRE_IDS, null);
+        final PaginationParameter paginationParameter = newPaginationParameter(query.payloadAsJsonObject());
 
         LOGGER.info("listing.unscheduled.search.hearings Query params -  " +
                         "caseUrn: {}, " +
                         "typeOfList: {}, " +
-                        "courtCentreId: {}, ",
-                caseUrnQueryParam, typeOfListQueryParam, courtCentreIdQueryParam);
+                        "courtCentreId: {}, " +
+                        "pageSize: {},  " +
+                        "pageNumber: {} ",
+                caseUrnQueryParam, typeOfListQueryParam, courtCentreIdQueryParam, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
 
         final List<Hearing> hearings;
         if (!isNullOrEmpty(courtCentreIdQueryParam)) {
             final Set<String> courtCentreIdSet = Stream.of(courtCentreIdQueryParam.split(","))
                     .map(String::trim)
                     .collect(Collectors.toSet());
-            hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, courtCentreIdSet);
+            hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, courtCentreIdSet, paginationParameter.getOffSet(), paginationParameter.getPageSize());
         } else {
-            hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam);
+            hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, paginationParameter.getOffSet(), paginationParameter.getPageSize());
         }
-
-        return envelop(createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings)).build())
+        final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
+        return envelop(createObjectBuilder()
+                .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
+                .add("results", totalCount)
+                .add("pageCount", toPageCount(totalCount, paginationParameter.getPageSize()))
+                .build())
                 .withName("listing.unscheduled.search.hearings")
                 .withMetadataFrom(query);
+    }
+
+    private long toPageCount(final long totalCount, final Integer pageSize) {
+        return (long) Math.ceil((double) totalCount / (double) pageSize) ;
     }
 
     @Handles("listing.allocated.and.unallocated.hearings")
@@ -252,7 +266,7 @@ public class HearingQueryView {
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
                         .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
-                        );
+        );
     }
 
     @Handles("listing.available.search.hearings")
@@ -343,7 +357,7 @@ public class HearingQueryView {
         final List<Hearing> hearings = repository.findHearingsByCaseUrnAndAnyAllocationState(caseUrnQueryParam);
 
         return Enveloper.envelop(createObjectBuilder()
-                .add(HEARINGS,  hearingJsonListConverterFilterEjectCases.convert(hearings))
+                .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
                 .build()).withName("listing.any-allocation.search.hearings").withMetadataFrom(query);
     }
 
@@ -483,6 +497,7 @@ public class HearingQueryView {
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.court.list.publish.status"), createObjectBuilder().add("publishCourtListStatuses", courtListPublishStatuses));
     }
 
+
     @Handles(NAME_LISTING_SEARCH_HEARING)
     /**
      * Note that all validation is done in HearingQueryApi; while
@@ -495,12 +510,16 @@ public class HearingQueryView {
      */
     @SuppressWarnings("WeakerAccess")
     public JsonEnvelope getHearingById(final JsonEnvelope query) {
-        final Hearing hearing = repository.findBy(extractUUID(query));
-        if (hearing == null) {
+        try {
+            final Hearing hearing = repository.findBy(extractUUID(query));
+            if (hearing == null) {
+                throw new NotFoundException("There is no Hearing for that ID.");
+            }
+            return envelopeFrom(metadataFrom(query.metadata()).withName(NAME_LISTING_SEARCH_HEARING),
+                    HearingToJsonConverter.convert(hearing));
+        } catch (NoResultException e) {
             throw new NotFoundException("There is no Hearing for that ID.");
         }
-        return envelopeFrom(metadataFrom(query.metadata()).withName(NAME_LISTING_SEARCH_HEARING),
-                HearingToJsonConverter.convert(hearing));
     }
 
     private UUID extractUUID(final JsonEnvelope query) {

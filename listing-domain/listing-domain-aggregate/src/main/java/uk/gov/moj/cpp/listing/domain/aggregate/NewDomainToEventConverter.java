@@ -10,12 +10,12 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
-import uk.gov.justice.listing.courts.JurisdictionType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.CommittingCourt;
 import uk.gov.justice.listing.events.CourtApplicationPartyType;
 import uk.gov.justice.listing.events.Defendant;
-import uk.gov.justice.listing.events.HearingLanguageNeeds;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.events.JudicialRoleType;
 import uk.gov.justice.listing.events.LaaReference;
 import uk.gov.justice.listing.events.LinkedToCases;
@@ -28,6 +28,7 @@ import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
+import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
@@ -73,6 +74,7 @@ public class NewDomainToEventConverter {
 
     @SuppressWarnings({"squid:S3655", "squid:S1067"})
     public static Defendant buildDefendant(final uk.gov.moj.cpp.listing.domain.Defendant d) {
+        final Optional<HearingLanguageNeeds> hearingLanguageNeeds = d.getHearingLanguageNeeds();
         return Defendant.defendant()
                 .withId(d.getId())
                 .withMasterDefendantId(d.getMasterDefendantId())
@@ -82,8 +84,8 @@ public class NewDomainToEventConverter {
                 .withFirstName(d.getFirstName())
                 .withLastName(d.getLastName())
                 .withDatesToAvoid(d.getDatesToAvoid())
-                .withHearingLanguageNeeds(d.getHearingLanguageNeeds().isPresent()
-                        ? HearingLanguageNeeds.valueFor(d.getHearingLanguageNeeds().get().toString())
+                .withHearingLanguageNeeds(hearingLanguageNeeds.isPresent()
+                        ? HearingLanguage.valueFor(hearingLanguageNeeds.get().toString())
                         : empty())
                 .withOrganisationName(d.getOrganisationName())
                 .withSpecificRequirements(d.getSpecificRequirements())

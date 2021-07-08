@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.event.listener;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.JurisdictionChangedForHearing;
-import uk.gov.justice.listing.events.JurisdictionType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;

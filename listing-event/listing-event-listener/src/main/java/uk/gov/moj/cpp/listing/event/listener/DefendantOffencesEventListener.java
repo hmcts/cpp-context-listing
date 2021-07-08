@@ -16,6 +16,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.List;
@@ -42,6 +43,10 @@ public class DefendantOffencesEventListener {
     @Inject
     private ListingNumbersRepository listingNumbersRepository;
 
+    @Inject
+    private HearingSearchSyncService hearingSearchSyncService;
+
+
     @Handles("listing.events.offence-updated")
     public void offenceUpdated(final Envelope<OffenceUpdated> event) {
         final OffenceUpdated offenceUpdated = event.payload();
@@ -56,6 +61,8 @@ public class DefendantOffencesEventListener {
                     .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getUpdatedListedCaseFunction(caseId, defendantId, offence))
                     .save();
         }
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     private Function<List<ListedCase>, List<ListedCase>> getUpdatedListedCaseFunction(UUID caseId, UUID defendantId, Offence offence) {
@@ -74,6 +81,8 @@ public class DefendantOffencesEventListener {
                 .find(hearingId)
                 .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getDeletedListedCaseFunction(caseId, defendantId, offenceId))
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
 
     }
 

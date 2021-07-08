@@ -23,7 +23,7 @@ public class EjectCaseOrApplicationIT extends AbstractIT {
             ejectCaseApplicationSteps.verifyListedCasesInHearings(false, 2);
             ejectCaseApplicationSteps.buildEjectCaseData();
             ejectCaseApplicationSteps.verifyEventCaseEjectedInActiveMQ();
-            ejectCaseApplicationSteps.verifyListedCasesInHearings(false, 1);
+            ejectCaseApplicationSteps.verifyNoHearingsReturned(false);
         }
     }
 

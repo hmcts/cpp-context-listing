@@ -29,7 +29,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
 
 @RunWith(MockitoJUnitRunner.class)
 public class NotesServiceTest {
@@ -39,6 +38,7 @@ public class NotesServiceTest {
     private static final String UNALLOCATEDSTR = "false";
     private static final String queryDate = "2020-09-03";
     private static final String queryCourtRoomId = "6e424105-55f4-4e1a-bb9e-6ffbae3f7c17";
+    public static final String EARLIEST_SEARCH_DATE = "1900-01-01";
 
     @Mock
     NotesRepository notesRepository;

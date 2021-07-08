@@ -39,52 +39,22 @@ import org.apache.deltaspike.data.api.Repository;
  */
 @SuppressWarnings({"squid:S00107", "squid:S1214"})
 @Repository
-public interface HearingRepository extends EntityRepository<Hearing, UUID>, EntityManagerDelegate<Hearing> {
+public abstract class HearingRepository implements EntityRepository<Hearing, UUID>, EntityManagerDelegate<Hearing> {
 
-    String ALL_AUTHORITY_CODES_SEARCH = "[ ]";
-
-    String WEEK_COMMENCING_CORE_QUERY = "(properties ->> 'unscheduled' is null or cast(properties ->> 'unscheduled' as boolean) = false)" +
-            "and (" +
-            "  ?3  = '" + ALL_AUTHORITY_CODES_SEARCH + "' " +
-            "  or properties -> 'listedCases' @> cast(?4 as jsonb) " +
-            "  or ( " +
-            "       properties -> 'listedCases' @> cast(?3 as jsonb) " +
-            "       and" +
-            "       not properties ->> 'listedCases' like '%prosecutor%'" +
-            "     )" +
-            ") " +
-            "and (?5 is null or properties -> 'type' ->> 'id' = cast(?5 as text))  " +
-            "and (?6 is null or properties ->> 'jurisdictionType' = cast(?6 as text))  " +
+    private static final String WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED = "(h.unscheduled is null or h.unscheduled = false)" +
+            "and (?3 is null or (lc.authority_id = cast(cast(?3 as varchar) as uuid) or lc.prosecutor_id = cast(cast(?3 as varchar) as uuid)))  " +
+            "and (?4 is null or h.type_id = cast(cast(?4 as varchar) as uuid))  " +
+            "and (?5 is null or h.jurisdiction_type = cast(?5 as text))  " +
             "and ( " +
-            "   ( cast(properties ->> 'weekCommencingStartDate' as date) >= cast(?7 as date) and cast(properties ->> 'weekCommencingStartDate' as date) <= cast(?8 as date) ) or " +
-            "   ( cast(properties ->> 'weekCommencingEndDate' as date) >= cast(?7 as date) and cast(properties ->> 'weekCommencingEndDate' as date) <= cast(?8 as date) ) or " +
-            "   ( cast(properties ->> 'startDate' as date) >= cast(?7 as date) and cast(properties ->> 'startDate' as date) <= cast(?8 as date) )  or " +
-            "   ( cast(properties ->> 'endDate' as date) >= cast(?7 as date) and cast(properties ->> 'endDate' as date) <= cast(?8 as date) ) ) " +
-            "group by id, properties " +
-            "order by cast(properties ->> 'startDate' as date)," +
-            "cast(properties ->> 'endDate' as date)," +
-            "cast(properties ->> 'weekCommencingStartDate' as date)," +
-            "cast(properties ->> 'weekCommencingEndDate' as date )";
-
-    String WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED = "(hearing.unscheduled is null or hearing.unscheduled = false)" +
-            "and (?3 is null or (listed_cases.authority_id = cast(cast(?3 as varchar) as uuid) or listed_cases.prosecutor_id = cast(cast(?3 as varchar) as uuid)))  " +
-            "and (?4 is null or hearing.type_id = cast(cast(?4 as varchar) as uuid))  " +
-            "and (?5 is null or hearing.jurisdiction_type = cast(?5 as text))  " +
-            "and ( " +
-            "   ( hearing.week_commencing_start_date >= ?6 and hearing.week_commencing_start_date <= ?7 ) or " +
-            "   ( hearing.week_commencing_end_date >= ?6 and hearing.week_commencing_end_date <= ?7 ) or " +
-            "   ( hearing.start_date >= ?6 and hearing.start_date <= ?7 )  or " +
-            "   ( hearing.end_date >= ?6 and hearing.end_date <= ?7 ) ) " +
-            "group by hearing.id, properties " +
-            "order by hearing.start_date," +
-            "hearing.end_date," +
-            "hearing.week_commencing_start_date," +
-            "hearing.week_commencing_end_date";
-
-    String AUTHORITY_ID_SEARCH = "[ { \"caseIdentifier\": { \"authorityId\": \"%s\" } } ]";
-    String PROSECUTOR_ID_SEARCH = "[ { \"prosecutor\": { \"prosecutorId\": \"%s\" } } ]";
-    String EARLIEST_SEARCH_DATE = "1900-01-01";
-    String LATEST_SEARCH_DATE = "9999-01-01";
+            "   ( h.week_commencing_start_date >= ?6 and h.week_commencing_start_date <= ?7 ) or " +
+            "   ( h.week_commencing_end_date >= ?6 and h.week_commencing_end_date <= ?7 ) or " +
+            "   ( h.start_date >= ?6 and h.start_date <= ?7 )  or " +
+            "   ( h.end_date >= ?6 and h.end_date <= ?7 ) ) " +
+            "group by h.id, h.properties " +
+            "order by h.start_date," +
+            "h.end_date," +
+            "h.week_commencing_start_date," +
+            "h.week_commencing_end_date";
 
     /**
      * Find {@link Hearing}s based on the following parameters
@@ -113,7 +83,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "h.week_commencing_start_date, " +
             "h.week_commencing_end_date, " +
             "h.allocated, " +
-            "h.type_of_list_id " +
+            "h.type_of_list_id, " +
+            "1 as totalCount " +
             "from hearing h INNER JOIN hearing_days hd on hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
             "where  " +
@@ -128,7 +99,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "and (:searchDate between h.start_date and h.end_date )  " +
             "and (hd.start_time between :startTime and :endTime) "
             , isNative = true)
-    List<Hearing> findHearings(@QueryParam("allocated") final boolean allocated,
+    public abstract List<Hearing> findHearings(@QueryParam("allocated") final boolean allocated,
                                @QueryParam("courtCentreId") final String courtCentreId,
                                @QueryParam("courtRoomId") final String courtRoomId,
                                @QueryParam("authorityId") final String authorityId,
@@ -154,43 +125,103 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param endDate          to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select distinct hearing.id, hearing.properties,  " +
-            "hearing.court_centre_id, " +
-            "hearing.court_room_id, " +
-            "hearing.type_id, " +
-            "hearing.start_date, " +
-            "hearing.end_date, " +
-            "hearing.is_vacated_trial, " +
-            "hearing.jurisdiction_type, " +
-            "hearing.unscheduled, " +
-            "hearing.week_commencing_start_date, " +
-            "hearing.week_commencing_end_date, " +
-            "hearing.allocated, " +
-            "hearing.type_of_list_id " +
-            "from hearing LEFT JOIN hearing_days ON hearing_days.hearing_id = hearing.id  " +
-            "LEFT JOIN listed_cases ON listed_cases.hearing_id = hearing.id  " +
+    @Query(value = "select distinct h.id, h.properties,  " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id, " +
+            "count(*) OVER() as totalCount " +
+            "from hearing h " +
+            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
+            "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
+            "LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             "where  " +
-            "cast(hearing.allocated as varchar) = cast(?1 as varchar)  " +
-            "and (hearing.unscheduled is null or hearing.unscheduled = false) " +
-            "and (hearing.is_vacated_trial is null or hearing.is_vacated_trial != true) " +
-            "and (?2 is null or coalesce(hearing_days.court_centre_id, hearing.court_centre_id) = cast(cast(?2 as varchar) as uuid))  " +
-            "and (?3 is null or coalesce(hearing_days.court_room_id, hearing.court_room_id) = cast(cast(?3 as varchar) as uuid))  " +
-            "and (?4 is null or (listed_cases.authority_id = cast(cast(?4 as varchar) as uuid) or listed_cases.prosecutor_id = cast(cast(?4 as varchar) as uuid)))  " +
-            "and (?5 is null or hearing.type_id = cast(cast(?5 as varchar) as uuid))  " +
-            "and (?6 is null or hearing.jurisdiction_type = cast(?6 as text))  " +
+            "cast(h.allocated as varchar) = cast(?1 as varchar)  " +
+            "and (h.unscheduled is null or h.unscheduled = false) " +
+            "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and (?2 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?2 as varchar) as uuid))  " +
+            "and (?3 is null or coalesce(hd.court_room_id, h.court_room_id) = cast(cast(?3 as varchar) as uuid))  " +
+            "and (?4 is null or (lc.authority_id = cast(cast(?4 as varchar) as uuid) or lc.prosecutor_id = cast(cast(?4 as varchar) as uuid)))  " +
+            "and (?5 is null or h.type_id = cast(cast(?5 as varchar) as uuid))  " +
+            "and (?6 is null or h.jurisdiction_type = cast(?6 as text))  " +
+            "and (lc.is_ejected is null or lc.is_ejected =false) " +
+            "and (ca.is_ejected is null or ca.is_ejected =false) " +
+            "and (lc.id is not null or ca.id is not null) " +
             "and ( " +
-            "(hearing.start_date between ?7 and ?8 ) or " +
-            "(hearing.end_date between ?7 and ?8 ) or " +
-            "((hearing.start_date <= ?7 ) and (hearing.end_date >= ?8 ) )  " +
-            ")", isNative = true)
-    List<Hearing> findHearings(final String allocated,
+            "(h.start_date between ?7 and ?8 ) or " +
+            "(h.end_date between ?7 and ?8 ) or " +
+            "((h.start_date <= ?7 ) and (h.end_date >= ?8 ) )  " +
+            ") order by h.id, h.court_centre_id ASC OFFSET (?9) ROWS FETCH NEXT (?10) ROWS ONLY", isNative = true)
+    public abstract List<Hearing> findHearings(final String allocated,
                                final String courtCentreId,
                                final String courtRoomId,
                                final String authorityCode,
                                final String hearingTypeId,
                                final String jurisdictionType,
                                final LocalDate startDate,
-                               final LocalDate endDate);
+                               final LocalDate endDate, final Integer offSet, final Integer pageSize);
+
+    /**
+     * Find {@link Hearing}s based on the query parameters
+     *
+     * @param allocated        property to search for - mandatory.
+     * @param courtCentreId    to search for or <code>null</code> for any courtCentreId - optional.
+     * @param courtRoomId      to search for or <code>null</code> for any courtRoomId - optional.
+     * @param authorityCode    to search for or <code>null</code> for any authorityCode - optional.
+     * @param hearingTypeId    to search for or <code>null</code> for any hearingType - optional.
+     * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType -
+     *                         optional.
+     * @param startDate        to search for - mandatory.
+     * @param endDate          to search for - mandatory.
+     * @return Hearings.
+     */
+    @Query(value = "select distinct h.id, h.properties,  " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id, " +
+            "1 as totalCount " +
+            "from hearing h " +
+            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
+            "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
+            "where  " +
+            "cast(h.allocated as varchar) = cast(?1 as varchar)  " +
+            "and (h.unscheduled is null or h.unscheduled = false) " +
+            "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and (?2 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?2 as varchar) as uuid))  " +
+            "and (?3 is null or coalesce(hd.court_room_id, h.court_room_id) = cast(cast(?3 as varchar) as uuid))  " +
+            "and (?4 is null or (lc.authority_id = cast(cast(?4 as varchar) as uuid) or lc.prosecutor_id = cast(cast(?4 as varchar) as uuid)))  " +
+            "and (?5 is null or h.type_id = cast(cast(?5 as varchar) as uuid))  " +
+            "and (?6 is null or h.jurisdiction_type = cast(?6 as text))  " +
+            "and ( " +
+            "(h.start_date between ?7 and ?8 ) or " +
+            "(h.end_date between ?7 and ?8 ) or " +
+            "((h.start_date <= ?7 ) and (h.end_date >= ?8 ) )  " +
+            ")", isNative = true)
+    public abstract List<Hearing> findHearings(final String allocated,
+                                               final String courtCentreId,
+                                               final String courtRoomId,
+                                               final String authorityCode,
+                                               final String hearingTypeId,
+                                               final String jurisdictionType,
+                                               final LocalDate startDate,
+                                               final LocalDate endDate);
 
     /**
      * Find {@link Hearing}s based on the query parameters
@@ -209,36 +240,43 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param weekCommencingEndDate   to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select hearing.id, hearing.properties,  " +
-            "hearing.court_centre_id, " +
-            "hearing.court_room_id, " +
-            "hearing.type_id, " +
-            "hearing.start_date, " +
-            "hearing.end_date, " +
-            "hearing.is_vacated_trial, " +
-            "hearing.jurisdiction_type, " +
-            "hearing.unscheduled, " +
-            "hearing.week_commencing_start_date, " +
-            "hearing.week_commencing_end_date, " +
-            "hearing.allocated, " +
-            "hearing.type_of_list_id " +
-            "from hearing LEFT JOIN hearing_days ON hearing_days.hearing_id = hearing.id  " +
-            "LEFT JOIN listed_cases ON listed_cases.hearing_id = hearing.id  " +
+    @Query(value = "select h.id, h.properties,  " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id, " +
+            "count(*) OVER() as totalCount " +
+            "from hearing h " +
+            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
+            "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
+            "LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             "where  " +
-            "(hearing.is_vacated_trial is null or hearing.is_vacated_trial != true) and " +
-            "(?1 is null or coalesce(hearing_days.court_centre_id, hearing.court_centre_id) = cast(cast(?1 as varchar) as uuid))  " +
-            "and (?2 is null or coalesce(hearing_days.court_room_id, hearing.court_room_id) = cast(cast(?2 as varchar) as uuid))  " +
+            "(h.is_vacated_trial is null or h.is_vacated_trial != true) and " +
+            "(?1 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?1 as varchar) as uuid))  " +
+            "and (?2 is null or coalesce(hd.court_room_id, h.court_room_id) = cast(cast(?2 as varchar) as uuid))  " +
+            "  and (lc.is_ejected is null or lc.is_ejected =false) " +
+            "  and (ca.is_ejected is null or ca.is_ejected =false) " +
+            "  and (lc.id is not null or ca.id is not null)" +
             "and " +
-            WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED
+            WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED +
+            " ASC OFFSET (?8) ROWS FETCH NEXT (?9) ROWS ONLY"
             , isNative = true)
-    List<Hearing> findHearingsByWeekCommencingRange(
+    public abstract List<Hearing> findHearingsByWeekCommencingRange(
             final String courtCentreId,
             final String courtRoomId,
             final String authorityCode,
             final String hearingTypeId,
             final String jurisdictionType,
             final LocalDate weekCommencingStartDate,
-            final LocalDate weekCommencingEndDate);
+            final LocalDate weekCommencingEndDate, final Integer offSet, final Integer pageSize);
 
 
     /**
@@ -259,30 +297,37 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
      * @param weekCommencingEndDate   to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select hearing.id, hearing.properties,  " +
-            "hearing.court_centre_id, " +
-            "hearing.court_room_id, " +
-            "hearing.type_id, " +
-            "hearing.start_date, " +
-            "hearing.end_date, " +
-            "hearing.is_vacated_trial, " +
-            "hearing.jurisdiction_type, " +
-            "hearing.unscheduled, " +
-            "hearing.week_commencing_start_date, " +
-            "hearing.week_commencing_end_date, " +
-            "hearing.allocated, " +
-            "hearing.type_of_list_id " +
-            "from hearing LEFT JOIN listed_cases ON listed_cases.hearing_id = hearing.id " +
+    @Query(value = "select h.id, h.properties,  " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id, " +
+            "count(*) OVER() as totalCount " +
+            "from hearing h " +
+            "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
+            " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             "where  " +
-            "(hearing.is_vacated_trial is null or hearing.is_vacated_trial != true) and " +
-            "hearing.allocated = ?8  " +
+            "(h.is_vacated_trial is null or h.is_vacated_trial != true) and " +
+            "h.allocated = ?8  " +
             "and " +
-            "(?1 is null or hearing.court_centre_id = cast(cast(?1 as varchar) as uuid))  " +
-            "and (?2 is null or hearing.court_room_id = cast(cast(?2 as varchar) as uuid))  " +
+            "(?1 is null or h.court_centre_id = cast(cast(?1 as varchar) as uuid))  " +
+            "and (?2 is null or h.court_room_id = cast(cast(?2 as varchar) as uuid))  " +
+            "  and (lc.is_ejected is null or lc.is_ejected =false) " +
+            "  and (ca.is_ejected is null or ca.is_ejected =false) " +
+            "  and (lc.id is not null or ca.id is not null)" +
             "and " +
-            WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED
+            WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED +
+            " ASC OFFSET (?9) ROWS FETCH NEXT (?10) ROWS ONLY"
             , isNative = true)
-    List<Hearing> findUnallocatedHearingsByWeekCommencingRange(
+    public abstract List<Hearing> findUnallocatedHearingsByWeekCommencingRange(
             final String courtCentreId,
             final String courtRoomId,
             final String authorityCode,
@@ -290,7 +335,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             final String jurisdictionType,
             final LocalDate weekCommencingStartDate,
             final LocalDate weekCommencingEndDate,
-            final boolean allocated);
+            final boolean allocated, final Integer offSet, final Integer pageSize);
 
     /**
      * Find {@link Hearing}s based on the query parameters.  This query will be used by the 'Public
@@ -319,6 +364,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "null as week_commencing_end_date, " +
             "null as allocated, " +
             "null as type_of_list_id, " +
+            "null as totalCount, " +
             "(select row_to_json(combinedJudiciaryAndHearings) as properties from " +
             "   (select * from " +
             "       (select json_agg(uniqueJudiciary) as judiciary from " +
@@ -333,7 +379,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "               hbsd)) " +
             "   hrngByCourtCentreId) b) " +
             "combinedJudiciaryAndHearings)", isNative = true)
-    Hearing findHearingsForPublicStandardList(@QueryParam("allocated") final boolean allocated,
+    public abstract Hearing findHearingsForPublicStandardList(@QueryParam("allocated") final boolean allocated,
                                               @QueryParam("courtCentreId") final String courtCentreId,
                                               @QueryParam("startDate") final LocalDate startDate,
                                               @QueryParam("endDate") final LocalDate endDate);
@@ -364,13 +410,14 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "null as week_commencing_end_date, " +
             "null as allocated, " +
             "null as type_of_list_id, " +
+            "null as totalCount, " +
             "(select jsonb_agg(hrngByCourtCentreId) as properties from " +
             "    (select h.hearingDate as \"hearingDate\", " +
             "        (select jsonb_agg(hearings) as \"hearingsByHearingDate\" from  " +
             "           (select distinct properties as hearing from filtered_hearings fh where fh.hearingDate = h.hearingDate) hearings) " +
             "        from (select distinct hearingDate from filtered_hearings) h) " +
             "hrngByCourtCentreId)", isNative = true)
-    List<Hearing> findHearingsForAlphabeticalList(@QueryParam("allocated") final boolean allocated,
+    public abstract List<Hearing> findHearingsForAlphabeticalList(@QueryParam("allocated") final boolean allocated,
                                                   @QueryParam("courtCentreId") final String courtCentreId,
                                                   @QueryParam("hearingDate") final LocalDate hearingDate);
 
@@ -387,7 +434,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "h.week_commencing_start_date, " +
             "h.week_commencing_end_date, " +
             "h.allocated, " +
-            "h.type_of_list_id " +
+            "h.type_of_list_id, " +
+            "count(*) OVER() as totalCount" +
             " from hearing h " +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
@@ -398,9 +446,13 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "           or (?1 is null or UPPER(ca.application_reference) = cast(?1 as varchar)) " +
             "      ) " +
             "  and (?2 is null" +
-            "    or h.type_of_list_id = cast(cast(?2 as varchar) as uuid))"
+            "    or h.type_of_list_id = cast(cast(?2 as varchar) as uuid))" +
+            "  and (lc.id is not null or ca.id is not null) " +
+            "  and (lc.is_ejected is null or lc.is_ejected =false) " +
+            "  and (ca.is_ejected is null or ca.is_ejected =false) " +
+            " order by h.id, h.court_centre_id ASC OFFSET (?3) ROWS FETCH NEXT (?4) ROWS ONLY"
             , isNative = true)
-    List<Hearing> findHearings(String caseUrn, String typeOfList);
+    public abstract List<Hearing> findHearings(String caseUrn, String typeOfList, Integer offSet, Integer pageSize);
 
     /**
      * Find {@link Hearing}s based on the following parameters
@@ -429,7 +481,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "h.week_commencing_start_date, " +
             "h.week_commencing_end_date, " +
             "h.allocated, " +
-            "h.type_of_list_id " +
+            "h.type_of_list_id, " +
+            "1 as totalCount " +
             "from hearing h " +
             "where " +
             "h.allocated = :allocated " +
@@ -459,7 +512,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             " and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid))) " +
             ")))"
             , isNative = true)
-    List<Hearing> findHearings(@QueryParam("allocated") final boolean allocated,
+    public abstract List<Hearing> findHearings(@QueryParam("allocated") final boolean allocated,
                                @QueryParam("jurisdictionTypes") final Set<String> jurisdictionTypes,
                                @QueryParam("hearingId") final String hearingId,
                                @QueryParam("caseUrnSet") final Set<String> caseUrnSet,
@@ -484,7 +537,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "h.week_commencing_start_date, " +
             "h.week_commencing_end_date, " +
             "h.allocated, " +
-            "h.type_of_list_id " +
+            "h.type_of_list_id, " +
+            "1 as totalCount " +
             " from hearing h " +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
@@ -493,7 +547,7 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "           or (?1 is null or UPPER(cast(ca.application_reference as varchar)) = cast(?1 as varchar))" +
             "      ) "
             , isNative = true)
-    List<Hearing> findHearingsByCaseUrnAndAnyAllocationState(String caseUrn);
+    public abstract List<Hearing> findHearingsByCaseUrnAndAnyAllocationState(String caseUrn);
 
     /**
      * @param caseUrn
@@ -513,7 +567,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "h.week_commencing_start_date, " +
             "h.week_commencing_end_date, " +
             "h.allocated, " +
-            "h.type_of_list_id " +
+            "h.type_of_list_id, " +
+            "count(*) OVER() as totalCount" +
             " from hearing h" +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
@@ -525,9 +580,13 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "      ) " +
             "  and (?2 is null" +
             "    or h.type_of_list_id = cast(cast(?2 as varchar) as uuid))" +
-            "  and cast(h.court_centre_id as varchar) in (?3)"
+            "  and cast(h.court_centre_id as varchar) in (?3)" +
+            "  and (lc.id is not null or ca.id is not null) " +
+            "  and (lc.is_ejected is null or lc.is_ejected =false) " +
+            "  and (ca.is_ejected is null or ca.is_ejected =false) " +
+            " order by h.id, h.court_centre_id ASC OFFSET (?4) ROWS FETCH NEXT (?5) ROWS ONLY"
             , isNative = true)
-    List<Hearing> findHearings(String caseUrn, String typeOfList, Set<String> courtCentreIds);
+    public abstract List<Hearing> findHearings(String caseUrn, String typeOfList, Set<String> courtCentreIds , Integer offSet, Integer pageSize);
 
     /**
      * @param caseId
@@ -545,7 +604,8 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             "null as week_commencing_start_date, " +
             "null as week_commencing_end_date, " +
             "null as allocated, " +
-            "null as type_of_list_id " +
+            "null as type_of_list_id, " +
+            "null as totalCount " +
             " from ( " +
             " select distinct h.id as id, h.properties as properties, h.start_date as startDate, h.end_date as endDate " +
             " from hearing h " +
@@ -557,7 +617,12 @@ public interface HearingRepository extends EntityRepository<Hearing, UUID>, Enti
             " ) as all_hearing " +
             " order by all_hearing.startDate desc, all_hearing.endDate desc "
             , isNative = true)
-    List<Hearing> findAllocatedAndUnallocatedHearingsByCaseId(String caseId, String applicationId);
+    public abstract List<Hearing> findAllocatedAndUnallocatedHearingsByCaseId(String caseId, String applicationId);
 
+    @Query(value = "select *, 1 as totalCount from hearing where id = cast(cast(?1 as varchar) as uuid)", isNative = true)
+    abstract Hearing findByHearingId(final String hearingId);
 
+    public Hearing findBy(final UUID hearingId){
+        return  findByHearingId(hearingId.toString());
+    }
 }

@@ -16,9 +16,10 @@ import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
 import uk.gov.justice.listing.events.DefendantOffenceIds;
 import uk.gov.justice.listing.events.DefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.HearingDay;
-import uk.gov.justice.listing.events.HearingLanguage;
+import uk.gov.justice.core.courts.HearingLanguage;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.events.JudicialRole;
-import uk.gov.justice.listing.events.JurisdictionType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.events.OffenceIds;
 import uk.gov.justice.listing.events.OrganisationUnit;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds;
@@ -226,7 +227,7 @@ public class AllocatedHearingUpdatedFactoryTest {
                                 .withOffenceIds(Arrays.asList(OffenceIds.offenceIds()
                                         .withSeedingHearing(SeedingHearing.seedingHearing()
                                                 .withSeedingHearingId(SEEDING_HEARING_ID)
-                                                .withJurisdictionType(uk.gov.justice.listing.courts.JurisdictionType.CROWN)
+                                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
                                                 .build())
                                         .withId(OFFENCE_ID)
                                         .build()))

@@ -48,6 +48,10 @@ public class ListedCases implements Serializable {
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "listedCase", orphanRemoval = true)
     private Set<Defendant> defendants = new HashSet<>();
 
+    @Column(name="is_ejected")
+    private Boolean isEjected;
+
+
     public ListedCases() {
         // for JPA
     }
@@ -58,7 +62,8 @@ public class ListedCases implements Serializable {
                        final Prosecutor prosecutor,
                        final Hearing hearing,
                        final Set<LinkedCase> linkedCases,
-                       Set<Defendant> defendants) {
+                       Set<Defendant> defendants,
+                       final Boolean isEjected) {
         this.id = id;
         this.caseId = caseId;
         this.caseIdentifier = caseIdentifier;
@@ -66,6 +71,7 @@ public class ListedCases implements Serializable {
         this.hearing = hearing;
         this.setLinkedCases(linkedCases);
         this.setDefendants(defendants);
+        this.isEjected = isEjected;
     }
 
     public UUID getId() {
@@ -138,5 +144,13 @@ public class ListedCases implements Serializable {
 
     public void setProsecutor(final Prosecutor prosecutor) {
         this.prosecutor = prosecutor;
+    }
+
+    public Boolean getEjected() {
+        return isEjected;
+    }
+
+    public void setEjected(final Boolean ejected) {
+        isEjected = ejected;
     }
 }

@@ -93,6 +93,9 @@ public class Hearing implements JsonEntity {
     @Type( type = "jsonb-node" )
     private JsonNode properties;
 
+    @Column(updatable = false, insertable = false)
+    private Long totalCount;
+
     public Hearing() {
         // for JPA
 
@@ -303,6 +306,14 @@ public class Hearing implements JsonEntity {
 
     public void setTypeOfListId(final UUID typeOfListId) {
         this.typeOfListId = typeOfListId;
+    }
+
+    public Long getTotalCount() {
+        return totalCount;
+    }
+
+    public void setTotalCount(final Long totalCount) {
+        this.totalCount = totalCount;
     }
 
     @Override

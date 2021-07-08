@@ -10,7 +10,7 @@
     },
     "courtHouseType": {
       "description": "The type of the court house",
-      "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/jurisdictionType"
+      "$ref": "http://justice.gov.uk/core/courts/jurisdictionType.json"
     },
     "courtHouseCode": {
       "description": "The oucode for the courthouse",

@@ -10,10 +10,10 @@ import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.events.CourtCentreDetails;
 import uk.gov.justice.listing.events.Hearing;
-import uk.gov.justice.listing.events.HearingLanguage;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.events.JudicialRole;
 import uk.gov.justice.listing.events.JudicialRoleType;
-import uk.gov.justice.listing.events.JurisdictionType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.listing.events.Type;
 

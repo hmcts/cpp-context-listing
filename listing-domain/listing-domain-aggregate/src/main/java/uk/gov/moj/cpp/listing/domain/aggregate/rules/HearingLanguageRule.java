@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.domain.aggregate.rules;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.moj.cpp.listing.domain.Defendant;
-import uk.gov.justice.listing.events.HearingLanguage;
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 
 import java.util.List;

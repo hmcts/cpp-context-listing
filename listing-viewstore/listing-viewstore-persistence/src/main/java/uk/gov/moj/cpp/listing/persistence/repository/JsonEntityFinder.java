@@ -1,27 +1,26 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
-import uk.gov.moj.cpp.listing.persistence.entity.JsonEntity;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 
-import java.io.Serializable;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.deltaspike.data.api.EntityRepository;
 
-public class JsonEntityFinder<E extends JsonEntity, PK extends Serializable> {
+public class JsonEntityFinder {
 
-    private final EntityRepository<E, PK> entityRepository;
+    private final  HearingRepository entityRepository;
 
-    private JsonEntityFinder(final EntityRepository<E, PK> entityRepository) {
+    private JsonEntityFinder(final HearingRepository entityRepository) {
         this.entityRepository = entityRepository;
     }
 
-    public static <E extends JsonEntity, PK extends Serializable> JsonEntityFinder using(
-            final EntityRepository<E, PK> entityRepository) {
+    public static JsonEntityFinder using(
+            final HearingRepository entityRepository) {
         return new JsonEntityFinder(entityRepository);
     }
 
-    public JsonNodeUpdater find(final PK entityId) {
-        E entity = entityRepository.findBy(entityId);
+    public JsonNodeUpdater find(final UUID entityId) {
+        final Hearing entity = entityRepository.findBy(entityId);
         ObjectNode properties = (ObjectNode) entity.getProperties();
         return JsonNodeUpdater.createJsonNodeUpdater(properties, newProperties -> {
             entity.setProperties(newProperties);
@@ -29,8 +28,8 @@ public class JsonEntityFinder<E extends JsonEntity, PK extends Serializable> {
         });
     }
 
-    public JsonNodeUpdater find(final PK entityId, final String pathToFind) {
-        E entity = entityRepository.findBy(entityId);
+    public JsonNodeUpdater find(final UUID entityId, final String pathToFind) {
+        final Hearing entity = entityRepository.findBy(entityId);
         ObjectNode properties = (ObjectNode) entity.getProperties();
         return JsonNodeUpdater.createJsonNodeUpdater(properties, pathToFind, newProperties -> {
             entity.setProperties(newProperties);

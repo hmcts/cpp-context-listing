@@ -19,7 +19,7 @@
       "type": "string"
     },
     "hearingLanguageNeeds": {
-      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/hearingLanguage"
+      "$ref": "http://justice.gov.uk/core/courts/hearingLanguage.json"
     },
     "specificRequirements": {
       "description": "The person special needs indicted any special needs that must be met by the courts process e.g. wheelchair access",

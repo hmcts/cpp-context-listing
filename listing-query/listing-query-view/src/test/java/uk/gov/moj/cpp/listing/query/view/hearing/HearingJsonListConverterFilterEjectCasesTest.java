@@ -397,25 +397,6 @@ public class HearingJsonListConverterFilterEjectCasesTest {
     }
 
     @Test
-    public void shouldConvertToJsonArrayWithEjectedCaseFiltered() throws IOException {
-        //Given
-        final List<Hearing> hearings = createHearings(SAMPLE_HEARING_WITH_EJECTED_CASE, SAMPLE_HEARING_WITHOUT_EJECTED_CASE);
-
-        //When
-        final JsonArray hearingJsonArray = converter.convert(hearings);
-
-        //Then
-        assertThat(hearingJsonArray.toString(), isJson(allOf(
-                withJsonPath("$", hasSize(2)),
-                withJsonPath("$[0].listedCases", hasSize(1)),
-                withJsonPath("$[0].courtApplications", hasSize(0)),
-                withJsonPath("$[0].listedCases[0].isEjected", equalTo(false)),
-                withJsonPath("$[1].listedCases", hasSize(2)),
-                withJsonPath("$[1].courtApplications", hasSize(1))
-        )));
-    }
-
-    @Test
     public void shouldConvertHearingResultForPublicList() throws IOException {
         //Given
         final Hearing hearing = createHearing(PUBLIC_LIST);

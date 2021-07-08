@@ -15,7 +15,6 @@ import uk.gov.moj.cpp.listing.persistence.repository.NotesRepository;
 
 import static java.util.UUID.fromString;
 import static uk.gov.justice.services.common.converter.LocalDates.from;
-import static uk.gov.moj.cpp.listing.persistence.repository.HearingRepository.EARLIEST_SEARCH_DATE;
 
 @SuppressWarnings({"squid:S1612"})
 @ApplicationScoped
@@ -26,6 +25,7 @@ public class NotesService {
     private static final String START_DATE = "startDate";
     private static final String HEARING_DAYS = "hearingDays";
     private static final String HEARING_DATE = "hearingDate";
+    public static final String EARLIEST_SEARCH_DATE = "1900-01-01";
 
     @Inject
     private NoteUUIDService noteUUIDService;

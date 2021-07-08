@@ -51,6 +51,8 @@ import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtLis
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
+import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
@@ -108,6 +110,8 @@ public class HearingQueryViewTest {
     private static final String CASE_URN = "caseUrn";
     private static final String TYPE_OF_LIST = "typeOfList";
     private static final String COURT_CENTRE_IDS = "courtCentreIds";
+    private static final String PAGE_SIZE = "pageSize";
+    private static final String PAGE_NUMBER = "pageNumber";
 
     private static final String COURT_ROOM_QUERY_PARAMETER = "courtRoomId";
     private static final String AUTHORITY_ID_QUERY_PARAMETER = "authorityId";
@@ -121,8 +125,8 @@ public class HearingQueryViewTest {
     private static final String CASE_URN_FOR_LINKED_CASES_QUERY_PARAMETER = "caseUrnForLinkedCases";
     private static final String ID_PARAMETER = "id";
     private static final String AUTHORITY_ID = "efa4e01b-1dc5-48c5-80b5-c3858a7622d6";
-    private static final String AUTHORITY_ID_SEARCH = String.format(HearingRepository.AUTHORITY_ID_SEARCH, AUTHORITY_ID);
-    private static final String PROSECUTOR_ID_SEARCH = String.format(HearingRepository.PROSECUTOR_ID_SEARCH, AUTHORITY_ID);
+    private  static final String AUTHORITY_ID_SEARCH = String.format("[ { \"caseIdentifier\": { \"authorityId\": \"%s\" } } ]", AUTHORITY_ID);
+    private static final String PROSECUTOR_ID_SEARCH = String.format("[ { \"prosecutor\": { \"prosecutorId\": \"%s\" } } ]", AUTHORITY_ID);
     private static final UUID HEARING_TYPE_ID = randomUUID();
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
     private static final LocalDate SEARCH_DATE = LocalDate.now();
@@ -132,6 +136,8 @@ public class HearingQueryViewTest {
     private static final String PUBLISH_DATE_WEEK_COMMENCING = "2012-12-13";
     private static final String EMPTY_STRING = "";
 
+    @Mock
+    private PaginationParameter paginationParameter;
 
     @Spy
     private Enveloper enveloper = createEnveloper();
@@ -163,6 +169,7 @@ public class HearingQueryViewTest {
         FieldUtils.writeField(this.listToJsonArrayConverter, "mapper", objectMapper, true);
         FieldUtils.writeField(this.listToJsonArrayConverter, "stringToJsonObjectConverter", stringToJsonObjectConverter, true);
         FieldUtils.writeField(this.hearingsQueryView, "listToJsonArrayConverter", listToJsonArrayConverter, true);
+        paginationParameter = new PaginationParameter(50, 1, 0);
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -531,7 +538,7 @@ public class HearingQueryViewTest {
         final String typeOfListId = "82c4c09c-12f1-4014-ad9f-f1a67aba1761";
 
         when(hearingRepository.findHearings(
-                "caseUrnValue", typeOfListId))
+                "caseUrnValue", typeOfListId, 0, paginationParameter.getPageSize()))
                 .thenReturn(hearingsJson);
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
                 .thenReturn(hearingsJsonArray);
@@ -540,6 +547,8 @@ public class HearingQueryViewTest {
                 createObjectBuilder()
                         .add(CASE_URN, "caseUrnValue")
                         .add(TYPE_OF_LIST, typeOfListId)
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
                         .build());
 
         final Envelope<JsonObject> results = hearingsQueryView.searchUnscheduledHearings(query);
@@ -550,7 +559,7 @@ public class HearingQueryViewTest {
                                 withJsonPath("$.hearings[0].hello", equalTo("world"))
                         ))
                 ));
-        verify(hearingRepository).findHearings(eq("caseUrnValue"), eq(typeOfListId));
+        verify(hearingRepository).findHearings(eq("caseUrnValue"), eq(typeOfListId), eq(0), eq(50));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
     }
 
@@ -593,18 +602,20 @@ public class HearingQueryViewTest {
         final String courtCentreId = courtCentreId1.toString() +"," +courtCentreId2.toString();
 
         final HashSet<String> courtCentreIdsSet = new HashSet<>(Arrays.asList(courtCentreId1.toString(), courtCentreId2.toString()));
-        when(hearingRepository.findHearings(
-                "caseUrnValue", typeOfListId, courtCentreIdsSet))
-                .thenReturn(hearingsJson);
-        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
                 createObjectBuilder()
                         .add(CASE_URN, "caseUrnValue")
                         .add(TYPE_OF_LIST, typeOfListId)
                         .add(COURT_CENTRE_IDS, courtCentreId)
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
                         .build());
+        when(hearingRepository.findHearings(
+                "caseUrnValue", typeOfListId, courtCentreIdsSet, 0, paginationParameter.getPageSize()))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(hearingsJsonArray);
 
         final Envelope<JsonObject> results = hearingsQueryView.searchUnscheduledHearings(query);
 
@@ -614,7 +625,7 @@ public class HearingQueryViewTest {
                                 withJsonPath("$.hearings[0].hello", equalTo("world"))
                         ))
                 ));
-        verify(hearingRepository).findHearings(eq("caseUrnValue"), eq(typeOfListId), eq(courtCentreIdsSet));
+        verify(hearingRepository).findHearings(eq("caseUrnValue"), eq(typeOfListId), eq(courtCentreIdsSet), eq(0), eq(50));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
     }
 
@@ -943,6 +954,7 @@ public class HearingQueryViewTest {
     private List<Hearing> hearingsJson(String allocated) {
         final String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
         final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        hearing1.setTotalCount(Long.valueOf(2));
         final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         return newArrayList(hearing1, hearing2);
     }
@@ -986,4 +998,5 @@ public class HearingQueryViewTest {
         }
 
     }
+
 }

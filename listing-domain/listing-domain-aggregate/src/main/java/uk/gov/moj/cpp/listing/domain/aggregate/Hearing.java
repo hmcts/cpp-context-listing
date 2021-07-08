@@ -32,7 +32,7 @@ import static uk.gov.justice.listing.events.HearingDaysChangedForHearing.hearing
 import static uk.gov.justice.listing.events.HearingDaysSequenced.hearingDaysSequenced;
 import static uk.gov.justice.listing.events.HearingListed.hearingListed;
 import static uk.gov.justice.listing.events.HearingUnallocatedForListing.hearingUnallocatedForListing;
-import static uk.gov.justice.listing.events.JurisdictionType.valueFor;
+import static uk.gov.justice.core.courts.JurisdictionType.valueFor;
 import static uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing.nonDefaultDaysChangedForHearing;
 import static uk.gov.justice.listing.events.NonSittingDaysAssignedToHearing.nonSittingDaysAssignedToHearing;
 import static uk.gov.justice.listing.events.NonSittingDaysChangedForHearing.nonSittingDaysChangedForHearing;
@@ -174,7 +174,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 4401532074124929480L;
+    private static final long serialVersionUID = 4401532074124929481L;
 
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
@@ -676,7 +676,7 @@ public class Hearing implements Aggregate {
 
         if (hasChanged(this.hearingLanguage, hearingLanguage)) {
             return apply(Stream.of(HearingLanguageChangedForHearing.hearingLanguageChangedForHearing()
-                    .withHearingLanguage(uk.gov.justice.listing.events.HearingLanguage.valueOf(hearingLanguage.toString()))
+                    .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.valueOf(hearingLanguage.toString()))
                     .withHearingId(hearingId)
                     .build()));
         } else {
@@ -1523,7 +1523,7 @@ public class Hearing implements Aggregate {
                 .withJudiciary(this.judiciary.stream()
                         .map(this::buildJudicialRole)
                         .collect(toList()))
-                .withHearingLanguage(uk.gov.justice.listing.events.HearingLanguage.valueFor(this.hearingLanguage.toString())
+                .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.valueFor(this.hearingLanguage.toString())
                         .orElseThrow(IllegalArgumentException::new))
                 .withJurisdictionType(valueFor(this.jurisdictionType.toString())
                         .orElseThrow(IllegalArgumentException::new))
@@ -1564,7 +1564,7 @@ public class Hearing implements Aggregate {
                 .withJudiciary(this.judiciary.stream()
                         .map(this::buildJudicialRole)
                         .collect(toList()))
-                .withHearingLanguage(uk.gov.justice.listing.events.HearingLanguage.valueFor(this.hearingLanguage.toString())
+                .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.valueFor(this.hearingLanguage.toString())
                         .orElseThrow(IllegalArgumentException::new))
                 .withJurisdictionType(valueFor(this.jurisdictionType.toString())
                         .orElseThrow(IllegalArgumentException::new))
@@ -2436,7 +2436,7 @@ public class Hearing implements Aggregate {
                 .withJudiciary(this.judiciary.stream()
                         .map(this::buildJudicialRole)
                         .collect(toList()))
-                .withHearingLanguage(uk.gov.justice.listing.events.HearingLanguage.valueFor(this.hearingLanguage.toString())
+                .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.valueFor(this.hearingLanguage.toString())
                         .orElseThrow(IllegalArgumentException::new))
                 .withJurisdictionType(valueFor(this.jurisdictionType.toString())
                         .orElseThrow(IllegalArgumentException::new))

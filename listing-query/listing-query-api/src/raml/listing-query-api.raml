@@ -172,6 +172,14 @@ protocols: [ HTTP, HTTPS ]
           description: (hearingWeekCommencingEndDate between weekCommencingStartDate and weekCommencingEndDate) or (hearingWeekCommencingStartDate <= weekCommencingStartDate and hearingWeekCommencingEndDate >= weekCommencingEndDate)
           type: date
           required: false
+        pageSize:
+          description: Number of records to be displayed per page
+          type: integer
+          required: false
+        pageNumber:
+          description: currentPageNumber details
+          type: integer
+          required: false
       responses:
             200:
                 description: OK
@@ -394,6 +402,15 @@ protocols: [ HTTP, HTTPS ]
           description: reference data id for the court centre
           type: string
           required: false
+        pageSize:
+          description: Number of records to be displayed per page
+          type: integer
+          required: false
+        pageNumber:
+          description: currentPageNumber details
+          type: integer
+          required: false
+
       responses:
             200:
                 description: OK

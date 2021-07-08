@@ -26,6 +26,7 @@ import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -96,6 +97,8 @@ public class EjectEventListenerTest {
     @Spy
     private ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
 
+    @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @InjectMocks
     private EjectEventListener ejectEventListener;

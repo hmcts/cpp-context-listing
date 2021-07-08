@@ -31,6 +31,7 @@ import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.ListingNumbers;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
@@ -83,6 +84,8 @@ public class DefendantOffencesEventListenerTest {
     @Mock
     private Envelope<OffenceDeleted> offenceDeletedEnvelope;
 
+    @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
 
     @Mock
     ObjectNode properties;

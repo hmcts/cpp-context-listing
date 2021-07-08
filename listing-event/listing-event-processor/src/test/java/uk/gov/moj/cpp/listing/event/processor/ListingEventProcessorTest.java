@@ -507,7 +507,7 @@ public class ListingEventProcessorTest {
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.MAGISTRATES);
         given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
-        when(hearingAllocatedForListing.getJurisdictionType()).thenReturn(uk.gov.justice.listing.events.JurisdictionType.MAGISTRATES);
+        when(hearingAllocatedForListing.getJurisdictionType()).thenReturn(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES);
         when(hearingAllocatedForListing.getUpdateSlot()).thenReturn(Optional.of(false));
         when(hearingAllocatedForListing.getHasAdjournmentDate()).thenReturn(Optional.of(true));
         when(hearingAllocatedForListing.getHearingId()).thenReturn(randomUUID());

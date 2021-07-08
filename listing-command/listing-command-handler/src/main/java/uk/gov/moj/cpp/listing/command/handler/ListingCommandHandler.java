@@ -320,7 +320,8 @@ public class ListingCommandHandler {
                     generateNonDefaultDays(nonDefaultDaysList, courtScheduleList, commandHearing);
                 }
 
-                if (isSchedulingAndListingUpdateRequired(commandHearing.getJurisdictionType(), nonDefaultDaysList)) {
+                final uk.gov.justice.core.courts.JurisdictionType jurisdictionType = commandHearing.getJurisdictionType();
+                if (isSchedulingAndListingUpdateRequired(jurisdictionType, nonDefaultDaysList)) {
                     nonDefaultDaysList = nonDefaultDayDurationBuilder.updateNonDefaultDayWithNewDuration(nonDefaultDaysList, commandHearing.getEstimatedMinutes());
                 }
             }
