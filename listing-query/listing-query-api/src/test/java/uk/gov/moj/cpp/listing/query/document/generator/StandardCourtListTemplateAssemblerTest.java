@@ -410,12 +410,10 @@ public class StandardCourtListTemplateAssemblerTest {
         Defendant actualDefendant = actualHearing.getDefendants().get(0);
         assertDefendant(actualDefendant,1);
         assertOffence(actualDefendant.getOffences().get(0));
-        if (CourtListType.STANDARD.equals(courtListType) || CourtListType.PUBLIC.equals(courtListType)) {
-            assertThat(actualDefendant.getReportingRestrictions().size(), is(1));
-            assertThat(actualDefendant.getReportingRestrictions().stream().findFirst().get(), is(REPORTING_RESTRICTION));
-        } else {
-            assertThat(actualDefendant.getReportingRestrictions(), is(nullValue()));
-        }
+
+        assertThat(actualDefendant.getReportingRestrictions().size(), is(1));
+        assertThat(actualDefendant.getReportingRestrictions().stream().findFirst().get().getLabel(), is(REPORTING_RESTRICTION));
+
         CourtRoom actualCourtRoom1 = actualHearingDate.getCourtRooms().get(0);
         assertThat(actualCourtRoom1.getCourtRoomName(), is(COURT_ROOM_NAME_1));
     }

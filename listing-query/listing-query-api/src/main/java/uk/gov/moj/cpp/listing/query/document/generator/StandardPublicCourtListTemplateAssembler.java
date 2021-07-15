@@ -540,9 +540,8 @@ public class StandardPublicCourtListTemplateAssembler {
         if(!offenceList.isEmpty()) {
             builder.withOffences(offenceList);
         }
-        if (PUBLIC.equals(courtListType) || STANDARD.equals(courtListType)) {
-            builder.withReportingRestrictions(reportingRestrictions);
-        }
+
+        builder.withReportingRestrictions(reportingRestrictions);
 
         if (BENCH.equals(courtListType)) {
             addDefenceAndProsecutionCounsels(hearingJson, defendant, caseId, builder);
