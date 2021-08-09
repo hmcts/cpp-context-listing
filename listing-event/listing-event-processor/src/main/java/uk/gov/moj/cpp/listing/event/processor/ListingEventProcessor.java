@@ -1096,7 +1096,7 @@ public class ListingEventProcessor {
                                                                                  final List<JudicialRole> judiciary) {
         final Optional<List<SlotDetail>> slotDetailsOptional = slotUpdater.updateSlot(envelope, hearingConfirmed.getConfirmedHearing(), isSlotUpdated, isForAdjournmentHearing, hearingDays);
 
-        if (isForAdjournmentHearing && JurisdictionType.MAGISTRATES.equals(jurisdictionType) && isEmpty(judiciary)) {
+        if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && isEmpty(judiciary)) {
             slotDetailsOptional.ifPresent(slotDetails ->
                     slotDetails.forEach(slotDetail -> {
                         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciariesFromRota = rotaSLServiceAdapter.getJudicialRoles(slotDetail.getSessionDate(),

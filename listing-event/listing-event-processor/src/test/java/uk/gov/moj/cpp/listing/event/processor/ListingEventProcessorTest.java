@@ -19,8 +19,8 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.never;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -106,8 +106,8 @@ import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
-import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProceedings;
+import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.progression.courts.CaseLinked;
@@ -515,23 +515,7 @@ public class ListingEventProcessorTest {
         when(hearingAllocatedForListing.getHearingDays()).thenReturn(hearingDays);
 
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
-        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = new ArrayList<>();
-
-        ((JsonObject)hearingSlotsResponse.getJsonArray("hearingSlots").get(0))
-                .getJsonArray("judiciaries")
-                .stream()
-                .map(JsonObject.class::cast)
-                .forEach(judiciaryJsonObject ->
-                        judicialRoles.add(uk.gov.moj.cpp.listing.domain.JudicialRole.judicialRole()
-                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
-                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
-                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("judiciaryId")))
-                                .withJudicialRoleType(
-                                        uk.gov.moj.cpp.listing.domain.JudicialRoleType.judicialRoleType()
-                                                .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))
-                                                .build())
-                                .build())
-                );
+        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = prepareRotaSLJudiciaryInfo(hearingSlotsResponse);
 
         when(rotaSLServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
         when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays))
@@ -554,6 +538,49 @@ public class ListingEventProcessorTest {
         verify(rotaSLServiceAdapter, times(1)).getJudicialRoles(anyString(), anyString(), any(), anyString());
         verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays);
         verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays);
+    }
+
+    @Test
+    public void shouldHandleHearingAllocatedForListingMessageWhenRecievedWithoutJudiciaryInfoAndGetFromRotaSL() {
+
+        setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
+        //given
+        final JsonEnvelope event = hearingAllocatedEvent();
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(hearingAllocatedForListing);
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.MAGISTRATES);
+        given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
+        when(hearingAllocatedForListing.getJurisdictionType()).thenReturn(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES);
+        when(hearingAllocatedForListing.getUpdateSlot()).thenReturn(Optional.of(false));
+        when(hearingAllocatedForListing.getHasAdjournmentDate()).thenReturn(Optional.of(false));
+        when(hearingAllocatedForListing.getHearingId()).thenReturn(randomUUID());
+        when(hearingAllocatedForListing.getCourtRoomId()).thenReturn(randomUUID());
+        when(hearingAllocatedForListing.getHearingDays()).thenReturn(hearingDays);
+
+        final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
+        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = prepareRotaSLJudiciaryInfo(hearingSlotsResponse);
+
+        when(rotaSLServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
+        when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays))
+                .thenReturn(Optional.of(Collections.singletonList(
+                        SlotDetailBuilder.slotDetail()
+                                .withOuCode("oucode")
+                                .withSession("AD")
+                                .withCourtRoomId(1)
+                                .build()))
+                );
+
+        //when
+        listingEventProcessor.handleHearingAllocatedForListingMessage(event);
+
+        //then
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS));
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+
+        verify(rotaSLServiceAdapter, times(1)).getJudicialRoles(anyString(), anyString(), any(), anyString());
+        verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
+        verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
     }
 
     @Test
@@ -1969,5 +1996,25 @@ public class ListingEventProcessorTest {
                 .withCaseMarkers(Collections.EMPTY_LIST)
                 .withOriginatingOrganisation(empty())
                 .build();
+    }
+
+    private List<uk.gov.moj.cpp.listing.domain.JudicialRole> prepareRotaSLJudiciaryInfo(final JsonObject hearingSlotsResponse) {
+        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = new ArrayList<>();
+        ((JsonObject) hearingSlotsResponse.getJsonArray("hearingSlots").get(0))
+                .getJsonArray("judiciaries")
+                .stream()
+                .map(JsonObject.class::cast)
+                .forEach(judiciaryJsonObject ->
+                        judicialRoles.add(uk.gov.moj.cpp.listing.domain.JudicialRole.judicialRole()
+                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
+                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
+                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("judiciaryId")))
+                                .withJudicialRoleType(
+                                        uk.gov.moj.cpp.listing.domain.JudicialRoleType.judicialRoleType()
+                                                .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))
+                                                .build())
+                                .build())
+                );
+        return judicialRoles;
     }
 }
