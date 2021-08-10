@@ -1,9 +1,18 @@
 package uk.gov.moj.cpp.listing.common.azure.adapter;
 
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyMapOf;
+import static org.mockito.Mockito.when;
+import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
+
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
-import uk.gov.moj.cpp.listing.common.utils.FileUtil;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 
 import java.time.LocalDate;
@@ -12,24 +21,18 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.http.HttpStatus;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
-
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Mockito.when;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
-
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.ws.rs.core.Response;
 
 
 
@@ -55,7 +58,7 @@ public class RotaSLServiceAdapterTest {
         final Optional<String> courtSessionOptional = Optional.of("AM");
         final String courtRoomId = UUID.randomUUID().toString();
 
-        final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/mock-data/azure.rotasl.getHearingSlots.stub-data.json");
+        final JsonObject hearingSlotsResponse = givenPayload("/mock-data/azure.rotasl.getHearingSlots.stub-data.json");
 
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.getEntity()).thenReturn(hearingSlotsResponse);
@@ -103,7 +106,7 @@ public class RotaSLServiceAdapterTest {
         final String ouCode = "B01LY00";
         final String courtRoomId = "a91a93e6-d704-3cf1-9f20-e267b5a7eeeb";
 
-        final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/mock-data/azure.rotasl.getHearingSlots.stub-data.json");
+        final JsonObject hearingSlotsResponse = givenPayload("/mock-data/azure.rotasl.getHearingSlots.stub-data.json");
 
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.getEntity()).thenReturn(hearingSlotsResponse);
@@ -116,5 +119,82 @@ public class RotaSLServiceAdapterTest {
 
         assertThat(object.getString("panel"), is("YOUTH"));
         assertThat(object.getString("courtRoomId"), is(courtRoomId));
+    }
+
+    @Test
+    public void shouldGetPanelInfoIfNotPresentInPayload() {
+        final Optional<String> panelInfoFromPayload = empty();
+
+        final LocalDate startDate = LocalDate.of(2021, 6, 21);
+        final LocalDate endDate = LocalDate.of(2021, 6, 22);
+        final UUID courtRoomId = UUID.fromString("a91a93e6-d704-3cf1-9f20-e267b5a7eeeb");
+        final String ouCode = "B06AN00";
+
+        final JsonObject hearingSlotsResponseJsonObject = givenPayload("/mock-data/azure.rotasl.getHearingSlots.stub-data.json");
+
+        when(hearingSlotsService.search(anyMapOf(String.class, String.class))).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(hearingSlotsResponseJsonObject);
+
+        final Optional<String> actualPanelInfo = rotaSLServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
+
+
+        assertTrue(actualPanelInfo.isPresent());
+        assertThat(actualPanelInfo.get(), CoreMatchers.is(hearingSlotsResponseJsonObject.getJsonArray("hearingSlots").getJsonObject(0).getString("panel")));
+    }
+
+    @Test
+    public void shouldGetPanelInfoIfPresentInPayload() {
+        final Optional<String> panelInfoFromPayload = of("ADULT");
+
+        final LocalDate startDate = LocalDate.of(2021, 6, 21);
+        final LocalDate endDate = LocalDate.of(2021, 6, 22);
+        final UUID courtRoomId = UUID.fromString("a91a93e6-d704-3cf1-9f20-e267b5a7eeeb");
+        final String ouCode = "B06AN00";
+
+        final Optional<String> actualPanelInfo = rotaSLServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
+
+
+        assertTrue(actualPanelInfo.isPresent());
+        assertThat(actualPanelInfo.get(), CoreMatchers.is(panelInfoFromPayload.get()));
+    }
+
+    @Test
+    public void shouldReturnEmptyPanelInfoIfNotPresentInPayloadAndGettingErrorFromRotaApi() {
+        final Optional<String> panelInfoFromPayload = empty();
+
+        final LocalDate startDate = LocalDate.of(2021, 6, 21);
+        final LocalDate endDate = LocalDate.of(2021, 6, 22);
+        final UUID courtRoomId = UUID.fromString("a91a93e6-d704-3cf1-9f20-e267b5a7eeeb");
+        final String ouCode = "B06AN00";
+
+        when(hearingSlotsService.search(anyMapOf(String.class, String.class))).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+
+        final Optional<String> actualPanelInfo = rotaSLServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
+
+
+        assertTrue(!actualPanelInfo.isPresent());
+    }
+
+    @Test
+    public void shouldReturnEmptyPanelInfoIfNotPresentInPayloadAndGettingEmptyPayloadFromRotaApi() {
+        final Optional<String> panelInfoFromPayload = empty();
+
+        final LocalDate startDate = LocalDate.of(2021, 6, 21);
+        final LocalDate endDate = LocalDate.of(2021, 6, 22);
+        final UUID courtRoomId = UUID.fromString("a91a93e6-d704-3cf1-9f20-e267b5a7eeeb");
+        final String ouCode = "B06AN00";
+
+        final JsonObject hearingSlotsResponseJsonObject = givenPayload("/mock-data/azure.rotasl.getHearingSlots.empty-response.json");
+
+        when(hearingSlotsService.search(anyMapOf(String.class, String.class))).thenReturn(response);
+        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
+        when(response.getEntity()).thenReturn(hearingSlotsResponseJsonObject);
+
+        final Optional<String> actualPanelInfo = rotaSLServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
+
+
+        assertTrue(!actualPanelInfo.isPresent());
     }
 }

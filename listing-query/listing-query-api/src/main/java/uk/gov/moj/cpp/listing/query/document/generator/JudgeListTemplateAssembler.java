@@ -35,6 +35,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -157,7 +158,10 @@ public class JudgeListTemplateAssembler {
 
     private String extractSittingTime(final List<SittingHearing> sittingHearings) {
         final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern(TIME_PATTERN);
-        final List<LocalTime> times = sittingHearings.stream().map(sh -> LocalTime.parse(sh.getHearingDay().getStartTime(), timeFormatter)).collect(toList());
+        final List<LocalTime> times = sittingHearings.stream()
+                .map(sh -> LocalTime.parse(sh.getHearingDay().getStartTime(), timeFormatter))
+                .sorted(Comparator.reverseOrder())
+                .collect(toList());
         return times.get(times.size() - 1).format(timeFormatter);
     }
 
@@ -214,7 +218,7 @@ public class JudgeListTemplateAssembler {
                 .findFirst()
                 .orElseThrow(IllegalArgumentException::new);
         final String startTime = prettifyDate(hearingDayJson, START_TIME);
-        final String endTime =prettifyDate(hearingDayJson, END_TIME);
+        final String endTime = prettifyDate(hearingDayJson, END_TIME);
         final int duration = hearingDayJson.containsKey(DURATION_MINUTES) ? hearingDayJson.getInt(DURATION_MINUTES) : 0;
         return HearingDay.hearingDay().withEndTime(endTime).withStartTime(startTime).withHearingDate(flatHearing.getHearingDate().toString()).withDurationMinutes(duration).build();
 
@@ -233,7 +237,7 @@ public class JudgeListTemplateAssembler {
                                 defendantBuilder.withOrganisationName(defendant.getString(ORGANISATION_NAME));
                             } else {
                                 defendantBuilder.withSurname(defendant.getString(LAST_NAME))
-                                                .withFirstName(defendant.getString(FIRST_NAME));
+                                        .withFirstName(defendant.getString(FIRST_NAME));
                             }
                             return defendantBuilder.build();
                         }

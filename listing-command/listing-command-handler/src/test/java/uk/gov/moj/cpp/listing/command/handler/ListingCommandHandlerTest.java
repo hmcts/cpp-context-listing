@@ -1,21 +1,72 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpStatus;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.time.ZonedDateTime.parse;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
+import static java.util.stream.Collectors.toList;
+import static javax.json.Json.createArrayBuilder;
+import static javax.json.Json.createObjectBuilder;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.core.Is.is;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
+import static uk.gov.justice.listing.event.PublishCourtListProduced.publishCourtListProduced;
+import static uk.gov.justice.listing.event.PublishCourtListRequested.publishCourtListRequested;
+import static uk.gov.justice.listing.event.PublishCourtListType.FIRM;
+import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
+import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payload;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeStreamMatcher.streamContaining;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingHelper.getEnvelopeForExtendPartialHearing;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingHelper.getEnvelopeForExtendWholeHearing;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.ALLOCATED_HEARING_ID;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.CASE_ID1;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.CASE_ID2;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.DEF_ID1;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.DEF_ID2;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.DEF_ID3;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.OFF_ID1;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.OFF_ID2;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.OFF_ID3;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.OFF_ID4;
+import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.UNALLOCATED_HEARING_ID;
+import static uk.gov.moj.cpp.listing.command.utils.FileUtil.givenPayload;
+import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
+
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Gender;
 import uk.gov.justice.core.courts.ProsecutionCase;
@@ -153,13 +204,6 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonReader;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.StringReader;
 import java.time.Instant;
@@ -177,71 +221,28 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.time.ZonedDateTime.parse;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
-import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
-import static java.util.stream.Collectors.toList;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.core.Is.is;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.atMost;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
-import static uk.gov.justice.listing.event.PublishCourtListProduced.publishCourtListProduced;
-import static uk.gov.justice.listing.event.PublishCourtListRequested.publishCourtListRequested;
-import static uk.gov.justice.listing.event.PublishCourtListType.FIRM;
-import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory.createEnvelope;
-import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payload;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeStreamMatcher.streamContaining;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingHelper.getEnvelopeForExtendPartialHearing;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingHelper.getEnvelopeForExtendWholeHearing;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.ALLOCATED_HEARING_ID;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.CASE_ID1;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.CASE_ID2;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.DEF_ID1;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.DEF_ID2;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.DEF_ID3;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.OFF_ID1;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.OFF_ID2;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.OFF_ID3;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.OFF_ID4;
-import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.UNALLOCATED_HEARING_ID;
-import static uk.gov.moj.cpp.listing.command.utils.FileUtil.givenPayload;
-import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import javax.ws.rs.core.Response;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.runners.MockitoJUnitRunner;
 
 @SuppressWarnings({"squid:S1607"})
 @RunWith(MockitoJUnitRunner.class)
@@ -502,8 +503,6 @@ public class ListingCommandHandlerTest {
     @Spy
     private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CourtListExportRequested.class,
             HearingCounselModified.class);
-    @Mock
-    private Response getHearingSlotResponse;
 
     private final static LocalDate SUNDAY_25TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 25);
     private final static LocalDate MONDAY_26TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 26);
@@ -873,7 +872,7 @@ public class ListingCommandHandlerTest {
                         .withRoomId(of(COURT_ROOM_ID_1).map(UUID::toString))
                         .build()).collect(toList());
 
-        final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
+        final JsonObject hearingSlotsResponse = givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
 
         final List<JudicialRole> judicialRoles = new ArrayList<>();
         ((JsonObject)hearingSlotsResponse
@@ -916,9 +915,7 @@ public class ListingCommandHandlerTest {
         when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE,HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(HAS_VIDEO_LINK,HEARING_ID_1)).thenReturn(mock(Stream.class));
 
-        when(getHearingSlotResponse.getStatus()).thenReturn(HttpStatus.SC_OK);
-        when(getHearingSlotResponse.getEntity()).thenReturn(hearingSlotsResponse);
-        when(rotaSLServiceAdapter.getHearingSlotResponse(anyString(), anyString(), anyString(), anyString())).thenReturn(getHearingSlotResponse);
+        when(rotaSLServiceAdapter.getPanelInfo(any(), any(LocalDate.class), any(LocalDate.class), any(UUID.class), anyString())).thenReturn(Optional.of("YOUTH"));
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -2215,7 +2212,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope getJsonEnvelopeForAddCaseForHearing() {
-        final String jsonString = FileUtil.givenPayload("/test-data/listing.command.add-cases-to-hearing.json").toString();
+        final String jsonString = givenPayload("/test-data/listing.command.add-cases-to-hearing.json").toString();
         try {
             final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
             return createEnvelope("listing.command.add-cases-to-hearing", jsonReader.readObject());
@@ -2224,7 +2221,7 @@ public class ListingCommandHandlerTest {
         }
     }
     private JsonEnvelope updateSequenceForHearingDayCommandEnvelope() {
-        final String jsonString = FileUtil.givenPayload("/test-data/listing.command.update-sequence-for-hearing-day.json").toString()
+        final String jsonString = givenPayload("/test-data/listing.command.update-sequence-for-hearing-day.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())
                 .replace("SEQUENCE_1", SEQUENCE_1)
                 .replace("SEQUENCE_2", SEQUENCE_2)
@@ -2244,7 +2241,7 @@ public class ListingCommandHandlerTest {
     }
 
     private JsonEnvelope listCourtHearingCommandEnvelope() {
-        final String jsonString = FileUtil.givenPayload("/test-data/listing.command.list-court-hearing.json").toString()
+        final String jsonString = givenPayload("/test-data/listing.command.list-court-hearing.json").toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString())
                 .replace("OFFENCE_ID", OFFENCE_ID1.toString())
                 .replace("REPORTING_RESTRICTIONS", REPORTING_RESTRICTIONS)
