@@ -25,6 +25,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -33,6 +34,7 @@ import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
+import javax.persistence.EntityNotFoundException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -71,7 +73,11 @@ public class ExtendHearingForHearingListener {
         final UUID hearingIdToBeDeleted = hearingDeleted.getHearingIdToBeDeleted();
         final Hearing hearingToBeDeleted = hearingRepository.findBy(hearingIdToBeDeleted);
 
-        if (hearingToBeDeleted != null) {
+        if (Objects.isNull(hearingToBeDeleted)) {
+            LOGGER.error("Hearing with id {} is not found. It could be deleted before the fix for DD-14484. " +
+                    "Please re-run the DLQ events if you see this message when doing a replay/catch up.", hearingIdToBeDeleted);
+            throw new EntityNotFoundException("Failed to delete hearing " + hearingIdToBeDeleted);
+        } else {
             hearingRepository.remove(hearingToBeDeleted);
             LOGGER.info("Hearing with id {} has been deleted ", hearingIdToBeDeleted);
         }
@@ -117,6 +123,7 @@ public class ExtendHearingForHearingListener {
 
         } else {
             LOGGER.error("Hearing with id {} not found", hearingIdToBeUpdated);
+            throw new EntityNotFoundException("Failed to update hearing " + hearingIdToBeUpdated);
         }
     }
 

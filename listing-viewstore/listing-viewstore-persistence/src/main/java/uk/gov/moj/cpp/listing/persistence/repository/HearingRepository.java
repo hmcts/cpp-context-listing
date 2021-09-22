@@ -13,6 +13,7 @@ import org.apache.deltaspike.data.api.EntityRepository;
 import org.apache.deltaspike.data.api.Query;
 import org.apache.deltaspike.data.api.QueryParam;
 import org.apache.deltaspike.data.api.Repository;
+import org.apache.deltaspike.data.api.SingleResultType;
 
 /**
  * Repository for {@link Hearing}
@@ -62,7 +63,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
      * @param allocated        property to search for - mandatory.
      * @param courtCentreId    to search for or <code>null</code> for any courtCentreId - optional.
      * @param courtRoomId      to search for or <code>null</code> for any courtRoomId - optional.
-     * @param authorityId    to search for or <code>null</code> for any authorityCode - optional.
+     * @param authorityId      to search for or <code>null</code> for any authorityCode - optional.
      * @param hearingTypeId    to search for or <code>null</code> for any hearingType - optional.
      * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType -
      *                         optional.
@@ -100,15 +101,14 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "and (hd.start_time between :startTime and :endTime) "
             , isNative = true)
     public abstract List<Hearing> findHearings(@QueryParam("allocated") final boolean allocated,
-                               @QueryParam("courtCentreId") final String courtCentreId,
-                               @QueryParam("courtRoomId") final String courtRoomId,
-                               @QueryParam("authorityId") final String authorityId,
-                               @QueryParam("typeId") final String hearingTypeId,
-                               @QueryParam("jurisdictionType") final String jurisdictionType,
-                               @QueryParam("searchDate") final LocalDate searchDate,
-                               @QueryParam("startTime") ZonedDateTime startTime,
-                               @QueryParam("endTime") final ZonedDateTime endTime);
-
+                                               @QueryParam("courtCentreId") final String courtCentreId,
+                                               @QueryParam("courtRoomId") final String courtRoomId,
+                                               @QueryParam("authorityId") final String authorityId,
+                                               @QueryParam("typeId") final String hearingTypeId,
+                                               @QueryParam("jurisdictionType") final String jurisdictionType,
+                                               @QueryParam("searchDate") final LocalDate searchDate,
+                                               @QueryParam("startTime") ZonedDateTime startTime,
+                                               @QueryParam("endTime") final ZonedDateTime endTime);
 
 
     /**
@@ -161,13 +161,13 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "((h.start_date <= ?7 ) and (h.end_date >= ?8 ) )  " +
             ") order by h.id, h.court_centre_id ASC OFFSET (?9) ROWS FETCH NEXT (?10) ROWS ONLY", isNative = true)
     public abstract List<Hearing> findHearings(final String allocated,
-                               final String courtCentreId,
-                               final String courtRoomId,
-                               final String authorityCode,
-                               final String hearingTypeId,
-                               final String jurisdictionType,
-                               final LocalDate startDate,
-                               final LocalDate endDate, final Integer offSet, final Integer pageSize);
+                                               final String courtCentreId,
+                                               final String courtRoomId,
+                                               final String authorityCode,
+                                               final String hearingTypeId,
+                                               final String jurisdictionType,
+                                               final LocalDate startDate,
+                                               final LocalDate endDate, final Integer offSet, final Integer pageSize);
 
     /**
      * Find {@link Hearing}s based on the query parameters
@@ -380,9 +380,9 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "   hrngByCourtCentreId) b) " +
             "combinedJudiciaryAndHearings)", isNative = true)
     public abstract Hearing findHearingsForPublicStandardList(@QueryParam("allocated") final boolean allocated,
-                                              @QueryParam("courtCentreId") final String courtCentreId,
-                                              @QueryParam("startDate") final LocalDate startDate,
-                                              @QueryParam("endDate") final LocalDate endDate);
+                                                              @QueryParam("courtCentreId") final String courtCentreId,
+                                                              @QueryParam("startDate") final LocalDate startDate,
+                                                              @QueryParam("endDate") final LocalDate endDate);
 
     /**
      * Find {@link Hearing}s based on the query parameters. This query will be used by the
@@ -418,8 +418,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "        from (select distinct hearingDate from filtered_hearings) h) " +
             "hrngByCourtCentreId)", isNative = true)
     public abstract List<Hearing> findHearingsForAlphabeticalList(@QueryParam("allocated") final boolean allocated,
-                                                  @QueryParam("courtCentreId") final String courtCentreId,
-                                                  @QueryParam("hearingDate") final LocalDate hearingDate);
+                                                                  @QueryParam("courtCentreId") final String courtCentreId,
+                                                                  @QueryParam("hearingDate") final LocalDate hearingDate);
 
 
     @Query(value = "select distinct h.id, properties, " +
@@ -513,13 +513,13 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             ")))"
             , isNative = true)
     public abstract List<Hearing> findHearings(@QueryParam("allocated") final boolean allocated,
-                               @QueryParam("jurisdictionTypes") final Set<String> jurisdictionTypes,
-                               @QueryParam("hearingId") final String hearingId,
-                               @QueryParam("caseUrnSet") final Set<String> caseUrnSet,
-                               @QueryParam("masterDefendantIdSet") final Set<String> masterDefendantIdSet,
-                               @QueryParam("linkedCaseUrn") final Set<String> linkedCaseUrn,
-                               @QueryParam("caseUrnForLinkedCases") final String caseUrnForLinkedCases,
-                               @QueryParam("currentDate") final LocalDate currentDate);
+                                               @QueryParam("jurisdictionTypes") final Set<String> jurisdictionTypes,
+                                               @QueryParam("hearingId") final String hearingId,
+                                               @QueryParam("caseUrnSet") final Set<String> caseUrnSet,
+                                               @QueryParam("masterDefendantIdSet") final Set<String> masterDefendantIdSet,
+                                               @QueryParam("linkedCaseUrn") final Set<String> linkedCaseUrn,
+                                               @QueryParam("caseUrnForLinkedCases") final String caseUrnForLinkedCases,
+                                               @QueryParam("currentDate") final LocalDate currentDate);
 
     /**
      * @param caseUrn
@@ -586,7 +586,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "  and (ca.is_ejected is null or ca.is_ejected =false) " +
             " order by h.id, h.court_centre_id ASC OFFSET (?4) ROWS FETCH NEXT (?5) ROWS ONLY"
             , isNative = true)
-    public abstract List<Hearing> findHearings(String caseUrn, String typeOfList, Set<String> courtCentreIds , Integer offSet, Integer pageSize);
+    public abstract List<Hearing> findHearings(String caseUrn, String typeOfList, Set<String> courtCentreIds, Integer offSet, Integer pageSize);
 
     /**
      * @param caseId
@@ -619,7 +619,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             , isNative = true)
     public abstract List<Hearing> findAllocatedAndUnallocatedHearingsByCaseId(String caseId, String applicationId);
 
-    @Query(value = "select *, 1 as totalCount from hearing where id = cast(cast(?1 as varchar) as uuid)", isNative = true)
+    @Query(value = "select *, 1 as totalCount from hearing where id = cast(cast(?1 as varchar) as uuid)", isNative = true, singleResult = SingleResultType.ANY)
     abstract Hearing findByHearingId(final String hearingId);
 
     public Hearing findBy(final UUID hearingId){

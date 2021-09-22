@@ -692,8 +692,8 @@ public class ListingCommandHandlerTest {
                 .replace("PROVISIONAL_OUCODE", PROVISIONAL_OUCODE)
                 .replace("PROVISIONAL_SESSION", PROVISIONAL_SESSION)
                 .replace("PROVISIONAL_COURT_ROOM", String.valueOf(PROVISIONAL_COURT_ROOM))
-                .replace("PROVISIONAL_START_TIME",PROVISIONAL_START_TIME)
-                .replace("PROVISIONAL_SESS_DATE",PROVISIONAL_SESSION_DATE)
+                .replace("PROVISIONAL_START_TIME", PROVISIONAL_START_TIME)
+                .replace("PROVISIONAL_SESS_DATE", PROVISIONAL_SESSION_DATE)
                 .replace("PROVISIONAL_COURT_HOUSE_ID", COURT_CENTRE_ID.toString())
                 .replace("PROVISIONAL_ROOM_ID", COURT_ROOM_ID.toString());
         final JsonReader jsonReader = Json.createReader(new StringReader(jsonProvisionalSlotString));
@@ -822,8 +822,8 @@ public class ListingCommandHandlerTest {
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), Integer.valueOf(DEFAULT_DURATION)));
         when(hearing.removeWeekCommencingDates(HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearingFactory.getHearingById(any(), any())).thenReturn(getSampleStoredHearing());
-        when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE,HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.assignVideoLink(HAS_VIDEO_LINK,HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -875,7 +875,7 @@ public class ListingCommandHandlerTest {
         final JsonObject hearingSlotsResponse = givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
 
         final List<JudicialRole> judicialRoles = new ArrayList<>();
-        ((JsonObject)hearingSlotsResponse
+        ((JsonObject) hearingSlotsResponse
                 .getJsonArray("hearingSlots").get(0))
                 .getJsonArray("judiciaries")
                 .stream()
@@ -912,8 +912,8 @@ public class ListingCommandHandlerTest {
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), Integer.valueOf(DEFAULT_DURATION)));
         when(hearing.removeWeekCommencingDates(HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearingFactory.getHearingById(any(), any())).thenReturn(getSampleStoredHearing());
-        when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE,HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.assignVideoLink(HAS_VIDEO_LINK,HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
 
         when(rotaSLServiceAdapter.getPanelInfo(any(), any(LocalDate.class), any(LocalDate.class), any(UUID.class), anyString())).thenReturn(Optional.of("YOUTH"));
 
@@ -1022,7 +1022,7 @@ public class ListingCommandHandlerTest {
     }
 
     @Test
-    public void shouldUpdateCaseIdentifier() throws Exception{
+    public void shouldUpdateCaseIdentifier() throws Exception {
         final JsonObject payload = Json.createObjectBuilder()
                 .add("prosecutionAuthorityId", randomUUID().toString())
                 .add("prosecutionAuthorityCode", STRING.next())
@@ -2029,7 +2029,7 @@ public class ListingCommandHandlerTest {
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
         verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class));
-        verify(hearing, times(1)).deleteUnAllocatedHearing(hearingID2);
+        verify(hearing, times(1)).markHearingAsDeleted(hearingID2);
     }
 
     @Test
@@ -2050,7 +2050,7 @@ public class ListingCommandHandlerTest {
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
         verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class));
-        verify(hearing, times(1)).deleteUnAllocatedHearing(hearingID2);
+        verify(hearing, times(1)).markHearingAsDeleted(hearingID2);
     }
 
     @Test
@@ -2107,6 +2107,35 @@ public class ListingCommandHandlerTest {
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearingDeepCopy.getListedCases());
         verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class));
         verify(hearing, times(1)).updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), anyList());
+    }
+
+    @Test
+    public void shouldRemovePartiallyMergedOffencesFromOriginalHearing() throws EventStreamException {
+        final UUID hearingIdToBeUpdated = randomUUID();
+
+        final JsonObject payload = Json.createObjectBuilder()
+                .add("hearingIdToBeUpdated", hearingIdToBeUpdated.toString())
+                .add("prosecutionCasesToRemove", createArrayBuilder())
+                .build();
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.remove-partially-merged-offences-from-original-hearing", payload);
+        listingCommandHandler.handleRemovePartiallyMergedOffencesFromOriginalHearing(commandEnvelope);
+
+        verify(hearing, times(1)).updateUnallocatedHearingPartially(hearingIdToBeUpdated, Collections.emptyList());
+    }
+
+    @Test
+    public void shouldMarkHearingAsDeleted() throws EventStreamException {
+        final UUID hearingId = randomUUID();
+
+        final JsonObject payload = Json.createObjectBuilder()
+                .add("hearingIdToMarkAsDeleted", hearingId.toString())
+                .build();
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.mark-hearing-as-deleted", payload);
+        listingCommandHandler.handleMarkHearingAsDeleted(commandEnvelope);
+
+        verify(hearing, times(1)).deleteUnAllocatedHearing();
     }
 
     @Test
@@ -2220,6 +2249,7 @@ public class ListingCommandHandlerTest {
             throw new RuntimeException(e);
         }
     }
+
     private JsonEnvelope updateSequenceForHearingDayCommandEnvelope() {
         final String jsonString = givenPayload("/test-data/listing.command.update-sequence-for-hearing-day.json").toString()
                 .replace("HEARING_ID_1", HEARING_ID_1.toString())

@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import uk.gov.justice.listing.courts.ProsecutionCasesToRemove;
 import uk.gov.justice.listing.events.Defendants;
 import uk.gov.justice.listing.events.Offences;
 import uk.gov.justice.listing.events.ProsecutionCases;
@@ -37,5 +38,39 @@ public class ProsecutionCasesBuilder {
         LOGGER.info("ProsecutionCases to be removed from hearing: {}", prosecutionCasesList);
 
         return prosecutionCasesList;
+    }
+
+    /**
+     * Build {@link ProsecutionCases} event object from {@link ProsecutionCasesToRemove} command by transforming:
+     * ProsecutionCasesToRemove -> ProsecutionCases
+     * DefendantsToRemove -> Defendants
+     * OffencesToRemove -> Offences
+     */
+    public List<ProsecutionCases> buildEventProsecutionCasesToRemove(final List<ProsecutionCasesToRemove> prosecutionCasesToRemove) {
+
+        final List<ProsecutionCases> cases = new ArrayList<>();
+
+        prosecutionCasesToRemove.forEach(pctu -> {
+
+            final ProsecutionCases.Builder casesBuilder = ProsecutionCases.prosecutionCases();
+            final List<Defendants> defendants = new ArrayList<>();
+
+            pctu.getDefendantsToRemove().forEach(dtu -> {
+
+                final Defendants.Builder defendantsBuilder = Defendants.defendants();
+                final List<Offences> offences = new ArrayList<>();
+
+                dtu.getOffencesToRemove().forEach(otu ->
+                        offences.add(Offences.offences().withOffenceId(otu.getOffenceId()).build())
+                );
+
+                defendants.add(defendantsBuilder.withOffences(offences).withDefendantId(dtu.getDefendantId()).build());
+            });
+
+            cases.add(casesBuilder.withCaseId(pctu.getCaseId()).withDefendants(defendants).build());
+        });
+
+
+        return cases;
     }
 }

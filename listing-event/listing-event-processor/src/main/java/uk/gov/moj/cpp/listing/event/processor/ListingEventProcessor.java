@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
 
-import static javax.json.Json.createArrayBuilder;
 import static java.util.Objects.nonNull;
+import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
@@ -16,6 +16,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.commands.LinkedToCases;
@@ -37,14 +38,15 @@ import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
+import uk.gov.justice.listing.events.HearingMarkedForPartialUpdate;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.JudicialRole;
-import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
-import uk.gov.justice.listing.events.OffenceIds;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
+import uk.gov.justice.listing.events.OffenceIds;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
@@ -61,7 +63,6 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
-import uk.gov.moj.cpp.listing.event.processor.util.JudicialRoleDomainToEventConverter;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommand;
@@ -78,7 +79,9 @@ import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearing
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommandCollectionConverter;
+import uk.gov.moj.cpp.listing.event.processor.command.UpdateUnallocatedHearingPartiallyCommandConverter;
 import uk.gov.moj.cpp.listing.event.processor.util.HearingListedToUpdateHearingForListingCommand;
+import uk.gov.moj.cpp.listing.event.processor.util.JudicialRoleDomainToEventConverter;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -172,8 +175,11 @@ public class ListingEventProcessor {
     private static final String COMMAND_MARK_HEARING_AS_DUPLICATE = "listing.command.mark-hearing-as-duplicate";
     private static final String COMMAND_MARK_HEARING_AS_DUPLICATE_FOR_CASE = "listing.command.mark-hearing-as-duplicate-for-case";
     private static final String COMMAND_CHANGE_NEXT_HEARING_DAY = "listing.command.change-next-hearing-day";
+    private static final String COMMAND_MARK_HEARING_AS_DELETED = "listing.command.mark-hearing-as-deleted";
+    private static final String COMMAND_REMOVE_PARTIALLY_MERGED_OFFENCES = "listing.command.remove-partially-merged-offences-from-original-hearing";
     private static final String APPLICATION_ID = "applicationId";
     private static final String HEARING_ID = "hearingId";
+    private static final String HEARING_ID_TO_MARK = "hearingIdToMarkAsDeleted";
     private static final String IS_VACATED = "isVacated";
     private static final String ALLOCATED = "allocated";
     private static final String REASON_ID = "vacatedTrialReasonId";
@@ -195,6 +201,8 @@ public class ListingEventProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingEventProcessor.class);
     private static final String PRIVATE_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS = "listing.events.new-defendant-added-for-court-proceedings";
     private static final String PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS = "public.listing.new-defendant-added-for-court-proceedings";
+    private static final String PRIVATE_EVENT_HEARING_MARKED_AS_DELETED = "listing.events.hearing-marked-as-deleted";
+    private static final String PRIVATE_EVENT_HEARING_MARKED_FOR_PARTIAL_UPDATE = "listing.events.hearing-marked-for-partial-update";
     static final String COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
 
     @Inject
@@ -253,6 +261,9 @@ public class ListingEventProcessor {
 
     @Inject
     private SlotUpdater slotUpdater;
+
+    @Inject
+    private UpdateUnallocatedHearingPartiallyCommandConverter updateUnallocatedHearingPartiallyCommandConverter;
 
     @Inject
     private RotaSLServiceAdapter rotaSLServiceAdapter;
@@ -517,7 +528,7 @@ public class ListingEventProcessor {
         final JsonObject payload = envelope.payloadAsJsonObject();
         final HearingExtended hearingExtended = jsonObjectConverter.convert(payload, HearingExtended.class);
 
-        if(isNotBoxWorkRequest(hearingExtended)){
+        if (isNotBoxWorkRequest(hearingExtended)) {
             if (isNotEmpty(hearingExtended.getProsecutionCases()) && !hearingExtended.getCourtApplication().isPresent()) {
                 sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_ADD_CASES_TO_HEARING),
                         envelope.payloadAsJsonObject()));
@@ -789,6 +800,38 @@ public class ListingEventProcessor {
                 .forEach(hearingday -> builder.add(hearingday));
 
         return builder.build();
+    }
+
+    @Handles(PRIVATE_EVENT_HEARING_MARKED_AS_DELETED)
+    public void handleHearingMarkedAsDeleted(final JsonEnvelope envelope) {
+
+        final HearingMarkedAsDeleted hearingMarkedAsDeleted = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingMarkedAsDeleted.class);
+        final UUID hearingIdToDelete = hearingMarkedAsDeleted.getHearingIdToDelete();
+
+        final JsonObject commandPayload = createObjectBuilder()
+                .add(HEARING_ID_TO_MARK, hearingIdToDelete.toString())
+                .build();
+
+        this.sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_MARK_HEARING_AS_DELETED),
+                (commandPayload)));
+
+    }
+
+    @Handles(PRIVATE_EVENT_HEARING_MARKED_FOR_PARTIAL_UPDATE)
+    public void handleHearingMarkedForPartialUpdate(final JsonEnvelope envelope) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENT_HEARING_MARKED_FOR_PARTIAL_UPDATE, envelope.toObfuscatedDebugString());
+        }
+
+        final JsonObject payload = envelope.payloadAsJsonObject();
+
+        final HearingMarkedForPartialUpdate hearingMarkedForPartialUpdate = jsonObjectConverter.convert(payload, HearingMarkedForPartialUpdate.class);
+
+        final JsonObject commandPayload = updateUnallocatedHearingPartiallyCommandConverter.convertPartialUpdateEventToCommand(hearingMarkedForPartialUpdate);
+
+        this.sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_REMOVE_PARTIALLY_MERGED_OFFENCES),
+                (commandPayload)));
+
     }
 
     private JsonObject generatePayloadForCommandMarkHearingAsDuplicate(final JsonEnvelope envelope) {
@@ -1148,7 +1191,7 @@ public class ListingEventProcessor {
 
         final JsonObject changeJudiciaryForHearingsJsonObject = createObjectBuilder()
                 .add("hearings", createArrayBuilder().add(hearingId.toString()).build())
-                .add("judiciary",jsonArrayBuilder)
+                .add("judiciary", jsonArrayBuilder)
                 .build();
 
         LOGGER.info(LOG_PUBLISHING, COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS, changeJudiciaryForHearingsJsonObject);

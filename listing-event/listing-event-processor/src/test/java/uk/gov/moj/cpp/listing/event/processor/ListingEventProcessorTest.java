@@ -90,13 +90,16 @@ import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
 import uk.gov.justice.listing.events.CourtListRestricted;
 import uk.gov.justice.listing.events.DefendantOffenceIds;
 import uk.gov.justice.listing.events.DefendantOffenceIdsV2;
+import uk.gov.justice.listing.events.Defendants;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.Hearing;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
+import uk.gov.justice.listing.events.HearingMarkedForPartialUpdate;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
@@ -104,11 +107,13 @@ import uk.gov.justice.listing.events.LinkedToCases;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.OffenceIds;
+import uk.gov.justice.listing.events.Offences;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
+import uk.gov.justice.listing.events.ProsecutionCases;
 import uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.StatementOfOffence;
@@ -145,6 +150,7 @@ import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearing
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommandCollectionConverter;
+import uk.gov.moj.cpp.listing.event.processor.command.UpdateUnallocatedHearingPartiallyCommandConverter;
 import uk.gov.moj.cpp.listing.event.processor.util.HearingListedToUpdateHearingForListingCommand;
 import uk.gov.moj.cpp.listing.event.utils.FileUtil;
 
@@ -313,6 +319,8 @@ public class ListingEventProcessorTest {
     private HearingExtended hearingExtended;
     @Mock
     private HearingListedToUpdateHearingForListingCommand hearingListedToUpdateHearingForListingCommand;
+    @Spy
+    private UpdateUnallocatedHearingPartiallyCommandConverter updateUnallocatedHearingPartiallyCommandConverter;
 
     @InjectMocks
     private ListingEventProcessor listingEventProcessor;
@@ -760,7 +768,6 @@ public class ListingEventProcessorTest {
         assertThat(jsonObject.getString("hearingId"), is(hearingId.toString()));
 
     }
-
 
 
     @Test
@@ -1499,13 +1506,13 @@ public class ListingEventProcessorTest {
 
         when(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingMarkedAsDuplicate.class))
                 .thenReturn(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate()
-                .withHearingId(hearingId)
-                        .withCaseIds(Arrays.asList(case1Id,case2Id))
+                        .withHearingId(hearingId)
+                        .withCaseIds(Arrays.asList(case1Id, case2Id))
                         .build());
 
         listingEventProcessor.handlePrivateHearingMarkedAsDuplicate(event);
 
-        verify(this.sender,times(2)).send(this.senderJsonEnvelopeCaptor.capture());
+        verify(this.sender, times(2)).send(this.senderJsonEnvelopeCaptor.capture());
 
         final JsonEnvelope firstCommandEvent = this.senderJsonEnvelopeCaptor.getAllValues().get(0);
         final JsonEnvelope secondCommandEvent = this.senderJsonEnvelopeCaptor.getAllValues().get(1);
@@ -1735,6 +1742,80 @@ public class ListingEventProcessorTest {
         assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getInt("listedDurationMinutes"), is(0));
         assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getInt("listingSequence"), is(3));
         assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getString("sittingDay"), is("2020-08-25T09:00:00.000Z"));
+
+    }
+
+    @Test
+    public void shouldHandleMarkHearingAsHearingDeleted() {
+
+        setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
+
+        final UUID hearingId = randomUUID();
+
+        final HearingMarkedAsDeleted hearingMarkedAsDeleted = HearingMarkedAsDeleted.hearingMarkedAsDeleted()
+                .withHearingIdToDelete(hearingId)
+                .build();
+
+        final JsonObject eventPayload = objectToJsonObjectConverter.convert(hearingMarkedAsDeleted);
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-marked-as-deleted"),
+                eventPayload);
+
+        given(jsonObjectConverter.convert(eventPayload, HearingMarkedAsDeleted.class)).willReturn(hearingMarkedAsDeleted);
+
+        listingEventProcessor.handleHearingMarkedAsDeleted(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final JsonEnvelope commandEvent = this.senderJsonEnvelopeCaptor.getValue();
+
+        assertThat(commandEvent.metadata().name(), is("listing.command.mark-hearing-as-deleted"));
+        assertThat(commandEvent.payload().toString(),
+                isJson(allOf(
+                        withJsonPath("$.hearingIdToMarkAsDeleted", equalTo(hearingId.toString())))
+                ));
+
+    }
+
+    @Test
+    public void shouldHandleHearingMarkedForPartialUpdate() {
+
+        setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
+
+        final UUID hearingId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID defendantId = randomUUID();
+        final UUID offenceId = randomUUID();
+
+
+        final HearingMarkedForPartialUpdate hearingMarkedForPartialUpdate = HearingMarkedForPartialUpdate.hearingMarkedForPartialUpdate()
+                .withHearingIdToBeUpdated(hearingId)
+                .withProsecutionCases(Arrays.asList(
+                        ProsecutionCases.prosecutionCases().withCaseId(caseId)
+                                .withDefendants(Arrays.asList(Defendants.defendants().withDefendantId(defendantId)
+                                        .withOffences(Arrays.asList(Offences.offences().withOffenceId(offenceId).build()))
+                                        .build()))
+                                .build()
+                ))
+                .build();
+
+        final JsonObject eventPayload = objectToJsonObjectConverter.convert(hearingMarkedForPartialUpdate);
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-marked-for-partial-update"),
+                eventPayload);
+
+        given(jsonObjectConverter.convert(eventPayload, HearingMarkedForPartialUpdate.class)).willReturn(hearingMarkedForPartialUpdate);
+
+        listingEventProcessor.handleHearingMarkedForPartialUpdate(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final JsonEnvelope commandEvent = this.senderJsonEnvelopeCaptor.getValue();
+
+        assertThat(commandEvent.metadata().name(), is("listing.command.remove-partially-merged-offences-from-original-hearing"));
+        assertThat(commandEvent.payload().toString(),
+                isJson(allOf(
+                        withJsonPath("$.hearingIdToBeUpdated", equalTo(hearingId.toString())),
+                        withJsonPath("$.prosecutionCasesToRemove", hasSize(1)))
+                ));
 
     }
 

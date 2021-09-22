@@ -161,10 +161,17 @@ baseUri: message://command/handler/message/listing
         example: !include json/listing.command.extend-hearing-for-hearing-enriched.json
         schema:  !include json/schema/listing.command.extend-hearing-for-hearing-enriched.json
 
+      application/vnd.listing.command.remove-partially-merged-offences-from-original-hearing+json:
+        example: !include json/listing.command.remove-partially-merged-offences-from-original-hearing.json
+        schema:  !include json/schema/listing.command.remove-partially-merged-offences-from-original-hearing.json
+
+      application/vnd.listing.command.mark-hearing-as-deleted+json:
+        example: !include json/listing.command.mark-hearing-as-deleted.json
+        schema:  !include json/schema/listing.command.mark-hearing-as-deleted.json
+
       application/vnd.listing.command.add-cases-to-hearing+json:
         example: !include json/listing.command.add-cases-to-hearing.json
         schema:  !include json/schema/listing.command.add-cases-to-hearing.json
-
 
       application/vnd.listing.command.update-linked-cases+json:
         example: !include json/listing.command.update-linked-cases.json

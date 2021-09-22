@@ -147,6 +147,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTED_CASES_ADDED_TO_HEARING = "listing.event.cases-added-to-hearing";
     private static final String EVENT_SELECTED_HEARING_UPDATED_TO_CASE = "listing.events.hearing-updated-to-case";
     private static final String EVENT_SELECTED_HEARING_DELETED = "listing.events.hearing-deleted";
+    private static final String EVENT_SELECTED_HEARING_MARKED_AS_DELETED = "listing.events.hearing-marked-as-deleted";
     private static final String EVENT_SELECTED_HEARING_PARTIALLY_UPDATED = "listing.events.hearing-partially-updated";
     private static final String PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED = "public.progression.events.hearing-extended";
@@ -175,6 +176,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private final MessageConsumer privateMessageConsumerAddedCaseForHearing;
     private final MessageConsumer privateMessageConsumerHearingUpdatedToCase;
     private final MessageConsumer privateMessageConsumerHearingDeleted;
+    private final MessageConsumer privateMessageConsumerHearingMarkedAsDeleted;
     private final MessageConsumer privateMessageConsumerHearingPartiallyUpdated;
     private final MessageConsumer privateMessageConsumerHearingDaysChanged;
     private final MessageConsumer publicMessageConsumerHearingConfirmedForExtendHearing;
@@ -199,6 +201,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerHearingUpdatedToCase = privateEvents.createConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
         privateMessageConsumerJudiciaryAssigned = privateEvents.createConsumer(EVENT_SELECTOR_JUDICIARY_ASSIGNED);
         privateMessageConsumerHearingDeleted = privateEvents.createConsumer(EVENT_SELECTED_HEARING_DELETED);
+        privateMessageConsumerHearingMarkedAsDeleted = privateEvents.createConsumer(EVENT_SELECTED_HEARING_MARKED_AS_DELETED);
         privateMessageConsumerHearingPartiallyUpdated = privateEvents.createConsumer(EVENT_SELECTED_HEARING_PARTIALLY_UPDATED);
         publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
         publicMessageConsumerHearingExtend = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED);
@@ -217,6 +220,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerAddedCaseForHearing = privateEvents.createConsumer(EVENT_SELECTED_CASES_ADDED_TO_HEARING);
         privateMessageConsumerHearingUpdatedToCase = privateEvents.createConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
         privateMessageConsumerHearingDeleted = privateEvents.createConsumer(EVENT_SELECTED_HEARING_DELETED);
+        privateMessageConsumerHearingMarkedAsDeleted = privateEvents.createConsumer(EVENT_SELECTED_HEARING_MARKED_AS_DELETED);
         privateMessageConsumerHearingPartiallyUpdated = privateEvents.createConsumer(EVENT_SELECTED_HEARING_PARTIALLY_UPDATED);
         publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
         publicMessageConsumerHearingExtend = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED);
@@ -1832,6 +1836,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
             privateMessageConsumerHearingDaysChanged.close();
             privateMessageConsumerAddedCaseForHearing.close();
             privateMessageConsumerHearingDeleted.close();
+            privateMessageConsumerHearingMarkedAsDeleted.close();
             privateMessageConsumerHearingPartiallyUpdated.close();
             publicMessageConsumerHearingConfirmedForExtendHearing.close();
             publicMessageConsumerHearingExtend.close();
@@ -2066,6 +2071,16 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("jsonResponse from privateMessageConsumerHearingDeleted: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("hearingIdToBeDeleted "), is(hearingId.toString()));
+    }
+
+    public void verifyHearingMarkedAsDeletedInActiveMQ(final UUID hearingId) {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingMarkedAsDeleted);
+        LOGGER.debug("jsonResponse from privateMessageConsumerHearingMarkedAsDeleted: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("hearingIdToDelete "), is(hearingId.toString()));
     }
 
     public void verifyHearingUpdatedPartiallyInActiveMQ(final UUID hearingId) {

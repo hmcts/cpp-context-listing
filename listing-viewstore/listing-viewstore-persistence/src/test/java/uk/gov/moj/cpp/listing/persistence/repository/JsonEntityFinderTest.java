@@ -29,7 +29,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class JsonEntityFinderTest {
 
     private static final UUID HEARING_ID = randomUUID();
-//    private static final String JSON_PATH = "path";
     private static final String JSON_PATH = "path";
     private static final String UUID_FIELD = "uuid";
     private static final String ARRAY_FIELD = "array";
