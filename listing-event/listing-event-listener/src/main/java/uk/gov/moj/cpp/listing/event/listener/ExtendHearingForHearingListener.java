@@ -2,10 +2,6 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
-
-import java.util.Collection;
-import java.util.Optional;
-import java.util.function.BiFunction;
 import uk.gov.justice.listing.events.AddedCasesForHearing;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.Defendant;
@@ -24,12 +20,16 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.ListingNumbersRepository;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -43,7 +43,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.moj.cpp.listing.persistence.repository.ListingNumbersRepository;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class ExtendHearingForHearingListener {
@@ -56,13 +55,18 @@ public class ExtendHearingForHearingListener {
     private ListingNumbersRepository listingNumbersRepository;
     private HearingSearchSyncService hearingSearchSyncService;
 
+    private OffenceComparator offenceComparator;
+
     @Inject
-    public ExtendHearingForHearingListener(final HearingRepository hearingRepository, final JsonObjectToObjectConverter jsonObjectConverter, final ObjectMapper objectMapper, final HearingSearchSyncService hearingSearchSyncService, final ListingNumbersRepository listingNumbersRepository) {
+    public ExtendHearingForHearingListener(final HearingRepository hearingRepository, final JsonObjectToObjectConverter jsonObjectConverter, final ObjectMapper objectMapper,
+                                           final HearingSearchSyncService hearingSearchSyncService, final ListingNumbersRepository listingNumbersRepository,
+                                           final OffenceComparator offenceComparator) {
         this.hearingRepository = hearingRepository;
         this.jsonObjectConverter = jsonObjectConverter;
         this.objectMapper = objectMapper;
         this.hearingSearchSyncService = hearingSearchSyncService;
         this.listingNumbersRepository = listingNumbersRepository;
+        this.offenceComparator = offenceComparator;
     }
 
     @Handles("listing.events.hearing-deleted")
@@ -189,42 +193,49 @@ public class ExtendHearingForHearingListener {
 
     private List<ListedCase> getListedCaseWithListingNumbers(final List<ListedCase> listedCasesToAdd) {
         return listedCasesToAdd.stream().map(listedCase -> ListedCase.listedCase().withValuesFrom(listedCase)
-                .withDefendants(listedCase.getDefendants().stream()
-                        .map(defendant -> Defendant.defendant().withValuesFrom(defendant)
-                                .withOffences(defendant.getOffences().stream()
-                                        .map(offence -> Offence.offence().withValuesFrom(offence)
-                                                .withListingNumber(listingNumbersRepository.upset(offence.getId()).getListingNumber())
-                                                .build())
-                                        .collect(Collectors.toList()))
-                                .build())
-                        .collect(Collectors.toList()))
-                .build())
+                        .withDefendants(listedCase.getDefendants().stream()
+                                .map(defendant -> Defendant.defendant().withValuesFrom(defendant)
+                                        .withOffences(defendant.getOffences().stream()
+                                                .map(offence -> Offence.offence().withValuesFrom(offence)
+                                                        .withListingNumber(listingNumbersRepository.upset(offence.getId()).getListingNumber())
+                                                        .build())
+                                                .collect(Collectors.toList()))
+                                        .build())
+                                .collect(Collectors.toList()))
+                        .build())
                 .collect(Collectors.toList());
     }
 
-    private void compareCases(final List<ListedCase> dbListedCases, final ListedCase c, final Defendant d) {
-        dbListedCases.forEach(dbListedCase -> {
-            if (dbListedCase.getId().toString().equals(c.getId().toString())) { //find the matching case
-                dbListedCase.getDefendants().forEach(dbListedDefendant -> addOffences(d, dbListedDefendant));
-            }
-        });
+    /**
+     * for each matching case in the db update matching defendant offences if the passed in
+     * offence has listing number greater than or equal to the db version or add the passed in offence
+     * if there is no version of the offence in db then
+     *
+     * @param dbListedCases
+     * @param listedCase
+     * @param defendant
+     */
+    private void compareCases(final List<ListedCase> dbListedCases, final ListedCase listedCase, final Defendant defendant) {
+
+        dbListedCases.stream().filter(dbListedCase -> dbListedCase.getId().equals(listedCase.getId())).forEach(dbListedCase ->
+                dbListedCase.getDefendants().stream().filter(dbListedDefendant -> dbListedDefendant.getId().equals(defendant.getId())).forEach(dbListedDefendant ->
+                        defendant.getOffences().forEach(defendantOffence -> {
+                                    final Offence latestVersionOfOffence = offenceComparator.getLatestVersionOfOffence(defendantOffence, dbListedDefendant.getOffences());
+                                    dbListedDefendant.getOffences().removeIf(dbOffence -> dbOffence.getId().equals(defendantOffence.getId()));
+                                    dbListedDefendant.getOffences().add(latestVersionOfOffence);
+                                }
+                        ))
+        );
     }
 
-    private void addDefendants(final List<ListedCase> dbListedCases, final ListedCase c, final Defendant d) {
-        dbListedCases.forEach(dbListedCase -> {
-            if (dbListedCase.getId().toString().equals(c.getId().toString())) {
-                dbListedCase.getDefendants().add(d); //add defendant without overriding previous defendants
-            }
-        });
+    private void addDefendants(final List<ListedCase> dbListedCases, final ListedCase listedCase, final Defendant defendant) {
+
+        dbListedCases.stream().filter(dbListedCase -> dbListedCase.getId().equals(listedCase.getId())).forEach(dbListedCase ->
+                dbListedCase.getDefendants().add(defendant));
     }
 
-    private void addOffences(final Defendant d, final Defendant dbListedDefendant) {
-        if (dbListedDefendant.getId().toString().equals(d.getId().toString())) { //find the matching defendant
-            dbListedDefendant.getOffences().addAll(d.getOffences()); //add offences in the request to the dbListedDefendant
-        }
-    }
-
-    private ListedCase extractListedCases(final ObjectMapper objectMapper, final JsonNode node, final String hearingIdToBeUpdated) {
+    private ListedCase extractListedCases(final ObjectMapper objectMapper,
+                                          final JsonNode node, final String hearingIdToBeUpdated) {
         final JsonObject hearingJson;
         String valueAsString = "";
         try {
@@ -239,7 +250,8 @@ public class ExtendHearingForHearingListener {
     }
 
     @SuppressWarnings({"squid:S3776", "squid:S134"})
-    private void removeCasesFromPersistedHearing(final List<ProsecutionCases> casesToRemove, final List<ListedCase> storedListCases) {
+    private void removeCasesFromPersistedHearing(final List<ProsecutionCases> casesToRemove,
+                                                 final List<ListedCase> storedListCases) {
         for (final ProsecutionCases pc : casesToRemove) {//cases in the request
             for (final Defendants defendant : pc.getDefendants()) {//defendants in the request
                 for (final Offences offence : defendant.getOffences()) {//offences in the request
