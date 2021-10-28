@@ -771,7 +771,6 @@ public class StandardCourtListTemplateAssemblerTest {
         assertThat(actualOffence.getOffenceTitle(), is(notNullValue()));
         assertThat(actualOffence.getOffenceWording(), is(notNullValue()));
         assertThat(actualOffence.getId().toString(), anyOf(is("b5bfc980-2efb-4eb3-83af-033a77694f51"), is("09844038-4709-49c1-9c4f-2300c9be7b32"), is("77d5da0e-4d97-4668-8933-780e38b9dd98")));
-        assertThat(actualOffence.getListingNumber(), is(1));
     }
 
 

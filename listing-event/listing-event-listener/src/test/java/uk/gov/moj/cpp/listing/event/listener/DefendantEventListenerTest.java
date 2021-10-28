@@ -6,7 +6,6 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
@@ -14,11 +13,6 @@ import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.junit.Before;
-import org.mockito.MockitoAnnotations;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
@@ -33,7 +27,6 @@ import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.entity.ListingNumbers;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.time.LocalDate;
@@ -51,16 +44,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import uk.gov.moj.cpp.listing.persistence.repository.ListingNumbersRepository;
+import org.mockito.runners.MockitoJUnitRunner;
 
-@RunWith(DataProviderRunner.class)
+@RunWith(MockitoJUnitRunner.class)
 public class DefendantEventListenerTest {
 
     private static final String LISTED_CASES = "listedCases";
     private static final UUID HEARING_ID = randomUUID();
     private static final UUID CASE_ID = randomUUID();
     private static final UUID DEFENDANT_ID = randomUUID();
-    private static final UUID OFFENCE_ID = randomUUID();
     private static final BailStatus EXPECTED_BAIL_STATUS = new BailStatus.Builder().withCode("B").withId(fromString("dd4073b6-22be-3875-9d63-5da286bb3ece")).withDescription("Conditional Bail").build();
 
     @Spy
@@ -76,9 +68,6 @@ public class DefendantEventListenerTest {
     private HearingRepository hearingRepository;
 
     @Mock
-    private ListingNumbersRepository listingNumbersRepository;
-
-    @Mock
     Hearing hearing;
 
 
@@ -87,19 +76,6 @@ public class DefendantEventListenerTest {
 
     @InjectMocks
     private DefendantEventListener defendantEventListener;
-
-    @DataProvider
-    public static Object[][] listingNumberVariations() {
-        return new Object[][]{
-                {"true", 1},
-                {"false", 0}
-        };
-    }
-
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-    }
 
     @Test
     public void shouldHandleDefendantDetailsUpdatedAndPersistSimpleDefendant() throws Exception {
@@ -222,10 +198,8 @@ public class DefendantEventListenerTest {
     }
 
     @Test
-    @UseDataProvider("listingNumberVariations")
-    public void shouldHandleDefendantAddedAndPersistSimpleDefendant(final String allocated, final int listingNumber) throws Exception {
+    public void shouldHandleDefendantAddedAndPersistSimpleDefendant() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
-        final JsonNode allocatedValue = objectMapper.readTree(allocated);
         List<ListedCase> testCases = createListedCases(CASE_ID, DEFENDANT_ID);
         String testCasesString = mapper.writeValueAsString(testCases);
         JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
@@ -237,9 +211,6 @@ public class DefendantEventListenerTest {
                 .withDefendant(Defendant.defendant()
                         .withBailStatus(of(EXPECTED_BAIL_STATUS))
                         .withId(DEFENDANT_ID)
-                        .withOffences(singletonList(Offence.offence()
-                                .withId(OFFENCE_ID)
-                                .build()))
                         .build())
                 .build();
 
@@ -248,8 +219,7 @@ public class DefendantEventListenerTest {
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
         given(properties.get(LISTED_CASES)).willReturn(testCasesProperties);
-        given(listingNumbersRepository.upset(OFFENCE_ID)).willReturn(new ListingNumbers(OFFENCE_ID, 1));
-        given(properties.get("allocated")).willReturn(allocatedValue);
+
 
         final ArgumentCaptor<ArrayNode> objectNodeCaptor =
                 ArgumentCaptor.forClass(ArrayNode.class);
@@ -258,15 +228,6 @@ public class DefendantEventListenerTest {
 
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
-
-        final JsonNode defendants = objectNodeCaptor.getValue().get(0).get("defendants");
-        assertThat(defendants.size(), equalTo(2));
-
-        if(listingNumber > 0) {
-            assertThat(defendants.get(1).get("offences").get(0).get("listingNumber").asInt(), equalTo(listingNumber));
-        }else{
-            assertNull(defendants.get(1).get("offences").get(0).get("listingNumber"));
-        }
     }
 
     @Test

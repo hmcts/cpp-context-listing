@@ -4,6 +4,7 @@ import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.gov.justice.listing.courts.AddCasesToHearing;

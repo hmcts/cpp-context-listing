@@ -11,11 +11,17 @@ import static javax.json.Json.createObjectBuilder;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
+
+import com.jayway.restassured.path.json.JsonPath;
+import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.steps.CourtListSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -43,6 +49,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jayway.jsonpath.Filter;
 import org.hamcrest.Matcher;
 import org.junit.Test;
+import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 public class HearingDaysIT extends AbstractIT {
 
@@ -50,7 +57,7 @@ public class HearingDaysIT extends AbstractIT {
     private static final String UPDATE_HEARING_FOR_LISTING_JSON = "update-hearing-for-listing.json";
     private static final String UPDATE_ALLOCATED_HEARING_FOR_LISTING_JSON = "update-allocated-hearing-for-listing.json";
     private static final String MEDIA_TYPE_CORRECT_HEARING_DAYS_WITHOUT_COURT_CENTRE = "application/vnd.listing.correct-hearing-days-without-court-centre+json";
-    private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     private static final String ALPHABETICAL = "Alphabetical";
     private static final String PUBLIC = "Public";
     public static final String STANDARD = "Standard";
@@ -64,9 +71,10 @@ public class HearingDaysIT extends AbstractIT {
     private ZonedDateTime hearingStartTime;
     private String caseUrn;
     private LocalTime defaultStartTime = LocalTime.parse("10:00");
-    private long defaultDuration = 20;
+    private int defaultDuration = 20;
     private UUID otherCourtCentreId;
     private UUID otherCourtRoomId;
+    private MessageConsumer messageConsumerClient;
 
 
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -159,7 +167,7 @@ public class HearingDaysIT extends AbstractIT {
     }
 
     @Test
-    public void testHearingDaysCorrectedWithCourtCentre() throws IOException {
+    public void testHearingDaysCorrectedWithCourtCentre() throws IOException, JMSException {
         startDate = LocalDate.now();
         hearingId = randomUUID();
         caseId = randomUUID();
@@ -191,6 +199,8 @@ public class HearingDaysIT extends AbstractIT {
                 .add("hearingDays", createArrayBuilder().add(populateCorrectedHearingDays()))
                 .add("id", hearingId.toString()).build();
 
+        messageConsumerClient = publicEvents.createConsumer("public.events.listing.hearing-days-without-court-centre-corrected");
+
         final Response response = restClient.postCommand(correctHearingDaysWithCourtCentre, MEDIA_TYPE_CORRECT_HEARING_DAYS_WITHOUT_COURT_CENTRE,
                 payload.toString(), getLoggedInHeader());
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
@@ -200,6 +210,15 @@ public class HearingDaysIT extends AbstractIT {
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtCentreId", hasItem(courtCentreId.toString())),
                 withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtRoomId", hasItem(courtRoomId.toString()))};
         listCourtHearingSteps.verifyUnallocatedHearingFound(hearingId.toString(), unallocatedMatchers);
+
+        final JsonPath message = QueueUtil.retrieveMessage(messageConsumerClient);
+        assertThat(message.get("id"), is(hearingId.toString()));
+        assertThat(message.get("hearingDays[0].sittingDay"), is(hearingStartTime.format(formatter)));
+        assertThat(message.get("hearingDays[0].courtCentreId"), is(courtCentreId.toString()));
+        assertThat(message.get("hearingDays[0].courtRoomId"), is(courtRoomId.toString()));
+        assertThat(message.get("hearingDays[0].listedDurationMinutes"), is(defaultDuration));
+        assertThat(message.get("hearingDays[0].listingSequence"), is(0));
+        messageConsumerClient.close();
     }
 
     private JsonObjectBuilder populateCorrectedHearingDays() {

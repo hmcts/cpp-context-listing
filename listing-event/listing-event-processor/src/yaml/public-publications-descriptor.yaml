@@ -38,6 +38,9 @@ subscriptions_descriptor:
         - name: public.events.listing.unallocated-hearing-deleted
           schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.unallocated-hearing-deleted.json
 
+        - name: public.events.listing.hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/courts/public.listing.events.hearing-deleted.json
+
         - name: public.events.listing.hearing-unallocated
           schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.hearing-unallocated.json
 
@@ -56,5 +59,7 @@ subscriptions_descriptor:
         - name: public.events.listing.cases-added-for-updated-related-hearing
           schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.cases-added-for-updated-related-hearing.json
 
+        - name: public.events.listing.hearing-days-without-court-centre-corrected
+          schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearing-days-without-court-centre-corrected.json
 
       event_source_name: public.event.source

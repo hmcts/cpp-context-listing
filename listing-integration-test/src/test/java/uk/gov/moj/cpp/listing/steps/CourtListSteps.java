@@ -58,7 +58,7 @@ public class CourtListSteps extends AbstractIT {
         assertEquals(COURT_LIST_DATA, responseData);
     }
 
-    public void verifyCourtListRequestedAndIsCorrectJson(final String listId, final String templateName, final int listingNumber, final Matcher[] allocatedMatchers) {
+    public void verifyCourtListRequestedAndIsCorrectJson(final String listId, final String templateName, final Matcher[] allocatedMatchers) {
         final String endDate = listId.equals(STANDARD) ? updatedHearingData.getStartDate() : updatedHearingData.getEndDate();
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.search.court.list.payload-court-room-id"), updatedHearingData.getCourtCentreId(),
@@ -73,15 +73,15 @@ public class CourtListSteps extends AbstractIT {
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[0].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[1].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[1].listingNumber", is(listingNumber)),
+                                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[1].listingNumber"),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[2].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[2].listingNumber", is(listingNumber)),
+                                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[2].listingNumber"),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[0].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[1].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[1].listingNumber", is(listingNumber)),
+                                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[1].listingNumber"),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[2].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[2].listingNumber", is(listingNumber)),
+                                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[1].offences[2].listingNumber"),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].panel", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].caseId", notNullValue()),

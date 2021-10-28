@@ -20,16 +20,13 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.ListingNumbersRepository;
 
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -52,20 +49,18 @@ public class ExtendHearingForHearingListener {
     private static final String LISTED_CASES_FIELD = "listedCases";
     private final JsonObjectToObjectConverter jsonObjectConverter;
     private final ObjectMapper objectMapper;
-    private ListingNumbersRepository listingNumbersRepository;
     private HearingSearchSyncService hearingSearchSyncService;
 
     private OffenceComparator offenceComparator;
 
     @Inject
     public ExtendHearingForHearingListener(final HearingRepository hearingRepository, final JsonObjectToObjectConverter jsonObjectConverter, final ObjectMapper objectMapper,
-                                           final HearingSearchSyncService hearingSearchSyncService, final ListingNumbersRepository listingNumbersRepository,
+                                           final HearingSearchSyncService hearingSearchSyncService,
                                            final OffenceComparator offenceComparator) {
         this.hearingRepository = hearingRepository;
         this.jsonObjectConverter = jsonObjectConverter;
         this.objectMapper = objectMapper;
         this.hearingSearchSyncService = hearingSearchSyncService;
-        this.listingNumbersRepository = listingNumbersRepository;
         this.offenceComparator = offenceComparator;
     }
 
@@ -153,57 +148,39 @@ public class ExtendHearingForHearingListener {
         if (null != hearing.getProperties().get(LISTED_CASES_FIELD)) {
             using(hearingRepository)
                     .find(hearingId)
-                    .putSubListWithCheckingValue(LISTED_CASES_FIELD, typeRef, getListedCasesAddFunction(listedCasesToAdd), "allocated")
+                    .putSubList(LISTED_CASES_FIELD, typeRef, getListedCasesAddFunction(listedCasesToAdd))
                     .save();
             LOGGER.info("Hearing with id {} has been updated with new listed cases ", hearingId);
             hearingSearchSyncService.sync(hearingId);
         }
     }
 
-    private BiFunction<List<ListedCase>, JsonNode, List<ListedCase>> getListedCasesAddFunction(final List<ListedCase> listedCasesToAdd) {
-        return (dbListedCases, allocated) -> updateListedCases(listedCasesToAdd, dbListedCases, allocated);
+    private Function<List<ListedCase>, List<ListedCase>> getListedCasesAddFunction(final List<ListedCase> listedCasesToAdd) {
+        return dbListedCases -> updateListedCases(listedCasesToAdd, dbListedCases);
     }
 
     private List<ListedCase> updateListedCases(final List<ListedCase> listedCasesToAdd,
-                                               final List<ListedCase> dbListedCases,
-                                               final JsonNode allocated) {
+                                               final List<ListedCase> dbListedCases) {
 
         //create map from dbListedCases to compare against given request
         //but we will still modify the dbListedCases list
         final Map<UUID, Map<UUID, List<Offence>>> dbCaseDefendantOffenceMap = dbListedCases.stream().collect(Collectors.toMap(ListedCase::getId, listedCase -> listedCase.getDefendants().stream().collect(Collectors.toMap(Defendant::getId, Defendant::getOffences))));
-        Optional.of(allocated.asBoolean()).map(allocatedValue -> allocatedValue ? getListedCaseWithListingNumbers(listedCasesToAdd) : listedCasesToAdd)
-                .map(Collection::stream)
-                .ifPresent(list ->
-                        list.forEach(c -> { //iterate over the requested cases
-                            if (dbCaseDefendantOffenceMap.containsKey(c.getId())) { //if dbListedCases already has the same case
-                                c.getDefendants().forEach(d -> {
-                                    if (dbCaseDefendantOffenceMap.get(c.getId()).containsKey(d.getId())) { //if dbListedCases already has the same defendant
-                                        compareCases(dbListedCases, c, d);
-                                    } else { //if dbListedCase already has the case but not the defendant
-                                        addDefendants(dbListedCases, c, d);
-                                    }
-                                });
-                            } else { // if caseToAdd is not already in dbListedCases, add it directly
-                                dbListedCases.add(c);
-                            }
-                        }));
+
+        listedCasesToAdd.forEach(c -> { //iterate over the requested cases
+            if (dbCaseDefendantOffenceMap.containsKey(c.getId())) { //if dbListedCases already has the same case
+                c.getDefendants().forEach(d -> {
+                    if (dbCaseDefendantOffenceMap.get(c.getId()).containsKey(d.getId())) { //if dbListedCases already has the same defendant
+                        compareCases(dbListedCases, c, d);
+                    } else { //if dbListedCase already has the case but not the defendant
+                        addDefendants(dbListedCases, c, d);
+                    }
+                });
+            } else { // if caseToAdd is not already in dbListedCases, add it directly
+                dbListedCases.add(c);
+            }
+        });
 
         return dbListedCases;
-    }
-
-    private List<ListedCase> getListedCaseWithListingNumbers(final List<ListedCase> listedCasesToAdd) {
-        return listedCasesToAdd.stream().map(listedCase -> ListedCase.listedCase().withValuesFrom(listedCase)
-                        .withDefendants(listedCase.getDefendants().stream()
-                                .map(defendant -> Defendant.defendant().withValuesFrom(defendant)
-                                        .withOffences(defendant.getOffences().stream()
-                                                .map(offence -> Offence.offence().withValuesFrom(offence)
-                                                        .withListingNumber(listingNumbersRepository.upset(offence.getId()).getListingNumber())
-                                                        .build())
-                                                .collect(Collectors.toList()))
-                                        .build())
-                                .collect(Collectors.toList()))
-                        .build())
-                .collect(Collectors.toList());
     }
 
     /**
@@ -233,6 +210,7 @@ public class ExtendHearingForHearingListener {
         dbListedCases.stream().filter(dbListedCase -> dbListedCase.getId().equals(listedCase.getId())).forEach(dbListedCase ->
                 dbListedCase.getDefendants().add(defendant));
     }
+
 
     private ListedCase extractListedCases(final ObjectMapper objectMapper,
                                           final JsonNode node, final String hearingIdToBeUpdated) {

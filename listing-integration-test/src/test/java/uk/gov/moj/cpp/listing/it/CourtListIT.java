@@ -2,8 +2,8 @@ package uk.gov.moj.cpp.listing.it;
 
 import static com.google.common.collect.ImmutableMap.of;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.util.UUID.fromString;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
@@ -68,7 +68,7 @@ public class CourtListIT extends AbstractIT {
 
     @Test
     public void generatePublicCourtList() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", 1, new Matcher[0]);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", new Matcher[0]);
     }
 
     @Test
@@ -92,7 +92,7 @@ public class CourtListIT extends AbstractIT {
         }
         courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
 
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", 2, new Matcher[0]);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", new Matcher[0]);
     }
 
     @Test
@@ -109,9 +109,9 @@ public class CourtListIT extends AbstractIT {
         }
         final Matcher[] allocatedMatchers = {
                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[3].id", notNullValue()),
-                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[3].listingNumber", is(1)),
+                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[3].listingNumber"),
         };
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", 1, allocatedMatchers);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", allocatedMatchers);
     }
 
     @Test
@@ -128,15 +128,15 @@ public class CourtListIT extends AbstractIT {
 
         final Matcher[] allocatedMatchers = {
                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[2].offences[0].id", notNullValue()),
-                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[2].offences[0].listingNumber", is(1)),
+                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[2].offences[0].listingNumber"),
         };
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", 1, allocatedMatchers);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh",  allocatedMatchers);
     }
 
 
     @Test
     public void generateStandardCourtList() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(STANDARD, "BenchAndStandardCourtList",1, new Matcher[0] );
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(STANDARD, "BenchAndStandardCourtList", new Matcher[0] );
     }
 
     @Test
@@ -148,7 +148,7 @@ public class CourtListIT extends AbstractIT {
 
     @Test
     public void generateBenchList() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(BENCH, "BenchAndStandardCourtList", 1, new Matcher[0] );
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(BENCH, "BenchAndStandardCourtList",  new Matcher[0] );
     }
 
 }

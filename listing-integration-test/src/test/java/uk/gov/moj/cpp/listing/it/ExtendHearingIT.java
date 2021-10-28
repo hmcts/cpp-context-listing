@@ -46,6 +46,7 @@ public class ExtendHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingConfirmedEventForExtendHearingPublicMQ(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID);
             listCourtHearingSteps.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID);
             listCourtHearingSteps.verifyHearingDeletedInActiveMQ(UNALLOCATED_HEARING_ID);
+            listCourtHearingSteps.verifyHearingDeletedInPublicMQ(UNALLOCATED_HEARING_ID);
         }
     }
 

@@ -4,8 +4,6 @@ import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import java.util.function.BiFunction;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Offence;
@@ -28,7 +26,6 @@ import javax.inject.Inject;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Iterables;
-import uk.gov.moj.cpp.listing.persistence.repository.ListingNumbersRepository;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class DefendantOffencesEventListener {
@@ -39,9 +36,6 @@ public class DefendantOffencesEventListener {
 
     @Inject
     private HearingRepository hearingRepository;
-
-    @Inject
-    private ListingNumbersRepository listingNumbersRepository;
 
     @Inject
     private HearingSearchSyncService hearingSearchSyncService;
@@ -100,12 +94,12 @@ public class DefendantOffencesEventListener {
 
         using(hearingRepository)
                 .find(hearingId)
-                .putSubListWithCheckingValue(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getAddedListedCaseFunction(caseId, defendantId, offence), "allocated")
+                .putSubList(LISTED_CASES_FIELD, LISTED_CASE_TYPE, getAddedListedCaseFunction(caseId, defendantId, offence))
                 .save();
     }
 
-    private BiFunction<List<ListedCase>, JsonNode, List<ListedCase>> getAddedListedCaseFunction(UUID caseId, UUID defendantId, Offence offence) {
-        return (cases, allocated) -> getAddedListedCase(caseId, defendantId, offence, cases, allocated);
+    private Function<List<ListedCase>, List<ListedCase>> getAddedListedCaseFunction(UUID caseId, UUID defendantId, Offence offence) {
+        return cases -> getAddedListedCase(caseId, defendantId, offence, cases);
     }
 
     private List<ListedCase> getUpdatedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases) {
@@ -117,16 +111,12 @@ public class DefendantOffencesEventListener {
         return listedCases;
     }
 
-    private List<ListedCase> getAddedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases, JsonNode allocated) {
+    private List<ListedCase> getAddedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases) {
         ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
         List<Defendant> defendants = listedCase.getDefendants();
         Defendant originalDefendant = Iterables.find(defendants, defendant -> defendant.getId().equals(defendantId));
 
-        if(allocated.asBoolean()){
-            originalDefendant.getOffences().add(Offence.offence().withValuesFrom(updatedOffence).withListingNumber(listingNumbersRepository.upset(updatedOffence.getId()).getListingNumber()).build());
-        }else {
-            originalDefendant.getOffences().add(updatedOffence);
-        }
+        originalDefendant.getOffences().add(updatedOffence);
         listedCases.replaceAll(
                 listedCase1 -> listedCase1.getId().equals(listedCase.getId()) ? updateShadowListedFlagForListedCase(listedCase) : listedCase1);
 

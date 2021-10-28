@@ -14,6 +14,7 @@ import uk.gov.justice.listing.courts.HearingUnallocated;
 import uk.gov.justice.listing.courts.OffencesRemovedFromUnallocatedHearing;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
+import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.NextHearingRequested;
 import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
 import uk.gov.justice.listing.events.RemoveOffencesFromExistingHearingRequested;
@@ -49,11 +50,14 @@ public class NextHearingProcessor {
     private static final String PRIVATE_EVENT_REMOVE_OFFENCES_FROM_EXISTING_HEARING_REQUESTED = "listing.events.remove-offences-from-existing-hearing-requested";
     private static final String PRIVATE_EVENT_ALLOCATED_HEARING_DELETED = "listing.events.allocated-hearing-deleted";
     private static final String PRIVATE_EVENT_UNALLOCATED_HEARING_DELETED = "listing.events.unallocated-hearing-deleted";
+    private static final String PRIVATE_EVENT_HEARING_DELETED = "listing.events.hearing-deleted";
     private static final String PRIVATE_EVENT_OFFENCES_REMOVED_FROM_HEARING = "listing.events.offences-removed-from-hearing";
     private static final String PRIVATE_EVENT_NEXT_HEARING_DAY_CHANGED = "listing.events.next-hearing-day-changed";
 
     private static final String PUBLIC_EVENT_UNALLOCATED_HEARING_DELETED = "public.events.listing.unallocated-hearing-deleted";
     private static final String PUBLIC_EVENT_ALLOCATED_HEARING_DELETED = "public.events.listing.allocated-hearing-deleted";
+
+    private static final String PUBLIC_EVENT_HEARING_DELETED = "public.events.listing.hearing-deleted";
 
     private static final String PUBLIC_EVENT_HEARING_UNALLOCATED = "public.events.listing.hearing-unallocated";
     private static final String PUBLIC_EVENT_OFFENCES_REMOVED_FROM_UNALLOCATED_HEARING = "public.events.listing.offences-removed-from-unallocated-hearing";
@@ -145,6 +149,16 @@ public class NextHearingProcessor {
             event.getCaseIds().forEach(caseId ->
                     sendUpdateCaseWithDuplicateHearing(envelope, hearingId, caseId));
         }
+    }
+
+    @Handles(PRIVATE_EVENT_HEARING_DELETED)
+    public void handleHearingDeleted(final JsonEnvelope envelope) {
+        logEventReceived(envelope, PRIVATE_EVENT_HEARING_DELETED);
+
+        final HearingDeleted event = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingDeleted.class);
+        final UUID hearingId = event.getHearingIdToBeDeleted();
+
+        publishPublicHearingDeleted(envelope, hearingId);
     }
 
     @SuppressWarnings({"squid:S3655"})
@@ -281,6 +295,20 @@ public class NextHearingProcessor {
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_HEARING_UNALLOCATED),
                 objectToJsonValueConverter.convert(hearingUnallocated)));
+    }
+
+    private void publishPublicHearingDeleted(final JsonEnvelope envelope, final UUID hearingId) {
+
+        final uk.gov.justice.listing.courts.HearingDeleted hearingDeleted = uk.gov.justice.listing.courts.HearingDeleted.hearingDeleted()
+                .withHearingId(hearingId)
+                .build();
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(EVENT_PAYLOAD_DEBUG_STRING, PUBLIC_EVENT_HEARING_DELETED, hearingDeleted);
+        }
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_HEARING_DELETED),
+                objectToJsonValueConverter.convert(hearingDeleted)));
     }
 
     private void publishPublicOffencesRemovedFromUnallocatedHearing(final JsonEnvelope envelope, final UUID hearingId, final List<UUID> seededOffences) {

@@ -23,7 +23,6 @@ import static org.apache.commons.lang3.StringUtils.upperCase;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.ORGANISATION;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.BENCH;
-import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.STANDARD;
 import static uk.gov.moj.cpp.listing.domain.utils.JsonUtils.getString;
 import static uk.gov.moj.cpp.listing.domain.utils.ZonedDateTimeFormatter.adjustDateTime;
@@ -567,7 +566,6 @@ public class StandardPublicCourtListTemplateAssembler {
             builder.withWelshOffenceTitle(offence.getJsonObject(STATEMENT_OF_OFFENCE).getString(WELSH_TITLE, BLANK_STRING));
             builder.withOffenceWording(offence.getString(OFFENCE_WORDING, BLANK_STRING));
             builder.withId(fromString(offence.getString(ID)));
-            builder.withListingNumber(offence.getInt("listingNumber"));
         }
 
         return builder.build();

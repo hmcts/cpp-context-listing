@@ -908,6 +908,7 @@ public class Hearing implements Aggregate {
         return Stream.empty();
     }
 
+
     public Stream<Object> updateCaseMarkers(final UUID caseId, final List<uk.gov.moj.cpp.listing.domain.CaseMarker> caseMarkers) {
         if (this.duplicate) {
             return Stream.empty();

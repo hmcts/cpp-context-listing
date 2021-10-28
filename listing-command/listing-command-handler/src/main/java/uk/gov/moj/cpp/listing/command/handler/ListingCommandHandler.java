@@ -29,6 +29,9 @@ import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursA
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkingDay;
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingListingNeeds;
@@ -172,10 +175,6 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 import javax.ws.rs.core.Response;
-
-import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @ServiceComponent(COMMAND_HANDLER)
 @SuppressWarnings({"squid:S1188", "squid:CallToDeprecatedMethod", "squid:S2629", "squid:S00112"})
@@ -1389,6 +1388,7 @@ public class ListingCommandHandler {
             appendEventsToStream(envelope, eventStream, events);
         }
     }
+
 
     @VisibleForTesting
     void setClock(final Clock clock) {

@@ -9,6 +9,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
+import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -87,6 +88,7 @@ import uk.gov.justice.listing.events.CaseResultedDefendantProceedingsConcluded;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
 import uk.gov.justice.listing.events.CourtListRestricted;
+import uk.gov.justice.listing.events.DefendantOffenceIds;
 import uk.gov.justice.listing.events.DefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.DefendantsToBeAddedForCourtProceedings;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
@@ -105,6 +107,7 @@ import uk.gov.justice.listing.events.OffenceIds;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
+import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.PublicListingNewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.SeedingHearing;
@@ -195,6 +198,7 @@ public class ListingEventProcessorTest {
     private static final String HEARING_IDS = "hearingIds";
     private static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
     private static final String REMOVAL_REASON = "removalReason";
+    private static final String ID = "id";
     private final List<uk.gov.justice.listing.events.HearingDay> hearingDays = Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).build());
 
 
@@ -513,6 +517,14 @@ public class ListingEventProcessorTest {
         when(hearingAllocatedForListing.getHearingId()).thenReturn(randomUUID());
         when(hearingAllocatedForListing.getCourtRoomId()).thenReturn(randomUUID());
         when(hearingAllocatedForListing.getHearingDays()).thenReturn(hearingDays);
+        when(hearingAllocatedForListing.getProsecutionCaseDefendantsOffenceIds()).thenReturn(Arrays.asList(
+                ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
+                        .withId(randomUUID())
+                        .withDefendants(asList(DefendantOffenceIds.defendantOffenceIds()
+                                .withId(randomUUID())
+                                .withOffenceIds(Arrays.asList(OFFENCE_ID))
+                                .build()))
+                        .build()));
 
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = prepareRotaSLJudiciaryInfo(hearingSlotsResponse);
@@ -581,6 +593,7 @@ public class ListingEventProcessorTest {
         verify(rotaSLServiceAdapter, times(1)).getJudicialRoles(anyString(), anyString(), any(), anyString());
         verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
         verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
+
     }
 
     @Test
@@ -628,7 +641,7 @@ public class ListingEventProcessorTest {
                         .withDefendants(asList(DefendantOffenceIdsV2.defendantOffenceIdsV2()
                                 .withId(randomUUID())
                                 .withOffenceIds(Arrays.asList(OffenceIds.offenceIds()
-                                        .withId(randomUUID())
+                                        .withId(OFFENCE_ID)
                                         .withSeedingHearing(SeedingHearing.seedingHearing()
                                                 .withSeedingHearingId(seedingHearingId)
                                                 .build())
@@ -1383,7 +1396,7 @@ public class ListingEventProcessorTest {
         given(allocatedHearingExtendedFactory.create(allocatedHearingExtendedForListing, event))
                 .willReturn(hearingConfirmed);
 
-        final JsonObject jsonObject = createObjectBuilder().add("confirmedHearing", createObjectBuilder().add("id", HEARING_ID.toString())).build();
+        final JsonObject jsonObject = createObjectBuilder().add("confirmedHearing", createObjectBuilder().add(ID, HEARING_ID.toString())).build();
         given(objectToJsonValueConverter.convert(any(HearingConfirmed.class))).willReturn(jsonObject);
         //when
         listingEventProcessor.handleAllocatedHearingExtendedForListingMessage(event);
@@ -1395,7 +1408,7 @@ public class ListingEventProcessorTest {
         final JsonEnvelopeMatcher jsonEnvelopeMatcher = new JsonEnvelopeMatcher();
         assertThat(allValues.get(0).metadata().name(), is(COMMAND_UPDATE_HEARING_TO_CASE));
         assertThat(allValues.get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
-        assertThat(allValues.get(1).payload().getJsonObject("confirmedHearing").getString("id"), equalTo(HEARING_ID.toString()));
+        assertThat(allValues.get(1).payload().getJsonObject("confirmedHearing").getString(ID), equalTo(HEARING_ID.toString()));
     }
 
     @Test
@@ -1565,11 +1578,16 @@ public class ListingEventProcessorTest {
         final UUID defendantId = randomUUID();
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
+        final UUID offenceId = randomUUID();
         final CourtCentre courtCentre = courtCentre().withId(courtCentreId).withRoomId(courtRoomId).build();
         final ZonedDateTime hearingDateTime = ZonedDateTime.now();
 
         final NewDefendantAddedForCourtProceedings privateEventPayload = newDefendantAddedForCourtProceedings()
-                .withDefendant(uk.gov.justice.listing.events.Defendant.defendant().withId(defendantId).build())
+                .withDefendant(uk.gov.justice.listing.events.Defendant.defendant().withId(defendantId)
+                        .withOffences(singletonList(uk.gov.justice.listing.events.Offence.offence()
+                                .withId(offenceId)
+                                .build()))
+                        .build())
                 .withCourtCentreId(courtCentreId)
                 .withCourtRoomId(courtRoomId)
                 .withCaseId(caseId)
@@ -1609,7 +1627,11 @@ public class ListingEventProcessorTest {
         final ZonedDateTime hearingDateTime = ZonedDateTime.now();
 
         final NewDefendantAddedForCourtProceedings privateEventPayload = newDefendantAddedForCourtProceedings()
-                .withDefendant(uk.gov.justice.listing.events.Defendant.defendant().withId(defendantId).build())
+                .withDefendant(uk.gov.justice.listing.events.Defendant.defendant().withId(defendantId)
+                        .withOffences(singletonList(uk.gov.justice.listing.events.Offence.offence()
+                                .withId(randomUUID())
+                                .build()))
+                        .build())
                 .withCourtRoomId(courtRoomId)
                 .withCaseId(caseId)
                 .withHearingDateTime(hearingDateTime)
@@ -1637,7 +1659,11 @@ public class ListingEventProcessorTest {
         final ZonedDateTime hearingDateTime = ZonedDateTime.now();
 
         final NewDefendantAddedForCourtProceedings privateEventPayload = newDefendantAddedForCourtProceedings()
-                .withDefendant(uk.gov.justice.listing.events.Defendant.defendant().withId(defendantId).build())
+                .withDefendant(uk.gov.justice.listing.events.Defendant.defendant().withId(defendantId)
+                        .withOffences(singletonList(uk.gov.justice.listing.events.Offence.offence()
+                                .withId(randomUUID())
+                                .build()))
+                        .build())
                 .withCourtCentreId(courtCentreId)
                 .withCaseId(caseId)
                 .withHearingDateTime(hearingDateTime)
@@ -1665,7 +1691,11 @@ public class ListingEventProcessorTest {
         final UUID courtRoomId = randomUUID();
 
         final NewDefendantAddedForCourtProceedings privateEventPayload = newDefendantAddedForCourtProceedings()
-                .withDefendant(uk.gov.justice.listing.events.Defendant.defendant().withId(defendantId).build())
+                .withDefendant(uk.gov.justice.listing.events.Defendant.defendant().withId(defendantId)
+                        .withOffences(singletonList(uk.gov.justice.listing.events.Offence.offence()
+                        .withId(randomUUID())
+                        .build()))
+                        .build())
                 .withCourtCentreId(courtCentreId)
                 .withCourtRoomId(courtRoomId)
                 .withCaseId(caseId)
@@ -1680,6 +1710,32 @@ public class ListingEventProcessorTest {
 
         verify(sender, never()).send(this.senderJsonEnvelopeCaptor.capture());
         verify(hearingConfirmedFactory, never()).buildCourtCentre(any(), any(Optional.class), (any(JsonEnvelope.class)));
+    }
+
+    @Test
+    public void ShouldPublicEventWhenRaisedHearingDaysWithoutCourtCentreCorrected(){
+        final UUID hearingId = randomUUID();
+        final JsonObject payload = createObjectBuilder().add(ID, hearingId.toString())
+                .add("hearingDays", createArrayBuilder()
+                        .add(createObjectBuilder().add("courtCentreId", "f8254db1-1683-483e-afb3-b87fde5a0a26")
+                                .add("courtRoomId", "f1ead1d2-4b26-3230-b781-508d6aaafd26")
+                                .add("durationMinutes", 0)
+                                .add("endTime", "2020-08-25T09:00:00.000Z")
+                                .add("hearingDate", "2020-08-25")
+                                .add("sequence", 3)
+                                .add("startTime", "2020-08-25T09:00:00.000Z").build())).build();
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-days-without-court-centre-corrected"), payload);
+        listingEventProcessor.hearingDaysWithoutCourtCentreCorrected(event);
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+        final JsonEnvelope onlyPublicEvent = this.senderJsonEnvelopeCaptor.getAllValues().get(0);
+        assertThat(onlyPublicEvent.metadata().name(), is("public.events.listing.hearing-days-without-court-centre-corrected"));
+        assertThat(onlyPublicEvent.payloadAsJsonObject().getString(ID), is(hearingId.toString()));
+        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getString("courtCentreId"), is("f8254db1-1683-483e-afb3-b87fde5a0a26"));
+        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getString("courtRoomId"), is("f1ead1d2-4b26-3230-b781-508d6aaafd26"));
+        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getInt("listedDurationMinutes"), is(0));
+        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getInt("listingSequence"), is(3));
+        assertThat(onlyPublicEvent.payloadAsJsonObject().getJsonArray("hearingDays").getJsonObject(0).getString("sittingDay"), is("2020-08-25T09:00:00.000Z"));
+
     }
 
     private JsonEnvelope allocatedHearingExtendedForListingEvent() {

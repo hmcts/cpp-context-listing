@@ -3,17 +3,12 @@ package uk.gov.moj.cpp.listing.event.listener;
 import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
-
-import com.fasterxml.jackson.databind.JsonNode;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.DefendantLegalaidStatusUpdatedForHearing;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.NewBaseDefendant;
 import uk.gov.justice.listing.events.NewDefendantAddedForCourtProceedings;
 import uk.gov.justice.listing.events.NewDefendantDetailsUpdated;
-import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -30,7 +25,6 @@ import javax.inject.Inject;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Iterables;
-import uk.gov.moj.cpp.listing.persistence.repository.ListingNumbersRepository;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class DefendantEventListener {
@@ -40,9 +34,6 @@ public class DefendantEventListener {
 
     @Inject
     private HearingRepository hearingRepository;
-
-    @Inject
-    private ListingNumbersRepository listingNumbersRepository;
 
     @Handles("listing.events.new-defendant-details-updated")
     public void defendantDetailsUpdated(final Envelope<NewDefendantDetailsUpdated> event) {
@@ -74,7 +65,7 @@ public class DefendantEventListener {
 
         using(hearingRepository)
                 .find(hearingId)
-                .putSubListWithCheckingValue(LISTED_CASES_FIELD, typeRef, getDefendantsAddFunction(caseId, defendant), "allocated").save();
+                .putSubList(LISTED_CASES_FIELD, typeRef, getDefendantsAddFunction(caseId, defendant)).save();
 
     }
 
@@ -179,22 +170,13 @@ public class DefendantEventListener {
         return listedCases;
     }
 
-    private BiFunction<List<ListedCase>, JsonNode, List<ListedCase>> getDefendantsAddFunction(UUID caseId, Defendant defendant) {
-        return (cases, allocated) -> getDefendants(caseId, defendant, cases, allocated);
+    private Function<List<ListedCase>, List<ListedCase>> getDefendantsAddFunction( final UUID caseId, final Defendant defendant) {
+        return cases -> getDefendants(caseId, defendant, cases);
     }
 
-    private List<ListedCase> getDefendants(UUID caseId, Defendant defendant, List<ListedCase> cases, JsonNode allocated) {
-        if(allocated.asBoolean()){
-            Iterables.find(cases, listedCase -> listedCase.getId().equals(caseId)).getDefendants().add(Defendant.defendant().withValuesFrom(defendant)
-                    .withOffences(defendant.getOffences().stream()
-                            .map(offence -> Offence.offence().withValuesFrom(offence)
-                                    .withListingNumber(listingNumbersRepository.upset(offence.getId()).getListingNumber())
-                                    .build())
-                            .collect(Collectors.toList()))
-                    .build());
-        }else {
-            Iterables.find(cases, listedCase -> listedCase.getId().equals(caseId)).getDefendants().add(defendant);
-        }
+    private List<ListedCase> getDefendants(final UUID caseId, final Defendant defendant, final List<ListedCase> cases) {
+        Iterables.find(cases, listedCase -> listedCase.getId().equals(caseId)).getDefendants().add(defendant);
+
         return cases;
 
     }

@@ -17,6 +17,7 @@ import uk.gov.justice.listing.events.CourtCentreDetails;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 
+import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.NextHearingDayChanged;
 import uk.gov.justice.listing.events.NextHearingRequested;
 import uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing;
@@ -205,6 +206,27 @@ public class NextHearingProcessorTest {
         assertThat(events.get(1).metadata().name(), is("listing.command.mark-hearing-as-duplicate-for-case"));
         assertThat(commandObject.getString("hearingId"), is(hearingId.toString()));
         assertThat(commandObject.getString("caseId"), is(caseId.toString()));
+    }
+
+    @Test
+    public void shouldHandleHearingDeleted() {
+        final UUID hearingId = randomUUID();
+
+        final HearingDeleted hearingDeleted = HearingDeleted.hearingDeleted()
+                .withHearingIdToBeDeleted(hearingId)
+                .build();
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-deleted"),
+                objectToJsonObjectConverter.convert(hearingDeleted));
+
+        nextHearingProcessor.handleHearingDeleted(event);
+
+        verify(this.sender, times(1)).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final List<JsonEnvelope> events = this.senderJsonEnvelopeCaptor.getAllValues();
+
+        final JsonObject publicEventObject = events.get(0).payloadAsJsonObject();
+        assertThat(events.get(0).metadata().name(), is("public.events.listing.hearing-deleted"));
+        assertThat(publicEventObject.getString("hearingId"), is(hearingId.toString()));
     }
 
     @Test

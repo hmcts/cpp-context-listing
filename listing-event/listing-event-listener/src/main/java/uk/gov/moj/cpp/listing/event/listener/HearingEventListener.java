@@ -8,9 +8,6 @@ import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
-
-import java.util.Collection;
-import java.util.stream.Stream;
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.CaseIdentifier;
@@ -26,8 +23,6 @@ import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.ListedCase;
-import uk.gov.justice.listing.events.Offence;
-import uk.gov.justice.listing.events.OffenceIds;
 import uk.gov.justice.listing.events.Prosecutor;
 import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -38,7 +33,6 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.entity.ListingNumbers;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder;
 
@@ -56,8 +50,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
-import uk.gov.moj.cpp.listing.persistence.repository.ListingNumbersRepository;
 
 @SuppressWarnings({"squid:S3655", "squid:S1067"})
 @ServiceComponent(Component.EVENT_LISTENER)
@@ -84,17 +76,13 @@ public class HearingEventListener {
     private StringToJsonObjectConverter stringToJsonObjectConverter;
 
     @Inject
-    private ListingNumbersRepository listingNumbersRepository;
-
-    @Inject
     public HearingEventListener(final HearingRepository hearingRepository,
                                 final ObjectMapper mapper,
-                                final HearingSearchSyncService hearingSearchSyncService, ListingNumbersRepository listingNumbersRepository) {
+                                final HearingSearchSyncService hearingSearchSyncService) {
         this.hearingRepository = hearingRepository;
         this.jsonEntityFinder = using(hearingRepository);
         this.mapper = mapper;
         this.hearingSearchSyncService = hearingSearchSyncService;
-        this.listingNumbersRepository = listingNumbersRepository;
     }
 
     @Handles("listing.events.hearing-listed")
@@ -112,18 +100,7 @@ public class HearingEventListener {
     public void hearingAllocated(final Envelope<HearingAllocatedForListing> event) {
         final HearingAllocatedForListing hearingAllocatedForListing = event.payload();
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
-
-        if(nonNull(hearingAllocatedForListing.getProsecutionCaseDefendantsOffenceIds())) {
-            final List<ListingNumbers> offencesWithListingNumbers = hearingAllocatedForListing.getProsecutionCaseDefendantsOffenceIds().stream()
-                    .flatMap(prosecutionCaseDefendantOffenceIdsV2 -> prosecutionCaseDefendantOffenceIdsV2.getDefendants().stream())
-                    .flatMap(defendant -> defendant.getOffenceIds().stream())
-                    .map(listingNumbersRepository::upset)
-                    .collect(toList());
-
-            updateViewStoreWithListingNumberAndAllocatedHearing(hearingId, offencesWithListingNumbers);
-        }else{
-            jsonEntityFinder.find(hearingId).put(FIELD_ALLOCATED, ALLOCATED).remove("unscheduled").save();
-        }
+        jsonEntityFinder.find(hearingId).put(FIELD_ALLOCATED, ALLOCATED).remove("unscheduled").save();
         LOGGER.info("'listing.events.hearing-allocated-for-listing' received hearingId {} ", hearingId);
         hearingSearchSyncService.sync(hearingId);
     }
@@ -132,15 +109,7 @@ public class HearingEventListener {
     public void hearingAllocatedV2(final Envelope<HearingAllocatedForListingV2> event) {
         final HearingAllocatedForListingV2 hearingAllocatedForListing = event.payload();
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
-
-        final List<ListingNumbers> offencesWithListingNumbersForCase = ofNullable(hearingAllocatedForListing.getProsecutionCaseDefendantsOffenceIds()).map(Collection::stream).orElseGet(Stream::empty)
-                .flatMap(prosecutionCaseDefendantOffenceIdsV2 -> prosecutionCaseDefendantOffenceIdsV2.getDefendants().stream())
-                .flatMap(defendant -> defendant.getOffenceIds().stream())
-                .map(OffenceIds::getId)
-                .map(listingNumbersRepository::upset)
-                .collect(toList());
-
-        updateViewStoreWithListingNumberAndAllocatedHearing(hearingId, offencesWithListingNumbersForCase);
+        jsonEntityFinder.find(hearingId).put(FIELD_ALLOCATED, ALLOCATED).remove("unscheduled").save();
         LOGGER.info("'listing.events.hearing-allocated-for-listing-v2' received hearingId {}", hearingId);
         hearingSearchSyncService.sync(hearingId);
     }
@@ -418,41 +387,5 @@ public class HearingEventListener {
                 .withClassOfCase(listingProsecutionCase.getClassOfCase())
                 .withIsCpsOrgVerifyError(listingProsecutionCase.getIsCpsOrgVerifyError())
                 .build();
-    }
-
-    private Function<List<ListedCase>, List<ListedCase>>  getListedCaseWithUpdateOffencesWithListingNumbersFunction(final List<ListingNumbers> offencesWithListingNumbers) {
-        return cases -> getListedCaseWithUpdateOffencesWithListingNumbers(offencesWithListingNumbers, cases);
-    }
-
-    private List<ListedCase> getListedCaseWithUpdateOffencesWithListingNumbers(final List<ListingNumbers> offencesWithListingNumbers, final List<ListedCase> cases) {
-        return ofNullable(cases).map(Collection::stream).orElseGet(Stream::empty)
-                .map(listedCase -> ListedCase.listedCase().withValuesFrom(listedCase)
-                        .withDefendants(listedCase.getDefendants().stream()
-                                .map(defendant -> uk.gov.justice.listing.events.Defendant.defendant().withValuesFrom(defendant)
-                                        .withOffences(defendant.getOffences().stream()
-                                                .map(offence -> Offence.offence().withValuesFrom(offence)
-                                                        .withListingNumber(offencesWithListingNumbers.stream().filter(listingNumber -> listingNumber.getOffenceId().equals(offence.getId()))
-                                                                .findAny().map(ListingNumbers::getListingNumber).orElse(null))
-                                                        .build())
-                                                .collect(toList()))
-                                        .build())
-                                .collect(toList()))
-                        .build())
-                .collect(toList());
-    }
-
-    private void updateViewStoreWithListingNumberAndAllocatedHearing(final UUID hearingId, final List<ListingNumbers> offencesWithListingNumbersForCase) {
-
-        final TypeReference<List<ListedCase>> typeRefCase = new TypeReference<List<ListedCase>>() {
-        };
-
-        JsonNodeUpdater updater = jsonEntityFinder
-                .find(hearingId)
-                .put(FIELD_ALLOCATED, ALLOCATED)
-                .remove("unscheduled");
-        if(! offencesWithListingNumbersForCase.isEmpty()){
-            updater = updater.putSubList(LISTED_CASES_FIELD, typeRefCase, getListedCaseWithUpdateOffencesWithListingNumbersFunction(offencesWithListingNumbersForCase));
-        }
-        updater.save();
     }
 }
