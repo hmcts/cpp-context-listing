@@ -4,6 +4,7 @@ import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.UUID.fromString;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static uk.gov.moj.cpp.listing.domain.xhibit.generated.ProsecutingAuthorityType.CROWN_PROSECUTION_SERVICE;
@@ -493,7 +494,7 @@ public class CourtServicesMapper {
 
         final ProsecutingAuthorityType prosecutingAuthorityType;
 
-        if (prosecutor != null){
+        if (prosecutor != null) {
             prosecutingAuthorityType = CROWN_PROSECUTION_SERVICE;
         } else {
             final String authorityType = listedCase.getJsonObject(CASE_IDENTIFIER).getString("authorityCode", "");
@@ -628,14 +629,14 @@ public class CourtServicesMapper {
             citizenNameStructure.getCitizenNameForename().add(firstName);
         }
 
-        final String lastName = defendant.getString(LAST_NAME, EMPTY);
+        final String lastOrOrganisationName = defendant.getString(LAST_NAME, SPACE);
 
-        if (isBlank(lastName)) {
-            throw new InvalidDataException(format("Surname = %s is not provided. This is a mandatory field", lastName));
+        if (isBlank(lastOrOrganisationName) && isNotBlank(firstName)) {
+            throw new InvalidDataException(format("Surname = %s is not provided. This is a mandatory field", lastOrOrganisationName));
         }
-        citizenNameStructure.setCitizenNameSurname(lastName);
+        citizenNameStructure.setCitizenNameSurname(lastOrOrganisationName);
 
-        citizenNameStructure.setCitizenNameRequestedName(judicialRequestedName.getRequestedCitizenName(firstName, lastName));
+        citizenNameStructure.setCitizenNameRequestedName(judicialRequestedName.getRequestedCitizenName(firstName, lastOrOrganisationName));
 
         return citizenNameStructure;
     }

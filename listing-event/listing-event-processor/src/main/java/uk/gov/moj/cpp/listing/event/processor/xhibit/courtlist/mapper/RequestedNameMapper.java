@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.SPACE;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import javax.json.JsonObject;
@@ -29,7 +31,13 @@ public class RequestedNameMapper {
 
 
     public String getRequestedCitizenName(final String firstNameValue, final String lastNameValue) {
-        return format("%s %s", firstNameValue, lastNameValue).trim();
+        final String requestedCitizenName = format("%s %s", firstNameValue, lastNameValue).trim();
+
+        if (isEmpty(requestedCitizenName)) {
+            return SPACE;
+        }
+
+        return requestedCitizenName;
     }
 }
 

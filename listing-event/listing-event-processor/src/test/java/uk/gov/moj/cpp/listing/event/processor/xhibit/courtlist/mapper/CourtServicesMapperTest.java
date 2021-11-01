@@ -240,7 +240,7 @@ public class CourtServicesMapperTest extends BaseMapperTest {
     }
 
     @Test(expected = InvalidDataException.class)
-    public void shouldThrowInvalidDataExceptionWhenGenerateDailyListXmlAndSurNameIsNotProvided() throws Exception {
+    public void shouldThrowInvalidDataExceptionWhenDefendantSurNameIsNotProvided() {
 
         final UUID courtCentreId = context.getParameters().getCourtCentreId();
 
@@ -253,9 +253,28 @@ public class CourtServicesMapperTest extends BaseMapperTest {
 
         final DailyListMapper dailyListMapper = new DailyListMapper(context, courtListsForPublishing, courtServicesMapper);
 
+        xmlUtils.convertToXml(dailyListMapper.generate());
+    }
+
+    @Test
+    public void shouldGenerateDailyListXmlWhenDefendantFirstNameAndSurNameIsNotProvided() throws Exception {
+
+        final UUID courtCentreId = context.getParameters().getCourtCentreId();
+
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c39"))).thenReturn(30);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c40"))).thenReturn(10);
+        when(commonXhibitReferenceDataService.getCourtRoomNumber(courtCentreId, UUID.fromString("7cb09222-49e1-3622-a5a6-ad253d2b3c41"))).thenReturn(20);
+
+        final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-with-defendant-firstname-and-surname-not-provided.json")
+                .getJsonArray("courtLists").getValuesAs(JsonObject.class);
+
+        final DailyListMapper dailyListMapper = new DailyListMapper(context, courtListsForPublishing, courtServicesMapper);
+
         final String generatedXml = xmlUtils.convertToXml(dailyListMapper.generate());
 
-        assertXml(generatedXml, "xhibit/mapper/expectedFirmListWhenDefendantFirstNameNotProvided.xml");
+        xmlUtils.validate(generatedXml, "xhibit/xsd/" + PublishCourtListType.FINAL.getSchemaName());
+
+        assertXml(generatedXml, "xhibit/mapper/expectedFirmListWhenDefendantFirstNameAndSurNameNotProvided.xml");
     }
 
     private void assertXml(final String generatedXml, final String expectedXmlResourceName) throws IOException {

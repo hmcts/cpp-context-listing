@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -52,9 +53,16 @@ public class RequestedNameMapperTest {
 
         final JsonObject judiciary = createCitizenRequestedName();
         final String formattedName = format("%s %s", judiciary.getString(FIRST_NAME), judiciary.getString(LAST_NAME)).trim();
-        final String judgeName = requestedNameMapper.getRequestedCitizenName(FIRST_NAME,LAST_NAME);
+        final String judgeName = requestedNameMapper.getRequestedCitizenName(FIRST_NAME, LAST_NAME);
         assertThat(judgeName, is(formattedName));
     }
+
+    @Test
+    public void shouldReturnSpace() {
+        final String judgeName = requestedNameMapper.getRequestedCitizenName(EMPTY, EMPTY);
+        assertThat(judgeName, is(SPACE));
+    }
+
 
     private JsonObject createJudiciaryWithRequestedName() {
         final JsonObjectBuilder judiciaryBuilder = Json.createObjectBuilder();
