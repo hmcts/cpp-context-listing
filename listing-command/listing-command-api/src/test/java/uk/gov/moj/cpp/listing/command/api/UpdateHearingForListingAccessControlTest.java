@@ -1,7 +1,12 @@
 package uk.gov.moj.cpp.listing.command.api;
 
 import static org.mockito.BDDMockito.given;
-
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ADMINISTRATORS;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ASSOCIATE;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_CLERKS;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.CROWN_COURT_ADMIN;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.LEGAL_ADVISERS;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.LISTING_OFFICERS;
 
 import uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider;
 import uk.gov.moj.cpp.accesscontrol.drools.Action;
@@ -13,12 +18,6 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 import org.kie.api.runtime.ExecutionResults;
 import org.mockito.Mock;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ADMINISTRATORS;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ASSOCIATE;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_CLERKS;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.CROWN_COURT_ADMIN;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.LEGAL_ADVISERS;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.LISTING_OFFICERS;
 
 public class UpdateHearingForListingAccessControlTest extends BaseDroolsAccessControlTest {
 

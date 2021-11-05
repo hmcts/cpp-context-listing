@@ -10,6 +10,7 @@ import static uk.gov.moj.cpp.listing.domain.RuleConstants.GROUP_POLICE_ADMIN;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.GROUP_VICTIMS_WITNESS_CARE_ADMIN;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LEGAL_ADVISERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LISTING_OFFICERS;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.MAGISTRATES;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.NPS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.SYSTEM_USERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.YOTS;
@@ -51,7 +52,7 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     public void shouldAllowAuthorisedUserToListCourtHearing() {
         final Action action = createActionFor(ACTION_LIST_COURT_HEARING);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS,
-                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS, SYSTEM_USERS, COURT_ASSOCIATE))
+                CROWN_COURT_ADMIN, COURT_ADMINISTRATORS, LEGAL_ADVISERS, COURT_CLERKS, SYSTEM_USERS, COURT_ASSOCIATE, MAGISTRATES))
                 .willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);
