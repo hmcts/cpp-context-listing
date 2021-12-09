@@ -36,7 +36,8 @@ public class HearingDaysCalculatorTest {
     private static final LocalDate END_DATE = FUTURE_LOCAL_DATE.next();
     private static final int DEFAULT_DURATION = 30;
     private static final int OTHER_DURATION = 60;
-    private static final CourtCentre COURT_CENTRE  = CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build();
+    private static final CourtCentre COURT_CENTRE = CourtCentre.courtCentre().withId(UUID.randomUUID()).withRoomId(UUID.randomUUID()).build();
+    private static final String NONE = "NONE";
 
     @Test
     public void shouldCreateEmptyHearingDaysCollectionIfNoStartDateProvided() {
@@ -48,7 +49,6 @@ public class HearingDaysCalculatorTest {
 
         //then
         assertThat(actual, is(empty()));
-
     }
 
     @Test
@@ -61,9 +61,7 @@ public class HearingDaysCalculatorTest {
 
         //then
         assertThat(actual, is(empty()));
-
     }
-
 
     @Test
     public void shouldCreateHearingDaysForASingleDayWithoutASuppliedStartTime() {
@@ -80,10 +78,7 @@ public class HearingDaysCalculatorTest {
         assertThat(actual.get(0).getDurationMinutes(), is(DEFAULT_DURATION));
         assertThat(actual.get(0).getSequence(), is(0));
         assertThat(actual.get(0).getEndTime(), is(ZonedDateTime.of(START_DATE, DEFAULT_TIME.plusMinutes(DEFAULT_DURATION), BST).withZoneSameInstant(UTC)));
-
-
     }
-
 
     @Test
     public void shouldCreateHearingDaysForConsecutiveDaysWithoutSuppliedStartTime() {
@@ -97,9 +92,7 @@ public class HearingDaysCalculatorTest {
 
         //then
         assertThat(actual.size(), is(totalHearingDays));
-
     }
-
 
     @Test
     public void shouldCreateHearingDaysWithoutSuppliedNonDefaultDays() {
@@ -115,7 +108,6 @@ public class HearingDaysCalculatorTest {
 
         //then
         assertThat(actual.size(), is(totalDaysStartToEndDate - 1));
-
     }
 
     @Test
@@ -140,8 +132,6 @@ public class HearingDaysCalculatorTest {
         assertThat(actual.get(0).getStartTime(), is(ZonedDateTime.of(START_DATE, startTime, UTC)));
         assertThat(actual.get(0).getDurationMinutes(), is(OTHER_DURATION));
         assertThat(actual.get(0).getEndTime(), is(ZonedDateTime.of(START_DATE, startTime, UTC).plusMinutes(OTHER_DURATION)));
-
-
     }
 
     @Test
@@ -168,7 +158,6 @@ public class HearingDaysCalculatorTest {
         assertThat(actual.get(0).getDurationMinutes(), is(DEFAULT_DURATION));
         assertThat(actual.get(0).getEndTime(), is(ZonedDateTime.of(START_DATE, startTime, UTC).plusMinutes(DEFAULT_DURATION)));
     }
-
 
     @Test
     public void shouldCreateHearingDaysForMultipleDaysWithSuppliedStartTimesAndDurations() {
@@ -199,6 +188,27 @@ public class HearingDaysCalculatorTest {
         assertThat(actual.size(), is(totalDaysStartToEndDate - nonSittingDays.size()));
     }
 
+    @Test
+    public void shouldCreateHearingDaysForASingleDayWithNotInUUIDFormatCourtScheduleIdCourtCentreIdRoomId() {
+        final Optional<UUID> uuid = of(UUID.randomUUID());
+        final List<HearingDay> actual = HearingDaysCalculator.calculate(
+                START_DATE,
+                START_DATE,
+                new ArrayList<>(), Collections.singletonList(NonDefaultDay.nonDefaultDay()
+                        .withStartTime(ZonedDateTime.of(START_DATE, LocalTime.now(), UTC))
+                        .withDuration(of(OTHER_DURATION))
+                        .withCourtScheduleId(Optional.empty())
+                        .withCourtCentreId(of(NONE))
+                        .withRoomId(of(uuid.get().toString()))
+                        .build()),
+                DEFAULT_TIME,
+                DEFAULT_DURATION,
+                COURT_CENTRE);
+
+        assertThat(actual.get(0).getCourtScheduleId(), is(Optional.empty()));
+        assertThat(actual.get(0).getCourtCentreId(), is(Optional.empty()));
+        assertThat(actual.get(0).getCourtRoomId(), is(uuid));
+    }
 
     private List<HearingDay> expectedHearingDaysWithDefaultStartTimeAndDuration(final LocalDate startDate, final int totalDays, final LocalTime defaultTime, final int defaultDuration) {
         return IntStream.iterate(0, i -> i + 1)
@@ -217,7 +227,6 @@ public class HearingDaysCalculatorTest {
                 .collect(Collectors.toList());
     }
 
-
     private HearingDay buildHearingDay(final ZonedDateTime startTime, final Integer defaultDuration) {
 
         return HearingDay.hearingDay()
@@ -228,5 +237,4 @@ public class HearingDaysCalculatorTest {
                 .withEndTime(startTime.plusMinutes(defaultDuration))
                 .build();
     }
-
 }

@@ -1,8 +1,6 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
-
 import static java.util.Collections.emptyList;
-import static java.util.UUID.fromString;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.listing.events.HearingDay;
@@ -22,8 +20,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HearingDaysCalculator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HearingDaysCalculator.class);
 
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final ZoneId BST = ZoneId.of("Europe/London");
@@ -43,7 +45,7 @@ public class HearingDaysCalculator {
         final List<LocalDate> nonDefaultDates = new ArrayList<>();
         final List<HearingDay> hearingDayList = new ArrayList<>();
 
-        nonDefaultDays.stream().forEach(ndd -> {
+        nonDefaultDays.forEach(ndd -> {
             final LocalDate nonDefaultDate = ndd.getStartTime().toLocalDate();
             if (!nonSittingDays.contains(nonDefaultDate)) {
                 hearingDayList.add(buildNonDefaultHearingDay(ndd, (ndd.getDuration().isPresent() ? ndd.getDuration().get() : defaultDuration)));
@@ -52,7 +54,7 @@ public class HearingDaysCalculator {
         });
 
         hearingDayList.addAll(buildSequentialHearingDays(startDate, endDate, nonSittingDays, nonDefaultDates, defaultStartTime, defaultDuration, defaultCourtCentre));
-        Collections.sort(hearingDayList, Comparator.comparing(HearingDay::getStartTime));
+        hearingDayList.sort(Comparator.comparing(HearingDay::getStartTime));
         return hearingDayList;
 
     }
@@ -94,18 +96,29 @@ public class HearingDaysCalculator {
         final Integer durationMinutes = nonDefaultDay.getDuration().orElse(defaultDuration);
         final ZonedDateTime endDateTime = nonDefaultDay.getStartTime().plusMinutes(durationMinutes);
 
-        final HearingDay.Builder builder = HearingDay.hearingDay()
+        return HearingDay.hearingDay()
                 .withHearingDate(nonDefaultDay.getStartTime().toLocalDate())
                 .withStartTime(nonDefaultDay.getStartTime())
                 .withDurationMinutes(durationMinutes)
                 .withSequence(0)
-                .withEndTime(endDateTime);
-        if (nonDefaultDay.getCourtScheduleId().isPresent()) {
-            builder.withCourtScheduleId(Optional.of(fromString(nonDefaultDay.getCourtScheduleId().get())));
+                .withEndTime(endDateTime)
+                .withCourtScheduleId(toUUID(nonDefaultDay.getCourtScheduleId()))
+                .withCourtCentreId(toUUID(nonDefaultDay.getCourtCentreId()))
+                .withCourtRoomId(toUUID(nonDefaultDay.getRoomId()))
+                .build();
+    }
+
+    private static Optional<UUID> toUUID(Optional<String> optionalValue) {
+        if (optionalValue.isPresent()) {
+            try {
+                final UUID uuid = UUID.fromString(optionalValue.get());
+                return Optional.of(uuid);
+            } catch (IllegalArgumentException ignored) {
+                LOGGER.warn("Invalid UUID string: {}", optionalValue.get(), ignored);
+            }
         }
-        nonDefaultDay.getCourtCentreId().map(UUID::fromString).ifPresent(builder::withCourtCentreId);
-        nonDefaultDay.getRoomId().map(UUID::fromString).ifPresent(builder::withCourtRoomId);
-        return builder.build();
+
+        return Optional.empty();
     }
 
     public static List<uk.gov.justice.listing.events.NonDefaultDay> calculateNewNonDefaultDaysForUnscheduled(final Integer hearingTypeDuration, final ZonedDateTime startDate, final LocalTime defaultStartTime, final CourtCentre courtCentre) {
