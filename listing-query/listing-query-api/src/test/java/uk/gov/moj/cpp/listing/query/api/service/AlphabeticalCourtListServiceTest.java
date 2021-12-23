@@ -304,8 +304,8 @@ public class AlphabeticalCourtListServiceTest {
 
     @Test
     public void shouldBuildAlphabeticalListDataForHearingsWithMultipleCourtCentres_1() {
-        final LocalDate date = LocalDate.now();
-        final LocalTime time = LocalTime.now();
+        final LocalDate date = LocalDate.of(2018, 11, 15);
+        final LocalTime time = LocalTime.of(11, 12, 12);
         final JsonEnvelope envelope = buildRequestEnvelopeForHearingWithMultipleCourtCentres(date, time);
         when(courtCentreFactory.getCourtCentre(fromString(TOP_LEVEL_COURT_CENTRE_ID), envelope)).thenReturn(getCourtCentreDetails(false, fromString(TOP_LEVEL_COURT_CENTRE_ID), fromString(TOP_LEVEL_COURT_ROOM_ID)));
 
@@ -330,8 +330,8 @@ public class AlphabeticalCourtListServiceTest {
 
     @Test
     public void shouldBuildAlphabeticalListDataForHearingsWithMultipleCourtCentres_2() {
-        final LocalDate date = LocalDate.now();
-        final LocalTime time = LocalTime.now();
+        final LocalDate date = LocalDate.of(2018, 11, 15);
+        final LocalTime time = LocalTime.of(11, 12, 12);
         final JsonEnvelope envelope = buildRequestEnvelopeForHearingWithMultipleCourtCentres(date, time);
         when(courtCentreFactory.getCourtCentre(fromString(OTHER_COURT_CENTRE_ID), envelope)).thenReturn(getCourtCentreDetails(false, fromString(OTHER_COURT_CENTRE_ID), fromString(OTHER_COURT_ROOM_ID)));
 
