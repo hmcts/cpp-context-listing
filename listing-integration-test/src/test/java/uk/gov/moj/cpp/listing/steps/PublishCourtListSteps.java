@@ -409,4 +409,24 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         assertThat(jsonResponse.get("dailyListDocument"), containsString("DailyList"));
 
     }
+
+    public void verifyDefendantNameIsMasked() throws Exception {
+
+        final String sentXml = getSentXml();
+        assertXpathEvaluatesTo("yes", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='IsMasked']/text()", sentXml);
+
+        assertXpathEvaluatesTo("******", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameForename']/text()", sentXml);
+
+        assertXpathEvaluatesTo("******", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameSurname']/text()", sentXml);
+
+        assertXpathEvaluatesTo("******", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+                "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='Defendants']" +
+                "/*[local-name()='Defendant']/*[local-name()='PersonalDetails']/*[local-name()='Name']/*[local-name()='CitizenNameRequestedName']/text()", sentXml);
+    }
 }

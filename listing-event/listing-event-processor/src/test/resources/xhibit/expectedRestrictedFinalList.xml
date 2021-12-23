@@ -59,9 +59,9 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameForename>RESTRICTEDDEFENDANTFIRSTNAME</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>RESTRICTEDDEFENDANTLASTNAME</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>RESTRICTEDDEFENDANTFIRSTNAME RESTRICTEDDEFENDANTLASTNAME</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameForename>******</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>******</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>******</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:MaskedName>******</cs:MaskedName>
                                         <cs:IsMasked>yes</cs:IsMasked>

@@ -84,9 +84,9 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameForename>Gussie</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>ROVAI</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Gussie ROVAI</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameForename>******</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>******</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>******</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:MaskedName>******</cs:MaskedName>
                                         <cs:IsMasked>yes</cs:IsMasked>

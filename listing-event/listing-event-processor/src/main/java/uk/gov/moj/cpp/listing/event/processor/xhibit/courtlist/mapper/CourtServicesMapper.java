@@ -623,10 +623,10 @@ public class CourtServicesMapper {
     private CitizenNameStructure generateCitizenNameStructure(final JsonObject defendant) {
 
         final CitizenNameStructure citizenNameStructure = objectFactory.createCitizenNameStructure();
-
+        final boolean restrictFromCourtList = defendant.getBoolean(RESTRICT_FROM_COURT_LIST, false);
         final String firstName = defendant.getString(FIRST_NAME, EMPTY);
         if (isNotBlank(firstName)) {
-            citizenNameStructure.getCitizenNameForename().add(firstName);
+            citizenNameStructure.getCitizenNameForename().add(restrictFromCourtList ? MASKED_VALUE : firstName);
         }
 
         final String lastOrOrganisationName = defendant.getString(LAST_NAME, SPACE);
@@ -634,9 +634,9 @@ public class CourtServicesMapper {
         if (isBlank(lastOrOrganisationName) && isNotBlank(firstName)) {
             throw new InvalidDataException(format("Surname = %s is not provided. This is a mandatory field", lastOrOrganisationName));
         }
-        citizenNameStructure.setCitizenNameSurname(lastOrOrganisationName);
+        citizenNameStructure.setCitizenNameSurname(restrictFromCourtList ? MASKED_VALUE : lastOrOrganisationName);
 
-        citizenNameStructure.setCitizenNameRequestedName(judicialRequestedName.getRequestedCitizenName(firstName, lastOrOrganisationName));
+        citizenNameStructure.setCitizenNameRequestedName(restrictFromCourtList ? MASKED_VALUE : judicialRequestedName.getRequestedCitizenName(firstName, lastOrOrganisationName));
 
         return citizenNameStructure;
     }
