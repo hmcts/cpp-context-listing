@@ -1,15 +1,19 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
+import static java.time.LocalDate.parse;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static uk.gov.moj.cpp.listing.command.utils.LocalDateUtils.isYouth;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds.valueFor;
 
+import org.apache.commons.lang3.StringUtils;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.DefendantListingNeeds;
@@ -99,7 +103,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .collect(toList());
 
         final Optional<LocalDate> weekCommencingStartDate = commandHearing.getWeekCommencingDate().isPresent() && nonNull(commandHearing.getWeekCommencingDate().get().getStartDate()) ?
-                of(LocalDate.parse(commandHearing.getWeekCommencingDate().get().getStartDate())) : empty();
+                of(parse(commandHearing.getWeekCommencingDate().get().getStartDate())) : empty();
 
         final Optional<Integer> weekCommencingDurationInWeeks = commandHearing.getWeekCommencingDate().isPresent() ? commandHearing.getWeekCommencingDate().get().getDuration() : empty();
 
@@ -111,7 +115,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withType(buildHearingType(commandHearing.getType()))
                 .withHearingLanguage(empty())
                 .withEstimatedMinutes(commandHearing.getEstimatedMinutes())
-                .withStartDateTime(nonNull(extractStartDate(commandHearing)) ? ZonedDateTimes.fromString(extractStartDate(commandHearing).toString()) : null)
+                .withStartDateTime(getHearingStartDateTime(commandHearing))
                 .withCourtCentreId(commandHearing.getCourtCentre().getId())
                 .withCourtRoomId(commandHearing.getCourtCentre().getRoomId())
                 .withListingDirections(commandHearing.getListingDirections())
@@ -121,7 +125,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withJurisdictionType(JurisdictionType.valueFor(commandHearing.getJurisdictionType().name())
                         .orElseThrow(IllegalArgumentException::new))
                 .withListedCases(domainListedCases)
-                .withEndDate(commandHearing.getEndDate().isPresent() ? of(LocalDate.parse(commandHearing.getEndDate().get())) : empty())
+                .withEndDate(getEndDate(commandHearing))
                 .withNonSittingDays(emptyList())
                 .withNonDefaultDays(nonDefaultDays)
                 .withHearingDays(emptyList())
@@ -134,6 +138,14 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withWeekCommencingEndDate(weekCommencingEndDate)
                 .withWeekCommencingDurationInWeeks(weekCommencingDurationInWeeks)
                 .build();
+    }
+
+    private Optional<LocalDate> getEndDate(HearingListingNeeds commandHearing) {
+        return commandHearing.getEndDate().isPresent() ? of(parse(commandHearing.getEndDate().get())) : empty();
+    }
+
+    private ZonedDateTime getHearingStartDateTime(final HearingListingNeeds commandHearing) {
+        return nonNull(extractStartDate(commandHearing)) ? ZonedDateTimes.fromString(extractStartDate(commandHearing).toString()) : null;
     }
 
     @SuppressWarnings("squid:S1168")
@@ -175,7 +187,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
         final ZonedDateTime listedStartDateTime = commandHearing.getListedStartDateTime().isPresent() ? commandHearing.getListedStartDateTime().get() : null;
         final ZonedDateTime earliestStartDateTime = commandHearing.getEarliestStartDateTime().isPresent() ? commandHearing.getEarliestStartDateTime().get() : null;
 
-        return Optional.ofNullable(listedStartDateTime).orElseGet(() -> earliestStartDateTime);
+        return ofNullable(listedStartDateTime).orElseGet(() -> earliestStartDateTime);
     }
 
     public Type buildHearingType(final HearingType type) {
@@ -257,8 +269,8 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingUnscheduledListingNeeds commandHearing, final Defendant d) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
-                .withMasterDefendantId(Optional.ofNullable(d.getMasterDefendantId()))
-                .withCourtProceedingsInitiated(Optional.ofNullable(d.getCourtProceedingsInitiated()))
+                .withMasterDefendantId(ofNullable(d.getMasterDefendantId()))
+                .withCourtProceedingsInitiated(ofNullable(d.getCourtProceedingsInitiated()))
                 .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())
                 .withLastName(d.getPersonDefendant().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getLastName()) : empty())
                 .withBailStatus(mapBailStatus(d))
@@ -278,12 +290,24 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .build();
     }
 
+    private Optional<Boolean> isYouthDefendant(final ZonedDateTime startDate, final Defendant defendant) {
+
+        if(nonNull(startDate)) {
+            final  String dob = defendant.getPersonDefendant().map(d -> d.getPersonDetails()).map(p -> p.getDateOfBirth().orElse("")).orElse("");
+            final Boolean defendantDOB = StringUtils.isNotBlank(dob) ? isYouth( parse(dob), startDate.toLocalDate())  : null;
+            return  ofNullable(defendantDOB);
+
+        }
+       return ofNullable(null);
+
+    }
+
     @SuppressWarnings({"squid:S3655", "squid:S1067", "squid:MethodCyclomaticComplexity"})
     private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingListingNeeds commandHearing, final Defendant d, final List<UUID> shadowListedOffences) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
-                .withMasterDefendantId(Optional.ofNullable(d.getMasterDefendantId()))
-                .withCourtProceedingsInitiated(Optional.ofNullable(d.getCourtProceedingsInitiated()))
+                .withMasterDefendantId(ofNullable(d.getMasterDefendantId()))
+                .withCourtProceedingsInitiated(ofNullable(d.getCourtProceedingsInitiated()))
                 .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())
                 .withLastName(d.getPersonDefendant().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getLastName()) : empty())
                 .withBailStatus(mapBailStatus(d))
@@ -297,7 +321,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withOffences(d.getOffences().stream()
                         .map(offence -> buildOffence(offence, shadowListedOffences))
                         .collect(toList()))
-                .withIsYouth(d.getIsYouth().isPresent() ? d.getIsYouth() : empty())
+                .withIsYouth(d.getIsYouth().isPresent() ? d.getIsYouth() : isYouthDefendant(getHearingStartDateTime(commandHearing), d ))
                 .withAddress(buildAddress(d))
                 .withNationalityDescription(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getNationalityDescription().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getNationalityDescription() : empty())
                 .build();
@@ -439,8 +463,8 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
-                .withMasterDefendantId(Optional.ofNullable(d.getMasterDefendantId()))
-                .withCourtProceedingsInitiated(Optional.ofNullable(d.getCourtProceedingsInitiated()))
+                .withMasterDefendantId(ofNullable(d.getMasterDefendantId()))
+                .withCourtProceedingsInitiated(ofNullable(d.getCourtProceedingsInitiated()))
                 .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())
                 .withLastName(d.getPersonDefendant().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getLastName()) : empty())
                 .withBailStatus(mapBailStatus(d))
@@ -567,7 +591,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     public Optional<LocalDate> getWeekCommencingStartDate(final HearingUnscheduledListingNeeds commandHearing) {
         return commandHearing.getWeekCommencingDate().isPresent() && nonNull(commandHearing.getWeekCommencingDate().get().getStartDate()) ?
-                of(LocalDate.parse(commandHearing.getWeekCommencingDate().get().getStartDate())) : empty();
+                of(parse(commandHearing.getWeekCommencingDate().get().getStartDate())) : empty();
     }
 
     public CourtCentreDefaults getCourtCentreDefaults(final Map<UUID, CourtCentreDetails> courtCentres, final HearingUnscheduledListingNeeds commandHearing) {

@@ -155,7 +155,7 @@ public class DefendantEventListener {
                         .withDatesToAvoid(originalDefendant.getDatesToAvoid())
                         .withHearingLanguageNeeds(originalDefendant.getHearingLanguageNeeds())
                         .withRestrictFromCourtList(originalDefendant.getRestrictFromCourtList())
-                        .withIsYouth(updatedDefendant.getIsYouth())
+                        .withIsYouth(originalDefendant.getIsYouth() .isPresent() ? originalDefendant.getIsYouth() : updatedDefendant.getIsYouth())
                         .withAddress(updatedDefendant.getAddress())
                         .withNationalityDescription(updatedDefendant.getNationalityDescription())
                         .withLegalAidStatus(originalDefendant.getLegalAidStatus())

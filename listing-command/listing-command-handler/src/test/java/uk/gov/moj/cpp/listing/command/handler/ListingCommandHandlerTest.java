@@ -3143,7 +3143,7 @@ public class ListingCommandHandlerTest {
                 .withCourtProceedingsInitiated(Optional.of(ZonedDateTimes.fromString("2020-03-05T14:24:03.148Z").withZoneSameInstant(ZoneId.of("UTC"))))
                 .withOrganisationName(empty())
                 .withSpecificRequirements(of("Screen"))
-                .withIsYouth(empty())
+                .withIsYouth(of(Boolean.FALSE))
                 .withNationalityDescription(empty())
                 .withAddress(of(Address
                         .address()
