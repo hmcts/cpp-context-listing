@@ -851,7 +851,7 @@ public class Hearing implements Aggregate {
 
         if (!this.hearingDays.isEmpty()) {
             final Map<ZonedDateTime, HearingDay> existingHearingDays = this.hearingDays.stream()
-                    .collect(toMap(HearingDay::getStartTime, hd -> hd));
+                    .collect(toMap(HearingDay::getStartTime, hearingDay->hearingDay, (hd1, hd2)-> hd2));
             final List<uk.gov.justice.listing.events.HearingDay> newHearingDaysWithExistingSequences =
                     mergeHearingDaySequences(hearingDaysChangedForHearing, existingHearingDays);
 
