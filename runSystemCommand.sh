@@ -17,7 +17,7 @@
 #
 ##################################################################################################
 
-FRAMEWORK_VERSION=7.1.4
+FRAMEWORK_VERSION=8.0.2
 CONTEXT_NAME="listing"
 USER_NAME="admin"
 PASSWORD="admin"
