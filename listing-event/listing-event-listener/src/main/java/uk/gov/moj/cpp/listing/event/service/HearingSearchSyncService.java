@@ -88,8 +88,14 @@ public class HearingSearchSyncService {
             final JsonNode caseIdentifierNode = listedCasesNode.get(i).get("caseIdentifier");
             final uk.gov.moj.cpp.listing.persistence.entity.CaseIdentifier caseIdentifier = new uk.gov.moj.cpp.listing.persistence.entity.CaseIdentifier();
             caseIdentifier.setAuthorityId(fromString(caseIdentifierNode.get("authorityId").asText()));
-            caseIdentifier.setAuthorityCode(caseIdentifierNode.get("authorityCode").asText());
-            caseIdentifier.setCaseReference(caseIdentifierNode.get("caseReference").asText());
+            final JsonNode authorityCode = caseIdentifierNode.get("authorityCode");
+            if (authorityCode != null) {
+                caseIdentifier.setAuthorityCode(authorityCode.asText());
+            }
+            final JsonNode caseReference = caseIdentifierNode.get("caseReference");
+            if (caseReference != null) {
+                caseIdentifier.setCaseReference(caseReference.asText());
+            }
 
             result.add(getListedCase(listedCasesNode, hearing, i, caseId, caseIdentifier, isEjected));
         }

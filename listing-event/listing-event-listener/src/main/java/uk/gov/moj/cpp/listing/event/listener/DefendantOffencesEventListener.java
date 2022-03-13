@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Objects.nonNull;
+import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupAllReportingRestrictions;
+import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupReportingRestrictions;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 
@@ -47,7 +49,7 @@ public class DefendantOffencesEventListener {
         final UUID hearingId = offenceUpdated.getHearingId();
         final UUID caseId = offenceUpdated.getCaseId();
         final UUID defendantId = offenceUpdated.getDefendantId();
-        final Offence offence = offenceUpdated.getOffence();
+        final Offence offence = dedupAllReportingRestrictions(offenceUpdated.getOffence());
 
         if (nonNull(hearingRepository.findBy(hearingId))) {
             using(hearingRepository)
@@ -90,7 +92,7 @@ public class DefendantOffencesEventListener {
         final UUID hearingId = offenceAdded.getHearingId();
         final UUID caseId = offenceAdded.getCaseId();
         final UUID defendantId = offenceAdded.getDefendantId();
-        final Offence offence = offenceAdded.getOffence();
+        final Offence offence = dedupAllReportingRestrictions(offenceAdded.getOffence());
 
         using(hearingRepository)
                 .find(hearingId)
@@ -116,6 +118,8 @@ public class DefendantOffencesEventListener {
         List<Defendant> defendants = listedCase.getDefendants();
         Defendant originalDefendant = Iterables.find(defendants, defendant -> defendant.getId().equals(defendantId));
 
+        final Optional<Offence> offence = originalDefendant.getOffences().stream().filter(offence1 ->  offence1.getId().equals(updatedOffence.getId())).findFirst();
+        offence.ifPresent(o -> originalDefendant.getOffences().remove(o));
         originalDefendant.getOffences().add(updatedOffence);
         listedCases.replaceAll(
                 listedCase1 -> listedCase1.getId().equals(listedCase.getId()) ? updateShadowListedFlagForListedCase(listedCase) : listedCase1);
@@ -147,7 +151,7 @@ public class DefendantOffencesEventListener {
                 .withLaaApplnReference(updatedOffence.getLaaApplnReference())
                 .withShadowListed(originalOffence.isPresent() ? originalOffence.get().getShadowListed() : Optional.of(Boolean.FALSE))
                 .withListingNumber(originalOffence.map( Offence::getListingNumber).orElse(null))
-                .withReportingRestrictions(updatedOffence.getReportingRestrictions())
+                .withReportingRestrictions(dedupReportingRestrictions(updatedOffence.getReportingRestrictions()))
                 .build();
     }
 

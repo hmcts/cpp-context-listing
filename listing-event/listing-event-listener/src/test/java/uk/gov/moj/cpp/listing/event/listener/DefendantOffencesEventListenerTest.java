@@ -147,7 +147,7 @@ public class DefendantOffencesEventListenerTest {
                 .withOffence(Offence.offence()
                         .withStartDate(LocalDates.to(LocalDate.now()))
                         .withOffenceCode(EXPECTED_OFFENCE_CODE)
-                        .withId(OFFENCE_ID)
+                        .withId(randomUUID())
                         .withShadowListed(Optional.ofNullable(null))
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withTitle(STRING.next())

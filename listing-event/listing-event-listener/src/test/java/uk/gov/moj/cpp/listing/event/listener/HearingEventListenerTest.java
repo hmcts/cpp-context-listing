@@ -87,8 +87,7 @@ public class HearingEventListenerTest {
     @Mock
     private HearingUnallocatedForListing hearingUnallocated;
 
-    @Mock
-    private uk.gov.justice.listing.events.Hearing hearingEvent;
+    private uk.gov.justice.listing.events.Hearing hearingEvent = uk.gov.justice.listing.events.Hearing.hearing().withId(HEARING_ID).build();
 
     @Mock
     private JsonObject jsonObject;
@@ -185,7 +184,6 @@ public class HearingEventListenerTest {
 
         given(envelope.payload()).willReturn(hearingListed);
         given(envelope.payload().getHearing()).willReturn(hearingEvent);
-        given(hearingEvent.getId()).willReturn(HEARING_ID);
         given(mapper.valueToTree(hearingEvent)).willReturn(jsonNode);
 
         hearingEventListener.hearingListed(envelope);

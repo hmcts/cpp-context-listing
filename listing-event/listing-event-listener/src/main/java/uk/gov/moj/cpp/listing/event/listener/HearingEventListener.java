@@ -6,6 +6,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
+import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupAllReportingRestrictions;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.core.courts.Defendant;
@@ -37,10 +38,12 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -88,12 +91,35 @@ public class HearingEventListener {
     @Handles("listing.events.hearing-listed")
     public void hearingListed(final Envelope<HearingListed> event) {
         final HearingListed hearingListed = event.payload();
-        final JsonNode hearingJsonNode = convertToObject(hearingListed.getHearing());
+        removeDuplicateOffences(hearingListed);
+        final JsonNode hearingJsonNode = convertToObject(dedupAllReportingRestrictions(hearingListed.getHearing()));
         final UUID hearingId = hearingListed.getHearing().getId();
         LOGGER.info("'listing.events.hearing-listed' received hearingId {}", hearingId);
         final Hearing hearing = new Hearing(hearingId, hearingJsonNode);
         hearingSearchSyncService.syncEntity(hearing);
         hearingRepository.save(hearing);
+    }
+
+    private void removeDuplicateOffences(final HearingListed hearingListed) {
+       final List<uk.gov.justice.listing.events.Defendant> allDefendantsList = hearingListed.getHearing().getListedCases() != null ? hearingListed.getHearing().getListedCases().stream().map(c -> c.getDefendants()).flatMap(l -> l.stream()).collect(Collectors.toList()) : null;
+        removeForAllDefendants(allDefendantsList);
+    }
+
+    private void removeForAllDefendants(List<uk.gov.justice.listing.events.Defendant> allDefendantsList) {
+        if(allDefendantsList != null) {
+            allDefendantsList.stream().forEach(d -> {
+                final List<UUID> offenceIds = new ArrayList<>();
+                final Iterator<uk.gov.justice.listing.events.Offence> offenceIterator = d.getOffences().iterator();
+                while (offenceIterator.hasNext()) {
+                    final uk.gov.justice.listing.events.Offence offence = offenceIterator.next();
+                    if (offenceIds.contains(offence.getId())) {
+                        offenceIterator.remove();
+                    } else {
+                        offenceIds.add(offence.getId());
+                    }
+                }
+            });
+        }
     }
 
     @Handles("listing.events.hearing-allocated-for-listing")
@@ -155,6 +181,12 @@ public class HearingEventListener {
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("'listing.events.hearing-trial-vacated' received hearingId {}", hearingId);
         }
+
+        if (hearingId == null) {
+            LOGGER.warn("'listing.events.hearing-trial-vacated' received null hearingId ... returning");
+            return;
+        }
+
         jsonEntityFinder.find(hearingId)
                 .put(FIELD_IS_VACATED_TRIAL, hearingTrialVacated.getVacatedTrialReasonId().isPresent() ? VACATED : NON_VACATED)
                 .put(FIELD_VACATE_TRIAL_REASON, hearingTrialVacated.getVacatedTrialReasonId().orElse(null) == null ? "" : hearingTrialVacated.getVacatedTrialReasonId().get().toString())

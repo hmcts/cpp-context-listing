@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
@@ -16,8 +17,10 @@ import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -59,7 +62,7 @@ public class DefendantEventListener {
         final UUID hearingId = defendantDetailsAddedForCourtProceedings.getHearingId();
         final UUID caseId = defendantDetailsAddedForCourtProceedings.getCaseId();
         final Defendant defendant = defendantDetailsAddedForCourtProceedings.getDefendant();
-
+        filterDuplicateOffencesById(defendant.getOffences());
         final TypeReference<List<ListedCase>> typeRef = new TypeReference<List<ListedCase>>() {
         };
 
@@ -67,6 +70,14 @@ public class DefendantEventListener {
                 .find(hearingId)
                 .putSubList(LISTED_CASES_FIELD, typeRef, getDefendantsAddFunction(caseId, defendant)).save();
 
+    }
+
+    private  void filterDuplicateOffencesById(final List<uk.gov.justice.listing.events.Offence> offences) {
+        if (isNull(offences) || offences.isEmpty()) {
+            return;
+        }
+        final Set<UUID> offenceIds = new HashSet<>();
+        offences.removeIf(e -> !offenceIds.add(e.getId()));
     }
 
     @Handles("listing.events.defendant-legalaid-status-updated-for-hearing")

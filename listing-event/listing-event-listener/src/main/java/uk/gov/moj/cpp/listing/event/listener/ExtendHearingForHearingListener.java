@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.isNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.AddedCasesForHearing;
@@ -23,9 +24,11 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -152,7 +155,7 @@ public class ExtendHearingForHearingListener {
 
         final Hearing hearing = hearingRepository.findBy(hearingId);
 
-        if (null != hearing.getProperties().get(LISTED_CASES_FIELD)) {
+        if (hearing != null && hearing.getProperties() != null && null != hearing.getProperties().get(LISTED_CASES_FIELD)) {
             using(hearingRepository)
                     .find(hearingId)
                     .putSubList(LISTED_CASES_FIELD, typeRef, getListedCasesAddFunction(listedCasesToAdd))
@@ -214,10 +217,18 @@ public class ExtendHearingForHearingListener {
 
     private void addDefendants(final List<ListedCase> dbListedCases, final ListedCase listedCase, final Defendant defendant) {
 
+        filterDuplicateOffencesById(defendant.getOffences());
         dbListedCases.stream().filter(dbListedCase -> dbListedCase.getId().equals(listedCase.getId())).forEach(dbListedCase ->
                 dbListedCase.getDefendants().add(defendant));
     }
 
+    private  void filterDuplicateOffencesById(final List<uk.gov.justice.listing.events.Offence> offences) {
+        if (isNull(offences) || offences.isEmpty()) {
+            return;
+        }
+        final Set<UUID> offenceIds = new HashSet<>();
+        offences.removeIf(e -> !offenceIds.add(e.getId()));
+    }
 
     private ListedCase extractListedCases(final ObjectMapper objectMapper,
                                           final JsonNode node, final String hearingIdToBeUpdated) {

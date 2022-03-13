@@ -117,9 +117,17 @@ public class RestrictCourtListEventListener {
 
     private List<ListedCase> getAndRestrictDefendantList(UUID defendantId, List<ListedCase> cases, Boolean restrictDetailsFromCourt) {
         final List<ListedCase> listedCases = cases;
-        final ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getDefendants().stream().anyMatch(def -> def.getId().equals(defendantId)));
+        final ListedCase listedCase = listedCases.stream().filter(caze -> caze.getDefendants().stream().anyMatch(def -> def.getId().equals(defendantId))).findFirst().orElse(null);
+        if (listedCase == null) {
+            return listedCases;
+        }
+
         final List<Defendant> defendantList = listedCase.getDefendants();
-        final Defendant originalDefendant = Iterables.find(defendantList, dd -> dd.getId().equals(defendantId));
+        final Defendant originalDefendant = defendantList.stream().filter(dd -> dd.getId().equals(defendantId)).findFirst().orElse(null);
+        if (originalDefendant == null) {
+            return listedCases;
+        }
+
         final Defendant newDefendant = defendant()
                 .withId(originalDefendant.getId())
                 .withBailStatus(originalDefendant.getBailStatus())

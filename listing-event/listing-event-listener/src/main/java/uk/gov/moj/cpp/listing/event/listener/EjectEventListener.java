@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.listing.event.listener;
 import static java.util.Optional.of;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
-import java.util.Objects;
 import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.CourtApplication;
@@ -16,6 +15,7 @@ import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.Iterables;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class EjectEventListener {
@@ -80,7 +79,12 @@ public class EjectEventListener {
         return cases -> getAndUpdateCases(cases, caseId);
     }
     private List<ListedCase> getAndUpdateCases(List<ListedCase> cases, UUID caseId) {
-        final ListedCase listedCase = Iterables.find(cases, lc -> lc.getId().equals(caseId));
+        final ListedCase listedCase = cases.stream().filter(lc -> lc.getId().equals(caseId)).findFirst().orElse(null);
+
+        if (listedCase == null) {
+            return cases;
+        }
+
         final ListedCase newListedCase
                 = ListedCase.listedCase()
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
