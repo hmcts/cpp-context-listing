@@ -22,7 +22,7 @@ import com.github.tomakehurst.wiremock.client.ValueMatchingStrategy;
 
 public class DocumentGeneratorStub {
 
-    public static final String PATH = "/system-documentgenerator-api/rest/documentgenerator/render";
+    public static final String PATH = "/systemdocgenerator-service/command/api/rest/systemdocgenerator";
 
     public static void stubDocumentCreate(final String documentText) {
         stubDocumentCreate(documentText, OK);
@@ -30,14 +30,14 @@ public class DocumentGeneratorStub {
 
     public static void stubDocumentCreate(final String documentText, final Status expectedStatus) {
         stubFor(post(urlPathMatching(PATH))
-                .withHeader(CONTENT_TYPE, equalTo("application/vnd.system.documentgenerator.render+json"))
+                .withHeader(CONTENT_TYPE, equalTo("application/vnd.systemdocgenerator.render+json"))
                 .willReturn(aResponse().withStatus(expectedStatus.getStatusCode())
                         .withBody(documentText.getBytes())));
     }
 
     public static void stubDocumentCreateWithRequestBody(final String documentText, final String requestContainsString) {
         stubFor(post(urlPathMatching(PATH))
-                .withHeader(CONTENT_TYPE, equalTo("application/vnd.system.documentgenerator.render+json"))
+                .withHeader(CONTENT_TYPE, equalTo("application/vnd.systemdocgenerator.render+json"))
                 .withRequestBody(containing(requestContainsString))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(documentText.getBytes())));
