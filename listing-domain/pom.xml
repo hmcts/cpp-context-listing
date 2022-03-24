@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.listing</groupId>
         <artifactId>listing-parent</artifactId>
-        <version>8.0.2-SNAPSHOT</version>
+        <version>8.0.2</version>
     </parent>
 
     <artifactId>listing-domain</artifactId>
