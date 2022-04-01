@@ -1308,7 +1308,9 @@ public class Hearing implements Aggregate {
         }
 
         final List<UUID> defendantIds = this.prosecutionCaseDefendants.get(prosecutionCase.getId());
-        prosecutionCase.getDefendants().removeIf(defendant -> !defendantIds.contains(defendant.getId()));
+        if (nonNull(defendantIds)) {
+            prosecutionCase.getDefendants().removeIf(defendant -> !defendantIds.contains(defendant.getId()));
+        }
 
         if (isEmpty(prosecutionCase.getDefendants())) {
             if (LOGGER.isDebugEnabled()) {
