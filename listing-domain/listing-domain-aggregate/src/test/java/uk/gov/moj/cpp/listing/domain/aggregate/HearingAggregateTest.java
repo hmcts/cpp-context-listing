@@ -790,18 +790,6 @@ public class HearingAggregateTest {
     }
 
     @Test
-    public void shouldReturnNothingWhenDefendantListIsNullForUpdateDefendantCourtProceedingForHearing2() {
-        final UUID case1Id = randomUUID();
-        final ProsecutionCase prosecutionCase = prosecutionCase().
-                withId(case1Id).
-                withDefendants(null).
-                build();
-
-        final Stream<Object> listedHearing = hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase);
-
-        assertThat(listedHearing.count(), is(0L));
-    }
-    @Test
     public void shouldPopulateSeedingHearingInAllocationWhenSeedingHearingNotExistsInPayloadsOffenceLevel() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
