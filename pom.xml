@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.common</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>10.8.3</version>
+        <version>10.8.10</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -30,8 +30,7 @@
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <junit4-dataprovider.version>2.6</junit4-dataprovider.version>
         <coredomain.version>1.0.178</coredomain.version>
-        <referencedata.version>7.0.79</referencedata.version>
-        <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
+        <referencedata.version>8.0.0</referencedata.version>
         <sardine.version>5.7</sardine.version>
         <test-utils-enveloper-provider.version>5.1.2</test-utils-enveloper-provider.version>
         <test-utils-core.version>5.1.2</test-utils-core.version>
