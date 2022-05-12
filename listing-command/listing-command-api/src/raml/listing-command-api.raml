@@ -266,3 +266,22 @@ protocols: [ HTTP, HTTPS ]
       responses:
         202:
           description: Request accepted
+
+
+/delete-hearing/{hearingId}:
+    post:
+      description: |
+        Update HearingDays without CourtCentre
+        ...
+        (mapping):
+          requestType: application/vnd.listing.delete-hearing+json
+          name: listing.command.delete-hearing
+        ...
+      body:
+        application/vnd.listing.delete-hearing+json:
+            schema: !include json/schema/listing.command.delete-hearing.json
+            example: !include json/listing.command.delete-hearing.json
+
+      responses:
+        202:
+          description: Request accepted

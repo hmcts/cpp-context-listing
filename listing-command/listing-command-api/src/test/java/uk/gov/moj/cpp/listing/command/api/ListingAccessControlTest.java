@@ -43,6 +43,8 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_CREATE_LISTING_NOTE = "listing.command.create-listing-note";
     private static final String ACTION_DELETE_LISTING_NOTE = "listing.command.delete-listing-note";
     private static final String ACTION_MARK_UNALLOCATED_HEARING_AS_DUPLICATE = "listing.mark-unallocated-hearing-as-duplicate";
+    private static final String ACTION_DELETE_HEARING = "listing.command.delete-hearing";
+
 
 
     @Mock
@@ -267,6 +269,26 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
                 .willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowSystemUserToDeleteHearing() {
+        final Action action = createActionFor(ACTION_DELETE_HEARING);
+        given(userAndGroupProvider.isSystemUser(action)).willReturn(true);
+
+        final ExecutionResults results = executeRulesWith(action);
+
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowNonSystemUserToDeleteHearing() {
+        final Action action = createActionFor(ACTION_DELETE_HEARING);
+        given(userAndGroupProvider.isSystemUser(action)).willReturn(false);
+
+        final ExecutionResults results = executeRulesWith(action);
+
         assertFailureOutcome(results);
     }
 

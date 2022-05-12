@@ -26,6 +26,7 @@ import uk.gov.justice.listing.courts.HearingUpdated;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdateHearingToCaseCommand;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
+import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
 import uk.gov.justice.listing.events.CaseMarkersToBeUpdated;
@@ -191,6 +192,8 @@ public class ListingEventProcessor {
     private static final String COMMAND_UPDATE_CASE_RESULTED_DEFENDANT_PROCEEDINGS_CONCLUDED = "listing.command.update-case-resulted-defendant-proceedings-concluded";
     private static final String LISTING_COMMAND_ADD_CASES_TO_HEARING = "listing.command.add-cases-to-hearing";
     private static final String PRIVATE_EVENT_ALLOCATED_HEARING_EXTENDED_FOR_HEARING = "listing.events.allocated-hearing-extended-for-listing";
+    private static final String PRIVATE_EVENT_ALLOCATED_HEARING_EXTENDED_FOR_HEARING_V2 = "listing.events.allocated-hearing-extended-for-listing-v2";
+
     private static final String PUBLIC_EVENT_HEARING_DAYS_CANCELLED = "public.hearing.hearing-days-cancelled";
     private static final String COMMAND_CANCEL_HEARING_DAYS = "listing.command.cancel-hearing-days";
     private static final String LEGAL_AID_STATUS = "legalAidStatus";
@@ -1112,9 +1115,31 @@ public class ListingEventProcessor {
         publishHearingConfirmedPublicEventForExtendHearing(envelope);
     }
 
+    @Handles(PRIVATE_EVENT_ALLOCATED_HEARING_EXTENDED_FOR_HEARING_V2)
+    public void handleAllocatedHearingExtendedForListingV2Message(final JsonEnvelope envelope) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENT_ALLOCATED_HEARING_EXTENDED_FOR_HEARING_V2, envelope.toObfuscatedDebugString());
+        }
+
+        publishHearingConfirmedPublicEventForExtendHearingAllocatedHearingExtendedV2(envelope);
+    }
+
     private void publishHearingConfirmedPublicEventForExtendHearing(final JsonEnvelope envelope) {
         final AllocatedHearingExtendedForListing hearingExtendedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), AllocatedHearingExtendedForListing.class);
         final HearingConfirmed hearingConfirmed = allocatedHearingExtendedFactory.create(hearingExtendedForListing, envelope);
+
+        updateHearingToCase(envelope, hearingConfirmed);
+
+        LOGGER.info("Publishing '{}' public event for extend hearing with payload {}", PUBLIC_EVENT_HEARING_CONFIRMED, hearingConfirmed);
+        final JsonValue payload = objectToJsonValueConverter.convert(hearingConfirmed);
+        sender.send(envelop(payload)
+                .withName(PUBLIC_EVENT_HEARING_CONFIRMED)
+                .withMetadataFrom(envelope));
+    }
+
+    private void publishHearingConfirmedPublicEventForExtendHearingAllocatedHearingExtendedV2(final JsonEnvelope envelope) {
+        final AllocatedHearingExtendedForListingV2 allocatedHearingExtendedForListingV2 = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), AllocatedHearingExtendedForListingV2.class);
+        final HearingConfirmed hearingConfirmed = allocatedHearingExtendedFactory.create(allocatedHearingExtendedForListingV2, envelope);
 
         updateHearingToCase(envelope, hearingConfirmed);
 

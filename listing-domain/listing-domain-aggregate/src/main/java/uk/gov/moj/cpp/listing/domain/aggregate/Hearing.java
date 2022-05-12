@@ -1,58 +1,16 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static java.lang.Boolean.TRUE;
-import static java.util.Collections.emptyList;
-import static java.util.Comparator.comparing;
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
-import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Stream.concat;
-import static org.apache.commons.collections.CollectionUtils.isEmpty;
-import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static uk.gov.justice.core.courts.JurisdictionType.valueFor;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
-import static uk.gov.justice.listing.events.AllocatedHearingExtendedForListing.allocatedHearingExtendedForListing;
-import static uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2.allocatedHearingUpdatedForListingV2;
-import static uk.gov.justice.listing.events.AvailableSlotsForHearingFreed.availableSlotsForHearingFreed;
-import static uk.gov.justice.listing.events.CourtRoomChangedForHearing.courtRoomChangedForHearing;
-import static uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2.defendantCourtProceedingsUpdatedV2;
-import static uk.gov.justice.listing.events.EndDateChangedForHearing.endDateChangedForHearing;
-import static uk.gov.justice.listing.events.EndDateRemovedFromHearing.endDateRemovedFromHearing;
-import static uk.gov.justice.listing.events.HearingAllocatedForListingV2.hearingAllocatedForListingV2;
-import static uk.gov.justice.listing.events.HearingDaysCancelled.hearingDaysCancelled;
-import static uk.gov.justice.listing.events.HearingDaysChangedForHearing.hearingDaysChangedForHearing;
-import static uk.gov.justice.listing.events.HearingDaysSequenced.hearingDaysSequenced;
-import static uk.gov.justice.listing.events.HearingListed.hearingListed;
-import static uk.gov.justice.listing.events.HearingUnallocatedForListing.hearingUnallocatedForListing;
-import static uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing.nonDefaultDaysChangedForHearing;
-import static uk.gov.justice.listing.events.NonSittingDaysAssignedToHearing.nonSittingDaysAssignedToHearing;
-import static uk.gov.justice.listing.events.NonSittingDaysChangedForHearing.nonSittingDaysChangedForHearing;
-import static uk.gov.justice.listing.events.StartDateChangedForHearing.startDateChangedForHearing;
-import static uk.gov.justice.listing.events.StartDateRemovedForHearing.startDateRemovedForHearing;
-import static uk.gov.justice.listing.events.TrialVacated.trialVacated;
-import static uk.gov.justice.listing.events.TypeChangedForHearing.typeChangedForHearing;
-import static uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing.weekCommencingDateChangedForHearing;
-import static uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing.weekCommencingDateRemovedForHearing;
-import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
-import static uk.gov.moj.cpp.listing.domain.aggregate.HearingDaysCalculator.calculate;
-import static uk.gov.moj.cpp.listing.domain.aggregate.HearingDaysCalculator.calculateNewNonDefaultDaysForUnscheduled;
-import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
-
+import com.google.common.collect.ImmutableList;
+import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.events.AddedCasesForHearing;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
+import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
 import uk.gov.justice.listing.events.ApplicationEjected;
@@ -166,10 +124,52 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.commons.collections.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.google.common.collect.Lists.newArrayList;
+import static java.lang.Boolean.TRUE;
+import static java.util.Collections.emptyList;
+import static java.util.Comparator.comparing;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Stream.concat;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static uk.gov.justice.core.courts.JurisdictionType.valueFor;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
+import static uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2.allocatedHearingExtendedForListingV2;
+import static uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2.allocatedHearingUpdatedForListingV2;
+import static uk.gov.justice.listing.events.AvailableSlotsForHearingFreed.availableSlotsForHearingFreed;
+import static uk.gov.justice.listing.events.CourtRoomChangedForHearing.courtRoomChangedForHearing;
+import static uk.gov.justice.listing.events.DefendantCourtProceedingsUpdatedV2.defendantCourtProceedingsUpdatedV2;
+import static uk.gov.justice.listing.events.EndDateChangedForHearing.endDateChangedForHearing;
+import static uk.gov.justice.listing.events.EndDateRemovedFromHearing.endDateRemovedFromHearing;
+import static uk.gov.justice.listing.events.HearingAllocatedForListingV2.hearingAllocatedForListingV2;
+import static uk.gov.justice.listing.events.HearingDaysCancelled.hearingDaysCancelled;
+import static uk.gov.justice.listing.events.HearingDaysChangedForHearing.hearingDaysChangedForHearing;
+import static uk.gov.justice.listing.events.HearingDaysSequenced.hearingDaysSequenced;
+import static uk.gov.justice.listing.events.HearingListed.hearingListed;
+import static uk.gov.justice.listing.events.HearingUnallocatedForListing.hearingUnallocatedForListing;
+import static uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing.nonDefaultDaysChangedForHearing;
+import static uk.gov.justice.listing.events.NonSittingDaysAssignedToHearing.nonSittingDaysAssignedToHearing;
+import static uk.gov.justice.listing.events.NonSittingDaysChangedForHearing.nonSittingDaysChangedForHearing;
+import static uk.gov.justice.listing.events.StartDateChangedForHearing.startDateChangedForHearing;
+import static uk.gov.justice.listing.events.StartDateRemovedForHearing.startDateRemovedForHearing;
+import static uk.gov.justice.listing.events.TrialVacated.trialVacated;
+import static uk.gov.justice.listing.events.TypeChangedForHearing.typeChangedForHearing;
+import static uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing.weekCommencingDateChangedForHearing;
+import static uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing.weekCommencingDateRemovedForHearing;
+import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
+import static uk.gov.moj.cpp.listing.domain.aggregate.HearingDaysCalculator.calculate;
+import static uk.gov.moj.cpp.listing.domain.aggregate.HearingDaysCalculator.calculateNewNonDefaultDaysForUnscheduled;
+import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 
 @SuppressWarnings({"squid:S1172", "squid:S2629", "squid:S1948", "squid:S00107", "squid:S3655", "squid:S1067", "squid:CommentedOutCodeLine", "squid:S1068", "squid:S4973", "PMD.BeanMembersShouldSerialize", "PMD.NullAssignment"})
 public class Hearing implements Aggregate {
@@ -265,6 +265,8 @@ public class Hearing implements Aggregate {
                 when(UnallocatedHearingDeleted.class).apply(this::onUnallocatedHearingDeleted),
                 when(OffencesRemovedFromHearing.class).apply(this::onOffencesRemovedFromHearing),
                 when(CasesAddedToHearing.class).apply(this::onCasesAddedToHearing),
+                when(AllocatedHearingExtendedForListingV2.class).apply(this::onAllocatedHearingExtendedForListingV2),
+                when(AllocatedHearingExtendedForListing.class).apply(this::onAllocatedHearingExtendedForListing),
                 otherwiseDoNothing());
     }
 
@@ -1052,13 +1054,13 @@ public class Hearing implements Aggregate {
                 .build()));
     }
 
-    public Stream<Object> applyAllocationRulesForExtendedHearing(final uk.gov.justice.listing.events.Hearing unallocatedHearing) {
+    public Stream<Object> applyAllocationRulesForExtendedHearing(final uk.gov.justice.listing.events.Hearing unallocatedHearing, final boolean fullExtension) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
 
         if (canAllocate() && allocated) {
-            return apply(Stream.of(allocatedHearingExtendedForListingEvent(unallocatedHearing)));
+            return apply(Stream.of(allocatedHearingExtendedForListingEvent(unallocatedHearing, fullExtension)));
         } else {
             LOGGER.info("Incoming hearing cannot allocated with new list cases");
         }
@@ -2092,6 +2094,14 @@ public class Hearing implements Aggregate {
         // Do nothing
     }
 
+    private void onAllocatedHearingExtendedForListingV2(final AllocatedHearingExtendedForListingV2 event) {
+        // Do nothing
+    }
+
+    private void onAllocatedHearingExtendedForListing(final AllocatedHearingExtendedForListing event) {
+        // Do nothing
+    }
+
     @SuppressWarnings({"squid:S1172"})
     private void onHearingUnallocatedForListing(final HearingUnallocatedForListing event) {
         this.allocated = Boolean.FALSE;
@@ -2447,9 +2457,9 @@ public class Hearing implements Aggregate {
 
     }
 
-    private AllocatedHearingExtendedForListing allocatedHearingExtendedForListingEvent(final uk.gov.justice.listing.events.Hearing unallocatedHearing) {
+    private AllocatedHearingExtendedForListingV2 allocatedHearingExtendedForListingEvent(final uk.gov.justice.listing.events.Hearing unallocatedHearing, final boolean fullExtension) {
 
-        return allocatedHearingExtendedForListing()
+        return allocatedHearingExtendedForListingV2()
                 .withHearingId(this.hearingId)
                 .withType(buildHearingType())
                 .withEstimatedMinutes(of(this.estimatedMinutes))
@@ -2475,6 +2485,7 @@ public class Hearing implements Aggregate {
                 .withCourtApplicationIds(this.confirmedCourtApplicationIds.isEmpty() ? null : this.confirmedCourtApplicationIds)
                 .withUnAllocatedListedCases(this.unAllocatedListedCases.isEmpty() ? null : this.unAllocatedListedCases.stream().map(EventAggregateConverter::buildEventListedCase).collect(toList()))
                 .withExistingHearingId(unallocatedHearing.getId())
+                .withFullExtension(fullExtension)
                 .build();
     }
 

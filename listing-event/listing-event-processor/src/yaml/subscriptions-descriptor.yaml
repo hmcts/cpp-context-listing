@@ -83,6 +83,9 @@ subscriptions_descriptor:
         - name: listing.events.allocated-hearing-extended-for-listing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.allocated-hearing-extended-for-listing.json
 
+        - name: listing.events.allocated-hearing-extended-for-listing-v2
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.allocated-hearing-extended-for-listing-v2.json
+
         - name: listing.events.linked-cases-to-be-updated
           schema_uri: http://justice.gov.uk/listing/events/listing.events.linked-cases-to-be-updated.json
 

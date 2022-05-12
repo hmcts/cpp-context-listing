@@ -46,6 +46,9 @@
       "items": {
         "$ref": "http://justice.gov.uk/listing/events/reportingRestriction.json"
       }
+    },
+    "seedingHearing" : {
+      "$ref": "http://justice.gov.uk/listing/events/seedingHearing.json"
     }
   },
   "required": [

@@ -67,6 +67,8 @@ public class ListingCommandApi {
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.command.mark-unallocated-hearing-as-duplicate";
     private static final String LISTING_COMMAND_UPDATE_EXISTING_HEARING = "listing.command.update-existing-hearing";
     private static final String LISTING_COMMAND_DELETE_NEXT_HEARINGS = "listing.command.delete-next-hearings";
+    private static final String LISTING_COMMAND_DELETE_HEARING = "listing.command.delete-hearing";
+
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandApi.class);
     private static final String PROSECUTION_CASES = "prosecutionCases";
@@ -350,6 +352,13 @@ public class ListingCommandApi {
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING),
                 envelope.payload()));
     }
+
+    @Handles("listing.command.delete-hearing")
+    public void handleDeleteHearing(final JsonEnvelope envelope) {
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_DELETE_HEARING),
+                envelope.payload()));
+    }
+
 
     private Set<CourtCentreDetails> getCourtCentreDetails(final JsonEnvelope envelope, final List<HearingListingNeeds> hearingListingNeeds) {
         final Set<CourtCentreDetails> courtCentres = new HashSet<>();

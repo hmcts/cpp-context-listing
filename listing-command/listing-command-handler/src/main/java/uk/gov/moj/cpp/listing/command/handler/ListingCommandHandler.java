@@ -655,6 +655,7 @@ public class ListingCommandHandler {
         if (prosecutionCases != null && !prosecutionCases.isEmpty()) {
             partialExtension = comparePersistedAndRequestedCaseMaps(unallocatedHearingRequestCaseMap, unAllocatedHearingPersisted, prosecutionCases, extendHearingForHearingEnriched);
         }
+        final boolean fullExtension =  !partialExtension;
 
         if (partialExtension) {
 
@@ -667,7 +668,7 @@ public class ListingCommandHandler {
 
             updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
                 final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unallocatedHearingPersisted, casesToMove);
-                final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unallocatedHearingPersisted);
+                final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unallocatedHearingPersisted, fullExtension);
                 final Stream<Object> hearingMarkedForPartialUpdated = hearing.markUnallocatedHearingForPartialUpdate(unAllocatedHearingId, prosecutionCasesToBeRemovedFromHearing);
                 return Stream.of(updatedHearing, allocationEvents, hearingMarkedForPartialUpdated).flatMap(i -> i);
             });
@@ -680,9 +681,8 @@ public class ListingCommandHandler {
             if (!unAllocatedHearingPersisted.getAllocated()) {
                 updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
                     final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unAllocatedHearingPersisted, unAllocatedHearingPersisted.getListedCases());
-                    final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted);
-                    final Stream<Object> markUnAllocatedHearingForDelete = hearing.markHearingAsDeleted(unAllocatedHearingId);
-                    return Stream.of(updatedHearing, allocationEvents, markUnAllocatedHearingForDelete).flatMap(i -> i);
+                    final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted, fullExtension);
+                    return Stream.of(updatedHearing, allocationEvents).flatMap(i -> i);
                 });
             } else {
                 LOGGER.info("incoming list cases : {} cannot be added in allocated hearing as same case id : {} ", unAllocatedHearingCasesId, allocatedHearingCasesId);
@@ -1422,6 +1422,25 @@ public class ListingCommandHandler {
             appendEventsToStream(envelope, eventStream, events);
         }
     }
+
+    @Handles("listing.command.delete-hearing")
+    public void deleteHearing(final JsonEnvelope envelope) throws EventStreamException {
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("listing.command.delete-hearing event received {}", envelope.toObfuscatedDebugString());
+        }
+
+        final JsonObject payload = envelope.payloadAsJsonObject();
+
+        final UUID deletedHearingId = fromString(payload.getString(HEARING_ID));
+        LOGGER.info("'listing.command.delete-hearing' received for hearing {}", deletedHearingId);
+
+        updateHearingEventStream(envelope, deletedHearingId, (Hearing hearing) -> {
+            final Stream<Object> hearingDeleted = hearing.markHearingAsDeleted(deletedHearingId);
+            return Stream.of(hearingDeleted).flatMap(i -> i);
+        });
+    }
+
 
 
     @VisibleForTesting

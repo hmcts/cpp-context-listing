@@ -29,8 +29,8 @@
         <sonar.scm.provider>git</sonar.scm.provider>
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <junit4-dataprovider.version>2.6</junit4-dataprovider.version>
-        <coredomain.version>1.0.178</coredomain.version>
-        <referencedata.version>8.0.0</referencedata.version>
+        <coredomain.version>1.0.180-SNAPSHOT</coredomain.version>
+        <referencedata.version>8.0.2</referencedata.version>
         <sardine.version>5.7</sardine.version>
         <test-utils-enveloper-provider.version>5.1.2</test-utils-enveloper-provider.version>
         <test-utils-core.version>5.1.2</test-utils-core.version>

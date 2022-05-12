@@ -516,6 +516,17 @@ public class ListingCommandApiTest {
         assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is("listing.command.update-existing-hearing"));
     }
 
+    @Test
+    public void shouldHandleListingCommandDeleteHearing() {
+        final Metadata mockMetadata = MetadataBuilderFactory.metadataWithRandomUUIDAndName().build();
+        when(envelope.metadata()).thenReturn(mockMetadata);
+
+        listingCommandApi.handleDeleteHearing(envelope);
+
+        verify(sender).send(envelopeArgumentCaptor.capture());
+        assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is("listing.command.delete-hearing"));
+    }
+
     private List<HearingUnscheduledListingNeeds> createUnscheduledListingNeeds(final UUID hearingId1, final UUID hearingId2) {
         return Arrays.asList(
                 HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()

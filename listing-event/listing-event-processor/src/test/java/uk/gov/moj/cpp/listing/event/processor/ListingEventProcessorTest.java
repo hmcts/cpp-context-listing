@@ -82,6 +82,7 @@ import uk.gov.justice.listing.courts.OffencesForDefendantUpdated;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdatedOffences;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
+import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
 import uk.gov.justice.listing.events.CaseResultedDefendantProceedingsConcluded;
@@ -311,6 +312,9 @@ public class ListingEventProcessorTest {
     private ArgumentCaptor<String> stringArgumentCaptor;
     @Mock
     private AllocatedHearingExtendedForListing allocatedHearingExtendedForListing;
+
+    @Mock
+    private AllocatedHearingExtendedForListingV2 allocatedHearingExtendedForListingV2;
     @Mock
     private ExtendHearingToListedCaseCommandConverter extendHearingToListedCaseCommandConverter;
     @Mock
@@ -1407,6 +1411,39 @@ public class ListingEventProcessorTest {
         given(objectToJsonValueConverter.convert(any(HearingConfirmed.class))).willReturn(jsonObject);
         //when
         listingEventProcessor.handleAllocatedHearingExtendedForListingMessage(event);
+
+        //then
+        verify(sender, times(2)).send(senderDefaultEnvelopeCaptor.capture());
+        final List<DefaultEnvelope<JsonObject>> allValues = senderDefaultEnvelopeCaptor.getAllValues();
+
+        final JsonEnvelopeMatcher jsonEnvelopeMatcher = new JsonEnvelopeMatcher();
+        assertThat(allValues.get(0).metadata().name(), is(COMMAND_UPDATE_HEARING_TO_CASE));
+        assertThat(allValues.get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+        assertThat(allValues.get(1).payload().getJsonObject("confirmedHearing").getString(ID), equalTo(HEARING_ID.toString()));
+    }
+
+    @Test
+    public void shouldHandleAllocatedHearingExtendedForListingV2Message() {
+        //given
+        final JsonEnvelope event = allocatedHearingExtendedForListingEvent();
+        final ListedCase listedCase = ListedCase.listedCase().withId(randomUUID()).build();
+        final List<ListedCase> listedCases = new ArrayList<>();
+        listedCases.add(listedCase);
+
+        allocatedHearingExtendedForListingV2 = AllocatedHearingExtendedForListingV2.allocatedHearingExtendedForListingV2()
+                .withUnAllocatedListedCases(listedCases).build();
+
+        final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
+
+        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), AllocatedHearingExtendedForListingV2.class))
+                .willReturn(allocatedHearingExtendedForListingV2);
+        given(allocatedHearingExtendedFactory.create(allocatedHearingExtendedForListingV2, event))
+                .willReturn(hearingConfirmed);
+
+        final JsonObject jsonObject = createObjectBuilder().add("confirmedHearing", createObjectBuilder().add(ID, HEARING_ID.toString())).build();
+        given(objectToJsonValueConverter.convert(any(HearingConfirmed.class))).willReturn(jsonObject);
+        //when
+        listingEventProcessor.handleAllocatedHearingExtendedForListingV2Message(event);
 
         //then
         verify(sender, times(2)).send(senderDefaultEnvelopeCaptor.capture());

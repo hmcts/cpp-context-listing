@@ -67,6 +67,8 @@ import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.UNALLO
 import static uk.gov.moj.cpp.listing.command.utils.FileUtil.givenPayload;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
 
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Gender;
 import uk.gov.justice.core.courts.ProsecutionCase;
@@ -228,6 +230,8 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.ws.rs.core.Response;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.MatcherAssert;
@@ -2028,8 +2032,7 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
-        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class));
-        verify(hearing, times(1)).markHearingAsDeleted(hearingID2);
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class));
     }
 
     @Test
@@ -2049,8 +2052,7 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
-        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class));
-        verify(hearing, times(1)).markHearingAsDeleted(hearingID2);
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class));
     }
 
     @Test
@@ -2105,7 +2107,7 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearingDeepCopy.getListedCases());
-        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class));
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), true);
         verify(hearing, times(1)).updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), anyList());
     }
 
@@ -3572,4 +3574,43 @@ public class ListingCommandHandlerTest {
                 )
         );
     }
+
+    @Test
+    public void shouldDeleteHearing() throws EventStreamException {
+        final UUID hearingId = randomUUID();
+
+        final JsonObject payload = Json.createObjectBuilder()
+                .add("hearingId", hearingId.toString())
+                .build();
+
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.delete-hearing", payload);
+        listingCommandHandler.deleteHearing(commandEnvelope);
+
+        verify(hearing, times(1)).markHearingAsDeleted(hearingId);
+    }
+
+
+    @Test
+    public void shouldParseStringToXML() {
+        final String authContextInfoValue = "<Sw:AuthContextInfo xmlns:Sw=\"urn:swift:saml:Sw.01\"><Network>abcdef</Network><SubjectDN>cn=%1,cn=uk2345678,ou=operators,o=scblgb21,o=swift</SubjectDN><PolicyOID>SWIFT_OID</PolicyOID></Sw:AuthContextInfo>";
+
+        System.out.print(authContextInfoValue.substring(authContextInfoValue.indexOf("<SubjectDN>") + "<SubjectDN>".length(), authContextInfoValue.indexOf("</SubjectDN>")));
+
+        //Parser that produces DOM object trees from XML content
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+
+        //API to obtain DOM Document instance
+        DocumentBuilder builder = null;
+        try {
+            //Create DocumentBuilder with default configuration
+            builder = factory.newDocumentBuilder();
+
+            //Parse the content to Document object
+            Document doc = builder.parse(new InputSource(new StringReader(authContextInfoValue)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }
