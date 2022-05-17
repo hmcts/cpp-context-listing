@@ -1006,7 +1006,9 @@ public class ListingEventProcessorTest {
         listingEventProcessor.handleCourtApplicationAddedForListedHearing(envelope);
 
         //then
-        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is("public.listing.court-application-added-for-hearing") );
     }
 
     @Test

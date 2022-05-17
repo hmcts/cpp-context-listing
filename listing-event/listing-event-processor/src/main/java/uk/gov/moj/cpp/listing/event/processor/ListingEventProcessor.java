@@ -332,6 +332,8 @@ public class ListingEventProcessor {
         }
 
         sendCommandAddApplicationToListedHearing(envelope);
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName("public.listing.court-application-added-for-hearing"), envelope.payloadAsJsonObject()));
     }
 
     @Handles(PRIVATE_EVENT_DEFENDANTS_TO_BE_UPDATED)

@@ -13,6 +13,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
+
+import javax.inject.Inject;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.listing.events.ApplicantRespondent;
 import uk.gov.justice.listing.events.CourtApplication;
@@ -22,6 +24,7 @@ import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -97,6 +100,9 @@ public class CourtApplicationEventListenerTest {
     @Mock
     ObjectNode properties;
 
+    @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @InjectMocks
     private CourtApplicationEventListener courtApplicationEventListener;
 
@@ -147,6 +153,7 @@ public class CourtApplicationEventListenerTest {
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
+        verify(hearingSearchSyncService).sync(HEARING_ID);
     }
 
     @Test
@@ -189,6 +196,7 @@ public class CourtApplicationEventListenerTest {
         verify(properties).set(anyObject(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, FIRST_NAME, LAST_NAME);
         verify(hearingRepository).save(hearing);
+        verify(hearingSearchSyncService).sync(HEARING_ID);
     }
 
     @Test
@@ -235,6 +243,7 @@ public class CourtApplicationEventListenerTest {
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
+        verify(hearingSearchSyncService).sync(HEARING_ID);
     }
 
     @Test
@@ -313,6 +322,7 @@ public class CourtApplicationEventListenerTest {
         verify(properties, times(2)).replace(anyObject(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, FIRST_NAME, LAST_NAME);
         verify(hearingRepository,times(2)).save(hearing);
+        verify(hearingSearchSyncService, times(2)).sync(HEARING_ID);
     }
 
     @Test
@@ -356,6 +366,7 @@ public class CourtApplicationEventListenerTest {
         verify(properties).set(anyString(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
+        verify(hearingSearchSyncService).sync(HEARING_ID);
     }
 
     private List<CourtApplication> createCourtApplications() {

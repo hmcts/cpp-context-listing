@@ -75,6 +75,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private static final UUID LINKED_APPLICATION_ID = UUID.randomUUID();
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED = "public.progression.events.hearing-extended";
     private static final String PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "listing.events.court-application-added-for-hearing";
+    private static final String PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "public.listing.court-application-added-for-hearing";
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED = "public.progression.court-application-changed";
     private static final String PRIVATE_EVENT_APPLICATION_UPDATED_FOR_HEARING = "listing.events.court-application-updated-for-hearing";
     private static final String POSTCODE = "CR1 4BX";
@@ -87,6 +88,8 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private MessageProducer publicEventCourtApplicationAdded;
     private MessageConsumer publicEventMessageConsumerCourtApplicationAdded;
     private MessageConsumer privateMessageConsumerCourtApplicationAddedForHearing;
+    private MessageConsumer publicMessageConsumerCourtApplicationAddedForHearing;
+
 
     private String request;
 
@@ -105,6 +108,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
         publicEventCourtApplicationAdded = QueueUtil.publicEvents.createProducer();
         publicEventMessageConsumerCourtApplicationAdded = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED);
         privateMessageConsumerCourtApplicationAddedForHearing = QueueUtil.privateEvents.createConsumer(PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
+        publicMessageConsumerCourtApplicationAddedForHearing = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -150,6 +154,11 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
 
         JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerCourtApplicationAddedForHearing);
         LOGGER.debug("jsonResponse from privateMessageConsumerCourtApplicationAddedForHearing: {}", jsonResponse.prettify());
+        assertThat(jsonResponse.get("hearingId"), is(jsRequest.getString("hearingId")));
+        assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));
+
+        jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerCourtApplicationAddedForHearing);
+        LOGGER.debug("jsonResponse from publicMessageConsumerCourtApplicationAddedForHearing: {}", jsonResponse.prettify());
         assertThat(jsonResponse.get("hearingId"), is(jsRequest.getString("hearingId")));
         assertThat(jsonResponse.get("courtApplication.id"), is(jsRequest.getString("courtApplication.id")));
     }
@@ -370,7 +379,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
             publicEventCourtApplicationAdded.close();
             publicEventMessageConsumerCourtApplicationAdded.close();
             privateMessageConsumerCourtApplicationAddedForHearing.close();
-
+            publicMessageConsumerCourtApplicationAddedForHearing.close();
         } catch (JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);

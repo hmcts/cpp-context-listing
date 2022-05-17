@@ -13,6 +13,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -36,6 +37,9 @@ public class CourtApplicationEventListener {
     @Inject
     private HearingRepository hearingRepository;
 
+    @Inject
+    private HearingSearchSyncService hearingSearchSyncService;
+
     @Handles("listing.events.court-application-added-for-hearing")
     public void courtApplicationAdded(final Envelope<CourtApplicationAddedForHearing> event) {
         final CourtApplicationAddedForHearing addedCourtapplicationToHearing = event.payload();
@@ -57,6 +61,7 @@ public class CourtApplicationEventListener {
                         .putObject(COURT_APPLICATION_FIELD, singletonList(courtApplication))
                         .save();
             }
+            hearingSearchSyncService.sync(hearingId);
         }
     }
 
@@ -81,6 +86,8 @@ public class CourtApplicationEventListener {
                 .find(hearingId)
                 .putSubList(COURT_APPLICATION_FIELD, typeRef, getCourtApplicationsFunction(courtApplication))
                 .save();
+
+        hearingSearchSyncService.sync(hearingId);
     }
 
     private Function<List<CourtApplication>, List<CourtApplication>> getCourtApplicationsFunction(CourtApplication courtApplication) {
