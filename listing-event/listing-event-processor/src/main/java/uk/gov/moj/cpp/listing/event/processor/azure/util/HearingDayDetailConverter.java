@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.azure.util;
 
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
 import static uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil.getMeridian;
@@ -39,9 +40,9 @@ public class HearingDayDetailConverter {
         final LocalDate date = hearingDaySittingDay.toLocalDate();
         final String session = StringUtils.trimToEmpty(getMeridian(hearingDaySittingDay));
         final String hearingStartTime = toIsoString(hearingDay.getStartTime());
-        final Optional<String> courtScheduleId = hearingDay.getCourtScheduleId().map(UUID::toString).map(Optional::of).orElse(Optional.empty());
-        final Optional<String> courtCentreId = hearingDay.getCourtCentreId().map(UUID::toString).map(Optional::of).orElse(Optional.empty());
-        final Optional<String> courtRoomId = hearingDay.getCourtRoomId().map(UUID::toString).map(Optional::of).orElse(Optional.empty());
+        final Optional<String> courtScheduleId = ofNullable(hearingDay.getCourtScheduleId()).map(UUID::toString);
+        final Optional<String> courtCentreId = ofNullable(hearingDay.getCourtCentreId()).map(UUID::toString);
+        final Optional<String> courtRoomId = ofNullable(hearingDay.getCourtRoomId()).map(UUID::toString);
 
         HearingDayDetail hearingDayDetail = null;
         if ("AD".equalsIgnoreCase(session) && isFalse(isForAdjournmentHearing)) {

@@ -8,6 +8,7 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
@@ -29,6 +30,7 @@ import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingTrialVacated;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.TrialVacated;
+import uk.gov.justice.listing.events.UpdatedHmiFieldsForHearing;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
@@ -103,6 +105,9 @@ public class HearingEventListenerTest {
 
     @Mock
     private HearingRescheduled hearingRescheduled;
+
+    @Mock
+    private UpdatedHmiFieldsForHearing updatedHmiFieldsForHearing;
 
 
     @InjectMocks
@@ -208,7 +213,7 @@ public class HearingEventListenerTest {
                         .withId(CASE_ID)
                         .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
                                 .withId(DEFENDANT_ID)
-                                .withProceedingsConcluded(of(Boolean.TRUE))
+                                .withProceedingsConcluded(true)
                                 .build()))
                         .build())
                 .build();
@@ -241,7 +246,7 @@ public class HearingEventListenerTest {
                         .withId(CASE_ID)
                         .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
                                 .withId(DEFENDANT_ID)
-                                .withProceedingsConcluded(of(Boolean.TRUE))
+                                .withProceedingsConcluded(true)
                                 .build()))
                         .build())
                 .build();
@@ -274,7 +279,7 @@ public class HearingEventListenerTest {
                         .withId(CASE_ID)
                         .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
                                 .withId(DEFENDANT_ID)
-                                .withProceedingsConcluded(of(Boolean.TRUE))
+                                .withProceedingsConcluded(true)
                                 .build()))
                         .build())
                 .build();
@@ -307,7 +312,7 @@ public class HearingEventListenerTest {
                         .withId(CASE_ID)
                         .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
                                 .withId(DEFENDANT_ID_NOT_MATCHED_IN_THE_EVENT)
-                                .withProceedingsConcluded(of(Boolean.TRUE))
+                                .withProceedingsConcluded(true)
                                 .build()))
                         .build())
                 .build();
@@ -369,7 +374,7 @@ public class HearingEventListenerTest {
 
         given(envelope.payload()).willReturn(hearingTrialVacated);
         given(hearingTrialVacated.getHearingId()).willReturn(HEARING_ID);
-        given(hearingTrialVacated.getVacatedTrialReasonId()).willReturn(of(VACATE_TRIAL_REASON));
+        given(hearingTrialVacated.getVacatedTrialReasonId()).willReturn(VACATE_TRIAL_REASON);
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
@@ -399,6 +404,32 @@ public class HearingEventListenerTest {
         verify(hearingRepository).save(hearing);
     }
 
+    @Test
+    public void shouldUpdateHmiFields() {
+        final Envelope<UpdatedHmiFieldsForHearing> envelope = (Envelope<UpdatedHmiFieldsForHearing>) mock(Envelope.class);
+
+        given(envelope.payload()).willReturn(updatedHmiFieldsForHearing);
+        given(updatedHmiFieldsForHearing.getHearingId()).willReturn(HEARING_ID);
+        given(updatedHmiFieldsForHearing.getBookingType()).willReturn("Video");
+        given(updatedHmiFieldsForHearing.getPriority()).willReturn("High");
+        given(updatedHmiFieldsForHearing.getSpecialRequirements()).willReturn(Arrays.asList("RVC", "GSN"));
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
+        final ArgumentCaptor<JsonNode> jsonNodeArgumentCaptor = ArgumentCaptor.forClass(JsonNode.class);
+
+        hearingEventListener.hmiFieldsUpdated(envelope);
+
+        verify(properties).put(eq("bookingType"), eq("Video"));
+        verify(properties).put(eq("priority"), eq("High"));
+        verify(properties).replace(anyObject(), jsonNodeArgumentCaptor.capture());
+        JsonNode actualValue = jsonNodeArgumentCaptor.getValue();
+        assertEquals("RVC", actualValue.get(0).asText());
+        assertEquals("GSN", actualValue.get(1).asText());
+
+        verify(hearingRepository).save(hearing);
+    }
 
     @Test
     public void shouldHandleCaseIdentifierProceedingsConcluded() throws Exception {

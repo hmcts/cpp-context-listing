@@ -59,12 +59,17 @@ public class NotesService {
     }
 
     private Stream<NoteUUIDService.ListingNotesCollection> createNoteListCollection(JsonNode node ){
+        String roomTextValue = node.get(COURT_ROOM_ID) != null ? node.get(COURT_ROOM_ID).textValue() : null;
+
+        if(roomTextValue == null){
+            return Stream.empty();
+        }
 
         if (node.get(HEARING_DAYS) == null || node.get(HEARING_DAYS).findValues(HEARING_DATE).isEmpty() ) {
-            return Stream.of(new NoteUUIDService.ListingNotesCollection(fromString(node.get(COURT_ROOM_ID).textValue()), from(node.get(START_DATE).textValue())));
+            return Stream.of(new NoteUUIDService.ListingNotesCollection(fromString(roomTextValue), from(node.get(START_DATE).textValue())));
         }else {
             return node.get(HEARING_DAYS).findValues(HEARING_DATE).stream().
-                    map(n -> new NoteUUIDService.ListingNotesCollection(fromString(node.get(COURT_ROOM_ID).textValue()), from(n.textValue())));
+                    map(n -> new NoteUUIDService.ListingNotesCollection(fromString(roomTextValue), from(n.textValue())));
         }
     }
 }

@@ -1,9 +1,9 @@
 package uk.gov.moj.cpp.listing.steps;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.lang.Integer.valueOf;
 import static java.text.MessageFormat.format;
 import static java.util.Arrays.asList;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -26,7 +26,9 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Defendant;
+import uk.gov.justice.core.courts.Gender;
 import uk.gov.justice.core.courts.HearingType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.LegalEntityDefendant;
 import uk.gov.justice.core.courts.ListDefendantRequest;
 import uk.gov.justice.core.courts.ListHearingRequest;
@@ -34,8 +36,6 @@ import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.core.courts.Organisation;
 import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
-import uk.gov.justice.core.courts.Gender;
-import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
@@ -47,7 +47,6 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.jms.JMSException;
@@ -68,6 +67,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTOR_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS = "listing.events.defendants-to-be-added-for-court-proceedings";
     private static final String EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS = "listing.events.new-defendant-added-for-court-proceedings";
     private static final String PUBLIC_EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS = "public.listing.new-defendant-added-for-court-proceedings";
+    private static final String PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI = "public.listing.updated-hearing-in-staging-hmi";
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
@@ -82,6 +82,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     private final MessageConsumer privateEventMessageDefendantsToBeAdded;
     private final MessageConsumer privateEventsMessageDefendantDetailsAdded;
     private final MessageConsumer publicEventsMessageNewDefendantAdded;
+    private final MessageConsumer publicMessageConsumerHmiHearingUpdated;
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
     private String request;
@@ -96,6 +97,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         privateEventMessageDefendantsToBeAdded = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS);
         privateEventsMessageDefendantDetailsAdded = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS);
         publicEventsMessageNewDefendantAdded = publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS);
+        publicMessageConsumerHmiHearingUpdated = publicEvents.createConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -196,7 +198,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
 
         final AddDefendantForCourtProceedingsData addDefendantForCourtProceedingsData = getAddDefendantDetails(caseId);
         final Defendant defendant = addDefendantForCourtProceedingsData.getDefendants().get(0);
-        final Person personDetails = defendant.getPersonDefendant().get().getPersonDetails();
+        final Person personDetails = defendant.getPersonDefendant().getPersonDetails();
 
         poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
@@ -215,6 +217,11 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
                         )));
     }
 
+    public void verifyHmiPublicEventForUpdateHearing() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHmiHearingUpdated);
+        LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
+        Assert.assertThat(jsonResponse.get("hearing.id"), is(hearingData.getId().toString()));
+    }
 
     private AddDefendantForCourtProceedingsData getAddDefendantDetails(final UUID caseId) {
 
@@ -223,39 +230,40 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
                 .withId(DEFENDANT_ID)
                 .withMasterDefendantId(MASTER_DEFENDANT_ID)
                 .withCourtProceedingsInitiated(ZonedDateTime.now())
-                .withLegalEntityDefendant(of(LegalEntityDefendant.legalEntityDefendant()
+                .withLegalEntityDefendant(LegalEntityDefendant.legalEntityDefendant()
                         .withOrganisation(Organisation.organisation()
                                 .withName("withOrganisationName")
                                 .build())
-                        .build()))
-                .withPersonDefendant(of(PersonDefendant.personDefendant()
+                        .build())
+                .withPersonDefendant(PersonDefendant.personDefendant()
                         .withPersonDetails(Person.person()
                                 .withLastName("Last Name")
-                                .withFirstName(of("FIRST NAME"))
-                                .withDateOfBirth(of("1980-07-15"))
-                                .withSpecificRequirements(of("Screen"))
+                                .withFirstName("FIRST NAME")
+                                .withDateOfBirth("1980-07-15")
+                                .withSpecificRequirements("Screen")
                                 .withGender(Gender.FEMALE)
                                 .build()
                         )
-                        .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
-                        .withCustodyTimeLimit(of("2017-10-05"))
-                        .build())
+                        .withBailStatus(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(UUID.fromString("12e69486-4d01-3403-a50a-7419ca040635")).build())
+                        .withCustodyTimeLimit("2017-10-05")
+                        .build()
                 )
                 .withOffences(Arrays.asList(Offence.offence()
                         .withId(UUID.randomUUID())
                         .withOffenceCode("TFL123")
                         .withStartDate("2019-05-01")
-                        .withEndDate(Optional.empty())
+                        .withEndDate(null)
                         .withOffenceTitle("TFL Ticket Dodger")
                         .withOffenceDefinitionId(UUID.randomUUID())
-                        .withCount(of(Integer.valueOf(0)))
+                        .withCount(valueOf(0))
+                        .withOrderIndex(valueOf(0))
+                        .withOffenceLegislation("legislation")
                         .withWording("TFL ticket dodged")
-
                         .build()))
                 .withProsecutionCaseId(caseId)
-                .withDefenceOrganisation(of(organisation()
+                .withDefenceOrganisation(organisation()
                         .withName("withOrganisationName")
-                        .build()))
+                        .build())
                 .build());
         return AddDefendantForCourtProceedingsData.addDefendantForCourtProceedingsData()
                 .withDefendant(defendant)
@@ -268,15 +276,15 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
                 .withCourtCentre(CourtCentre.courtCentre()
                         .withId(UUID.randomUUID())
                         .withName("Carmarthen Magistrates Court")
-                        .withRoomId(of(UUID.randomUUID()))
+                        .withRoomId(UUID.randomUUID())
                         .build())
                 .withHearingType(HearingType.hearingType()
                         .withDescription("Sentence").withId(UUID.randomUUID()).build())
                 .withJurisdictionType(JurisdictionType.CROWN)
                 .withListDefendantRequests(asList(ListDefendantRequest.listDefendantRequest()
-                        .withDefendantId(Optional.of(defendantId))
+                        .withDefendantId(defendantId)
                         .withDefendantOffences(asList(UUID.randomUUID()))
-                        .withProsecutionCaseId(Optional.of(prosecutionCaseId))
+                        .withProsecutionCaseId(prosecutionCaseId)
                         .build()))
                 .build();
 
@@ -289,6 +297,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
             publicEventMessageConsumerDefendantAdded.close();
             privateEventMessageDefendantsToBeAdded.close();
             privateEventsMessageDefendantDetailsAdded.close();
+            publicMessageConsumerHmiHearingUpdated.close();
         } catch (final JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);

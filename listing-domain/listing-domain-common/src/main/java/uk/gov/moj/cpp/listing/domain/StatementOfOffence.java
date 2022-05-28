@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Optional.empty;
+
 import java.util.Optional;
 
 @SuppressWarnings({"squid:S00107", "squid:S00121"})
@@ -66,11 +68,11 @@ public class StatementOfOffence {
   }
 
   public static class Builder {
-    private Optional<String>  legislation;
+    private Optional<String>  legislation = empty();
 
     private String title;
 
-    private Optional<String> welshLegislation;
+    private Optional<String> welshLegislation = empty();
 
     private String welshTitle;
 

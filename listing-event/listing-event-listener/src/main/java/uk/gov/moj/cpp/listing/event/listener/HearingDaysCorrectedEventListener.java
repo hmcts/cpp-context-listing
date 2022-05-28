@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 import static utils.HearingDayUtil.getNotCancelledHearingDays;
 
@@ -18,7 +19,6 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -50,11 +50,11 @@ public class HearingDaysCorrectedEventListener {
 
     @Handles("listing.events.hearing-days-without-court-centre-corrected")
     public void hearingDaysWithoutCourtCentreCorrected(final Envelope<HearingDaysWithoutCourtCentreCorrected> event) throws JsonProcessingException {
-        final HearingDaysWithoutCourtCentreCorrected hearingDaysWithoutCourtCentreCorrected =  event.payload();
+        final HearingDaysWithoutCourtCentreCorrected hearingDaysWithoutCourtCentreCorrected = event.payload();
         final List<HearingDay> hearingDays = hearingDaysWithoutCourtCentreCorrected.getHearingDays();
         final UUID hearingId = hearingDaysWithoutCourtCentreCorrected.getId();
-        final Optional<UUID> courtCentreId = hearingDays.get(0).getCourtCentreId();
-        final Optional<UUID> courtRoomId = hearingDays.get(0).getCourtRoomId();
+        final UUID courtCentreId = hearingDays.get(0).getCourtCentreId();
+        final UUID courtRoomId = hearingDays.get(0).getCourtRoomId();
         List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
 
         final Hearing dbHearingEntity = hearingRepository.findBy(hearingId);
@@ -82,19 +82,19 @@ public class HearingDaysCorrectedEventListener {
         hearingSearchSyncService.sync(hearingId);
     }
 
-    private void correctHearingDaysWithoutCourtCentre(final Optional<UUID> courtCentreId, final Optional<UUID> courtRoomId, final uk.gov.justice.listing.events.Hearing dbHearing) {
+    private void correctHearingDaysWithoutCourtCentre(final UUID courtCentreId, final UUID courtRoomId, final uk.gov.justice.listing.events.Hearing dbHearing) {
         dbHearing.getHearingDays().replaceAll(hearingDay -> HearingDay.hearingDay()
                 .withValuesFrom(hearingDay)
-                .withCourtCentreId(hearingDay.getCourtCentreId().orElse(courtCentreId.get()))
-                .withCourtRoomId(hearingDay.getCourtRoomId().orElse(courtRoomId.orElse(null)))
+                .withCourtCentreId(nonNull(hearingDay.getCourtCentreId()) ? hearingDay.getCourtCentreId() : courtCentreId)
+                .withCourtRoomId(nonNull(hearingDay.getCourtRoomId()) ? hearingDay.getCourtRoomId() : courtRoomId)
                 .build());
     }
 
-    private void correctNonDefaultDaysWithoutCourtCentre(final Optional<UUID> courtCentreId, final Optional<UUID> courtRoomId, final uk.gov.justice.listing.events.Hearing dbHearing) {
+    private void correctNonDefaultDaysWithoutCourtCentre(final UUID courtCentreId, final UUID courtRoomId, final uk.gov.justice.listing.events.Hearing dbHearing) {
         dbHearing.getNonDefaultDays().replaceAll(nonDefaultDay -> NonDefaultDay.nonDefaultDay()
                 .withValuesFrom(nonDefaultDay)
-                .withRoomId(nonDefaultDay.getRoomId().map(Optional::of).orElse(courtRoomId.map(UUID::toString)))
-                .withCourtCentreId(nonDefaultDay.getCourtCentreId().map(Optional::of).orElse(courtCentreId.map(UUID::toString)))
+                .withRoomId(null == nonDefaultDay.getRoomId() ? courtRoomId.toString() : nonDefaultDay.getRoomId())
+                .withCourtCentreId(null == nonDefaultDay.getCourtCentreId() ? courtCentreId.toString() : nonDefaultDay.getCourtCentreId())
                 .build());
     }
 

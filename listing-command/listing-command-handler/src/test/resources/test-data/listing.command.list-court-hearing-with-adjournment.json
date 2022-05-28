@@ -153,8 +153,8 @@
                     "arrestDate": "2018-01-01",
                     "chargeDate": "2018-01-01",
                     "laidDate": "2019-05-01",
-                    "orderIndex": 1,
-                    "count": 0,
+                    "orderIndex": 0,
+                    "count": 1,
                     "notifiedPlea": {
                       "offenceId": "3789ab16-0bb7-4ef1-87ef-c936bf0364f1",
                       "notifiedPleaDate": "2018-04-01",
@@ -304,6 +304,12 @@
             "referralReason": "for Trial",
             "hearingLanguageNeeds": "ENGLISH"
           }
+        ],
+        "bookingType": "Video",
+        "priority": "High",
+        "specialRequirements": [
+          "RVC",
+          "GSN"
         ]
       }
     ],

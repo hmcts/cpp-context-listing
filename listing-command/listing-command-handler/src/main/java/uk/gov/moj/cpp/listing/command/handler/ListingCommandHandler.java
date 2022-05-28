@@ -6,6 +6,7 @@ import static java.time.ZonedDateTime.now;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
@@ -28,6 +29,7 @@ import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.convertHoursAndMinutesToMinutes;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkingDay;
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
+import static uk.gov.moj.cpp.listing.domain.utils.HmiConstants.SOURCE_HMI;
 
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtCentre;
@@ -69,6 +71,7 @@ import uk.gov.justice.listing.courts.LinkedToCases;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.ListCourtHearingEnriched;
 import uk.gov.justice.listing.courts.ProsecutionCases;
+import uk.gov.justice.listing.courts.RemovePartiallyMergedOffencesFromOriginalHearing;
 import uk.gov.justice.listing.courts.RestrictCourtList;
 import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.listing.courts.SequenceHearings;
@@ -83,7 +86,6 @@ import uk.gov.justice.listing.courts.UpdateHearingToCaseCommand;
 import uk.gov.justice.listing.courts.UpdateLinkedCaseInHearing;
 import uk.gov.justice.listing.courts.UpdateLinkedCases;
 import uk.gov.justice.listing.courts.UpdateOffencesForHearing;
-import uk.gov.justice.listing.courts.RemovePartiallyMergedOffencesFromOriginalHearing;
 import uk.gov.justice.listing.courts.UpdatedOffences;
 import uk.gov.justice.listing.courts.VacateTrialEnriched;
 import uk.gov.justice.listing.event.CourtListExportRequested;
@@ -91,7 +93,6 @@ import uk.gov.justice.listing.event.HearingCounselModified;
 import uk.gov.justice.listing.event.PublishCourtListExportFailed;
 import uk.gov.justice.listing.event.PublishCourtListExportSuccessful;
 import uk.gov.justice.listing.event.PublishedCourtListStored;
-import uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -110,6 +111,7 @@ import uk.gov.moj.cpp.listing.command.factory.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.command.service.StagingHmiQueryService;
 import uk.gov.moj.cpp.listing.command.service.UUIDService;
 import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.CasesToDomainConverter;
@@ -128,6 +130,7 @@ import uk.gov.moj.cpp.listing.command.utils.ProsecutionCaseDefendantOffenceIdsBu
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
 import uk.gov.moj.cpp.listing.command.utils.RotaSlotToNonDefaultDayConverter;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
+import uk.gov.moj.cpp.listing.command.utils.hearing.HearingUpdateOperationType;
 import uk.gov.moj.cpp.listing.common.azure.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
@@ -136,6 +139,8 @@ import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.HearingLanguage;
+import uk.gov.moj.cpp.listing.domain.HmiJudiciary;
+import uk.gov.moj.cpp.listing.domain.HmiSession;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
@@ -147,6 +152,7 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil;
+import uk.gov.moj.cpp.staginghmi.common.StagingHmiService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -175,6 +181,8 @@ import javax.json.JsonValue;
 import javax.ws.rs.core.Response;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -186,6 +194,10 @@ public class ListingCommandHandler {
     public static final String HEARING_ID = "hearingId";
     private static final String PROSECUTION_CASE = "prosecutionCase";
     private static final ZoneId UTC = ZoneId.of("UTC");
+    public static final int PAGE_NUMBER_FOR_SINGLE_SLOT = 1;
+    public static final int PAGE_SIZE_FOR_SINGLE_SLOT = 1;
+    public static final String OUCODE = "oucode";
+    public static final String ALL_DAY = "AD";
 
     @Inject
     private EventSource eventSource;
@@ -281,20 +293,27 @@ public class ListingCommandHandler {
     @Inject
     private RotaSLServiceAdapter rotaSLServiceAdapter;
 
+    @Inject
+    private StagingHmiService stagingHmiService;
+
+    @Inject
+    private StagingHmiQueryService stagingHmiQueryService;
+
     private static final String APPLICATION_ID = "applicationId";
     private static final String PROSECUTION_CASE_ID = "prosecutionCaseId";
     private static final String REMOVAL_REASON = "removalReason";
 
-    @SuppressWarnings("squid:S3655")
+    @SuppressWarnings({"squid:S3655", "squid:S3776"})
     @Handles("listing.command.list-court-hearing-enriched")
     public void listCourtHearing(final JsonEnvelope command) throws EventStreamException {
         final JsonObject payload = command.payloadAsJsonObject();
+
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("'listing.command.list-court-hearing' received with payload {}", command.toObfuscatedDebugString());
         }
         final ListCourtHearingEnriched listCourtHearingEnriched = jsonObjectConverter.convert(payload, ListCourtHearingEnriched.class);
         LOGGER.debug("'listing.command.list-court-hearing' listCourtHearing: {}", listCourtHearingEnriched);
-        final Optional<String> adjournedFromDate = listCourtHearingEnriched.getAdjournedFromDate();
+        final Optional<String> adjournedFromDate = ofNullable(listCourtHearingEnriched.getAdjournedFromDate());
         final ListCourtHearing listCourtHearing = listCourtHearingEnriched.getListCourtHearing();
         final Map<UUID, CourtCentreDetails> courtCentres = listCourtHearingEnriched.getCourtCentresDetails().stream()
                 .collect(Collectors.toMap(CourtCentreDetails::getId, cc -> cc));
@@ -315,8 +334,8 @@ public class ListingCommandHandler {
                         .forEach(b -> finalNonDefaultDaysList.add(rotaSlotToNonDefaultDayConverter.convert(b, defaultCourtCentre)));
                 nonDefaultDaysList = finalNonDefaultDaysList;
             } else {
-                if (listCourtHearing.getAdjournedFromDate().isPresent() && commandHearing.getBookingReference().isPresent()) {
-                    bookingReference = commandHearing.getBookingReference();
+                if (nonNull(listCourtHearing.getAdjournedFromDate()) && nonNull(commandHearing.getBookingReference())) {
+                    bookingReference = ofNullable(commandHearing.getBookingReference());
                     final List<CourtSchedule> courtScheduleList = getCourtSchedules(bookingReference.get().toString());
                     Collections.sort(courtScheduleList);
                     generateNonDefaultDays(nonDefaultDaysList, courtScheduleList, commandHearing);
@@ -336,13 +355,18 @@ public class ListingCommandHandler {
                     .withCourtCentreId(courtCentre.getId())
                     .build();
 
+            final String ouCode = getOucode(domainHearing.getCourtCentreId(), command);
+            final boolean isHmiEnabled = stagingHmiService.isHmiListingEnabled(ofNullable(ouCode));
+
+            final List<JudicialRole> finalJudiciaries = CollectionUtils.isEmpty(commandHearing.getJudiciary()) ? getJudicialRoles(command, domainHearing, isHmiEnabled, ouCode, courtCentreDefaults) : convertJudicialRolesToDomain(commandHearing.getJudiciary());
+
             final Optional<UUID> finalBookingReference = bookingReference;
             updateHearingEventStream(command, commandHearing.getId(), (Hearing hearing) -> {
                 final Stream<Object> listingEvents = hearing.list(domainHearing.getId(),
                         domainHearing.getType(),
                         domainHearing.getEstimatedMinutes(),
                         domainHearing.getListedCases(), domainHearing.getCourtCentreId(),
-                        domainHearing.getJudiciary(),
+                        finalJudiciaries,
                         domainHearing.getCourtRoomId().orElse(null),
                         domainHearing.getListingDirections().orElse(null),
                         domainHearing.getJurisdictionType(),
@@ -359,15 +383,55 @@ public class ListingCommandHandler {
                         domainHearing.getWeekCommencingEndDate(),
                         domainHearing.getWeekCommencingDurationInWeeks(),
                         domainHearing.getNonDefaultDays(),
-                        isSlotsBooked
+                        isSlotsBooked,
+                        commandHearing.getBookingType(),
+                        commandHearing.getPriority(),
+                        commandHearing.getSpecialRequirements()
                 );
 
                 final Stream<Object> allocationEvents = hearing.applyAllocationRules(finalBookingReference);
+                final Stream<Object> stagingHmiEvents = isHmiEnabled ? hearing.sendToHmi() : Stream.empty();
 
-                return Stream.of(listingEvents, allocationEvents).flatMap(i -> i);
+                return Stream.of(listingEvents, allocationEvents, stagingHmiEvents).flatMap(i -> i);
             });
 
         }
+
+    }
+
+    private List<JudicialRole> getJudicialRoles(final JsonEnvelope command, final uk.gov.moj.cpp.listing.domain.Hearing domainHearing, final boolean isHmiEnabled, final String ouCode, final CourtCentreDefaults courtCentreDefaults) {
+        List<JudicialRole> judiciaries = Collections.emptyList();
+
+        if (isHmiEnabled && domainHearing.getCourtRoomId().isPresent()) {
+            final List<HmiSession> hmiSessions = getSessionsFromHmi(command, domainHearing, ouCode, courtCentreDefaults);
+            if (CollectionUtils.isNotEmpty(hmiSessions)) {
+                judiciaries = populateJudiciaries(domainHearing.getJudiciary(), hmiSessions);
+            }
+        }
+
+        return CollectionUtils.isNotEmpty(domainHearing.getJudiciary()) ? domainHearing.getJudiciary() : judiciaries;
+    }
+
+    private List<JudicialRole> populateJudiciaries(final List<JudicialRole> judiciaries, final List<HmiSession> hmiSessions) {
+        if (CollectionUtils.isEmpty(judiciaries) && CollectionUtils.isNotEmpty(hmiSessions)) {
+            return getJudiciariesFromHmi(hmiSessions.get(0).getJudiciaries());
+        }
+        return judiciaries;
+    }
+
+    private String getOucode(final UUID courtCentreId, final JsonEnvelope command) {
+        final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
+        return organisationUnitJsonObject.getString(OUCODE);
+    }
+
+    private List<HmiSession> getSessionsFromHmi(final JsonEnvelope command, final uk.gov.moj.cpp.listing.domain.Hearing domainHearing, final String ouCode, final CourtCentreDefaults courtCentreDefaults) {
+        final ZonedDateTime sessionStartDateTime = nonNull(domainHearing.getStartDateTime()) ? domainHearing.getStartDateTime() : buildStartDateTime(domainHearing.getWeekCommencingStartDate().orElse(LocalDate.now()), courtCentreDefaults.getDefaultStartTime());
+        final String sessionType = nonNull(sessionStartDateTime) ? MeridianUtil.getMeridian(sessionStartDateTime) : ALL_DAY;
+        return stagingHmiQueryService.getHmiSessions(sessionStartDateTime, sessionStartDateTime, sessionType, ouCode, PAGE_NUMBER_FOR_SINGLE_SLOT, PAGE_SIZE_FOR_SINGLE_SLOT, Optional.empty(), command);
+    }
+
+    private ZonedDateTime buildStartDateTime(final LocalDate localDate, final LocalTime localTime) {
+        return ZonedDateTime.of(localDate, localTime, ZoneOffset.UTC);
     }
 
     private AddHearingToCaseCommand getAddHearingToCaseCommand(final JsonEnvelope envelope) {
@@ -402,7 +466,7 @@ public class ListingCommandHandler {
         final VacateTrialEnriched vacateTrialEnriched = jsonObjectConverter.convert(command.payloadAsJsonObject(), VacateTrialEnriched.class);
 
         updateHearingEventStream(command, vacateTrialEnriched.getHearingId(), (Hearing hearing) ->
-                hearing.vacateTrial(vacateTrialEnriched.getHearingId(), vacateTrialEnriched.getVacatedTrialReasonId()));
+                hearing.raiseUpdateHearingInStagingHmi(hearing.vacateTrial(vacateTrialEnriched.getHearingId(), vacateTrialEnriched.getVacatedTrialReasonId())));
 
     }
 
@@ -412,7 +476,7 @@ public class ListingCommandHandler {
         final HearingVacateTrial hearingVacateTrial = jsonObjectConverter.convert(command.payloadAsJsonObject(), HearingVacateTrial.class);
 
         updateHearingEventStream(command, hearingVacateTrial.getHearingId(), (Hearing hearing) ->
-                hearing.hearingVacateTrial(hearingVacateTrial.getVacatedTrialReasonId()));
+                hearing.raiseUpdateHearingInStagingHmi(hearing.hearingVacateTrial(ofNullable(hearingVacateTrial.getVacatedTrialReasonId()))));
     }
 
     @SuppressWarnings({"squid:S3776"})
@@ -423,9 +487,10 @@ public class ListingCommandHandler {
 
         final UpdateHearingForListingEnriched updateHearingForListingEnriched = jsonObjectConverter.convert(command.payloadAsJsonObject(), UpdateHearingForListingEnriched.class);
         UpdateHearingForListing updateHearingForListing = updateHearingForListingEnriched.getUpdateHearingForListing();
+        final Optional<String> source = ofNullable(updateHearingForListing.getSource());
 
         final CourtCentreDetails courtCentre = updateHearingForListingEnriched.getCourtCentreDetails();
-        if (isSchedulingAndListingUpdateRequired(updateHearingForListing.getJurisdictionType(), updateHearingForListing.getNonDefaultDays())) {
+        if (!source.isPresent() && isSchedulingAndListingUpdateRequired(updateHearingForListing.getJurisdictionType(), updateHearingForListing.getNonDefaultDays())) {
             updateHearingForListing = nonDefaultDayDurationBuilder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, updateHearingForListing.getNonDefaultDays());
 
         }
@@ -446,18 +511,22 @@ public class ListingCommandHandler {
 
         // Fields that may not have a value
         final UUID courtRoomId = getCourtRoomId(updateHearingForListing);
-        final LocalDate startDate = updateHearingForListing.getStartDate().orElse(null);
-        final LocalDate endDate = updateHearingForListing.getEndDate().orElse(null);
-        final LocalDate weekCommencingStartDate = updateHearingForListing.getWeekCommencingStartDate().orElse(null);
-        final LocalDate weekCommencingEndDate = updateHearingForListing.getWeekCommencingEndDate().orElse(null);
-        final Integer weekCommencingDurationInWeeks = updateHearingForListing.getWeekCommencingDurationInWeeks().orElse(null);
+        final LocalDate startDate = updateHearingForListing.getStartDate();
+        final LocalDate endDate = updateHearingForListing.getEndDate();
+        final LocalDate weekCommencingStartDate = updateHearingForListing.getWeekCommencingStartDate();
+        final LocalDate weekCommencingEndDate = updateHearingForListing.getWeekCommencingEndDate();
+        final Integer weekCommencingDurationInWeeks = updateHearingForListing.getWeekCommencingDurationInWeeks();
+        final String bookingType = updateHearingForListing.getBookingType();
+        final String priority = updateHearingForListing.getPriority();
+        final List<String> specialRequirements = updateHearingForListing.getSpecialRequirements();
+        final Boolean unscheduled = source.map(value -> SOURCE_HMI.equals(value) && weekCommencingStartDate == null).orElse(false);
 
         final JsonEnvelope jsonEnvelope = JsonEnvelope.envelopeFrom(command.metadata(), JsonValue.NULL);
 
         final uk.gov.justice.listing.events.Hearing storedHearing = hearingFactory.getHearingById(hearingId, command);
 
-        final boolean hasVideoLink = updateHearingForListing.getHasVideoLink().orElse(false);
-        final String publicListNote = updateHearingForListing.getPublicListNote().orElse(null);
+        final boolean hasVideoLink = nonNull(updateHearingForListing.getHasVideoLink());
+        final String publicListNote = updateHearingForListing.getPublicListNote();
 
         final List<NonDefaultDay> nonDefaultDays = generateNewNonDefaultDays(command, updateHearingForListing, nonSittingDays, endDate, startDate,
                 defaultDuration, jurisdictionType);
@@ -465,15 +534,30 @@ public class ListingCommandHandler {
         final CourtCentre defaultCourtCentre = CourtCentre.courtCentre()
                 .withId(courtCentreId)
                 .withRoomId(courtRoomId).build();
-        final Optional<String> panelFromCommand = updateHearingForListing.getPanel();
+        final Optional<String> panelFromCommand = ofNullable(updateHearingForListing.getPanel());
+        final Map<UUID, Map<UUID, List<UUID>>> persistedUnallocatedHearingCasesMap = new HashMap<>();
+        final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap = new HashMap<>();
+        final List<ProsecutionCases> prosecutionCases = updateHearingForListingEnriched.getProsecutionCases();
+        final HearingUpdateOperationType operationType = extendHearingUtils.getOperationType(hearingId, storedHearing, prosecutionCases, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, nonDefaultDays, courtRoomId, weekCommencingStartDate);
+
+        LOGGER.info("HearingUpdateOperationType for hearing id: {}  is {}", updateHearingForListing.getHearingId(), operationType);
 
         updateHearingEventStream(jsonEnvelope, hearingId, (Hearing hearing) -> {
+            final Stream<Object> hearingPartiallyEvents = extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing,
+                    hearingId,
+                    unallocatedHearingRequestCaseMap,
+                    persistedUnallocatedHearingCasesMap,
+                    operationType);
+            if (HearingUpdateOperationType.SPLIT.equals(operationType)) {
+                //if its a split the only thing we need to update is the remaining cases
+                return Stream.of(hearingPartiallyEvents).flatMap(i -> i);
+            }
             final Stream<Object> typeEvents = hearing.changeType(type, hearingId);
             final Stream<Object> jurisdictionTypeEvents = hearing.changeJurisdictionType(jurisdictionType, hearingId);
             final Stream<Object> hearingLanguageEvents = hearing.changeHearingLanguage(hearingLanguage, hearingId);
 
             final Stream<Object> startDateEvents = startDate != null ?
-                    hearing.changeStartDate(startDate, hearingId) : hearing.removeStartDate(hearingId);
+                    hearing.changeStartDate(startDate, hearingId) : hearing.removeStartDate(hearingId, unscheduled);
             final Stream<Object> endDateEvents = endDate != null ?
                     hearing.changeEndDate(endDate, hearingId) : hearing.removeEndDate(hearingId);
 
@@ -484,9 +568,10 @@ public class ListingCommandHandler {
             final Stream<Object> courtCentreEvents = hearing.changeCourtCentre(courtCentreId, hearingId);
 
             Optional<String> panel = empty();
-            if (JurisdictionType.MAGISTRATES.equals(jurisdictionType)) {
-                final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
-                final String ouCode = organisationUnitJsonObject.getString("oucode");
+            final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
+            final String ouCode = organisationUnitJsonObject.getString(OUCODE);
+            boolean hmiEnabled = stagingHmiService.isHmiListingEnabled(ofNullable(ouCode));
+            if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && !hmiEnabled) {
                 setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagistrates(judiciary, courtRoomId, nonDefaultDays, ouCode);
                 panel = rotaSLServiceAdapter.getPanelInfo(panelFromCommand, startDate, endDate, courtRoomId, ouCode);
             }
@@ -505,8 +590,8 @@ public class ListingCommandHandler {
                     hearing.changeWeekCommencingDate(weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingId) : hearing.removeWeekCommencingDates(hearingId);
 
             final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds = prosecutionCaseDefendantOffenceIdsBuilder.buildFromProsecutionCases(updateHearingForListingEnriched.getProsecutionCases());
-            final Stream<Object> allocationEvents = hearing.applyAllocationRules(prosecutionCaseDefendantOffenceIds);
-            final Stream<Object> hearingPartiallyEvents = extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing, hearingId, updateHearingForListingEnriched.getProsecutionCases(), storedHearing);
+            final Stream<Object> allocationEvents = hearing.applyAllocationRules(prosecutionCaseDefendantOffenceIds, source);
+
 
             final List<Object> startDateEventList = startDateEvents.collect(toList());
 
@@ -518,15 +603,54 @@ public class ListingCommandHandler {
                 publicListNoteUpdateEvent = hearing.assignPublicListNote(publicListNote, hearingId);
             }
             final Stream<Object> videoLinkUpdateEvent = hearing.assignVideoLink(hasVideoLink, hearingId);
+            final Stream<Object> hmiFieldsUpdateEvent = hearing.updateHmiFields(hearingId, bookingType, priority, specialRequirements);
+            final Stream<Object> hmiEvent = hearing.raiseUpdateHearingInStagingHmi(source);
 
             return Stream.of(typeEvents, jurisdictionTypeEvents, hearingLanguageEvents, startDateEventList.stream(), nonDefaultDaysEvents, endDateEvents,
                     nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, hearingPartiallyEvents,
-                    rescheduledEvents, videoLinkUpdateEvent, publicListNoteUpdateEvent).flatMap(i -> i);
+                    rescheduledEvents, videoLinkUpdateEvent, publicListNoteUpdateEvent, hmiFieldsUpdateEvent, hmiEvent).flatMap(i -> i);
         });
+
+
+        if (HearingUpdateOperationType.SPLIT.equals(operationType)) {
+            final ZonedDateTime newHearingStartTime = nonNull(startDate) ? ZonedDateTime.of(startDate.atTime(defaultStartTime), ZoneOffset.UTC) : null;
+            //raisenewHearing
+            final List<ListedCase> listedCases = extendHearingUtils.extractCasesToMove(storedHearing.getListedCases(), unallocatedHearingRequestCaseMap);
+            final List<uk.gov.justice.core.courts.JudicialRole> judiciaryInfoByUpdate = updateHearingForListing.getJudiciary();
+            updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+                final Stream<Object> hearingListedEvent = hearing.listForSplit(type,
+                        listedCases,
+                        courtCentreId,
+                        courtCentre.getName(),
+                        courtRoomId,
+                        jurisdictionType,
+                        newHearingStartTime,
+                        weekCommencingStartDate,
+                        weekCommencingDurationInWeeks,
+                        judiciaryInfoByUpdate);
+                return Stream.of(hearingListedEvent).flatMap(i -> i);
+            });
+        }
+    }
+
+    private List<JudicialRole> getJudiciariesFromHmi(final List<HmiJudiciary> hmiJudiciaries) {
+        final List<JudicialRole> judiciaries = new ArrayList<>();
+        hmiJudiciaries.stream()
+                .forEach(hmiJudiciaryObject ->
+                        judiciaries.add(new JudicialRole.Builder()
+                                .withJudicialRoleType(JudicialRoleType.judicialRoleType()
+                                        .withJudiciaryType(hmiJudiciaryObject.getJudiciaryType())
+                                        .build())
+                                .withIsBenchChairman(Optional.ofNullable(hmiJudiciaryObject.getIsPresiding()))
+                                .withJudicialId(UUID.fromString(hmiJudiciaryObject.getJudiciaryId()))
+                                .withIsDeputy(Optional.empty())
+                                .build())
+                );
+        return judiciaries;
     }
 
     private void setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagistrates(final List<JudicialRole> judiciary,
-             final UUID courtRoomId, final List<NonDefaultDay> nonDefaultDays, final String ouCode) {
+                                                                        final UUID courtRoomId, final List<NonDefaultDay> nonDefaultDays, final String ouCode) {
         if (isEmpty(judiciary)) {
             nonDefaultDays.stream()
                     .filter(nonDefaultDay -> nonNull(nonDefaultDay.getStartTime()))
@@ -560,7 +684,7 @@ public class ListingCommandHandler {
                 .filter(nonDefaultDay -> !nonSittingDays.contains(nonDefaultDay.getStartTime().toLocalDate()))
                 .collect(toList());
 
-        final Optional<SelectedCourtCentre> selectedCourtCentre = updateHearingForListing.getSelectedCourtCentre();
+        final Optional<SelectedCourtCentre> selectedCourtCentre = ofNullable(updateHearingForListing.getSelectedCourtCentre());
         if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && selectedCourtCentre.isPresent() && !filteredNonDefaultDays.isEmpty()) {
             final Map<UUID, JsonObject> organisationUnitMap = new HashMap<>();
             final UUID selectedCourtCentreId = selectedCourtCentre.get().getId();
@@ -605,7 +729,7 @@ public class ListingCommandHandler {
 
     private NonDefaultDay getNonDefaultDay(final Optional<Integer> defaultDuration, final UUID courtCentreId, final UUID courtRoomId,
                                            final JsonObject courtCentreObj, final ZonedDateTime hearingStartTime) {
-        final Optional<String> ouCode = getString(courtCentreObj, "oucode");
+        final Optional<String> ouCode = getString(courtCentreObj, OUCODE);
         final Optional<Integer> courtRoomNumber = courtCentreFactory.getCourtRoomNumber(courtCentreObj, courtRoomId.toString());
 
         return NonDefaultDay.nonDefaultDay()
@@ -619,15 +743,15 @@ public class ListingCommandHandler {
     }
 
     private UUID getCourtRoomId(final UpdateHearingForListing updateHearingForListing) {
-        final Optional<SelectedCourtCentre> selectedCourtCentre = updateHearingForListing.getSelectedCourtCentre();
+        final Optional<SelectedCourtCentre> selectedCourtCentre = ofNullable(updateHearingForListing.getSelectedCourtCentre());
         if (selectedCourtCentre.isPresent() && CROWN.equals(updateHearingForListing.getJurisdictionType())) {
             return selectedCourtCentre.get().getCourtRoomId();
         }
-        return updateHearingForListing.getCourtRoomId().orElse(null);
+        return updateHearingForListing.getCourtRoomId();
     }
 
     private UUID getCourtCentreId(final UpdateHearingForListing updateHearingForListing) {
-        final Optional<SelectedCourtCentre> selectedCourtCentre = updateHearingForListing.getSelectedCourtCentre();
+        final Optional<SelectedCourtCentre> selectedCourtCentre = ofNullable(updateHearingForListing.getSelectedCourtCentre());
         if (selectedCourtCentre.isPresent() && CROWN.equals(updateHearingForListing.getJurisdictionType())) {
             return selectedCourtCentre.get().getId();
         }
@@ -655,7 +779,7 @@ public class ListingCommandHandler {
         if (prosecutionCases != null && !prosecutionCases.isEmpty()) {
             partialExtension = comparePersistedAndRequestedCaseMaps(unallocatedHearingRequestCaseMap, unAllocatedHearingPersisted, prosecutionCases, extendHearingForHearingEnriched);
         }
-        final boolean fullExtension =  !partialExtension;
+        final boolean fullExtension = !partialExtension;
 
         if (partialExtension) {
 
@@ -669,8 +793,9 @@ public class ListingCommandHandler {
             updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
                 final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unallocatedHearingPersisted, casesToMove);
                 final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unallocatedHearingPersisted, fullExtension);
+                final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(casesToMove, unAllocatedHearingId);
                 final Stream<Object> hearingMarkedForPartialUpdated = hearing.markUnallocatedHearingForPartialUpdate(unAllocatedHearingId, prosecutionCasesToBeRemovedFromHearing);
-                return Stream.of(updatedHearing, allocationEvents, hearingMarkedForPartialUpdated).flatMap(i -> i);
+                return Stream.of(addCaseEvent, updatedHearing, allocationEvents, hearingMarkedForPartialUpdated).flatMap(i -> i);
             });
 
         } else {
@@ -678,11 +803,13 @@ public class ListingCommandHandler {
             final List<UUID> allocatedHearingCasesId = extractListCasesId(allocatedHearing);
             final List<UUID> unAllocatedHearingCasesId = extractListCasesId(unAllocatedHearingPersisted);
 
-            if (!unAllocatedHearingPersisted.getAllocated()) {
+            if (Boolean.FALSE.equals(unAllocatedHearingPersisted.getAllocated())) {
                 updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
                     final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unAllocatedHearingPersisted, unAllocatedHearingPersisted.getListedCases());
                     final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted, fullExtension);
-                    return Stream.of(updatedHearing, allocationEvents).flatMap(i -> i);
+                    final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(unAllocatedHearingPersisted.getListedCases(), unAllocatedHearingId);
+                    final Stream<Object> markUnAllocatedHearingForDelete = hearing.markHearingAsDeleted(unAllocatedHearingId);
+                    return Stream.of(addCaseEvent, updatedHearing, allocationEvents, markUnAllocatedHearingForDelete).flatMap(i -> i);
                 });
             } else {
                 LOGGER.info("incoming list cases : {} cannot be added in allocated hearing as same case id : {} ", unAllocatedHearingCasesId, allocatedHearingCasesId);
@@ -703,7 +830,7 @@ public class ListingCommandHandler {
 
             final List<uk.gov.justice.listing.events.ProsecutionCases> prosecutionCases = prosecutionCasesBuilder.buildEventProsecutionCasesToRemove(removePartiallyMergedOffencesFromOriginalHearing.getProsecutionCasesToRemove());
 
-            return Stream.of(hearing.updateUnallocatedHearingPartially(removePartiallyMergedOffencesFromOriginalHearing.getHearingIdToBeUpdated(), prosecutionCases)).flatMap(i -> i);
+            return hearing.raiseUpdateHearingInStagingHmi(hearing.updateUnallocatedHearingPartially(removePartiallyMergedOffencesFromOriginalHearing.getHearingIdToBeUpdated(), prosecutionCases));
         });
 
     }
@@ -733,8 +860,8 @@ public class ListingCommandHandler {
                 (command.payloadAsJsonObject(), AddCasesToHearing.class);
 
         updateHearingEventStream(command, addCasesToHearing.getHearingId(), (Hearing hearing) -> {
-            final Stream<Object> addedCases = hearing.addCasesToHearing(addCasesToHearing.getProsecutionCases(), addCasesToHearing.getShadowListedOffences(), addCasesToHearing.getSeedingHearingId());
-            return Stream.of(addedCases).flatMap(i -> i);
+            final Stream<Object> addedCases = hearing.addCasesToHearing(addCasesToHearing.getProsecutionCases(), addCasesToHearing.getShadowListedOffences(), ofNullable(addCasesToHearing.getSeedingHearingId()));
+            return hearing.raiseUpdateHearingInStagingHmi(addedCases);
         });
     }
 
@@ -808,7 +935,7 @@ public class ListingCommandHandler {
         final List<uk.gov.moj.cpp.listing.domain.Defendant> domainDefendants = commandDefendantToDomainConverter.convert(defendants);
 
         updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.updateDefendants(caseId, domainDefendants));
+                hearing.raiseUpdateHearingInStagingHmi(hearing.updateDefendants(caseId, domainDefendants)));
     }
 
     @Handles("listing.command.update-offences-for-hearing")
@@ -826,7 +953,7 @@ public class ListingCommandHandler {
         final List<uk.gov.moj.cpp.listing.domain.Offence> domainOffences = commandOffenceToDomainOffence.convert(offences);
 
         updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.updateOffences(caseId, defendantId, domainOffences));
+                hearing.raiseUpdateHearingInStagingHmi(hearing.updateOffences(caseId, defendantId, domainOffences)));
     }
 
     @Handles("listing.command.delete-offences-for-hearing")
@@ -843,7 +970,7 @@ public class ListingCommandHandler {
         final List<uk.gov.moj.cpp.listing.domain.SimpleOffence> domainOffences = commandSimpleOffenceToDomainOffence.convert(offences);
 
         updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.deleteOffences(caseId, defendantId, domainOffences));
+                hearing.raiseUpdateHearingInStagingHmi(hearing.deleteOffences(caseId, defendantId, domainOffences)));
     }
 
     @Handles("listing.command.add-offences-for-hearing")
@@ -860,7 +987,7 @@ public class ListingCommandHandler {
         final List<uk.gov.moj.cpp.listing.domain.Offence> domainOffences = commandOffenceToDomainOffence.convert(offences);
 
         updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.addOffences(caseId, defendantId, domainOffences));
+                hearing.raiseUpdateHearingInStagingHmi(hearing.addOffences(caseId, defendantId, domainOffences)));
     }
 
     @Handles("listing.command.change-judiciary-for-hearings")
@@ -877,8 +1004,7 @@ public class ListingCommandHandler {
             updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
                 final Stream<Object> judicialEvents = hearing.assignJudiciary(judicialRoles, hearingId);
                 final Stream<Object> allocationEvents = hearing.applyAllocationRules(Collections.emptyList());
-
-                return Stream.of(allocationEvents, judicialEvents).flatMap(i -> i);
+                return hearing.raiseUpdateHearingInStagingHmi(Stream.of(allocationEvents, judicialEvents).flatMap(i -> i));
             });
         }
     }
@@ -893,7 +1019,7 @@ public class ListingCommandHandler {
 
         for (final uk.gov.moj.cpp.listing.domain.SequenceHearing sequenceHearing : sequenceHearingList) {
             updateHearingEventStream(command, sequenceHearing.getId(), (Hearing hearing) ->
-                    hearing.sequenceHearingDays(sequenceHearing));
+                    hearing.raiseUpdateHearingInStagingHmi(hearing.sequenceHearingDays(sequenceHearing)));
         }
     }
 
@@ -911,7 +1037,7 @@ public class ListingCommandHandler {
 
         for (final UUID hearingId : hearingIds) {
             updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                    hearing.updateCourtApplication(hearingId, courtApplicationDomain));
+                    hearing.raiseUpdateHearingInStagingHmi(hearing.updateCourtApplication(hearingId, courtApplicationDomain)));
         }
 
     }
@@ -930,7 +1056,7 @@ public class ListingCommandHandler {
         final uk.gov.moj.cpp.listing.domain.CourtApplication courtApplicationDomain = courtApplicationToDomainConverter.convert(courtApplication);
 
         updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.addCourtApplication(hearingId, courtApplicationDomain));
+                hearing.raiseUpdateHearingInStagingHmi(hearing.addCourtApplication(hearingId, courtApplicationDomain)));
 
 
     }
@@ -962,7 +1088,7 @@ public class ListingCommandHandler {
         final List<CaseMarker> caseMarkers = caseMarkersToDomainConverter.convert(command.getCaseMarkers());
 
         updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) ->
-                hearing.updateCaseMarkers(caseId, caseMarkers));
+                hearing.raiseUpdateHearingInStagingHmi(hearing.updateCaseMarkers(caseId, caseMarkers)));
 
     }
 
@@ -1060,7 +1186,7 @@ public class ListingCommandHandler {
         final List<uk.gov.moj.cpp.listing.domain.Defendant> domainDefendants = commandDefendantToDomainConverter.convert(defendants);
 
         updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.addDefendantsForCourtProceedings(caseId, domainDefendants));
+                hearing.raiseUpdateHearingInStagingHmi(hearing.addDefendantsForCourtProceedings(caseId, domainDefendants)));
     }
 
     @Handles("listing.command.restrict-court-list")
@@ -1113,16 +1239,16 @@ public class ListingCommandHandler {
         }
 
         final CaseOrApplicationEjected command = jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), CaseOrApplicationEjected.class);
-        final Optional<UUID> caseId = command.getProsecutionCaseId();
+        final Optional<UUID> caseId = ofNullable(command.getProsecutionCaseId());
         final List<UUID> hearingIds = command.getHearingIds();
-        final Optional<UUID> applicationId = command.getApplicationId();
+        final Optional<UUID> applicationId = ofNullable(command.getApplicationId());
         if (caseId.isPresent()) {
             updateCaseEventStream(commandEnvelope, caseId.get(), (Case listingCase) ->
-                    listingCase.ejectCaseForHearings(hearingIds, caseId.get(), command.getRemovalReason()));
+                    listingCase.ejectCaseForHearings(hearingIds, caseId.get(), ofNullable(command.getRemovalReason())));
         }
         if (applicationId.isPresent()) {
             updateApplicationEventStream(commandEnvelope, applicationId.get(), (Application application) ->
-                    application.ejectApplicationForHearings(hearingIds, applicationId.get(), (command.getRemovalReason())));
+                    application.ejectApplicationForHearings(hearingIds, applicationId.get(), ofNullable(command.getRemovalReason())));
         }
 
     }
@@ -1201,7 +1327,8 @@ public class ListingCommandHandler {
         }
         final UUID hearingId = fromString(envelope.payloadAsJsonObject().getString(HEARING_ID));
         final ProsecutionCase prosecutionCase = jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject(PROSECUTION_CASE), ProsecutionCase.class);
-        updateHearingEventStream(envelope, hearingId, (Hearing hearing) -> hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase));
+        updateHearingEventStream(envelope, hearingId, (Hearing hearing) ->
+                hearing.raiseUpdateHearingInStagingHmi(hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase)));
     }
 
 
@@ -1368,9 +1495,10 @@ public class ListingCommandHandler {
                 modifyHearingCounsels.getHearingId(),
                 modifyHearingCounsels.getPayload());
 
-        final Stream<Object> events = streamOf(event);
-
         final EventStream eventStream = eventSource.getStreamById(modifyHearingCounsels.getHearingId());
+        final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+
+        final Stream<Object> events = hearingAggregate.raiseUpdateHearingInStagingHmi(streamOf(event));
 
         eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
     }
@@ -1382,8 +1510,9 @@ public class ListingCommandHandler {
         final EventStream eventStream = eventSource.getStreamById(payload.getHearingId());
         final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
         final Stream<Object> events = hearingAggregate.cancelHearingDays(payload.getHearingId(), hearingDaysToDomainConverter.convert(payload.getHearingDays()));
+        final Stream<Object> allEvents = hearingAggregate.raiseUpdateHearingInStagingHmi(events);
 
-        appendEventsToStream(envelope, eventStream, events);
+        appendEventsToStream(envelope, eventStream, allEvents);
     }
 
     @Handles("listing.command.correct-hearing-days-without-court-centre")
@@ -1391,20 +1520,15 @@ public class ListingCommandHandler {
         final JsonObject payload = commandEnvelope.payloadAsJsonObject();
         final UUID hearingId = fromString(payload.getString("id"));
 
-        final EventStream eventStream = eventSource.getStreamById(hearingId);
-
         final List<uk.gov.justice.listing.events.HearingDay> hearingDays = new ArrayList<>();
 
         payload.getJsonArray("hearingDays").getValuesAs(JsonObject.class).stream()
                 .forEach(hearingDay -> hearingDays.add(jsonObjectConverter.convert(hearingDay, uk.gov.justice.listing.events.HearingDay.class)));
 
-        final HearingDaysWithoutCourtCentreCorrected event = HearingDaysWithoutCourtCentreCorrected.hearingDaysWithoutCourtCentreCorrected()
-                .withId(hearingId)
-                .withHearingDays(hearingDays)
-                .build();
-
-        final Stream<Object> events = Stream.of(event);
-        appendEventsToStream(commandEnvelope, eventStream, events);
+        updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) -> {
+            final Stream<Object> events = hearing.raiseHearingDaysWithoutCourtCentreCorrected(hearingId, hearingDays);
+            return hearing.raiseUpdateHearingInStagingHmi(events);
+        });
     }
 
     @Handles("listing.command.update-cps-prosecutor-with-associated-hearings")
@@ -1419,7 +1543,7 @@ public class ListingCommandHandler {
             final EventStream eventStream = eventSource.getStreamById(hearingId);
             final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
             final Stream<Object> events = hearingAggregate.updateCaseIdentifier(updateCpsProsecutorWithHearings.getProsecutionAuthorityId(), updateCpsProsecutorWithHearings.getProsecutionAuthorityCode(), updateCpsProsecutorWithHearings.getProsecutionCaseId());
-            appendEventsToStream(envelope, eventStream, events);
+            appendEventsToStream(envelope, eventStream, hearingAggregate.raiseUpdateHearingInStagingHmi(events));
         }
     }
 
@@ -1440,7 +1564,6 @@ public class ListingCommandHandler {
             return Stream.of(hearingDeleted).flatMap(i -> i);
         });
     }
-
 
 
     @VisibleForTesting
@@ -1480,7 +1603,7 @@ public class ListingCommandHandler {
                 .withStartDate(nextWorkingDay)
                 .withEndDate(nextWorkingDay)
                 .withPublishCourtListType(PublishCourtListType.FINAL)
-                .withRequestedTime(of(zonedNow))
+                .withRequestedTime(zonedNow)
                 .build();
     }
 
@@ -1514,14 +1637,14 @@ public class ListingCommandHandler {
         List<JudicialRole> domainJudiciary = new ArrayList<>();
         if (commandJudiciary != null && !commandJudiciary.isEmpty()) {
             domainJudiciary = commandJudiciary.stream().map(jr -> JudicialRole.judicialRole()
-                    .withIsBenchChairman(jr.getIsBenchChairman())
-                    .withIsDeputy(jr.getIsDeputy())
+                    .withIsBenchChairman(ofNullable(jr.getIsBenchChairman()))
+                    .withIsDeputy(ofNullable(jr.getIsDeputy()))
                     .withJudicialId(jr.getJudicialId())
                     .withJudicialRoleType(JudicialRoleType.judicialRoleType()
                             .withJudiciaryType(jr.getJudicialRoleType().getJudiciaryType())
-                            .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId().orElse(null))
+                            .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId())
                             .build())
-                    .withUserId(jr.getUserId().orElse(null))
+                    .withUserId(jr.getUserId())
                     .build()).collect(toList());
         }
         return domainJudiciary;
@@ -1539,14 +1662,14 @@ public class ListingCommandHandler {
         List<NonDefaultDay> domainDefaultDays = Collections.emptyList();
         if (commandDefaultDays != null && !commandDefaultDays.isEmpty()) {
             domainDefaultDays = commandDefaultDays.stream().map(ndd -> NonDefaultDay.nonDefaultDay()
-                            .withStartTime(ndd.getStartTime())
-                            .withDuration(of(getAdjustedDuration(ndd.getDuration().isPresent() ? ndd.getDuration().get() : null)))
-                            .withCourtScheduleId(ndd.getCourtScheduleId())
-                            .withCourtRoomId(ndd.getCourtRoomId())
-                            .withOucode(ndd.getOucode())
-                            .withSession(ndd.getSession())
-                            .withRoomId(ndd.getRoomId())
-                            .withCourtCentreId(ndd.getCourtCentreId()).build())
+                    .withStartTime(ndd.getStartTime())
+                    .withDuration(of(getAdjustedDuration(ndd.getDuration())))
+                    .withCourtScheduleId(ofNullable(ndd.getCourtScheduleId()))
+                    .withCourtRoomId(ofNullable(ndd.getCourtRoomId()))
+                    .withOucode(ofNullable(ndd.getOucode()))
+                    .withSession(ofNullable(ndd.getSession()))
+                    .withRoomId(ofNullable(ndd.getRoomId()))
+                    .withCourtCentreId(ofNullable(ndd.getCourtCentreId())).build())
                     .collect(toList());
         }
         return domainDefaultDays;
@@ -1562,7 +1685,7 @@ public class ListingCommandHandler {
                 .withCourtApplicationApplicantIds(restrictCourtList.getCourtApplicationApplicantIds())
                 .withCourtApplicatonIds(restrictCourtList.getCourtApplicationIds())
                 .withCourtApplicatonRespondentIds(restrictCourtList.getCourtApplicationRespondentIds())
-                .withCourtApplicationType(restrictCourtList.getCourtApplicationType().orElse(null))
+                .withCourtApplicationType(restrictCourtList.getCourtApplicationType())
                 .withRestrictFromCourtList(restrictCourtList.getRestrictCourtList())
                 .build();
     }
@@ -1650,11 +1773,11 @@ public class ListingCommandHandler {
         courtScheduleList.forEach(cs ->
                 nonDefaultDaysList.add(
                         uk.gov.justice.listing.commands.NonDefaultDay.nonDefaultDay()
-                                .withCourtScheduleId(of(cs.getCourtScheduleId()))
-                                .withOucode(of(cs.getOuCode()))
-                                .withSession(of(cs.getCourtSession()))
+                                .withCourtScheduleId(cs.getCourtScheduleId())
+                                .withOucode(cs.getOuCode())
+                                .withSession(cs.getCourtSession())
                                 .withDuration(getAdjustedDuration(commandHearing.getEstimatedMinutes()))
-                                .withCourtRoomId(of(cs.getCourtRoomNumber())) // for prospect developers, names mismatch but fields point to the same context
+                                .withCourtRoomId(cs.getCourtRoomNumber()) // for prospect developers, names mismatch but fields point to the same context
                                 .withStartTime(isBlank(cs.getHearingStartTime()) ? cs.getSessionDate().atStartOfDay(UTC).withHour(hour).minusMinutes(minute) : ZonedDateTime.parse(cs.getHearingStartTime()))
                                 .withRoomId(cs.getCourtRoomId())
                                 .withCourtCentreId(cs.getCourtHouseId())
@@ -1667,7 +1790,7 @@ public class ListingCommandHandler {
     private boolean isSchedulingAndListingUpdateRequired(final uk.gov.justice.core.courts.JurisdictionType jurisdictionType, final List<uk.gov.justice.listing.commands.NonDefaultDay> nonDefaultDays) {
         return MAGISTRATES.equals(jurisdictionType)
                 && !nonDefaultDays.isEmpty()
-                && nonDefaultDays.stream().anyMatch(ndd -> ndd.getCourtScheduleId().isPresent());
+                && nonDefaultDays.stream().anyMatch(ndd -> StringUtils.isNotEmpty(ndd.getCourtScheduleId()));
     }
 
     private boolean comparePersistedAndRequestedCaseMaps(final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap,

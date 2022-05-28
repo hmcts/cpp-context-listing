@@ -164,6 +164,27 @@ subscriptions_descriptor:
         - name: listing.events.hearing-marked-for-partial-update
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-marked-for-partial-update.json
 
+        - name: listing.events.requested-hearing-from-staging-hmi
+          schema_uri: http://justice.gov.uk/listing/courts/listing.events.requested-hearing-from-staging-hmi.json
+
+        - name: listing.events.updated-hearing-in-staging-hmi
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.updated-hearing-in-staging-hmi.json
+
+        - name: listing.events.deleted-hearing-in-staging-hmi
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.deleted-hearing-in-staging-hmi.json
+
+        - name: listing.events.hearing-days-changed-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-days-changed-for-hearing.json
+
+        - name: listing.events.hearing-partially-updated
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-partially-updated.json
+
+        - name: listing.events.hearing-requested-for-listing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-requested-for-listing.json
+
+        - name: listing.events.hearing-changes-saved
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-changes-saved.json
+
       event_source_name: listing
 
     - name: public event subscription
@@ -227,5 +248,11 @@ subscriptions_descriptor:
 
         - name: public.progression.events.cps-prosecutor-updated
           schema_uri: http://cpp.moj.gov.uk/hearing/json/schema/event/cps-prosecutor-updated.json
+
+        - name: public.hearing.selected-offences-removed-from-existing-hearing
+          schema_uri: http://justice.gov.uk/hearing/courts/public.hearing.selected-offences-removed-from-existing-hearing.json
+
+        - name: public.staginghmi.hearing-updated-from-hmi
+          schema_uri: http://justice.gov.uk/staginghmi/courts/public.staginghmi.hearing-updated-from-hmi.json
 
       event_source_name: public.event.source

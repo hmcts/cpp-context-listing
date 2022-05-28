@@ -104,6 +104,7 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
         hearingMarkedAsDuplicateCommandHandler.handleMarkHearingAsDuplicate(commandEnvelope);
 
         verify(hearingAggregate).markHearingAsDuplicate(eq(hearingId), eq(caseIds));
+        verify(hearingAggregate).deleteHearingForHmi();
     }
 
     @Test

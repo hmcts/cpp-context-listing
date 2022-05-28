@@ -50,6 +50,18 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
+            <artifactId>staginghmi-common</artifactId>
+            <version>${staginghmi.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
+                    <artifactId>staginghmi-domain-event</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <!-- Test Dependencies -->
         <dependency>
             <groupId>uk.gov.justice.services</groupId>

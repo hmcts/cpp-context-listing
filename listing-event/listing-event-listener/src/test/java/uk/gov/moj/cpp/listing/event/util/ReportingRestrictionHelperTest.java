@@ -46,10 +46,10 @@ public class ReportingRestrictionHelperTest extends TestCase {
     }
 
     private ReportingRestriction newRR(String label, LocalDate date) {
-        return new ReportingRestriction(UUID.randomUUID(), ofNullable(null), label, ofNullable(date));
+        return new ReportingRestriction(UUID.randomUUID(), null, label, date);
     }
 
     private ReportingRestriction newRR(UUID resultId, String label, LocalDate date) {
-        return new ReportingRestriction(UUID.randomUUID(), ofNullable(resultId), label, ofNullable(date));
+        return new ReportingRestriction(UUID.randomUUID(), resultId, label, date);
     }
 }

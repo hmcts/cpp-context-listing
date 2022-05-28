@@ -5,7 +5,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
+
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import uk.gov.justice.core.courts.CaseMarkersUpdated;
 import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
@@ -42,6 +46,7 @@ public class UpdateCaseMarkersSteps extends AbstractIT implements AutoCloseable 
     private static final String PRIVATE_EVENT_CASE_MARKERS_TO_BE_UPDATED = "listing.events.case-markers-to-be-updated";
 
     private static final String EVENT_SELECTOR_CASE_MARKERS_TO_BE_UPDATED = "listing.events.case-markers-to-be-updated";
+    public static final String PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI = "public.listing.updated-hearing-in-staging-hmi";
 
     JSONComparator ignoreMetaDataComparator = new CustomComparator(JSONCompareMode.LENIENT, new Customization("_metadata", (o1, o2) -> true));
 
@@ -52,6 +57,7 @@ public class UpdateCaseMarkersSteps extends AbstractIT implements AutoCloseable 
     private MessageConsumer privateEventMessageCaseMarkersToBeUpdated;
 
     private MessageConsumer privateEventsMessageCaseMarkersToBeUpdated;
+    private MessageConsumer publicMessageConsumerHmiHearingUpdated;
 
     private String request;
 
@@ -80,6 +86,7 @@ public class UpdateCaseMarkersSteps extends AbstractIT implements AutoCloseable 
         privateEventMessageCaseMarkersToBeUpdated = privateEvents.createConsumer(PRIVATE_EVENT_CASE_MARKERS_TO_BE_UPDATED);
 
         privateEventsMessageCaseMarkersToBeUpdated = privateEvents.createConsumer(EVENT_SELECTOR_CASE_MARKERS_TO_BE_UPDATED);
+        publicMessageConsumerHmiHearingUpdated = publicEvents.createConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -170,6 +177,12 @@ public class UpdateCaseMarkersSteps extends AbstractIT implements AutoCloseable 
 
     }
 
+    public void verifyHmiPublicEventForUpdateHearing() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHmiHearingUpdated);
+        LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
+        Assert.assertThat(jsonResponse.get("hearing.id"), CoreMatchers.is(hearingData.getId().toString()));
+    }
+
     @Override
     public void close() {
         try {
@@ -179,6 +192,8 @@ public class UpdateCaseMarkersSteps extends AbstractIT implements AutoCloseable 
             privateEventMessageCaseMarkersToBeUpdated.close();
 
             privateEventsMessageCaseMarkersToBeUpdated.close();
+
+            publicMessageConsumerHmiHearingUpdated.close();
         } catch (JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);

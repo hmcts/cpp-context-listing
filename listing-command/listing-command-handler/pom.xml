@@ -111,6 +111,17 @@
             <artifactId>cpp-platform-data-utils-service</artifactId>
             <version>${cpp.platform-libraries.version}</version>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
+            <artifactId>staginghmi-common</artifactId>
+            <version>${staginghmi.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
+                    <artifactId>staginghmi-domain-event</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -131,6 +142,18 @@
                             </exclusion>
                         </exclusions>
                     </dependency>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
+                        <artifactId>staginghmi-query-api</artifactId>
+                        <version>${staginghmi.version}</version>
+                        <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
                 </dependencies>
             </plugin>
             <plugin>
@@ -142,7 +165,13 @@
                         <configuration>
                             <skip>false</skip>
                             <sourceDirectory>src/raml/json/schema</sourceDirectory>
-                            <generatorProperties>
+                            <generatorProperties implementation="uk.gov.justice.generation.pojo.core.PojoGeneratorProperties">
+                                <plugins>
+                                    <plugin>uk.gov.justice.generation.pojo.plugin.typemodifying.ReferenceCustomReturnTypePlugin</plugin>
+                                    <plugin>uk.gov.justice.generation.pojo.plugin.typemodifying.FormatCustomReturnTypePlugin</plugin>
+                                    <plugin>uk.gov.justice.generation.pojo.plugin.classmodifying.MakeClassSerializablePlugin</plugin>
+                                    <plugin>uk.gov.justice.generation.pojo.plugin.classmodifying.AddHashcodeAndEqualsPlugin</plugin>
+                                </plugins>
                                 <typeMappings>
                                     <typeMapping>
                                         <name>localTime</name>
@@ -169,13 +198,6 @@
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>uk.gov.moj.cpp.listing</groupId>
-                        <artifactId>listing-json</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
 
         </plugins>

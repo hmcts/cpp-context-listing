@@ -59,6 +59,17 @@
             <artifactId>test-utils-enveloper-provider</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
+            <artifactId>staginghmi-common</artifactId>
+            <version>${staginghmi.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
+                    <artifactId>staginghmi-domain-event</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>

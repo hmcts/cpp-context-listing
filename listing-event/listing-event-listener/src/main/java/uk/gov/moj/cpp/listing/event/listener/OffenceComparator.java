@@ -40,6 +40,6 @@ public class OffenceComparator {
     }
 
     private int getListingNumber(final Offence offence) {
-        return offence.getListingNumber().orElse(INITIAL_OFFENCE_LISTING_NUMBER);
+        return (offence.getListingNumber() != null ? offence.getListingNumber() : INITIAL_OFFENCE_LISTING_NUMBER);
     }
 }

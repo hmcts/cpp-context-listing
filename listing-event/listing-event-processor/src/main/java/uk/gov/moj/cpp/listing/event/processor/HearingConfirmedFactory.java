@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.moj.cpp.listing.event.processor.command.SeedingHearingConverter.convertSeedingHearingForCoreDomain;
@@ -54,7 +55,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
                 .withHearingDays(hearingAllocated.getHearingDays().stream()
                         .map(this::buildHearingDay)
                         .collect(toList()))
-                .withHearingLanguage(HearingLanguage.valueFor(hearingAllocated.getHearingLanguage().toString()))
+                .withHearingLanguage(HearingLanguage.valueFor(hearingAllocated.getHearingLanguage().toString()).orElse(null))
                 .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingAllocated.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withProsecutionCases(isNull(hearingAllocated.getProsecutionCaseDefendantsOffenceIds()) ? null : hearingAllocated.getProsecutionCaseDefendantsOffenceIds().stream()
                         .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
@@ -90,7 +91,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
                 .withHearingDays(hearingAllocated.getHearingDays().stream()
                         .map(this::buildHearingDay)
                         .collect(toList()))
-                .withHearingLanguage(HearingLanguage.valueFor(hearingAllocated.getHearingLanguage().toString()))
+                .withHearingLanguage(HearingLanguage.valueFor(hearingAllocated.getHearingLanguage().toString()).orElse(null))
                 .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingAllocated.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withProsecutionCases(isNull(hearingAllocated.getProsecutionCaseDefendantsOffenceIds()) ? null : hearingAllocated.getProsecutionCaseDefendantsOffenceIds().stream()
                         .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
@@ -100,7 +101,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
                                                 .withOffences(d.getOffenceIds().stream()
                                                         .map(o -> ConfirmedOffence.confirmedOffence()
                                                                 .withId(o.getId())
-                                                                .withSeedingHearing(buildSeedingHearing(o))
+                                                                .withSeedingHearing(buildSeedingHearing(o).orElse(null))
                                                                 .build())
                                                         .collect(toList()))
                                                 .build())
@@ -121,8 +122,8 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
 
     @SuppressWarnings("squid:S3655")
     private Optional<SeedingHearing> buildSeedingHearing(final OffenceIds offenceIds) {
-        return offenceIds.getSeedingHearing().isPresent() ?
-                convertSeedingHearingForCoreDomain(offenceIds.getSeedingHearing().get()) : empty();
+        return nonNull(offenceIds.getSeedingHearing()) ?
+                convertSeedingHearingForCoreDomain(offenceIds.getSeedingHearing()) : empty();
     }
 
 }

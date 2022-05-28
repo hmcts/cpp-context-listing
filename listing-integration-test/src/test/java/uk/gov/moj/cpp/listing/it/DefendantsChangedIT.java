@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.it;
 
+
+import javax.jms.JMSException;
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantSteps;
@@ -27,7 +29,7 @@ public class DefendantsChangedIT extends AbstractIT {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws JMSException {
         publicMessageConsumer.close();
     }
 
@@ -54,4 +56,28 @@ public class DefendantsChangedIT extends AbstractIT {
         }
     }
 
+    @Test
+    public void shouldUpdateDefendantsFollowingPublicDefendantsChangedEventFromProgressionHmiEnabled() {
+        HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+
+        DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
+        UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
+        HearingData hearingData = hearingsData.getHearingData().get(0);
+        UpdatedDefendantData updatedDefendantData = UpdatedDefendantData.updatedDefendantData(defendantData);
+
+        try (final UpdateDefendantSteps updateDefendantSteps = new UpdateDefendantSteps(caseId, hearingData, updatedDefendantData)) {
+            updateDefendantSteps.whenCaseDefendantsUpdatedPublicEventIsPublished();
+            updateDefendantSteps.verifyEventDefendantUpdatedInActiveMQ();
+            updateDefendantSteps.verifyEventDefendantsToBeUpdateInActiveMQ();
+            updateDefendantSteps.verifyEventDefendantDetailsUpdatedInActiveMQ();
+            updateDefendantSteps.verifyHearingListedFromAPI(true);
+            updateDefendantSteps.verifyHmiPublicEventForUpdateHearing();
+        }
+    }
 }

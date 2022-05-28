@@ -98,7 +98,7 @@ public class HearingDayDetailConverterTest {
 
     public List<uk.gov.justice.listing.events.HearingDay> convertCourtHearingDayToEventHearingDay(final List<HearingDay> courtHearingDay) {
         return courtHearingDay.stream().map(chd -> uk.gov.justice.listing.events.HearingDay.hearingDay()
-                .withCourtScheduleId(Optional.of(UUID.randomUUID()))
+                .withCourtScheduleId(UUID.randomUUID())
                 .withDurationMinutes(chd.getListedDurationMinutes())
                 .withHearingDate(chd.getSittingDay().toLocalDate())
                 .withStartTime(chd.getSittingDay())

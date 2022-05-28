@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.domain;
 
 import static java.util.Collections.emptyList;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -10,37 +12,37 @@ import java.util.UUID;
 
 @SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067", "squid:S2065", "pmd:BeanMembersShouldSerialize"})
 public class Defendant {
-    private final Optional<BailStatus> bailStatus;
+    private Optional<BailStatus> bailStatus;
 
-    private final Optional<String> custodyTimeLimit;
+    private Optional<String> custodyTimeLimit;
 
-    private final Optional<String> dateOfBirth;
+    private Optional<String> dateOfBirth;
 
-    private final Optional<String> datesToAvoid;
+    private Optional<String> datesToAvoid;
 
-    private final Optional<String> defenceOrganisation;
+    private Optional<String> defenceOrganisation;
 
-    private final Optional<String> firstName;
+    private Optional<String> firstName;
 
-    private final Optional<HearingLanguageNeeds> hearingLanguageNeeds;
+    private Optional<HearingLanguageNeeds> hearingLanguageNeeds;
 
     private final UUID id;
 
-    private final Optional<UUID> masterDefendantId;
+    private Optional<UUID> masterDefendantId;
 
-    private final Optional<ZonedDateTime> courtProceedingsInitiated;
+    private Optional<ZonedDateTime> courtProceedingsInitiated;
 
-    private final Optional<String> lastName;
+    private Optional<String> lastName;
 
     private final UUID prosecutionCaseId;
 
     private final List<Offence> offences;
 
-    private final Optional<String> organisationName;
+    private Optional<String> organisationName;
 
-    private final Optional<String> specificRequirements;
+    private Optional<String> specificRequirements;
 
-    private final Optional<Boolean> isYouth;
+    private Optional<Boolean> isYouth;
 
 
     private final transient Optional<String> nationalityDescription;
@@ -74,31 +76,31 @@ public class Defendant {
     }
 
     public Optional<BailStatus> getBailStatus() {
-        return bailStatus;
+        return bailStatus.isPresent() ? bailStatus : empty();
     }
 
     public Optional<String> getCustodyTimeLimit() {
-        return custodyTimeLimit;
+        return custodyTimeLimit.isPresent() ? custodyTimeLimit : empty();
     }
 
     public Optional<String> getDateOfBirth() {
-        return dateOfBirth;
+        return dateOfBirth.isPresent() ? dateOfBirth : empty();
     }
 
     public Optional<String> getDatesToAvoid() {
-        return datesToAvoid;
+        return datesToAvoid.isPresent() ? datesToAvoid : empty();
     }
 
     public Optional<String> getDefenceOrganisation() {
-        return defenceOrganisation;
+        return defenceOrganisation.isPresent() ? defenceOrganisation : empty();
     }
 
     public Optional<String> getFirstName() {
-        return firstName;
+        return firstName.isPresent() ? firstName : empty();
     }
 
     public Optional<HearingLanguageNeeds> getHearingLanguageNeeds() {
-        return hearingLanguageNeeds;
+        return hearingLanguageNeeds.isPresent() ? hearingLanguageNeeds : empty();
     }
 
     public UUID getId() {
@@ -106,15 +108,15 @@ public class Defendant {
     }
 
     public Optional<UUID> getMasterDefendantId() {
-        return masterDefendantId;
+        return masterDefendantId.isPresent() ? masterDefendantId : empty();
     }
 
     public Optional<ZonedDateTime> getCourtProceedingsInitiated() {
-        return courtProceedingsInitiated;
+        return courtProceedingsInitiated.isPresent() ? courtProceedingsInitiated : empty();
     }
 
     public Optional<String> getLastName() {
-        return lastName;
+        return lastName.isPresent() ? lastName : empty();
     }
 
     @SuppressWarnings({"squid:S2384"})
@@ -202,24 +204,24 @@ public class Defendant {
 
     @SuppressWarnings("pmd:BeanMembersShouldSerialize")
     public static final class Builder {
-        private Optional<BailStatus> bailStatus;
-        private Optional<String> custodyTimeLimit;
-        private Optional<String> dateOfBirth;
-        private Optional<String> datesToAvoid;
-        private Optional<String> defenceOrganisation;
-        private Optional<String> firstName;
-        private Optional<HearingLanguageNeeds> hearingLanguageNeeds;
+        private Optional<BailStatus> bailStatus = empty();
+        private Optional<String> custodyTimeLimit = empty();
+        private Optional<String> dateOfBirth = empty();
+        private Optional<String> datesToAvoid = empty();
+        private Optional<String> defenceOrganisation = empty();
+        private Optional<String> firstName = empty();
+        private Optional<HearingLanguageNeeds> hearingLanguageNeeds = empty();
         private UUID id;
-        private Optional<UUID> masterDefendantId;
-        private Optional<ZonedDateTime> courtProceedingsInitiated;
-        private Optional<String> lastName;
+        private Optional<UUID> masterDefendantId = empty();
+        private Optional<ZonedDateTime> courtProceedingsInitiated = empty();
+        private Optional<String> lastName = empty();
         private UUID prosecutionCaseId;
         private List<Offence> offences;
-        private Optional<String> organisationName;
-        private Optional<String> specificRequirements;
-        private Optional<Boolean> isYouth;
-        private transient Optional<String> nationalityDescription;
-        private transient Optional<Address> address;
+        private Optional<String> organisationName = empty();
+        private Optional<String> specificRequirements = empty();
+        private Optional<Boolean> isYouth = empty();
+        private transient Optional<String> nationalityDescription = empty();
+        private transient Optional<Address> address = empty();
 
         private Builder() {
         }

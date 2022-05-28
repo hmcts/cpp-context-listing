@@ -1,13 +1,10 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import static java.util.Objects.nonNull;
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
-
-import java.util.Optional;
 
 @SuppressWarnings({"PMD.BeanMembersShouldSerialize", "squid:S3655", "squid:S1067", "PMD.NullAssignment"})
 public final class EventAggregateConverter {
@@ -51,7 +48,7 @@ public final class EventAggregateConverter {
                 .withOrganisationName(defendant.getOrganisationName())
                 .withAddress(nonNull(defendant.getAddress()) ? buildEventAddress(defendant.getAddress()) : null)
                 .withRestrictFromCourtList(defendant.getRestrictFromCourtList())
-                .withHearingLanguageNeeds(nonNull(hearingLanguageNeeds) ? uk.gov.justice.core.courts.HearingLanguage.valueFor(hearingLanguageNeeds.toString()) : Optional.empty())
+                .withHearingLanguageNeeds(hearingLanguageNeeds)
                 .withIsYouth(defendant.getIsYouth())
                 .withLegalAidStatus(defendant.getLegalAidStatus())
                 .withNationalityDescription(defendant.getNationalityDescription())
@@ -73,7 +70,7 @@ public final class EventAggregateConverter {
 
     public static uk.gov.justice.core.courts.DefenceOrganisation buildEventDefenceOrganisation(final DefenceOrganisation defenceOrganisation) {
         return uk.gov.justice.core.courts.DefenceOrganisation.defenceOrganisation()
-                .withLaaContractNumber(ofNullable(defenceOrganisation.getLaaContractNumber()))
+                .withLaaContractNumber(defenceOrganisation.getLaaContractNumber())
                 .withOrganisation(nonNull(defenceOrganisation.getOrganisation()) ? buildEventOrganisation(defenceOrganisation.getOrganisation()) : null)
                 .build();
     }
@@ -81,8 +78,8 @@ public final class EventAggregateConverter {
     public static uk.gov.justice.core.courts.Organisation buildEventOrganisation(final Organisation organisation) {
         return uk.gov.justice.core.courts.Organisation.organisation()
                 .withName(organisation.getName())
-                .withIncorporationNumber(ofNullable(organisation.getIncorporationNumber()))
-                .withRegisteredCharityNumber(ofNullable(organisation.getRegisteredCharityNumber()))
+                .withIncorporationNumber(organisation.getIncorporationNumber())
+                .withRegisteredCharityNumber(organisation.getRegisteredCharityNumber())
                 .withAddress(nonNull(organisation.getAddress()) ? buildEventAddress(organisation.getAddress()) : null)
                 .withContact(nonNull(organisation.getContact()) ? buildEventContactNumber(organisation.getContact()) : null)
                 .build();
@@ -91,12 +88,12 @@ public final class EventAggregateConverter {
 
     public static uk.gov.justice.core.courts.ContactNumber buildEventContactNumber(final ContactNumber contactNumber) {
         return uk.gov.justice.core.courts.ContactNumber.contactNumber()
-                .withHome(ofNullable(contactNumber.getHome()))
-                .withMobile(ofNullable(contactNumber.getMobile()))
-                .withWork(ofNullable(contactNumber.getWork()))
-                .withFax(ofNullable(contactNumber.getFax()))
-                .withPrimaryEmail(ofNullable(contactNumber.getPrimaryEmail()))
-                .withSecondaryEmail(ofNullable(contactNumber.getSecondaryEmail()))
+                .withHome(contactNumber.getHome())
+                .withMobile(contactNumber.getMobile())
+                .withWork(contactNumber.getWork())
+                .withFax(contactNumber.getFax())
+                .withPrimaryEmail(contactNumber.getPrimaryEmail())
+                .withSecondaryEmail(contactNumber.getSecondaryEmail())
                 .build();
     }
 
@@ -128,7 +125,7 @@ public final class EventAggregateConverter {
 
     public static uk.gov.justice.core.courts.CustodyTimeLimit buildEventCustodyTimeLimit(final CustodyTimeLimit custodyTimeLimit) {
         return uk.gov.justice.core.courts.CustodyTimeLimit.custodyTimeLimit()
-                .withDaysSpent(ofNullable(custodyTimeLimit.getDaysSpent()))
+                .withDaysSpent(custodyTimeLimit.getDaysSpent())
                 .withTimeLimit(custodyTimeLimit.getTimeLimit())
                 .build();
     }
@@ -200,34 +197,34 @@ public final class EventAggregateConverter {
         return uk.gov.moj.cpp.listing.domain.aggregate.Defendant.defendant()
                 .withId(defendant.getId())
                 .withOffences(defendant.getOffences().stream().map(EventAggregateConverter::buildAggregateOffence).collect(toList()))
-                .withBailStatus(defendant.getBailStatus().isPresent() ? buildAggregateBailStatus(defendant.getBailStatus().get()) : null)
-                .withCourtProceedingsInitiated(defendant.getCourtProceedingsInitiated().orElse(null))
-                .withFirstName(defendant.getFirstName().orElse(null))
-                .withLastName(defendant.getLastName().orElse(null))
-                .withMasterDefendantId(defendant.getMasterDefendantId().orElse(null))
-                .withSpecificRequirements(defendant.getSpecificRequirements().orElse(null))
-                .withDatesToAvoid(defendant.getDatesToAvoid().orElse(null))
-                .withCustodyTimeLimit(defendant.getCustodyTimeLimit().orElse(null))
-                .withDateOfBirth(defendant.getDateOfBirth().orElse(null))
-                .withDefenceOrganisation(defendant.getDefenceOrganisation().orElse(null))
-                .withOrganisationName(defendant.getOrganisationName().orElse(null))
-                .withAddress(defendant.getAddress().isPresent() ? buildAggregateAddress(defendant.getAddress().get()) : null)
-                .withRestrictFromCourtList(defendant.getRestrictFromCourtList().orElse(null))
-                .withHearingLanguageNeeds(defendant.getHearingLanguageNeeds().orElse(null))
-                .withIsYouth(defendant.getIsYouth().orElse(null))
-                .withLegalAidStatus(defendant.getLegalAidStatus().orElse(null))
-                .withNationalityDescription(defendant.getNationalityDescription().orElse(null))
-                .withAssociatedDefenceOrganisation(defendant.getAssociatedDefenceOrganisation().isPresent() ? buildAggregateAssociatedDefenceOrganisation(defendant.getAssociatedDefenceOrganisation().get()) : null)
-                .withProceedingsConcluded(defendant.getProceedingsConcluded().orElse(null))
+                .withBailStatus(defendant.getBailStatus() != null ? buildAggregateBailStatus(defendant.getBailStatus()) : null)
+                .withCourtProceedingsInitiated(defendant.getCourtProceedingsInitiated())
+                .withFirstName(defendant.getFirstName())
+                .withLastName(defendant.getLastName())
+                .withMasterDefendantId(defendant.getMasterDefendantId())
+                .withSpecificRequirements(defendant.getSpecificRequirements())
+                .withDatesToAvoid(defendant.getDatesToAvoid())
+                .withCustodyTimeLimit(defendant.getCustodyTimeLimit())
+                .withDateOfBirth(defendant.getDateOfBirth())
+                .withDefenceOrganisation(defendant.getDefenceOrganisation())
+                .withOrganisationName(defendant.getOrganisationName())
+                .withAddress(defendant.getAddress() != null ? buildAggregateAddress(defendant.getAddress()) : null)
+                .withRestrictFromCourtList(defendant.getRestrictFromCourtList())
+                .withHearingLanguageNeeds(defendant.getHearingLanguageNeeds())
+                .withIsYouth(defendant.getIsYouth())
+                .withLegalAidStatus(defendant.getLegalAidStatus())
+                .withNationalityDescription(defendant.getNationalityDescription())
+                .withAssociatedDefenceOrganisation(defendant.getAssociatedDefenceOrganisation() != null ? buildAggregateAssociatedDefenceOrganisation(defendant.getAssociatedDefenceOrganisation()) : null)
+                .withProceedingsConcluded(defendant.getProceedingsConcluded())
                 .build();
     }
 
     public static AssociatedDefenceOrganisation buildAggregateAssociatedDefenceOrganisation(final uk.gov.justice.core.courts.AssociatedDefenceOrganisation associatedDefenceOrganisation) {
         return uk.gov.moj.cpp.listing.domain.aggregate.AssociatedDefenceOrganisation.associatedDefenceOrganisation()
-                .withApplicationReference(associatedDefenceOrganisation.getApplicationReference().orElse(null))
+                .withApplicationReference(associatedDefenceOrganisation.getApplicationReference())
                 .withAssociationStartDate(associatedDefenceOrganisation.getAssociationStartDate())
-                .withAssociationEndDate(associatedDefenceOrganisation.getAssociationEndDate().orElse(null))
-                .withIsAssociatedByLAA(associatedDefenceOrganisation.getIsAssociatedByLAA().orElse(null))
+                .withAssociationEndDate(associatedDefenceOrganisation.getAssociationEndDate())
+                .withIsAssociatedByLAA(associatedDefenceOrganisation.getIsAssociatedByLAA())
                 .withDefenceOrganisation(nonNull(associatedDefenceOrganisation.getDefenceOrganisation()) ? buildAggregateDefenceOrganisation(associatedDefenceOrganisation.getDefenceOrganisation()) : null)
                 .withFundingType(associatedDefenceOrganisation.getFundingType())
                 .build();
@@ -235,29 +232,29 @@ public final class EventAggregateConverter {
 
     public static DefenceOrganisation buildAggregateDefenceOrganisation(final uk.gov.justice.core.courts.DefenceOrganisation defenceOrganisation) {
         return uk.gov.moj.cpp.listing.domain.aggregate.DefenceOrganisation.defenceOrganisation()
-                .withLaaContractNumber(defenceOrganisation.getLaaContractNumber().orElse(null))
+                .withLaaContractNumber(defenceOrganisation.getLaaContractNumber())
                 .withOrganisation(nonNull(defenceOrganisation.getOrganisation()) ? buildAggregateOrganisation(defenceOrganisation.getOrganisation()) : null)
                 .build();
     }
 
     public static Organisation buildAggregateOrganisation(final uk.gov.justice.core.courts.Organisation organisation) {
         return uk.gov.moj.cpp.listing.domain.aggregate.Organisation.organisation()
-                .withAddress(organisation.getAddress().isPresent() ? buildAggregateAddress(organisation.getAddress().get()) : null)
+                .withAddress(organisation.getAddress() != null ? buildAggregateAddress(organisation.getAddress()) : null)
                 .withName(organisation.getName())
-                .withContact(organisation.getContact().isPresent() ? buildAggregateContactNumber(organisation.getContact().get()) : null)
-                .withIncorporationNumber(organisation.getIncorporationNumber().orElse(null))
-                .withRegisteredCharityNumber(organisation.getRegisteredCharityNumber().orElse(null))
+                .withContact(organisation.getContact() != null ? buildAggregateContactNumber(organisation.getContact()) : null)
+                .withIncorporationNumber(organisation.getIncorporationNumber())
+                .withRegisteredCharityNumber(organisation.getRegisteredCharityNumber())
                 .build();
     }
 
     public static ContactNumber buildAggregateContactNumber(final uk.gov.justice.core.courts.ContactNumber contactNumber) {
         return uk.gov.moj.cpp.listing.domain.aggregate.ContactNumber.contactNumber()
-                .withHome(contactNumber.getHome().orElse(null))
-                .withWork(contactNumber.getWork().orElse(null))
-                .withMobile(contactNumber.getMobile().orElse(null))
-                .withFax(contactNumber.getFax().orElse(null))
-                .withPrimaryEmail(contactNumber.getPrimaryEmail().orElse(null))
-                .withSecondaryEmail(contactNumber.getSecondaryEmail().orElse(null))
+                .withHome(contactNumber.getHome())
+                .withWork(contactNumber.getWork())
+                .withMobile(contactNumber.getMobile())
+                .withFax(contactNumber.getFax())
+                .withPrimaryEmail(contactNumber.getPrimaryEmail())
+                .withSecondaryEmail(contactNumber.getSecondaryEmail())
                 .build();
     }
 
@@ -265,16 +262,16 @@ public final class EventAggregateConverter {
     public static Address buildAggregateAddress(final uk.gov.justice.core.courts.Address address) {
         return uk.gov.moj.cpp.listing.domain.aggregate.Address.address()
                 .withAddress1(address.getAddress1())
-                .withAddress2(address.getAddress2().orElse(null))
-                .withAddress3(address.getAddress3().orElse(null))
-                .withAddress4(address.getAddress4().orElse(null))
-                .withAddress5(address.getAddress5().orElse(null))
-                .withWelshAddress1(address.getWelshAddress1().orElse(null))
-                .withWelshAddress2(address.getWelshAddress2().orElse(null))
-                .withWelshAddress3(address.getWelshAddress3().orElse(null))
-                .withWelshAddress4(address.getWelshAddress4().orElse(null))
-                .withWelshAddress5(address.getWelshAddress5().orElse(null))
-                .withPostcode(address.getPostcode().orElse(null))
+                .withAddress2(address.getAddress2())
+                .withAddress3(address.getAddress3())
+                .withAddress4(address.getAddress4())
+                .withAddress5(address.getAddress5())
+                .withWelshAddress1(address.getWelshAddress1())
+                .withWelshAddress2(address.getWelshAddress2())
+                .withWelshAddress3(address.getWelshAddress3())
+                .withWelshAddress4(address.getWelshAddress4())
+                .withWelshAddress5(address.getWelshAddress5())
+                .withPostcode(address.getPostcode())
                 .build();
     }
 
@@ -283,14 +280,14 @@ public final class EventAggregateConverter {
                 .withId(bailStatus.getId())
                 .withCode(bailStatus.getCode())
                 .withDescription(bailStatus.getDescription())
-                .withCustodyTimeLimit(bailStatus.getCustodyTimeLimit().isPresent() ? buildAggregateCustodyTimeLimit(bailStatus.getCustodyTimeLimit().get()) : null)
+                .withCustodyTimeLimit(bailStatus.getCustodyTimeLimit() != null ? buildAggregateCustodyTimeLimit(bailStatus.getCustodyTimeLimit()) : null)
                 .build();
     }
 
 
     public static CustodyTimeLimit buildAggregateCustodyTimeLimit(final uk.gov.justice.core.courts.CustodyTimeLimit custodyTimeLimit) {
         return uk.gov.moj.cpp.listing.domain.aggregate.CustodyTimeLimit.custodyTimeLimit()
-                .withDaysSpent(custodyTimeLimit.getDaysSpent().orElse(null))
+                .withDaysSpent(custodyTimeLimit.getDaysSpent())
                 .withTimeLimit(custodyTimeLimit.getTimeLimit())
                 .build();
     }
@@ -301,12 +298,12 @@ public final class EventAggregateConverter {
                 .withId(offence.getId())
                 .withOffenceCode(offence.getOffenceCode())
                 .withStartDate(offence.getStartDate())
-                .withEndDate(offence.getEndDate().orElse(null))
+                .withEndDate(offence.getEndDate())
                 .withStatementOfOffence(nonNull(offence.getStatementOfOffence()) ? buildAggregateStatementOfOffence(offence.getStatementOfOffence()) : null)
                 .withOffenceWording(offence.getOffenceWording())
-                .withLaidDate(offence.getLaidDate().orElse(null))
-                .withLaaApplnReference(offence.getLaaApplnReference().isPresent() ? buildAggregateLaaReference(offence.getLaaApplnReference().get()) : null)
-                .withRestrictFromCourtList(offence.getRestrictFromCourtList().orElse(null))
+                .withLaidDate(offence.getLaidDate())
+                .withLaaApplnReference(offence.getLaaApplnReference() != null ? buildAggregateLaaReference(offence.getLaaApplnReference()) : null)
+                .withRestrictFromCourtList(offence.getRestrictFromCourtList())
                 .build();
     }
 
@@ -317,17 +314,17 @@ public final class EventAggregateConverter {
                 .withStatusDescription(laaReference.getStatusDescription())
                 .withStatusDate(laaReference.getStatusDate())
                 .withApplicationReference(laaReference.getApplicationReference())
-                .withEffectiveStartDate(laaReference.getEffectiveStartDate().orElse(null))
-                .withEffectiveEndDate(laaReference.getEffectiveEndDate().orElse(null))
+                .withEffectiveStartDate(laaReference.getEffectiveStartDate())
+                .withEffectiveEndDate(laaReference.getEffectiveEndDate())
                 .build();
     }
 
     public static StatementOfOffence buildAggregateStatementOfOffence(final uk.gov.justice.listing.events.StatementOfOffence statementOfOffence) {
         return uk.gov.moj.cpp.listing.domain.aggregate.StatementOfOffence.statementOfOffence()
                 .withTitle(statementOfOffence.getTitle())
-                .withLegislation(statementOfOffence.getLegislation().orElse(null))
+                .withLegislation(statementOfOffence.getLegislation())
                 .withWelshTitle(statementOfOffence.getWelshTitle())
-                .withWelshLegislation(statementOfOffence.getWelshLegislation().orElse(null))
+                .withWelshLegislation(statementOfOffence.getWelshLegislation())
                 .build();
     }
 

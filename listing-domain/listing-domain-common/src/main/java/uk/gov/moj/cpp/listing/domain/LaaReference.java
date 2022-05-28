@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Optional.empty;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -7,9 +9,9 @@ import java.util.UUID;
 public class LaaReference {
     private final String applicationReference;
 
-    private final Optional<String> effectiveEndDate;
+    private Optional<String> effectiveEndDate;
 
-    private final Optional<String> effectiveStartDate;
+    private Optional<String> effectiveStartDate;
 
     private final String statusCode;
 
@@ -38,11 +40,11 @@ public class LaaReference {
     }
 
     public Optional<String> getEffectiveEndDate() {
-        return effectiveEndDate;
+        return effectiveEndDate.isPresent() ? effectiveEndDate : empty();
     }
 
     public Optional<String> getEffectiveStartDate() {
-        return effectiveStartDate;
+        return effectiveStartDate.isPresent() ? effectiveStartDate : empty();
     }
 
     public String getStatusCode() {
@@ -102,9 +104,9 @@ public class LaaReference {
     public static class Builder {
         private String applicationReference;
 
-        private Optional<String> effectiveEndDate;
+        private Optional<String> effectiveEndDate = empty();
 
-        private Optional<String> effectiveStartDate;
+        private Optional<String> effectiveStartDate = empty();
 
         private String statusCode;
 

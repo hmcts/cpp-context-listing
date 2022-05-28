@@ -1,7 +1,10 @@
 package uk.gov.moj.cpp.listing.utils;
 
+import static java.util.Optional.ofNullable;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
+
+import org.hamcrest.Matcher;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
 
@@ -31,6 +34,7 @@ public class QueueUtil {
     private static final String QUEUE_URI = "tcp://" + HOST + ":61616";
 
     private static final long RETRIEVE_TIMEOUT = 20000;
+    private static final long MESSAGE_RETRIEVE_TRIAL_TIMEOUT = 10000;
 
     private final Session session;
 
@@ -120,5 +124,19 @@ public class QueueUtil {
         } catch (JMSException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static JsonPath retrieveMessage(final MessageConsumer consumer, final Matcher matchers) {
+        final long startTime = System.currentTimeMillis();
+        JsonPath message;
+        do {
+            message = retrieveMessage(consumer, RETRIEVE_TIMEOUT);
+            if (ofNullable(message).isPresent()) {
+                if(matchers.matches(message.prettify())){
+                    return message;
+                }
+            }
+        } while (MESSAGE_RETRIEVE_TRIAL_TIMEOUT > (System.currentTimeMillis() - startTime));
+        return null;
     }
 }

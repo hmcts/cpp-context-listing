@@ -139,7 +139,7 @@ public class PublishCourtListEventListenerTest {
                 .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(courtListType)
                 .withProducedTime(producedTime)
-                .withWeekCommencing(of(false))
+                .withWeekCommencing(false)
                 .build();
 
         final Envelope<PublishCourtListProduced> publishCourtListProducedEvent = envelopeFrom(metadataWithDefaults(), publishCourtListProduced);

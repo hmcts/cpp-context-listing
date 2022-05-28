@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
+import static java.util.Objects.nonNull;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
@@ -29,6 +30,7 @@ import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -86,6 +88,8 @@ public class NextHearingProcessor {
 
     @Inject
     private ListToJsonArrayConverter listToJsonArrayConverter;
+
+
 
     @SuppressWarnings("squid:S3655")
     @Handles(PRIVATE_EVENT_NEXT_HEARING_LISTING_REQUESTED)
@@ -170,7 +174,7 @@ public class NextHearingProcessor {
         final UUID hearingId = event.getHearingId();
         final List<UUID> seededOffences = event.getSeededOffences();
 
-        if (event.getUnallocated().isPresent() && event.getUnallocated().get()) {
+        if (nonNull(event.getUnallocated()) && event.getUnallocated()) {
             publishPublicHearingUnallocated(envelope, hearingId, seededOffences);
         } else {
             publishPublicOffencesRemovedFromUnallocatedHearing(envelope, hearingId, seededOffences);
@@ -220,7 +224,7 @@ public class NextHearingProcessor {
 
     private JsonObject buildListNextHearingCommand(final NextHearingRequested event) {
         final JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
-        addStringToJsonObjectNullSafe(jsonObjectBuilder, "adjournedFromDate", event.getAdjournedFromDate());
+        addStringToJsonObjectNullSafe(jsonObjectBuilder, "adjournedFromDate", Optional.ofNullable(event.getAdjournedFromDate()));
         if (CollectionUtils.isNotEmpty(event.getCourtCentreDetails())) {
             addJsonValueToJsonObjectNullSafe(jsonObjectBuilder, "courtCentresDetails", listToJsonArrayConverter.convert(event.getCourtCentreDetails()));
         }

@@ -105,7 +105,7 @@ public class ExtendHearingHelper {
         }
     }
 
-    public Hearing getHearingPersisted() {
+    public Hearing whenWeHave2Cases3DefendantsAnd4OffencesPersistedInViewStore() {
 
         final String jsonString = FileUtil.givenPayload("/test-data/listing.command.extend-hearing-for-hearing-unallocated-partial-extension-sample.json").toString()
                 .replace("HEARING_ID1", UNALLOCATED_HEARING_ID.toString())

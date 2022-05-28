@@ -59,6 +59,9 @@
     },
     "updateSlot":{
       "type" : "boolean"
+    },
+    "source": {
+      "type": "string"
     }
   },
   "required": [

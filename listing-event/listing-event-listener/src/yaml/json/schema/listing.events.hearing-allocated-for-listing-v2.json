@@ -71,6 +71,9 @@
     },
     "hasAdjournmentDate":{
       "type" : "boolean"
+    },
+    "source": {
+      "type": "string"
     }
   },
   "required": [

@@ -66,6 +66,28 @@
     "panel": {
       "description": "it can be Adult/Youth ",
       "type": "string"
+    },
+    "bookingType": {
+      "description": "A choice of in-court, or video conference options",
+      "type": "string"
+    },
+    "priority": {
+      "description": "Priority marking on hearings/cases",
+      "type": "string"
+    },
+    "specialRequirements": {
+      "description": "Special requirements on hearings/cases",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "type": "string"
+    },
+    "startDateAndWeekCommencingOptional": {
+      "type": "boolean"
     }
   },
   "required": [
@@ -89,6 +111,11 @@
         "weekCommencingStartDate",
         "weekCommencingEndDate",
         "weekCommencingDurationInWeeks"
+      ]
+    },
+    {
+      "required": [
+        "startDateAndWeekCommencingOptional"
       ]
     }
   ],

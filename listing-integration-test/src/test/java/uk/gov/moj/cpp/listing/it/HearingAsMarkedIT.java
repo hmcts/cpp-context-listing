@@ -1,12 +1,16 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
+import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
 import uk.gov.moj.cpp.listing.steps.HearingAsMarkedSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+
+import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
@@ -62,6 +66,27 @@ public class HearingAsMarkedIT extends AbstractIT {
             hearingAsMarkedSteps.whenUnallocatedHearingMarkedAsDuplicateCommandIsSent();
             hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
             hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
+        }
+    }
+
+    @Test
+    public void shouldHearingDeletedForHmi() {
+        final UUID courtCentreId = randomUUID();
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, CROWN_JURISDICTION);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+
+        HearingData hearingData = hearingsData.getHearingData().get(0);
+        try (final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData)) {
+            hearingAsMarkedSteps.whenHearingMarkedAsDuplicatePublicEventIsPublished();
+            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicatePublicEventInActiveMQ();
+            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
+            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ();
+            hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
+            hearingAsMarkedSteps.verifyHmiPublicEventForDeleteHearing();
         }
     }
 

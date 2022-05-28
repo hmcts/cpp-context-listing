@@ -18,7 +18,7 @@ public class HearingDaysToDomainConverter implements Converter<List<HearingDay>,
                         .withCourtCentreId(hearingDay.getCourtCentreId())
                         .withHearingDate(hearingDay.getSittingDay().toLocalDate())
                         .withStartTime(hearingDay.getSittingDay())
-                        .withSequence(hearingDay.getListingSequence().orElse(null))
+                        .withSequence(hearingDay.getListingSequence())
                         .withDurationMinutes(hearingDay.getListedDurationMinutes())
                         .withIsCancelled(hearingDay.getIsCancelled())
                         .build())

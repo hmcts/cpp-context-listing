@@ -9,6 +9,8 @@
       "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, John Smith",
       "startDate": "2010-08-01",
       "endDate": "2011-08-01",
+      "count": 2,
+      "orderIndex": 0,
       "convictionDate": "2017-08-01",
       "statementOfOffence": {
         "title": "Wounding with intent",
@@ -33,6 +35,8 @@
       "wording": "on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Fred Smith",
       "startDate": "2010-08-10",
       "endDate": "2011-08-20",
+      "count": 2,
+      "orderIndex": 1,
       "convictionDate": "2017-08-02",
       "statementOfOffence": {
         "title": "Wounding with intent2",

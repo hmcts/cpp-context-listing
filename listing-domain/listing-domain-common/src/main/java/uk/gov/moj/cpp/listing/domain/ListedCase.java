@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Optional.empty;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -101,7 +103,7 @@ public class ListedCase {
 
     private List<CaseMarker> caseMarkers;
 
-    private Optional<Boolean> shadowListed;
+    private Optional<Boolean> shadowListed = empty();
 
     private String trialReceiptType;
 

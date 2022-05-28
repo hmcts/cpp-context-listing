@@ -1,0 +1,25 @@
+{
+  "organisationUnitHMIStatus": [
+    {
+      "oucode": "B01LY00",
+      "isHMIListingEnabled": false,
+      "isHMISchedulingEnabled": true,
+      "isHMIPubHubEnabled": true,
+      "updatedOn": "2021-07-23 01:14:28.18"
+    },
+    {
+      "oucode": "C02LY00",
+      "isHMIListingEnabled": true,
+      "isHMISchedulingEnabled": true,
+      "isHMIPubHubEnabled": true,
+      "updatedOn": "2021-07-23 01:14:28.18"
+    },
+    {
+      "oucode": "C55BN01",
+      "isHMIListingEnabled": true,
+      "isHMISchedulingEnabled": true,
+      "isHMIPubHubEnabled": true,
+      "updatedOn": "2021-07-23 01:14:28.18"
+    }
+  ]
+}

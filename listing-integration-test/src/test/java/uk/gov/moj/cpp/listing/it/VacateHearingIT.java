@@ -2,9 +2,12 @@ package uk.gov.moj.cpp.listing.it;
 
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAllocationDataAndJudiciary;
+import static uk.gov.moj.cpp.listing.steps.data.HearingsData.notHmiEnabledHearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubPingForOrganisationUnitHmiSServiceForCache;
 
+import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.ListUnscheduledCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.VacatingTrialSteps;
@@ -13,12 +16,25 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @SuppressWarnings({"squid:S1607"})
 @RunWith(DataProviderRunner.class)
 public class VacateHearingIT extends AbstractIT {
+
+    private static final String CONTEXT_NAME = "listing";
+    private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
+
+    @Before
+    public void cleanPublishedEventTable() {
+        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
+        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
+        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "listing_notes");
+    }
 
     @DataProvider
     public static Object[][] provideJurisdictionTypes() {
@@ -113,7 +129,8 @@ public class VacateHearingIT extends AbstractIT {
     @Test
     @UseDataProvider("provideJurisdictionTypes")
     public void shouldVacateUnscheduledHearingAndNotAttemptToFreeHearingSlots(final String jurisdictionType) {
-        final HearingsData hearingsData = hearingsData(jurisdictionType);
+        stubPingForOrganisationUnitHmiSServiceForCache();
+        final HearingsData hearingsData = notHmiEnabledHearingsData(jurisdictionType);
         try (final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();

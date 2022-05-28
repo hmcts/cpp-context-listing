@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 
+import java.util.Collections;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -18,6 +19,9 @@ import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
+import uk.gov.justice.listing.events.Defendant;
+import uk.gov.justice.listing.events.ListedCase;
+import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.UpdateExistingHearingRequested;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -116,5 +120,33 @@ public class UpdateExistingHearingEventProcessorTest {
 
         verify(this.sender, never()).send(this.senderJsonEnvelopeCaptor.capture());
 
+    }
+
+    @Test
+    public void shouldRaisePublicEventWhenSendPublicEventExists() {
+        final UUID hearingId = randomUUID();
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.case-added-to-hearing"),
+                objectToJsonObjectConverter.convert(CasesAddedToHearing.casesAddedToHearing()
+                        .withHearingId(hearingId)
+                        .withUnAllocatedListedCases(Collections.singletonList(ListedCase.listedCase()
+                                .withId(randomUUID())
+                                .withIsEjected(true)
+                                .withDefendants(Collections.singletonList(Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withLastName("Summer")
+                                        .withOffences(Collections.singletonList(Offence.offence()
+                                                .withId(randomUUID())
+                                                .withOffenceCode("offenceCode")
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .withAddCasesToUnAllocatedHearing(true)
+                        .build()));
+        processor.handleCasesAddedToHearingEvent(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+        final JsonEnvelope publicEvent = this.senderJsonEnvelopeCaptor.getValue();
+        assertThat(publicEvent.metadata().name(), is ("public.listing.cases-added-to-hearing"));
+        assertThat(publicEvent.payloadAsJsonObject().getString("hearingId"), is(hearingId.toString()));
     }
 }

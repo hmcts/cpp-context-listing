@@ -9,6 +9,12 @@
     "seededHearing": {
       "description": "This field will be true if the hearing is seeded",
       "type": "boolean"
+    },
+    "source": {
+      "type": "string"
+    },
+    "courtCentreId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
     }
   },
   "required": [

@@ -55,20 +55,20 @@ public class UpdateDefendantsForHearingCommandCollectionConverterTest {
 
     private void assertDefendant(final Defendant actualDefendant, DefendantsToBeUpdated sourceEvent) {
         final uk.gov.justice.listing.events.Defendant eventDefendant = sourceEvent.getDefendants().get(0);
-        assertThat(actualDefendant.getDateOfBirth(), is(eventDefendant.getDateOfBirth()));
-        assertThat(actualDefendant.getFirstName(), is(eventDefendant.getFirstName()));
-        assertThat(actualDefendant.getLastName(), is(eventDefendant.getLastName()));
+        assertThat(actualDefendant.getDateOfBirth().get(), is(eventDefendant.getDateOfBirth()));
+        assertThat(actualDefendant.getFirstName().get(), is(eventDefendant.getFirstName()));
+        assertThat(actualDefendant.getLastName().get(), is(eventDefendant.getLastName()));
         assertThat(actualDefendant.getOffences(), is(empty()));
 
         BailStatus actualBailStatus = actualDefendant.getBailStatus().get();
-        uk.gov.justice.core.courts.BailStatus expectedBailStatus = eventDefendant.getBailStatus().get();
+        uk.gov.justice.core.courts.BailStatus expectedBailStatus = eventDefendant.getBailStatus();
         assertThat(actualBailStatus.getCode(), is(expectedBailStatus.getCode()));
         assertThat(actualBailStatus.getDescription(), is(expectedBailStatus.getDescription()));
         assertThat(actualBailStatus.getId(), equalTo(expectedBailStatus.getId()));
-        assertThat(actualDefendant.getCustodyTimeLimit().get(), is(eventDefendant.getCustodyTimeLimit().get()));
-        assertThat(actualDefendant.getDefenceOrganisation(), is(eventDefendant.getDefenceOrganisation()));
+        assertThat(actualDefendant.getCustodyTimeLimit().get(), is(eventDefendant.getCustodyTimeLimit()));
+        assertThat(actualDefendant.getDefenceOrganisation().get(), is(eventDefendant.getDefenceOrganisation()));
         assertThat(actualDefendant.getId(), is(eventDefendant.getId()));
-        assertThat(actualDefendant.getDefenceOrganisation(), is(eventDefendant.getDefenceOrganisation()));
+        assertThat(actualDefendant.getDefenceOrganisation().get(), is(eventDefendant.getDefenceOrganisation()));
         assertThat(actualDefendant.getId(), is(eventDefendant.getId()));
     }
 }

@@ -82,6 +82,30 @@ public class SearchAvailableHearingIT extends AbstractIT {
     }
 
     @Test
+    public void shouldListAllAvailableHearingForMatchedCaseUrn() {
+
+        final UUID hearingId = UUID.randomUUID();
+        final UUID hearingId2 = UUID.randomUUID();
+        final UUID masterDefendantId = UUID.randomUUID();
+        final String caseUrn = STRING.next();
+        final String caseUrn2 = STRING.next();
+        final String jurisdictionType = JurisdictionType.CROWN.name();
+
+        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, null, caseUrn, masterDefendantId, MATCHED_DEFENDANTS, jurisdictionType, jurisdictionType,
+                null, null);
+        final CaseAndDefendantData caseAndDefendantData2 = new CaseAndDefendantData(hearingId2, caseUrn, caseUrn, masterDefendantId, CASE_IN_HEARING, jurisdictionType, jurisdictionType,
+                null, null);
+
+        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        }
+        try (ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithUnAllocationDataAndJudiciary(caseAndDefendantData2))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyAllAvailableHearingListedForMatchedDefendant(caseAndDefendantData2, masterDefendantId);
+        }
+    }
+
+    @Test
     public void shouldListAvailableHearingWithCaseInHearingAndMatchedDefendant() {
 
         final UUID hearingId = UUID.randomUUID();

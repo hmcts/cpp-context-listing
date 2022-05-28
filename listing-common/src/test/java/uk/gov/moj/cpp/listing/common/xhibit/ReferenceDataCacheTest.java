@@ -170,6 +170,19 @@ public class ReferenceDataCacheTest {
     }
 
     @Test
+    public void shouldPopulateFirstHearingTypeCache() {
+        final HearingType expectedHearingType = new HearingType.Builder()
+                .withId(hearingTypeId)
+                .withHearingCode("FHG")
+                .withHearingDescription("FIRST HEARING")
+                .build();
+        final HearingType actualHearingType = referenceDataCache.getHearingTypeCodeCache("FHG").get();
+        assertThat(actualHearingType.getId(), is(expectedHearingType.getId()));
+        assertThat(actualHearingType.getHearingCode(), is(expectedHearingType.getHearingCode()));
+        assertThat(actualHearingType.getHearingDescription(), is(expectedHearingType.getHearingDescription()));
+    }
+
+    @Test
     public void shouldPopulateCrownCourtMappingsMapCache() {
         final List<CourtMapping> expectedCourtMappingList = asList(getCourtMapping("CROWN_COURT"));
 
@@ -281,6 +294,8 @@ public class ReferenceDataCacheTest {
     private HearingType getHearingType() {
         return new HearingType.Builder()
                     .withId(hearingTypeId)
+                    .withHearingCode("FHG")
+                    .withHearingDescription("FIRST HEARING")
                     .withExhibitHearingCode("PTP")
                     .withExhibitHearingDescription("Plea & Trial Preparation")
                     .build();

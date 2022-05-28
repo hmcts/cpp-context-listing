@@ -71,6 +71,9 @@
       "items": {
         "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
       }
+    },
+    "source": {
+      "type": "string"
     }
   },
   "required": [

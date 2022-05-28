@@ -45,12 +45,14 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
     private static final String PRIVATE_HEARING_MARKED_AS_DUPLICATE_FOR_CASE_EVENT = "listing.events.hearing-marked-as-duplicate-for-case";
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.mark-unallocated-hearing-as-duplicate";
     private static final String MEDIA_TYPE_DUPLICATE_UNALLOCATED_HEARING = "application/vnd.listing.duplicate-unallocated-hearing+json";
+    public static final String PUBLIC_LISTING_DELETED_HEARING_IN_STAGING_HMI = "public.listing.deleted-hearing-in-staging-hmi";
 
 
     private final MessageProducer publicEventHearingMarkedAsDuplicateEvent;
     private final MessageConsumer publicMessageConsumerHearingMarkedAsDuplicateEvent;
     private final MessageConsumer privateMessageConsumerHearingMarkedAsDuplicateEvent;
     private final MessageConsumer privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent;
+    private final MessageConsumer publicMessageConsumerHmiHearingDeleted;
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
@@ -65,6 +67,7 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
         publicEventHearingMarkedAsDuplicateEvent = QueueUtil.publicEvents.createProducer();
         privateMessageConsumerHearingMarkedAsDuplicateEvent = privateEvents.createConsumer(PRIVATE_HEARING_MARKED_AS_DUPLICATE_EVENT);
         privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent = privateEvents.createConsumer(PRIVATE_HEARING_MARKED_AS_DUPLICATE_FOR_CASE_EVENT);
+        publicMessageConsumerHmiHearingDeleted = publicEvents.createConsumer(PUBLIC_LISTING_DELETED_HEARING_IN_STAGING_HMI);
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
@@ -154,6 +157,7 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
             publicMessageConsumerHearingMarkedAsDuplicateEvent.close();
             privateMessageConsumerHearingMarkedAsDuplicateEvent.close();
             privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent.close();
+            publicMessageConsumerHmiHearingDeleted.close();
         } catch (final JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);
@@ -171,5 +175,13 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
                         payload().isJson(
                                 withJsonPath("$.hearings", emptyCollection())
                         ));
+    }
+
+    public void verifyHmiPublicEventForDeleteHearing() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHmiHearingDeleted);
+        LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
+        assertThat(jsonResponse.getString("hearingId"), is(hearingData.getId().toString()));
+        assertThat(jsonResponse.getString("cancellationReasonCode"), is("CNCL"));
+        assertThat(jsonResponse.getList("caseAndApplicationIds").size(), is(3));
     }
 }

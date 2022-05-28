@@ -82,7 +82,6 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -188,6 +187,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST)
         )).thenReturn(events);
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
 
         unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(commandEnvelope);
 
@@ -212,6 +212,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_END_DATE)),
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST));
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
@@ -256,6 +257,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST)
         )).thenReturn(events);
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
 
         unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(commandEnvelope);
 
@@ -280,6 +282,8 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_END_DATE)),
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST));
+
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
@@ -330,6 +334,8 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(TYPE_OF_LIST)
         )).thenReturn(events);
 
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
+
         unscheduledListingCommandHandler.handleListUnscheduledNextHearing(commandEnvelope);
 
         verify(hearing).listUnscheduled(
@@ -353,6 +359,8 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(of(WEEK_COMMENCING_END_DATE)),
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST));
+
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     private JsonEnvelope buildListUnscheduledNextHearingsEnvelope() {

@@ -1,7 +1,9 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.Optional.ofNullable;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
@@ -12,15 +14,16 @@ import static uk.gov.justice.services.core.enveloper.Enveloper.envelop;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
-
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.core.courts.CourtCentre;
+import uk.gov.justice.core.courts.Hearing;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.commands.AddApplicationToHearingCommand;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.commands.LinkedToCases;
 import uk.gov.justice.listing.commands.UpdateLinkedCaseInHearing;
+import uk.gov.justice.listing.courts.HearingChangesSaved;
 import uk.gov.justice.listing.courts.HearingConfirmed;
 import uk.gov.justice.listing.courts.HearingUpdated;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
@@ -38,10 +41,12 @@ import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingDay;
+import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicate;
 import uk.gov.justice.listing.events.HearingMarkedForPartialUpdate;
+import uk.gov.justice.listing.events.HearingPartiallyUpdated;
 import uk.gov.justice.listing.events.HearingRescheduled;
 import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.JudicialRole;
@@ -60,7 +65,6 @@ import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
-import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
@@ -73,7 +77,6 @@ import uk.gov.moj.cpp.listing.event.processor.command.AddOffencesForHearingComma
 import uk.gov.moj.cpp.listing.event.processor.command.AddOffencesForHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.DeleteOffencesForHearingCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.DeleteOffencesForHearingCommandCollectionConverter;
-import uk.gov.moj.cpp.listing.event.processor.command.ExtendHearingToListedCaseCommandConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateCaseMarkersForHearingCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateCaseMarkersForHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearingCommand;
@@ -81,10 +84,13 @@ import uk.gov.moj.cpp.listing.event.processor.command.UpdateDefendantsForHearing
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommand;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateOffencesForHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.UpdateUnallocatedHearingPartiallyCommandConverter;
+import uk.gov.moj.cpp.listing.event.processor.factory.PublicHearingPartiallyUpdatedFactory;
 import uk.gov.moj.cpp.listing.event.processor.util.HearingListedToUpdateHearingForListingCommand;
+import uk.gov.moj.cpp.listing.event.processor.util.HearingObjectsListingToCoreConverter;
 import uk.gov.moj.cpp.listing.event.processor.util.JudicialRoleDomainToEventConverter;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -107,6 +113,7 @@ public class ListingEventProcessor {
     static final String PUBLIC_EVENT_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     static final String PUBLIC_EVENT_HEARING_UPDATED = "public.listing.hearing-updated";
     static final String PUBLIC_EVENT_VACATED_TRIAL_UPDATED = "public.listing.vacated-trial-updated";
+    static final String PUBLIC_EVENT_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
     static final String PUBLIC_EVENT_LISTING_EVENTS_HEARING_DAYS_WITHOUT_COURT_CENTRE_CORRECTED = "public.events.listing.hearing-days-without-court-centre-corrected";
     static final String COMMAND_UPDATE_CASE_DEFENDANT_DETAILS = "listing.command.update-case-defendant-details"; //command back of public event
     static final String COMMAND_UPDATE_CASE_DEFENDANT_OFFENCES = "listing.command.update-case-defendant-offences";
@@ -138,6 +145,7 @@ public class ListingEventProcessor {
     private static final String PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT = "public.events.hearing.marked-as-duplicate";
     private static final String LISTING_EVENTS_CASE_EJECTED_FOR_HEARINGS = "listing.events.case-ejected-for-hearings";
     private static final String LISTING_EVENTS_APPLICATION_EJECTED_FOR_HEARINGS = "listing.events.application-ejected-for-hearings";
+    private static final String PRIVATE_EVENT_HEARING_CHANGES_SAVED = "listing.events.hearing-changes-saved";
     private static final String PRIVATE_EVENT_HEARING_LISTED = "listing.events.hearing-listed";
     private static final String PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING = "listing.events.allocated-hearing-updated-for-listing";
     private static final String PRIVATE_EVENT_ALLOCATED_HEARING_UPDATED_FOR_LISTING_V2 = "listing.events.allocated-hearing-updated-for-listing-v2";
@@ -184,7 +192,7 @@ public class ListingEventProcessor {
     private static final String IS_VACATED = "isVacated";
     private static final String ALLOCATED = "allocated";
     private static final String REASON_ID = "vacatedTrialReasonId";
-    private static final String LOG_PUBLISHING = "Publishing '{}' public event with payload {}";
+    public static final String LOG_PUBLISHING = "Publishing '{}' public event with payload {}";
     private static final String PUBLIC_PROGRESSION_DEFENDANT_LEGALAID_STATUS_UPDATED = "public.progression.defendant-legalaid-status-updated";
     private static final String COMMAND_UPDATE_DEFENDANT_LEGALAID_STATUS = "listing.command.update-defendant-legalaid-status";
     private static final String COMMAND_UPDATE_DEFENDANT_LEGALAID_STATUS_FOR_HEARING = "listing.command.update-defendant-legalaid-status-for-hearing";
@@ -207,12 +215,19 @@ public class ListingEventProcessor {
     private static final String PRIVATE_EVENT_HEARING_MARKED_AS_DELETED = "listing.events.hearing-marked-as-deleted";
     private static final String PRIVATE_EVENT_HEARING_MARKED_FOR_PARTIAL_UPDATE = "listing.events.hearing-marked-for-partial-update";
     static final String COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
+    public static final String PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.hearing.selected-offences-removed-from-existing-hearing";
+    private static final String COURT_CENTRE_ID_FIELD = "courtCentreId";
+    private static final String PRIVATE_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "listing.events.hearing-days-changed-for-hearing";
+    private static final String PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING = "public.listing.hearing-days-changed-for-hearing";
+
+    private static final String PUBLIC_LISTING_HEARING_LISTED = "public.listing.hearing-listed";
+
+    private static final String PRIVATE_LISTING_HEARING_PARTIALLY_UPDATED = "listing.events.hearing-partially-updated";
+    private static final String PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED = "public.listing.hearing-partially-updated";
+
 
     @Inject
     private Sender sender;
-
-    @Inject
-    private Enveloper enveloper;
 
     @Inject
     private AllocatedHearingUpdatedFactory allocatedHearingUpdatedFactory;
@@ -225,9 +240,6 @@ public class ListingEventProcessor {
 
     @Inject
     private AddHearingToCaseCommandCollectionConverter listHearingCommandConverter;
-
-    @Inject
-    private ExtendHearingToListedCaseCommandConverter extendHearingToListedCaseCommandConverter;
 
     @Inject
     private UpdateDefendantsForHearingCommandCollectionConverter updateDefendantsForHearingCommandCollectionConverter;
@@ -271,6 +283,12 @@ public class ListingEventProcessor {
     @Inject
     private RotaSLServiceAdapter rotaSLServiceAdapter;
 
+    @Inject
+    private HearingObjectsListingToCoreConverter hearingListingToCoreConverter;
+
+    @Inject
+    private PublicHearingPartiallyUpdatedFactory publicHearingPartiallyUpdatedFactory;
+
     @Handles(PRIVATE_EVENT_HEARING_LISTED)
     public void handleHearingListedMessage(final JsonEnvelope envelope) {
         if (LOGGER.isInfoEnabled()) {
@@ -280,7 +298,10 @@ public class ListingEventProcessor {
         sendCommandAddHearingToCase(envelope);
         sendCommandAddApplicationToHearing(envelope);
         sendCommandUpdateHearingForListing(envelope);
+
+        publishPublicHearingListedEvent(envelope);
     }
+
 
     @Handles(PRIVATE_EVENT_TRIAL_VACATED)
     public void trialVacated(final JsonEnvelope envelope) {
@@ -312,6 +333,15 @@ public class ListingEventProcessor {
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_VACATED_TRIAL_UPDATED),
                 vacatedTrialUpdatedPayload));
+    }
+
+    @Handles("listing.events.hearing-requested-for-listing")
+    public void handleHearingRequestedForListing(final JsonEnvelope envelope){
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, "listing.events.hearing-requested-for-listing", envelope.toObfuscatedDebugString());
+        }
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName("public.listing.hearing-requested-for-listing"),
+                envelope.payloadAsJsonObject()));
     }
 
     @Handles(PRIVATE_EVENT_HEARING_MARKED_AS_DUPLICATE)
@@ -386,8 +416,8 @@ public class ListingEventProcessor {
         }
         final HearingConfirmed hearingConfirmed = getHearingConfirmed(envelope);
         final HearingAllocatedForListing hearingAllocatedForListing = getHearingAllocatedForListing(envelope);
-        final boolean isSlotUpdated = hearingAllocatedForListing.getUpdateSlot().orElse(false);
-        final boolean isForAdjournmentHearing = hearingAllocatedForListing.getHasAdjournmentDate().orElse(false);
+        final boolean isSlotUpdated = hearingAllocatedForListing.getUpdateSlot();
+        final boolean isForAdjournmentHearing = hearingAllocatedForListing.getHasAdjournmentDate();
         final List<HearingDay> hearingDays = hearingAllocatedForListing.getHearingDays();
 
         LOGGER.debug("HearingConfirmed confirmedHearing used for slot update: {}", hearingConfirmed.getConfirmedHearing());
@@ -395,6 +425,7 @@ public class ListingEventProcessor {
         updateSlotAndSendChangeJudiciaryForHearingsIfJudiciariesPresent(envelope, hearingConfirmed, isSlotUpdated, isForAdjournmentHearing, hearingDays, hearingAllocatedForListing.getJurisdictionType(), hearingAllocatedForListing.getJudiciary());
 
         publishHearingConfirmedPublicEvent(envelope, hearingConfirmed);
+        publishHearingChangesSavedPublicEvent(envelope, hearingAllocatedForListing.getHearingId());
     }
 
     @Handles(PRIVATE_EVENT_HEARING_ALLOCATED_FOR_LISTING_V2)
@@ -405,8 +436,8 @@ public class ListingEventProcessor {
 
         final HearingConfirmed hearingConfirmed = getHearingConfirmedV2(envelope);
         final HearingAllocatedForListingV2 hearingAllocatedForListing = getHearingAllocatedForListingV2(envelope);
-        final boolean isSlotUpdated = hearingAllocatedForListing.getUpdateSlot().orElse(false);
-        final boolean isForAdjournmentHearing = hearingAllocatedForListing.getHasAdjournmentDate().orElse(false);
+        final boolean isSlotUpdated = hearingAllocatedForListing.getUpdateSlot();
+        final boolean isForAdjournmentHearing = hearingAllocatedForListing.getHasAdjournmentDate();
         final List<HearingDay> hearingDays = hearingAllocatedForListing.getHearingDays();
         final List<ProsecutionCaseDefendantOffenceIdsV2> prosecutionCaseDefendantOffenceIds = hearingAllocatedForListing.getProsecutionCaseDefendantsOffenceIds();
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
@@ -417,6 +448,7 @@ public class ListingEventProcessor {
 
         publishHearingConfirmedPublicEvent(envelope, hearingConfirmed);
         sendChangeNextHearingDayIfHearingIsSeeded(envelope, prosecutionCaseDefendantOffenceIds, hearingId);
+        publishHearingChangesSavedPublicEvent(envelope, hearingAllocatedForListing.getHearingId());
 
     }
 
@@ -427,7 +459,7 @@ public class ListingEventProcessor {
         }
         final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = getAllocatedHearingUpdatedForListing(envelope);
         final HearingUpdated hearingUpdated = getHearingUpdated(envelope, allocatedHearingUpdatedForListing);
-        final boolean isSlotUpdated = getAllocatedHearingUpdatedForListing(envelope).getUpdateSlot().orElse(false);
+        final boolean isSlotUpdated = getAllocatedHearingUpdatedForListing(envelope).getUpdateSlot();
         final List<HearingDay> hearingDays = allocatedHearingUpdatedForListing.getHearingDays();
 
         LOGGER.debug("HearingUpdated confirmedHearing used for slot update: {}", hearingUpdated.getUpdatedHearing());
@@ -444,7 +476,7 @@ public class ListingEventProcessor {
         }
         final AllocatedHearingUpdatedForListingV2 allocatedHearingUpdatedForListing = getAllocatedHearingUpdatedForListingV2(envelope);
         final HearingUpdated hearingUpdated = getHearingUpdatedV2(envelope, allocatedHearingUpdatedForListing);
-        final boolean isSlotUpdated = getAllocatedHearingUpdatedForListingV2(envelope).getUpdateSlot().orElse(false);
+        final boolean isSlotUpdated = getAllocatedHearingUpdatedForListingV2(envelope).getUpdateSlot();
         final List<HearingDay> hearingDays = allocatedHearingUpdatedForListing.getHearingDays();
         final List<ProsecutionCaseDefendantOffenceIdsV2> prosecutionCaseDefendantOffenceIds = allocatedHearingUpdatedForListing.getProsecutionCaseDefendantsOffenceIds();
         final UUID hearingId = allocatedHearingUpdatedForListing.getHearingId();
@@ -534,7 +566,7 @@ public class ListingEventProcessor {
         final HearingExtended hearingExtended = jsonObjectConverter.convert(payload, HearingExtended.class);
 
         if (isNotBoxWorkRequest(hearingExtended)) {
-            if (isNotEmpty(hearingExtended.getProsecutionCases()) && !hearingExtended.getCourtApplication().isPresent()) {
+            if (isNotEmpty(hearingExtended.getProsecutionCases()) && isNull(hearingExtended.getCourtApplication())) {
                 sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_ADD_CASES_TO_HEARING),
                         envelope.payloadAsJsonObject()));
                 LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, LISTING_COMMAND_ADD_CASES_TO_HEARING, envelope.toObfuscatedDebugString());
@@ -547,7 +579,7 @@ public class ListingEventProcessor {
     }
 
     private boolean isNotBoxWorkRequest(final HearingExtended hearingExtended) {
-        return !hearingExtended.getIsBoxWorkRequest().isPresent();
+        return isNull(hearingExtended.getIsBoxWorkRequest()) || !hearingExtended.getIsBoxWorkRequest();
     }
 
     @Handles(PUBLIC_EVENT_PROGRESSION_DEFENDANTS_ADDED_TO_COURT_PROCEEDINGS)
@@ -642,7 +674,7 @@ public class ListingEventProcessor {
         }
         final JsonObject eventPayload = envelop.payloadAsJsonObject();
         final JsonArray hearingIds = eventPayload.getJsonArray(HEARING_IDS);
-        hearingIds.stream().forEach(hearingId -> {
+        hearingIds.forEach(hearingId -> {
             final JsonObject commandPayload = createObjectBuilder()
                     .add(HEARING_ID, hearingId)
                     .add(CASE_ID, eventPayload.getString(CASE_ID))
@@ -750,9 +782,9 @@ public class ListingEventProcessor {
         LOGGER.info("Processing event '{}'", PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS);
 
         final NewDefendantAddedForCourtProceedings payload = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), NewDefendantAddedForCourtProceedings.class);
-        final Optional<UUID> optionalCourtCentreId = payload.getCourtCentreId();
-        final Optional<UUID> optionalCourtRoomId = payload.getCourtRoomId();
-        final Optional<ZonedDateTime> hearingDateTime = payload.getHearingDateTime();
+        final Optional<UUID> optionalCourtCentreId = ofNullable(payload.getCourtCentreId());
+        final Optional<UUID> optionalCourtRoomId = ofNullable(payload.getCourtRoomId());
+        final Optional<ZonedDateTime> hearingDateTime = ofNullable(payload.getHearingDateTime());
         final boolean hearingAllocated = optionalCourtCentreId.isPresent() && optionalCourtRoomId.isPresent() && hearingDateTime.isPresent();
         if (hearingAllocated) {
             final CourtCentre courtCentre = hearingConfirmedFactory.buildCourtCentre(optionalCourtCentreId.get(), payload.getCourtRoomId(), envelope);
@@ -776,7 +808,7 @@ public class ListingEventProcessor {
     public void handleHearingUnallocatedForListing(final JsonEnvelope envelope) {
         LOGGER.debug("listing.events.hearing-unallocated-for-listing {}", envelope.toObfuscatedDebugString());
         final HearingUnallocatedForListing hearingUnallocatedForListing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), HearingUnallocatedForListing.class);
-        if (hearingUnallocatedForListing.getSeededHearing().isPresent() && hearingUnallocatedForListing.getSeededHearing().get()) {
+        if (nonNull(hearingUnallocatedForListing.getSeededHearing()) && hearingUnallocatedForListing.getSeededHearing()) {
             changeNextHearingDay(envelope, hearingUnallocatedForListing.getHearingId());
         }
     }
@@ -788,21 +820,27 @@ public class ListingEventProcessor {
                         .add("id", payload.get("id"))
                         .add("hearingDays", getHearingDays(payload.getJsonArray("hearingDays")))
                         .build()).orElse(createObjectBuilder().build());
-        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_LISTING_EVENTS_HEARING_DAYS_WITHOUT_COURT_CENTRE_CORRECTED),  publicEvent));
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_LISTING_EVENTS_HEARING_DAYS_WITHOUT_COURT_CENTRE_CORRECTED), publicEvent));
+    }
+
+    @Handles(PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING)
+    public void offencesRemovedFromExistingHearing(final JsonEnvelope envelope) {
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName("listing.command.remove-selected-offences-from-existing-hearing"),
+                envelope.payloadAsJsonObject()));
     }
 
 
-    private JsonArray getHearingDays(JsonArray hearingDays){
+    private JsonArray getHearingDays(JsonArray hearingDays) {
         final JsonArrayBuilder builder = createArrayBuilder();
         hearingDays.stream()
                 .map(hearingDay -> (JsonObject) hearingDay)
-                .map(hearingDay -> createObjectBuilder().add("courtCentreId", hearingDay.getString("courtCentreId", null))
+                .map(hearingDay -> createObjectBuilder().add(COURT_CENTRE_ID_FIELD, hearingDay.getString(COURT_CENTRE_ID_FIELD, null))
                         .add("courtRoomId", hearingDay.getString("courtRoomId", null))
                         .add("listedDurationMinutes", hearingDay.getInt("durationMinutes"))
                         .add("listingSequence", hearingDay.getInt("sequence"))
                         .add("sittingDay", hearingDay.getString("startTime"))
                         .build())
-                .forEach(hearingday -> builder.add(hearingday));
+                .forEach(builder::add);
 
         return builder.build();
     }
@@ -837,6 +875,44 @@ public class ListingEventProcessor {
         this.sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_REMOVE_PARTIALLY_MERGED_OFFENCES),
                 (commandPayload)));
 
+    }
+
+    @Handles(PRIVATE_LISTING_HEARING_PARTIALLY_UPDATED)
+    public void handleHearingPartiallyUpdate(final JsonEnvelope jsonEnvelope) {
+
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_LISTING_HEARING_PARTIALLY_UPDATED, jsonEnvelope.toObfuscatedDebugString());
+        }
+
+        final JsonObject payload = jsonEnvelope.payloadAsJsonObject();
+
+        final HearingPartiallyUpdated hearingPartiallyUpdated = jsonObjectConverter.convert(payload, HearingPartiallyUpdated.class);
+
+        final uk.gov.justice.listing.courts.HearingPartiallyUpdated pubEvent = publicHearingPartiallyUpdatedFactory.create(hearingPartiallyUpdated);
+
+        //This public event is used by UI only as of now,
+        final JsonEnvelope publicEvent = envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withName(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED),
+                objectToJsonValueConverter.convert(pubEvent));
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(LOG_PUBLISHING, PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED, publicEvent.metadata());
+        }
+        sender.send(publicEvent);
+
+        //Unified public event is used by UI only as of now
+        publishHearingChangesSavedPublicEvent(jsonEnvelope, hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+    }
+
+    @Handles(PRIVATE_EVENT_HEARING_CHANGES_SAVED)
+    public void handleHearingChangesSaved(final JsonEnvelope envelope) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENT_HEARING_CHANGES_SAVED, envelope.toObfuscatedDebugString());
+        }
+        final JsonObject payload = envelope.payloadAsJsonObject();
+
+        final uk.gov.justice.listing.events.HearingChangesSaved hearingChangesSaved = jsonObjectConverter.convert(payload, uk.gov.justice.listing.events.HearingChangesSaved.class);
+
+        publishHearingChangesSavedPublicEvent(envelope, hearingChangesSaved.getHearingId());
     }
 
     private JsonObject generatePayloadForCommandMarkHearingAsDuplicate(final JsonEnvelope envelope) {
@@ -891,14 +967,13 @@ public class ListingEventProcessor {
 
     private void sendCommandUpdateHearingForListing(JsonEnvelope envelope) {
         final HearingListed event = getHearingListedEvent(envelope);
-        final Optional<Boolean> isSlotsBooked = event.getHearing().getIsSlotsBooked();
+        final Optional<Boolean> isSlotsBooked = ofNullable(event.getHearing().getIsSlotsBooked());
 
         if (isSlotsBooked.isPresent() && isSlotsBooked.get()) {
             final UpdateHearingForListingEnriched updateHearingForListingEnriched = hearingListedToUpdateHearingForListingCommand.convert(event.getHearing());
             sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED),
                     objectToJsonValueConverter.convert(updateHearingForListingEnriched)));
         }
-
     }
 
     private void sendCommandAddApplicationToListedHearing(JsonEnvelope envelope) {
@@ -987,7 +1062,7 @@ public class ListingEventProcessor {
             final Optional<OffenceIds> seededOffence = prosecutionCaseDefendantsOffenceIds.stream()
                     .flatMap(pc -> pc.getDefendants().stream())
                     .flatMap(defendantOffenceIdsV2 -> defendantOffenceIdsV2.getOffenceIds().stream())
-                    .filter(offenceIds -> offenceIds.getSeedingHearing().isPresent())
+                    .filter(offenceIds -> nonNull(offenceIds.getSeedingHearing()))
                     .findFirst();
 
             if (seededOffence.isPresent()) {
@@ -1010,10 +1085,18 @@ public class ListingEventProcessor {
      * Publish a public event to notify that the hearing has been confirmed.
      */
     private void publishHearingConfirmedPublicEvent(final JsonEnvelope envelope, final HearingConfirmed hearingConfirmed) {
-
         LOGGER.info(LOG_PUBLISHING, PUBLIC_EVENT_HEARING_CONFIRMED, hearingConfirmed);
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_HEARING_CONFIRMED),
                 objectToJsonValueConverter.convert(hearingConfirmed)));
+    }
+
+    private void publishHearingChangesSavedPublicEvent(final JsonEnvelope envelope, final UUID hearingId) {
+        final HearingChangesSaved hearingChangesSaved = HearingChangesSaved.hearingChangesSaved().withHearingId(hearingId).build();
+
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withId(UUID.randomUUID()).withName(PUBLIC_EVENT_HEARING_CHANGES_SAVED).build(),
+                objectToJsonValueConverter.convert(hearingChangesSaved)));
+        LOGGER.info(LOG_PUBLISHING, PUBLIC_EVENT_HEARING_CHANGES_SAVED, hearingChangesSaved);
     }
 
     private HearingConfirmed getHearingConfirmed(final JsonEnvelope envelope) {
@@ -1158,7 +1241,7 @@ public class ListingEventProcessor {
 
         for (final ConfirmedProsecutionCase prosecutionCase : confirmedHearing.getProsecutionCases()) {
 
-            final Optional<UUID> allocatedHearingIdOpt = confirmedHearing.getExistingHearingId();
+            final Optional<UUID> allocatedHearingIdOpt = ofNullable(confirmedHearing.getExistingHearingId());
             if (allocatedHearingIdOpt.isPresent()) {
 
                 final UUID allocatedHearingId = allocatedHearingIdOpt.get();
@@ -1199,7 +1282,7 @@ public class ListingEventProcessor {
                         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciariesFromRota = rotaSLServiceAdapter.getJudicialRoles(slotDetail.getSessionDate(),
                                 slotDetail.getOuCode(),
                                 Optional.of(slotDetail.getSession()),
-                                hearingConfirmed.getConfirmedHearing().getCourtCentre().getRoomId().get().toString());
+                                hearingConfirmed.getConfirmedHearing().getCourtCentre().getRoomId().toString());
 
 
                         if (isNotEmpty(judiciariesFromRota)) {
@@ -1225,6 +1308,57 @@ public class ListingEventProcessor {
 
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS),
                 changeJudiciaryForHearingsJsonObject));
+    }
+
+
+    @Handles(PRIVATE_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING)
+    public void handleListingCourtRoomNotSelectedEvent(JsonEnvelope jsonEnvelope) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING, jsonEnvelope.toObfuscatedDebugString());
+        }
+        final HearingDaysChangedForHearing hearingDaysChangedForHearing = jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(), HearingDaysChangedForHearing.class);
+        convertHearingDayEventToCourtEvent(jsonEnvelope, hearingDaysChangedForHearing);
+        publishHearingChangesSavedPublicEvent(jsonEnvelope, hearingDaysChangedForHearing.getHearingId());
+    }
+
+    private void convertHearingDayEventToCourtEvent(final JsonEnvelope jsonEnvelope, final HearingDaysChangedForHearing hearingDaysChangedForHearing) {
+
+        List<uk.gov.justice.core.courts.HearingDay> courtHearingDays = new ArrayList<>();
+        for (HearingDay hearingDayEvent : hearingDaysChangedForHearing.getHearingDays()) {
+            uk.gov.justice.core.courts.HearingDay courtHearingDay = allocatedHearingExtendedFactory.buildHearingDay(hearingDayEvent);
+            courtHearingDays.add(courtHearingDay);
+        }
+
+        uk.gov.justice.listing.courts.HearingDaysChangedForHearing hearingDaysForHearingChanged = uk.gov.justice.listing.courts.HearingDaysChangedForHearing.hearingDaysChangedForHearing().withHearingDays(courtHearingDays).withHearingId(hearingDaysChangedForHearing.getHearingId()).build();
+
+        //This public event is used by UI only as of now,
+        final JsonEnvelope publicEvent = envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withName(PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING),
+                objectToJsonValueConverter.convert(hearingDaysForHearingChanged));
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(LOG_PUBLISHING, PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING, publicEvent.metadata());
+        }
+
+        sender.send(publicEvent);
+    }
+
+    private void publishPublicHearingListedEvent(final JsonEnvelope jsonEnvelope) {
+
+        final HearingListed listingHearingListed = jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(), HearingListed.class);
+
+        final Hearing courtDomainHearing = hearingListingToCoreConverter.convert(listingHearingListed.getHearing());
+        final uk.gov.justice.listing.courts.HearingListed courtHearingListed = uk.gov.justice.listing.courts.HearingListed.
+                hearingListed().
+                withHearing(courtDomainHearing).
+                build();
+
+        final JsonEnvelope publicEvent = envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withName(PUBLIC_LISTING_HEARING_LISTED),
+                objectToJsonObjectConverter.convert(courtHearingListed));
+
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(LOG_PUBLISHING, PUBLIC_LISTING_HEARING_LISTED, publicEvent.metadata());
+        }
+
+        sender.send(publicEvent);
     }
 
 }

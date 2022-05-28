@@ -1,0 +1,56 @@
+{
+  "id": "COURT_CENTRE_ID",
+  "oucode": "C02LY00",
+  "oucodeL1Code": "C",
+  "oucodeL1Name": "Magistrates' Courts",
+  "oucodeL3Name": "Port Talbot",
+  "oucodeL3WelshName": "Welsh Name",
+  "address1": "The Court House",
+  "address2": "Cramic Way",
+  "address3": "Port Talbot",
+  "address4": "West Glam.",
+  "address5": "address line 5",
+  "postcode": "SA13 1RU",
+  "welshAddress1": "Llys Ynadon",
+  "welshAddress2": "Adeilad y Llys",
+  "welshAddress3": "Adeilad y Llys",
+  "welshAddress4": "Gorllewin Morgannwgc",
+  "welshAddress5": "Caerdydd",
+  "defaultStartTime": "DEFAULT_START_TIME",
+  "defaultDurationHrs": "DEFAULT_DURATION_HOURS_MINS",
+  "isWelsh":true,
+  "courtrooms": [
+    {
+      "courtroomId": 231,
+      "id":"COURT_ROOM_ID",
+      "venueName": "BOURNEMOUTH COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
+      "courtroomName": "Courtroom 04",
+      "courtroomNameWelsh": "Ystafell y Llys 04"
+    },
+    {
+      "courtroomId": 789,
+      "id":"b52f805c-2821-4904-a0e0-26f7fda6dd08",
+      "venueName": "BOURNEMOUTH COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
+      "courtroomName": "Courtroom 05",
+      "courtroomNameWelsh": "Ystafell y Llys 05"
+    },
+    {
+      "courtroomId": 456,
+      "id":"2a128f95-5892-4ca9-b6ba-45d027d389e7",
+      "venueName": "BOURNEMOUTH COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
+      "courtroomName": "Courtroom 03",
+      "courtroomNameWelsh": "Ystafell y Llys 03"
+    },
+    {
+      "courtroomId": 123,
+      "id":"33b7d399-8379-437c-980d-af9487b1198c",
+      "venueName": "BOURNEMOUTH COMBINED COURT",
+      "venueNameWelsh": "COURT CYFFREDINOL BOURNEMOUTH",
+      "courtroomName": "Courtroom 01",
+      "courtroomNameWelsh": "Ystafell y Llys 01"
+    }
+  ]
+}

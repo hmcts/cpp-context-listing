@@ -8,6 +8,7 @@ import static java.time.LocalDate.parse;
 import static java.time.LocalTime.MAX;
 import static java.time.LocalTime.MIN;
 import static java.time.ZoneOffset.UTC;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
@@ -35,6 +36,7 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
@@ -60,6 +62,7 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -121,6 +124,7 @@ public class HearingQueryView {
     private static final String EMPTY_STRING = "";  // It is needed as jsonb query cannot handle null as per our query condition
     private static final String MATCHED_DEFENDANT_IDS = "matchedDefendantIds";
     private static final String CASE_URN_FOR_LINKED_CASES = "caseUrnForLinkedCases";
+    private static final String RETURN_ALL_HEARINGS = "returnAllHearings";
 
     @Inject
     private HearingRepository repository;
@@ -151,6 +155,9 @@ public class HearingQueryView {
 
     @Inject
     private ListToJsonArrayConverter<Notes> listToJsonArrayConverter;
+
+    @Inject
+    private OrganisationUnitHMICache organisationUnitHMICache;
 
     @Handles("listing.search.hearings")
     public JsonEnvelope searchHearings(final JsonEnvelope query) {
@@ -229,14 +236,31 @@ public class HearingQueryView {
                 caseUrnQueryParam, typeOfListQueryParam, courtCentreIdQueryParam, paginationParameter.getPageSize(), paginationParameter.getPageNumber());
 
         final List<Hearing> hearings;
+
+        final Set<String> notHmiEnabledCourtCentreIdSet = organisationUnitHMICache.getNotHmiEnabledCourtCentreIdSet();
+
+        if(notHmiEnabledCourtCentreIdSet != null) {
+            LOGGER.info("HearingQueryView.notHmiEnabledCourtCentreIdSet size is {} ", notHmiEnabledCourtCentreIdSet.size());
+        }
+
         if (!isNullOrEmpty(courtCentreIdQueryParam)) {
             final Set<String> courtCentreIdSet = Stream.of(courtCentreIdQueryParam.split(","))
                     .map(String::trim)
+                    .filter(courtCentreId -> notHmiEnabledCourtCentreIdSet.contains(courtCentreId))
                     .collect(Collectors.toSet());
-            hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, courtCentreIdSet, paginationParameter.getOffSet(), paginationParameter.getPageSize());
+            if (!courtCentreIdSet.isEmpty()) {
+                hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, courtCentreIdSet, paginationParameter.getOffSet(), paginationParameter.getPageSize());
+            } else {
+                hearings = emptyList();
+            }
         } else {
-            hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, paginationParameter.getOffSet(), paginationParameter.getPageSize());
+            if (notHmiEnabledCourtCentreIdSet != null && !notHmiEnabledCourtCentreIdSet.isEmpty()) {
+                hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, notHmiEnabledCourtCentreIdSet, paginationParameter.getOffSet(), paginationParameter.getPageSize());
+            } else {
+                hearings = repository.findHearings(caseUrnQueryParam, typeOfListQueryParam, paginationParameter.getOffSet(), paginationParameter.getPageSize());
+            }
         }
+
         final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
         return envelop(createObjectBuilder()
                 .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
@@ -278,6 +302,7 @@ public class HearingQueryView {
         final String matchingDefendantIdsParam = query.payloadAsJsonObject().getString(MATCHED_DEFENDANT_IDS, null);
         final String caseUrnForLinkedCases = query.payloadAsJsonObject().getString(CASE_URN_FOR_LINKED_CASES, null);
         final boolean allocated = true;
+        final Boolean returnAllHearings = query.payloadAsJsonObject().getBoolean(RETURN_ALL_HEARINGS, false);
 
         final Set<String> masterDefendantSet = new HashSet<>();
         final Set<String> caseUrnSet = new HashSet<>();
@@ -321,19 +346,34 @@ public class HearingQueryView {
                         "caseUrns : {}, " +
                         "masterDefendantIds : {}, " +
                         "linkedCaseUrn : {}, " +
-                        "caseUrnForLinkedCases: {}",
-                allocated, jurisdictionTypeSet, hearingId, caseUrnSet, masterDefendantSet, linkedCaseUrnSet, caseUrnForLinkedCases);
+                        "caseUrnForLinkedCases: {}"+
+                        "returnAllHearings: {}",
+                allocated, jurisdictionTypeSet, hearingId, caseUrnSet, masterDefendantSet, linkedCaseUrnSet, caseUrnForLinkedCases,returnAllHearings);
 
-        final List<Hearing> hearings = repository.findHearings(
-                allocated,
-                jurisdictionTypeSet,
-                hearingId,
-                caseUrnSet,
-                masterDefendantSet,
-                linkedCaseUrnSet,
-                caseUrnForLinkedCases,
-                now()
-        );
+        final List<Hearing> hearings;
+
+        if (returnAllHearings) {
+            hearings = repository.findHearings(
+                    jurisdictionTypeSet,
+                    hearingId,
+                    caseUrnSet,
+                    masterDefendantSet,
+                    linkedCaseUrnSet,
+                    caseUrnForLinkedCases,
+                    now()
+            );
+        } else {
+            hearings = repository.findHearings(
+                    allocated,
+                    jurisdictionTypeSet,
+                    hearingId,
+                    caseUrnSet,
+                    masterDefendantSet,
+                    linkedCaseUrnSet,
+                    caseUrnForLinkedCases,
+                    now()
+            );
+        }
 
         final List<Notes> notes = notesService.findNotes(true, null, null, hearings);
 

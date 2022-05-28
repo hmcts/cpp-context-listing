@@ -79,12 +79,10 @@ import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-
 // It seems that this must only be run with PersistenceTestSuite.
 @RunWith(CdiTestRunner.class)
 public class HearingRepositoryTest extends BaseTransactionalTest {
-
-
+    
     private static final UtcClock UTC_CLOCK = new UtcClock();
     private static final Boolean ALLOCATED = TRUE;
     private static final Boolean UNALLOCATED = FALSE;

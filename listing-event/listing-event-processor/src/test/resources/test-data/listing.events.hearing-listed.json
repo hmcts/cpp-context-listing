@@ -9,7 +9,9 @@
     "sequence": 1,
     "jurisdictionType": "CROWN",
     "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
+    "isSlotsBooked": true,
     "courtRoomId": "9d324f4f-6c3b-451f-ac1e-f459db781153",
+    "courtApplications": [],
     "judiciary": [{
       "judicialId": "d1a22d9e-088b-4af4-acb5-bc6e78aaf5ea",
       "judicialRoleType": {

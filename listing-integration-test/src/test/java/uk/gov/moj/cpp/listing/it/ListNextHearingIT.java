@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.it;
 
 import static com.google.common.collect.ImmutableMap.of;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubPingForOrganisationUnitHmiSServiceForCache;
 import static uk.gov.moj.cpp.platform.test.feature.toggle.FeatureStubber.stubFeaturesFor;
 
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
@@ -92,11 +93,12 @@ public class ListNextHearingIT extends AbstractIT {
     public void shouldDeleteOldScheduledNextHearingsAndScheduledNextHearings() {
         final ImmutableMap<String, Boolean> features = of("amendReshare", true);
         stubFeaturesFor("listing", features);
+        stubPingForOrganisationUnitHmiSServiceForCache();
 
-        final HearingsData oldNextHearings = HearingsData.hearingsData();
-        final HearingsData nextHearings = HearingsData.hearingsData();
+        final HearingsData oldNextHearings = HearingsData.notHmiEnabledHearingsData();
+        final HearingsData nextHearings = HearingsData.notHmiEnabledHearingsData();
+        final HearingsData firstHearings = HearingsData.notHmiEnabledHearingsData();
 
-        final HearingsData firstHearings = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();

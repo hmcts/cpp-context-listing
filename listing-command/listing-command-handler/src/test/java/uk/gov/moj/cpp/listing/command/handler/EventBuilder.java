@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
@@ -15,7 +14,6 @@ import uk.gov.justice.listing.events.StatementOfOffence;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -53,8 +51,8 @@ public class EventBuilder {
     private static Defendant createDefendant(final Offence offence, final UUID defendantId) {
         return Defendant.defendant()
                 .withId(defendantId)
-                .withBailStatus(of(new BailStatus.Builder().withId(fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).withCode("P").withDescription("Conditional Bail with Pre-Release conditions").build()))
-                .withCustodyTimeLimit(of(LocalDate.now().toString()))
+                .withBailStatus(new BailStatus.Builder().withId(fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).withCode("P").withDescription("Conditional Bail with Pre-Release conditions").build())
+                .withCustodyTimeLimit(LocalDate.now().toString())
                 .withOffences(singletonList(offence))
                 .build();
     }
@@ -63,7 +61,7 @@ public class EventBuilder {
         return StatementOfOffence.statementOfOffence()
                 .withTitle(STRING.next())
                 .withWelshTitle(STRING.next())
-                .withLegislation(of(STRING.next()))
+                .withLegislation(STRING.next())
                 .build();
     }
 
@@ -72,7 +70,7 @@ public class EventBuilder {
                 .withId(offenceId)
                 .withOffenceCode(STRING.next())
                 .withStartDate(LocalDate.now().toString())
-                .withEndDate(Optional.ofNullable(LocalDate.now().toString()))
+                .withEndDate(LocalDate.now().toString())
                 .withStatementOfOffence(statementOfOffence)
                 .build();
     }

@@ -1,0 +1,33 @@
+{
+  "hmiSessions": [
+    {
+      "courtHouseId": "497cb631-fc89-36f2-86fa-3bd1e0ca93ba",
+      "courtHouseName": "COURT_HOUSE_NAME",
+      "courtRoomId": "d1e9964a-e94e-44fe-b954-d07158fb9829",
+      "courtRoomName": "Courtroom 01",
+      "courtRoomNumber": 111,
+      "courtScheduleId": "2d69b3fc-f4e1-391c-9bf2-007894c372e6",
+      "courtSession": "AM",
+      "duration": 0,
+      "hearingType": "TRL",
+      "judiciaries": [
+        {
+          "isPresiding": false,
+          "judiciaryId": "0a87257e-5308-397d-b432-30edf4ad1dae",
+          "judiciaryType": "Magistrate"
+        },
+        {
+          "isPresiding": true,
+          "judiciaryId": "00ac8ed3-b432-3bdd-8ebb-ebcb2ba10a00",
+          "judiciaryType": "DJ"
+        }
+      ],
+      "ouCode": "OUCODE",
+      "remainingSlot": 12,
+      "remainingTime": 0,
+      "sessionDate": "SESSION_DATE",
+      "sessionStartTime": "SESSION_START_TIME",
+      "venueId": "VENUE_ID"
+    }
+  ]
+}

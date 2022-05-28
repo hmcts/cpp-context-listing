@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import static java.util.Optional.ofNullable;
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
@@ -21,7 +21,6 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -148,7 +147,7 @@ public class HearingMarkedAsDuplicateEventListener {
 
     private void deleteHearing(final UUID hearingId) {
         final Hearing hearing = hearingRepository.findBy(hearingId);
-        if (Objects.nonNull(hearing)) {
+        if (nonNull(hearing)) {
             hearingRepository.remove(hearing);
         }
     }
@@ -168,7 +167,7 @@ public class HearingMarkedAsDuplicateEventListener {
 
     private List<HearingDay> getHearingDaysWithRemoveCourtRoomId(final List<HearingDay> hearingDays) {
         return new ArrayList<>(hearingDays.stream()
-                .map(hearingDay -> HearingDay.hearingDay().withValuesFrom(hearingDay).withCourtRoomId(ofNullable(null)).build())
+                .map(hearingDay -> HearingDay.hearingDay().withValuesFrom(hearingDay).withCourtRoomId(null).build())
                 .collect(toList()));
 
     }
@@ -177,7 +176,7 @@ public class HearingMarkedAsDuplicateEventListener {
         final List<ListedCase> listedCases = new ArrayList<>(cases.stream().filter(listedCase -> !seedCaseIds.contains(listedCase.getId())).collect(toList()));
         listedCases.forEach(listedCase -> listedCase.getDefendants()
                 .forEach(defendant -> defendant.getOffences()
-                        .removeIf(offence -> offence.getSeedingHearing().isPresent() &&  offence.getSeedingHearing().get().getSeedingHearingId().equals(seedingHearingId))));
+                        .removeIf(offence -> nonNull(offence.getSeedingHearing()) && offence.getSeedingHearing().getSeedingHearingId().equals(seedingHearingId))));
 
         listedCases.forEach(listedCase -> listedCase.getDefendants().removeIf(defendant -> defendant.getOffences().isEmpty()));
 

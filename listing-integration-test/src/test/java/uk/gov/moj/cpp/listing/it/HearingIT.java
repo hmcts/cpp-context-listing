@@ -1,7 +1,14 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static uk.gov.moj.cpp.listing.it.util.ContextNameProvider.CONTEXT_NAME;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
+import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetAvailableHearingSlots;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetAvailableHearingSlotsWithQueryParams;
@@ -10,6 +17,7 @@ import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAv
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 
+import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.SequenceHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
@@ -24,6 +32,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,6 +40,7 @@ import java.util.UUID;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import org.junit.Before;
 import org.junit.Test;
 
 @SuppressWarnings("squid:S1607")
@@ -38,6 +48,16 @@ import org.junit.Test;
 public class HearingIT extends AbstractIT {
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
+    private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
+
+    @Before
+    public void cleanPublishedEventTable() {
+        databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
+        databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
+        databaseCleaner.cleanStreamStatusTable(CONTEXT_NAME);
+        databaseCleaner.cleanViewStoreTables(CONTEXT_NAME, "hearing");
+
+    }
 
     @Test
     public void updateHearingResultsInAllocatedListingAndRaisesPublicHearingConfirmedPublicEvent() {
@@ -55,6 +75,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingUpdatedResultsInAllocationInMQ();
             updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
     }
 
@@ -156,8 +177,8 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.whenHearingIsUpdatedForListingWithProsecutionCases();
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
             updateHearingSteps.verifyHearingAllocatedEventNotExistsRemovedOffence(removedOffenceId);
-            updateHearingSteps.verifyHearingPartiallyEvent(removedOffenceId);
-
+            updateHearingSteps.verifyHearingPartiallyEventNotExistsRemovedOffence(removedOffenceId);
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
 
     }
@@ -195,6 +216,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingUpdatedResultsInAllocationInMQ();
             updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
 
     }
@@ -244,6 +266,7 @@ public class HearingIT extends AbstractIT {
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingConfirmedInPublicMQHasNoJudiciary();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
     }
 
@@ -262,17 +285,97 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
             updateHearingSteps.verifyVacatedTrialUpdatedInPublicMQ(ALLOCATED, false);
             updateHearingSteps.verifyHearingUpdatedInPublicMQ();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
     }
-
 
     @Test
     public void updateHearingResultsInUpdatedListingAndUpdateSlotDetails() {
         final UUID courtCentreId = randomUUID();
 
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, CROWN_JURISDICTION);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+
+        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDaysWithAdditionalFields(hearingId);
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabled();
+            updateHearingSteps.verifyHearingUpdatedResultsForSlotUpdateInMQ();
+            updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
+            updateHearingSteps.verifyHearingDaysWhenQueryFromAPI();
+            updateHearingSteps.verifyHmiPublicEventForUpdateHearing();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
+        }
+    }
+
+    @Test
+    public void updateHearingResultsWhenMultipleOffencesSplitToMultipleHearings() {
+        final HearingsData hearingsData = HearingsData.singleHearingDataSingleCaseMultipleOffences();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+
+        final UUID hearingId =  hearingsData.getHearingData().get(0).getId();
+        final UpdatedHearingData updatedHearingDataForSplit = UpdatedHearingData.updatedHearingDataForAllocationWithJurisdictionType(hearingId,CROWN_JURISDICTION);
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForSplit)) {
+            updateHearingSteps.whenHearingIsUpdatedFromHmiWithoutCourtRoomSelection();
+            updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabledWithoutCourtRoomSelection();
+            updateHearingSteps.verifyHearingDaysChangedEventForOneDayOnlyWithoutCourtRoomSelection();
+            updateHearingSteps.verifyHearingDaysChangedForHearingEvent();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
+        }
+
+    }
+
+    @Test
+    public void updateHearingResultsWhenCourtRoomNotSelected() {
+        final HearingsData hearingsData = HearingsData.singleHearingDataForHMI();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+
+        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
+        final UUID courtCenterId = hearingsData.getHearingData().get(0).getCourtCentreId();
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDaysWithoutCourtRoomSelection(hearingId, courtCenterId);
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedFromHmiWithoutCourtRoomSelection();
+            updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabledWithoutCourtRoomSelection();
+            updateHearingSteps.verifyHearingDaysChangedEventForOneDayOnlyWithoutCourtRoomSelection();
+            updateHearingSteps.verifyHearingDaysChangedForHearingEvent();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
+        }
+    }
+
+    @Test
+    public void updateHearingResultsWhenCourtRoomNotSelectedForHearingListed() {
+        final HearingsData hearingsData = HearingsData.singleHearingDataForHMI();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+            listCourtHearingSteps.verifyHearingListedPublicEvent();
+        }
+    }
+
+    @Test
+    public void updateHearingResultsInUpdatedListingAndUpdateSlotDetailsFromHmi() {
+        final UUID courtCentreId = randomUUID();
+
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
@@ -282,10 +385,95 @@ public class HearingIT extends AbstractIT {
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocationWithNonDefaultDays(hearingId);
 
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedFromHmi();
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingUpdatedResultsForSlotUpdateInMQ();
             updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingDaysWhenQueryFromAPI();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
+            //verify(postRequestedFor(urlMatching(STAGINGHMI_HEARINGS_UPDATE_URL)));
+        }
+    }
+
+    @Test
+    public void ShouldUnAllocateHearingWhenHmiRemoveCourtRoom() {
+        final UUID courtCentreId = randomUUID();
+
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingData(hearingsData.getHearingData().get(0));
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedFromHmi(Arrays.asList("courtRoomId"));
+            updateHearingSteps.verifyHearingListedFromAPI(UNALLOCATED, allOf(
+                    withJsonPath("$.hearings[0].id", equalTo(updatedHearingDataForAllocation.getHearingId().toString())),
+                    withJsonPath("$.hearings[0].allocated", equalTo(false)),
+                    withoutJsonPath("$.hearings[0].hearingDays[0].courtRoomId")), null, null);
+        }
+    }
+
+    @Test
+    public void ShouldUnScheduledHearingWhenHmiRemoveHearingDate() {
+        final UUID courtCentreId = randomUUID();
+
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingData(hearingsData.getHearingData().get(0));
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedFromHmi(Arrays.asList("courtRoomId", "startDate", "endDate"));
+            updateHearingSteps.verifyStartDateRemovedEvent();
+            updateHearingSteps.verifyEndDateRemovedEvent();
+            updateHearingSteps.verifyCourtRoomRemovedEvent();
+            updateHearingSteps.verifyEmptyHearingDaysChangedEventInActiveMQ();
+            updateHearingSteps.verifyUnallocatedHearingEvent();
+        }
+    }
+
+    @Test
+    public void shouldUnAllocatedAndWeekCommercingHearingWhenHmiConvertFixedDateToWeekCommercing() {
+        final UUID courtCentreId = randomUUID();
+
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+
+        final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataWithWeekCommencingDate(hearingsData.getHearingData().get(0), LocalDate.now(), LocalDate.now().plusWeeks(1), 1);
+
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
+            updateHearingSteps.whenHearingIsUpdatedFromHmi(Arrays.asList("startDate", "endDate", "courtRoomId"));
+            updateHearingSteps.verifyStartDateRemovedEvent();
+            updateHearingSteps.verifyEndDateRemovedEvent();
+            updateHearingSteps.verifyCourtRoomRemovedEvent();
+            updateHearingSteps.verifyEmptyHearingDaysChangedEventInActiveMQ();
+            updateHearingSteps.verifyUnallocatedHearingEvent();
+            updateHearingSteps.verifyWeekCommercingDateChangedEvent();
+            updateHearingSteps.verifyHearingListedFromAPI(UNALLOCATED, allOf(
+                    withJsonPath("$.hearings[0].id", equalTo(updatedHearingDataForAllocation.getHearingId().toString())),
+                    withJsonPath("$.hearings[0].allocated", equalTo(false)),
+                    withoutJsonPath("$.hearings[0].hearingDays[0]"),
+                    withJsonPath("$.hearings[0].weekCommencingEndDate", is(LocalDate.now().plusWeeks(1).toString())),
+                    withJsonPath("$.hearings[0].weekCommencingStartDate", is(LocalDate.now().toString())),
+                    withJsonPath("$.hearings[0].weekCommencingDurationInWeeks", is("1")),
+                    withoutJsonPath("$.hearings[0].startDate"),
+                    withoutJsonPath("$.hearings[0].endDate")
+            ),LocalDate.now().toString(), LocalDate.now().plusWeeks(1).toString());
         }
     }
 
@@ -296,6 +484,7 @@ public class HearingIT extends AbstractIT {
 
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, MAGISTRATES_JURISDICTION);
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
@@ -319,6 +508,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyJudiciaryChangedEventWithRotaSLJudiciaries(judicialRoleDataList);
             updateHearingSteps.verifyHearingDaysWhenQueryFromAPI();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
     }
 
@@ -346,7 +536,7 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void updateAllocatedHearingWithNoCourtRoomResultsInUnallocatedListing() {
-        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+       final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(CROWN_JURISDICTION);
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
@@ -354,9 +544,10 @@ public class HearingIT extends AbstractIT {
 
         final UpdatedHearingData updatedHearingDataWithNoCourtRoom = UpdatedHearingData.updatedHearingDataWithNoCourtRoom(hearingsData.getHearingData().get(0));
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithNoCourtRoom)) {
-            updateHearingSteps.whenHearingIsUpdatedForListing();
+            updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabled();
             updateHearingSteps.verifyHearingUpdatedWithNoCourtRoomResultsInUnallocationInMQ();
             updateHearingSteps.verifyHearingUpdatedWithNoCourtRoomAndUnallocatedWhenQueryingFromAPI();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
     }
 
@@ -373,6 +564,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingUpdatedWithNoEndDateResultsInUnallocationInMQ();
             updateHearingSteps.verifyHearingUpdatedWithNoEndDateAndUnallocatedWhenQueryingFromAPI();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
     }
 
@@ -398,6 +590,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingFoundByAllocatedAndCourtCentreAndAuthorityIdFromAPI();
             updateHearingSteps.verifyHearingFoundByAllocatedAndCourtCentreAndAuthorityIdAndHearingTypFromAPI();
             updateHearingSteps.verifyHearingFoundByAllocatedAndCourtCentreAndIdHearingTypAndJurisdictionTypeFromAPI();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
     }
 
@@ -431,6 +624,7 @@ public class HearingIT extends AbstractIT {
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingFoundByAllocatedFromAPI();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
 
         try (final SequenceHearingSteps sequenceHearingSteps = new SequenceHearingSteps(sequenceHearingData)) {
@@ -479,6 +673,4 @@ public class HearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedWithAnyAllocationFromAPI(UNALLOCATED);
         }
     }
-
-
 }

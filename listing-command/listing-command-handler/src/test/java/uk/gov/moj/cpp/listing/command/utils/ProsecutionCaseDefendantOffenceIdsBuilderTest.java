@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.command.utils;
 
 
 import static java.util.Arrays.asList;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -28,9 +27,9 @@ public class ProsecutionCaseDefendantOffenceIdsBuilderTest {
         final UUID caseId = randomUUID();
 
         final List<ProsecutionCases> prosecutionCases = asList(ProsecutionCases.prosecutionCases()
-                .withCaseId(of(caseId))
+                .withCaseId(caseId)
                 .withDefendants(asList(Defendants.defendants()
-                        .withDefendantId(of(defendantId))
+                        .withDefendantId(defendantId)
                         .withOffences(asList(Offences.offences()
                                 .withOffenceId(offenceId)
                                 .build()))
@@ -64,9 +63,9 @@ public class ProsecutionCaseDefendantOffenceIdsBuilderTest {
         final UUID caseId_2 = randomUUID();
 
         final List<ProsecutionCases> prosecutionCases = asList(ProsecutionCases.prosecutionCases()
-                .withCaseId(of(caseId1))
+                .withCaseId(caseId1)
                 .withDefendants(asList(Defendants.defendants()
-                        .withDefendantId(of(case1DefendantId1))
+                        .withDefendantId(case1DefendantId1)
                         .withOffences(asList(Offences.offences()
                                 .withOffenceId(case1Defendant1OffenceId1)
                                 .build(),
@@ -76,15 +75,15 @@ public class ProsecutionCaseDefendantOffenceIdsBuilderTest {
                         .build()))
                 .build(),
                 ProsecutionCases.prosecutionCases()
-                        .withCaseId(of(caseId_2))
+                        .withCaseId(caseId_2)
                         .withDefendants(asList(Defendants.defendants()
-                                .withDefendantId(of(case2DefendantId1))
+                                .withDefendantId(case2DefendantId1)
                                 .withOffences(asList(Offences.offences()
                                         .withOffenceId(case2DefendantId1Offence1)
                                         .build()))
                                 .build(),
                                 Defendants.defendants()
-                                        .withDefendantId(of(case2DefendantId2))
+                                        .withDefendantId(case2DefendantId2)
                                         .withOffences(asList(Offences.offences()
                                                 .withOffenceId(case2DefendantId2Offence1)
                                                 .build(),

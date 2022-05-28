@@ -11,8 +11,10 @@ import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static uk.gov.justice.listing.events.HearingDay.hearingDay;
 import static uk.gov.justice.listing.events.HearingDaysCancelled.hearingDaysCancelled;
 import static uk.gov.justice.listing.events.HearingDaysSequenced.hearingDaysSequenced;
@@ -23,6 +25,7 @@ import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
 import uk.gov.justice.listing.events.HearingDaysSequenced;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
@@ -119,6 +122,45 @@ public class HearingDaysForHearingEventListenerTest {
                 withJsonPath("$.hearingDays[0].sequence", equalTo(hearingData.getHearingDays().get(0).getSequence()))
         )));
     }
+
+    @Test
+    public void shouldRemoveUnscheduledWhenHearingDaysChangedForHearing() {
+        final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+        final Envelope<HearingDaysChangedForHearing> envelope = (Envelope<HearingDaysChangedForHearing>) mock(Envelope.class);
+        final HearingDaysChangedForHearing hearingData = HearingDaysChangedForHearing.hearingDaysChangedForHearing()
+                .withHearingDays(ImmutableList.of(hearingDay()
+                        .withStartTime(START_TIME)
+                        .withDurationMinutes(DURATION_MINUTES)
+                        .withEndTime(END_TIME)
+                        .withSequence(1)
+                        .build()))
+                .withHearingId(HEARING_ID)
+                .build();
+        given(envelope.payload()).willReturn(hearingData);
+
+        final Hearing domainHearing = Hearing.builder()
+                .withId(HEARING_ID)
+                .withAllocated(false)
+                .withUnscheduled(true)
+                .build();
+        final JsonNode hearingProperties = objectMapper.valueToTree(domainHearing);
+        final Hearing hearing = Hearing.builder().withId(HEARING_ID)
+                .withProperties(hearingProperties)
+                .build();
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        final ArgumentCaptor<Hearing> argumentCaptor = ArgumentCaptor.forClass(Hearing.class);
+
+        hearingDaysForHearingEventListener.hearingDaysChangedForHearing(envelope);
+
+        verify(hearingRepository).save(argumentCaptor.capture());
+
+        final Hearing savedHearing = argumentCaptor.getValue();
+        assertThat(savedHearing.getProperties().get("allocated").asBoolean(), is(false));
+        assertThat(savedHearing.getProperties().get("unscheduled"), nullValue());
+        assertThat(savedHearing.getProperties().get("hearingDays").size(), is(1));
+    }
+
 
     @Test
     public void shouldUpdateHearingDaysWhenHearingDaysSequenced() {

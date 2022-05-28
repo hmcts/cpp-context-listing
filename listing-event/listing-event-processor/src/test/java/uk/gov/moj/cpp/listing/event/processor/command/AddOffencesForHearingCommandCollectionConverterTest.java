@@ -49,6 +49,8 @@ public class AddOffencesForHearingCommandCollectionConverterTest {
                         "        \"id\": \"0baecac5-222b-402d-9047-84803679edad\",\n" +
                         "        \"offenceCode\": \"OF61131\",\n" +
                         "        \"startDate\": \"2016-06-21\",\n" +
+                        "        \"count\": 1,\n" +
+                        "        \"orderIndex\": 0,\n" +
                         "        \"statementOfOffence\": {\n" +
                         "          \"legislation\": \"legislation\",\n" +
                         "          \"title\": \"Wounding with intent\",\n" +

@@ -35,12 +35,13 @@ public class CourtCentreFactory {
 
         final String defaultStartTimeStr = getJsonObjectString("defaultStartTime", jsonObject, courtCentreId);
         final LocalTime defaultStartTime = LocalTime.parse(defaultStartTimeStr);
-
+        final String name = getJsonObjectString("oucodeL3Name", jsonObject, courtCentreId);
 
         return CourtCentreDetails.courtCentreDetails()
                 .withDefaultStartTime(defaultStartTime)
                 .withDefaultDuration(defaultDurationMinutes)
                 .withId(courtCentreId)
+                .withName(name)
                 .build();
     }
 

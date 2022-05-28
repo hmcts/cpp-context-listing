@@ -5,7 +5,8 @@
         {
           "offenceCode": "TFL123",
           "offenceTitle": "TFL Ticket Dodger",
-          "count": 0,
+          "count": 1,
+          "orderIndex": 0,
           "id": "OFFENCE_ID1",
           "wording": "TFL ticket dodged",
           "offenceDefinitionId": "bfd0a307-7c59-43f9-8713-d568fa4e4fff",
@@ -39,7 +40,8 @@
         {
           "offenceCode": "TFL123",
           "offenceTitle": "TFL Ticket Dodger",
-          "count": 0,
+          "count": 1,
+          "orderIndex": 0,
           "id": "OFFENCE_ID1",
           "wording": "TFL ticket dodged",
           "offenceDefinitionId": "bfd0a307-7c59-43f9-8713-d568fa4e4fff",

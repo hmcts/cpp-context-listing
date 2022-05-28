@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_HANDLER;
 import static uk.gov.justice.services.core.enveloper.Enveloper.toEnvelopeWithMetadataFrom;
@@ -122,28 +123,29 @@ public class UnscheduledListingCommandHandler {
         final Optional<Integer> weekCommencingDurationInWeeks = commandToDomainConverter.getWeekCommencingDurationInWeeks(commandHearing);
         final Optional<LocalDate> weekCommencingEndDate = commandToDomainConverter.getWeekCommencingEndDate(weekCommencingStartDate, weekCommencingDurationInWeeks);
 
-        updateHearingEventStream(command, commandHearing.getId(), (Hearing hearing) -> hearing.listUnscheduled(
-                commandHearing.getId(),
-                commandToDomainConverter.buildHearingType(commandHearing.getType()),
-                commandToDomainConverter.mapToListedCases(commandHearing, commandHearing.getProsecutionCases()),
-                commandHearing.getCourtCentre().getId(),
-                commandToDomainConverter.getJudicialRoles(commandHearing),
-                commandHearing.getCourtCentre().getRoomId().orElse(null),
-                commandHearing.getListingDirections().orElse(null),
-                commandToDomainConverter.getJurisdictionType(commandHearing),
-                commandHearing.getProsecutorDatesToAvoid().orElse(null),
-                commandHearing.getReportingRestrictionReason().orElse(null),
-                CommandToDomainConverter.extractStartDate(commandHearing),
-                commandHearing.getEndDate().isPresent() ? LocalDate.parse(commandHearing.getEndDate().get()) : null,
-                commandToDomainConverter.getCourtCentreDefaults(courtCentres, commandHearing),
-                commandToDomainConverter.getCourtApplications(commandHearing),
-                commandToDomainConverter.getCourtApplicationPartyListingNeeds(commandHearing),
-                hearingTypesIdDurationMap.get(commandHearing.getType().getId().toString()),
-                weekCommencingStartDate,
-                weekCommencingEndDate,
-                weekCommencingDurationInWeeks,
-                commandToDomainConverter.convertTypeOfList(commandHearing.getTypeOfList())
-        ));
+        updateHearingEventStream(command, commandHearing.getId(), (Hearing hearing) ->
+                hearing.raiseUpdateHearingInStagingHmi(hearing.listUnscheduled(
+                        commandHearing.getId(),
+                        commandToDomainConverter.buildHearingType(commandHearing.getType()),
+                        commandToDomainConverter.mapToListedCases(commandHearing, commandHearing.getProsecutionCases()),
+                        commandHearing.getCourtCentre().getId(),
+                        commandToDomainConverter.getJudicialRoles(commandHearing),
+                        commandHearing.getCourtCentre().getRoomId(),
+                        commandHearing.getListingDirections(),
+                        commandToDomainConverter.getJurisdictionType(commandHearing),
+                        commandHearing.getProsecutorDatesToAvoid(),
+                        commandHearing.getReportingRestrictionReason(),
+                        CommandToDomainConverter.extractStartDate(commandHearing),
+                        nonNull(commandHearing.getEndDate()) ? LocalDate.parse(commandHearing.getEndDate()) : null,
+                        commandToDomainConverter.getCourtCentreDefaults(courtCentres, commandHearing),
+                        commandToDomainConverter.getCourtApplications(commandHearing),
+                        commandToDomainConverter.getCourtApplicationPartyListingNeeds(commandHearing),
+                        hearingTypesIdDurationMap.get(commandHearing.getType().getId().toString()),
+                        weekCommencingStartDate,
+                        weekCommencingEndDate,
+                        weekCommencingDurationInWeeks,
+                        commandToDomainConverter.convertTypeOfList(commandHearing.getTypeOfList())))
+        );
     }
 
     private void updateHearingEventStream(final JsonEnvelope command, final UUID hearingId,

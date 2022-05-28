@@ -38,7 +38,6 @@ import java.util.UUID;
 import static com.jayway.jsonassert.JsonAssert.with;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
@@ -115,7 +114,7 @@ public class SlotsToJsonStringConverterTest {
         isForAdjournmentHearing = false;
 
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(HearingAllocatedForListing.hearingAllocatedForListing()
-                .withBookingId(Optional.of(UUID.randomUUID()))
+                .withBookingId(UUID.randomUUID())
                 .withHearingDays(Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).withStartTime(DATE_TIME).build()))
                 .build());
     }
@@ -223,9 +222,9 @@ public class SlotsToJsonStringConverterTest {
                         .build()))
                 .withCourtCentre(CourtCentre.courtCentre()
                         .withId(COURT_CENTRE_ID)
-                        .withRoomId(of(COURT_ROOM_ID))
+                        .withRoomId(COURT_ROOM_ID)
                         .build())
-                .withHearingLanguage(of(HearingLanguage.WELSH))
+                .withHearingLanguage(HearingLanguage.WELSH)
                 .withCourtApplicationIds(asList(randomUUID()))
                 .withJurisdictionType(JurisdictionType.CROWN)
                 .withType(HearingType.hearingType().withDescription(TYPE).withId(randomUUID()).build())
@@ -234,7 +233,7 @@ public class SlotsToJsonStringConverterTest {
                         .withJudicialRoleType(
                                 uk.gov.justice.core.courts.JudicialRoleType.judicialRoleType()
                                         .withJudiciaryType(CIRCUIT_JUDGE)
-                                        .withJudicialRoleTypeId(Optional.empty())
+                                        .withJudicialRoleTypeId(null)
                                         .build())
                         .build()))
                 .withProsecutionCases(asList(uk.gov.justice.core.courts.ConfirmedProsecutionCase.confirmedProsecutionCase()
@@ -270,20 +269,20 @@ public class SlotsToJsonStringConverterTest {
 
         final NonDefaultDay nonDefaultDay1 = NonDefaultDay.nonDefaultDay()
                 .withStartTime(START_DATE_TIME)
-                .withDuration(of(1))
-                .withCourtRoomId(of(123))
-                .withCourtScheduleId(of("224686"))
-                .withOucode(of("BA09US"))
-                .withSession(of("AD"))
+                .withDuration(1)
+                .withCourtRoomId(123)
+                .withCourtScheduleId("224686")
+                .withOucode("BA09US")
+                .withSession("AD")
                 .build();
 
         final NonDefaultDay nonDefaultDay2 = NonDefaultDay.nonDefaultDay()
                 .withStartTime(START_DATE_TIME.plusDays(1))
-                .withDuration(of(311))
-                .withCourtRoomId(of(34))
-                .withCourtScheduleId(of("224687"))
-                .withOucode(of("BA09UK"))
-                .withSession(of("AM"))
+                .withDuration(311)
+                .withCourtRoomId(34)
+                .withCourtScheduleId("224687")
+                .withOucode("BA09UK")
+                .withSession("AM")
                 .build();
 
 

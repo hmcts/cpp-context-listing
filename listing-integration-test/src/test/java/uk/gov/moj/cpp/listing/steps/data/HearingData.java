@@ -21,7 +21,7 @@ public class HearingData {
     private final List<JudicialRoleData> judiciary;
     private final String reportingRestrictionReason;
     private final String jurisdictionType;
-    private final List<CourtApplicationData> courtApplications;
+    private  List<CourtApplicationData> courtApplications;
     private final List<CourtApplicationPartyListingNeeds> courtApplicationPartyNeeds;
     private final LocalDate hearingStartDate;
     private final LocalDate hearingEndDate;
@@ -228,6 +228,10 @@ public class HearingData {
 
     public List<CourtApplicationData> getCourtApplications() {
         return courtApplications;
+    }
+
+    public  void setCourtApplications(List<CourtApplicationData> courtApplicationData) {
+         courtApplications = courtApplicationData;
     }
 
     public List<CourtApplicationPartyListingNeeds> getCourtApplicationPartyNeeds() {

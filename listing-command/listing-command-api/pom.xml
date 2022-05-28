@@ -63,7 +63,13 @@
                         <configuration>
                             <skip>false</skip>
                             <sourceDirectory>src/raml/json/schema</sourceDirectory>
-                            <generatorProperties>
+                            <generatorProperties implementation="uk.gov.justice.generation.pojo.core.PojoGeneratorProperties">
+                                <plugins>
+                                    <plugin>uk.gov.justice.generation.pojo.plugin.typemodifying.ReferenceCustomReturnTypePlugin</plugin>
+                                    <plugin>uk.gov.justice.generation.pojo.plugin.typemodifying.FormatCustomReturnTypePlugin</plugin>
+                                    <plugin>uk.gov.justice.generation.pojo.plugin.classmodifying.MakeClassSerializablePlugin</plugin>
+                                    <plugin>uk.gov.justice.generation.pojo.plugin.classmodifying.AddHashcodeAndEqualsPlugin</plugin>
+                                </plugins>
                                 <typeMappings>
                                     <typeMapping>
                                         <name>localTime</name>
@@ -162,6 +168,18 @@
             <groupId>uk.gov.justice.services</groupId>
             <artifactId>test-utils-enveloper-provider</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
+            <artifactId>staginghmi-common</artifactId>
+            <version>${staginghmi.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>uk.gov.moj.cpp.staging.hmi</groupId>
+                    <artifactId>staginghmi-domain-event</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
     </dependencies>

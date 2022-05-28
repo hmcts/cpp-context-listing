@@ -17,10 +17,10 @@ public class ProsecutionCaseDefendantOffenceIdsBuilder {
         return Objects.isNull(prosecutionCases) ? Collections.emptyList() :
                 prosecutionCases.stream()
                         .map(p -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
-                                .withId(p.getCaseId().orElseThrow(IllegalArgumentException::new))
+                                .withId(p.getCaseId())
                                 .withDefendants(p.getDefendants().stream()
                                         .map(d -> DefendantOffenceIds.defendantOffenceIds()
-                                                .withId(d.getDefendantId().orElseThrow(IllegalArgumentException::new))
+                                                .withId(d.getDefendantId())
                                                 .withOffences(d.getOffences().stream()
                                                         .map(o -> OffenceIds.offenceIds()
                                                                 .withId(o.getOffenceId())

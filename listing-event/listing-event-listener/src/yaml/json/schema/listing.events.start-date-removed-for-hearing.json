@@ -5,6 +5,9 @@
   "properties": {
     "hearingId": {
       "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "unscheduled" : {
+      "type": "boolean"
     }
   },
   "required": [

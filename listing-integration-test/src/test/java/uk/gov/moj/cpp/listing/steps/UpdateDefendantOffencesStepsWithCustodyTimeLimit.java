@@ -266,15 +266,15 @@ public class UpdateDefendantOffencesStepsWithCustodyTimeLimit extends AbstractIT
                 .withOffenceCode(updatedOffenceData.getOffenceCode())
                 .withStartDate(updatedOffenceData.getStartDate().toString())
                 .withWording(updatedOffenceData.getOffenceWording())
-                .withEndDate(of(updatedOffenceData.getEndDate().toString()))
+                .withEndDate(updatedOffenceData.getEndDate().toString())
                 .withOffenceTitle(updatedOffenceData.getStatementOfOffenceTitle())
-                .withOffenceTitleWelsh(of(updatedOffenceData.getStatementOfOffenceTitleWelsh()))
+                .withOffenceTitleWelsh(updatedOffenceData.getStatementOfOffenceTitleWelsh())
                 .withWording(updatedOffenceData.getOffenceWording())
-                .withOffenceLegislation(of(updatedOffenceData.getLegislation()))
-                .withOffenceLegislationWelsh(of(updatedOffenceData.getLegislationWelsh()))
-                .withCount(Optional.of(offenceData.getCount()))
+                .withOffenceLegislation(updatedOffenceData.getLegislation())
+                .withOffenceLegislationWelsh(updatedOffenceData.getLegislationWelsh())
+                .withCount(offenceData.getCount())
                 .withOffenceDefinitionId(offenceData.getOffenceDefinitionId())
-                .withCustodyTimeLimit(offenceData.getCustodyTimeLimit())
+                .withCustodyTimeLimit(offenceData.getCustodyTimeLimit().orElse(null))
                 .build();
     }
 

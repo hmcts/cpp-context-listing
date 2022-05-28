@@ -28,6 +28,8 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.jms.JMSException;
@@ -45,6 +47,7 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
     private static final String PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED = "public.progression.hearing-resulted-case-updated";
     private static final String LISTING_EVENTS_CASE_RESULTED_AND_DEFENDANT_PROCEEDINGS_CONCLUDED = "listing.events.case-resulted-defendant-proceedings-updated";
     private static final String LISTING_EVENTS_DEFENDANT_COURT_PROCEEDINGS_UPDATED_V_2 = "listing.events.defendant-court-proceedings-updated-v2";
+    private static final String LISTING_EVENTS_UPDATED_HEARING_IN_STAGING_HMI = "listing.events.updated-hearing-in-staging-hmi";
 
     private static final String MEDIA_TYPE_HEARING_RESULTED_CASE_UPDATED_JSON = "application/vnd" +
             ".public.progression.hearing-resulted-case-updated+json";
@@ -55,6 +58,8 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
     private MessageConsumer publicEventMessageConsumerCaseUpdatedAndHearingResulted;
     private MessageConsumer privateEventMessageConsumerCaseUpdatedAndHearingResulted;
     private MessageConsumer privateEventMessageConsumerDefendantCourtProceedingsUpdatedV2;
+    private MessageConsumer privateEventMessageConsumerUpdatedHearingInStagingHmi;
+
     private final UUID metadataId;
     private final UUID userId;
     private final UUID caseId;
@@ -74,6 +79,7 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         this.publicEventMessageConsumerCaseUpdatedAndHearingResulted = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_HEARING_RESULTED_CASE_UPDATED);
         this.privateEventMessageConsumerCaseUpdatedAndHearingResulted = privateEvents.createConsumer(LISTING_EVENTS_CASE_RESULTED_AND_DEFENDANT_PROCEEDINGS_CONCLUDED);
         this.privateEventMessageConsumerDefendantCourtProceedingsUpdatedV2 = privateEvents.createConsumer(LISTING_EVENTS_DEFENDANT_COURT_PROCEEDINGS_UPDATED_V_2);
+        this.privateEventMessageConsumerUpdatedHearingInStagingHmi = privateEvents.createConsumer(LISTING_EVENTS_UPDATED_HEARING_IN_STAGING_HMI);
     }
 
     public void whenPublicEventCaseUpdatedAndHearingResultedIsPublished() {
@@ -118,6 +124,16 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         LOGGER.debug("jsonResponse from privateEventMessageConsumerDefendantCourtProceedingsUpdatedV2: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("prosecutionCase"), notNullValue());
+    }
+
+    public void verifyPrivateEventUpdatedHearingInStagingHmiInActiveMQ() {
+        JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerUpdatedHearingInStagingHmi);
+        LOGGER.debug("jsonResponse from privateEventMessageConsumerUpdatedHearingInStagingHmi: {}", jsonResponse.prettify());
+
+        assertThat(((ArrayList)((Map)jsonResponse.get("hearing")).get("listedCases")).size(), is(3));
     }
 
     public void verifyPrivateEventDefendantCourtProceedingsUpdatedIsNotInActiveMQ() {

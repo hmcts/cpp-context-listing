@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import static java.util.Optional.of;
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.ApplicationEjected;
@@ -90,7 +90,7 @@ public class EjectEventListener {
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
                 .withDefendants(listedCase.getDefendants())
                 .withId(listedCase.getId())
-                .withIsEjected(of(Boolean.TRUE))
+                .withIsEjected(true)
                 .withShadowListed(listedCase.getShadowListed()).build();
         cases.replaceAll(lc -> lc.getId().equals(caseId) ? newListedCase : lc);
         return cases;
@@ -105,13 +105,13 @@ public class EjectEventListener {
     }
 
     private List<CourtApplication> getAndUpdateCourtApplicationToEject(UUID courtApplicationId, List<CourtApplication> courtApplications) {
-        courtApplications.replaceAll(ca -> ca.getId().equals(courtApplicationId) ||  Optional.of(courtApplicationId).equals(ca.getParentApplicationId())? buildCourtApplication(ca) : ca);
+        courtApplications.replaceAll(ca -> ca.getId().equals(courtApplicationId) ||  (nonNull(courtApplicationId) && courtApplicationId.equals(ca.getParentApplicationId())) ? buildCourtApplication(ca) : ca);
         return courtApplications;
     }
 
     private List<CourtApplication> getAndUpdateCourtApplicationWithLinkedCaseIdToEject(UUID linkedCaseId, List<CourtApplication> courtApplications) {
         final List<CourtApplication> courtApplicationEntities = courtApplications.stream()
-                .filter(ca -> Objects.nonNull(ca.getLinkedCaseIds()))
+                .filter(ca -> nonNull(ca.getLinkedCaseIds()))
                 .filter(ca -> ca.getLinkedCaseIds().contains(linkedCaseId))
                 .collect(Collectors.toList());
         courtApplicationEntities.forEach(
@@ -138,7 +138,7 @@ public class EjectEventListener {
                 .withApplicationReference(courtApplication.getApplicationReference())
                 .withApplicationParticulars(courtApplication.getApplicationParticulars())
                 .withApplicationType(courtApplication.getApplicationType())
-                .withIsEjected(of(Boolean.TRUE))
+                .withIsEjected(true)
                 .build();
     }
 

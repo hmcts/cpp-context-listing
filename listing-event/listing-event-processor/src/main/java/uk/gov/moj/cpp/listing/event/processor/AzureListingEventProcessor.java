@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 
@@ -75,11 +76,11 @@ public class AzureListingEventProcessor {
 
     private List<NonDefaultDay> getMagistratesNonDefaultDays(final List<NonDefaultDay> nonDefaultDays) {
         return nonDefaultDays.stream()
-                .filter(ndd -> ndd.getCourtScheduleId().isPresent() || isSlotDetailPresent(ndd))
+                .filter(ndd -> nonNull(ndd.getCourtScheduleId())|| isSlotDetailPresent(ndd))
                 .collect(toList());
     }
 
     private boolean isSlotDetailPresent(final NonDefaultDay ndd) {
-        return ndd.getOucode().isPresent() && ndd.getCourtRoomId().isPresent() && ndd.getSession().isPresent();
+        return nonNull(ndd.getOucode()) && nonNull(ndd.getCourtRoomId()) && nonNull(ndd.getSession());
     }
 }

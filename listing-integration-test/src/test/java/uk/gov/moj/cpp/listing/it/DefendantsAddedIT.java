@@ -53,6 +53,29 @@ public class DefendantsAddedIT extends AbstractIT {
     }
 
     @Test
+    public void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsUnallocatedHmiEnabled() {
+        HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+
+        UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
+        HearingData hearingData = hearingsData.getHearingData().get(0);
+        try (final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData)) {
+            addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
+            addDefendantSteps.verifyEventDefendantAddedInActiveMQ();
+            addDefendantSteps.verifyEventDefendantsToBeAddedInActiveMQ();
+            addDefendantSteps.verifyEventDefendantDetailsAddedInActiveMQ();
+            addDefendantSteps.verifyHearingListedFromAPI(true);
+            addDefendantSteps.verifyHmiPublicEventForUpdateHearing();
+        }
+    }
+
+
+    @Test
     public void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsAllocated() {
         HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
@@ -72,4 +95,25 @@ public class DefendantsAddedIT extends AbstractIT {
         }
     }
 
+    @Test
+    public void shouldAddDefendantsFollowingPublicDefendantsAddedEventFromProgressionAndHearingIsAllocatedHmiEnabled() {
+        HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+
+        UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
+        HearingData hearingData = hearingsData.getHearingData().get(0);
+        try (final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData)) {
+            addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
+            addDefendantSteps.verifyEventDefendantAddedInActiveMQ();
+            addDefendantSteps.verifyEventDefendantsToBeAddedInActiveMQ();
+            addDefendantSteps.verifyEventDefendantDetailsAddedInActiveMQ();
+            addDefendantSteps.verifyPublicEventDefendantAddedInActiveMQ();
+            addDefendantSteps.verifyHmiPublicEventForUpdateHearing();
+        }
+    }
 }

@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -63,20 +62,20 @@ public class CourtApplicationEventListenerTest {
     private static final Address APPLICANT_ADDRESS = Address
             .address()
             .withAddress1(STRING.next())
-            .withAddress2(of(STRING.next()))
-            .withAddress3(of(STRING.next()))
-            .withAddress4(of(STRING.next()))
-            .withAddress5(of(STRING.next()))
-            .withPostcode(of(STRING.next()))
+            .withAddress2(STRING.next())
+            .withAddress3(STRING.next())
+            .withAddress4(STRING.next())
+            .withAddress5(STRING.next())
+            .withPostcode(STRING.next())
             .build();
     private static final Address RESPONDENT_ADDRESS = Address
             .address()
             .withAddress1(STRING.next())
-            .withAddress2(of(STRING.next()))
-            .withAddress3(of(STRING.next()))
-            .withAddress4(of(STRING.next()))
-            .withAddress5(of(STRING.next()))
-            .withPostcode(of(STRING.next()))
+            .withAddress2(STRING.next())
+            .withAddress3(STRING.next())
+            .withAddress4(STRING.next())
+            .withAddress5(STRING.next())
+            .withPostcode(STRING.next())
             .build();
 
     @Spy
@@ -91,6 +90,9 @@ public class CourtApplicationEventListenerTest {
     private HearingRepository hearingRepository;
 
     @Mock
+    private HearingSearchSyncService hearingSearchSyncService;
+
+    @Mock
     Hearing hearing;
 
     @Captor
@@ -99,9 +101,6 @@ public class CourtApplicationEventListenerTest {
 
     @Mock
     ObjectNode properties;
-
-    @Mock
-    private HearingSearchSyncService hearingSearchSyncService;
 
     @InjectMocks
     private CourtApplicationEventListener courtApplicationEventListener;
@@ -118,21 +117,21 @@ public class CourtApplicationEventListenerTest {
                 .withHearingId(HEARING_ID)
                 .withCourtApplication(CourtApplication.courtApplication()
                         .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
-                        .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                        .withParentApplicationId(LINKED_APPLICATION_ID)
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
-                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                        .withApplicationParticulars(APPLICATION_PARTICULARS)
                         .withApplicant(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(UPDATED_FIRST_NAME))
+                                .withFirstName(UPDATED_FIRST_NAME)
                                 .withLastName(UPDATED_LAST_NAME)
                                 .withIsRespondent(false)
-                                .withAddress(of(APPLICANT_ADDRESS))
+                                .withAddress(APPLICANT_ADDRESS)
                                 .build())
                         .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(FIRST_NAME))
+                                .withFirstName(FIRST_NAME)
                                 .withLastName(LAST_NAME)
                                 .withIsRespondent(true)
-                                .withAddress(of(RESPONDENT_ADDRESS))
+                                .withAddress(RESPONDENT_ADDRESS)
                                 .build()))
                         .withOffences(Arrays.asList(Offence.offence().withId(OFFENCE_ID).build()))
                         .build())
@@ -163,21 +162,21 @@ public class CourtApplicationEventListenerTest {
                 .withHearingId(HEARING_ID)
                 .withCourtApplication(CourtApplication.courtApplication()
                         .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
-                        .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                        .withParentApplicationId(LINKED_APPLICATION_ID)
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
-                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                        .withApplicationParticulars(APPLICATION_PARTICULARS)
                         .withApplicant(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(FIRST_NAME))
+                                .withFirstName(FIRST_NAME)
                                 .withLastName(LAST_NAME)
                                 .withIsRespondent(false)
-                                .withAddress(of(APPLICANT_ADDRESS))
+                                .withAddress(APPLICANT_ADDRESS)
                                 .build())
                         .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(FIRST_NAME))
+                                .withFirstName(FIRST_NAME)
                                 .withLastName(LAST_NAME)
                                 .withIsRespondent(true)
-                                .withAddress(of(RESPONDENT_ADDRESS))
+                                .withAddress(RESPONDENT_ADDRESS)
                                 .build()))
                         .build())
                 .build();
@@ -210,21 +209,21 @@ public class CourtApplicationEventListenerTest {
                 .withHearingId(HEARING_ID)
                 .withCourtApplication(CourtApplication.courtApplication()
                         .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
-                        .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                        .withParentApplicationId(LINKED_APPLICATION_ID)
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
-                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                        .withApplicationParticulars(APPLICATION_PARTICULARS)
                         .withApplicant(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(UPDATED_FIRST_NAME))
+                                .withFirstName(UPDATED_FIRST_NAME)
                                 .withLastName(UPDATED_LAST_NAME)
                                 .withIsRespondent(false)
-                                .withAddress(of(APPLICANT_ADDRESS))
+                                .withAddress(APPLICANT_ADDRESS)
                                 .build())
                         .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(FIRST_NAME))
+                                .withFirstName(FIRST_NAME)
                                 .withLastName(LAST_NAME)
                                 .withIsRespondent(true)
-                                .withAddress(of(RESPONDENT_ADDRESS))
+                                .withAddress(RESPONDENT_ADDRESS)
                                 .build()))
                         .build())
                 .build();
@@ -257,21 +256,21 @@ public class CourtApplicationEventListenerTest {
                 .withHearingId(HEARING_ID)
                 .withCourtApplication(CourtApplication.courtApplication()
                         .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
-                        .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                        .withParentApplicationId(LINKED_APPLICATION_ID)
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
-                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                        .withApplicationParticulars(APPLICATION_PARTICULARS)
                         .withApplicant(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(UPDATED_FIRST_NAME))
+                                .withFirstName(UPDATED_FIRST_NAME)
                                 .withLastName(UPDATED_LAST_NAME)
                                 .withIsRespondent(false)
-                                .withAddress(of(APPLICANT_ADDRESS))
+                                .withAddress(APPLICANT_ADDRESS)
                                 .build())
                         .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(FIRST_NAME))
+                                .withFirstName(FIRST_NAME)
                                 .withLastName(LAST_NAME)
                                 .withIsRespondent(true)
-                                .withAddress(of(RESPONDENT_ADDRESS))
+                                .withAddress(RESPONDENT_ADDRESS)
                                 .build()))
                         .build())
                 .build();
@@ -290,26 +289,27 @@ public class CourtApplicationEventListenerTest {
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
+        verify(hearingSearchSyncService).sync(HEARING_ID);
 
         CourtApplicationAddedForHearing newHearingData = CourtApplicationAddedForHearing.courtApplicationAddedForHearing()
                 .withHearingId(HEARING_ID)
                 .withCourtApplication(CourtApplication.courtApplication()
                         .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
-                        .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                        .withParentApplicationId(LINKED_APPLICATION_ID)
                         .withId(randomUUID())
                         .withApplicationType(APPLICATION_TYPE)
-                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                        .withApplicationParticulars(APPLICATION_PARTICULARS)
                         .withApplicant(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(UPDATED_FIRST_NAME))
+                                .withFirstName(UPDATED_FIRST_NAME)
                                 .withLastName(UPDATED_LAST_NAME)
                                 .withIsRespondent(false)
-                                .withAddress(of(APPLICANT_ADDRESS))
+                                .withAddress(APPLICANT_ADDRESS)
                                 .build())
                         .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(FIRST_NAME))
+                                .withFirstName(FIRST_NAME)
                                 .withLastName(LAST_NAME)
                                 .withIsRespondent(true)
-                                .withAddress(of(RESPONDENT_ADDRESS))
+                                .withAddress(RESPONDENT_ADDRESS)
                                 .build()))
                         .build())
                 .build();
@@ -332,21 +332,21 @@ public class CourtApplicationEventListenerTest {
                 .withHearingId(HEARING_ID)
                 .withCourtApplication(CourtApplication.courtApplication()
                         .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
-                        .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                        .withParentApplicationId(LINKED_APPLICATION_ID)
                         .withId(ID)
                         .withApplicationType(APPLICATION_TYPE)
-                        .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                        .withApplicationParticulars(APPLICATION_PARTICULARS)
                         .withApplicant(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(UPDATED_FIRST_NAME))
+                                .withFirstName(UPDATED_FIRST_NAME)
                                 .withLastName(UPDATED_LAST_NAME)
                                 .withIsRespondent(false)
-                                .withAddress(of(APPLICANT_ADDRESS))
+                                .withAddress(APPLICANT_ADDRESS)
                                 .build())
                         .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
-                                .withFirstName(of(FIRST_NAME))
+                                .withFirstName(FIRST_NAME)
                                 .withLastName(LAST_NAME)
                                 .withIsRespondent(true)
-                                .withAddress(of(RESPONDENT_ADDRESS))
+                                .withAddress(RESPONDENT_ADDRESS)
                                 .build()))
                         .build())
                 .build();
@@ -372,21 +372,21 @@ public class CourtApplicationEventListenerTest {
     private List<CourtApplication> createCourtApplications() {
         return singletonList(CourtApplication.courtApplication()
                 .withLinkedCaseIds(singletonList(LINKED_CASE_ID))
-                .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                .withParentApplicationId(LINKED_APPLICATION_ID)
                 .withId(ID)
                 .withApplicationType(APPLICATION_TYPE)
-                .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
                 .withApplicant(ApplicantRespondent.applicantRespondent()
-                        .withFirstName(of(FIRST_NAME))
+                        .withFirstName(FIRST_NAME)
                         .withLastName(LAST_NAME)
                         .withIsRespondent(false)
-                        .withAddress(of(APPLICANT_ADDRESS))
+                        .withAddress(APPLICANT_ADDRESS)
                         .build())
                 .withRespondents(Arrays.asList(ApplicantRespondent.applicantRespondent()
-                        .withFirstName(of(FIRST_NAME))
+                        .withFirstName(FIRST_NAME)
                         .withLastName(LAST_NAME)
                         .withIsRespondent(true)
-                        .withAddress(of(RESPONDENT_ADDRESS))
+                        .withAddress(RESPONDENT_ADDRESS)
                         .build()))
                 .build());
     }
@@ -404,10 +404,10 @@ public class CourtApplicationEventListenerTest {
 
     private void validateAddress(final JsonNode actualAddress, final Address expectedAddress) {
         assertThat(actualAddress.get("address1").asText(), equalTo(expectedAddress.getAddress1()));
-        assertThat(actualAddress.get("address2").asText(), equalTo(expectedAddress.getAddress2().get()));
-        assertThat(actualAddress.get("address3").asText(), equalTo(expectedAddress.getAddress3().get()));
-        assertThat(actualAddress.get("address4").asText(), equalTo(expectedAddress.getAddress4().get()));
-        assertThat(actualAddress.get("address5").asText(), equalTo(expectedAddress.getAddress5().get()));
-        assertThat(actualAddress.get("postcode").asText(), equalTo(expectedAddress.getPostcode().get()));
+        assertThat(actualAddress.get("address2").asText(), equalTo(expectedAddress.getAddress2()));
+        assertThat(actualAddress.get("address3").asText(), equalTo(expectedAddress.getAddress3()));
+        assertThat(actualAddress.get("address4").asText(), equalTo(expectedAddress.getAddress4()));
+        assertThat(actualAddress.get("address5").asText(), equalTo(expectedAddress.getAddress5()));
+        assertThat(actualAddress.get("postcode").asText(), equalTo(expectedAddress.getPostcode()));
     }
 }

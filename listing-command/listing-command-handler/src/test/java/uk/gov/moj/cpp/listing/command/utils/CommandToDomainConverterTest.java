@@ -30,7 +30,6 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -73,19 +72,19 @@ public class CommandToDomainConverterTest {
         assertListedCases(commandHearing, actual);
         assertCourtApplications(commandHearing, actual);
 
-        assertThat(actual.getProsecutorDatesToAvoid(), is(commandHearing.getProsecutorDatesToAvoid()));
+        assertThat(actual.getProsecutorDatesToAvoid().get(), is(commandHearing.getProsecutorDatesToAvoid()));
         assertThat(actual.getNonDefaultDays(), is(Collections.emptyList()));
-        assertThat(actual.getListingDirections(), is(commandHearing.getListingDirections()));
+        assertThat(actual.getListingDirections().get(), is(commandHearing.getListingDirections()));
         assertThat(actual.getType().getId(), is(commandHearing.getType().getId()));
         assertThat(actual.getType().getDescription(), is(commandHearing.getType().getDescription()));
-        assertThat(actual.getCourtRoomId(), is(commandHearing.getCourtCentre().getRoomId()));
+        assertThat(actual.getCourtRoomId().get(), is(commandHearing.getCourtCentre().getRoomId()));
         assertThat(actual.getCourtCentreId(), is(commandHearing.getCourtCentre().getId()));
         assertThat(actual.getEstimatedMinutes(), is(commandHearing.getEstimatedMinutes()));
-        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().get().toString())));
-        assertThat(actual.getEndDate(), is(commandHearing.getEndDate()));
-        assertThat(actual.getReportingRestrictionReason(), is(commandHearing.getReportingRestrictionReason()));
-        assertThat(actual.getWeekCommencingStartDate(), is(of(LocalDate.parse(commandHearing.getWeekCommencingDate().get().getStartDate()))));
-        assertThat(actual.getWeekCommencingDurationInWeeks(), is(commandHearing.getWeekCommencingDate().get().getDuration()));
+        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().toString())));
+        assertThat(actual.getEndDate().orElse(null), is(commandHearing.getEndDate()));
+        assertThat(actual.getReportingRestrictionReason().get(), is(commandHearing.getReportingRestrictionReason()));
+        assertThat(actual.getWeekCommencingStartDate(), is(of(LocalDate.parse(commandHearing.getWeekCommencingDate().getStartDate()))));
+        assertThat(actual.getWeekCommencingDurationInWeeks().get(), is(commandHearing.getWeekCommencingDate().getDuration()));
 
     }
 
@@ -118,25 +117,25 @@ public class CommandToDomainConverterTest {
         assertJudicialRole(commandHearing, actual);
         assertCourtApplications(commandHearing, actual);
 
-        assertThat(actual.getProsecutorDatesToAvoid(), is(commandHearing.getProsecutorDatesToAvoid()));
+        assertThat(actual.getProsecutorDatesToAvoid().get(), is(commandHearing.getProsecutorDatesToAvoid()));
         final RotaSlot rotaSlot = commandHearing.getBookedSlots().get(0);
         final NonDefaultDay nonDefaultDay = actual.getNonDefaultDays().get(0);
-        assertThat(nonDefaultDay.getCourtRoomId(), is(rotaSlot.getCourtRoomId()));
-        assertThat(nonDefaultDay.getCourtScheduleId(), is(rotaSlot.getCourtScheduleId()));
-        assertThat(nonDefaultDay.getDuration(), is(rotaSlot.getDuration()));
-        assertThat(nonDefaultDay.getOucode(), is(rotaSlot.getOucode()));
-        assertThat(nonDefaultDay.getSession(), is(rotaSlot.getSession()));
+        assertThat(nonDefaultDay.getCourtRoomId().get(), is(rotaSlot.getCourtRoomId()));
+        assertThat(nonDefaultDay.getCourtScheduleId().get(), is(rotaSlot.getCourtScheduleId()));
+        assertThat(nonDefaultDay.getDuration().get(), is(rotaSlot.getDuration()));
+        assertThat(nonDefaultDay.getOucode().get(), is(rotaSlot.getOucode()));
+        assertThat(nonDefaultDay.getSession().get(), is(rotaSlot.getSession()));
         assertThat(nonDefaultDay.getStartTime(), is(rotaSlot.getStartTime()));
 
-        assertThat(actual.getListingDirections(), is(commandHearing.getListingDirections()));
+        assertThat(actual.getListingDirections().get(), is(commandHearing.getListingDirections()));
         assertThat(actual.getType().getId(), is(commandHearing.getType().getId()));
         assertThat(actual.getType().getDescription(), is(commandHearing.getType().getDescription()));
-        assertThat(actual.getCourtRoomId(), is(commandHearing.getCourtCentre().getRoomId()));
+        assertThat(actual.getCourtRoomId().get(), is(commandHearing.getCourtCentre().getRoomId()));
         assertThat(actual.getCourtCentreId(), is(commandHearing.getCourtCentre().getId()));
         assertThat(actual.getEstimatedMinutes(), is(commandHearing.getEstimatedMinutes()));
-        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().get().toString())));
-        assertThat(actual.getEndDate(), is(commandHearing.getEndDate()));
-        assertThat(actual.getReportingRestrictionReason(), is(commandHearing.getReportingRestrictionReason()));
+        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().toString())));
+        assertThat(actual.getEndDate().orElse(null), is(commandHearing.getEndDate()));
+        assertThat(actual.getReportingRestrictionReason().get(), is(commandHearing.getReportingRestrictionReason()));
     }
 
 
@@ -154,17 +153,17 @@ public class CommandToDomainConverterTest {
         assertThat(actual.getJurisdictionType().name(), is(commandHearing.getJurisdictionType().name()));
         assertCourtApplications(commandHearing, actual);
 
-        assertThat(actual.getProsecutorDatesToAvoid(), is(commandHearing.getProsecutorDatesToAvoid()));
+        assertThat(actual.getProsecutorDatesToAvoid().get(), is(commandHearing.getProsecutorDatesToAvoid()));
         assertThat(actual.getNonDefaultDays(), is(Collections.emptyList()));
-        assertThat(actual.getListingDirections(), is(commandHearing.getListingDirections()));
+        assertThat(actual.getListingDirections().get(), is(commandHearing.getListingDirections()));
         assertThat(actual.getType().getId(), is(commandHearing.getType().getId()));
         assertThat(actual.getType().getDescription(), is(commandHearing.getType().getDescription()));
-        assertThat(actual.getCourtRoomId(), is(commandHearing.getCourtCentre().getRoomId()));
+        assertThat(actual.getCourtRoomId().get(), is(commandHearing.getCourtCentre().getRoomId()));
         assertThat(actual.getCourtCentreId(), is(commandHearing.getCourtCentre().getId()));
         assertThat(actual.getEstimatedMinutes(), is(commandHearing.getEstimatedMinutes()));
-        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().get().toString())));
-        assertThat(actual.getEndDate(), is(commandHearing.getEndDate()));
-        assertThat(actual.getReportingRestrictionReason(), is(commandHearing.getReportingRestrictionReason()));
+        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getEarliestStartDateTime().toString())));
+        assertThat(actual.getEndDate().orElse(null), is(commandHearing.getEndDate()));
+        assertThat(actual.getReportingRestrictionReason().get(), is(commandHearing.getReportingRestrictionReason()));
 
     }
 
@@ -177,8 +176,8 @@ public class CommandToDomainConverterTest {
         uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing);
 
         //then
-        assertThat(actual.getStartDateTime(), not(commandHearing.getEarliestStartDateTime().get().toLocalDate()));
-        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getListedStartDateTime().get().toString())));
+        assertThat(actual.getStartDateTime(), not(commandHearing.getEarliestStartDateTime().toLocalDate()));
+        assertThat(actual.getStartDateTime(), is(ZonedDateTimes.fromString(commandHearing.getListedStartDateTime().toString())));
     }
 
     @Test
@@ -312,20 +311,20 @@ public class CommandToDomainConverterTest {
         uk.gov.justice.core.courts.Defendant commandDefendant2 = commandProsecutionCase.getDefendants().get(1);
 
         assertThat(actualDefendant.getId(), is(commandDefendant.getId()));
-        assertThat(actualDefendant.getBailStatus().get().getCode(), is(commandDefendant.getPersonDefendant().get().getBailStatus().get().getCode()));
-        assertThat(actualDefendant.getBailStatus().get().getId(), is(commandDefendant.getPersonDefendant().get().getBailStatus().get().getId()));
-        assertThat(actualDefendant.getBailStatus().get().getDescription(), is(commandDefendant.getPersonDefendant().get().getBailStatus().get().getDescription()));
-        assertThat(actualDefendant.getFirstName(), is(commandDefendant.getPersonDefendant().get().getPersonDetails().getFirstName()));
-        assertThat(actualDefendant.getLastName().get(), is(commandDefendant.getPersonDefendant().get().getPersonDetails().getLastName()));
-        assertThat(actualDefendant.getDefenceOrganisation().get(), is(commandDefendant.getDefenceOrganisation().get().getName()));
-        assertThat(actualDefendant.getSpecificRequirements(), is(commandDefendant.getPersonDefendant().get().getPersonDetails().getSpecificRequirements()));
-        assertThat(actualDefendant.getDateOfBirth(), is(commandDefendant.getPersonDefendant().get().getPersonDetails().getDateOfBirth()));
-        assertThat(actualDefendant.getCustodyTimeLimit(), is(commandDefendant.getPersonDefendant().get().getCustodyTimeLimit()));
-        assertThat(actualDefendant.getHearingLanguageNeeds().get().toString(), is(commandListDefendantRequests.getHearingLanguageNeeds().get().toString()));
-        assertThat(actualDefendant.getDatesToAvoid(), is(commandListDefendantRequests.getDatesToAvoid()));
+        assertThat(actualDefendant.getBailStatus().get().getCode(), is(commandDefendant.getPersonDefendant().getBailStatus().getCode()));
+        assertThat(actualDefendant.getBailStatus().get().getId(), is(commandDefendant.getPersonDefendant().getBailStatus().getId()));
+        assertThat(actualDefendant.getBailStatus().get().getDescription(), is(commandDefendant.getPersonDefendant().getBailStatus().getDescription()));
+        assertThat(actualDefendant.getFirstName().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getFirstName()));
+        assertThat(actualDefendant.getLastName().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getLastName()));
+        assertThat(actualDefendant.getDefenceOrganisation().get(), is(commandDefendant.getDefenceOrganisation().getName()));
+        assertThat(actualDefendant.getSpecificRequirements().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getSpecificRequirements()));
+        assertThat(actualDefendant.getDateOfBirth().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getDateOfBirth().toString()));
+        assertThat(actualDefendant.getCustodyTimeLimit().get(), is(commandDefendant.getPersonDefendant().getCustodyTimeLimit().toString()));
+        assertThat(actualDefendant.getHearingLanguageNeeds().get().toString(), is(commandListDefendantRequests.getHearingLanguageNeeds().toString()));
+        assertThat(actualDefendant.getDatesToAvoid().get(), is(commandListDefendantRequests.getDatesToAvoid()));
 
 
-        assertThat(actualDefendant2.getOrganisationName().get(), is(commandDefendant2.getLegalEntityDefendant().get().getOrganisation().getName()));
+        assertThat(actualDefendant2.getOrganisationName().get(), is(commandDefendant2.getLegalEntityDefendant().getOrganisation().getName()));
 
 
         assertOffence(actualDefendant, commandDefendant);
@@ -336,8 +335,8 @@ public class CommandToDomainConverterTest {
         uk.gov.justice.core.courts.Offence commandOffence = commandDefendant.getOffences().get(0);
 
         assertThat(actualOffence.getId(), is(commandOffence.getId()));
-        assertThat(actualOffence.getStartDate(), is(commandOffence.getStartDate()));
-        assertThat(actualOffence.getEndDate(), is(commandOffence.getEndDate()));
+        assertThat(actualOffence.getStartDate(), is(commandOffence.getStartDate().toString()));
+        assertThat(actualOffence.getEndDate().get(), is(commandOffence.getEndDate().toString()));
         assertThat(actualOffence.getOffenceCode(), is(commandOffence.getOffenceCode()));
 
         assertStatementOfOffence(actualOffence, commandOffence);
@@ -347,14 +346,14 @@ public class CommandToDomainConverterTest {
     private void assertStatementOfOffence(final Offence actualOffence, final uk.gov.justice.core.courts.Offence commandOffence) {
         StatementOfOffence actualStatementOfOffence = actualOffence.getStatementOfOffence();
         assertThat(actualStatementOfOffence.getTitle(), is(commandOffence.getOffenceTitle()));
-        assertThat(actualStatementOfOffence.getWelshTitle(), is(commandOffence.getOffenceTitleWelsh().get()));
-        assertThat(actualStatementOfOffence.getLegislation().get(), is(commandOffence.getOffenceLegislation().get()));
-        assertThat(actualStatementOfOffence.getWelshLegislation().get(), is(commandOffence.getOffenceLegislationWelsh().get()));
+        assertThat(actualStatementOfOffence.getWelshTitle(), is(commandOffence.getOffenceTitleWelsh()));
+        assertThat(actualStatementOfOffence.getLegislation().get(), is(commandOffence.getOffenceLegislation()));
+        assertThat(actualStatementOfOffence.getWelshLegislation().get(), is(commandOffence.getOffenceLegislationWelsh()));
     }
 
     private void assertSeedingHearing(final Offence actualOffence, final uk.gov.justice.core.courts.Offence commandOffence) {
         final SeedingHearing actualSeedingHearing = actualOffence.getSeedingHearing().get();
-        final uk.gov.justice.core.courts.SeedingHearing seedingHearing = commandOffence.getSeedingHearing().get();
+        final uk.gov.justice.core.courts.SeedingHearing seedingHearing = commandOffence.getSeedingHearing();
         assertThat(actualSeedingHearing.getSeedingHearingId(), is(seedingHearing.getSeedingHearingId()));
         assertThat(actualSeedingHearing.getJurisdictionType().name(), is(seedingHearing.getJurisdictionType().name()));
         if(nonNull(seedingHearing.getSittingDay())) {
@@ -376,12 +375,12 @@ public class CommandToDomainConverterTest {
         JudicialRole actualJudicialRole = actual.getJudiciary().get(0);
         uk.gov.justice.core.courts.JudicialRole commandJudicialRole = commandHearing.getJudiciary().get(0);
 
-        assertThat(actualJudicialRole.getIsBenchChairman(), is(commandJudicialRole.getIsBenchChairman()));
-        assertThat(actualJudicialRole.getIsDeputy(), is(commandJudicialRole.getIsDeputy()));
+        assertThat(actualJudicialRole.getIsBenchChairman().get(), is(commandJudicialRole.getIsBenchChairman()));
+        assertThat(actualJudicialRole.getIsDeputy().get(), is(commandJudicialRole.getIsDeputy()));
         assertThat(actualJudicialRole.getJudicialId(), is(commandJudicialRole.getJudicialId()));
-        assertThat(Optional.of(actualJudicialRole.getUserId()),is(commandJudicialRole.getUserId()));
+        assertThat(actualJudicialRole.getUserId(), is(commandJudicialRole.getUserId()));
         assertThat(actualJudicialRole.getJudicialRoleType().getJudiciaryType(), is(commandJudicialRole.getJudicialRoleType().getJudiciaryType()));
-        assertThat(actualJudicialRole.getJudicialRoleType().getJudicialRoleTypeId(), is(commandJudicialRole.getJudicialRoleType().getJudicialRoleTypeId()));
+        assertThat(actualJudicialRole.getJudicialRoleType().getJudicialRoleTypeId().orElse(null), is(commandJudicialRole.getJudicialRoleType().getJudicialRoleTypeId()));
     }
 
     @Test
@@ -402,7 +401,7 @@ public class CommandToDomainConverterTest {
         assertThat(actual.getCourtApplications().get(0).getApplicant().getId(),
                 is(commandHearing.getCourtApplications().get(0).getApplicant().getId()));
         assertThat(actual.getListedCases().get(0).getDefendants().get(0).getOrganisationName().get(),
-                is(commandHearing.getProsecutionCases().get(0).getDefendants().get(0).getLegalEntityDefendant().get().getOrganisation().getName()));
+                is(commandHearing.getProsecutionCases().get(0).getDefendants().get(0).getLegalEntityDefendant().getOrganisation().getName()));
 
 
     }

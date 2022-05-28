@@ -45,7 +45,7 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
                 .withHearingDays(hearingExtendedForListingV2.getHearingDays().stream()
                         .map(this::buildHearingDay)
                         .collect(toList()))
-                .withHearingLanguage(HearingLanguage.valueFor(hearingExtendedForListingV2.getHearingLanguage().toString()))
+                .withHearingLanguage(HearingLanguage.valueFor(hearingExtendedForListingV2.getHearingLanguage().toString()).orElse(null))
                 .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingExtendedForListingV2.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withCourtApplicationIds(hearingExtendedForListingV2.getCourtApplicationIds())
                 .withReportingRestrictionReason(hearingExtendedForListingV2.getReportingRestrictionReason())
@@ -72,7 +72,7 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
                     .collect(toList()));
         }
         if(Objects.nonNull(hearingExtendedForListingV2.getExistingHearingId())){
-            builder.withExistingHearingId(Optional.of(hearingExtendedForListingV2.getHearingId()));
+            builder.withExistingHearingId(hearingExtendedForListingV2.getHearingId());
         }
         builder.withFullExtension(hearingExtendedForListingV2.getFullExtension());
         return builder.build();
@@ -85,7 +85,7 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
                 .withHearingDays(hearingExtendedForListing.getHearingDays().stream()
                         .map(this::buildHearingDay)
                         .collect(toList()))
-                .withHearingLanguage(HearingLanguage.valueFor(hearingExtendedForListing.getHearingLanguage().toString()))
+                .withHearingLanguage(HearingLanguage.valueFor(hearingExtendedForListing.getHearingLanguage().toString()).orElse(null))
                 .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingExtendedForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withCourtApplicationIds(hearingExtendedForListing.getCourtApplicationIds())
                 .withReportingRestrictionReason(hearingExtendedForListing.getReportingRestrictionReason())
@@ -112,7 +112,7 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
                     .collect(toList()));
         }
         if(Objects.nonNull(hearingExtendedForListing.getExistingHearingId())){
-            builder.withExistingHearingId(Optional.of(hearingExtendedForListing.getHearingId()));
+            builder.withExistingHearingId(hearingExtendedForListing.getHearingId());
         }
         return builder.build();
     }

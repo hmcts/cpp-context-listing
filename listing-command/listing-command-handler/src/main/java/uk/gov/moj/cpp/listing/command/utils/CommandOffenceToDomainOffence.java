@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
@@ -27,7 +28,7 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
 
     private uk.gov.moj.cpp.listing.domain.Offence convertToDomainOffence(final Offence commandOffence) {
 
-        final Optional<uk.gov.justice.listing.commands.LaaReference> laaReference =
+        final uk.gov.justice.listing.commands.LaaReference laaReference =
                 commandOffence.getLaaApplnReference();
         StatementOfOffence statementOfOffence = null;
         if (commandOffence.getStatementOfOffence() != null) {
@@ -36,18 +37,18 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
             statementOfOffence = StatementOfOffence.statementOfOffence()
                     .withTitle(commandSoo.getTitle())
                     .withWelshTitle(commandSoo.getWelshTitle())
-                    .withLegislation(commandSoo.getLegislation())
-                    .withWelshLegislation(commandSoo.getWelshLegislation())
+                    .withLegislation(ofNullable(commandSoo.getLegislation()))
+                    .withWelshLegislation(ofNullable(commandSoo.getWelshLegislation()))
                     .build();
         }
 
         Optional<CustodyTimeLimit> custodyTimeLimit = Optional.empty();
-        final Optional<uk.gov.justice.listing.commands.CustodyTimeLimit> commandSoo = commandOffence.getCustodyTimeLimit();
+        final uk.gov.justice.listing.commands.CustodyTimeLimit commandSoo = commandOffence.getCustodyTimeLimit();
 
-        if (commandSoo.isPresent()){
+        if (null != commandSoo){
              custodyTimeLimit = Optional.ofNullable(CustodyTimeLimit.custodyTimeLimit()
-                    .withTimeLimit(commandSoo.get().getTimeLimit())
-                    .withDaysSpent(commandSoo.get().getDaysSpent())
+                    .withTimeLimit(commandSoo.getTimeLimit())
+                    .withDaysSpent(commandSoo.getDaysSpent())
                     .build());
         }
 
@@ -55,11 +56,13 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
                 .withId(commandOffence.getId())
                 .withOffenceCode(commandOffence.getOffenceCode())
                 .withStartDate(commandOffence.getStartDate())
-                .withEndDate(commandOffence.getEndDate())
+                .withEndDate(ofNullable(commandOffence.getEndDate()))
+                .withOrderIndex(commandOffence.getOrderIndex())
+                .withCount(commandOffence.getCount())
                 .withStatementOfOffence(statementOfOffence)
                 .withOffenceWording(commandOffence.getOffenceWording())
                 .withCustodyTimeLimit(custodyTimeLimit)
-                .withLaaApplnReference(laaReference.isPresent() ? buildLaaReference((laaReference.get())) : empty());
+                .withLaaApplnReference(buildLaaReference((laaReference)));
 
         if (isNotEmpty(commandOffence.getReportingRestrictions())) {
             offenceBuilder.withReportingRestrictions(ReportingRestrictionConverter.eventsToDomainAsList(commandOffence.getReportingRestrictions()));
@@ -69,16 +72,18 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
     }
 
     private Optional<LaaReference> buildLaaReference(final uk.gov.justice.listing.commands.LaaReference laaReference) {
-
-        return Optional.of(uk.gov.moj.cpp.listing.domain.LaaReference.laaReference()
-                .withApplicationReference(laaReference.getApplicationReference())
-                .withEffectiveEndDate((laaReference.getEffectiveEndDate()))
-                .withEffectiveStartDate((laaReference.getEffectiveStartDate()))
-                .withStatusCode(laaReference.getStatusCode())
-                .withStatusDate(laaReference.getStatusDate())
-                .withStatusDescription(laaReference.getStatusDescription())
-                .withStatusId(laaReference.getStatusId())
-                .build());
+        if(null != laaReference) {
+            return Optional.of(uk.gov.moj.cpp.listing.domain.LaaReference.laaReference()
+                    .withApplicationReference(laaReference.getApplicationReference())
+                    .withEffectiveEndDate(ofNullable(laaReference.getEffectiveEndDate()))
+                    .withEffectiveStartDate(ofNullable(laaReference.getEffectiveStartDate()))
+                    .withStatusCode(laaReference.getStatusCode())
+                    .withStatusDate(laaReference.getStatusDate())
+                    .withStatusDescription(laaReference.getStatusDescription())
+                    .withStatusId(laaReference.getStatusId())
+                    .build());
+        }
+        return empty();
     }
 
 }

@@ -1,5 +1,8 @@
 package uk.gov.moj.cpp.listing.event.processor.command;
 
+import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
@@ -16,6 +19,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
+
+import org.apache.commons.lang3.StringUtils;
 
 
 public class UpdateOffencesForHearingCommandCollectionConverter implements Converter<OffencesToBeUpdated, List<UpdateOffencesForHearingCommand> > {
@@ -35,18 +40,20 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
 
     private List<Offence> convertOffences(List<uk.gov.justice.listing.events.Offence> offences) {
         return offences.stream().map(offence -> {
-            final LocalDate endDate = offence.getEndDate().map(LocalDates::from).orElse(null);
+            final LocalDate endDate = StringUtils.isNotEmpty(offence.getEndDate()) ? LocalDates.from(offence.getEndDate()) : null;
             final StatementOfOffence soo = convertStatementOfOffence(offence.getStatementOfOffence());
             final String strEndDate = endDate==null ? null : endDate.toString();
             final Offence.Builder offenceBuilder = Offence.offence()
-                    .withEndDate(Optional.ofNullable(strEndDate))
+                    .withEndDate(ofNullable(strEndDate))
                     .withId(offence.getId())
                     .withOffenceCode(offence.getOffenceCode())
                     .withStartDate(offence.getStartDate())
+                    .withCount(offence.getCount())
+                    .withOrderIndex(offence.getOrderIndex())
                     .withStatementOfOffence(soo)
                     .withOffenceWording(offence.getOffenceWording())
-                    .withSeedingHearing(offence.getSeedingHearing().isPresent() ? SeedingHearingConverter.convertSeedingHearing(offence.getSeedingHearing().get()) : Optional.empty())
-                    .withLaaApplnReference(offence.getLaaApplnReference().isPresent()? buildLaaReference(offence.getLaaApplnReference().get()):Optional.empty());
+                    .withSeedingHearing(nonNull(offence.getSeedingHearing()) ? SeedingHearingConverter.convertSeedingHearing(offence.getSeedingHearing()) : empty())
+                    .withLaaApplnReference(nonNull(offence.getLaaApplnReference())? buildLaaReference(offence.getLaaApplnReference()): empty());
 
             if (isNotEmpty(offence.getReportingRestrictions())) {
                 offenceBuilder.withReportingRestrictions(commonHearingCommandConverter.buildReportingRestrictions(offence.getReportingRestrictions()));
@@ -59,9 +66,9 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
     private StatementOfOffence convertStatementOfOffence(uk.gov.justice.listing.events.StatementOfOffence soo) {
         return StatementOfOffence.statementOfOffence()
                 .withWelshTitle(soo.getWelshTitle())
-                .withWelshLegislation(soo.getWelshLegislation())
+                .withWelshLegislation(ofNullable(soo.getWelshLegislation()))
                 .withTitle(soo.getTitle())
-                .withLegislation(soo.getLegislation())
+                .withLegislation(ofNullable(soo.getLegislation()))
                 .build();
 
     }
@@ -70,8 +77,8 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
 
         return Optional.of(LaaReference.laaReference()
                 .withApplicationReference(laaReference.getApplicationReference())
-                .withEffectiveEndDate((laaReference.getEffectiveEndDate()))
-                .withEffectiveStartDate((laaReference.getEffectiveStartDate()))
+                .withEffectiveEndDate(ofNullable(laaReference.getEffectiveEndDate()))
+                .withEffectiveStartDate(ofNullable(laaReference.getEffectiveStartDate()))
                 .withStatusCode(laaReference.getStatusCode())
                 .withStatusDate(laaReference.getStatusDate())
                 .withStatusDescription(laaReference.getStatusDescription())

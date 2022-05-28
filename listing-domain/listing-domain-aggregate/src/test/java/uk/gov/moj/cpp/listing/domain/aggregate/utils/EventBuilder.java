@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
@@ -45,9 +44,9 @@ public class EventBuilder {
     private static Defendant createDefendant(final Offence offence) {
         return Defendant.defendant()
                 .withId(randomUUID())
-                .withMasterDefendantId(Optional.of(randomUUID()))
-                .withCourtProceedingsInitiated(Optional.of(ZonedDateTime.now()))
-                .withCustodyTimeLimit(of(LocalDate.now().toString()))
+                .withMasterDefendantId(randomUUID())
+                .withCourtProceedingsInitiated(ZonedDateTime.now())
+                .withCustodyTimeLimit(LocalDate.now().toString())
                 .withOffences(singletonList(offence))
                 .build();
     }
@@ -56,7 +55,7 @@ public class EventBuilder {
         return StatementOfOffence.statementOfOffence()
                 .withTitle(STRING.next())
                 .withWelshTitle(STRING.next())
-                .withLegislation(of(STRING.next()))
+                .withLegislation(STRING.next())
                 .build();
     }
 
@@ -65,7 +64,7 @@ public class EventBuilder {
                 .withId(randomUUID())
                 .withOffenceCode(STRING.next())
                 .withStartDate(LocalDate.now().toString())
-                .withEndDate(Optional.ofNullable(LocalDate.now().toString()))
+                .withEndDate(LocalDate.now().toString())
                 .withStatementOfOffence(statementOfOffence)
                 .build();
     }

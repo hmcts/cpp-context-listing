@@ -69,7 +69,7 @@ public class SeedHearingAggregate implements Aggregate {
                         .map(hearingListingNeed -> NextHearingRequested.nextHearingRequested()
                                 .withHearing(hearingListingNeed)
                                 .withCourtCentreDetails(convertCourtCentreDetails(courtCentreDefaults))
-                                .withAdjournedFromDate(adjournedFromDate)
+                                .withAdjournedFromDate((adjournedFromDate.orElse(null)))
                                 .withShadowListedOffences(shadowListedOffences)
                                 .withHearingDay(hearingDay)
                                 .build())

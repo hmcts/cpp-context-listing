@@ -35,10 +35,9 @@ public class CourtApplicationEventListener {
     private static final String COURT_APPLICATION_FIELD = "courtApplications";
 
     @Inject
-    private HearingRepository hearingRepository;
-
-    @Inject
     private HearingSearchSyncService hearingSearchSyncService;
+    @Inject
+    private HearingRepository hearingRepository;
 
     @Handles("listing.events.court-application-added-for-hearing")
     public void courtApplicationAdded(final Envelope<CourtApplicationAddedForHearing> event) {

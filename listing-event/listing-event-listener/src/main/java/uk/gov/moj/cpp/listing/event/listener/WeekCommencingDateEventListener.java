@@ -42,6 +42,7 @@ public class WeekCommencingDateEventListener {
                 .put(WEEK_COMMENCING_START_DATE, weekCommencingStartDate)
                 .put(WEEK_COMMENCING_END_DATE, weekCommencingEndDate)
                 .put(WEEK_COMMENCING_DURATION, weekCommencingDurationInWeeks.toString())
+                .remove("unscheduled")
                 .save();
 
         hearingSearchSyncService.sync(hearingId);

@@ -1,12 +1,12 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.time.LocalDate.now;
-import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
 import static uk.gov.justice.core.courts.HearingLanguage.ENGLISH;
 import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 
@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -161,16 +162,12 @@ public class NonDefaultDayDurationBuilderTest {
         final NonDefaultDay firstNonDefaultDay = nondefaultDays.get(0);
         final NonDefaultDay secondNonDefaultDay = nondefaultDays.get(1);
 
-        assertThat(firstNonDefaultDay.getDuration().isPresent(), equalTo(true));
-        assertThat(secondNonDefaultDay.getDuration().isPresent(), equalTo(true));
+        assertThat(firstNonDefaultDay.getDuration(), notNullValue());
+        assertThat(secondNonDefaultDay.getDuration(), notNullValue());
 
-        if (firstNonDefaultDay.getDuration().isPresent()) {
-            assertThat(firstNonDefaultDay.getDuration().get(), equalTo(firstNonDefaultDayDuration));
-        }
+        assertThat(firstNonDefaultDay.getDuration(), equalTo(firstNonDefaultDayDuration));
 
-        if (secondNonDefaultDay.getDuration().isPresent()) {
-            assertThat(secondNonDefaultDay.getDuration().get(), equalTo(secondNonDefaultDayDuration));
-        }
+        assertThat(secondNonDefaultDay.getDuration(), equalTo(secondNonDefaultDayDuration));
     }
 
     private UpdateHearingForListing newUpdateHearingForListing(final List<NonDefaultDay> nonDefaultDays) {
@@ -178,36 +175,36 @@ public class NonDefaultDayDurationBuilderTest {
 
         return new UpdateHearingForListing.Builder()
                 .withCourtCentreId(randomUUID())
-                .withCourtRoomId(of(randomUUID()))
-                .withEndDate(of(now()))
+                .withCourtRoomId(randomUUID())
+                .withEndDate(now())
                 .withHearingId(randomUUID())
                 .withHearingLanguage(ENGLISH)
                 .withJudiciary(asList(judiciary))
                 .withJurisdictionType(MAGISTRATES)
                 .withNonDefaultDays(nonDefaultDays)
                 .withNonSittingDays(asList(now()))
-                .withStartDate(getNewStartDate(nonDefaultDays))
-                .withType(new HearingType("random type", randomUUID(), empty()))
-                .withWeekCommencingDurationInWeeks(of(1))
-                .withWeekCommencingEndDate(of(now()))
-                .withWeekCommencingStartDate(of(now()))
+                .withStartDate(getNewStartDate(nonDefaultDays).get())
+                .withType(new HearingType("random type", randomUUID(), null))
+                .withWeekCommencingDurationInWeeks(1)
+                .withWeekCommencingEndDate(now())
+                .withWeekCommencingStartDate(now())
                 .build();
     }
 
     private List<NonDefaultDay> getNonDefaultDays(final int duration) {
         final NonDefaultDay.Builder nonDefaultDayBuilder = NonDefaultDay.nonDefaultDay()
-                .withDuration(of(duration))
+                .withDuration(duration)
                 .withStartTime(NDD1_START_TIME)
-                .withSession(of("AM"))
-                .withOucode(of(OUCODE))
-                .withCourtScheduleId(of("17452"))
-                .withCourtRoomId(of(1245));
+                .withSession("AM")
+                .withOucode(OUCODE)
+                .withCourtScheduleId("17452")
+                .withCourtRoomId(1245);
 
         final NonDefaultDay nonDefaultDay1 = nonDefaultDayBuilder.build();
         final NonDefaultDay nonDefaultDay2 = nonDefaultDayBuilder
                 .withStartTime(NDD2_START_TIME)
-                .withCourtScheduleId(of("555"))
-                .withSession(of("PM")).build();
+                .withCourtScheduleId("555")
+                .withSession("PM").build();
 
         final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
 
@@ -220,23 +217,23 @@ public class NonDefaultDayDurationBuilderTest {
 
     private NonDefaultDay getAllDaySession() {
         return NonDefaultDay.nonDefaultDay()
-                .withDuration(of(360))
+                .withDuration(360)
                 .withStartTime(NDD1_START_TIME)
-                .withSession(of("AD"))
-                .withOucode(of(OUCODE))
-                .withCourtScheduleId(of("1111"))
-                .withCourtRoomId(of(1245)).build();
+                .withSession("AD")
+                .withOucode(OUCODE)
+                .withCourtScheduleId("1111")
+                .withCourtRoomId(1245).build();
 
     }
 
     private NonDefaultDay getCountBasedSingleSession() {
         return NonDefaultDay.nonDefaultDay()
-                .withDuration(of(1))
+                .withDuration(1)
                 .withStartTime(NDD1_START_TIME)
-                .withSession(of("AM"))
-                .withOucode(of(OUCODE))
-                .withCourtScheduleId(of("1111"))
-                .withCourtRoomId(of(1245)).build();
+                .withSession("AM")
+                .withOucode(OUCODE)
+                .withCourtScheduleId("1111")
+                .withCourtRoomId(1245).build();
     }
 
     private Optional<LocalDate> getNewStartDate(final List<NonDefaultDay> nonDefaultDays) {

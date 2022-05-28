@@ -2,8 +2,6 @@ package uk.gov.moj.cpp.listing.command.handler;
 
 
 import static java.util.Collections.emptyList;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
@@ -18,6 +16,8 @@ import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.HEARING_TYPE;
 
+
+import java.util.ArrayList;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.HearingLanguage;
@@ -39,6 +39,7 @@ import uk.gov.justice.listing.courts.ListNextHearingsV2;
 import uk.gov.justice.listing.courts.WeekCommencingDate;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
+import uk.gov.justice.listing.events.DeletedHearingInStagingHmi;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
@@ -50,6 +51,7 @@ import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.Type;
 import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
+import uk.gov.justice.listing.events.UpdatedHearingInStagingHmi;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.util.UtcClock;
@@ -68,7 +70,6 @@ import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -89,6 +90,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class ListNextHearingCommandHandlerTest {
 
     public static final UUID HEARING_ID = randomUUID();
+    public static final int OFFENCE_COUNT = 1;
+    public static final int OFFENCE_ORDER_INDEX = 0;
+    public static final String OFFENCE_LEGISLATION = "legislation";
 
     @Spy
     private final Enveloper enveloper = createEnveloperWithEvents(
@@ -99,7 +103,9 @@ public class ListNextHearingCommandHandlerTest {
             UnallocatedHearingDeleted.class,
             OffencesRemovedFromHearing.class,
             DeleteNextHearingRequested.class,
-            NextHearingDayChanged.class);
+            NextHearingDayChanged.class,
+            UpdatedHearingInStagingHmi.class,
+            DeletedHearingInStagingHmi.class);
 
     @Mock
     private EventSource eventSource;
@@ -137,13 +143,13 @@ public class ListNextHearingCommandHandlerTest {
         final UUID seedingHearingId = randomUUID();
         final UUID hearingId = randomUUID();
         final UUID hearing2Id = randomUUID();
-        final List<HearingListingNeeds> hearings = Arrays.asList(
+        final List<HearingListingNeeds> hearings = asList(
                 HearingListingNeeds.hearingListingNeeds()
                         .withId(hearingId)
-                        .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase()
+                        .withProsecutionCases(asList(ProsecutionCase.prosecutionCase()
                                 .withId(randomUUID())
-                                .withDefendants(Arrays.asList(Defendant.defendant()
-                                        .withOffences(Arrays.asList(Offence.offence()
+                                .withDefendants(asList(Defendant.defendant()
+                                        .withOffences(asList(Offence.offence()
                                                 .withId(randomUUID())
                                                 .build()))
                                         .build()))
@@ -151,23 +157,23 @@ public class ListNextHearingCommandHandlerTest {
                         .build(),
                 HearingListingNeeds.hearingListingNeeds()
                         .withId(hearing2Id)
-                        .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase()
+                        .withProsecutionCases(asList(ProsecutionCase.prosecutionCase()
                                 .withId(randomUUID())
-                                .withDefendants(Arrays.asList(Defendant.defendant()
-                                        .withOffences(Arrays.asList(Offence.offence()
+                                .withDefendants(asList(Defendant.defendant()
+                                        .withOffences(asList(Offence.offence()
                                                 .withId(randomUUID())
                                                 .build()))
                                         .build()))
                                 .build()))
                         .build());
         final UUID courtCentreId = randomUUID();
-        final List<CourtCentreDetails> courtCentresDetails = Arrays.asList(CourtCentreDetails.courtCentreDetails()
+        final List<CourtCentreDetails> courtCentresDetails = asList(CourtCentreDetails.courtCentreDetails()
                 .withDefaultStartTime(startTime)
                 .withDefaultDuration(defaultDuration)
                 .withId(courtCentreId)
                 .build());
         final UUID offenceId = randomUUID();
-        final List<UUID> shadowListedOffences = Arrays.asList(offenceId);
+        final List<UUID> shadowListedOffences = asList(offenceId);
         final String sittingDay = LocalDate.now().toString();
         when(jsonObjectConverter.convert(commandPayload, ListNextHearingsEnrichedV2.class))
                 .thenReturn(ListNextHearingsEnrichedV2.listNextHearingsEnrichedV2()
@@ -275,11 +281,11 @@ public class ListNextHearingCommandHandlerTest {
                         .withHearingDays(emptyList())
                         .withJurisdictionType(CROWN)
                         .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.ENGLISH)
-                        .withListedCases(Arrays.asList(ListedCase.listedCase()
+                        .withListedCases(asList(ListedCase.listedCase()
                                 .withId(caseId)
-                                .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
                                         .withId(randomUUID())
-                                        .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offence.offence()
+                                        .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
                                                 .withId(offenceId)
                                                 .withSeedingHearing(SeedingHearing.seedingHearing()
                                                         .withSeedingHearingId(seedingHearingId)
@@ -301,13 +307,20 @@ public class ListNextHearingCommandHandlerTest {
 
         final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());
 
-        assertThat(events.size(), is(1));
+        assertThat(events.size(), is(2));
         final JsonEnvelope deletedEventProduced = events.get(0);
         assertThat(deletedEventProduced.metadata().name(), is("listing.events.unallocated-hearing-deleted"));
         final JsonObject deleteEventObject = deletedEventProduced.payloadAsJsonObject();
         assertThat(deleteEventObject.getString("hearingId"), is(hearingId.toString()));
         assertThat(deleteEventObject.getJsonArray("caseIds").size(), is(1));
         assertThat(deleteEventObject.getJsonArray("caseIds").getString(0), is(caseId.toString()));
+
+        final JsonEnvelope deletedEventForHmi = events.get(1);
+        assertThat(deletedEventForHmi.metadata().name(), is("listing.events.deleted-hearing-in-staging-hmi"));
+        final JsonObject deletedEventForHmiObject = deletedEventForHmi.payloadAsJsonObject();
+        assertThat(deletedEventForHmiObject.getString("hearingId"), is(hearingId.toString()));
+
+
     }
 
     @Test
@@ -332,42 +345,42 @@ public class ListNextHearingCommandHandlerTest {
                         .withHearingDays(emptyList())
                         .withJurisdictionType(CROWN)
                         .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.ENGLISH)
-                        .withListedCases(Arrays.asList(ListedCase.listedCase()
+                        .withListedCases(asList(ListedCase.listedCase()
                                         .withId(caseId)
-                                        .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                        .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
                                                 .withId(randomUUID())
-                                                .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offence.offence()
+                                                .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
                                                                 .withId(offenceId)
-                                                                .withSeedingHearing(of(SeedingHearing.seedingHearing()
+                                                                .withSeedingHearing(SeedingHearing.seedingHearing()
                                                                         .withSeedingHearingId(seedingHearingId)
                                                                         .withJurisdictionType(CROWN)
-                                                                        .build()))
+                                                                        .build())
                                                                 .build(),
                                                         uk.gov.justice.listing.events.Offence.offence()
-                                                                .withSeedingHearing(of(SeedingHearing.seedingHearing()
+                                                                .withSeedingHearing(SeedingHearing.seedingHearing()
                                                                         .withSeedingHearingId(seedingHearingId)
                                                                         .withJurisdictionType(CROWN)
-                                                                        .build()))
+                                                                        .build())
                                                                 .withId(offence2Id).build()
                                                 ))
                                                 .build()))
                                         .build(),
                                 ListedCase.listedCase()
                                         .withId(caseId)
-                                        .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                        .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
                                                 .withId(randomUUID())
-                                                .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offence.offence()
+                                                .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
                                                                 .withId(randomUUID())
-                                                                .withSeedingHearing(of(SeedingHearing.seedingHearing()
+                                                                .withSeedingHearing(SeedingHearing.seedingHearing()
                                                                         .withSeedingHearingId(randomUUID())
                                                                         .withJurisdictionType(CROWN)
-                                                                        .build()))
+                                                                        .build())
                                                                 .build(),
                                                         uk.gov.justice.listing.events.Offence.offence()
-                                                                .withSeedingHearing(of(SeedingHearing.seedingHearing()
+                                                                .withSeedingHearing(SeedingHearing.seedingHearing()
                                                                         .withSeedingHearingId(randomUUID())
                                                                         .withJurisdictionType(CROWN)
-                                                                        .build()))
+                                                                        .build())
                                                                 .withId(offence2Id).build()
                                                 ))
                                                 .build()))
@@ -387,16 +400,19 @@ public class ListNextHearingCommandHandlerTest {
 
         final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());
 
-        assertThat(events.size(), is(1));
+        assertThat(events.size(), is(2));
         final JsonEnvelope deletedEventProduced = events.get(0);
         assertThat(deletedEventProduced.metadata().name(), is("listing.events.offences-removed-from-hearing"));
         final JsonObject unallocateEventObject = deletedEventProduced.payloadAsJsonObject();
         assertThat(unallocateEventObject.getString("hearingId"), is(hearingId.toString()));
         assertThat(unallocateEventObject.getString("seedingHearingId"), is(seedingHearingId.toString()));
-        assertThat(unallocateEventObject.containsKey("unallocated"), is(false));
+        assertThat(unallocateEventObject.containsKey("unallocated"), is(true));
         assertThat(unallocateEventObject.getJsonArray("caseIdsSeededByOnlySeedingHearingId").size(), is(0));
 
-
+        final JsonEnvelope deletedEventForHmi = events.get(1);
+        assertThat(deletedEventForHmi.metadata().name(), is("listing.events.deleted-hearing-in-staging-hmi"));
+        final JsonObject deletedEventForHmiObject = deletedEventForHmi.payloadAsJsonObject();
+        assertThat(deletedEventForHmiObject.getString("hearingId"), is(hearingId.toString()));
     }
 
     @Test
@@ -454,7 +470,7 @@ public class ListNextHearingCommandHandlerTest {
         final LocalDate hearingDate = LocalDate.now();
         final int sequence = 1234567;
         final ZonedDateTime startTime = utcClock.now();
-        final List<HearingDay> hearingDays = Arrays.asList(HearingDay.hearingDay()
+        final List<HearingDay> hearingDays = asList(HearingDay.hearingDay()
                 .withCourtCentreId(centreId)
                 .withCourtRoomId(roomId)
                 .withCourtScheduleId(scheduleId)
@@ -482,11 +498,11 @@ public class ListNextHearingCommandHandlerTest {
                         .withHearingDays(emptyList())
                         .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.ENGLISH)
                         .withJurisdictionType(CROWN)
-                        .withListedCases(Arrays.asList(ListedCase.listedCase()
+                        .withListedCases(asList(ListedCase.listedCase()
                                 .withId(randomUUID())
-                                .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
                                         .withId(randomUUID())
-                                        .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offence.offence()
+                                        .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
                                                 .withId(randomUUID())
                                                 .withSeedingHearing(SeedingHearing.seedingHearing()
                                                         .withSeedingHearingId(seedingHearingId)
@@ -530,7 +546,7 @@ public class ListNextHearingCommandHandlerTest {
         final LocalDate hearingDate = LocalDate.now();
         final int sequence = 1234567;
         final ZonedDateTime startTime = ZonedDateTime.now();
-        final List<HearingDay> hearingDays = Arrays.asList(HearingDay.hearingDay()
+        final List<HearingDay> hearingDays = asList(HearingDay.hearingDay()
                 .withCourtCentreId(centreId)
                 .withCourtRoomId(roomId)
                 .withCourtScheduleId(scheduleId)
@@ -558,11 +574,11 @@ public class ListNextHearingCommandHandlerTest {
                         .withHearingDays(emptyList())
                         .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.ENGLISH)
                         .withJurisdictionType(CROWN)
-                        .withListedCases(Arrays.asList(ListedCase.listedCase()
+                        .withListedCases(asList(ListedCase.listedCase()
                                         .withId(randomUUID())
-                                        .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                        .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
                                                 .withId(randomUUID())
-                                                .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offence.offence()
+                                                .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
                                                         .withId(randomUUID())
                                                         .withSeedingHearing(SeedingHearing.seedingHearing()
                                                                 .withSeedingHearingId(seedingHearingId)
@@ -579,9 +595,9 @@ public class ListNextHearingCommandHandlerTest {
                                         .build(),
                                 ListedCase.listedCase()
                                         .withId(randomUUID())
-                                        .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                        .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
                                                 .withId(randomUUID())
-                                                .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offence.offence()
+                                                .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
                                                         .withId(randomUUID())
                                                         .withSeedingHearing(SeedingHearing.seedingHearing()
                                                                 .withSeedingHearingId(seedingHearingId2)
@@ -620,8 +636,8 @@ public class ListNextHearingCommandHandlerTest {
 
         final JsonObject eventObject2 = eventProduced2.payloadAsJsonObject();
         assertThat(eventObject2.getString("hearingId"), is(hearingId.toString()));
-        assertThat(Arrays.asList(eventObject.getString("seedingHearingId"), eventObject2.getString("seedingHearingId")).containsAll(
-                Arrays.asList(seedingHearingId.toString(), seedingHearingId2.toString())) , is(true));
+        assertThat(asList(eventObject.getString("seedingHearingId"), eventObject2.getString("seedingHearingId")).containsAll(
+                asList(seedingHearingId.toString(), seedingHearingId2.toString())) , is(true));
         }
 
 
@@ -660,29 +676,32 @@ public class ListNextHearingCommandHandlerTest {
                         .withEstimatedMinutes(estimatedMinutes)
                         .withEndDate(endDate)
                         .withId(HEARING_ID)
-                        .withJudiciary(Arrays.asList(JudicialRole.judicialRole()
+                        .withJudiciary(asList(JudicialRole.judicialRole()
                                 .withJudicialId(randomUUID())
-                                .withIsBenchChairman(of(true))
-                                .withIsDeputy(of(false))
+                                .withIsBenchChairman(true)
+                                .withIsDeputy(false)
                                 .withJudicialRoleType(JudicialRoleType.judicialRoleType()
                                         .withJudicialRoleTypeId(randomUUID())
                                         .withJudiciaryType("judiciary-type")
                                         .build())
                                 .build()))
                         .withJurisdictionType(jurisdictionType)
-                        .withProsecutionCases(Arrays.asList(ProsecutionCase.prosecutionCase()
+                        .withProsecutionCases(asList(ProsecutionCase.prosecutionCase()
                                 .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
                                         .withProsecutionAuthorityReference(prosecutionAuthorityReference)
                                         .withProsecutionAuthorityId(prosecutionAuthorityId)
                                         .withProsecutionAuthorityCode(prosecutionAuthorityCode)
                                         .build())
-                                .withDefendants(Arrays.asList(Defendant.defendant()
+                                .withDefendants(asList(Defendant.defendant()
                                         .withCourtProceedingsInitiated(courtProceedingsInitiated)
                                         .withId(defendantId)
                                         .withMasterDefendantId(masterDefendantId)
-                                        .withOffences(Arrays.asList(Offence.offence()
+                                        .withOffences(asList(Offence.offence()
                                                 .withId(randomUUID())
-                                                .withSeedingHearing(empty())
+                                                .withCount(OFFENCE_COUNT)
+                                                .withOrderIndex(OFFENCE_ORDER_INDEX)
+                                                .withOffenceLegislation(OFFENCE_LEGISLATION)
+                                                .withSeedingHearing(null)
                                                 .build()))
                                         .build()))
                                 .build()))
@@ -696,13 +715,17 @@ public class ListNextHearingCommandHandlerTest {
                                 .withDuration(weekCommencingDurationInWeeks)
                                 .build())
                         .build())
-                .withCourtCentresDetails(Arrays.asList((CourtCentreDetails.courtCentreDetails()
+                .withCourtCentresDetails(asList((CourtCentreDetails.courtCentreDetails()
                         .withId(courtCentreId)
                         .withDefaultDuration(30)
                         .withDefaultStartTime(LocalTime.of(10, 00))
                         .build())))
                 .build();
 
+    }
+
+    private  <T> List<T> asList(T... a) {
+        return new ArrayList<>(java.util.Arrays.asList(a));
     }
 
 }

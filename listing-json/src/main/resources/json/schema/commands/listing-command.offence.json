@@ -15,6 +15,12 @@
     "endDate": {
       "type": "string"
     },
+    "count": {
+      "type": "integer"
+    },
+    "orderIndex": {
+      "type": "integer"
+    },
     "offenceWording": {
       "type": "string"
     },

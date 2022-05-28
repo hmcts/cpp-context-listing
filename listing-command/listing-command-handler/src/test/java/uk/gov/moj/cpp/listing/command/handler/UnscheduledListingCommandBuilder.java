@@ -77,6 +77,8 @@ public class UnscheduledListingCommandBuilder {
     static final String INITIAL_START_DATE = "2018-05-30";
     static final String END_DATE = "2018-06-03";
     static final LocalDate WEEK_COMMENCING_START_DATE = LocalDate.now();
+    private static final int OFFENCE_COUNT = 1;
+    private static final int OFFENCE_ORDER_INDEX = 0;
     static final Integer WEEK_COMMENCING_DURATION = 1;
     static final LocalDate WEEK_COMMENCING_END_DATE = LocalDate.now().plusWeeks(WEEK_COMMENCING_DURATION);
     static final String UPDATED_START_DATE = "2018-06-01";
@@ -110,7 +112,6 @@ public class UnscheduledListingCommandBuilder {
     static final String PERSON_NATIONALITY = "La La Land";
     static final String MODIFIED_DATE = "2018-01-01";
     static final String OFFENCE_WORDING = "wording";
-    static final int OFFENCE_COUNT = 1;
     static final String OFFENCE_CONVICTION_DATE = "2017-10-05";
     static final String LISTING_DIRECTIONS = "wheelchair access required";
     static final LocalDate START_DATE = LocalDate.parse("2018-01-02");
@@ -151,6 +152,7 @@ public class UnscheduledListingCommandBuilder {
             .withDescription("Warrant for arrest without bail").build();
 
     private final static Optional<String> APPLICATION_PARTICULARS = of("Application particulars");
+
 
 
     static JsonEnvelope listUnscheduledCourtHearingCommandEnvelope() {
@@ -259,6 +261,8 @@ public class UnscheduledListingCommandBuilder {
                         .withEndDate(of("2018-01-01"))
                         .withLaidDate(Optional.of("2019-05-01"))
                         .withOffenceWording("No Travel Card")
+                        .withCount(OFFENCE_COUNT)
+                        .withOrderIndex(OFFENCE_ORDER_INDEX)
                         .withLaaApplnReference(Optional.empty())
                         .withShadowListed(of(Boolean.FALSE))
                         .withSeedingHearing(empty())
@@ -362,4 +366,4 @@ public class UnscheduledListingCommandBuilder {
                 .withIsDeputy(of(IS_DEPUTY)).build());
     }
 
-    }
+}

@@ -1,0 +1,29 @@
+{
+  "organisationUnitHMIStatus": [
+    {
+      "oucode": "B01LY00",
+      "isHMIListingEnabled": false,
+      "isHMISchedulingEnabled": true,
+      "isHMIPubHubEnabled": true,
+      "updatedOn": "2021-07-23 01:14:28.18",
+      "courtCentreId": "6bf56746-cfe8-40bc-a789-3fae393c33ab"
+    },
+    {
+      "oucode": "C02LY00",
+      "isHMIListingEnabled": true,
+      "isHMISchedulingEnabled": true,
+      "isHMIPubHubEnabled": true,
+      "updatedOn": "2021-07-23 01:14:28.18",
+      "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f"
+    },
+    {
+      "oucode": "C55BN01",
+      "isHMIListingEnabled": true,
+      "isHMISchedulingEnabled": true,
+      "isHMIPubHubEnabled": true,
+      "updatedOn": "2021-07-23 01:14:28.18",
+      "courtCentreId": "0110aa28-abf7-4ff4-8848-942814e55787"
+    }
+  ]
+}
+

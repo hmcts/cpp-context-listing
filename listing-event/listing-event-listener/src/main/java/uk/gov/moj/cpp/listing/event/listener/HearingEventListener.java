@@ -1,10 +1,9 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Objects.nonNull;
-import static java.util.Optional.empty;
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
 import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupAllReportingRestrictions;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
@@ -26,8 +25,8 @@ import uk.gov.justice.listing.events.HearingUnallocatedForListing;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Prosecutor;
 import uk.gov.justice.listing.events.TrialVacated;
+import uk.gov.justice.listing.events.UpdatedHmiFieldsForHearing;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
@@ -40,7 +39,6 @@ import uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -75,8 +73,6 @@ public class HearingEventListener {
     @Inject
     private JsonObjectToObjectConverter jsonToObjectConverter;
 
-    @Inject
-    private StringToJsonObjectConverter stringToJsonObjectConverter;
 
     @Inject
     public HearingEventListener(final HearingRepository hearingRepository,
@@ -174,6 +170,28 @@ public class HearingEventListener {
         hearingSearchSyncService.sync(hearingId);
     }
 
+    @Handles("listing.events.updated-hmi-fields-for-hearing")
+    public void hmiFieldsUpdated(final Envelope<UpdatedHmiFieldsForHearing> event) {
+        final UpdatedHmiFieldsForHearing updatedHmiFieldsForHearing = event.payload();
+        final UUID hearingId = updatedHmiFieldsForHearing.getHearingId();
+        LOGGER.info("'listing.events.updated-hmi-fields-for-hearing' received hearingId {}", hearingId);
+        final TypeReference<List<String>> typeRefStringList = new TypeReference<List<String>>() {
+        };
+        jsonEntityFinder.find(hearingId)
+                .put("bookingType", updatedHmiFieldsForHearing.getBookingType())
+                .put("priority", updatedHmiFieldsForHearing.getPriority())
+                .putSubList("specialRequirements", typeRefStringList, getSpecialRequirementsFunction(updatedHmiFieldsForHearing.getSpecialRequirements()))
+                .save();
+    }
+
+    private Function<List<String>, List<String>> getSpecialRequirementsFunction(final List<String> specialRequirements) {
+        return specialRequirementsList -> getSpecialRequirements(specialRequirements);
+    }
+
+    private List<String> getSpecialRequirements(final List<String> specialRequirements) {
+        return isNotEmpty(specialRequirements) ? new ArrayList<>(specialRequirements) : null;
+    }
+
     @Handles("listing.events.hearing-trial-vacated")
     public void hearingTrialVacated(final Envelope<HearingTrialVacated> event) {
         final HearingTrialVacated hearingTrialVacated = event.payload();
@@ -188,8 +206,8 @@ public class HearingEventListener {
         }
 
         jsonEntityFinder.find(hearingId)
-                .put(FIELD_IS_VACATED_TRIAL, hearingTrialVacated.getVacatedTrialReasonId().isPresent() ? VACATED : NON_VACATED)
-                .put(FIELD_VACATE_TRIAL_REASON, hearingTrialVacated.getVacatedTrialReasonId().orElse(null) == null ? "" : hearingTrialVacated.getVacatedTrialReasonId().get().toString())
+                .put(FIELD_IS_VACATED_TRIAL, nonNull(hearingTrialVacated.getVacatedTrialReasonId()) ? VACATED : NON_VACATED)
+                .put(FIELD_VACATE_TRIAL_REASON, hearingTrialVacated.getVacatedTrialReasonId() == null ? "" : hearingTrialVacated.getVacatedTrialReasonId().toString())
                 .save();
 
         hearingSearchSyncService.sync(hearingId);
@@ -287,7 +305,7 @@ public class HearingEventListener {
 
     private List<HearingDay> getHearingDaysWithRemoveCourtRoomId(final List<HearingDay> hearingDays) {
         return new ArrayList<>(hearingDays.stream()
-                .map(hearingDay -> HearingDay.hearingDay().withValuesFrom(hearingDay).withCourtRoomId(ofNullable(null)).build())
+                .map(hearingDay -> HearingDay.hearingDay().withValuesFrom(hearingDay).withCourtRoomId(null).build())
                 .collect(toList()));
 
     }
@@ -375,24 +393,25 @@ public class HearingEventListener {
                 .withLegalAidStatus(originalDefendant.getLegalAidStatus())
                 .withProceedingsConcluded(defendant.getProceedingsConcluded())
                 .withIsYouth(originalDefendant.getIsYouth())
-                .withAddress(nonNull(originalDefendant.getAddress()) && originalDefendant.getAddress().isPresent() ? buildAddress(originalDefendant.getAddress()) : empty())
-                .withNationalityDescription(nonNull(originalDefendant.getNationalityDescription()) && originalDefendant.getNationalityDescription().isPresent() ? originalDefendant.getNationalityDescription() : empty())
+                .withAddress(nonNull(originalDefendant.getAddress()) ? buildAddress(originalDefendant.getAddress()) : null)
+                .withNationalityDescription(originalDefendant.getNationalityDescription())
                 .withMasterDefendantId(originalDefendant.getMasterDefendantId())
                 .withCourtProceedingsInitiated(originalDefendant.getCourtProceedingsInitiated())
                 .build();
     }
 
-    private Optional<uk.gov.justice.core.courts.Address> buildAddress(Optional<uk.gov.justice.core.courts.Address> a) {
-
-        return Optional.of(uk.gov.justice.core.courts.Address.address().
-                withAddress1(a.get().getAddress1())
-                .withAddress2(a.get().getAddress2().isPresent() ? a.get().getAddress2() : empty())
-                .withAddress3(a.get().getAddress3().isPresent() ? a.get().getAddress3() : empty())
-                .withAddress4(a.get().getAddress4().isPresent() ? a.get().getAddress4() : empty())
-                .withAddress5(a.get().getAddress5().isPresent() ? a.get().getAddress5() : empty())
-                .withPostcode(a.get().getPostcode().isPresent() ? a.get().getPostcode() : empty())
-                .build());
-
+    private uk.gov.justice.core.courts.Address buildAddress(uk.gov.justice.core.courts.Address a) {
+        if(nonNull(a)) {
+            return uk.gov.justice.core.courts.Address.address().
+                    withAddress1(a.getAddress1())
+                    .withAddress2(a.getAddress2())
+                    .withAddress3(a.getAddress3())
+                    .withAddress4(a.getAddress4())
+                    .withAddress5(a.getAddress5())
+                    .withPostcode(a.getPostcode())
+                    .build();
+        }
+        return null;
     }
 
     private JsonNode convertToObject(Object source) {
@@ -400,24 +419,26 @@ public class HearingEventListener {
     }
 
     private ProsecutionCase convertToCourtProsecutionCase(final uk.gov.justice.listing.events.ProsecutionCase listingProsecutionCase) {
-
-        return prosecutionCase()
-                .withId(listingProsecutionCase.getId())
-                .withProsecutionCaseIdentifier(listingProsecutionCase.getProsecutionCaseIdentifier())
-                .withOriginatingOrganisation(listingProsecutionCase.getOriginatingOrganisation())
-                .withCpsOrganisation(listingProsecutionCase.getCpsOrganisation())
-                .withInitiationCode(listingProsecutionCase.getInitiationCode())
-                .withCaseStatus(listingProsecutionCase.getCaseStatus())
-                .withPoliceOfficerInCase(listingProsecutionCase.getPoliceOfficerInCase())
-                .withStatementOfFacts(listingProsecutionCase.getStatementOfFacts())
-                .withStatementOfFactsWelsh(listingProsecutionCase.getStatementOfFactsWelsh())
-                .withBreachProceedingsPending(listingProsecutionCase.getBreachProceedingsPending())
-                .withRemovalReason(listingProsecutionCase.getRemovalReason())
-                .withAppealProceedingsPending(listingProsecutionCase.getAppealProceedingsPending())
-                .withDefendants(listingProsecutionCase.getDefendants())
-                .withCaseMarkers(listingProsecutionCase.getCaseMarkers())
-                .withClassOfCase(listingProsecutionCase.getClassOfCase())
-                .withIsCpsOrgVerifyError(listingProsecutionCase.getIsCpsOrgVerifyError())
-                .build();
+        if(nonNull(listingProsecutionCase)) {
+            return prosecutionCase()
+                    .withId(listingProsecutionCase.getId())
+                    .withProsecutionCaseIdentifier(listingProsecutionCase.getProsecutionCaseIdentifier())
+                    .withOriginatingOrganisation(listingProsecutionCase.getOriginatingOrganisation())
+                    .withCpsOrganisation(listingProsecutionCase.getCpsOrganisation())
+                    .withInitiationCode(listingProsecutionCase.getInitiationCode())
+                    .withCaseStatus(listingProsecutionCase.getCaseStatus())
+                    .withPoliceOfficerInCase(listingProsecutionCase.getPoliceOfficerInCase())
+                    .withStatementOfFacts(listingProsecutionCase.getStatementOfFacts())
+                    .withStatementOfFactsWelsh(listingProsecutionCase.getStatementOfFactsWelsh())
+                    .withBreachProceedingsPending(listingProsecutionCase.getBreachProceedingsPending())
+                    .withRemovalReason(listingProsecutionCase.getRemovalReason())
+                    .withAppealProceedingsPending(listingProsecutionCase.getAppealProceedingsPending())
+                    .withDefendants(listingProsecutionCase.getDefendants())
+                    .withCaseMarkers(listingProsecutionCase.getCaseMarkers())
+                    .withClassOfCase(listingProsecutionCase.getClassOfCase())
+                    .withIsCpsOrgVerifyError(listingProsecutionCase.getIsCpsOrgVerifyError())
+                    .build();
+        }
+        return null;
     }
 }

@@ -2,24 +2,34 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
 
+import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
+
+import java.util.ArrayList;
+import java.util.Collections;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.listing.events.CourtCentreDetails;
+import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 
+import uk.gov.justice.listing.events.Hearing;
 import uk.gov.justice.listing.events.HearingDeleted;
+import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.NextHearingDayChanged;
 import uk.gov.justice.listing.events.NextHearingRequested;
+import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing;
 import uk.gov.justice.listing.events.OffencesRemovedFromExistingUnallocatedHearing;
 import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
@@ -37,7 +47,6 @@ import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFact
 
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,6 +61,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+import uk.gov.moj.cpp.listing.event.processor.service.HearingService;
 
 @RunWith(MockitoJUnitRunner.class)
 public class NextHearingProcessorTest {
@@ -76,6 +86,20 @@ public class NextHearingProcessorTest {
 
     @InjectMocks
     private NextHearingProcessor nextHearingProcessor;
+
+    @Mock
+    private HearingService hearingService;
+
+    private UUID offenceId1 = randomUUID();
+    private Hearing hearing = Hearing.hearing()
+            .withListedCases(new ArrayList(Collections.singletonList(ListedCase.listedCase()
+                    .withDefendants(new ArrayList(Collections.singletonList(Defendant.defendant()
+                            .withOffences(new ArrayList(Collections.singletonList(Offence.offence()
+                                    .withId(offenceId1)
+                                    .build())))
+                            .build())))
+                    .build())))
+            .build();
 
     @Before
     public void setup() {
@@ -103,12 +127,12 @@ public class NextHearingProcessorTest {
                 .withHearing(HearingListingNeeds.hearingListingNeeds()
                         .withId(hearingId)
                         .build())
-                .withCourtCentreDetails(Arrays.asList(CourtCentreDetails.courtCentreDetails()
+                .withCourtCentreDetails(asList(CourtCentreDetails.courtCentreDetails()
                         .withDefaultDuration(30)
                         .withDefaultStartTime(LocalTime.of(10, 0))
                         .withId(courtCentreId)
                         .build()))
-                .withShadowListedOffences(Arrays.asList(shadowOffenceId))
+                .withShadowListedOffences(asList(shadowOffenceId))
                 .build();
 
 
@@ -159,7 +183,7 @@ public class NextHearingProcessorTest {
 
         final AllocatedHearingDeleted hearingDeletedV2 = AllocatedHearingDeleted.allocatedHearingDeleted()
                 .withHearingId(hearingId)
-                .withCaseIds(Arrays.asList(caseId))
+                .withCaseIds(asList(caseId))
                 .build();
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.allocated-hearing-deleted"),
                 objectToJsonObjectConverter.convert(hearingDeletedV2));
@@ -187,7 +211,7 @@ public class NextHearingProcessorTest {
 
         final AllocatedHearingDeleted hearingDeletedV2 = AllocatedHearingDeleted.allocatedHearingDeleted()
                 .withHearingId(hearingId)
-                .withCaseIds(Arrays.asList(caseId))
+                .withCaseIds(asList(caseId))
                 .build();
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.unallocated-hearing-deleted"),
                 objectToJsonObjectConverter.convert(hearingDeletedV2));
@@ -238,9 +262,9 @@ public class NextHearingProcessorTest {
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = OffencesRemovedFromHearing.offencesRemovedFromHearing()
                 .withHearingId(hearingId)
-                .withCaseIdsSeededByOnlySeedingHearingId(Arrays.asList(caseId))
+                .withCaseIdsSeededByOnlySeedingHearingId(asList(caseId))
                 .withSeedingHearingId(seedingHearingId)
-                .withSeededOffences(Arrays.asList(offenceId))
+                .withSeededOffences(asList(offenceId))
                 .build();
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.offences-removed-from-hearing"),
                 objectToJsonObjectConverter.convert(offencesRemovedFromHearing));
@@ -274,9 +298,9 @@ public class NextHearingProcessorTest {
 
         final OffencesRemovedFromHearing offencesRemovedFromHearing = OffencesRemovedFromHearing.offencesRemovedFromHearing()
                 .withHearingId(hearingId)
-                .withCaseIdsSeededByOnlySeedingHearingId(Arrays.asList(caseId))
+                .withCaseIdsSeededByOnlySeedingHearingId(asList(caseId))
                 .withSeedingHearingId(seedingHearingId)
-                .withSeededOffences(Arrays.asList(offenceId))
+                .withSeededOffences(asList(offenceId))
                 .withUnallocated(true)
                 .build();
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.offences-removed-from-hearing"),
@@ -311,7 +335,7 @@ public class NextHearingProcessorTest {
                 .withHearing(HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
                         .withId(hearingId)
                         .build())
-                .withCourtCentreDetails(Arrays.asList(CourtCentreDetails.courtCentreDetails()
+                .withCourtCentreDetails(asList(CourtCentreDetails.courtCentreDetails()
                         .withDefaultDuration(30)
                         .withDefaultStartTime(LocalTime.of(10, 0))
                         .withId(courtCentreId)
@@ -366,12 +390,13 @@ public class NextHearingProcessorTest {
     public void shouldHandleOffencesRemovedFromExistingAllocatedHearingEvent() {
 
         final UUID hearingId = randomUUID();
-        final UUID offenceId1 = randomUUID();
         final UUID offenceId2 = randomUUID();
 
+
+        when(hearingService.getHearing(any(), any())).thenReturn(hearing);
         final OffencesRemovedFromExistingAllocatedHearing offencesToBeDeleted = OffencesRemovedFromExistingAllocatedHearing.offencesRemovedFromExistingAllocatedHearing()
                 .withHearingId(hearingId)
-                .withOffenceIds(Arrays.asList(offenceId1, offenceId2))
+                .withOffenceIds(asList(offenceId1, offenceId2))
                 .build();
 
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.offence-from-existing-allocated-hearing-deleted"),
@@ -394,12 +419,13 @@ public class NextHearingProcessorTest {
     public void shouldHandleOffencesRemovedFromExistingUnallocatedHearingEvent() {
 
         final UUID hearingId = randomUUID();
-        final UUID offenceId1 = randomUUID();
         final UUID offenceId2 = randomUUID();
+
+        when(hearingService.getHearing(any(), any())).thenReturn(hearing);
 
         final OffencesRemovedFromExistingUnallocatedHearing offencesToBeDeleted = OffencesRemovedFromExistingUnallocatedHearing.offencesRemovedFromExistingUnallocatedHearing()
                 .withHearingId(hearingId)
-                .withOffenceIds(Arrays.asList(offenceId1, offenceId2))
+                .withOffenceIds(asList(offenceId1, offenceId2))
                 .build();
 
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.offence-from-existing-unallocated-hearing-deleted"),

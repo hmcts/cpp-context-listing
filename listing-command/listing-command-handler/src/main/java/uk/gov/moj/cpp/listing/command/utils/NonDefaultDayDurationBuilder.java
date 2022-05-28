@@ -1,7 +1,5 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
-import static java.util.Optional.of;
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.commands.NonDefaultDay;
@@ -10,7 +8,6 @@ import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class NonDefaultDayDurationBuilder {
 
@@ -50,11 +47,11 @@ public class NonDefaultDayDurationBuilder {
                 .build();
     }
 
-    private Optional<LocalDate> getNewStartDate(final List<NonDefaultDay> nonDefaultDays) {
-        return of(nonDefaultDays.
+    private LocalDate getNewStartDate(final List<NonDefaultDay> nonDefaultDays) {
+        return nonDefaultDays.
                 get(0)
                 .getStartTime()
-                .toLocalDate());
+                .toLocalDate();
     }
 
     private List<NonDefaultDay> buildNewNonDefaultDays(final List<NonDefaultDay> nonDefaultDays, final int totalDuration) {
@@ -85,7 +82,7 @@ public class NonDefaultDayDurationBuilder {
         return new NonDefaultDay.Builder()
                 .withCourtRoomId(nonDefaultDay.getCourtRoomId())
                 .withCourtScheduleId(nonDefaultDay.getCourtScheduleId())
-                .withDuration(ofNullable(totalDuration))
+                .withDuration(totalDuration)
                 .withOucode(nonDefaultDay.getOucode())
                 .withSession(nonDefaultDay.getSession())
                 .withStartTime(nonDefaultDay.getStartTime())
@@ -96,7 +93,7 @@ public class NonDefaultDayDurationBuilder {
     private boolean isAllDaySessionBooking(final List<NonDefaultDay> nonDefaultDays, final int duration) {
         return duration == FULL_DAY_MINUTES
                 && nonDefaultDays.size() == 1
-                && nonDefaultDays.get(0).getSession().filter(s -> s.equals(ALL_DAY)).isPresent();
+                && nonDefaultDays.get(0).getSession().equals(ALL_DAY);
 
     }
 
@@ -107,6 +104,6 @@ public class NonDefaultDayDurationBuilder {
 
     private int getDuration(final List<NonDefaultDay> nonDefaultDays) {
         return nonDefaultDays.stream().map(NonDefaultDay::getDuration)
-                .findFirst().orElse(of(1)).orElse(1);
+                .findFirst().orElse(1);
     }
 }

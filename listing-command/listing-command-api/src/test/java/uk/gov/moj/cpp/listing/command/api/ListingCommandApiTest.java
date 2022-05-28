@@ -1,8 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Arrays.asList;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.codehaus.groovy.runtime.DefaultGroovyMethods.any;
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -35,7 +33,6 @@ import uk.gov.justice.listing.commands.CreateListingNote;
 import uk.gov.justice.listing.commands.DeleteListingNote;
 import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
-import uk.gov.justice.listing.courts.DeleteNextHearings;
 import uk.gov.justice.listing.courts.ExtendHearingForHearing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearingEnriched;
 import uk.gov.justice.listing.courts.ListCourtHearing;
@@ -48,6 +45,7 @@ import uk.gov.justice.listing.courts.ListUnscheduledNextHearingsEnriched;
 import uk.gov.justice.listing.courts.ProsecutionCases;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdateRelatedHearing;
+import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.enveloper.Enveloper;
@@ -59,6 +57,9 @@ import uk.gov.justice.services.messaging.MetadataBuilder;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
+import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
+import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
+import uk.gov.moj.cpp.staginghmi.common.StagingHmiService;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -114,6 +115,10 @@ public class ListingCommandApiTest {
     private ListingCommandApi listingCommandApi;
     @Mock
     private ExtendHearingForHearing extendHearingForHearing;
+    @Mock
+    private StagingHmiService stagingHmiService;
+    @Mock
+    private ReferenceDataService referenceDataService;
     @Captor
     private ArgumentCaptor<Envelope> envelopeArgumentCaptor;
 
@@ -134,7 +139,14 @@ public class ListingCommandApiTest {
         //given
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
-        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(empty());
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
+        given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
+
+        final UUID courtCentreId = randomUUID();
+        given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
+        OrganisationUnit organisationUnit = new OrganisationUnit(randomUUID(), "abc");
+        when(referenceDataService.getOrganizationUnitById(courtCentreId, envelope)).thenReturn(organisationUnit);
+        when(stagingHmiService.isHmiListingEnabled(Matchers.any())).thenReturn(true);
 
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
@@ -164,7 +176,14 @@ public class ListingCommandApiTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(empty());
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
+        given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
+
+        final UUID courtCentreId = randomUUID();
+        given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
+        OrganisationUnit organisationUnit = new OrganisationUnit(randomUUID(), "abc");
+        when(referenceDataService.getOrganizationUnitById(courtCentreId, envelope)).thenReturn(organisationUnit);
+        when(stagingHmiService.isHmiListingEnabled(Matchers.any())).thenReturn(true);
 
         given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
 
@@ -386,12 +405,19 @@ public class ListingCommandApiTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(updateHearingForListing.getJurisdictionType()).willReturn(MAGISTRATES);
+        given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
         given(updateHearingForListing.getNonDefaultDays()).willReturn(getNonDefaultDays());
-        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(empty());
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
 
 
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
         given(updateHearingForListing.getNonDefaultDays()).willReturn(getNonDefaultDays());
+
+        final UUID courtCentreId = randomUUID();
+        given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
+        OrganisationUnit organisationUnit = new OrganisationUnit(randomUUID(), "abc");
+        when(referenceDataService.getOrganizationUnitById(courtCentreId, envelope)).thenReturn(organisationUnit);
+        when(stagingHmiService.isHmiListingEnabled(Matchers.any())).thenReturn(true);
 
         given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
 
@@ -402,8 +428,30 @@ public class ListingCommandApiTest {
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
     }
 
+    @Test(expected = BadRequestException.class)
+    public void shouldThrowBadRequestExceptionWhenJurisdictionTypeIsMagistratesCourtAndCourtRoomIdIsNull() {
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
+        given(updateHearingForListing.getJurisdictionType()).willReturn(MAGISTRATES);
+        given(updateHearingForListing.getNonDefaultDays()).willReturn(getNonDefaultDays());
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
+
+        final UUID courtCentreId = randomUUID();
+        given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
+        OrganisationUnit organisationUnit = new OrganisationUnit(randomUUID(), "abc");
+        when(referenceDataService.getOrganizationUnitById(courtCentreId, envelope)).thenReturn(organisationUnit);
+        when(stagingHmiService.isHmiListingEnabled(Matchers.any())).thenReturn(true);
+
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(updateHearingForListing.getNonDefaultDays()).willReturn(getNonDefaultDays());
+
+        given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
+
+        listingCommandApi.handleUpdateHearingForListing(envelope);
+    }
+
     private List<NonDefaultDay> getNonDefaultDays() {
-        return asList(new NonDefaultDay.Builder().withCourtScheduleId(of("134452")).build());
+        return asList(new NonDefaultDay.Builder().withCourtScheduleId("134452").build());
     }
 
     @Test
@@ -514,6 +562,39 @@ public class ListingCommandApiTest {
 
         verify(sender).send(envelopeArgumentCaptor.capture());
         assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is("listing.command.update-existing-hearing"));
+    }
+
+    @Test
+    public void shouldUpdateHearingForListingFromHmi() {
+
+        //given
+        given(envelope.payloadAsJsonObject()).willReturn(payload);
+        given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
+        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
+        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
+        given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
+
+        final UUID courtCentreId = randomUUID();
+        given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
+        OrganisationUnit organisationUnit = new OrganisationUnit(randomUUID(), "abc");
+        when(referenceDataService.getOrganizationUnitById(courtCentreId, envelope)).thenReturn(organisationUnit);
+        when(stagingHmiService.isHmiListingEnabled(Matchers.any())).thenReturn(true);
+
+        given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
+
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
+                ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        final JsonArray prosecutionCasesArray = Json.createArrayBuilder().build();
+        given(payload.getJsonArray("prosecutionCases")).willReturn(prosecutionCasesArray);
+
+        //when
+        listingCommandApi.handleUpdateHearingForListing(envelope);
+
+        //then
+        verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
+        verify(jsonObjectConverter, never()).convert(Matchers.any(), eq(ProsecutionCases.class));
+
     }
 
     @Test

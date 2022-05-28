@@ -1,8 +1,7 @@
 package uk.gov.moj.cpp.listing.it;
 
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
@@ -14,7 +13,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExtendHearingIT extends AbstractIT {
 
@@ -74,6 +75,9 @@ public class ExtendHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingConfirmedEventForExtendPartialHearingPublicMQ(ALLOCATED_HEARING_ID, unallocatedHearingId);
             listCourtHearingSteps.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, unallocatedHearingId);
             listCourtHearingSteps.verifyHearingUpdatedPartiallyInActiveMQ(unallocatedHearingId);
+            listCourtHearingSteps.verifyPublicHearingChangesSavedInPublicMQ(ALLOCATED_HEARING_ID);
+            listCourtHearingSteps.verifyPublicHearingUpdatedPartiallyInActiveMQ(unallocatedHearingId);
+
         }
     }
 

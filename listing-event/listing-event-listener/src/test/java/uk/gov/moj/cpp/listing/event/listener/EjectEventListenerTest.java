@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -61,20 +61,20 @@ public class EjectEventListenerTest {
     private static final Address APPLICANT_ADDRESS = Address
             .address()
             .withAddress1(STRING.next())
-            .withAddress2(of(STRING.next()))
-            .withAddress3(of(STRING.next()))
-            .withAddress4(of(STRING.next()))
-            .withAddress5(of(STRING.next()))
-            .withPostcode(of(STRING.next()))
+            .withAddress2(STRING.next())
+            .withAddress3(STRING.next())
+            .withAddress4(STRING.next())
+            .withAddress5(STRING.next())
+            .withPostcode(STRING.next())
             .build();
     private static final Address RESPONDENT_ADDRESS = Address
             .address()
             .withAddress1(STRING.next())
-            .withAddress2(of(STRING.next()))
-            .withAddress3(of(STRING.next()))
-            .withAddress4(of(STRING.next()))
-            .withAddress5(of(STRING.next()))
-            .withPostcode(of(STRING.next()))
+            .withAddress2(STRING.next())
+            .withAddress3(STRING.next())
+            .withAddress4(STRING.next())
+            .withAddress5(STRING.next())
+            .withPostcode(STRING.next())
             .build();
 
     @Mock
@@ -205,7 +205,8 @@ public class EjectEventListenerTest {
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         final ArrayNode applicationArrayNode = objectNodeCaptor.getValue();
         applicationArrayNode.forEach(applicationNode -> {
-            if (applicationNode.get("id").asText().equals(COURT_APPLICATIONS_ID.toString()) || applicationNode.get("parentApplicationId").asText().equals(COURT_APPLICATIONS_ID.toString())) {
+            if (applicationNode.get("id").asText().equals(COURT_APPLICATIONS_ID.toString()) || (applicationNode.get("parentApplicationId").asText().equals(COURT_APPLICATIONS_ID.toString())
+                    && isNotEmpty(applicationNode.path("isEjected").asText()))) {
                 assertEquals("Check if the application status is ejected", "true",
                         applicationNode.path("isEjected").asText());
             } else {
@@ -222,11 +223,11 @@ public class EjectEventListenerTest {
 
     private void validateAddress(final JsonNode actualAddress, final Address expectedAddress) {
         assertThat(actualAddress.get("address1").asText(), equalTo(expectedAddress.getAddress1()));
-        assertThat(actualAddress.get("address2").asText(), equalTo(expectedAddress.getAddress2().get()));
-        assertThat(actualAddress.get("address3").asText(), equalTo(expectedAddress.getAddress3().get()));
-        assertThat(actualAddress.get("address4").asText(), equalTo(expectedAddress.getAddress4().get()));
-        assertThat(actualAddress.get("address5").asText(), equalTo(expectedAddress.getAddress5().get()));
-        assertThat(actualAddress.get("postcode").asText(), equalTo(expectedAddress.getPostcode().get()));
+        assertThat(actualAddress.get("address2").asText(), equalTo(expectedAddress.getAddress2()));
+        assertThat(actualAddress.get("address3").asText(), equalTo(expectedAddress.getAddress3()));
+        assertThat(actualAddress.get("address4").asText(), equalTo(expectedAddress.getAddress4()));
+        assertThat(actualAddress.get("address5").asText(), equalTo(expectedAddress.getAddress5()));
+        assertThat(actualAddress.get("postcode").asText(), equalTo(expectedAddress.getPostcode()));
     }
 
     private List<ListedCase> createListedCases() {
@@ -255,65 +256,65 @@ public class EjectEventListenerTest {
     private List<CourtApplication> createCourtApplications(final List<UUID> linkedCaseIds) {
        CourtApplication parentCourtApplication = CourtApplication.courtApplication()
                 .withLinkedCaseIds(linkedCaseIds)
-                .withParentApplicationId(of(randomUUID()))
+                .withParentApplicationId(randomUUID())
                 .withId(COURT_APPLICATIONS_ID)
                 .withApplicationType(COURT_APPLICATION_TYPE)
-                .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
                 .withApplicant(ApplicantRespondent.applicantRespondent()
-                        .withFirstName(of(STRING.next()))
+                        .withFirstName(STRING.next())
                         .withLastName(STRING.next())
                         .withIsRespondent(false)
                         .withId(randomUUID())
-                        .withAddress(of(APPLICANT_ADDRESS))
+                        .withAddress(APPLICANT_ADDRESS)
                         .build())
                 .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
-                        .withFirstName(of(STRING.next()))
+                        .withFirstName(STRING.next())
                         .withLastName(STRING.next())
                         .withIsRespondent(true)
                         .withId(randomUUID())
-                        .withAddress(of(RESPONDENT_ADDRESS))
+                        .withAddress(RESPONDENT_ADDRESS)
                         .build()))
                 .build();
         CourtApplication childApplication = CourtApplication.courtApplication()
                 .withLinkedCaseIds(singletonList(CASE_ID))
-                .withParentApplicationId(of(COURT_APPLICATIONS_ID))
+                .withParentApplicationId(COURT_APPLICATIONS_ID)
                 .withId(randomUUID())
                 .withApplicationType(COURT_APPLICATION_TYPE)
-                .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
                 .withApplicant(ApplicantRespondent.applicantRespondent()
-                        .withFirstName(of(STRING.next()))
+                        .withFirstName(STRING.next())
                         .withLastName(STRING.next())
                         .withIsRespondent(false)
                         .withId(randomUUID())
-                        .withAddress(of(APPLICANT_ADDRESS))
+                        .withAddress(APPLICANT_ADDRESS)
                         .build())
                 .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
-                        .withFirstName(of(STRING.next()))
+                        .withFirstName(STRING.next())
                         .withLastName(STRING.next())
                         .withIsRespondent(true)
                         .withId(randomUUID())
-                        .withAddress(of(RESPONDENT_ADDRESS))
+                        .withAddress(RESPONDENT_ADDRESS)
                         .build()))
                 .build();
         CourtApplication noChildApplication = CourtApplication.courtApplication()
                 .withLinkedCaseIds(singletonList(CASE_ID))
-                .withParentApplicationId(of(randomUUID()))
+                .withParentApplicationId(randomUUID())
                 .withId(randomUUID())
                 .withApplicationType(COURT_APPLICATION_TYPE)
-                .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
                 .withApplicant(ApplicantRespondent.applicantRespondent()
-                        .withFirstName(of(STRING.next()))
+                        .withFirstName(STRING.next())
                         .withLastName(STRING.next())
                         .withIsRespondent(false)
                         .withId(randomUUID())
-                        .withAddress(of(APPLICANT_ADDRESS))
+                        .withAddress(APPLICANT_ADDRESS)
                         .build())
                 .withRespondents(singletonList(ApplicantRespondent.applicantRespondent()
-                        .withFirstName(of(STRING.next()))
+                        .withFirstName(STRING.next())
                         .withLastName(STRING.next())
                         .withIsRespondent(true)
                         .withId(randomUUID())
-                        .withAddress(of(RESPONDENT_ADDRESS))
+                        .withAddress(RESPONDENT_ADDRESS)
                         .build()))
                 .build();
 

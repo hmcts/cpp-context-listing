@@ -159,6 +159,12 @@
       "defaultDuration": 30,
       "defaultStartTime": "10:30:00",
       "id": "e8821a38-546d-4b56-9992-ebdd772a561f"
-    }
+    },
+    "bookingType": "Video",
+    "priority": "High",
+    "specialRequirements": [
+      "RVC",
+      "GSN"
+    ]
   }
 }

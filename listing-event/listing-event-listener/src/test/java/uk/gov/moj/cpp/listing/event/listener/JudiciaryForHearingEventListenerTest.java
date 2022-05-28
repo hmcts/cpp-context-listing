@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
@@ -22,7 +21,6 @@ import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.io.StringReader;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -66,12 +64,12 @@ public class JudiciaryForHearingEventListenerTest {
         ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
         Envelope<JudiciaryAssignedToHearing>  envelope = (Envelope<JudiciaryAssignedToHearing>) mock(Envelope.class);
         JudicialRole judicialRole = judicialRole()
-                .withIsBenchChairman(of(true))
-                .withIsDeputy(of(false))
+                .withIsBenchChairman(true)
+                .withIsDeputy(false)
                 .withJudicialId(fromString("5a4ce2e5-4b4e-43bd-963c-b98c2150b74d"))
                 .withJudicialRoleType(JudicialRoleType.judicialRoleType()
                         .withJudiciaryType("CIRCUIT_JUDGE")
-                        .withJudicialRoleTypeId(Optional.empty())
+                        .withJudicialRoleTypeId(null)
                         .build())
                 .build();
 
@@ -96,12 +94,12 @@ public class JudiciaryForHearingEventListenerTest {
         ObjectNode properties = (ObjectNode) objectMapper.readTree(TEST_JSON);
         Envelope<JudiciaryChangedForHearing> envelope = (Envelope<JudiciaryChangedForHearing>) mock(Envelope.class);
         JudicialRole judicialRole = judicialRole()
-                .withIsBenchChairman(of(true))
-                .withIsDeputy(of(false))
+                .withIsBenchChairman(true)
+                .withIsDeputy(false)
                 .withJudicialId(JUDICIAL_ROLE_ID)
                 .withJudicialRoleType(JudicialRoleType.judicialRoleType()
                         .withJudiciaryType("CIRCUIT_JUDGE")
-                        .withJudicialRoleTypeId(Optional.empty())
+                        .withJudicialRoleTypeId(null)
                         .build())
                 .build();
 

@@ -55,6 +55,8 @@ public class ReferenceDataCache {
 
     private Map<UUID, Judiciary> judiciariesMapCache = new HashMap<>();
 
+    private Map<String, HearingType> hearingTypesCodesMapCache = new HashMap<>();
+
     @PostConstruct
     public void initReferenceData() {
         initCrownCourtMappingsList();
@@ -122,6 +124,13 @@ public class ReferenceDataCache {
         return Optional.of(hearingTypesMapCache.get(hearingTypeId));
     }
 
+    public Optional<HearingType> getHearingTypeCodeCache(final String hearingCode) {
+        if (hearingTypesCodesMapCache.isEmpty()) {
+            initHearingTypes();
+        }
+        return Optional.of(hearingTypesCodesMapCache.get(hearingCode));
+    }
+
     public List<CourtLocation> getCrownCourtLocationsCache(final String crestCourtId) {
         if (crownCourtLocationListMapCache.isEmpty()) {
             initCrownCourtMappingsList();
@@ -167,6 +176,9 @@ public class ReferenceDataCache {
     private void getHearingTypes(HearingTypesList hearingTypesList) {
         hearingTypesMapCache = hearingTypesList.getHearingTypes().stream()
                 .collect(Collectors.toMap(HearingType::getId, Function.identity(), (firstHearingTypeId, secondHearingTypeId) -> firstHearingTypeId)
+                );
+        hearingTypesCodesMapCache = hearingTypesList.getHearingTypes().stream()
+                .collect(Collectors.toMap(HearingType::getHearingCode, Function.identity(), (firstHearingTypeId, secondHearingTypeId) -> firstHearingTypeId)
                 );
     }
 

@@ -1,8 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Collections.singletonList;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,7 +29,6 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -98,11 +95,11 @@ public class DefendantOffencesEventListenerTest {
                         .withStartDate(LocalDates.to(LocalDate.now()))
                         .withOffenceCode(EXPECTED_OFFENCE_CODE)
                         .withId(OFFENCE_ID)
-                        .withEndDate(of(LocalDates.to(LocalDate.now())))
+                        .withEndDate(LocalDates.to(LocalDate.now()))
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withTitle(STRING.next())
                                 .withWelshTitle(STRING.next())
-                                .withLegislation(of(STRING.next()))
+                                .withLegislation(STRING.next())
                                 .build())
                         .build())
                 .build();
@@ -127,9 +124,9 @@ public class DefendantOffencesEventListenerTest {
         assertThat(numberOffence, equalTo(1));
         assertThat(expectedOffenceCode, equalTo("\"" + EXPECTED_OFFENCE_CODE + "\""));
 
-        assertThat(newListedCase.get("shadowListed").asBoolean(), equalTo(testListedCase.getShadowListed().get()));
+        assertThat(newListedCase.get("shadowListed").asBoolean(), equalTo(testListedCase.getShadowListed()));
         assertThat(newListedCase.get("defendants").get(0).get("offences").get(0).get("shadowListed").asBoolean(),
-                equalTo(testListedCase.getDefendants().get(0).getOffences().get(0).getShadowListed().get()));
+                equalTo(testListedCase.getDefendants().get(0).getOffences().get(0).getShadowListed()));
         verify(hearingRepository).save(hearing);
     }
 
@@ -148,11 +145,11 @@ public class DefendantOffencesEventListenerTest {
                         .withStartDate(LocalDates.to(LocalDate.now()))
                         .withOffenceCode(EXPECTED_OFFENCE_CODE)
                         .withId(randomUUID())
-                        .withShadowListed(Optional.ofNullable(null))
+                        .withShadowListed(null)
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withTitle(STRING.next())
                                 .withWelshTitle(STRING.next())
-                                .withLegislation(of(STRING.next()))
+                                .withLegislation(STRING.next())
                                 .build())
                         .build())
                 .build();
@@ -221,24 +218,24 @@ public class DefendantOffencesEventListenerTest {
                         .withCaseReference(STRING.next())
                         .build())
                 .withDefendants(singletonList(Defendant.defendant()
-                        .withSpecificRequirements(empty())
-                        .withFirstName(of("FirstName"))
-                        .withDatesToAvoid(of("Dates to avoid"))
+                        .withSpecificRequirements(null)
+                        .withFirstName("FirstName")
+                        .withDatesToAvoid("Dates to avoid")
                         .withId(DEFENDANT_ID)
-                        .withBailStatus(of(new BailStatus.Builder().withCode("C").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).withDescription("Custody or remanded into custody").build()))
+                        .withBailStatus(new BailStatus.Builder().withCode("C").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).withDescription("Custody or remanded into custody").build())
                         .withOffences(singletonList(Offence.offence()
                                 .withId(OFFENCE_ID)
                                 .withOffenceCode(STRING.next())
                                 .withStartDate(LocalDates.to(LocalDate.now()))
                                 .withStatementOfOffence(StatementOfOffence.statementOfOffence()
-                                        .withLegislation(of(STRING.next()))
+                                        .withLegislation(STRING.next())
                                         .withTitle(STRING.next())
                                         .build())
-                                .withShadowListed(Optional.of(Boolean.TRUE))
+                                .withShadowListed(true)
                                 .build()))
                         .build()))
                 .withId(CASE_ID)
-                .withShadowListed(Optional.of(Boolean.TRUE))
+                .withShadowListed(true)
                 .build());
     }
 }

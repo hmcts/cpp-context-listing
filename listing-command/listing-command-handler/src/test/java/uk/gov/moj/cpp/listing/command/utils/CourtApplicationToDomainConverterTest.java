@@ -38,21 +38,21 @@ public class CourtApplicationToDomainConverterTest {
         final CourtApplication courtApplication = commandBuilder.buildCourtApplication();
         final uk.gov.moj.cpp.listing.domain.CourtApplication actual = converter.convert(courtApplication);
         assertThat(actual.getId(), is(courtApplication.getId()));
-        assertThat(actual.getApplicant().getFirstName().get(), is(courtApplication.getApplicant().getPersonDetails().get().getFirstName().get()));
-        assertThat(actual.getApplicant().getLastName(), is(courtApplication.getApplicant().getPersonDetails().get().getLastName()));
+        assertThat(actual.getApplicant().getFirstName().get(), is(courtApplication.getApplicant().getPersonDetails().getFirstName()));
+        assertThat(actual.getApplicant().getLastName(), is(courtApplication.getApplicant().getPersonDetails().getLastName()));
         assertThat(actual.getApplicationType(), is(courtApplication.getType().getType()));
-        assertThat(actual.getApplicationParticulars().get(), is(courtApplication.getApplicationParticulars().get()));
-        assertThat(actual.getRespondents().get(0).getFirstName().get(), is(courtApplication.getRespondents().get(0).getPersonDetails().get().getFirstName().get()));
-        assertThat(actual.getRespondents().get(0).getLastName(), is(courtApplication.getRespondents().get(0).getPersonDetails().get().getLastName()));
-        assertThat(actual.getRespondents().get(1).getLastName(), is(courtApplication.getRespondents().get(1).getProsecutingAuthority().get().getProsecutionAuthorityCode()));
-        assertThat(actual.getRespondents().get(2).getLastName(), is(courtApplication.getRespondents().get(2).getOrganisation().get().getName()));
-        assertThat(actual.getRespondents().get(3).getFirstName().get(), is(courtApplication.getRespondents().get(3).getMasterDefendant().get().getPersonDefendant().get().getPersonDetails().getFirstName().get()));
-        assertThat(actual.getRespondents().get(3).getLastName(), is(courtApplication.getRespondents().get(3).getMasterDefendant().get().getPersonDefendant().get().getPersonDetails().getLastName()));
-        checkAddress(actual.getApplicant().getAddress(), courtApplication.getApplicant().getPersonDetails().get().getAddress().get());
-        checkAddress(actual.getRespondents().get(0).getAddress(), courtApplication.getRespondents().get(0).getPersonDetails().get().getAddress().get());
-        checkAddress(actual.getRespondents().get(1).getAddress(), courtApplication.getRespondents().get(1).getProsecutingAuthority().get().getAddress().get());
-        checkAddress(actual.getRespondents().get(2).getAddress(), courtApplication.getRespondents().get(2).getOrganisation().get().getAddress().get());
-        checkAddress(actual.getRespondents().get(3).getAddress(), courtApplication.getRespondents().get(3).getMasterDefendant().get().getPersonDefendant().get().getPersonDetails().getAddress().get());
+        assertThat(actual.getApplicationParticulars().get(), is(courtApplication.getApplicationParticulars()));
+        assertThat(actual.getRespondents().get(0).getFirstName().get(), is(courtApplication.getRespondents().get(0).getPersonDetails().getFirstName()));
+        assertThat(actual.getRespondents().get(0).getLastName(), is(courtApplication.getRespondents().get(0).getPersonDetails().getLastName()));
+        assertThat(actual.getRespondents().get(1).getLastName(), is(courtApplication.getRespondents().get(1).getProsecutingAuthority().getProsecutionAuthorityCode()));
+        assertThat(actual.getRespondents().get(2).getLastName(), is(courtApplication.getRespondents().get(2).getOrganisation().getName()));
+        assertThat(actual.getRespondents().get(3).getFirstName().get(), is(courtApplication.getRespondents().get(3).getMasterDefendant().getPersonDefendant().getPersonDetails().getFirstName()));
+        assertThat(actual.getRespondents().get(3).getLastName(), is(courtApplication.getRespondents().get(3).getMasterDefendant().getPersonDefendant().getPersonDetails().getLastName()));
+        checkAddress(actual.getApplicant().getAddress(), courtApplication.getApplicant().getPersonDetails().getAddress());
+        checkAddress(actual.getRespondents().get(0).getAddress(), courtApplication.getRespondents().get(0).getPersonDetails().getAddress());
+        checkAddress(actual.getRespondents().get(1).getAddress(), courtApplication.getRespondents().get(1).getProsecutingAuthority().getAddress());
+        checkAddress(actual.getRespondents().get(2).getAddress(), courtApplication.getRespondents().get(2).getOrganisation().getAddress());
+        checkAddress(actual.getRespondents().get(3).getAddress(), courtApplication.getRespondents().get(3).getMasterDefendant().getPersonDefendant().getPersonDetails().getAddress());
 
     }
 
@@ -61,11 +61,11 @@ public class CourtApplicationToDomainConverterTest {
         final CourtApplication courtApplication = commandBuilder.buildCourtApplicationWithLegalEntity();
         final uk.gov.moj.cpp.listing.domain.CourtApplication actual = converter.convert(courtApplication);
         assertThat(actual.getId(), is(courtApplication.getId()));
-        assertThat(actual.getApplicant().getLastName(), is(courtApplication.getApplicant().getMasterDefendant().get().getLegalEntityDefendant().get().getOrganisation().getName()));
+        assertThat(actual.getApplicant().getLastName(), is(courtApplication.getApplicant().getMasterDefendant().getLegalEntityDefendant().getOrganisation().getName()));
         assertThat(actual.getApplicationType(), is(courtApplication.getType().getType()));
-        assertThat(actual.getApplicationParticulars().get(), is(courtApplication.getApplicationParticulars().get()));
-        checkAddress(actual.getApplicant().getAddress(), courtApplication.getApplicant().getMasterDefendant().get().getLegalEntityDefendant().get().getOrganisation().getAddress().get());
-        checkAddress(actual.getRespondents().get(0).getAddress(), courtApplication.getRespondents().get(0).getPersonDetails().get().getAddress().get());
+        assertThat(actual.getApplicationParticulars().get(), is(courtApplication.getApplicationParticulars()));
+        checkAddress(actual.getApplicant().getAddress(), courtApplication.getApplicant().getMasterDefendant().getLegalEntityDefendant().getOrganisation().getAddress());
+        checkAddress(actual.getRespondents().get(0).getAddress(), courtApplication.getRespondents().get(0).getPersonDetails().getAddress());
     }
 
     @Test
@@ -73,19 +73,19 @@ public class CourtApplicationToDomainConverterTest {
         final CourtApplication courtApplication = commandBuilder.buildCourtApplicationWithOrganisation();
         final uk.gov.moj.cpp.listing.domain.CourtApplication actual = converter.convert(courtApplication);
         assertThat(actual.getId(), is(courtApplication.getId()));
-        assertThat(actual.getApplicant().getLastName(), is(courtApplication.getApplicant().getOrganisation().get().getName()));
+        assertThat(actual.getApplicant().getLastName(), is(courtApplication.getApplicant().getOrganisation().getName()));
         assertThat(actual.getApplicationType(), is(courtApplication.getType().getType()));
-        assertThat(actual.getApplicationParticulars().get(), is(courtApplication.getApplicationParticulars().get()));
-        checkAddress(actual.getApplicant().getAddress(), courtApplication.getApplicant().getOrganisation().get().getAddress().get());
-        checkAddress(actual.getRespondents().get(0).getAddress(), courtApplication.getRespondents().get(0).getPersonDetails().get().getAddress().get());
+        assertThat(actual.getApplicationParticulars().get(), is(courtApplication.getApplicationParticulars()));
+        checkAddress(actual.getApplicant().getAddress(), courtApplication.getApplicant().getOrganisation().getAddress());
+        checkAddress(actual.getRespondents().get(0).getAddress(), courtApplication.getRespondents().get(0).getPersonDetails().getAddress());
     }
 
     private void checkAddress(final Address actualAddress, final uk.gov.justice.core.courts.Address address) {
         assertThat(actualAddress.getAddress1(), is(address.getAddress1()));
-        assertThat(actualAddress.getAddress2(), is(address.getAddress2()));
-        assertThat(actualAddress.getAddress3(), is(address.getAddress3()));
-        assertThat(actualAddress.getAddress4(), is(address.getAddress4()));
-        assertThat(actualAddress.getAddress5(), is(address.getAddress5()));
-        assertThat(actualAddress.getPostcode(), is(address.getPostcode()));
+        assertThat(actualAddress.getAddress2().get(), is(address.getAddress2()));
+        assertThat(actualAddress.getAddress3().get(), is(address.getAddress3()));
+        assertThat(actualAddress.getAddress4().get(), is(address.getAddress4()));
+        assertThat(actualAddress.getAddress5().orElse(null), is(address.getAddress5()));
+        assertThat(actualAddress.getPostcode().orElse(null), is(address.getPostcode()));
     }
 }

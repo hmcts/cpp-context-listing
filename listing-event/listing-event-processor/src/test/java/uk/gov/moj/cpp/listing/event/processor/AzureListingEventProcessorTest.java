@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
 import static java.time.ZonedDateTime.now;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
@@ -103,20 +102,20 @@ public class AzureListingEventProcessorTest {
 
         final NonDefaultDay nonDefaultDay1 = nonDefaultDay()
                 .withStartTime(START_DATE_TIME)
-                .withDuration(of(1))
-                .withCourtRoomId(of(123))
-                .withCourtScheduleId(of("224686"))
-                .withOucode(of("BA09US"))
-                .withSession(of("AD"))
+                .withDuration(1)
+                .withCourtRoomId(123)
+                .withCourtScheduleId("224686")
+                .withOucode("BA09US")
+                .withSession("AD")
                 .build();
 
         final NonDefaultDay nonDefaultDay2 = nonDefaultDay()
                 .withStartTime(START_DATE_TIME)
-                .withDuration(of(311))
-                .withCourtRoomId(of(34))
-                .withCourtScheduleId(of("224686"))
-                .withOucode(of("BA09US"))
-                .withSession(of("AD"))
+                .withDuration(311)
+                .withCourtRoomId(34)
+                .withCourtScheduleId("224686")
+                .withOucode("BA09US")
+                .withSession("AD")
                 .build();
 
 

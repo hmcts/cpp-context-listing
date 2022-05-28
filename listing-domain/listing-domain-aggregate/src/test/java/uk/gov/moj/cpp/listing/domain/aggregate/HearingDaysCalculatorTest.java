@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.domain.aggregate;
 import static java.util.Optional.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.FUTURE_LOCAL_DATE;
@@ -205,9 +206,9 @@ public class HearingDaysCalculatorTest {
                 DEFAULT_DURATION,
                 COURT_CENTRE);
 
-        assertThat(actual.get(0).getCourtScheduleId(), is(Optional.empty()));
-        assertThat(actual.get(0).getCourtCentreId(), is(Optional.empty()));
-        assertThat(actual.get(0).getCourtRoomId(), is(uuid));
+        assertThat(actual.get(0).getCourtScheduleId(), nullValue());
+        assertThat(actual.get(0).getCourtCentreId(), nullValue());
+        assertThat(actual.get(0).getCourtRoomId(), is(uuid.get()));
     }
 
     private List<HearingDay> expectedHearingDaysWithDefaultStartTimeAndDuration(final LocalDate startDate, final int totalDays, final LocalTime defaultTime, final int defaultDuration) {

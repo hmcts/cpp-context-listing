@@ -81,6 +81,7 @@ public class ListCourtHearingStepsWithWeekCommencing {
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData)) {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
         return updatedHearingData;
     }

@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.command;
 
+import static java.util.Objects.nonNull;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
@@ -34,14 +36,16 @@ public class AddOffencesForHearingCommandCollectionConverter implements Converte
         return offences.stream().map(offence -> {
             final StatementOfOffence soo = convertStatementOfOffence(offence.getStatementOfOffence());
             final Offence.Builder offenceBuilder = Offence.offence()
-                    .withEndDate(offence.getEndDate())
+                    .withEndDate(ofNullable(offence.getEndDate()))
                     .withId(offence.getId())
                     .withOffenceCode(offence.getOffenceCode())
                     .withStartDate(offence.getStartDate())
+                    .withOrderIndex(offence.getOrderIndex())
+                    .withCount(offence.getCount())
                     .withStatementOfOffence(soo)
                     .withOffenceWording(offence.getOffenceWording())
-                    .withSeedingHearing(offence.getSeedingHearing().isPresent() ? SeedingHearingConverter.convertSeedingHearing(offence.getSeedingHearing().get()) : Optional.empty())
-                    .withLaaApplnReference(offence.getLaaApplnReference().isPresent() ? convertLaaReference(offence.getLaaApplnReference().get()) : Optional.empty());
+                    .withSeedingHearing(nonNull(offence.getSeedingHearing()) ? SeedingHearingConverter.convertSeedingHearing(offence.getSeedingHearing()) : Optional.empty())
+                    .withLaaApplnReference(nonNull(offence.getLaaApplnReference()) ? convertLaaReference(offence.getLaaApplnReference()) : Optional.empty());
 
             if (isNotEmpty(offence.getReportingRestrictions())) {
                 offenceBuilder.withReportingRestrictions(commonHearingCommandConverter.buildReportingRestrictions(offence.getReportingRestrictions()));
@@ -53,21 +57,21 @@ public class AddOffencesForHearingCommandCollectionConverter implements Converte
 
     private StatementOfOffence convertStatementOfOffence(uk.gov.justice.listing.events.StatementOfOffence soo) {
         return StatementOfOffence.statementOfOffence()
-                .withLegislation(soo.getLegislation())
+                .withLegislation(ofNullable(soo.getLegislation()))
                 .withTitle(soo.getTitle())
-                .withWelshLegislation(soo.getWelshLegislation())
+                .withWelshLegislation(ofNullable(soo.getWelshLegislation()))
                 .withWelshTitle(soo.getWelshTitle())
                 .build();
     }
 
     private Optional<LaaReference> convertLaaReference(uk.gov.justice.listing.events.LaaReference laaReference){
-        return Optional.ofNullable(LaaReference.laaReference()
+        return ofNullable(LaaReference.laaReference()
                 .withStatusCode(laaReference.getStatusCode())
                 .withStatusId(laaReference.getStatusId())
                 .withStatusDescription(laaReference.getStatusDescription())
                 .withStatusDate(laaReference.getStatusDate())
-                .withEffectiveStartDate(laaReference.getEffectiveStartDate())
-                .withEffectiveEndDate(laaReference.getEffectiveEndDate())
+                .withEffectiveStartDate(ofNullable(laaReference.getEffectiveStartDate()))
+                .withEffectiveEndDate(ofNullable(laaReference.getEffectiveEndDate()))
                 .withApplicationReference(laaReference.getApplicationReference())
                 .build());
     }

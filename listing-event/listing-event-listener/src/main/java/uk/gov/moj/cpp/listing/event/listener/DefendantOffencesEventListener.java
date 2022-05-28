@@ -3,6 +3,9 @@ package uk.gov.moj.cpp.listing.event.listener;
 import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupAllReportingRestrictions;
 import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupReportingRestrictions;
+import static java.util.Optional.of;
+import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupAllReportingRestrictions;
+import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupReportingRestrictions;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 
@@ -147,17 +150,17 @@ public class DefendantOffencesEventListener {
                 .withId(updatedOffence.getId())
                 .withOffenceCode(updatedOffence.getOffenceCode())
                 .withStartDate(updatedOffence.getStartDate())
-                .withRestrictFromCourtList(restrictCourtList)
+                .withRestrictFromCourtList(nonNull(restrictCourtList) && restrictCourtList.isPresent() ? restrictCourtList.get() : null)
                 .withLaaApplnReference(updatedOffence.getLaaApplnReference())
-                .withShadowListed(originalOffence.isPresent() ? originalOffence.get().getShadowListed() : Optional.of(Boolean.FALSE))
+                .withShadowListed(originalOffence.map(Offence::getShadowListed).orElse(null))
                 .withListingNumber(originalOffence.map( Offence::getListingNumber).orElse(null))
                 .withReportingRestrictions(dedupReportingRestrictions(updatedOffence.getReportingRestrictions()))
                 .build();
     }
 
     private Optional<Boolean> getRestrictCourtList(Optional<Offence> offence) {
-        if (offence.isPresent() && offence.get().getRestrictFromCourtList().isPresent()) {
-            return offence.get().getRestrictFromCourtList();
+        if (offence.isPresent() && nonNull(offence.get().getRestrictFromCourtList())) {
+            return of(offence.get().getRestrictFromCourtList());
         }
         return Optional.empty();
     }
@@ -165,7 +168,7 @@ public class DefendantOffencesEventListener {
     private ListedCase updateShadowListedFlagForListedCase(ListedCase listedCase){
         final boolean caseShadowListed = listedCase.getDefendants().stream()
                 .flatMap(defendant -> defendant.getOffences().stream())
-                .allMatch(offence -> offence.getShadowListed().isPresent() && offence.getShadowListed().get());
+                .allMatch(offence -> nonNull(offence.getShadowListed()) && offence.getShadowListed());
 
         return ListedCase.listedCase()
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
@@ -176,7 +179,7 @@ public class DefendantOffencesEventListener {
                 .withMarkers(listedCase.getMarkers())
                 .withRestrictFromCourtList(listedCase.getRestrictFromCourtList())
                 .withId(listedCase.getId())
-                .withShadowListed(Optional.of(caseShadowListed))
+                .withShadowListed(caseShadowListed)
                 .build();
     }
 

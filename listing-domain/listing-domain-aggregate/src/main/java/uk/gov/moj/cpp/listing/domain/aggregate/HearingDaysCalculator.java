@@ -79,7 +79,6 @@ public class HearingDaysCalculator {
         final LocalTime endTime = defaultStartTime.plusMinutes(defaultDuration);
 
         return HearingDay.hearingDay()
-                .withCourtScheduleId(Optional.empty())
                 .withCourtCentreId(defaultCourtCentre.getId())
                 .withCourtRoomId(defaultCourtCentre.getRoomId())
                 .withHearingDate(date)
@@ -108,25 +107,23 @@ public class HearingDaysCalculator {
                 .build();
     }
 
-    private static Optional<UUID> toUUID(Optional<String> optionalValue) {
+    private static UUID toUUID(Optional<String> optionalValue) {
         if (optionalValue.isPresent()) {
             try {
-                final UUID uuid = UUID.fromString(optionalValue.get());
-                return Optional.of(uuid);
+                return UUID.fromString(optionalValue.get());
             } catch (IllegalArgumentException ignored) {
                 LOGGER.warn("Invalid UUID string: {}", optionalValue.get(), ignored);
             }
         }
 
-        return Optional.empty();
+        return null;
     }
 
     public static List<uk.gov.justice.listing.events.NonDefaultDay> calculateNewNonDefaultDaysForUnscheduled(final Integer hearingTypeDuration, final ZonedDateTime startDate, final LocalTime defaultStartTime, final CourtCentre courtCentre) {
         return Collections.singletonList(uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay()
-                .withCourtScheduleId(Optional.empty())
                 .withCourtCentreId(courtCentre.getId().toString())
-                .withRoomId(courtCentre.getRoomId().map(UUID::toString).orElse(null))
-                .withDuration(Optional.of(hearingTypeDuration))
+                .withRoomId(courtCentre.getRoomId() != null ? courtCentre.getRoomId().toString() : null)
+                .withDuration(hearingTypeDuration)
                 .withStartTime(ZonedDateTime.of(startDate.toLocalDate(), defaultStartTime, BST)
                         .withZoneSameInstant(UTC))
                 .build());

@@ -4,8 +4,6 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
-import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -21,6 +19,7 @@ import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.ApplicationStatus;
 import uk.gov.justice.core.courts.AssociatedPerson;
 import uk.gov.justice.core.courts.BailStatus;
+import uk.gov.justice.core.courts.BreachType;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtApplicationCase;
 import uk.gov.justice.core.courts.CourtApplicationParty;
@@ -32,23 +31,22 @@ import uk.gov.justice.core.courts.Ethnicity;
 import uk.gov.justice.core.courts.Gender;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.core.courts.InitiationCode;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
 import uk.gov.justice.core.courts.Jurisdiction;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.LaaReference;
+import uk.gov.justice.core.courts.LinkType;
 import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.core.courts.Offence;
+import uk.gov.justice.core.courts.OffenceActiveOrder;
 import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
-import uk.gov.justice.core.courts.BreachType;
-import uk.gov.justice.core.courts.InitiationCode;
-import uk.gov.justice.core.courts.LinkType;
-import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
-import uk.gov.justice.core.courts.OffenceActiveOrder;
 import uk.gov.justice.core.courts.SummonsTemplateType;
+import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
 import uk.gov.justice.listing.courts.TypeOfList;
 import uk.gov.justice.listing.courts.WeekCommencingDate;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
@@ -59,7 +57,6 @@ import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -88,9 +85,41 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
+    public void whenCaseIsSubmittedForUnscheduledListingHmiEnabled() {
+        final Response response = getResponseCaseSubmittedForUnscheduledListingHmiEnabled(false);
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void getResponseCaseSubmittedForUnscheduledListingHmiEnabled() {
+        final Response response = getResponseCaseSubmittedForUnscheduledListing(false);
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
     private Response getResponseCaseSubmittedForUnscheduledListing(final boolean isStandaloneApp) {
 
         stubReferenceDataForFirstHearing();
+
+        final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_UNSCHEDULED_LIST_COURT_HEARING)));
+
+        ListUnscheduledCourtHearing listCourtHearingData = null;
+        if (isStandaloneApp) {
+            listCourtHearingData = getListCourtHearingDataStandaloneApplication(getHearingsData());
+        } else {
+            listCourtHearingData = getListCourtHearingData(getHearingsData());
+        }
+        final JsonObject listCourtHearingJsonObject = (JsonObject) objectToJsonValueConverter.convert(listCourtHearingData);
+
+        request = listCourtHearingJsonObject.toString();
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", listCaseForHearingUrl, MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING, request, getLoggedInHeader());
+
+        return restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_UNSCHEDULED_COURT_HEARING,
+                request, getLoggedInHeader());
+    }
+
+    private Response getResponseCaseSubmittedForUnscheduledListingHmiEnabled(final boolean isStandaloneApp) {
+
+        stubReferenceDataForFirstHearingHmiEnabled();
 
         final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_COMMAND_UNSCHEDULED_LIST_COURT_HEARING)));
@@ -178,22 +207,22 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                                 .withCourtCentre(CourtCentre.courtCentre()
                                         .withId(hearingData.getCourtCentreId())
                                         .withName(hearingData.getName())
-                                        .withRoomId(ofNullable(hearingData.getCourtRoomId()))
+                                        .withRoomId(hearingData.getCourtRoomId())
                                         .build())
-                                .withBookingReference(of(randomUUID()))
+                                .withBookingReference(randomUUID())
                                 .withCourtApplications(getCourtApplications(hearingData))
                                 .withCourtApplicationPartyListingNeeds(hearingData.getCourtApplicationPartyNeeds())
                                 .withId(hearingData.getId())
-                                .withEarliestStartDateTime(hearingData.getHearingStartTime() != null ? of(hearingData.getHearingStartTime()) : Optional.empty())
-                                .withEndDate(hearingData.getHearingEndDate() != null ? of(hearingData.getHearingEndDate().toString()) : Optional.empty())
-                                .withEstimatedMinutes(of(hearingData.getHearingEstimateMinutes()))
+                                .withEarliestStartDateTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : null)
+                                .withEndDate(hearingData.getHearingEndDate() != null ? hearingData.getHearingEndDate().toString() : null)
+                                .withEstimatedMinutes(hearingData.getHearingEstimateMinutes())
                                 .withJudiciary(getJudiciary(hearingData))
                                 .withJurisdictionType(hearingData.getJurisdictionType() != null ? JurisdictionType.valueFor(hearingData.getJurisdictionType()).get() : null)
-                                .withWeekCommencingDate(hearingData.getWeekCommencingStartDate() == null ? Optional.empty() :
-                                        of(WeekCommencingDate.weekCommencingDate()
+                                .withWeekCommencingDate(hearingData.getWeekCommencingStartDate() == null ? null :
+                                        WeekCommencingDate.weekCommencingDate()
                                                 .withStartDate(FORMATTER.format(hearingData.getWeekCommencingStartDate()))
-                                                .withDuration(of(hearingData.getWeekCommencingDuration()))
-                                                .build()))
+                                                .withDuration(hearingData.getWeekCommencingDuration())
+                                                .build())
                                 .withProsecutionCases(convertToListedCases(hearingData, listedCaseData))
                                 .withDefendantListingNeeds(hearingData.getListedCases().stream()
                                         .map(lc -> lc.getDefendants().stream().map(d ->
@@ -210,7 +239,7 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                                         .withWelshDescription(hearingData.getHearingTypeData().getWelshDescription())
                                         .withId(hearingData.getHearingTypeData().getTypeId())
                                         .build())
-                                .withReportingRestrictionReason(of(hearingData.getReportingRestrictionReason()))
+                                .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
                                 .build()))
                 .build();
     }
@@ -233,63 +262,63 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                                 .withId(d.getDefendantId())
                                 .withMasterDefendantId(d.getMasterDefendantId())
                                 .withCourtProceedingsInitiated(ZonedDateTime.now())
-                                .withIsYouth(ofNullable(d.getIsYouth()))
-                                .withPersonDefendant(of(PersonDefendant.personDefendant()
-                                        .withBailStatus(of(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build()))
+                                .withIsYouth(d.getIsYouth())
+                                .withPersonDefendant(PersonDefendant.personDefendant()
+                                        .withBailStatus(new BailStatus.Builder().withCode(d.getBailStatus().getCode()).withDescription(d.getBailStatus().getDescription()).withId(d.getBailStatus().getId()).build())
                                         .withPersonDetails(Person.person()
-                                                .withTitle(of(PERSON_TITLE))
-                                                .withNationalityId(of(randomUUID()))
-                                                .withNationalityDescription(of(PERSON_NATIONALITY_DESCRIPTION))
-                                                .withAddress(of(Address.address()
+                                                .withTitle(PERSON_TITLE)
+                                                .withNationalityId(randomUUID())
+                                                .withNationalityDescription(PERSON_NATIONALITY_DESCRIPTION)
+                                                .withAddress(Address.address()
                                                         .withAddress1(PERSON_ADDRESS_1)
-                                                        .withAddress2(of(PERSON_ADDRESS_2))
-                                                        .withAddress3(of(PERSON_ADDRESS_3))
-                                                        .withAddress4(of(PERSON_ADDRESS_4))
-                                                        .withAddress5(of(PERSON_ADDRESS_5))
-                                                        .withPostcode(of(PERSON_POSTCODE))
-                                                        .build()))
-                                                .withFirstName(of(d.getFirstName()))
+                                                        .withAddress2(PERSON_ADDRESS_2)
+                                                        .withAddress3(PERSON_ADDRESS_3)
+                                                        .withAddress4(PERSON_ADDRESS_4)
+                                                        .withAddress5(PERSON_ADDRESS_5)
+                                                        .withPostcode(PERSON_POSTCODE)
+                                                        .build())
+                                                .withFirstName(d.getFirstName())
                                                 .withLastName(d.getLastName())
                                                 .withGender(Gender.MALE)
-                                                .withAdditionalNationalityId(of(randomUUID()))
-                                                .withEthnicity(of(Ethnicity.ethnicity()
-                                                        .withObservedEthnicityId(of(randomUUID()))
-                                                        .withObservedEthnicityDescription(of(STRING.next()))
-                                                        .build()))
-                                                .withDateOfBirth(of(LocalDate.now().minusYears(21).toString()))
+                                                .withAdditionalNationalityId(randomUUID())
+                                                .withEthnicity(Ethnicity.ethnicity()
+                                                        .withObservedEthnicityId(randomUUID())
+                                                        .withObservedEthnicityDescription(STRING.next())
+                                                        .build())
+                                                .withDateOfBirth(LocalDate.now().minusYears(21).toString())
                                                 .build())
-                                        .build()))
+                                        .build())
                                 .withAssociatedPersons(asList(AssociatedPerson.associatedPerson()
-                                        .withRole(of(STRING.next()))
+                                        .withRole(STRING.next())
                                         .withPerson(Person.person()
-                                                .withAdditionalNationalityId(of(randomUUID()))
+                                                .withAdditionalNationalityId(randomUUID())
                                                 .withGender(Gender.FEMALE)
                                                 .withLastName(d.getLastName())
-                                                .withNationalityId(of(randomUUID()))
-                                                .withTitle(of(PERSON_TITLE))
-                                                .withEthnicity(of(Ethnicity.ethnicity()
-                                                        .withObservedEthnicityId(of(randomUUID()))
-                                                        .withObservedEthnicityDescription(of(STRING.next()))
-                                                        .build()))
+                                                .withNationalityId(randomUUID())
+                                                .withTitle(PERSON_TITLE)
+                                                .withEthnicity(Ethnicity.ethnicity()
+                                                        .withObservedEthnicityId(randomUUID())
+                                                        .withObservedEthnicityDescription(STRING.next())
+                                                        .build())
                                                 .build())
                                         .build()))
                                 .withOffences(d.getOffences().stream()
                                         .map(o -> Offence.offence()
-                                                .withCount(of(INTEGER.next()))
+                                                .withCount(INTEGER.next())
                                                 .withId(o.getOffenceId())
                                                 .withOffenceCode(STRING.next())
                                                 .withOffenceDefinitionId(randomUUID())
                                                 .withWording(STRING.next())
                                                 .withStartDate(LocalDate.now().toString())
-                                                .withOrderIndex(of(INTEGER.next()))
+                                                .withOrderIndex(INTEGER.next())
                                                 .withOffenceTitle(o.getStatementOfOffenceTitle())
-                                                .withLaaApplnReference(of(
+                                                .withLaaApplnReference(
                                                         LaaReference.laaReference()
                                                                 .withApplicationReference(STRING.next())
                                                                 .withStatusCode(STRING.next())
                                                                 .withStatusDate((format(LocalDate.now().toString())))
                                                                 .withStatusDescription(STRING.next())
-                                                                .withStatusId(randomUUID()).build()))
+                                                                .withStatusId(randomUUID()).build())
                                                 .build())
                                         .collect(Collectors.toList()))
                                 .withProsecutionCaseId(listedCaseData.getCaseId())
@@ -305,10 +334,10 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                 .withJudicialId(hearingData.getJudiciary().get(0).getJudicialId())
                 .withJudicialRoleType(JudicialRoleType.judicialRoleType()
                         .withJudiciaryType(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType())
-                        .withJudicialRoleTypeId(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudicialRoleTypeId())
+                        .withJudicialRoleTypeId(hearingData.getJudiciary().get(0).getJudicialRoleType().getJudicialRoleTypeId().orElse(null))
                         .build())
-                .withIsDeputy(hearingData.getJudiciary().get(0).getIsDeputy())
-                .withIsBenchChairman(hearingData.getJudiciary().get(0).getIsBenchChairman())
+                .withIsDeputy(hearingData.getJudiciary().get(0).getIsDeputy().orElse(null))
+                .withIsBenchChairman(hearingData.getJudiciary().get(0).getIsBenchChairman().orElse(null))
                 .build())
                 : null;
     }
@@ -316,10 +345,10 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
     private List<CourtApplication> getCourtApplications(final HearingData hearingData) {
         final CourtApplicationParty applicant  = CourtApplicationParty.courtApplicationParty()
                 .withId(hearingData.getCourtApplications().get(0).getApplicant().getId())
-                .withPersonDetails(of(Person.person().withLastName(hearingData.getCourtApplications().get(0).getApplicant().getLastName())
-                        .withFirstName(of(hearingData.getCourtApplications().get(0).getApplicant().getFirstName()))
+                .withPersonDetails(Person.person().withLastName(hearingData.getCourtApplications().get(0).getApplicant().getLastName())
+                        .withFirstName(hearingData.getCourtApplications().get(0).getApplicant().getFirstName())
                         .withGender(Gender.FEMALE)
-                        .build()))
+                        .build())
                 .withSummonsRequired(false)
                 .withNotificationRequired(false)
                 .build();
@@ -335,12 +364,12 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                         .withIsSJP(false)
                         .withCaseStatus("ACTIVE")
                         .build()))
-                .withParentApplicationId(of(hearingData.getCourtApplications().get(0).getParentApplicationId()))
+                .withParentApplicationId(hearingData.getCourtApplications().get(0).getParentApplicationId())
                 .withType(CourtApplicationType.courtApplicationType()
                         .withId(randomUUID())
-                        .withCode(of(STRING.next()))
+                        .withCode(STRING.next())
                         .withType(hearingData.getCourtApplications().get(0).getType())
-                        .withLegislation(of(STRING.next()))
+                        .withLegislation(STRING.next())
                         .withCategoryCode(STRING.next())
                         .withLinkType(LinkType.LINKED)
                         .withJurisdiction(Jurisdiction.CROWN)
@@ -357,16 +386,16 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                         .withOffenceActiveOrder(OffenceActiveOrder.COURT_ORDER)
                         .build())
                 .withApplicationReceivedDate(LocalDate.now().toString())
-                .withApplicationReference(of(STRING.next()))
+                .withApplicationReference(STRING.next())
                 .withApplicationStatus(ApplicationStatus.LISTED)
                 .withApplicant(applicant)
                 .withRespondents(asList(
                         CourtApplicationParty.courtApplicationParty()
                                 .withId(hearingData.getCourtApplications().get(0).getRespondent().getId())
-                                .withPersonDetails(of(Person.person().withLastName(hearingData.getCourtApplications().get(0).getRespondent().getLastName())
-                                        .withFirstName(of(hearingData.getCourtApplications().get(0).getRespondent().getFirstName()))
+                                .withPersonDetails(Person.person().withLastName(hearingData.getCourtApplications().get(0).getRespondent().getLastName())
+                                        .withFirstName(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())
                                         .withGender(Gender.FEMALE)
-                                        .build()))
+                                        .build())
                                 .withSummonsRequired(false)
                                 .withNotificationRequired(false)
                                 .build()))
@@ -387,50 +416,50 @@ public class ListUnscheduledCourtHearingSteps extends ListCourtHearingSteps {
                         .withCourtCentre(CourtCentre.courtCentre()
                                 .withId(hearingData.getCourtCentreId())
                                 .withName(hearingData.getName())
-                                .withRoomId(ofNullable(hearingData.getCourtRoomId()))
+                                .withRoomId(hearingData.getCourtRoomId())
                                 .build())
                         .withCourtApplications(asList(CourtApplication.courtApplication()
                                 .withId(hearingData.getCourtApplications().get(0).getId())
-                                .withParentApplicationId(of(hearingData.getCourtApplications().get(0).getParentApplicationId()))
+                                .withParentApplicationId(hearingData.getCourtApplications().get(0).getParentApplicationId())
                                 .withType(CourtApplicationType.courtApplicationType()
                                         .withId(randomUUID())
-                                        .withCode(Optional.of(STRING.next()))
+                                        .withCode(STRING.next())
                                         .withType(hearingData.getCourtApplications().get(0).getType())
-                                        .withLegislation(Optional.of(STRING.next()))
+                                        .withLegislation(STRING.next())
                                         .withCategoryCode(STRING.next())
                                         .withLinkType(LinkType.STANDALONE)
                                         .withJurisdiction(Jurisdiction.MAGISTRATES)
                                         .build())
                                 .withApplicationReceivedDate(LocalDate.now().toString())
-                                .withApplicationReference(Optional.of(STRING.next()))
+                                .withApplicationReference(STRING.next())
                                 .withApplicationStatus(ApplicationStatus.DRAFT)
                                 .withApplicant(CourtApplicationParty.courtApplicationParty()
                                         .withId(randomUUID())
-                                        .withPersonDetails(of(Person.person().withLastName(hearingData.getCourtApplications().get(0).getApplicant().getLastName())
-                                                .withFirstName(of(hearingData.getCourtApplications().get(0).getApplicant().getFirstName()))
+                                        .withPersonDetails(Person.person().withLastName(hearingData.getCourtApplications().get(0).getApplicant().getLastName())
+                                                .withFirstName(hearingData.getCourtApplications().get(0).getApplicant().getFirstName())
                                                 .withGender(Gender.FEMALE)
-                                                .build()))
+                                                .build())
                                         .build())
                                 .withRespondents(asList(
                                         CourtApplicationParty.courtApplicationParty()
                                                 .withId(randomUUID())
-                                                .withPersonDetails(of(Person.person().withLastName(hearingData.getCourtApplications().get(0).getRespondent().getLastName())
-                                                        .withFirstName(of(hearingData.getCourtApplications().get(0).getRespondent().getFirstName()))
+                                                .withPersonDetails(Person.person().withLastName(hearingData.getCourtApplications().get(0).getRespondent().getLastName())
+                                                        .withFirstName(hearingData.getCourtApplications().get(0).getRespondent().getFirstName())
                                                         .withGender(Gender.FEMALE)
-                                                        .build()))
+                                                        .build())
                                                 .build()))
                                 .build()))
                         .withCourtApplicationPartyListingNeeds(hearingData.getCourtApplicationPartyNeeds())
                         .withId(hearingData.getId())
-                        .withEarliestStartDateTime(hearingData.getHearingStartTime() != null ? of(hearingData.getHearingStartTime()) : Optional.empty())
-                        .withEndDate(hearingData.getHearingEndDate() != null ? of(hearingData.getHearingEndDate().toString()) : Optional.empty())
-                        .withEstimatedMinutes(Optional.of(hearingData.getHearingEstimateMinutes()))
+                        .withEarliestStartDateTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : null)
+                        .withEndDate(hearingData.getHearingEndDate() != null ? hearingData.getHearingEndDate().toString() : null)
+                        .withEstimatedMinutes(hearingData.getHearingEstimateMinutes())
                         .withJurisdictionType(hearingData.getJurisdictionType() != null ? JurisdictionType.valueFor(hearingData.getJurisdictionType()).get() : null)
                         .withType(HearingType.hearingType()
                                 .withDescription(hearingData.getHearingTypeData().getTypeDescription())
                                 .withId(hearingData.getHearingTypeData().getTypeId())
                                 .build())
-                        .withReportingRestrictionReason(of(hearingData.getReportingRestrictionReason()))
+                        .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
                         .build()))
                 .build();
     }

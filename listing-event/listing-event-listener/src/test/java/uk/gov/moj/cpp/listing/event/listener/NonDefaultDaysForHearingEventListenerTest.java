@@ -74,7 +74,7 @@ public class NonDefaultDaysForHearingEventListenerTest {
         NonDefaultDaysAssignedToHearing hearingData = NonDefaultDaysAssignedToHearing.nonDefaultDaysAssignedToHearing()
                 .withNonDefaultDays(Arrays.asList(NonDefaultDay.nonDefaultDay()
                         .withStartTime(START_TIME)
-                        .withDuration(empty())
+                        .withDuration(null)
                         .build()))
                 .withHearingId(HEARING_ID)
                 .build();
@@ -98,7 +98,7 @@ public class NonDefaultDaysForHearingEventListenerTest {
         NonDefaultDaysChangedForHearing hearingData = NonDefaultDaysChangedForHearing.nonDefaultDaysChangedForHearing()
                 .withNonDefaultDays(Arrays.asList(NonDefaultDay.nonDefaultDay()
                         .withStartTime(START_TIME)
-                        .withDuration(empty())
+                        .withDuration(null)
                         .build()))
                 .withHearingId(HEARING_ID)
                 .build();

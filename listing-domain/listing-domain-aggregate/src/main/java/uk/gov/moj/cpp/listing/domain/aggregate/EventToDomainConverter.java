@@ -15,16 +15,19 @@ public class EventToDomainConverter {
     public static  uk.gov.moj.cpp.listing.domain.OffenceIds buildOffenceIds(final uk.gov.justice.listing.events.Offence offence){
         return uk.gov.moj.cpp.listing.domain.OffenceIds.offenceIds()
                 .withId(offence.getId())
-                .withSeedingHearing(offence.getSeedingHearing().isPresent() ? buildSeedingHearing(offence.getSeedingHearing().get()) : null)
+                .withSeedingHearing(buildSeedingHearing(offence.getSeedingHearing()))
                 .build();
     }
 
     private static SeedingHearing buildSeedingHearing(final uk.gov.justice.listing.events.SeedingHearing seedingHearing) {
-        return SeedingHearing.seedingHearing()
-                .withSeedingHearingId(seedingHearing.getSeedingHearingId())
-                .withSittingDay(seedingHearing.getSittingDay().orElse(null))
-                .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
-                .build();
+        if(null != seedingHearing) {
+            return SeedingHearing.seedingHearing()
+                    .withSeedingHearingId(seedingHearing.getSeedingHearingId())
+                    .withSittingDay(seedingHearing.getSittingDay())
+                    .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
+                    .build();
+        }
+        return null;
     }
 
 }

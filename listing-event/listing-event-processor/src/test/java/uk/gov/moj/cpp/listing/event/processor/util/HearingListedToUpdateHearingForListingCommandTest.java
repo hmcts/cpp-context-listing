@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor.util;
 
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
@@ -75,81 +74,81 @@ public class HearingListedToUpdateHearingForListingCommandTest {
 
         final UpdateHearingForListing updateHearingForListing = updateHearingForListingEnriched.getUpdateHearingForListing();
         assertThat(updateHearingForListing.getCourtCentreId(), is(COURT_CENTRE_ID));
-        assertThat(updateHearingForListing.getCourtRoomId(), is(of(COURT_ROOM_ID)));
-        assertThat(updateHearingForListing.getEndDate(), is(of(END_DATE)));
+        assertThat(updateHearingForListing.getCourtRoomId(), is(COURT_ROOM_ID));
+        assertThat(updateHearingForListing.getEndDate(), is(END_DATE));
         assertThat(updateHearingForListing.getHearingId(), is(HEARING_ID));
         assertThat(updateHearingForListing.getHearingLanguage().name(), is("ENGLISH"));
 
         final uk.gov.justice.core.courts.JudicialRole judicialRole = updateHearingForListing.getJudiciary().get(0);
-        assertThat(judicialRole.getIsBenchChairman(), is(of(IS_BENCH_CHAIRMAN)));
-        assertThat(judicialRole.getIsDeputy(), is(of(IS_DEPUTY)));
+        assertThat(judicialRole.getIsBenchChairman(), is(IS_BENCH_CHAIRMAN));
+        assertThat(judicialRole.getIsDeputy(), is(IS_DEPUTY));
         assertThat(judicialRole.getJudicialId(), is(JUDICIAL_ID));
-        assertThat(judicialRole.getJudicialRoleType().getJudicialRoleTypeId(), is(of(JUDICIAL_ROLE_TYPE_ID)));
+        assertThat(judicialRole.getJudicialRoleType().getJudicialRoleTypeId(), is(JUDICIAL_ROLE_TYPE_ID));
         assertThat(judicialRole.getJudicialRoleType().getJudiciaryType(), is(JUDICIARY_TYPE));
 
         assertThat(updateHearingForListing.getJurisdictionType().name(), is(JURISDICTION_TYPE));
 
         final uk.gov.justice.listing.commands.NonDefaultDay nonDefaultDay = updateHearingForListing.getNonDefaultDays().get(0);
-        assertThat(nonDefaultDay.getCourtRoomId(), is(of(NON_DEFAULT_DAY_COURT_ROOM_ID)));
-        assertThat(nonDefaultDay.getCourtScheduleId(), is(of(COURT_SCHEDULE_ID)));
-        assertThat(nonDefaultDay.getDuration(), is(of(NON_DEFAULT_DAY_DURATION)));
-        assertThat(nonDefaultDay.getOucode(), is(of(OUCODE)));
-        assertThat(nonDefaultDay.getSession(), is(of(SESSION)));
+        assertThat(nonDefaultDay.getCourtRoomId(), is(NON_DEFAULT_DAY_COURT_ROOM_ID));
+        assertThat(nonDefaultDay.getCourtScheduleId(), is(COURT_SCHEDULE_ID));
+        assertThat(nonDefaultDay.getDuration(), is(NON_DEFAULT_DAY_DURATION));
+        assertThat(nonDefaultDay.getOucode(), is(OUCODE));
+        assertThat(nonDefaultDay.getSession(), is(SESSION));
         assertThat(nonDefaultDay.getStartTime(), is(NON_DEFAULT_DAY_START_TIME));
 
         final List<LocalDate> nonSittingDays = updateHearingForListing.getNonSittingDays();
         assertThat(nonSittingDays.get(0), is(NON_SITTING_DAYS1));
         assertThat(nonSittingDays.get(1), is(NON_SITTING_DAYS2));
 
-        assertThat(updateHearingForListing.getStartDate(), is(of(START_DATE)));
+        assertThat(updateHearingForListing.getStartDate(), is(START_DATE));
 
         final HearingType type = updateHearingForListing.getType();
         assertThat(type.getId(), is(TYPE_ID));
         assertThat(type.getDescription(), is(TYPE_DESCRIPTION));
 
-        assertThat(updateHearingForListing.getWeekCommencingDurationInWeeks(), is(of(WEEK_COMMENCING_DURATION_IN_WEEKS)));
-        assertThat(updateHearingForListing.getWeekCommencingEndDate(), is(of(WEEK_COMMENCING_END_DATE)));
-        assertThat(updateHearingForListing.getWeekCommencingStartDate(), is(of(WEEK_COMMENCING_START_DATE)));
+        assertThat(updateHearingForListing.getWeekCommencingDurationInWeeks(), is(WEEK_COMMENCING_DURATION_IN_WEEKS));
+        assertThat(updateHearingForListing.getWeekCommencingEndDate(), is(WEEK_COMMENCING_END_DATE));
+        assertThat(updateHearingForListing.getWeekCommencingStartDate(), is(WEEK_COMMENCING_START_DATE));
     }
 
     private Hearing buildSampleHearing() {
         return Hearing.hearing()
                 .withCourtCentreId(COURT_CENTRE_ID)
-                .withCourtRoomId(of(COURT_ROOM_ID))
-                .withEndDate(of(END_DATE))
+                .withCourtRoomId(COURT_ROOM_ID)
+                .withEndDate(END_DATE)
                 .withId(HEARING_ID)
                 .withHearingLanguage(HearingLanguage.valueOf("ENGLISH"))
                 .withJudiciary(Arrays.asList(JudicialRole.judicialRole()
-                        .withIsBenchChairman(of(IS_BENCH_CHAIRMAN))
-                        .withIsDeputy(of(IS_DEPUTY))
+                        .withIsBenchChairman(IS_BENCH_CHAIRMAN)
+                        .withIsDeputy(IS_DEPUTY)
                         .withJudicialId(JUDICIAL_ID)
                         .withJudicialRoleType(JudicialRoleType.judicialRoleType()
-                                .withJudicialRoleTypeId(of(JUDICIAL_ROLE_TYPE_ID))
+                                .withJudicialRoleTypeId(JUDICIAL_ROLE_TYPE_ID)
                                 .withJudiciaryType(JUDICIARY_TYPE)
                                 .build())
                         .build()))
                 .withJurisdictionType(JurisdictionType.valueOf(JURISDICTION_TYPE))
                 .withNonDefaultDays(Arrays.asList(NonDefaultDay.nonDefaultDay()
-                        .withCourtRoomId(of(NON_DEFAULT_DAY_COURT_ROOM_ID))
-                        .withCourtScheduleId(of(COURT_SCHEDULE_ID))
-                        .withDuration(of(NON_DEFAULT_DAY_DURATION))
-                        .withOucode(of(OUCODE))
-                        .withSession(of(SESSION))
+                        .withCourtRoomId(NON_DEFAULT_DAY_COURT_ROOM_ID)
+                        .withCourtScheduleId(COURT_SCHEDULE_ID)
+                        .withDuration(NON_DEFAULT_DAY_DURATION)
+                        .withOucode(OUCODE)
+                        .withSession(SESSION)
                         .withStartTime(NON_DEFAULT_DAY_START_TIME)
                         .build()))
-                .withStartDate(of(START_DATE))
+                .withStartDate(START_DATE)
                 .withNonSittingDays(Arrays.asList(NON_SITTING_DAYS1, NON_SITTING_DAYS2))
                 .withType(Type.type()
                         .withId(TYPE_ID)
                         .withDescription(TYPE_DESCRIPTION)
                         .build())
-                .withWeekCommencingEndDate(of(WEEK_COMMENCING_END_DATE))
-                .withWeekCommencingStartDate(of(WEEK_COMMENCING_START_DATE))
-                .withWeekCommencingDurationInWeeks(of(WEEK_COMMENCING_DURATION_IN_WEEKS))
-                .withCourtCentreDetails(of(CourtCentreDetails.courtCentreDetails()
+                .withWeekCommencingEndDate(WEEK_COMMENCING_END_DATE)
+                .withWeekCommencingStartDate(WEEK_COMMENCING_START_DATE)
+                .withWeekCommencingDurationInWeeks(WEEK_COMMENCING_DURATION_IN_WEEKS)
+                .withCourtCentreDetails(CourtCentreDetails.courtCentreDetails()
                         .withDefaultDuration(COURT_CENTRE_DETAILS_DURATION)
                         .withDefaultStartTime(LocalTime.parse(COURT_CENTRE_DETAILS_START_TIME))
-                        .build()))
+                        .build())
                 .build();
     }
 }

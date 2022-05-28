@@ -105,6 +105,10 @@
     "isSlotsBooked": {
       "type": "boolean"
     },
+    "isGroupProceedings": {
+      "description": "The hearing is a logical grouping of cases when it is true",
+      "type": "boolean"
+    },
     "courtCentreDetails": {
       "$ref": "http://justice.gov.uk/listing/events/court-centre-details.json"
     },
@@ -148,6 +152,22 @@
       "minItems": 1,
       "items": {
         "$ref": "http://justice.gov.uk/core/courts/defenceCounsel.json"
+      }
+    },
+    "bookingType": {
+      "description": "A choice of in-court, or video conference options",
+      "type": "string"
+    },
+    "priority": {
+      "description": "Priority marking on hearings/cases",
+      "type": "string"
+    },
+    "specialRequirements": {
+      "description": "Special requirements on hearings/cases",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
       }
     }
   },

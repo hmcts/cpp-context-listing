@@ -2,8 +2,6 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -32,7 +30,6 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -142,7 +139,7 @@ public class CaseMarkersEventListenerTest {
 
         MatcherAssert.assertThat(newListedCase.get("id").textValue() , equalTo(testCases.get(0).getId().toString()));
         MatcherAssert.assertThat(newListedCase.get("caseIdentifier").get("caseReference").textValue() , equalTo(testCases.get(0).getCaseIdentifier().getCaseReference().toString()));
-        MatcherAssert.assertThat(newListedCase.get("shadowListed").asBoolean() , equalTo(testCases.get(0).getShadowListed().get()));
+        MatcherAssert.assertThat(newListedCase.get("shadowListed").asBoolean() , equalTo(testCases.get(0).getShadowListed()));
     }
 
     @Test
@@ -272,7 +269,7 @@ public class CaseMarkersEventListenerTest {
                         .build())
                 .withDefendants(buildDefendantList())
                 .withMarkers(buildCaseMarkersList())
-                .withShadowListed(Optional.of(Boolean.TRUE))
+                .withShadowListed(true)
                 .withId(CASE_ID)
                 .build());
     }
@@ -323,19 +320,19 @@ public class CaseMarkersEventListenerTest {
 
     private List<Defendant> buildDefendantList() {
         return singletonList(Defendant.defendant()
-                .withSpecificRequirements(empty())
-                .withFirstName(of("FirstName"))
-                .withDatesToAvoid(of("Dates to avoid"))
+                .withSpecificRequirements(null)
+                .withFirstName("FirstName")
+                .withDatesToAvoid("Dates to avoid")
                 .withId(DEFENDANT_ID)
-                .withMasterDefendantId(java.util.Optional.of(DEFENDANT_ID))
-                .withCourtProceedingsInitiated(java.util.Optional.of(ZonedDateTime.now()))
-                .withBailStatus(of(new BailStatus.Builder().withCode("C").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).withDescription("Custody or remanded into custody").build()))
+                .withMasterDefendantId(DEFENDANT_ID)
+                .withCourtProceedingsInitiated(ZonedDateTime.now())
+                .withBailStatus(new BailStatus.Builder().withCode("C").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).withDescription("Custody or remanded into custody").build())
                 .withOffences(singletonList(Offence.offence()
                         .withId(OFFENCE_ID)
                         .withOffenceCode(STRING.next())
                         .withStartDate(LocalDates.to(LocalDate.now()))
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
-                                .withLegislation(of(STRING.next()))
+                                .withLegislation(STRING.next())
                                 .withTitle(STRING.next())
                                 .build())
                         .build()))

@@ -125,6 +125,16 @@ public class NotesServiceTest {
     }
 
     @Test
+    public void ShouldReturnNotesArrayForAllocatedHearingsNotFailForNullRoomId(){
+        final List<Hearing> hearings = hearingsJsonWithNullRoomId(ALLOCATEDSTR);
+        when(notesRepository.findNotes(any(List.class))).thenReturn(expectedNotes);
+        final List<Notes> result = notesService.findNotes(ALLOCATED, null, null, hearings);
+        verify(notesRepository, times(1)).findNotes(queryListCaptor.capture());
+        assertEquals(2, result.size());
+        assertEquals(1, queryListCaptor.getValue().size());
+    }
+
+    @Test
     public void shouldAddQueryParamsToArgListWhenTheyAreExists(){
         final List<Hearing> hearings = hearingsJson(ALLOCATEDSTR);
         when(notesRepository.findNotes(any(List.class))).thenReturn(expectedNotes);
@@ -172,6 +182,14 @@ public class NotesServiceTest {
     private List<Hearing> hearingsJson(String allocated) {
         final String testJsonString = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
         final String testJsonString2 = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c19\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
+        final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
+        final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString2));
+        return newArrayList(hearing1, hearing2);
+    }
+
+    private List<Hearing> hearingsJsonWithNullRoomId(String allocated) {
+        final String testJsonString = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\",  \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
+        final String testJsonString2 = "{ \"allocated\":\"" + allocated+ "\", \"startDate\": \"2020-09-03\",  \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
         final Hearing hearing1 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString));
         final Hearing hearing2 = new Hearing(randomUUID(), JacksonUtil.toJsonNode(testJsonString2));
         return newArrayList(hearing1, hearing2);

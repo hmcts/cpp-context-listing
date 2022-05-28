@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Optional.empty;
+
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -132,13 +134,13 @@ public class HearingDay implements Serializable {
 
         private ZonedDateTime startTime;
 
-        private Optional<UUID> courtScheduleId;
+        private Optional<UUID> courtScheduleId = empty();
 
-        private Optional<Boolean> isCancelled;
+        private Optional<Boolean> isCancelled = empty();
 
-        private Optional<UUID> courtCentreId;
+        private Optional<UUID> courtCentreId = empty();
 
-        private Optional<UUID> courtRoomId;
+        private Optional<UUID> courtRoomId = empty();
 
         public Builder withDurationMinutes(final Integer durationMinutes) {
             this.durationMinutes = durationMinutes;

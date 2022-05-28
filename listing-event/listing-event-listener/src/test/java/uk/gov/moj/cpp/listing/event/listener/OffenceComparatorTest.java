@@ -6,7 +6,6 @@ import uk.gov.justice.listing.events.Offence;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import junit.framework.TestCase;
@@ -36,7 +35,7 @@ public class OffenceComparatorTest extends TestCase {
         final Offence offenceId1WithListingNumber4 = getOffence(offenceId1, 4);
 
         final Offence offenceToAddOrReplace = offenceComparator.getLatestVersionOfOffence(offenceId1WithListingNumber4, dbListedOffences);
-        assertThat(offenceToAddOrReplace.getListingNumber(), CoreMatchers.is(Optional.of(4)));
+        assertThat(offenceToAddOrReplace.getListingNumber(), CoreMatchers.is(4));
     }
 
     @Test
@@ -52,7 +51,7 @@ public class OffenceComparatorTest extends TestCase {
         final Offence offenceId1WithListingNumber4 = getOffence(offenceId1, 3);
 
         final Offence offenceToAddOrReplace = offenceComparator.getLatestVersionOfOffence(offenceId1WithListingNumber4, dbListedOffences);
-        assertThat(offenceToAddOrReplace.getListingNumber(), CoreMatchers.is(Optional.of(3)));
+        assertThat(offenceToAddOrReplace.getListingNumber(), CoreMatchers.is(3));
     }
 
 
@@ -69,7 +68,7 @@ public class OffenceComparatorTest extends TestCase {
         final Offence offenceId2WithListingNumber1 = getOffence(offenceId3, 1);
 
         final Offence offenceToAddOrReplace = offenceComparator.getLatestVersionOfOffence(offenceId2WithListingNumber1, dbListedOffences);
-        assertThat(offenceToAddOrReplace.getListingNumber(), CoreMatchers.is(Optional.of(1)));
+        assertThat(offenceToAddOrReplace.getListingNumber(), CoreMatchers.is(1));
     }
 
     @Test
@@ -85,7 +84,7 @@ public class OffenceComparatorTest extends TestCase {
         final Offence offenceId2WithListingNumber1 = getOffence(offenceId2, 1);
 
         final Offence offenceToAddOrReplace = offenceComparator.getLatestVersionOfOffence(offenceId2WithListingNumber1, dbListedOffences);
-        assertThat(offenceToAddOrReplace.getListingNumber(), CoreMatchers.is(Optional.of(3)));
+        assertThat(offenceToAddOrReplace.getListingNumber(), CoreMatchers.is(3));
     }
 
     private Offence getOffence(final UUID id, final int listingNumber) {

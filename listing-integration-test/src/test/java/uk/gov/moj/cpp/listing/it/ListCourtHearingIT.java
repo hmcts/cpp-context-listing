@@ -1,16 +1,22 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static java.util.UUID.randomUUID;
+import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
+import static uk.gov.moj.cpp.listing.it.SearchAvailableHearingIT.MATCHED_DEFENDANTS;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased;
 
+import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
+import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.utils.StagingHmiStub;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -52,6 +58,16 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
+    public void shouldListHearingWithAdjournedDateSingleCountBasedSlotHmiEnabled() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+    }
+
+    @Test
     public void shouldListHearingWithAdjournedDateMultipleCountBasedSlots() {
 
         stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased();
@@ -60,6 +76,19 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+    }
+
+    @Test
+    public void shouldListHearingWithAdjournedDateMultipleCountBasedSlotsHmiEnabled() {
+
+        stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased();
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
         }
     }
 
@@ -76,12 +105,26 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
+    public void shouldListHearingWithAdjournedDateSingleDurationBasedSlotHmiEnabled() {
+
+        stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased();
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+    }
+
+    @Test
     public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlotsWinterTime() {
+
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1);
 
         final String courtRoomId1 = hearingsData.getHearingData().get(0).getCourtRoomId().toString();
         final String courtCentreId = hearingsData.getHearingData().get(0).getCourtCentreId().toString();
-        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>(){{
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>() {{
             put("2020-02-11", courtRoomId1);
             put("2020-02-12", courtRoomId1);
             put("2020-02-13", "33b7d399-8379-437c-980d-af9487b1198c");
@@ -96,12 +139,35 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
-    public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlotsSummerTime() {
+    public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlotsWinterTimeHmiEnabled() {
+
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1);
 
         final String courtRoomId1 = hearingsData.getHearingData().get(0).getCourtRoomId().toString();
         final String courtCentreId = hearingsData.getHearingData().get(0).getCourtCentreId().toString();
-        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>(){{
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>() {{
+            put("2020-02-11", courtRoomId1);
+            put("2020-02-12", courtRoomId1);
+            put("2020-02-13", "33b7d399-8379-437c-980d-af9487b1198c");
+        }};
+        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, courtCentreId);
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().stream().toArray(String[]::new), courtRoomSchedules.values().stream().toArray(String[]::new));
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+    }
+
+    @Test
+    public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlotsSummerTime() {
+
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1);
+
+        final String courtRoomId1 = hearingsData.getHearingData().get(0).getCourtRoomId().toString();
+        final String courtCentreId = hearingsData.getHearingData().get(0).getCourtCentreId().toString();
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>() {{
             put("2020-05-21", courtRoomId1);
             put("2020-05-22", "33b7d399-8379-437c-980d-af9487b1198c");
             put("2020-05-23", courtRoomId1);
@@ -116,12 +182,83 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
+    public void shouldListHearingWithAdjournedDateMultipleDurationBasedSlotsSummerTimeHmiEnabled() {
+
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(1);
+
+        final String courtRoomId1 = hearingsData.getHearingData().get(0).getCourtRoomId().toString();
+        final String courtCentreId = hearingsData.getHearingData().get(0).getCourtCentreId().toString();
+        final Map<String, String> courtRoomSchedules = new LinkedHashMap<String, String>() {{
+            put("2020-05-21", courtRoomId1);
+            put("2020-05-22", "33b7d399-8379-437c-980d-af9487b1198c");
+            put("2020-05-23", courtRoomId1);
+        }};
+        stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, courtCentreId);
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().stream().toArray(String[]::new), courtRoomSchedules.values().stream().toArray(String[]::new));
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+    }
+
+    @Test
     public void shouldListHearingWithAllocatedData() {
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+    }
+
+    @Test
+    public void shouldListHearingAsUnallocatedAndSendDummyCourtroomToHmi() {
+        final UUID hearingId = randomUUID();
+        final String caseUrn = RandomGenerator.STRING.next();
+        final UUID masterDefendantId = randomUUID();
+        final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(hearingId, null, caseUrn, masterDefendantId, MATCHED_DEFENDANTS, MAGISTRATES.name(), MAGISTRATES.name(),
+                null, null);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithUnAllocationDataAndJudiciary(caseAndDefendantData))) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+    }
+
+    @Test
+    public void shouldListHearingWithAllocatedDataHmiEnabled() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedWithJudiciaryInfoInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+    }
+
+    @Test
+    public void shouldListHearingWithAllocatedWhenCourtroomFoundButNoSessionsAvailablefromHmi() {
+        StagingHmiStub.stubHmiNoSessionsAvailable();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedWithJudiciaryInfoInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+    }
+
+    @Test
+    public void shouldListHearingAllocatedWithJudiciaryInfoWhenCourtroomFoundAndSessionsAvailablefromHmi() {
+        StagingHmiStub.stubHmiMagsSession();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedWithJudiciaryInfoInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
         }
     }
 
@@ -179,13 +316,37 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
-    public void shouldExtendHearingWithShadowListedFlag() throws IOException {
+    public void shouldListHearingWithShadowListedFlagHmiEnabled() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithShadowListedOffences())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedWithShadowListedFlag(ALLOCATED);
+            listCourtHearingSteps.verifyHearingExtendedWithReportingRestriction(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+    }
+
+    @Test
+    public void shouldExtendHearingWithShadowListedFlag() {
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithShadowListedOffences())) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.whenProgressionHearingExtended();
             listCourtHearingSteps.verifyHearingExtendedWithShadowListedFlag(ALLOCATED);
             listCourtHearingSteps.verifyHearingExtendedWithReportingRestriction(ALLOCATED);
+        }
+    }
+
+    @Test
+    public void shouldExtendHearingWithShadowListedFlagHmiEnabled() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithShadowListedOffences())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.whenProgressionHearingExtended();
+            listCourtHearingSteps.verifyHearingExtendedWithShadowListedFlag(ALLOCATED);
+            listCourtHearingSteps.verifyHearingExtendedWithReportingRestriction(ALLOCATED);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
         }
     }
 }

@@ -3,10 +3,9 @@ package uk.gov.moj.cpp.listing.command.utils;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
-import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 
 import uk.gov.justice.core.courts.Address;
-import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.listing.courts.Defendant;
 import uk.gov.justice.services.common.converter.Converter;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
@@ -25,48 +24,51 @@ public class CourtsDefendantToDomainConverter implements Converter<uk.gov.justic
     private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final uk.gov.justice.listing.courts.Defendant d) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
-                .withMasterDefendantId(Objects.nonNull(d.getMasterDefendantId().isPresent()) ? d.getMasterDefendantId() : empty())
+                .withMasterDefendantId(Objects.nonNull(d.getMasterDefendantId()) ? ofNullable(d.getMasterDefendantId()) : empty())
                 .withCourtProceedingsInitiated(empty())
                 .withHearingLanguageNeeds(empty())
-                .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())
-                .withLastName(d.getPersonDefendant().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getLastName()) : empty())
+                .withFirstName(nonNull(d.getPersonDefendant()) && nonNull(d.getPersonDefendant().getPersonDetails()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getFirstName()) : empty())
+                .withLastName(nonNull(d.getPersonDefendant())? ofNullable(d.getPersonDefendant().getPersonDetails().getLastName()) : empty())
                 .withBailStatus(mapBailStatus(d))
-                .withDefenceOrganisation(d.getDefenceOrganisation().isPresent() ? of(d.getDefenceOrganisation().get().getName()) : empty())
-                .withOrganisationName(d.getLegalEntityDefendant().isPresent() ? of(d.getLegalEntityDefendant().get().getOrganisation().getName()) : empty())
-                .withSpecificRequirements(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getSpecificRequirements() : empty())
-                .withDateOfBirth(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getDateOfBirth() : empty())
-                .withCustodyTimeLimit(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getCustodyTimeLimit() : empty())
+                .withDefenceOrganisation(nonNull(d.getDefenceOrganisation()) ? ofNullable(d.getDefenceOrganisation().getName()) : empty())
+                .withOrganisationName(nonNull(d.getLegalEntityDefendant()) ? ofNullable(d.getLegalEntityDefendant().getOrganisation().getName()) : empty())
+                .withSpecificRequirements(nonNull(d.getPersonDefendant()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getSpecificRequirements()) : empty())
+                .withDateOfBirth(nonNull(d.getPersonDefendant())
+                        && nonNull(d.getPersonDefendant().getPersonDetails())
+                        && nonNull(d.getPersonDefendant().getPersonDetails().getDateOfBirth()) ? Optional.of(d.getPersonDefendant().getPersonDetails().getDateOfBirth()) : empty())
+                .withCustodyTimeLimit(nonNull(d.getPersonDefendant())
+                        && nonNull(d.getPersonDefendant().getCustodyTimeLimit()) ? Optional.of(d.getPersonDefendant().getCustodyTimeLimit()) : empty())
                 .withOffences(emptyList())
-                .withIsYouth(d.getIsYouth().isPresent() ? d.getIsYouth() : empty())
+                .withIsYouth(ofNullable(d.getIsYouth()))
                 .withAddress(buildAddress(d))
-                .withNationalityDescription(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getNationalityDescription().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getNationalityDescription() : empty())
+                .withNationalityDescription(nonNull(d.getPersonDefendant()) && nonNull(d.getPersonDefendant().getPersonDetails().getNationalityDescription()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getNationalityDescription()) : empty())
                 .build();
     }
 
     private Optional<uk.gov.moj.cpp.listing.domain.Address> buildAddress(Defendant defendant) {
         Optional<Address> d = empty();
 
-        if (nonNull(defendant) && defendant.getPersonDefendant().isPresent()) {
-            d = defendant.getPersonDefendant().get().getPersonDetails().getAddress();
+        if (nonNull(defendant) && nonNull(defendant.getPersonDefendant())) {
+            d = ofNullable(defendant.getPersonDefendant().getPersonDetails().getAddress());
 
-        } else if (nonNull(defendant) && defendant.getLegalEntityDefendant().isPresent()) {
-            d = defendant.getLegalEntityDefendant().get().getOrganisation().getAddress();
+        } else if (nonNull(defendant) && nonNull(defendant.getLegalEntityDefendant())) {
+            d = ofNullable(defendant.getLegalEntityDefendant().getOrganisation().getAddress());
         }
 
         return Optional.of(uk.gov.moj.cpp.listing.domain.Address.address().
                 withAddress1(d.isPresent() ? d.get().getAddress1() : "")
-                .withAddress2(d.isPresent() ? d.get().getAddress2() : empty())
-                .withAddress3(d.isPresent() ? d.get().getAddress3() : empty())
-                .withAddress4(d.isPresent() ? d.get().getAddress4() : empty())
-                .withAddress5(d.isPresent() ? d.get().getAddress5() : empty())
-                .withPostcode(d.isPresent() ? d.get().getPostcode() : empty())
+                .withAddress2(d.map(Address::getAddress2))
+                .withAddress3(d.map(Address::getAddress3))
+                .withAddress4(d.map(Address::getAddress4))
+                .withAddress5(d.map(Address::getAddress5))
+                .withPostcode(d.map(Address::getPostcode))
                 .build());
 
     }
 
     private Optional<BailStatus> mapBailStatus(final Defendant defendant) {
-        if (defendant.getPersonDefendant().isPresent()) {
-            final Optional<uk.gov.justice.core.courts.BailStatus> optBailStatus = defendant.getPersonDefendant().map(PersonDefendant::getBailStatus).orElse(Optional.empty());
+        if (nonNull(defendant.getPersonDefendant())) {
+            final Optional<uk.gov.justice.core.courts.BailStatus> optBailStatus = ofNullable(defendant.getPersonDefendant().getBailStatus());
             return optBailStatus.map(bailStatus -> new BailStatus.Builder().withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).withId(bailStatus.getId()).build());
         }
         return empty();

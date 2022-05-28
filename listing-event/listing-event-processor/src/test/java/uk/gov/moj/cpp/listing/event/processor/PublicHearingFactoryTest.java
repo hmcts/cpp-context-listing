@@ -45,15 +45,15 @@ public class PublicHearingFactoryTest {
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
 
         when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit()
-                .withOucodeL3Name(Optional.of("test Court Centre"))
-                .withOucode(Optional.of(courtCentreOucode))
+                .withOucodeL3Name("test Court Centre")
+                .withOucode(courtCentreOucode)
                 .build());
 
         final CourtCentre actual = publicHearingFactory.buildCourtCentre(courtCentreId, courtRoomId, envelope);
 
         assertEquals(courtCentreId, actual.getId());
-        assertEquals(Optional.of(courtCentreOucode), actual.getCode());
-        assertEquals(Optional.of(courtRoomId), actual.getRoomId());
+        assertEquals(courtCentreOucode, actual.getCode());
+        assertEquals(courtRoomId, actual.getRoomId());
         assertEquals("test Court Centre", actual.getName());
     }
 
@@ -69,7 +69,7 @@ public class PublicHearingFactoryTest {
                 .build();
         final uk.gov.justice.core.courts.HearingDay actual = publicHearingFactory.buildHearingDay(hd);
         assertEquals(durationInMinutes, actual.getListedDurationMinutes());
-        assertEquals(Optional.of(sequence), actual.getListingSequence());
+        assertEquals(sequence, actual.getListingSequence());
         assertEquals(startTime, actual.getSittingDay());
 
 
@@ -89,11 +89,11 @@ public class PublicHearingFactoryTest {
     @Test
     public void shouldBuildJudicialRole() {
         final UUID judicialId = UUID.randomUUID();
-        final Optional<UUID> userId = Optional.of(UUID.randomUUID());
+        final UUID userId = UUID.randomUUID();
         uk.gov.justice.listing.events.JudicialRole judicialRole = JudicialRole.judicialRole()
                 .withJudicialId(judicialId)
-                .withIsDeputy(Optional.of(false))
-                .withIsBenchChairman(Optional.of(true))
+                .withIsDeputy(false)
+                .withIsBenchChairman(true)
                 .withJudicialRoleType(JudicialRoleType.judicialRoleType().build())
                 .withUserId(userId).build();
 

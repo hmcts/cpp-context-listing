@@ -236,4 +236,7 @@ subscriptions_descriptor:
         - name: listing.events.offences-removed-from-existing-allocated-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.offences-removed-from-existing-allocated-hearing.json
 
+        - name: listing.events.updated-hmi-fields-for-hearing
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.updated-hmi-fields-for-hearing.json
+
       event_source_name: listing

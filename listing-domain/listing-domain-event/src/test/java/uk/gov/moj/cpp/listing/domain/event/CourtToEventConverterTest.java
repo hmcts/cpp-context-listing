@@ -1,11 +1,10 @@
-package uk.gov.moj.cpp.listing.domain.aggregate;
+package uk.gov.moj.cpp.listing.domain.event;
 
 
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import uk.gov.justice.core.courts.Address;
@@ -33,7 +32,6 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -102,9 +100,9 @@ public class CourtToEventConverterTest {
         final ListedCase listedCase = CourtToEventConverter.buildListedCase(getSampleProsecutionCase(), Collections.emptyList());
 
         assertThat(CASE_ID, is(listedCase.getId()));
-        assertThat(of(CASE_STATUS), is(listedCase.getCaseStatus()));
-        assertThat(of(false), is(listedCase.getRestrictFromCourtList()));
-        assertThat(listedCase.getShadowListed(), is(Optional.of(Boolean.FALSE)));
+        assertThat(CASE_STATUS, is(listedCase.getCaseStatus()));
+        assertThat(false, is(listedCase.getRestrictFromCourtList()));
+        assertThat(listedCase.getShadowListed(), is(false));
 
         final CaseIdentifier caseIdentifier = listedCase.getCaseIdentifier();
         assertThat(CASE_URN, is(caseIdentifier.getCaseReference()));
@@ -119,69 +117,69 @@ public class CourtToEventConverterTest {
 
         final uk.gov.justice.listing.events.Defendant defendant = listedCase.getDefendants().get(0);
         assertThat(DEFENDANT_ID, is(defendant.getId()));
-        assertThat(of(MASTER_DEFENDANT_ID), is(defendant.getMasterDefendantId()));
-        assertThat(of(COURT_PROCEEDINGS_INITIATED), is(defendant.getCourtProceedingsInitiated()));
-        assertThat(of(DATE_OF_BIRTH), is(defendant.getDateOfBirth()));
-        assertThat(of(FIRST_NAME), is(defendant.getFirstName()));
-        assertThat(of(LAST_NAME), is(defendant.getLastName()));
-        assertThat(of(ORGANIZATION_NAME), is(defendant.getOrganisationName()));
+        assertThat(MASTER_DEFENDANT_ID, is(defendant.getMasterDefendantId()));
+        assertThat(COURT_PROCEEDINGS_INITIATED, is(defendant.getCourtProceedingsInitiated()));
+        assertThat(DATE_OF_BIRTH, is(defendant.getDateOfBirth()));
+        assertThat(FIRST_NAME, is(defendant.getFirstName()));
+        assertThat(LAST_NAME, is(defendant.getLastName()));
+        assertThat(ORGANIZATION_NAME, is(defendant.getOrganisationName()));
 
-        final BailStatus bailStatus = defendant.getBailStatus().get();
+        final BailStatus bailStatus = defendant.getBailStatus();
         assertThat(BAIL_CODE, is(bailStatus.getCode()));
         assertThat(BAIL_DESCRIPTION, is(bailStatus.getDescription()));
         assertThat(BAIL_ID, is(bailStatus.getId()));
 
-        final CustodyTimeLimit custodyTimeLimit = bailStatus.getCustodyTimeLimit().get();
-        assertThat(of(DAYS_SPENT), is(custodyTimeLimit.getDaysSpent()));
+        final CustodyTimeLimit custodyTimeLimit = bailStatus.getCustodyTimeLimit();
+        assertThat(DAYS_SPENT, is(custodyTimeLimit.getDaysSpent()));
         assertThat(TIME_LIMIT, is(custodyTimeLimit.getTimeLimit()));
 
-        assertThat(of(false), is(defendant.getRestrictFromCourtList()));
-        assertThat(of(YOUTH), is(defendant.getIsYouth()));
-        assertThat(ADDRESS_1, is(defendant.getAddress().get().getAddress1()));
-        assertThat(defendant.getAddress().get().getAddress2(), is(empty()));
-        assertThat(defendant.getAddress().get().getAddress3(), is(empty()));
-        assertThat(defendant.getAddress().get().getAddress4(), is(empty()));
-        assertThat(defendant.getAddress().get().getAddress5(), is(empty()));
-        assertThat(of(POST_CODE), is(defendant.getAddress().get().getPostcode()));
+        assertThat(false, is(defendant.getRestrictFromCourtList()));
+        assertThat(YOUTH, is(defendant.getIsYouth()));
+        assertThat(ADDRESS_1, is(defendant.getAddress().getAddress1()));
+        assertThat(defendant.getAddress().getAddress2(), is(nullValue()));
+        assertThat(defendant.getAddress().getAddress3(), is(nullValue()));
+        assertThat(defendant.getAddress().getAddress4(), is(nullValue()));
+        assertThat(defendant.getAddress().getAddress5(), is(nullValue()));
+        assertThat(POST_CODE, is(defendant.getAddress().getPostcode()));
 
 
         final uk.gov.justice.listing.events.Offence offence = defendant.getOffences().get(0);
         assertThat(OFFENCE_ID, is(offence.getId()));
         assertThat(OFFENCE_START_DATE, is(offence.getStartDate()));
-        assertThat(of(OFFENCE_END_DATE), is(offence.getEndDate()));
+        assertThat(OFFENCE_END_DATE, is(offence.getEndDate()));
         assertThat(OFFENCE_CODE, is(offence.getOffenceCode()));
         assertThat(OFFENCE_WORDING, is(offence.getOffenceWording()));
-        assertThat(of(Boolean.FALSE), is(offence.getRestrictFromCourtList()));
-        assertThat(of(LAID_DATE), is(offence.getLaidDate()));
-        assertThat(offence.getShadowListed(), is(Optional.of(Boolean.FALSE)));
+        assertThat(Boolean.FALSE, is(offence.getRestrictFromCourtList()));
+        assertThat(LAID_DATE, is(offence.getLaidDate()));
+        assertThat(offence.getShadowListed(), is(false));
 
-        final uk.gov.justice.listing.events.LaaReference laaReference = offence.getLaaApplnReference().get();
+        final uk.gov.justice.listing.events.LaaReference laaReference = offence.getLaaApplnReference();
         assertThat(LAA_APPLICATION_REFERENCE, is(laaReference.getApplicationReference()));
-        assertThat(of(LAA_REFERENCE_END_DATE), is(laaReference.getEffectiveEndDate()));
-        assertThat(of(LAA_REFERENCE_START_DATE), is(laaReference.getEffectiveStartDate()));
+        assertThat(LAA_REFERENCE_END_DATE, is(laaReference.getEffectiveEndDate()));
+        assertThat(LAA_REFERENCE_START_DATE, is(laaReference.getEffectiveStartDate()));
         assertThat(LAA_REFERENCE_STATUS_CODE, is(laaReference.getStatusCode()));
         assertThat(LAA_REFERENCE_STATUS_DATE, is(laaReference.getStatusDate()));
         assertThat(LAA_REFERENCE_DESCRIPTION, is(laaReference.getStatusDescription()));
         assertThat(LA_REFERENCE_ID, is(laaReference.getStatusId()));
 
         final StatementOfOffence statementOfOffence = offence.getStatementOfOffence();
-        assertThat(of(OFFENCE_LEGISLATION), is(statementOfOffence.getLegislation()));
+        assertThat(OFFENCE_LEGISLATION, is(statementOfOffence.getLegislation()));
         assertThat(OFFENCE_TITLE, is(statementOfOffence.getTitle()));
         assertThat(WELSH_TITLE, is(statementOfOffence.getWelshTitle()));
-        assertThat(of(LEGISLATION_WELSH), is(statementOfOffence.getWelshLegislation()));
+        assertThat(LEGISLATION_WELSH, is(statementOfOffence.getWelshLegislation()));
 
-        final Optional<uk.gov.justice.listing.events.Prosecutor> prosecutor = listedCase.getProsecutor();
-        assertThat(prosecutor.get().getProsecutorId(), is(notNullValue()));
-        assertThat(PROSECUTOR_NAME, is(prosecutor.get().getProsecutorName().get()));
-        assertThat(PROSECUTOR_CODE, is(prosecutor.get().getProsecutorCode()));
-        assertThat(ADDRESS1, is(prosecutor.get().getAddress().get().getAddress1()));
-        assertThat(ADDRESS2, is(prosecutor.get().getAddress().get().getAddress2().get()));
-        assertThat(prosecutor.get().getAddress().get().getAddress3(), is(Optional.empty()));
+        final uk.gov.justice.listing.events.Prosecutor prosecutor = listedCase.getProsecutor();
+        assertThat(prosecutor.getProsecutorId(), is(notNullValue()));
+        assertThat(PROSECUTOR_NAME, is(prosecutor.getProsecutorName()));
+        assertThat(PROSECUTOR_CODE, is(prosecutor.getProsecutorCode()));
+        assertThat(ADDRESS1, is(prosecutor.getAddress().getAddress1()));
+        assertThat(ADDRESS2, is(prosecutor.getAddress().getAddress2()));
+        assertThat(prosecutor.getAddress().getAddress3(), is(nullValue()));
 
-        final uk.gov.justice.listing.events.SeedingHearing seedingHearing = offence.getSeedingHearing().get();
+        final uk.gov.justice.listing.events.SeedingHearing seedingHearing = offence.getSeedingHearing();
         assertThat(seedingHearing.getSeedingHearingId(), is(SEEDING_HEARING_ID));
-        assertThat(seedingHearing.getJurisdictionType(), is(uk.gov.justice.core.courts.JurisdictionType.CROWN));
-        assertThat(seedingHearing.getSittingDay().get(), is(SITTING_DAY));
+        assertThat(seedingHearing.getJurisdictionType(), is(JurisdictionType.CROWN));
+        assertThat(seedingHearing.getSittingDay(), is(SITTING_DAY));
 
     }
 
@@ -189,19 +187,19 @@ public class CourtToEventConverterTest {
     public void shouldSetShadowListedFlag() {
         final ListedCase listedCase = CourtToEventConverter.buildListedCase(getSampleProsecutionCase(), Arrays.asList(OFFENCE_ID));
 
-        assertThat(listedCase.getShadowListed(), is(Optional.of(Boolean.TRUE)));
-        assertThat(listedCase.getDefendants().get(0).getOffences().get(0).getShadowListed(), is(Optional.of(Boolean.TRUE)));
+        assertThat(listedCase.getShadowListed(), is(true));
+        assertThat(listedCase.getDefendants().get(0).getOffences().get(0).getShadowListed(), is(true));
     }
 
     @Test
     public void shouldSetProsecutorObject() {
         final ListedCase listedCase = CourtToEventConverter.buildListedCase(getSampleProsecutionCaseWithProsecutorMadatoryFields(), Arrays.asList(OFFENCE_ID));
 
-        final Optional<uk.gov.justice.listing.events.Prosecutor> prosecutor = listedCase.getProsecutor();
-        assertThat(prosecutor.get().getProsecutorId(), is(notNullValue()));
-        assertThat(prosecutor.get().getProsecutorName(), is(Optional.empty()));
-        assertThat(PROSECUTOR_CODE, is(prosecutor.get().getProsecutorCode()));
-        assertThat(prosecutor.get().getAddress(), is(Optional.empty()));
+        final uk.gov.justice.listing.events.Prosecutor prosecutor = listedCase.getProsecutor();
+        assertThat(prosecutor.getProsecutorId(), is(notNullValue()));
+        assertThat(prosecutor.getProsecutorName(), is(nullValue()));
+        assertThat(PROSECUTOR_CODE, is(prosecutor.getProsecutorCode()));
+        assertThat(prosecutor.getAddress(), is(nullValue()));
     }
 
     @Test
@@ -215,13 +213,13 @@ public class CourtToEventConverterTest {
         final uk.gov.justice.listing.events.Defendant defendant1 = listedCase.getDefendants().get(0);
         final uk.gov.justice.listing.events.Defendant defendant2 = listedCase.getDefendants().get(1);
 
-        assertThat(listedCase.getShadowListed(), is(Optional.of(Boolean.FALSE)));
+        assertThat(listedCase.getShadowListed(), is(false));
 
-        assertThat(defendant1.getOffences().get(0).getShadowListed(), is(Optional.of(Boolean.TRUE)));
-        assertThat(defendant1.getOffences().get(1).getShadowListed(), is(Optional.of(Boolean.TRUE)));
+        assertThat(defendant1.getOffences().get(0).getShadowListed(), is(true));
+        assertThat(defendant1.getOffences().get(1).getShadowListed(), is(true));
 
-        assertThat(defendant2.getOffences().get(0).getShadowListed(), is(Optional.of(Boolean.FALSE)));
-        assertThat(defendant2.getOffences().get(1).getShadowListed(), is(Optional.of(Boolean.FALSE)));
+        assertThat(defendant2.getOffences().get(0).getShadowListed(), is(false));
+        assertThat(defendant2.getOffences().get(1).getShadowListed(), is(false));
     }
 
     @Test
@@ -230,9 +228,9 @@ public class CourtToEventConverterTest {
         final uk.gov.justice.listing.events.ReportingRestriction rr = listedCase.getDefendants().get(0).getOffences().get(0).getReportingRestrictions().get(0);
 
         assertThat(rr.getId(), is(RR_ID));
-        assertThat(rr.getJudicialResultId(), is(of(RR_JUDICIAL_RESULT_ID)));
+        assertThat(rr.getJudicialResultId(), is(RR_JUDICIAL_RESULT_ID));
         assertThat(rr.getLabel(), is(RR_LABEL));
-        assertThat(rr.getOrderedDate(), is(of(RR_ORDERED_DATE)));
+        assertThat(rr.getOrderedDate(), is(RR_ORDERED_DATE));
     }
 
     private ProsecutionCase getSampleProsecutionCase() {
@@ -241,7 +239,7 @@ public class CourtToEventConverterTest {
                 .withProsecutionCaseIdentifier(getSampleCaseIdentifier())
                 .withCaseMarkers(getSampleCaseMarkers())
                 .withDefendants(getSampleDefendants())
-                .withCaseStatus(of(CASE_STATUS))
+                .withCaseStatus(CASE_STATUS)
                 .withProsecutor(getProsecutor())
                 .build();
 
@@ -253,13 +251,13 @@ public class CourtToEventConverterTest {
                 .withProsecutionCaseIdentifier(getSampleCaseIdentifier())
                 .withCaseMarkers(getSampleCaseMarkers())
                 .withDefendants(getSampleDefendants())
-                .withCaseStatus(of(CASE_STATUS))
+                .withCaseStatus(CASE_STATUS)
                 .withProsecutor(getProsecutorWithMandatoryFields())
                 .build();
 
     }
 
-    private uk.gov.justice.core.courts.Prosecutor getProsecutor(){
+    private Prosecutor getProsecutor(){
         return Prosecutor.prosecutor()
                 .withProsecutorId(UUID.randomUUID())
                 .withProsecutorName(PROSECUTOR_NAME)
@@ -271,7 +269,7 @@ public class CourtToEventConverterTest {
                 .build();
     }
 
-    private uk.gov.justice.core.courts.Prosecutor getProsecutorWithMandatoryFields(){
+    private Prosecutor getProsecutorWithMandatoryFields(){
         return Prosecutor.prosecutor()
                 .withProsecutorId(UUID.randomUUID())
                 .withProsecutorCode(PROSECUTOR_CODE)
@@ -283,11 +281,11 @@ public class CourtToEventConverterTest {
                 .withId(DEFENDANT_ID)
                 .withMasterDefendantId(MASTER_DEFENDANT_ID)
                 .withCourtProceedingsInitiated(COURT_PROCEEDINGS_INITIATED)
-                .withDefenceOrganisation(of(Organisation.organisation()
+                .withDefenceOrganisation(Organisation.organisation()
                         .withName(ORGANIZATION_NAME)
-                        .build()))
-                .withIsYouth(of(YOUTH))
-                .withPersonDefendant(of(getSamplePersonDefendant()))
+                        .build())
+                .withIsYouth(YOUTH)
+                .withPersonDefendant(getSamplePersonDefendant())
                 .withOffences(getSampleOffences())
                 .build());
     }
@@ -295,16 +293,16 @@ public class CourtToEventConverterTest {
     private List<Offence> getSampleOffences() {
         return Arrays.asList(Offence.offence()
                 .withId(OFFENCE_ID)
-                .withEndDate(of(OFFENCE_END_DATE))
+                .withEndDate(OFFENCE_END_DATE)
                 .withStartDate(OFFENCE_START_DATE)
                 .withOffenceCode(OFFENCE_CODE)
                 .withWording(OFFENCE_WORDING)
-                .withOffenceLegislation(of(OFFENCE_LEGISLATION))
+                .withOffenceLegislation(OFFENCE_LEGISLATION)
                 .withOffenceTitle(OFFENCE_TITLE)
-                .withOffenceLegislationWelsh(of(LEGISLATION_WELSH))
-                .withOffenceTitleWelsh(of(WELSH_TITLE))
-                .withLaaApplnReference(of(getSampleLaaReference()))
-                .withLaidDate(of(LAID_DATE))
+                .withOffenceLegislationWelsh(LEGISLATION_WELSH)
+                .withOffenceTitleWelsh(WELSH_TITLE)
+                .withLaaApplnReference(getSampleLaaReference())
+                .withLaidDate(LAID_DATE)
                 .withReportingRestrictions(getSampleReportingRestrictions())
                 .withSeedingHearing(getSampleSeedingHearing())
                 .build());
@@ -313,8 +311,8 @@ public class CourtToEventConverterTest {
     private LaaReference getSampleLaaReference() {
         return LaaReference.laaReference()
                 .withApplicationReference(LAA_APPLICATION_REFERENCE)
-                .withEffectiveEndDate(of(LAA_REFERENCE_END_DATE))
-                .withEffectiveStartDate(of(LAA_REFERENCE_START_DATE))
+                .withEffectiveEndDate(LAA_REFERENCE_END_DATE)
+                .withEffectiveStartDate(LAA_REFERENCE_START_DATE)
                 .withStatusCode(LAA_REFERENCE_STATUS_CODE)
                 .withStatusDate(LAA_REFERENCE_STATUS_DATE)
                 .withStatusDescription(LAA_REFERENCE_DESCRIPTION)
@@ -325,31 +323,31 @@ public class CourtToEventConverterTest {
     private PersonDefendant getSamplePersonDefendant() {
         return PersonDefendant.personDefendant()
                 .withPersonDetails(getSamplePersonDetail())
-                .withBailStatus(of(BailStatus.bailStatus()
+                .withBailStatus(BailStatus.bailStatus()
                         .withCode(BAIL_CODE)
                         .withDescription(BAIL_DESCRIPTION)
                         .withId(BAIL_ID)
-                        .withCustodyTimeLimit(of(CustodyTimeLimit.custodyTimeLimit()
-                                .withDaysSpent(of(DAYS_SPENT))
+                        .withCustodyTimeLimit(CustodyTimeLimit.custodyTimeLimit()
+                                .withDaysSpent(DAYS_SPENT)
                                 .withTimeLimit(TIME_LIMIT)
-                                .build()))
-                        .build()))
+                                .build())
+                        .build())
                 .build();
     }
 
     private Person getSamplePersonDetail() {
         return Person.person()
                 .withLastName(LAST_NAME)
-                .withFirstName(of(FIRST_NAME))
-                .withAddress(of(getSampleAddress()))
-                .withDateOfBirth(of(DATE_OF_BIRTH))
+                .withFirstName(FIRST_NAME)
+                .withAddress(getSampleAddress())
+                .withDateOfBirth(DATE_OF_BIRTH)
                 .build();
     }
 
     private Address getSampleAddress() {
         return Address.address()
                 .withAddress1(ADDRESS_1)
-                .withPostcode(of(POST_CODE))
+                .withPostcode(POST_CODE)
                 .build();
     }
 
@@ -377,7 +375,7 @@ public class CourtToEventConverterTest {
                 .withProsecutionCaseIdentifier(getSampleCaseIdentifier())
                 .withCaseMarkers(getSampleCaseMarkers())
                 .withDefendants(getMultipleDefendants(defendantCount, offencesCount))
-                .withCaseStatus(of(CASE_STATUS))
+                .withCaseStatus(CASE_STATUS)
                 .build();
     }
 
@@ -392,11 +390,11 @@ public class CourtToEventConverterTest {
                 .withId(UUID.randomUUID())
                 .withMasterDefendantId(UUID.randomUUID())
                 .withCourtProceedingsInitiated(COURT_PROCEEDINGS_INITIATED)
-                .withDefenceOrganisation(of(Organisation.organisation()
+                .withDefenceOrganisation(Organisation.organisation()
                         .withName(ORGANIZATION_NAME)
-                        .build()))
-                .withIsYouth(of(YOUTH))
-                .withPersonDefendant(of(getSamplePersonDefendant()))
+                        .build())
+                .withIsYouth(YOUTH)
+                .withPersonDefendant(getSamplePersonDefendant())
                 .withOffences(getMultipleOffences(offencesCount))
                 .build();
     }
@@ -410,16 +408,16 @@ public class CourtToEventConverterTest {
     private Offence getRandomOffence() {
         return Offence.offence()
                 .withId(UUID.randomUUID())
-                .withEndDate(of(OFFENCE_END_DATE))
+                .withEndDate(OFFENCE_END_DATE)
                 .withStartDate(OFFENCE_START_DATE)
                 .withOffenceCode(OFFENCE_CODE)
                 .withWording(OFFENCE_WORDING)
-                .withOffenceLegislation(of(OFFENCE_LEGISLATION))
+                .withOffenceLegislation(OFFENCE_LEGISLATION)
                 .withOffenceTitle(OFFENCE_TITLE)
-                .withOffenceLegislationWelsh(of(LEGISLATION_WELSH))
-                .withOffenceTitleWelsh(of(WELSH_TITLE))
-                .withLaaApplnReference(of(getSampleLaaReference()))
-                .withLaidDate(of(LAID_DATE))
+                .withOffenceLegislationWelsh(LEGISLATION_WELSH)
+                .withOffenceTitleWelsh(WELSH_TITLE)
+                .withLaaApplnReference(getSampleLaaReference())
+                .withLaidDate(LAID_DATE)
                 .build();
     }
 

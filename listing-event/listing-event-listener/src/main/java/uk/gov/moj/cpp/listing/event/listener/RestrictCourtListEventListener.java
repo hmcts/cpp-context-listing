@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 
 import static com.google.common.collect.Lists.newArrayList;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static uk.gov.justice.listing.events.ApplicantRespondent.applicantRespondent;
 import static uk.gov.justice.listing.events.CourtApplication.courtApplication;
@@ -24,7 +25,6 @@ import uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder;
 import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -69,9 +69,8 @@ public class RestrictCourtListEventListener {
         ofNullable(restrictCourtList.getOffenceIds()).orElse(newArrayList()).forEach(offenceIdToBeRestricted ->
                 jsonNodeUpdater
                         .putSubList(LISTED_CASES, typeRef, getOffencesFunction(offenceIdToBeRestricted, restrictDetailsFromCourt)).save());
-        final Optional<String> hasCourtApplicationType = restrictCourtList.getCourtApplicationType();
-        if (hasCourtApplicationType.isPresent()) {
-            final String appType = hasCourtApplicationType.get();
+        final String appType = restrictCourtList.getCourtApplicationType();
+        if (nonNull(appType)) {
             restrictCourtList.getCourtApplicationIds().forEach(
                     courtApplicationIdToBeRestricted -> jsonNodeUpdater.putSubList(COURT_APPLICATIONS_FIELD, typeRefCourtApplication,
                             getCourtApplicationTypeFunction(courtApplicationIdToBeRestricted, appType, restrictDetailsFromCourt)).save());
@@ -101,7 +100,7 @@ public class RestrictCourtListEventListener {
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
                 .withDefendants(listedCase.getDefendants())
                 .withId(listedCase.getId())
-                .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
+                .withRestrictFromCourtList(restrictDetailsFromCourt)
                 .withShadowListed(listedCase.getShadowListed()).build();
         cases.replaceAll(lc -> lc.getId().equals(caseId) ? newListedCase : lc);
         return cases;
@@ -141,7 +140,7 @@ public class RestrictCourtListEventListener {
                 .withSpecificRequirements(originalDefendant.getSpecificRequirements())
                 .withDatesToAvoid(originalDefendant.getDatesToAvoid())
                 .withHearingLanguageNeeds(originalDefendant.getHearingLanguageNeeds())
-                .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
+                .withRestrictFromCourtList(restrictDetailsFromCourt)
                 .withIsYouth(originalDefendant.getIsYouth())
                 .withAddress(originalDefendant.getAddress())
                 .withNationalityDescription(originalDefendant.getNationalityDescription())
@@ -168,7 +167,7 @@ public class RestrictCourtListEventListener {
                 .withEndDate(originalOffence.getEndDate())
                 .withStatementOfOffence(originalOffence.getStatementOfOffence())
                 .withOffenceWording(originalOffence.getOffenceWording())
-                .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
+                .withRestrictFromCourtList(restrictDetailsFromCourt)
                 .withShadowListed(originalOffence.getShadowListed())
                 .withReportingRestrictions(originalOffence.getReportingRestrictions())
                 .withListingNumber(originalOffence.getListingNumber())
@@ -190,7 +189,7 @@ public class RestrictCourtListEventListener {
                 .withId(courtApplication.getId())
                 .withParentApplicationId(courtApplication.getParentApplicationId())
                 .withLinkedCaseIds(courtApplication.getLinkedCaseIds())
-                .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
+                .withRestrictFromCourtList(restrictDetailsFromCourt)
                 .withRestrictCourtApplicationType(courtApplication.getRestrictCourtApplicationType())
                 .withApplicationReference(courtApplication.getApplicationReference())
                 .withApplicationParticulars(courtApplication.getApplicationParticulars())
@@ -211,7 +210,7 @@ public class RestrictCourtListEventListener {
                 .withFirstName(applicantRespondent.getFirstName())
                 .withLastName(applicantRespondent.getLastName())
                 .withIsRespondent(applicantRespondent.getIsRespondent())
-                .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
+                .withRestrictFromCourtList(restrictDetailsFromCourt)
                 .withCourtApplicationPartyType(applicantRespondent.getCourtApplicationPartyType())
                 .withAddress(applicantRespondent.getAddress())
                 .build();
@@ -245,7 +244,7 @@ public class RestrictCourtListEventListener {
                 .withFirstName(applicantRespondent.getFirstName())
                 .withLastName(applicantRespondent.getLastName())
                 .withIsRespondent(applicantRespondent.getIsRespondent())
-                .withRestrictFromCourtList(ofNullable(restrictDetailsFromCourt))
+                .withRestrictFromCourtList(restrictDetailsFromCourt)
                 .withCourtApplicationPartyType(applicantRespondent.getCourtApplicationPartyType())
                 .withAddress(applicantRespondent.getAddress())
                 .build();
@@ -270,7 +269,7 @@ public class RestrictCourtListEventListener {
                 .withParentApplicationId(courtApplication.getParentApplicationId())
                 .withLinkedCaseIds(courtApplication.getLinkedCaseIds())
                 .withRestrictFromCourtList(courtApplication.getRestrictFromCourtList())
-                .withRestrictCourtApplicationType(ofNullable(restrictDetailsFromCourt))
+                .withRestrictCourtApplicationType(restrictDetailsFromCourt)
                 .withApplicationReference(courtApplication.getApplicationReference())
                 .withApplicationParticulars(courtApplication.getApplicationParticulars())
                 .build();

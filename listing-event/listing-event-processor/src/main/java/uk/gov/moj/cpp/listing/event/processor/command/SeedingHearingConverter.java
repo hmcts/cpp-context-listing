@@ -14,7 +14,7 @@ public class SeedingHearingConverter {
             return Optional.of(SeedingHearing.seedingHearing()
                     .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
                     .withSeedingHearingId(seedingHearing.getSeedingHearingId())
-                    .withSittingDay(seedingHearing.getSittingDay().orElse(null))
+                    .withSittingDay(seedingHearing.getSittingDay())
                     .build());
     }
 
@@ -22,7 +22,7 @@ public class SeedingHearingConverter {
         return Optional.of(uk.gov.justice.core.courts.SeedingHearing.seedingHearing()
                 .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
                 .withSeedingHearingId(seedingHearing.getSeedingHearingId())
-                .withSittingDay(seedingHearing.getSittingDay().orElse(null))
+                .withSittingDay(seedingHearing.getSittingDay())
                 .build());
     }
 }

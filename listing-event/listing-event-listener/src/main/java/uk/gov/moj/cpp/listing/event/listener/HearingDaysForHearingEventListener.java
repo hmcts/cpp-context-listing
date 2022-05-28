@@ -13,11 +13,14 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 
 import java.util.List;
 import java.util.UUID;
 
 import javax.inject.Inject;
+
+import org.apache.commons.collections.CollectionUtils;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class HearingDaysForHearingEventListener {
@@ -38,10 +41,12 @@ public class HearingDaysForHearingEventListener {
         final UUID hearingId = hearingDaysChangedForHearing.getHearingId();
 
         if (nonNull(hearingRepository.findBy(hearingId))) {
-            using(hearingRepository)
-                    .find(hearingId)
-                    .putObjectList(HEARING_DAYS, hearingDays)
-                    .save();
+            final JsonNodeUpdater hearing = using(hearingRepository).find(hearingId);
+            hearing.putObjectList(HEARING_DAYS, hearingDays);
+            if(CollectionUtils.isNotEmpty(hearingDays)){
+                hearing.remove("unscheduled");
+            }
+            hearing.save();
 
             hearingSearchSyncService.sync(hearingId);
         }

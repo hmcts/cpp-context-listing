@@ -50,7 +50,6 @@ public class RangeSearchQuery {
     @Inject
     private HearingJsonListConverterFilterEjectCases hearingJsonListConverterFilterEjectCases;
 
-
     @Inject
     private ListToJsonArrayConverter listToJsonArrayConverter;
 

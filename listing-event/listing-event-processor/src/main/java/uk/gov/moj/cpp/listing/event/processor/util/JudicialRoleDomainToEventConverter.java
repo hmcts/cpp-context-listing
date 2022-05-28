@@ -19,12 +19,12 @@ public class JudicialRoleDomainToEventConverter {
 
     public static JudicialRole buildJudicialRole(final uk.gov.moj.cpp.listing.domain.JudicialRole jr) {
         return JudicialRole.judicialRole()
-                .withIsBenchChairman(jr.getIsBenchChairman())
-                .withIsDeputy(jr.getIsDeputy())
+                .withIsBenchChairman((jr.getIsBenchChairman().orElse(null)))
+                .withIsDeputy(jr.getIsDeputy().orElse(null))
                 .withJudicialId(jr.getJudicialId())
                 .withJudicialRoleType(JudicialRoleType.judicialRoleType()
                         .withJudiciaryType(jr.getJudicialRoleType().getJudiciaryType())
-                        .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId())
+                        .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId().orElse(null))
                         .build())
                 .withUserId(jr.getUserId())
                 .build();

@@ -1,7 +1,9 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.core.courts.LaaReference;
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 
 
 @SuppressWarnings({"squid:S3655"})
@@ -44,19 +47,19 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
 
     private uk.gov.moj.cpp.listing.domain.Offence convertToDomainOffence(final uk.gov.justice.core.courts.Offence courtOffence) {
 
-        final Optional<LaaReference> laaReference = courtOffence.getLaaApplnReference();
+        final LaaReference laaReference = courtOffence.getLaaApplnReference();
         final StatementOfOffence statement = StatementOfOffence.statementOfOffence()
                 .withTitle(courtOffence.getOffenceTitle())
-                .withWelshTitle(courtOffence.getOffenceTitleWelsh().orElse(courtOffence.getOffenceTitle()))
-                .withLegislation(courtOffence.getOffenceLegislation())
-                .withWelshLegislation(courtOffence.getOffenceLegislationWelsh())
+                .withWelshTitle(StringUtils.isNotEmpty(courtOffence.getOffenceTitleWelsh()) ? courtOffence.getOffenceTitleWelsh() : courtOffence.getOffenceTitle())
+                .withLegislation(ofNullable(courtOffence.getOffenceLegislation()))
+                .withWelshLegislation(ofNullable(courtOffence.getOffenceLegislationWelsh()))
                 .build();
 
         Optional<CustodyTimeLimit> custodyTimeLimit = Optional.empty();
-        if (courtOffence.getCustodyTimeLimit().isPresent()) {
+        if (nonNull(courtOffence.getCustodyTimeLimit())) {
             custodyTimeLimit = Optional.ofNullable(CustodyTimeLimit.custodyTimeLimit()
-                    .withTimeLimit(courtOffence.getCustodyTimeLimit().get().getTimeLimit())
-                    .withDaysSpent(courtOffence.getCustodyTimeLimit().get().getDaysSpent().orElse(null))
+                    .withTimeLimit(courtOffence.getCustodyTimeLimit().getTimeLimit())
+                    .withDaysSpent(courtOffence.getCustodyTimeLimit().getDaysSpent())
                     .build());
         }
 
@@ -64,12 +67,14 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
                 .withId(courtOffence.getId())
                 .withOffenceCode(courtOffence.getOffenceCode())
                 .withStartDate(courtOffence.getStartDate())
-                .withEndDate(courtOffence.getEndDate())
+                .withEndDate(ofNullable(courtOffence.getEndDate()))
+                .withCount(courtOffence.getCount())
+                .withOrderIndex(courtOffence.getOrderIndex())
                 .withStatementOfOffence(statement)
                 .withOffenceWording(courtOffence.getWording())
                 .withCustodyTimeLimit(custodyTimeLimit)
-                .withSeedingHearing(courtOffence.getSeedingHearing().isPresent() ? buildSeedingHearing(courtOffence.getSeedingHearing().get()) : empty())
-                .withLaaApplnReference(laaReference.isPresent() ? buildLaaReference((laaReference.get())) : empty());
+                .withSeedingHearing(buildSeedingHearing(courtOffence.getSeedingHearing()))
+                .withLaaApplnReference(buildLaaReference(laaReference));
 
 
         if (!isNull(courtOffence.getReportingRestrictions()) && !courtOffence.getReportingRestrictions().isEmpty()) {
@@ -83,25 +88,29 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
     }
 
     private Optional<uk.gov.moj.cpp.listing.domain.LaaReference> buildLaaReference(final LaaReference laaReference) {
-
-        return Optional.of(uk.gov.moj.cpp.listing.domain.LaaReference.laaReference()
-                .withApplicationReference(laaReference.getApplicationReference())
-                .withEffectiveEndDate(laaReference.getEffectiveEndDate())
-                .withEffectiveStartDate(laaReference.getEffectiveStartDate())
-                .withStatusCode(laaReference.getStatusCode())
-                .withStatusDate(laaReference.getStatusDate())
-                .withStatusDescription(laaReference.getStatusDescription())
-                .withStatusId(laaReference.getStatusId())
-                .build());
+        if(nonNull(laaReference)) {
+            return Optional.of(uk.gov.moj.cpp.listing.domain.LaaReference.laaReference()
+                    .withApplicationReference(laaReference.getApplicationReference())
+                    .withEffectiveEndDate(ofNullable(laaReference.getEffectiveEndDate()))
+                    .withEffectiveStartDate(ofNullable(laaReference.getEffectiveStartDate()))
+                    .withStatusCode(laaReference.getStatusCode())
+                    .withStatusDate(laaReference.getStatusDate())
+                    .withStatusDescription(laaReference.getStatusDescription())
+                    .withStatusId(laaReference.getStatusId())
+                    .build());
+        }
+        return empty();
     }
 
     private Optional<uk.gov.moj.cpp.listing.domain.SeedingHearing> buildSeedingHearing(final SeedingHearing seedingHearing) {
-
-        return Optional.of(uk.gov.moj.cpp.listing.domain.SeedingHearing.seedingHearing()
-                .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
-                .withSittingDay(seedingHearing.getSittingDay())
-                .withSeedingHearingId(seedingHearing.getSeedingHearingId())
-                .build());
+        if(nonNull(seedingHearing)) {
+            return Optional.of(uk.gov.moj.cpp.listing.domain.SeedingHearing.seedingHearing()
+                    .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
+                    .withSittingDay(seedingHearing.getSittingDay())
+                    .withSeedingHearingId(seedingHearing.getSeedingHearingId())
+                    .build());
+        }
+        return empty();
     }
 
 }

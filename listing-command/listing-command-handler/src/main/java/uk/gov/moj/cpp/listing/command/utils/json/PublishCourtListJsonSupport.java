@@ -17,8 +17,7 @@ public class PublishCourtListJsonSupport {
     }
 
     public static JsonValue asJson(final PublishCourtList publishCourtList) {
-        final String requestedTimeAsOptionalString = publishCourtList.getRequestedTime()
-                .map(x -> x.format(DATE_FORMAT_ZONED_DATE_AND_TIME)).orElse(null);
+        final String requestedTimeAsOptionalString = null != publishCourtList.getRequestedTime() ? publishCourtList.getRequestedTime().format(DATE_FORMAT_ZONED_DATE_AND_TIME) : null;
         return Json.createObjectBuilder()
                 .add(PublishCourtListFields.COURT_CENTRE_ID.getInternalName(), publishCourtList.getCourtCentreId().toString())
                 .add(PublishCourtListFields.START_DATE.getInternalName(), publishCourtList.getStartDate().format(DATE_FORMAT_DATE_ONLY))

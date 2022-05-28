@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
@@ -40,7 +41,9 @@ public class CourtRoomForHearingEventListener {
         final UUID hearingId = courtRoomAssignedToHearing.getHearingId();
         final JsonNodeUpdater hearing = using(hearingRepository).find(hearingId);
         hearing.put(COURT_ROOM_ID_FIELD, courtRoomId);
-        courtRoomAssignedToHearing.getPanel().ifPresent( panel -> hearing.put(PANEL, panel));
+        if(nonNull(courtRoomAssignedToHearing.getPanel())) {
+            hearing.put(PANEL, courtRoomAssignedToHearing.getPanel());
+        }
         hearing.save();
 
         hearingSearchSyncService.sync(hearingId);
@@ -53,7 +56,9 @@ public class CourtRoomForHearingEventListener {
         final UUID hearingId = courtRoomChangedForHearing.getHearingId();
         final JsonNodeUpdater hearing = using(hearingRepository).find(hearingId);
         hearing.put(COURT_ROOM_ID_FIELD, courtRoomId);
-        courtRoomChangedForHearing.getPanel().ifPresent( panel -> hearing.put(PANEL, panel));
+        if(nonNull(courtRoomChangedForHearing.getPanel())) {
+            hearing.put(PANEL, courtRoomChangedForHearing.getPanel());
+        }
         hearing.save();
 
         hearingSearchSyncService.sync(hearingId);

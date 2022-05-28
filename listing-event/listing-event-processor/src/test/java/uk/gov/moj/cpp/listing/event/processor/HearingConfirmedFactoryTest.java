@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import org.junit.Ignore;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -87,12 +87,12 @@ public class HearingConfirmedFactoryTest {
                 .withJudicialRoleType(uk.gov.justice.listing.events.JudicialRoleType.judicialRoleType()
                         .withJudiciaryType(JUDICIAL_ROLE_TYPE)
                         .build())
-                .withIsDeputy(empty())
-                .withIsBenchChairman(empty())
+                .withIsDeputy(null)
+                .withIsBenchChairman(null)
                 .build());
         final HearingAllocatedForListing hearingAllocated = hearingAllocatedForListing(judiciary);
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
-        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name("test Court Centre").build());
 
 
         //when
@@ -104,15 +104,15 @@ public class HearingConfirmedFactoryTest {
 
         assertThat(listedHearing.getHearingDays().get(0).getSittingDay().toInstant().toString(),
                 is(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME, BST).withZoneSameInstant(UTC).toInstant().toString()));
-        assertThat(listedHearing.getHearingDays().get(0).getIsCancelled().get(), is(true));
+        assertThat(listedHearing.getHearingDays().get(0).getIsCancelled(), is(true));
         assertThat(listedHearing.getType().getDescription(), is(TYPE));
         assertThat(listedHearing.getType().getId(), is(TYPE_ID));
         assertThat(listedHearing.getCourtCentre().getId(), is(COURT_CENTRE_ID));
-        assertThat(listedHearing.getCourtCentre().getRoomId().get(), is(COURT_ROOM_ID));
+        assertThat(listedHearing.getCourtCentre().getRoomId(), is(COURT_ROOM_ID));
         assertThat(listedHearing.getJudiciary().get(0).getJudicialId(), is(JUDICIAL_ID));
         assertThat(listedHearing.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType(), is(JUDICIAL_ROLE_TYPE));
-        assertThat(listedHearing.getReportingRestrictionReason().get(), is(REPORTING_RESTRICTION_REASON));
-        assertThat(listedHearing.getHearingLanguage().get().toString(), is(HEARING_LANGUAGE.toString()));
+        assertThat(listedHearing.getReportingRestrictionReason(), is(REPORTING_RESTRICTION_REASON));
+        assertThat(listedHearing.getHearingLanguage().toString(), is(HEARING_LANGUAGE.toString()));
         assertThat(listedHearing.getJurisdictionType().toString(), is(JURISDICTION_TYPE.toString()));
 
         final ConfirmedProsecutionCase prosecutionCaseDefendantOffenceIds = listedHearing.getProsecutionCases().get(0);
@@ -128,7 +128,7 @@ public class HearingConfirmedFactoryTest {
         final List<JudicialRole> judiciary = Collections.emptyList();
         final HearingAllocatedForListing hearingAllocated = hearingAllocatedForListing(judiciary);
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
-        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name("test Court Centre").build());
 
         //when
         final HearingConfirmed actual = hearingConfirmedFactory.create(hearingAllocated, envelope);
@@ -146,7 +146,7 @@ public class HearingConfirmedFactoryTest {
         //given
         final HearingAllocatedForListingV2 hearingAllocated = hearingAllocatedForListingV2();
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
-        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name("test Court Centre").build());
 
 
         //when
@@ -158,15 +158,15 @@ public class HearingConfirmedFactoryTest {
 
         assertThat(listedHearing.getHearingDays().get(0).getSittingDay().toInstant().toString(),
                 is(ZonedDateTime.of(UPDATED_START_DATE, UPDATED_START_TIME, BST).withZoneSameInstant(UTC).toInstant().toString()));
-        assertThat(listedHearing.getHearingDays().get(0).getIsCancelled().get(), is(true));
+        assertThat(listedHearing.getHearingDays().get(0).getIsCancelled(), is(true));
         assertThat(listedHearing.getType().getDescription(), is(TYPE));
         assertThat(listedHearing.getType().getId(), is(TYPE_ID));
         assertThat(listedHearing.getCourtCentre().getId(), is(COURT_CENTRE_ID));
-        assertThat(listedHearing.getCourtCentre().getRoomId().get(), is(COURT_ROOM_ID));
+        assertThat(listedHearing.getCourtCentre().getRoomId(), is(COURT_ROOM_ID));
         assertThat(listedHearing.getJudiciary().get(0).getJudicialId(), is(JUDICIAL_ID));
         assertThat(listedHearing.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType(), is(JUDICIAL_ROLE_TYPE));
-        assertThat(listedHearing.getReportingRestrictionReason().get(), is(REPORTING_RESTRICTION_REASON));
-        assertThat(listedHearing.getHearingLanguage().get().toString(), is(HEARING_LANGUAGE.toString()));
+        assertThat(listedHearing.getReportingRestrictionReason(), is(REPORTING_RESTRICTION_REASON));
+        assertThat(listedHearing.getHearingLanguage().toString(), is(HEARING_LANGUAGE.toString()));
         assertThat(listedHearing.getJurisdictionType().toString(), is(JURISDICTION_TYPE.toString()));
 
         final ConfirmedProsecutionCase prosecutionCaseDefendantOffenceIds = listedHearing.getProsecutionCases().get(0);
@@ -174,7 +174,7 @@ public class HearingConfirmedFactoryTest {
         final ConfirmedDefendant defendantOffenceIds = prosecutionCaseDefendantOffenceIds.getDefendants().get(0);
         assertThat(defendantOffenceIds.getId(), is(DEFENDANT_ID));
         assertThat(defendantOffenceIds.getOffences().get(0).getId(), is(OFFENCE_ID));
-        final uk.gov.justice.core.courts.SeedingHearing seedingHearing = defendantOffenceIds.getOffences().get(0).getSeedingHearing().get();
+        final uk.gov.justice.core.courts.SeedingHearing seedingHearing = defendantOffenceIds.getOffences().get(0).getSeedingHearing();
         assertThat(seedingHearing.getSeedingHearingId(), is(SEEDING_HEARING_ID));
         assertThat(seedingHearing.getJurisdictionType(), is(uk.gov.justice.core.courts.JurisdictionType.CROWN));
     }
@@ -203,7 +203,7 @@ public class HearingConfirmedFactoryTest {
                 .withHearingDays(hearingDays)
                 .withCourtApplicationIds(Collections.singletonList(UUID.randomUUID()))
                 .withHearingLanguage(HEARING_LANGUAGE)
-                .withReportingRestrictionReason(of(REPORTING_RESTRICTION_REASON))
+                .withReportingRestrictionReason(REPORTING_RESTRICTION_REASON)
                 .withCourtCentreId(COURT_CENTRE_ID)
                 .withCourtRoomId(COURT_ROOM_ID)
                 .withHearingId(HEARING_ID)
@@ -247,7 +247,7 @@ public class HearingConfirmedFactoryTest {
                 .withHearingDays(hearingDays)
                 .withCourtApplicationIds(Collections.singletonList(UUID.randomUUID()))
                 .withHearingLanguage(HEARING_LANGUAGE)
-                .withReportingRestrictionReason(of(REPORTING_RESTRICTION_REASON))
+                .withReportingRestrictionReason(REPORTING_RESTRICTION_REASON)
                 .withCourtCentreId(COURT_CENTRE_ID)
                 .withCourtRoomId(COURT_ROOM_ID)
                 .withHearingId(HEARING_ID)
@@ -262,8 +262,8 @@ public class HearingConfirmedFactoryTest {
                         .withJudicialRoleType(uk.gov.justice.listing.events.JudicialRoleType.judicialRoleType()
                                 .withJudiciaryType(JUDICIAL_ROLE_TYPE)
                                 .build())
-                        .withIsDeputy(empty())
-                        .withIsBenchChairman(empty())
+                        .withIsDeputy(null)
+                        .withIsBenchChairman(null)
                         .build()))
                 .build();
     }

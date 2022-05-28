@@ -98,7 +98,6 @@ public class RangeSearchQueryTest {
     @Spy
     private StringToJsonObjectConverter stringToJsonObjectConverter;
 
-
     @Before
     public void setup() throws IllegalAccessException {
         final ObjectMapper objectMapper = new ObjectMapper();
@@ -244,6 +243,7 @@ public class RangeSearchQueryTest {
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
                 .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
 
+
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
                 createObjectBuilder()
@@ -258,7 +258,6 @@ public class RangeSearchQueryTest {
         assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
         assertEquals("listing.search.hearings", results.metadata().name());
     }
-
 
     private List<Hearing> hearingsJson(String allocated) {
         final String testJsonString = "{ \"allocated\":\"" + allocated + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";

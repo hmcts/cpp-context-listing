@@ -1,5 +1,8 @@
 package uk.gov.moj.cpp.listing.it;
 
+import static com.jayway.awaitility.Awaitility.with;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
@@ -46,7 +49,7 @@ public class CaseMarkerUpdateIT extends AbstractIT {
 
         try (final UpdateCaseMarkersSteps steps = new UpdateCaseMarkersSteps(caseId, hearingData, caseMarkerData)) {
             steps.whenCaseMarkerUpdatedPublicEventIsPublished();
-            Thread.sleep(10000); // TODO Looks like this larger payload with both
+            with().pollDelay(10000, MILLISECONDS);
             steps.verifyPublicEventCaseMarkersUpdatedInActiveMQ();
             steps.verifyEventCaseMarkersToBeUpdateInActiveMQ();
 
@@ -54,6 +57,7 @@ public class CaseMarkerUpdateIT extends AbstractIT {
             steps.verifyEventCaseMarkersUpdatedInActiveMQ();
         }
     }
+
 
     private HearingsData listCourtHearing() {
         final HearingsData hearingsData = HearingsData.hearingsData();

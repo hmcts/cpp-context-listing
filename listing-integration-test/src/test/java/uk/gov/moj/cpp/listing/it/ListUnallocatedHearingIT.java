@@ -31,5 +31,4 @@ public class ListUnallocatedHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingUnallocatededFromAPI();
         }
     }
-
 }

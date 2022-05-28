@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
-import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -23,16 +22,22 @@ import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
+import uk.gov.moj.cpp.listing.command.utils.hearing.HearingUpdateOperationType;
+import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -112,7 +117,7 @@ public class ExtendHearingUtilsTest {
     public void shouldBuildPersistedCaseDefendantOffenceMap() {
         final Map<UUID, Map<UUID, List<UUID>>> hearingMap = buildCaseDefendantMapToCompare(true);
 
-        final Hearing unallocatedHearingPersisted = extendHearingHelper.getHearingPersisted();
+        final Hearing unallocatedHearingPersisted = extendHearingHelper.whenWeHave2Cases3DefendantsAnd4OffencesPersistedInViewStore();
 
         final Map<UUID, Map<UUID, List<UUID>>> hearingMapBuilt = extendHearingUtils.buildPersistedCaseDefendantOffenceMap(unallocatedHearingPersisted);
 
@@ -121,7 +126,7 @@ public class ExtendHearingUtilsTest {
 
     @Test
     public void shouldUpdateUnallocatedHearingPartially() {
-        final Hearing unallocatedHearingPersisted = extendHearingHelper.getHearingPersisted();
+        final Hearing unallocatedHearingPersisted = extendHearingHelper.whenWeHave2Cases3DefendantsAnd4OffencesPersistedInViewStore();
         final Map<UUID, Map<UUID, List<UUID>>> hearingRequestMap = buildCaseDefendantMapToCompare(false);
 
         final AtomicInteger numberOfOffences = new AtomicInteger(0);
@@ -137,7 +142,7 @@ public class ExtendHearingUtilsTest {
 
     @Test
     public void shouldExtractCasesToAllocatePartially() {
-        final Hearing unallocatedHearingPersisted = extendHearingHelper.getHearingPersisted();
+        final Hearing unallocatedHearingPersisted = extendHearingHelper.whenWeHave2Cases3DefendantsAnd4OffencesPersistedInViewStore();
         final Map<UUID, Map<UUID, List<UUID>>> hearingRequestMap = buildCaseDefendantMapToCompare(false);
 
         final AtomicInteger numberOfOffences = new AtomicInteger(0);
@@ -153,43 +158,42 @@ public class ExtendHearingUtilsTest {
 
     @Test
     public void shouldGetPartiallyAllocationEventForUpdateHearingWhenStoredDataAndRequestAreDifferent() {
-        final Hearing unallocatedHearingPersisted = extendHearingHelper.getHearingPersisted();
+        final Hearing unallocatedHearingPersisted = extendHearingHelper.whenWeHave2Cases3DefendantsAnd4OffencesPersistedInViewStore();
 
-        final List<ProsecutionCases> prosecutionCases = Arrays.asList(ProsecutionCases.prosecutionCases()
-                .withCaseId(of(CASE_ID1))
+        final List<ProsecutionCases> selectedUpdateList = select1DefendantWithAllItsOffences();
+        when(hearing.updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), any())).thenReturn(Stream.builder().build());
+        final ArgumentCaptor<List> prosecutionCaseCapture = ArgumentCaptor.forClass(List.class);
+
+
+        final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap = new HashMap<>();
+        final Map<UUID, Map<UUID, List<UUID>>> persistedUnallocatedHearingCasesMap = new HashMap<>();
+        final List<NonDefaultDay> nonDefaultDays = Stream.of(NonDefaultDay.nonDefaultDay().withCourtCentreId(Optional.of(randomUUID().toString())).withCourtRoomId(Optional.of(RandomGenerator.INTEGER.next())).withDuration(Optional.of(RandomGenerator.INTEGER.next())).withStartTime(RandomGenerator.FUTURE_UTC_DATE_TIME.next()).withOucode(Optional.of(RandomGenerator.STRING.next())).build()).collect(Collectors.toList());
+        final HearingUpdateOperationType operationType = extendHearingUtils.getOperationType(UNALLOCATED_HEARING_ID, unallocatedHearingPersisted, selectedUpdateList, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, nonDefaultDays, randomUUID(), null);
+        extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing, UNALLOCATED_HEARING_ID, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, operationType);
+
+        verify(hearing).updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), prosecutionCaseCapture.capture());
+
+        final uk.gov.justice.listing.events.ProsecutionCases selectedCase = uk.gov.justice.listing.events.ProsecutionCases.prosecutionCases()
+                .withCaseId(CASE_ID1)
+                .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendants.defendants()
+                        .withDefendantId(DEF_ID1)
+                        .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offences.offences().withOffenceId(OFF_ID1).build()))
+                        .build()))
+                .build();
+
+        assertThat(prosecutionCaseCapture.getValue().contains(selectedCase), is(true));
+    }
+
+    private List<ProsecutionCases> select1DefendantWithAllItsOffences() {
+        return Arrays.asList(ProsecutionCases.prosecutionCases()
+                .withCaseId(CASE_ID1)
                 .withDefendants(Arrays.asList(Defendants.defendants()
-                        .withDefendantId(of(DEF_ID1))
+                        .withDefendantId(DEF_ID1)
                         .withOffences(Arrays.asList(Offences.offences()
                                 .withOffenceId(OFF_ID1)
                                 .build()))
                         .build()))
                 .build());
-        when(hearing.updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), any())).thenReturn(Stream.builder().build());
-        final ArgumentCaptor<List> prosecutionCaseCapture = ArgumentCaptor.forClass(List.class);
-        extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing, UNALLOCATED_HEARING_ID, prosecutionCases, unallocatedHearingPersisted);
-
-        verify(hearing).updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), prosecutionCaseCapture.capture());
-
-        final uk.gov.justice.listing.events.ProsecutionCases case1 = uk.gov.justice.listing.events.ProsecutionCases.prosecutionCases()
-                .withCaseId(CASE_ID1)
-                .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendants.defendants()
-                        .withDefendantId(DEF_ID2)
-                        .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offences.offences().withOffenceId(OFF_ID2).build(),
-                                uk.gov.justice.listing.events.Offences.offences().withOffenceId(OFF_ID3).build()))
-                        .build()))
-                .build();
-
-        final uk.gov.justice.listing.events.ProsecutionCases case2 = uk.gov.justice.listing.events.ProsecutionCases.prosecutionCases()
-                .withCaseId(CASE_ID2)
-                .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendants.defendants()
-                        .withDefendantId(DEF_ID3)
-                        .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offences.offences().withOffenceId(OFF_ID4).build(),
-                                uk.gov.justice.listing.events.Offences.offences().withOffenceId(EXTRA_OFFENCE_ID).build()))
-                        .build()))
-                .build();
-
-        assertThat(prosecutionCaseCapture.getValue().contains(case1), is(true));
-        assertThat(prosecutionCaseCapture.getValue().contains(case2), is(true));
     }
 
     @Test
@@ -213,16 +217,16 @@ public class ExtendHearingUtilsTest {
 
 
         final List<ProsecutionCases> prosecutionCases = Arrays.asList(ProsecutionCases.prosecutionCases()
-                .withCaseId(of(CASE_ID1))
+                .withCaseId(CASE_ID1)
                 .withDefendants(Arrays.asList(
                         Defendants.defendants()
-                                .withDefendantId(of(DEF_ID1))
+                                .withDefendantId(DEF_ID1)
                                 .withOffences(Arrays.asList(Offences.offences()
                                         .withOffenceId(OFF_ID1)
                                         .build()))
                                 .build(),
                         Defendants.defendants()
-                                .withDefendantId(of(DEF_ID2))
+                                .withDefendantId(DEF_ID2)
                                 .withOffences(Arrays.asList(Offences.offences()
                                         .withOffenceId(OFF_ID2)
                                         .build()))
@@ -230,7 +234,12 @@ public class ExtendHearingUtilsTest {
                 .build());
         when(hearing.updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), any())).thenReturn(Stream.builder().build());
 
-        extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing, UNALLOCATED_HEARING_ID, prosecutionCases, unallocatedHearingPersisted);
+        final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap = new HashMap<>();
+        final Map<UUID, Map<UUID, List<UUID>>> persistedUnallocatedHearingCasesMap = new HashMap<>();
+        final List<NonDefaultDay> nonDefaultDays = Collections.emptyList();
+
+        final HearingUpdateOperationType operationType = extendHearingUtils.getOperationType(UNALLOCATED_HEARING_ID, unallocatedHearingPersisted, prosecutionCases, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, nonDefaultDays, randomUUID(), null);
+        extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing, UNALLOCATED_HEARING_ID, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, operationType);
 
         verify(hearing, never()).updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), any());
     }

@@ -69,7 +69,7 @@ public class PublishCourtListEventListener {
                 publishCourtListProduced.getPublishCourtListType(), COURT_LIST_PRODUCED, publishCourtListProduced.getProducedTime(),
                 publishCourtListProduced.getCourtListFileId(), publishCourtListProduced.getCourtListFileName(), "",
                 publishCourtListProduced.getProducedTime().toLocalDate(),
-                publishCourtListProduced.getWeekCommencing().orElse(false)
+                publishCourtListProduced.getWeekCommencing()
         );
         courtListRepository.save(publishProduced);
     }

@@ -59,7 +59,7 @@ protocols: [ HTTP, HTTPS ]
       Update hearing for listing
       ...
       (mapping):
-        requestType: application/vnd.listing.command.update-hearing-for-listing+json
+      requestType: application/vnd.listing.command.update-hearing-for-listing+json
         name: listing.command.update-hearing-for-listing
       (mapping):
         requestType: application/vnd.listing.command.update-defendants-for-hearing+json
@@ -130,6 +130,7 @@ protocols: [ HTTP, HTTPS ]
       application/vnd.listing.delete-next-hearings+json:
         example: !include json/listing.delete-next-hearings.json
         schema: !include json/schema/listing.delete-next-hearings.json
+
     responses:
       202:
         description: Request accepted

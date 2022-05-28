@@ -1,14 +1,12 @@
 package uk.gov.moj.cpp.listing.domain.aggregate.converter;
 
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 
 import uk.gov.moj.cpp.listing.domain.ReportingRestriction;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -20,8 +18,8 @@ public class ReportingRestrictionConverter {
         return ReportingRestriction.reportingRestriction()
                 .withId(reportingRestriction.getId())
                 .withLabel(reportingRestriction.getLabel())
-                .withJudicialResultId(reportingRestriction.getJudicialResultId())
-                .withOrderedDate(getOrderedDate(reportingRestriction.getOrderedDate()))
+                .withJudicialResultId(ofNullable(reportingRestriction.getJudicialResultId()))
+                .withOrderedDate(ofNullable(getOrderedDate(reportingRestriction.getOrderedDate())))
                 .build();
     }
 
@@ -38,9 +36,9 @@ public class ReportingRestrictionConverter {
     public static ReportingRestriction eventsToDomain(final uk.gov.justice.listing.events.ReportingRestriction reportingRestriction) {
         return ReportingRestriction.reportingRestriction()
                 .withId(reportingRestriction.getId())
-                .withJudicialResultId(reportingRestriction.getJudicialResultId())
+                .withJudicialResultId(ofNullable(reportingRestriction.getJudicialResultId()))
                 .withLabel(reportingRestriction.getLabel())
-                .withOrderedDate(reportingRestriction.getOrderedDate())
+                .withOrderedDate(ofNullable(reportingRestriction.getOrderedDate()))
                 .build();
     }
 
@@ -56,15 +54,14 @@ public class ReportingRestrictionConverter {
     public static uk.gov.justice.listing.events.ReportingRestriction domainToEvents(final ReportingRestriction reportingRestriction) {
         return uk.gov.justice.listing.events.ReportingRestriction.reportingRestriction()
                 .withId(reportingRestriction.getId())
-                .withJudicialResultId(reportingRestriction.getJudicialResultId())
+                .withJudicialResultId(reportingRestriction.getJudicialResultId().orElse(null))
                 .withLabel(reportingRestriction.getLabel())
-                .withOrderedDate(reportingRestriction.getOrderedDate())
+                .withOrderedDate(reportingRestriction.getOrderedDate().orElse(null))
                 .build();
     }
 
-    private static Optional<LocalDate> getOrderedDate(final Optional<String> orderedDate) {
-        return orderedDate.isPresent() && !StringUtils.isEmpty(orderedDate.get()) ?
-                of(LocalDate.parse(orderedDate.get())) : empty();
+    private static LocalDate getOrderedDate(final String orderedDate) {
+        return !StringUtils.isEmpty(orderedDate) ? LocalDate.parse(orderedDate) : null;
     }
 
 }

@@ -6,6 +6,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
@@ -36,6 +37,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
+import org.apache.commons.lang3.StringUtils;
+
 @SuppressWarnings({"squid:UnusedPrivateMethod"})
 public class CourtApplicationToDomainConverter implements Converter<uk.gov.justice.core.courts.CourtApplication, CourtApplication> {
 
@@ -44,7 +47,7 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
         return CourtApplication.courtApplication()
                 .withId(commandCourtApplication.getId())
                 .withLinkedCaseIds(getCaseIds(commandCourtApplication))
-                .withParentApplicationId(commandCourtApplication.getParentApplicationId().orElse(null))
+                .withParentApplicationId(commandCourtApplication.getParentApplicationId())
                 .withApplicationType(commandCourtApplication.getType().getType())
                 .withApplicant(buildCourtApplicant(commandCourtApplication.getApplicant()))
                 .withRespondents(ofNullable(commandCourtApplication.getRespondents())
@@ -64,23 +67,23 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
         if(isNotEmpty(commandCourtApplication.getCourtApplicationCases())) {
             return commandCourtApplication.getCourtApplicationCases().stream().map(CourtApplicationCase::getProsecutionCaseId).collect(Collectors.toList());
         }
-        final Optional<CourtOrder> courtOrder = commandCourtApplication.getCourtOrder();
+        final Optional<CourtOrder> courtOrder = ofNullable(commandCourtApplication.getCourtOrder());
         return courtOrder.map(order -> order.getCourtOrderOffences().stream().map(CourtOrderOffence::getProsecutionCaseId).collect(toList())).orElseGet(ArrayList::new);
     }
 
     private Optional<String> getApplicationReference(uk.gov.justice.core.courts.CourtApplication commandCourtApplication) {
-        return commandCourtApplication.getApplicationReference().isPresent() ? commandCourtApplication.getApplicationReference() : empty();
+        return ofNullable(commandCourtApplication.getApplicationReference());
     }
 
     private Optional<String> getApplicationParticulars(uk.gov.justice.core.courts.CourtApplication commandCourtApplication) {
-        return commandCourtApplication.getApplicationParticulars().isPresent() ? commandCourtApplication.getApplicationParticulars() : empty();
+        return ofNullable(commandCourtApplication.getApplicationParticulars());
     }
 
     public CourtApplication convertListingCoreCourtApplication(final uk.gov.justice.listing.courts.CourtApplication listingCoreCourtApplication) {
         return CourtApplication.courtApplication()
                 .withId(listingCoreCourtApplication.getId())
                 .withLinkedCaseIds(listingCoreCourtApplication.getLinkedCaseIds())
-                .withParentApplicationId(listingCoreCourtApplication.getParentApplicationId().orElse(null))
+                .withParentApplicationId(listingCoreCourtApplication.getParentApplicationId())
                 .withApplicant(getApplicant(listingCoreCourtApplication.getApplicant()))
                 .withRespondents(ofNullable(listingCoreCourtApplication.getRespondents())
                         .map(respondents -> respondents
@@ -90,8 +93,8 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
                                 .collect(toList()))
                         .orElse(null))
                 .withApplicationType(listingCoreCourtApplication.getApplicationType())
-                .withApplicationReference(listingCoreCourtApplication.getApplicationReference())
-                .withApplicationParticulars(listingCoreCourtApplication.getApplicationParticulars())
+                .withApplicationReference(ofNullable(listingCoreCourtApplication.getApplicationReference()))
+                .withApplicationParticulars(ofNullable(listingCoreCourtApplication.getApplicationParticulars()))
                 .withOffences(isNotEmpty(listingCoreCourtApplication.getOffences()) ? listingCoreCourtApplication.getOffences().stream().map(this::getDomainOffence).collect(Collectors.toList()) : emptyList())
                 .build();
     }
@@ -106,51 +109,51 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
 
     private ApplicantRespondent buildApplicantRespondent(final CourtApplicationParty courtApplicationParty, final boolean isRespondent) {
 
-        ApplicantRespondent applicantRespondent = courtApplicationParty.getPersonDetails()
+        ApplicantRespondent applicantRespondent = ofNullable(courtApplicationParty.getPersonDetails())
                 .map(person -> getApplicantRespondent(
                         courtApplicationParty.getId(),
                         isRespondent,
-                        person.getFirstName(),
+                        ofNullable(person.getFirstName()),
                         person.getLastName(),
                         PERSON,
-                        person.getAddress()))
+                        ofNullable(person.getAddress())))
                 .orElse(null);
         if (isNull(applicantRespondent)) {
-            applicantRespondent = courtApplicationParty.getMasterDefendant()
+            applicantRespondent = ofNullable(courtApplicationParty.getMasterDefendant())
                     .map(defendant -> getApplicantRespondentForLegalEntityDefendant(
                             courtApplicationParty.getId(),
                             isRespondent,
-                            defendant.getLegalEntityDefendant()))
+                            ofNullable(defendant.getLegalEntityDefendant())))
                     .orElse(null);
         }
 
         if (isNull(applicantRespondent)) {
-            applicantRespondent = courtApplicationParty.getOrganisation()
+            applicantRespondent = ofNullable(courtApplicationParty.getOrganisation())
                     .map(organisation -> getApplicantRespondent(
                             courtApplicationParty.getId(),
                             isRespondent, empty(),
                             organisation.getName(),
                             ORGANISATION,
-                            organisation.getAddress()))
+                            ofNullable(organisation.getAddress())))
                     .orElse(null);
         }
         if (isNull(applicantRespondent)) {
-            applicantRespondent = courtApplicationParty.getProsecutingAuthority()
+            applicantRespondent = ofNullable(courtApplicationParty.getProsecutingAuthority())
                     .map(prosecutingAuthority -> getApplicantRespondent(
                             courtApplicationParty.getId(),
                             isRespondent,
                             empty(),
                             prosecutingAuthority.getProsecutionAuthorityCode(),
                             PROSECUTING_AUTHORITY,
-                            prosecutingAuthority.getAddress()))
+                            ofNullable(prosecutingAuthority.getAddress())))
                     .orElse(null);
         }
         if (isNull(applicantRespondent)) {
-            applicantRespondent = courtApplicationParty.getMasterDefendant()
+            applicantRespondent = ofNullable(courtApplicationParty.getMasterDefendant())
                     .map(defendant -> getApplicantRespondent(
                             courtApplicationParty.getId(),
                             isRespondent,
-                            defendant.getPersonDefendant()))
+                            ofNullable(defendant.getPersonDefendant())))
                     .orElse(null);
         }
         return applicantRespondent;
@@ -160,21 +163,21 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
         return personDefendant.map(defendant -> getApplicantRespondent(
                 id,
                 isRespondent,
-                defendant.getPersonDetails().getFirstName(),
+                        ofNullable(defendant.getPersonDetails().getFirstName()),
                 defendant.getPersonDetails().getLastName(),
                 PERSON_DEFENDANT,
-                defendant.getPersonDetails().getAddress()))
+                        ofNullable(defendant.getPersonDetails().getAddress())))
                 .orElse(null);
     }
 
     private ApplicantRespondent getApplicantRespondentForLegalEntityDefendant(final UUID id, final boolean isRespondent, final Optional<LegalEntityDefendant> legalEntityDefendant) {
-        return legalEntityDefendant.isPresent() ? getApplicantRespondent(
+        return legalEntityDefendant.map(entityDefendant -> getApplicantRespondent(
                 id,
                 isRespondent,
                 empty(),
-                legalEntityDefendant.get().getOrganisation().getName(),
+                entityDefendant.getOrganisation().getName(),
                 PERSON,
-                legalEntityDefendant.get().getOrganisation().getAddress()) : null;
+                ofNullable(entityDefendant.getOrganisation().getAddress()))).orElse(null);
     }
 
     private ApplicantRespondent getApplicantRespondent(final UUID id, final boolean isRespondent, final Optional<String> firstName, final String lastName, final CourtApplicationPartyType type, Optional<uk.gov.justice.core.courts.Address> address) {
@@ -191,16 +194,16 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
     private Address buildAddress(final Optional<uk.gov.justice.core.courts.Address> address) {
         return address.map(addr -> Address.address()
                 .withAddress1(addr.getAddress1())
-                .withAddress2(addr.getAddress2())
-                .withAddress3(addr.getAddress3())
-                .withAddress4(addr.getAddress4())
-                .withAddress5(addr.getAddress5())
-                .withPostcode(addr.getPostcode())
-                .withWelshAddress1(addr.getWelshAddress1())
-                .withWelshAddress2(addr.getWelshAddress2())
-                .withWelshAddress3(addr.getWelshAddress3())
-                .withWelshAddress4(addr.getWelshAddress4())
-                .withWelshAddress5(addr.getWelshAddress5())
+                .withAddress2(ofNullable(addr.getAddress2()))
+                .withAddress3(ofNullable(addr.getAddress3()))
+                .withAddress4(ofNullable(addr.getAddress4()))
+                .withAddress5(ofNullable(addr.getAddress5()))
+                .withPostcode(ofNullable(addr.getPostcode()))
+                .withWelshAddress1(ofNullable(addr.getWelshAddress1()))
+                .withWelshAddress2(ofNullable(addr.getWelshAddress2()))
+                .withWelshAddress3(ofNullable(addr.getWelshAddress3()))
+                .withWelshAddress4(ofNullable(addr.getWelshAddress4()))
+                .withWelshAddress5(ofNullable(addr.getWelshAddress5()))
                 .build())
                 .orElse(null);
     }
@@ -208,22 +211,22 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
     private ApplicantRespondent getApplicant(final Applicant applicant) {
         return isNull(applicant) ? null : ApplicantRespondent.applicantRespondent()
                 .withId(applicant.getId())
-                .withFirstName(applicant.getFirstName().orElse(null))
+                .withFirstName(applicant.getFirstName())
                 .withLastName(applicant.getLastName())
                 .withIsRespondent(false)
                 .withCourtApplicationPartyType(buildCourtApplicationPartyType(applicant.getCourtApplicationPartyType()))
-                .withAddress(buildAddress(applicant.getAddress()))
+                .withAddress(buildAddress(ofNullable(applicant.getAddress())))
                 .build();
     }
 
     private ApplicantRespondent getRespondent(final Respondents respondents) {
         return isNull(respondents) ? null : ApplicantRespondent.applicantRespondent()
                 .withId(respondents.getId())
-                .withFirstName(respondents.getFirstName().orElse(null))
+                .withFirstName(respondents.getFirstName())
                 .withLastName(respondents.getLastName())
                 .withIsRespondent(true)
                 .withCourtApplicationPartyType(buildCourtApplicationPartyType(respondents.getCourtApplicationPartyType()))
-                .withAddress(buildAddress(respondents.getAddress()))
+                .withAddress(buildAddress(ofNullable(respondents.getAddress())))
                 .build();
     }
 
@@ -238,11 +241,9 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
                 offences.addAll(courtApplicationCase.getOffences().stream().map(this::getDomainOffence).collect(Collectors.toList()))
             );
         }
-        commandCourtApplication.getCourtOrder().ifPresent(co ->
-           co.getCourtOrderOffences().stream().filter(coo -> nonNull(coo.getOffence())).forEach(courtOrderOffence ->
-               offences.add(getDomainOffence(courtOrderOffence.getOffence()))
-           )
-        );
+        if(nonNull(commandCourtApplication.getCourtOrder())) {
+            commandCourtApplication.getCourtOrder().getCourtOrderOffences().stream().filter(coo -> nonNull(coo.getOffence())).forEach(courtOrderOffence -> offences.add(getDomainOffence(courtOrderOffence.getOffence())));
+        }
 
         return offences;
     }
@@ -253,11 +254,13 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
                 .withStartDate(offence.getStartDate())
                 .withOffenceCode(offence.getOffenceCode())
                 .withOffenceWording(offence.getWording())
+                .withCount(offence.getCount())
+                .withOrderIndex(offence.getOrderIndex())
                 .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                         .withTitle(offence.getOffenceTitle())
-                        .withWelshTitle(offence.getOffenceTitleWelsh().orElse(offence.getOffenceTitle()))
-                        .withLegislation(offence.getOffenceLegislation())
-                        .withWelshLegislation(offence.getOffenceLegislationWelsh())
+                        .withWelshTitle(StringUtils.isNotEmpty(offence.getOffenceTitleWelsh()) ? offence.getOffenceTitleWelsh() : offence.getOffenceTitle())
+                        .withLegislation(ofNullable(offence.getOffenceLegislation()))
+                        .withWelshLegislation(ofNullable(offence.getOffenceLegislationWelsh()))
                         .build())
                 .build();
     }
@@ -270,8 +273,8 @@ public class CourtApplicationToDomainConverter implements Converter<uk.gov.justi
                 .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                         .withTitle(offence.getStatementOfOffence().getTitle())
                         .withWelshTitle(offence.getStatementOfOffence().getWelshTitle())
-                        .withLegislation(offence.getStatementOfOffence().getLegislation())
-                        .withWelshLegislation(offence.getStatementOfOffence().getWelshLegislation())
+                        .withLegislation(ofNullable(offence.getStatementOfOffence().getLegislation()))
+                        .withWelshLegislation(ofNullable(offence.getStatementOfOffence().getWelshLegislation()))
                         .build())
                 .build();
     }

@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Optional.empty;
+
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.Optional;
@@ -75,11 +77,11 @@ public class ReportingRestriction {
   public static class Builder {
     private UUID id;
 
-    private Optional<UUID> judicialResultId;
+    private Optional<UUID> judicialResultId = empty();
 
     private String label;
 
-    private Optional<LocalDate> orderedDate;
+    private Optional<LocalDate> orderedDate = empty();
 
     public Builder withId(final UUID id) {
       this.id = id;

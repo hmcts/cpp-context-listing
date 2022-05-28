@@ -2,19 +2,16 @@ package uk.gov.moj.cpp.listing.steps.data;
 
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
-
-import java.util.Arrays;
-import java.util.List;
-import static java.util.Optional.of;
 import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 
-import uk.gov.justice.core.courts.DefendantAlias;
-import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.AssociatedDefenceOrganisation;
+import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.DefenceOrganisation;
+import uk.gov.justice.core.courts.DefendantAlias;
 import uk.gov.justice.core.courts.Organisation;
 import uk.gov.justice.listing.courts.FundingType;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -63,12 +60,12 @@ public class UpdatedDefendantData {
                                 .withOrganisation(Organisation.organisation()
                                         .withName("withOrganisationName")
                                         .build())
-                                .withLaaContractNumber(of("LAACONTRACT"))
+                                .withLaaContractNumber("LAACONTRACT")
                                 .build())
                         .build())
                 .withAliases(asList(DefendantAlias.defendantAlias()
-                        .withFirstName(of("Alias First Name"))
-                        .withLastName(of("Alias Last Name"))
+                        .withFirstName("Alias First Name")
+                        .withLastName("Alias Last Name")
                         .build()))
                 .build();
     }

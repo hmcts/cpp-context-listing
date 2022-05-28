@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -88,12 +87,12 @@ public class AllocatedHearingUpdatedFactoryTest {
                 .withJudicialRoleType(uk.gov.justice.listing.events.JudicialRoleType.judicialRoleType()
                         .withJudiciaryType(JUDICIAL_ROLE_TYPE)
                         .build())
-                .withIsBenchChairman(empty())
-                .withIsDeputy(empty())
+                .withIsBenchChairman(null)
+                .withIsDeputy(null)
                 .build());
         final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = allocatedHearingUpdatedForListing(judiciary);
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
-        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name("test Court Centre").build());
 
         //when
         final HearingUpdated actual = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing, envelope);
@@ -107,11 +106,11 @@ public class AllocatedHearingUpdatedFactoryTest {
         assertThat(listedHearing.getType().getDescription(), is(TYPE));
         assertThat(listedHearing.getType().getId(), is(TYPE_ID));
         assertThat(listedHearing.getCourtCentre().getId(), is(COURT_CENTRE_ID));
-        assertThat(listedHearing.getCourtCentre().getRoomId().get(), is(COURT_ROOM_ID));
+        assertThat(listedHearing.getCourtCentre().getRoomId(), is(COURT_ROOM_ID));
         assertThat(listedHearing.getJudiciary().get(0).getJudicialId(), is(JUDICIAL_ID));
         assertThat(listedHearing.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType(), is(JUDICIAL_ROLE_TYPE));
-        assertThat(listedHearing.getReportingRestrictionReason().get(), is(REPORTING_RESTRICTION_REASON));
-        assertThat(listedHearing.getHearingLanguage().get().toString(), is(HEARING_LANGUAGE.toString()));
+        assertThat(listedHearing.getReportingRestrictionReason(), is(REPORTING_RESTRICTION_REASON));
+        assertThat(listedHearing.getHearingLanguage().toString(), is(HEARING_LANGUAGE.toString()));
         assertThat(listedHearing.getJurisdictionType().toString(), is(JURISDICTION_TYPE.toString()));
 
         final ConfirmedProsecutionCase prosecutionCaseDefendantOffenceIds = listedHearing.getProsecutionCases().get(0);
@@ -129,7 +128,7 @@ public class AllocatedHearingUpdatedFactoryTest {
 
         final AllocatedHearingUpdatedForListingV2 allocatedHearingUpdatedForListingV2 = allocatedHearingUpdatedForListingV2();
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
-        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name("test Court Centre").build());
 
         //when
         final HearingUpdated actual = allocatedHearingUpdatedFactory.createV2(allocatedHearingUpdatedForListingV2, envelope);
@@ -143,11 +142,11 @@ public class AllocatedHearingUpdatedFactoryTest {
         assertThat(listedHearing.getType().getDescription(), is(TYPE));
         assertThat(listedHearing.getType().getId(), is(TYPE_ID));
         assertThat(listedHearing.getCourtCentre().getId(), is(COURT_CENTRE_ID));
-        assertThat(listedHearing.getCourtCentre().getRoomId().get(), is(COURT_ROOM_ID));
+        assertThat(listedHearing.getCourtCentre().getRoomId(), is(COURT_ROOM_ID));
         assertThat(listedHearing.getJudiciary().get(0).getJudicialId(), is(JUDICIAL_ID));
         assertThat(listedHearing.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType(), is(JUDICIAL_ROLE_TYPE));
-        assertThat(listedHearing.getReportingRestrictionReason().get(), is(REPORTING_RESTRICTION_REASON));
-        assertThat(listedHearing.getHearingLanguage().get().toString(), is(HEARING_LANGUAGE.toString()));
+        assertThat(listedHearing.getReportingRestrictionReason(), is(REPORTING_RESTRICTION_REASON));
+        assertThat(listedHearing.getHearingLanguage().toString(), is(HEARING_LANGUAGE.toString()));
         assertThat(listedHearing.getJurisdictionType().toString(), is(JURISDICTION_TYPE.toString()));
 
         final ConfirmedProsecutionCase prosecutionCaseDefendantOffenceIds = listedHearing.getProsecutionCases().get(0);
@@ -156,7 +155,7 @@ public class AllocatedHearingUpdatedFactoryTest {
         assertThat(defendantOffenceIds.getId(), is(DEFENDANT_ID));
         final ConfirmedOffence confirmedOffence = defendantOffenceIds.getOffences().get(0);
         assertThat(confirmedOffence.getId(), is(OFFENCE_ID));
-        final uk.gov.justice.core.courts.SeedingHearing seedingHearing = confirmedOffence.getSeedingHearing().get();
+        final uk.gov.justice.core.courts.SeedingHearing seedingHearing = confirmedOffence.getSeedingHearing();
         assertThat(seedingHearing.getSeedingHearingId(), is(SEEDING_HEARING_ID));
         assertThat(seedingHearing.getJurisdictionType(), is(uk.gov.justice.core.courts.JurisdictionType.CROWN));
         assertThat(listedHearing.getCourtApplicationIds().get(0), is(COURT_APPLICATION_ID));
@@ -168,7 +167,7 @@ public class AllocatedHearingUpdatedFactoryTest {
         final List<JudicialRole> judiciary = Collections.emptyList();
         final AllocatedHearingUpdatedForListing allocatedHearingUpdatedForListing = allocatedHearingUpdatedForListing(judiciary);
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
-        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name("test Court Centre").build());
 
         //when
         final HearingUpdated actual = allocatedHearingUpdatedFactory.create(allocatedHearingUpdatedForListing, envelope);
@@ -204,7 +203,7 @@ public class AllocatedHearingUpdatedFactoryTest {
         return AllocatedHearingUpdatedForListing.allocatedHearingUpdatedForListing()
                 .withHearingDays(hearingDays)
                 .withHearingLanguage(HEARING_LANGUAGE)
-                .withReportingRestrictionReason(of(REPORTING_RESTRICTION_REASON))
+                .withReportingRestrictionReason(REPORTING_RESTRICTION_REASON)
                 .withCourtCentreId(COURT_CENTRE_ID)
                 .withCourtRoomId(COURT_ROOM_ID)
                 .withHearingId(HEARING_ID)
@@ -248,7 +247,7 @@ public class AllocatedHearingUpdatedFactoryTest {
         return AllocatedHearingUpdatedForListingV2.allocatedHearingUpdatedForListingV2()
                 .withHearingDays(hearingDays)
                 .withHearingLanguage(HEARING_LANGUAGE)
-                .withReportingRestrictionReason(of(REPORTING_RESTRICTION_REASON))
+                .withReportingRestrictionReason(REPORTING_RESTRICTION_REASON)
                 .withCourtCentreId(COURT_CENTRE_ID)
                 .withCourtRoomId(COURT_ROOM_ID)
                 .withHearingId(HEARING_ID)
@@ -263,8 +262,8 @@ public class AllocatedHearingUpdatedFactoryTest {
                         .withJudicialRoleType(uk.gov.justice.listing.events.JudicialRoleType.judicialRoleType()
                                 .withJudiciaryType(JUDICIAL_ROLE_TYPE)
                                 .build())
-                        .withIsBenchChairman(empty())
-                        .withIsDeputy(empty())
+                        .withIsBenchChairman(null)
+                        .withIsDeputy(null)
                         .build()))
                 .withCourtApplicationIds(courtApplicationIds)
                 .build();

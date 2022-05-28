@@ -1,5 +1,8 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
+import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.singleHearingsData;
+import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.singleNotHmiEnabledHearingsData;
+
 import uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory;
 
 import java.time.LocalDate;
@@ -13,12 +16,27 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData notHmiEnabledHearingsData(){
+        return new HearingsData(HearingsDataFactory.notHmiEnabledHearingsData());
+    }
+
+    public static HearingsData mixtureHmiEnabledAndNotHmiEnabledHearingsData(){
+        List<HearingData> hmiEnabledHearingData = singleHearingsData();
+        List<HearingData> notHmiEnabledHearingData = singleNotHmiEnabledHearingsData();
+        notHmiEnabledHearingData.addAll(hmiEnabledHearingData);
+        return new HearingsData(notHmiEnabledHearingData);
+    }
+
     public static HearingsData nextHearingsData(final List<HearingData> hearings) {
         return new HearingsData(HearingsDataFactory.hearingsData(hearings));
     }
 
     public static HearingsData hearingsData(final String jurisdictionType) {
         return new HearingsData(HearingsDataFactory.hearingsData(jurisdictionType));
+    }
+
+    public static HearingsData notHmiEnabledHearingsData(final String jurisdictionType) {
+        return new HearingsData(HearingsDataFactory.notHmiEnabledHearingsData(jurisdictionType));
     }
 
     public static HearingsData hearingsData(final UUID hearingId) {
@@ -41,8 +59,16 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.singleHearingData());
     }
 
+    public static HearingsData singleHearingDataForHMI() {
+        return new HearingsData(HearingsDataFactory.singleHearingDataForHMI());
+    }
+
     public static HearingsData singleHearingDataMultipleCasesWithSingleOffence() {
         return new HearingsData(HearingsDataFactory.singleHearingDataSingleOffence());
+    }
+
+    public static HearingsData singleHearingDataSingleCaseMultipleOffences() {
+        return new HearingsData(HearingsDataFactory.singleHearingDataMultipleOffences());
     }
 
     public static HearingsData hearingsDataForWeekCommencing(final UUID hearingId, final LocalDate hearingEndDate,
@@ -87,6 +113,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData));
     }
 
+    public static HearingsData hearingsDataWithUnAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithUnAllocationDataAndJudiciary(caseAndDefendantData));
+    }
+
     public static HearingsData hearingsDataStandaloneApplication() {
         return new HearingsData(HearingsDataFactory.hearingsDataStandaloneApplication());
     }
@@ -120,5 +150,7 @@ public class HearingsData {
     public List<HearingData> getHearingData() {
         return hearingData;
     }
+
+
 
 }

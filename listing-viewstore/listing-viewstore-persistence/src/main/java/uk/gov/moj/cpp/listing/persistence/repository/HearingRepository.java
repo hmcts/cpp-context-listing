@@ -521,6 +521,70 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
                                                @QueryParam("caseUrnForLinkedCases") final String caseUrnForLinkedCases,
                                                @QueryParam("currentDate") final LocalDate currentDate);
 
+
+    /**
+     * Find {@link Hearing}s based on the following parameters
+     *
+     * @param jurisdictionTypes     to search for or <code>null</code> for any jurisdictionTypes.
+     * @param hearingId             property to search for - mandatory.
+     * @param caseUrnSet            to search for or <code>empty string</code> for any case urn.
+     * @param masterDefendantIdSet  to search for or <code>empty string</code> for any master
+     *                              defendant id.
+     * @param linkedCaseUrn         to search for or <code>empty string</code> for any linked case
+     *                              urn.
+     * @param caseUrnForLinkedCases to search for or <code>empty string</code> for any linked case
+     *                              urn.
+     * @return Hearings.
+     */
+    @Query(value = "select h.id, h.properties, " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id, " +
+            "1 as totalCount " +
+            "from hearing h " +
+            "where (h.unscheduled is null or h.unscheduled = false) " +
+            "and (h.jurisdiction_type in (:jurisdictionTypes)) " +
+            "and (h.end_date is null OR h.end_date >= :currentDate) " +
+            "and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid)) " +
+            "AND " +
+            "(h.id in (select distinct h.id from hearing h  " +
+            " inner join listed_cases lc on lc.hearing_id = h.id where UPPER(lc.case_reference) in (:caseUrnSet)  " +
+            " and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid))) " +
+            "OR " +
+            "(h.id in (SELECT distinct(hrng.id) FROM hearing hrng inner join listed_cases lc3 on lc3.hearing_id = hrng.id " +
+            "   WHERE lc3.case_reference IN (select lnkCase.case_urn as linkedCaseUrn from hearing h2  " +
+            "   inner join listed_cases listCase on listCase.hearing_id = h2.id  " +
+            "   inner join linked_case lnkCase on lnkCase.listed_case_id = listCase.id  " +
+            "   where listCase.case_reference = cast(:caseUrnForLinkedCases as text)))) " +
+            "OR " +
+            " (h.id in (select distinct h5.id from " +
+            "hearing h5 inner join listed_cases lc6 on lc6.hearing_id = h5.id where " +
+            "lc6.case_id in (select distinct lc5.case_id from hearing h4 inner join listed_cases lc5 on lc5.hearing_id = h4.id  " +
+            "inner join defendant d on d.listed_case_id = lc5.id where cast(d.master_defendant_id as varchar) in (:masterDefendantIdSet)) " +
+            " and (:hearingId is null or h5.id != cast(cast(:hearingId as varchar) as uuid))) " +
+            "OR " +
+            "(h.id in (select distinct h.id from hearing h  " +
+            " inner join listed_cases lc on lc.hearing_id = h.id where UPPER(lc.case_reference) in (:linkedCaseUrn)  " +
+            " and (:hearingId is null or h.id != cast(cast(:hearingId as varchar) as uuid))) " +
+            ")))"
+            , isNative = true)
+    public abstract List<Hearing> findHearings(@QueryParam("jurisdictionTypes") final Set<String> jurisdictionTypes,
+                                               @QueryParam("hearingId") final String hearingId,
+                                               @QueryParam("caseUrnSet") final Set<String> caseUrnSet,
+                                               @QueryParam("masterDefendantIdSet") final Set<String> masterDefendantIdSet,
+                                               @QueryParam("linkedCaseUrn") final Set<String> linkedCaseUrn,
+                                               @QueryParam("caseUrnForLinkedCases") final String caseUrnForLinkedCases,
+                                               @QueryParam("currentDate") final LocalDate currentDate);
+
     /**
      * @param caseUrn
      * @return

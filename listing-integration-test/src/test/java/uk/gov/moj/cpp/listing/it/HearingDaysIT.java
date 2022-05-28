@@ -17,6 +17,7 @@ import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetAvail
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 
 
 import com.jayway.restassured.path.json.JsonPath;
@@ -48,6 +49,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jayway.jsonpath.Filter;
 import org.hamcrest.Matcher;
+import org.junit.Before;
 import org.junit.Test;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
@@ -88,6 +90,7 @@ public class HearingDaysIT extends AbstractIT {
         hearingId = randomUUID();
         caseId = randomUUID();
         courtCentreId = randomUUID();
+        stubGetReferenceDataCourtCentreById(courtCentreId);
         courtRoomId = randomUUID();
         caseUrn = "TVL16116BT1UU";
 

@@ -5,7 +5,6 @@ import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -21,32 +20,37 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
+
+import javax.ws.rs.core.Response;
+import org.hamcrest.Matcher;
+import org.junit.Assert;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.ApplicationStatus;
+import uk.gov.justice.core.courts.BreachType;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtApplicationCase;
 import uk.gov.justice.core.courts.CourtApplicationParty;
 import uk.gov.justice.core.courts.CourtApplicationType;
+import uk.gov.justice.core.courts.Gender;
+import uk.gov.justice.core.courts.Jurisdiction;
+import uk.gov.justice.core.courts.LinkType;
+import uk.gov.justice.core.courts.OffenceActiveOrder;
 import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
-import uk.gov.justice.core.courts.BreachType;
-import uk.gov.justice.core.courts.Jurisdiction;
-import uk.gov.justice.core.courts.OffenceActiveOrder;
 import uk.gov.justice.core.courts.SummonsTemplateType;
-import uk.gov.justice.core.courts.Gender;
-import uk.gov.justice.core.courts.LinkType;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.AddCourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationUpdateData;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.time.LocalDate;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.jms.JMSException;
@@ -81,6 +85,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private static final String POSTCODE = "CR1 4BX";
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
+    private static final String PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI = "public.listing.updated-hearing-in-staging-hmi";
 
     private MessageProducer publicEventCourtApplicationUpdated;
     private MessageConsumer publicEventMessageConsumerCourtApplicationUpdated;
@@ -90,6 +95,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private MessageConsumer privateMessageConsumerCourtApplicationAddedForHearing;
     private MessageConsumer publicMessageConsumerCourtApplicationAddedForHearing;
 
+    private MessageConsumer publicMessageConsumerHmiHearingUpdated;
 
     private String request;
 
@@ -109,6 +115,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
         publicEventMessageConsumerCourtApplicationAdded = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED);
         privateMessageConsumerCourtApplicationAddedForHearing = QueueUtil.privateEvents.createConsumer(PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
         publicMessageConsumerCourtApplicationAddedForHearing = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
+        publicMessageConsumerHmiHearingUpdated = publicEvents.createConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -234,9 +241,9 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                         )));
     }
 
-    public void verifyCourtApplicationAddedFromAPI() {
+    public void verifyCourtApplicationAddedFromAPI(final boolean allocated) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
-                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), false));
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), allocated));
 
         final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
         final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
@@ -274,6 +281,28 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                         )));
     }
 
+    public void verifyHmiPublicEventForUpdateHearing() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHmiHearingUpdated);
+        LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
+        Assert.assertThat(jsonResponse.get("hearing.id"), is(hearingsData.getHearingData().get(0).getId().toString()));
+    }
+
+    public void verifyTimeLine(HearingData hearingsData) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.unallocated-hearings_for_application"),
+                        hearingsData.getCourtApplications().get(0).getId()));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(Response.Status.OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[0].id", is(hearingsData.getId().toString())),
+                                withJsonPath("$.hearings[0].courtApplications.size()", is(1)),
+                                withJsonPath("$.hearings[0].courtApplications[0].id", is(hearingsData.getCourtApplications().get(0).getId().toString()))
+                        )
+                ));
+    }
+
     private CourtApplicationUpdateData getUpdateCourtApplicationForHearingsData(HearingsData hearingsData) {
         CourtApplicationData courtApplicationData = hearingsData.getHearingData().get(0).getCourtApplications().get(0);
         CourtApplication courtApplication = getCourtApplication(courtApplicationData);
@@ -290,34 +319,34 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private CourtApplication getCourtApplication(final CourtApplicationData courtApplicationData) {
         return CourtApplication.courtApplication()
                 .withApplicant(CourtApplicationParty.courtApplicationParty()
-                        .withPersonDetails(of(Person.person()
-                                .withFirstName(of(APPLICANT_FIRST_NAME))
+                        .withPersonDetails(Person.person()
+                                .withFirstName(APPLICANT_FIRST_NAME)
                                 .withLastName(APPLICANT_LAST_NAME)
                                 .withGender(Gender.FEMALE)
                                 .withAddress(buildAddress())
-                                .build()))
+                                .build())
                         .withId(APPLICANT_ID)
                         .withSummonsRequired(false)
                         .withNotificationRequired(false)
                         .build())
                 .withSubject(CourtApplicationParty.courtApplicationParty()
-                        .withPersonDetails(of(Person.person()
-                                .withFirstName(of(APPLICANT_FIRST_NAME))
+                        .withPersonDetails(Person.person()
+                                .withFirstName(APPLICANT_FIRST_NAME)
                                 .withLastName(APPLICANT_LAST_NAME)
                                 .withGender(Gender.FEMALE)
                                 .withAddress(buildAddress())
-                                .build()))
+                                .build())
                         .withId(APPLICANT_ID)
                         .withSummonsRequired(false)
                         .withNotificationRequired(false)
                         .build())
                 .withRespondents(singletonList(CourtApplicationParty.courtApplicationParty()
-                        .withPersonDetails(of(Person.person()
-                                .withFirstName(of(RESPONDENT_FIRST_NAME))
+                        .withPersonDetails(Person.person()
+                                .withFirstName(RESPONDENT_FIRST_NAME)
                                 .withLastName(RESPONDENT_LAST_NAME)
                                 .withGender(Gender.MALE)
                                 .withAddress(buildAddress())
-                                .build()))
+                                .build())
                         .withId(RESPONDENT_ID)
                         .withSummonsRequired(false)
                         .withNotificationRequired(false)
@@ -331,12 +360,12 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                         .withIsSJP(false)
                         .withCaseStatus("ACTIVE")
                         .build()))
-                .withParentApplicationId(of(LINKED_APPLICATION_ID))
+                .withParentApplicationId(LINKED_APPLICATION_ID)
                 .withType(CourtApplicationType.courtApplicationType()
                         .withType(APPLICATION_TYPE)
                         .withId(UUID.randomUUID())
-                        .withCode(Optional.of(STRING.next()))
-                        .withLegislation(Optional.of(STRING.next()))
+                        .withCode(STRING.next())
+                        .withLegislation(STRING.next())
                         .withCategoryCode(STRING.next())
                         .withLinkType(LinkType.LINKED)
                         .withSummonsTemplateType(SummonsTemplateType.GENERIC_APPLICATION)
@@ -354,20 +383,20 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                         .build())
                 .withApplicationStatus(ApplicationStatus.LISTED)
                 .withApplicationReceivedDate(LocalDate.now().toString())
-                .withApplicationReference(Optional.of(STRING.next()))
-                .withApplicationParticulars(of(STRING.next()))
+                .withApplicationReference(STRING.next())
+                .withApplicationParticulars(STRING.next())
                 .build();
     }
 
-    private Optional<Address> buildAddress() {
-        return of(Address.address()
+    private Address buildAddress() {
+        return Address.address()
                 .withAddress1(STRING.next())
-                .withAddress2(of(STRING.next()))
-                .withAddress3(of(STRING.next()))
-                .withAddress4(of(STRING.next()))
-                .withAddress5(of(STRING.next()))
-                .withPostcode(of(POSTCODE))
-                .build());
+                .withAddress2(STRING.next())
+                .withAddress3(STRING.next())
+                .withAddress4(STRING.next())
+                .withAddress5(STRING.next())
+                .withPostcode(POSTCODE)
+                .build();
     }
 
     @Override
@@ -380,10 +409,11 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
             publicEventMessageConsumerCourtApplicationAdded.close();
             privateMessageConsumerCourtApplicationAddedForHearing.close();
             publicMessageConsumerCourtApplicationAddedForHearing.close();
+            publicMessageConsumerHmiHearingUpdated.close();
+
         } catch (JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);
         }
     }
-
 }

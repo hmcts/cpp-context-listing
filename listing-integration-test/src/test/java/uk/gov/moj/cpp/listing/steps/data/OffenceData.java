@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
 import uk.gov.justice.core.courts.CustodyTimeLimit;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +17,9 @@ public class OffenceData {
     private final LocalDate endDate;
     private final String statementOfOffenceTitle;
     private final String statementOfOffenceTitleWelsh;
-    private final int count;
+    private final Integer count;
+    private final Integer orderIndex;
+    private final String offenceLegislation;
     private final UUID offenceDefinitionId;
     private final Optional<CustodyTimeLimit> custodyTimeLimit;
     private final Optional<LaaReferenceData> laaApplnReference;
@@ -27,9 +30,9 @@ public class OffenceData {
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                        final String statementOfOffenceTitleWelsh, final String offenceWording,
-                       final int count, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit,
+                       final Integer count, final Integer orderIndex, final String offenceLegislation, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit,
                        final Optional<LaaReferenceData> laaApplnReference, final LocalDate laidDate,
-                       final Optional<Boolean> shadowListed,final List<ReportingRestrictionData> reportingRestrictionData) {
+                       final Optional<Boolean> shadowListed, final List<ReportingRestrictionData> reportingRestrictionData) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
@@ -41,8 +44,10 @@ public class OffenceData {
         this.statementOfOffenceTitleWelsh = statementOfOffenceTitleWelsh;
         this.statementOfOffenceTitle = statementOfOffenceTitle;
         this.count = count;
+        this.orderIndex = orderIndex;
+        this.offenceLegislation = offenceLegislation;
         this.offenceDefinitionId = offenceDefinitionId;
-        this.custodyTimeLimit =  custodyTimeLimit;
+        this.custodyTimeLimit = custodyTimeLimit;
         this.laidDate = laidDate;
         this.shadowListed = shadowListed;
         this.reportingRestriction = reportingRestrictionData;
@@ -52,43 +57,73 @@ public class OffenceData {
         return laaApplnReference;
     }
 
-    public UUID getOffenceId() { return offenceId; }
+    public UUID getOffenceId() {
+        return offenceId;
+    }
 
     public String getOffenceWording() {
         return offenceWording;
     }
 
-    public UUID getRandomOffenceId() { return randomOffenceId; }
+    public UUID getRandomOffenceId() {
+        return randomOffenceId;
+    }
 
-    public String getNewOffenceCode() { return offenceCode + "-new"; }
+    public String getNewOffenceCode() {
+        return offenceCode + "-new";
+    }
 
-    public String getOffenceCode() { return offenceCode; }
+    public String getOffenceCode() {
+        return offenceCode;
+    }
 
-    public String getChangedOffenceCode() { return offenceCode + "-changed"; }
+    public String getChangedOffenceCode() {
+        return offenceCode + "-changed";
+    }
 
-    public LocalDate getStartDate() { return startDate; }
+    public LocalDate getStartDate() {
+        return startDate;
+    }
 
-    public LocalDate getEndDate() { return endDate; }
+    public LocalDate getEndDate() {
+        return endDate;
+    }
 
-    public String getStatementOfOffenceTitle() { return statementOfOffenceTitle; }
+    public String getStatementOfOffenceTitle() {
+        return statementOfOffenceTitle;
+    }
 
-    public String getAddedStatementOfOffenceTitle() { return statementOfOffenceTitle + "-added"; }
+    public String getAddedStatementOfOffenceTitle() {
+        return statementOfOffenceTitle + "-added";
+    }
 
-    public String getChangedStatementOfOffenceTitle() { return statementOfOffenceTitle + "-changed"; }
+    public String getChangedStatementOfOffenceTitle() {
+        return statementOfOffenceTitle + "-changed";
+    }
 
-    public String getStatementOfOffenceTitleWelsh() { return statementOfOffenceTitleWelsh; }
+    public String getStatementOfOffenceTitleWelsh() {
+        return statementOfOffenceTitleWelsh;
+    }
 
-    public int getCount() { return count;  }
+    public Integer getCount() {
+        return count;
+    }
 
-    public UUID getOffenceDefinitionId() { return offenceDefinitionId; }
+    public UUID getOffenceDefinitionId() {
+        return offenceDefinitionId;
+    }
 
-    public Optional<CustodyTimeLimit> getCustodyTimeLimit() { return custodyTimeLimit; }
+    public Optional<CustodyTimeLimit> getCustodyTimeLimit() {
+        return custodyTimeLimit;
+    }
 
     public LocalDate getLaidDate() {
         return laidDate;
     }
 
-    public Optional<Boolean> getShadowListed() { return shadowListed; }
+    public Optional<Boolean> getShadowListed() {
+        return shadowListed;
+    }
 
     public void setShadowListed(Optional<Boolean> shadowListed) {
         this.shadowListed = shadowListed;
@@ -100,5 +135,13 @@ public class OffenceData {
 
     public void setReportingRestrictionDataList(final List<ReportingRestrictionData> reportingRestrictionDataList) {
         this.reportingRestriction = reportingRestrictionDataList;
+    }
+
+    public Integer getOrderIndex() {
+        return orderIndex;
+    }
+
+    public String getOffenceLegislation() {
+        return offenceLegislation;
     }
 }

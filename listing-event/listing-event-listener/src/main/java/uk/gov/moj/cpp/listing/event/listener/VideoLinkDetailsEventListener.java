@@ -34,13 +34,13 @@ public class VideoLinkDetailsEventListener {
     @Handles("listing.events.video-link-details-assigned-for-hearing")
     public void videoLinkDetailsAssigned(final Envelope<VideoLinkDetailsAssignedForHearing> event) {
         final VideoLinkDetailsAssignedForHearing payload = event.payload();
-        saveVideoLinkDetail(payload.getHearingId(), payload.getHasVideoLink(), payload.getVideoLinkDetails().orElse(null));
+        saveVideoLinkDetail(payload.getHearingId(), payload.getHasVideoLink(), payload.getVideoLinkDetails());
     }
 
     @Handles("listing.events.video-link-details-changed-for-hearing")
     public void videoLinkDetailsChangedForHearing(final Envelope<VideoLinkDetailsChangedForHearing> event) {
         final VideoLinkDetailsChangedForHearing payload = event.payload();
-        saveVideoLinkDetail(payload.getHearingId(), payload.getHasVideoLink(), payload.getVideoLinkDetails().orElse(null));
+        saveVideoLinkDetail(payload.getHearingId(), payload.getHasVideoLink(), payload.getVideoLinkDetails());
     }
 
     @Handles("listing.events.video-link-details-removed-for-hearing")

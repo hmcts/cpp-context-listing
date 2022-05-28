@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import static java.util.Optional.of;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingDay;
@@ -21,23 +20,37 @@ public class PublicHearingFactory {
     ReferenceDataService referenceDataService;
 
     protected CourtCentre buildCourtCentre(UUID courtCentreId, UUID courtRoomId, final JsonEnvelope envelope) {
-        return buildCourtCentre(courtCentreId, Optional.of(courtRoomId), envelope);
+        return buildCourtCentre(courtCentreId, Optional.ofNullable(courtRoomId), envelope);
+    }
+
+    protected CourtCentre buildCourtCentreWithAdmin(UUID courtCentreId, UUID courtRoomId, final JsonEnvelope envelope) {
+        return buildCourtCentreWithAdmin(courtCentreId, Optional.ofNullable(courtRoomId), envelope);
     }
 
     protected CourtCentre buildCourtCentre(UUID courtCentreId, Optional<UUID> courtRoomId, final JsonEnvelope envelope) {
         final OrganisationUnit organisationUnit = referenceDataService.getOrganizationUnitById(courtCentreId, envelope);
         return CourtCentre.courtCentre()
                 .withId(courtCentreId)
-                .withName(organisationUnit.getOucodeL3Name().orElse(null))
-                .withCode(organisationUnit.getOucode().orElse(null))
-                .withRoomId(courtRoomId)
+                .withName(organisationUnit.getOucodeL3Name())
+                .withCode(organisationUnit.getOucode())
+                .withRoomId(courtRoomId.orElse(null))
                 .build();
     }
 
-    protected HearingDay buildHearingDay(uk.gov.justice.listing.events.HearingDay hd) {
+    protected CourtCentre buildCourtCentreWithAdmin(UUID courtCentreId, Optional<UUID> courtRoomId, final JsonEnvelope envelope) {
+        final OrganisationUnit organisationUnit = referenceDataService.getOrganizationUnitByIdWithAdmin(courtCentreId, envelope);
+        return CourtCentre.courtCentre()
+                .withId(courtCentreId)
+                .withName(organisationUnit.getOucodeL3Name())
+                .withCode(organisationUnit.getOucode())
+                .withRoomId(courtRoomId.orElse(null))
+                .build();
+    }
+
+    public HearingDay buildHearingDay(uk.gov.justice.listing.events.HearingDay hd) {
         return HearingDay.hearingDay()
                 .withListedDurationMinutes(hd.getDurationMinutes())
-                .withListingSequence(of(hd.getSequence()))
+                .withListingSequence(hd.getSequence())
                 .withSittingDay(hd.getStartTime())
                 .withCourtCentreId(hd.getCourtCentreId())
                 .withCourtRoomId(hd.getCourtRoomId())

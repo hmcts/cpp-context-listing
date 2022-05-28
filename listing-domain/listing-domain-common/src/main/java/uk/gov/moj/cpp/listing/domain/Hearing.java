@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Optional.empty;
+
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -273,15 +275,15 @@ public class Hearing {
 
     private UUID courtCentreId;
 
-    private Optional<UUID> courtRoomId;
+    private Optional<UUID> courtRoomId = empty();
 
-    private Optional<LocalDate> endDate;
+    private Optional<LocalDate> endDate = empty();
 
     private Integer estimatedMinutes;
 
     private List<HearingDay> hearingDays;
 
-    private Optional<HearingLanguage> hearingLanguage;
+    private Optional<HearingLanguage> hearingLanguage = empty();
 
     private UUID id;
 
@@ -291,17 +293,17 @@ public class Hearing {
 
     private List<ListedCase> listedCases;
 
-    private Optional<String> listingDirections;
+    private Optional<String> listingDirections = empty();
 
     private List<NonDefaultDay> nonDefaultDays;
 
     private List<LocalDate> nonSittingDays;
 
-    private Optional<String> prosecutorDatesToAvoid;
+    private Optional<String> prosecutorDatesToAvoid = empty();
 
-    private Optional<String> reportingRestrictionReason;
+    private Optional<String> reportingRestrictionReason = empty();
 
-    private Optional<Integer> sequence;
+    private Optional<Integer> sequence = empty();
 
     private ZonedDateTime startDateTime;
 
@@ -311,15 +313,15 @@ public class Hearing {
 
     private List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds;
 
-    private Optional<Boolean> hasAdjournmentDate;
+    private Optional<Boolean> hasAdjournmentDate = empty();
 
-    private Optional<LocalDate> weekCommencingStartDate;
+    private Optional<LocalDate> weekCommencingStartDate = empty();
 
-    private Optional<LocalDate> weekCommencingEndDate;
+    private Optional<LocalDate> weekCommencingEndDate = empty();
 
-    private Optional<Integer> weekCommencingDurationInWeeks;
+    private Optional<Integer> weekCommencingDurationInWeeks = empty();
 
-    private Optional<Boolean> isSlotsBooked;
+    private Optional<Boolean> isSlotsBooked = empty();
 
     public Builder withAllocated(final Boolean allocated) {
       this.allocated = allocated;

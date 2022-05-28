@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Optional.empty;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -7,7 +9,7 @@ import java.util.UUID;
 
 @SuppressWarnings({"squid:S1067", "squid:S00121", "pmd:BeanMembersShouldSerialize", "squid:S00107", "squid:S00122", "squid:S2384"})
 public class Offence {
-    private final Optional<String> endDate;
+    private Optional<String> endDate;
 
     private final UUID id;
 
@@ -19,25 +21,28 @@ public class Offence {
 
     private final StatementOfOffence statementOfOffence;
 
-    private final Optional<CustodyTimeLimit> custodyTimeLimit;
+    private Optional<CustodyTimeLimit> custodyTimeLimit;
 
-    private final Optional<LaaReference> laaApplnReference;
+    private Optional<LaaReference> laaApplnReference;
 
-    private final Optional<String> laidDate;
+    private Optional<String> laidDate;
 
-    private final Optional<Boolean> shadowListed;
+    private Optional<Boolean> shadowListed;
 
-    private final Optional<CommittingCourt> committingCourt;
+    private Optional<CommittingCourt> committingCourt;
 
-    private final List<ReportingRestriction> reportingRestrictions;
+    private final Integer count;
+    private final Integer orderIndex;
 
-    private final Optional<SeedingHearing> seedingHearing;
+    private List<ReportingRestriction> reportingRestrictions;
+
+    private Optional<SeedingHearing> seedingHearing;
 
     public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording,
                    final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit,
                    final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate, final Optional<Boolean> shadowListed,
                    final Optional<CommittingCourt> committingCourt, final List<ReportingRestriction> reportingRestrictions,
-                   final Optional<SeedingHearing> seedingHearing ) {
+                   final Optional<SeedingHearing> seedingHearing, final Integer count, final Integer orderIndex) {
         this.endDate = endDate;
         this.id = id;
         this.offenceCode = offenceCode;
@@ -51,10 +56,12 @@ public class Offence {
         this.committingCourt = committingCourt;
         this.reportingRestrictions = reportingRestrictions;
         this.seedingHearing = seedingHearing;
+        this.count = count;
+        this.orderIndex = orderIndex;
     }
 
     public Optional<String> getEndDate() {
-        return endDate;
+        return endDate.isPresent() ? endDate : empty();
     }
 
     public UUID getId() {
@@ -66,7 +73,7 @@ public class Offence {
     }
 
     public Optional<LaaReference> getLaaApplnReference() {
-        return laaApplnReference;
+        return laaApplnReference.isPresent() ? laaApplnReference : empty();
     }
 
     public String getOffenceWording() {
@@ -82,19 +89,19 @@ public class Offence {
     }
 
     public Optional<CustodyTimeLimit> getCustodyTimeLimit() {
-        return custodyTimeLimit;
+        return custodyTimeLimit.isPresent() ? custodyTimeLimit : empty();
     }
 
     public Optional<String> getLaidDate() {
-        return laidDate;
+        return laidDate.isPresent() ? laidDate : empty();
     }
 
     public Optional<Boolean> getShadowListed() {
-        return shadowListed;
+        return shadowListed.isPresent() ? shadowListed : empty();
     }
 
     public Optional<CommittingCourt> getCommittingCourt() {
-        return committingCourt;
+        return committingCourt.isPresent() ? committingCourt : empty();
     }
 
     public List<ReportingRestriction> getReportingRestrictions() {
@@ -102,7 +109,15 @@ public class Offence {
     }
 
     public Optional<SeedingHearing> getSeedingHearing() {
-        return seedingHearing;
+        return seedingHearing.isPresent() ? seedingHearing : empty();
+    }
+
+    public Integer getCount() {
+        return count;
+    }
+
+    public Integer getOrderIndex() {
+        return orderIndex;
     }
 
     public static Builder offence() {
@@ -130,12 +145,14 @@ public class Offence {
                 Objects.equals(shadowListed, offence.shadowListed) &&
                 Objects.equals(committingCourt, offence.committingCourt) &&
                 Objects.equals(reportingRestrictions, offence.reportingRestrictions) &&
+                Objects.equals(count, offence.count) &&
+                Objects.equals(orderIndex, offence.orderIndex) &&
                 Objects.equals(seedingHearing, offence.seedingHearing);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing);
+        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex);
     }
 
     @Override
@@ -152,6 +169,8 @@ public class Offence {
                 ", laidDate=" + laidDate +
                 ", shadowListed=" + shadowListed +
                 ", committingCourt=" + committingCourt +
+                ", count=" + count +
+                ", orderIndex=" + orderIndex +
                 ", reportingRestrictions=" + reportingRestrictions +
                 ", seedingHearing=" + seedingHearing +
                 '}';
@@ -159,7 +178,7 @@ public class Offence {
 
     @SuppressWarnings("pmd:BeanMembersShouldSerialize")
     public static class Builder {
-        private Optional<String> endDate;
+        private Optional<String> endDate = empty();
 
         private UUID id;
 
@@ -171,19 +190,22 @@ public class Offence {
 
         private StatementOfOffence statementOfOffence;
 
-        private Optional<CustodyTimeLimit> custodyTimeLimit;
+        private Optional<CustodyTimeLimit> custodyTimeLimit = empty();
 
-        private Optional<String> laidDate;
+        private Optional<String> laidDate = empty();
 
-        private Optional<LaaReference> laaApplnReference;
+        private Optional<LaaReference> laaApplnReference = empty();
 
-        private Optional<Boolean> shadowListed;
+        private Optional<Boolean> shadowListed = empty();
 
-        private Optional<CommittingCourt> committingCourt;
+        private Optional<CommittingCourt> committingCourt = empty();
 
         private List<ReportingRestriction> reportingRestrictions;
 
-        private Optional<SeedingHearing> seedingHearing;
+        private Optional<SeedingHearing> seedingHearing = empty();
+
+        private Integer count;
+        private Integer orderIndex;
 
         public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
@@ -250,8 +272,18 @@ public class Offence {
             return this;
         }
 
+        public Builder withCount(final Integer count) {
+            this.count = count;
+            return this;
+        }
+
+        public Builder withOrderIndex(final Integer orderIndex) {
+            this.orderIndex = orderIndex;
+            return this;
+        }
+
         public Offence build() {
-            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex);
         }
     }
 }

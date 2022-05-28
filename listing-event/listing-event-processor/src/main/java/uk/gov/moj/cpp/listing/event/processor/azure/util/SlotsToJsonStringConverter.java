@@ -1,7 +1,9 @@
 package uk.gov.moj.cpp.listing.event.processor.azure.util;
 
 import static java.lang.String.format;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.toIsoString;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.HearingDayDetailConverter.getHearingDayDetails;
@@ -51,10 +53,10 @@ public class SlotsToJsonStringConverter {
 
         final UUID roomId;
 
-        if (courtCentre.getRoomId().isPresent()) {
-            roomId = courtCentre.getRoomId().get();
+        if (nonNull(courtCentre.getRoomId())) {
+            roomId = courtCentre.getRoomId();
         } else {
-            throw new IllegalArgumentException(format("No room id specified %s to lookup court room number", courtCentre.getRoomId().get()));
+            throw new IllegalArgumentException(format("No room id specified %s to lookup court room number", courtCentre.getRoomId()));
         }
 
         final Map<UUID, JsonEnvelope> courtRoomPayloadMap = new HashMap<>();
@@ -137,11 +139,11 @@ public class SlotsToJsonStringConverter {
                 .withHearingId(hearingId.toString())
                 .withSessionDate(nonDefaultDay.getStartTime().toLocalDate().toString());
 
-        nonDefaultDay.getCourtScheduleId().ifPresent(builder::withCourtScheduleId);
-        nonDefaultDay.getDuration().ifPresent(builder::withDuration);
-        nonDefaultDay.getOucode().ifPresent(builder::withOuCode);
-        nonDefaultDay.getCourtRoomId().ifPresent(builder::withCourtRoomId);
-        nonDefaultDay.getSession().ifPresent(builder::withSession);
+        ofNullable(nonDefaultDay.getCourtScheduleId()).ifPresent(builder::withCourtScheduleId);
+        ofNullable(nonDefaultDay.getDuration()).ifPresent(builder::withDuration);
+        ofNullable(nonDefaultDay.getOucode()).ifPresent(builder::withOuCode);
+        ofNullable(nonDefaultDay.getCourtRoomId()).ifPresent(builder::withCourtRoomId);
+        ofNullable(nonDefaultDay.getSession()).ifPresent(builder::withSession);
         builder.withHearingStartTime(toIsoString(nonDefaultDay.getStartTime()));
 
         return builder.build();

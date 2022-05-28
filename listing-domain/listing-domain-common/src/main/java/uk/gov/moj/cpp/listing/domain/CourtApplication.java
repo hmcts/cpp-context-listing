@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 
 import java.util.List;
@@ -143,9 +144,9 @@ public class CourtApplication {
 
     private Boolean requiresResponse;
 
-    private Optional<String> applicationReference;
+    private Optional<String> applicationReference = empty();
 
-    private Optional<String> applicationParticulars;
+    private Optional<String> applicationParticulars = empty();
 
     private List<Offence> offences;
 

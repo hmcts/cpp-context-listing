@@ -31,6 +31,26 @@
             <artifactId>listing-json</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>test-utils-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.gov.justice.services</groupId>
+            <artifactId>domain-test-dsl</artifactId>
+            <version>0.2.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.gov.moj.cpp.common.library.utils</groupId>
+            <artifactId>cpp-platform-test-utils</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -44,7 +64,16 @@
                         <configuration>
                             <skip>false</skip>
                             <sourceDirectory>${basedir}/../../listing-event/listing-event-listener/src/yaml/json/schema</sourceDirectory>
-                            <generatorProperties>
+                            <generatorProperties implementation="uk.gov.justice.generation.pojo.core.PojoGeneratorProperties">
+                            <plugins>
+                                <plugin>uk.gov.justice.generation.pojo.plugin.typemodifying.ReferenceCustomReturnTypePlugin</plugin>
+                                <plugin>uk.gov.justice.generation.pojo.plugin.typemodifying.FormatCustomReturnTypePlugin</plugin>
+                                <plugin>uk.gov.justice.generation.pojo.plugin.classmodifying.MakeClassSerializablePlugin</plugin>
+                                <plugin>uk.gov.justice.generation.pojo.plugin.classmodifying.AddHashcodeAndEqualsPlugin</plugin>
+                                <plugin>
+                                    uk.gov.justice.generation.pojo.plugin.classmodifying.AddEventAnnotationToClassPlugin
+                                </plugin>
+                            </plugins>
                                 <typeMappings>
                                     <typeMapping>
                                         <name>date-time</name>
@@ -63,6 +92,16 @@
                                     </typeMapping>
                                     <typeMapping>
                                         <name>localDate</name>
+                                        <type>reference</type>
+                                        <implementation>java.time.LocalDate</implementation>
+                                    </typeMapping>
+                                    <typeMapping>
+                                        <name>date</name>
+                                        <type>format</type>
+                                        <implementation>java.time.LocalDate</implementation>
+                                    </typeMapping>
+                                    <typeMapping>
+                                        <name>date</name>
                                         <type>reference</type>
                                         <implementation>java.time.LocalDate</implementation>
                                     </typeMapping>

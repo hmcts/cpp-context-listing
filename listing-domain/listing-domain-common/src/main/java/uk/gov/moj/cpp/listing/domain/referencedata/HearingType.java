@@ -117,6 +117,16 @@ public class HearingType {
             return this;
         }
 
+        public Builder withHearingCode(String hearingCode) {
+            this.hearingCode = hearingCode;
+            return this;
+        }
+
+        public Builder withHearingDescription(String hearingDescription) {
+            this.hearingDescription = hearingDescription;
+            return this;
+        }
+
         public HearingType build() {
             return new HearingType(id, seqId, hearingCode, hearingDescription, welshHearingDescription, defaultDurationMin, validFrom, validTo, exhibitHearingCode, exhibitHearingDescription);
         }

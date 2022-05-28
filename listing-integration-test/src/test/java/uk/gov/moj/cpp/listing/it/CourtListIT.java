@@ -9,9 +9,6 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
 import static uk.gov.moj.cpp.platform.test.feature.toggle.FeatureStubber.stubFeaturesFor;
 
-
-import com.google.common.collect.ImmutableMap;
-import org.hamcrest.Matcher;
 import uk.gov.moj.cpp.listing.steps.AddDefendantSteps;
 import uk.gov.moj.cpp.listing.steps.CourtListSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -23,12 +20,14 @@ import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 
 import java.util.UUID;
 
+import com.google.common.collect.ImmutableMap;
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
-import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 
 public class CourtListIT extends AbstractIT {
 
@@ -56,6 +55,7 @@ public class CourtListIT extends AbstractIT {
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(firstHearing, updatedHearingDataForAllocation)) {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
         courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
     }
@@ -89,6 +89,7 @@ public class CourtListIT extends AbstractIT {
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(nextHearing, updatedHearingDataForAllocation)) {
             updateHearingSteps.whenHearingIsUpdatedForListing();
             updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+            updateHearingSteps.verifyPublicHearingChangesSaved();
         }
         courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
 

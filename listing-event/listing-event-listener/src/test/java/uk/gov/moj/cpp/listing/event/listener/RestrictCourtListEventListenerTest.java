@@ -8,9 +8,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
-import static java.util.Optional.ofNullable;
+
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -44,7 +42,6 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -80,20 +77,20 @@ public class RestrictCourtListEventListenerTest {
     private static final Address APPLICANT_ADDRESS = Address
             .address()
             .withAddress1(STRING.next())
-            .withAddress2(of(STRING.next()))
-            .withAddress3(of(STRING.next()))
-            .withAddress4(of(STRING.next()))
-            .withAddress5(of(STRING.next()))
-            .withPostcode(of(STRING.next()))
+            .withAddress2(STRING.next())
+            .withAddress3(STRING.next())
+            .withAddress4(STRING.next())
+            .withAddress5(STRING.next())
+            .withPostcode(STRING.next())
             .build();
     private static final Address RESPONDENT_ADDRESS = Address
             .address()
             .withAddress1(STRING.next())
-            .withAddress2(of(STRING.next()))
-            .withAddress3(of(STRING.next()))
-            .withAddress4(of(STRING.next()))
-            .withAddress5(of(STRING.next()))
-            .withPostcode(of(STRING.next()))
+            .withAddress2(STRING.next())
+            .withAddress3(STRING.next())
+            .withAddress4(STRING.next())
+            .withAddress5(STRING.next())
+            .withPostcode(STRING.next())
             .build();
 
     @Mock
@@ -121,7 +118,7 @@ public class RestrictCourtListEventListenerTest {
                 .withDefendantIds(singletonList(DEFENDANTS_ID))
                 .withHearingId(HEARING_ID)
                 .withRestrictCourtList(true)
-                .withCourtApplicationType(Optional.empty())
+                .withCourtApplicationType(null)
                 .build();
         final Envelope<CourtListRestricted> restrictCourtListEnvelope = envelopeFrom(metadataWithRandomUUID(EVENT_NAME), restrictCourtList);
 
@@ -147,7 +144,7 @@ public class RestrictCourtListEventListenerTest {
                 .withCourtApplicationIds(singletonList(COURT_APPLICATIONS_ID))
                 .withHearingId(HEARING_ID)
                 .withRestrictCourtList(true)
-                .withCourtApplicationType(ofNullable(COURT_APPLICATION_TYPE))
+                .withCourtApplicationType(COURT_APPLICATION_TYPE)
                 .build();
         final Envelope<CourtListRestricted> restrictCourtListEnvelope = envelopeFrom(metadataWithRandomUUID(EVENT_NAME), restrictCourtList);
 
@@ -173,7 +170,7 @@ public class RestrictCourtListEventListenerTest {
                 .withHearingId(HEARING_ID)
                 .withRestrictCourtList(TRUE)
                 .withCourtApplicationRespondentIds(singletonList(RESPONDENT_ID_1))
-                .withCourtApplicationType(empty())
+                .withCourtApplicationType(null)
                 .build();
         final Envelope<CourtListRestricted> restrictCourtListEnvelope = envelopeFrom(metadataWithRandomUUID(EVENT_NAME), payload);
         final Hearing hearing = new Hearing(payload.getHearingId(), properties);
@@ -199,23 +196,23 @@ public class RestrictCourtListEventListenerTest {
         return newArrayList(
                 withJsonPath("$[0].id", equalTo(courtApplication.getId().toString())),
                 withJsonPath("$[0].applicationType", equalTo(courtApplication.getApplicationType())),
-                withJsonPath("$[0].applicationParticulars", equalTo(courtApplication.getApplicationParticulars().orElse(null)))
+                withJsonPath("$[0].applicationParticulars", equalTo(courtApplication.getApplicationParticulars()))
         );
     }
 
     private Collection<? extends Matcher<? super ReadContext>> getApplicantMatchers(final CourtApplication courtApplication) {
         return newArrayList(
                 withJsonPath("$[0].applicant.id", equalTo(courtApplication.getApplicant().getId().toString())),
-                withJsonPath("$[0].applicant.firstName", equalTo(courtApplication.getApplicant().getFirstName().orElse(null))),
+                withJsonPath("$[0].applicant.firstName", equalTo(courtApplication.getApplicant().getFirstName())),
                 withJsonPath("$[0].applicant.lastName", equalTo(courtApplication.getApplicant().getLastName())),
                 withJsonPath("$[0].applicant.isRespondent", equalTo(courtApplication.getApplicant().getIsRespondent())),
-                withJsonPath("$[0].applicant.restrictFromCourtList", equalTo(courtApplication.getApplicant().getRestrictFromCourtList().orElse(null))),
+                withJsonPath("$[0].applicant.restrictFromCourtList", equalTo(courtApplication.getApplicant().getRestrictFromCourtList())),
                 withJsonPath("$[0].applicant.address.address1", equalTo(APPLICANT_ADDRESS.getAddress1())),
-                withJsonPath("$[0].applicant.address.address2", equalTo(APPLICANT_ADDRESS.getAddress2().orElse(null))),
-                withJsonPath("$[0].applicant.address.address3", equalTo(APPLICANT_ADDRESS.getAddress3().orElse(null))),
-                withJsonPath("$[0].applicant.address.address4", equalTo(APPLICANT_ADDRESS.getAddress4().orElse(null))),
-                withJsonPath("$[0].applicant.address.address5", equalTo(APPLICANT_ADDRESS.getAddress5().orElse(null))),
-                withJsonPath("$[0].applicant.address.postcode", equalTo(APPLICANT_ADDRESS.getPostcode().orElse(null)))
+                withJsonPath("$[0].applicant.address.address2", equalTo(APPLICANT_ADDRESS.getAddress2())),
+                withJsonPath("$[0].applicant.address.address3", equalTo(APPLICANT_ADDRESS.getAddress3())),
+                withJsonPath("$[0].applicant.address.address4", equalTo(APPLICANT_ADDRESS.getAddress4())),
+                withJsonPath("$[0].applicant.address.address5", equalTo(APPLICANT_ADDRESS.getAddress5())),
+                withJsonPath("$[0].applicant.address.postcode", equalTo(APPLICANT_ADDRESS.getPostcode()))
         );
     }
 
@@ -224,28 +221,28 @@ public class RestrictCourtListEventListenerTest {
                 withJsonPath("$[0].respondents", hasSize(2)),
 
                 withJsonPath("$[0].respondents[0].id", equalTo(courtApplication.getRespondents().get(0).getId().toString())),
-                withJsonPath("$[0].respondents[0].firstName", equalTo(courtApplication.getRespondents().get(0).getFirstName().orElse(null))),
+                withJsonPath("$[0].respondents[0].firstName", equalTo(courtApplication.getRespondents().get(0).getFirstName())),
                 withJsonPath("$[0].respondents[0].lastName", equalTo(courtApplication.getRespondents().get(0).getLastName())),
                 withJsonPath("$[0].respondents[0].isRespondent", equalTo(courtApplication.getRespondents().get(0).getIsRespondent())),
                 withJsonPath("$[0].respondents[0].restrictFromCourtList", equalTo(true)),
                 withJsonPath("$[0].respondents[0].address.address1", equalTo(RESPONDENT_ADDRESS.getAddress1())),
-                withJsonPath("$[0].respondents[0].address.address2", equalTo(RESPONDENT_ADDRESS.getAddress2().orElse(null))),
-                withJsonPath("$[0].respondents[0].address.address3", equalTo(RESPONDENT_ADDRESS.getAddress3().orElse(null))),
-                withJsonPath("$[0].respondents[0].address.address4", equalTo(RESPONDENT_ADDRESS.getAddress4().orElse(null))),
-                withJsonPath("$[0].respondents[0].address.address5", equalTo(RESPONDENT_ADDRESS.getAddress5().orElse(null))),
-                withJsonPath("$[0].respondents[0].address.postcode", equalTo(RESPONDENT_ADDRESS.getPostcode().orElse(null))),
+                withJsonPath("$[0].respondents[0].address.address2", equalTo(RESPONDENT_ADDRESS.getAddress2())),
+                withJsonPath("$[0].respondents[0].address.address3", equalTo(RESPONDENT_ADDRESS.getAddress3())),
+                withJsonPath("$[0].respondents[0].address.address4", equalTo(RESPONDENT_ADDRESS.getAddress4())),
+                withJsonPath("$[0].respondents[0].address.address5", equalTo(RESPONDENT_ADDRESS.getAddress5())),
+                withJsonPath("$[0].respondents[0].address.postcode", equalTo(RESPONDENT_ADDRESS.getPostcode())),
 
                 withJsonPath("$[0].respondents[1].id", equalTo(courtApplication.getRespondents().get(1).getId().toString())),
-                withJsonPath("$[0].respondents[1].firstName", equalTo(courtApplication.getRespondents().get(1).getFirstName().orElse(null))),
+                withJsonPath("$[0].respondents[1].firstName", equalTo(courtApplication.getRespondents().get(1).getFirstName())),
                 withJsonPath("$[0].respondents[1].lastName", equalTo(courtApplication.getRespondents().get(1).getLastName())),
                 withJsonPath("$[0].respondents[1].isRespondent", equalTo(courtApplication.getRespondents().get(1).getIsRespondent())),
-                withJsonPath("$[0].respondents[1].restrictFromCourtList", equalTo(courtApplication.getRespondents().get(1).getRestrictFromCourtList().orElse(null))),
+                withJsonPath("$[0].respondents[1].restrictFromCourtList", equalTo(courtApplication.getRespondents().get(1).getRestrictFromCourtList())),
                 withJsonPath("$[0].respondents[1].address.address1", equalTo(RESPONDENT_ADDRESS.getAddress1())),
-                withJsonPath("$[0].respondents[1].address.address2", equalTo(RESPONDENT_ADDRESS.getAddress2().orElse(null))),
-                withJsonPath("$[0].respondents[1].address.address3", equalTo(RESPONDENT_ADDRESS.getAddress3().orElse(null))),
-                withJsonPath("$[0].respondents[1].address.address4", equalTo(RESPONDENT_ADDRESS.getAddress4().orElse(null))),
-                withJsonPath("$[0].respondents[1].address.address5", equalTo(RESPONDENT_ADDRESS.getAddress5().orElse(null))),
-                withJsonPath("$[0].respondents[1].address.postcode", equalTo(RESPONDENT_ADDRESS.getPostcode().orElse(null)))
+                withJsonPath("$[0].respondents[1].address.address2", equalTo(RESPONDENT_ADDRESS.getAddress2())),
+                withJsonPath("$[0].respondents[1].address.address3", equalTo(RESPONDENT_ADDRESS.getAddress3())),
+                withJsonPath("$[0].respondents[1].address.address4", equalTo(RESPONDENT_ADDRESS.getAddress4())),
+                withJsonPath("$[0].respondents[1].address.address5", equalTo(RESPONDENT_ADDRESS.getAddress5())),
+                withJsonPath("$[0].respondents[1].address.postcode", equalTo(RESPONDENT_ADDRESS.getPostcode()))
         );
     }
 
@@ -260,11 +257,11 @@ public class RestrictCourtListEventListenerTest {
 
     private void validateAddress(final JsonNode actualAddress, final Address expectedAddress) {
         assertThat(actualAddress.get("address1").asText(), equalTo(expectedAddress.getAddress1()));
-        assertThat(actualAddress.get("address2").asText(), equalTo(expectedAddress.getAddress2().orElse(null)));
-        assertThat(actualAddress.get("address3").asText(), equalTo(expectedAddress.getAddress3().orElse(null)));
-        assertThat(actualAddress.get("address4").asText(), equalTo(expectedAddress.getAddress4().orElse(null)));
-        assertThat(actualAddress.get("address5").asText(), equalTo(expectedAddress.getAddress5().orElse(null)));
-        assertThat(actualAddress.get("postcode").asText(), equalTo(expectedAddress.getPostcode().orElse(null)));
+        assertThat(actualAddress.get("address2").asText(), equalTo(expectedAddress.getAddress2()));
+        assertThat(actualAddress.get("address3").asText(), equalTo(expectedAddress.getAddress3()));
+        assertThat(actualAddress.get("address4").asText(), equalTo(expectedAddress.getAddress4()));
+        assertThat(actualAddress.get("address5").asText(), equalTo(expectedAddress.getAddress5()));
+        assertThat(actualAddress.get("postcode").asText(), equalTo(expectedAddress.getPostcode()));
     }
 
     private List<ListedCase> createListedCases() {
@@ -279,7 +276,7 @@ public class RestrictCourtListEventListenerTest {
                         .withOffences(singletonList(Offence.offence()
                                 .withId(randomUUID())
                                 .withOffenceCode(STRING.next())
-                                .withShadowListed(Optional.of(Boolean.FALSE))
+                                .withShadowListed(false)
                                 .withStartDate(LocalDates.to(LocalDate.now()))
                                 .withListingNumber(1)
                                 .withStatementOfOffence(StatementOfOffence.statementOfOffence()
@@ -288,30 +285,30 @@ public class RestrictCourtListEventListenerTest {
                                 .build()))
                         .build()))
                 .withId(UUID.randomUUID())
-                .withShadowListed(Optional.of(Boolean.FALSE))
+                .withShadowListed(false)
                 .build());
     }
 
     private List<uk.gov.justice.listing.events.CourtApplication> createCourtApplications() {
         return singletonList(courtApplication()
                 .withLinkedCaseIds(singletonList(randomUUID()))
-                .withParentApplicationId(of(randomUUID()))
+                .withParentApplicationId(randomUUID())
                 .withId(COURT_APPLICATIONS_ID)
                 .withApplicationType(COURT_APPLICATION_TYPE)
-                .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
                 .withApplicant(applicantRespondent()
-                        .withFirstName(of(STRING.next()))
+                        .withFirstName(STRING.next())
                         .withLastName(STRING.next())
                         .withIsRespondent(false)
                         .withId(randomUUID())
-                        .withAddress(of(APPLICANT_ADDRESS))
+                        .withAddress(APPLICANT_ADDRESS)
                         .build())
                 .withRespondents(singletonList(applicantRespondent()
-                        .withFirstName(of(STRING.next()))
+                        .withFirstName(STRING.next())
                         .withLastName(STRING.next())
                         .withIsRespondent(true)
                         .withId(randomUUID())
-                        .withAddress(of(RESPONDENT_ADDRESS))
+                        .withAddress(RESPONDENT_ADDRESS)
                         .build()))
                 .build());
     }
@@ -320,31 +317,31 @@ public class RestrictCourtListEventListenerTest {
         return singletonList(courtApplication()
                 .withId(COURT_APPLICATIONS_ID)
                 .withApplicationType(COURT_APPLICATION_TYPE)
-                .withApplicationParticulars(of(APPLICATION_PARTICULARS))
+                .withApplicationParticulars(APPLICATION_PARTICULARS)
                 .withApplicant(applicantRespondent()
-                        .withFirstName(of(STRING.next()))
+                        .withFirstName(STRING.next())
                         .withLastName(STRING.next())
                         .withIsRespondent(false)
                         .withId(APPLICANT_ID)
-                        .withAddress(of(APPLICANT_ADDRESS))
-                        .withRestrictFromCourtList(of(FALSE))
+                        .withAddress(APPLICANT_ADDRESS)
+                        .withRestrictFromCourtList(FALSE)
                         .build())
                 .withRespondents(asList(
                         applicantRespondent()
-                                .withFirstName(of(STRING.next()))
+                                .withFirstName(STRING.next())
                                 .withLastName(STRING.next())
                                 .withIsRespondent(true)
                                 .withId(RESPONDENT_ID_1)
-                                .withAddress(of(RESPONDENT_ADDRESS))
-                                .withRestrictFromCourtList(of(FALSE))
+                                .withAddress(RESPONDENT_ADDRESS)
+                                .withRestrictFromCourtList(FALSE)
                                 .build(),
                         applicantRespondent()
-                                .withFirstName(of(STRING.next()))
+                                .withFirstName(STRING.next())
                                 .withLastName(STRING.next())
                                 .withIsRespondent(true)
                                 .withId(RESPONDENT_ID_2)
-                                .withAddress(of(RESPONDENT_ADDRESS))
-                                .withRestrictFromCourtList(of(FALSE))
+                                .withAddress(RESPONDENT_ADDRESS)
+                                .withRestrictFromCourtList(FALSE)
                                 .build()
                 ))
                 .build());

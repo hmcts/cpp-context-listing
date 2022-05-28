@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.domain;
 
+import static java.util.Optional.empty;
+
 import java.util.Optional;
 import java.util.UUID;
 
@@ -7,11 +9,11 @@ public class CommittingCourt {
 
     private final UUID courtCentreId;
 
-    private final Optional<String> courtHouseCode;
+    private Optional<String> courtHouseCode;
 
     private final String courtHouseName;
 
-    private final Optional<String> courtHouseShortName;
+    private Optional<String> courtHouseShortName;
 
     private final CourtHouseType courtHouseType;
 
@@ -28,7 +30,7 @@ public class CommittingCourt {
     }
 
     public Optional<String> getCourtHouseCode() {
-        return courtHouseCode;
+        return courtHouseCode.isPresent() ? courtHouseCode : empty();
     }
 
     public String getCourtHouseName() {
@@ -36,7 +38,7 @@ public class CommittingCourt {
     }
 
     public Optional<String> getCourtHouseShortName() {
-        return courtHouseShortName;
+        return courtHouseShortName.isPresent() ? courtHouseShortName : empty();
     }
 
     public CourtHouseType getCourtHouseType() {

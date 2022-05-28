@@ -20,7 +20,6 @@ import uk.gov.justice.listing.event.PublishedCourtListStored;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -51,7 +50,7 @@ public class PublishCourtListRequestAggregate implements Aggregate {
                 .withStartDate(startDate.toString())
                 .withEndDate(endDate.toString())
                 .withPublishStatus(COURT_LIST_REQUESTED)
-                .withWeekCommencing(Optional.of(weekCommencing))
+                .withWeekCommencing(weekCommencing)
                 .withRequestedTime(requestedTime)
                 .build()));
     }
@@ -72,7 +71,7 @@ public class PublishCourtListRequestAggregate implements Aggregate {
                 .withCourtListFileName(courtListFileName)
                 .withPublishCourtListType(publishCourtListType)
                 .withPublishStatus(COURT_LIST_PRODUCED)
-                .withWeekCommencing(Optional.of(weekCommencing))
+                .withWeekCommencing(weekCommencing)
                 .withPublishDate(publishDate.toString())
                 .withProducedTime(producedTime)
                 .build()));
@@ -91,7 +90,7 @@ public class PublishCourtListRequestAggregate implements Aggregate {
     }
 
     private void recordCourtListRequested(final PublishCourtListRequested publishCourtListRequested) {
-        this.weekCommencing = publishCourtListRequested.getWeekCommencing().orElse(false);
+        this.weekCommencing = publishCourtListRequested.getWeekCommencing();
     }
 }
 

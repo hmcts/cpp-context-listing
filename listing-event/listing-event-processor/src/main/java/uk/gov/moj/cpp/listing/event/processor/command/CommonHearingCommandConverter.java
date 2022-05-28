@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.event.processor.command;
 
+import static java.util.Optional.ofNullable;
+
 import uk.gov.moj.cpp.listing.domain.ReportingRestriction;
 
 import java.util.ArrayList;
@@ -13,9 +15,9 @@ public class CommonHearingCommandConverter {
         reportingRestrictions.forEach(reportingRestriction ->
                 reportingRestrictionDomainList.add(ReportingRestriction.reportingRestriction()
                         .withId(reportingRestriction.getId())
-                        .withJudicialResultId(reportingRestriction.getJudicialResultId())
+                        .withJudicialResultId(ofNullable(reportingRestriction.getJudicialResultId()))
                         .withLabel(reportingRestriction.getLabel())
-                        .withOrderedDate(reportingRestriction.getOrderedDate())
+                        .withOrderedDate(ofNullable(reportingRestriction.getOrderedDate()))
                         .build())
         );
 

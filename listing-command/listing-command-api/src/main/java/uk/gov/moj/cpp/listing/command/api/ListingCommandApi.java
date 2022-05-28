@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static javax.json.Json.createObjectBuilder;
@@ -28,6 +29,7 @@ import uk.gov.justice.listing.courts.SelectedCourtCentre;
 import uk.gov.justice.listing.courts.UpdateExistingHearing;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdateRelatedHearing;
+import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.annotation.FeatureControl;
@@ -225,6 +227,8 @@ public class ListingCommandApi {
 
         final UpdateHearingForListing updateHearingForListing = jsonObjectConverter.convert(payload, UpdateHearingForListing.class);
 
+        checkCourtRoomIsOptionalForCrownCourts(updateHearingForListing);
+
         final JsonArray prosecutionCases = payload.getJsonArray(PROSECUTION_CASES);
 
         final CourtCentreDetails courtCentre = courtCentreFactory.getCourtCentre(getCourtCentreId(updateHearingForListing), envelope);
@@ -241,9 +245,24 @@ public class ListingCommandApi {
 
     }
 
+    private void checkCourtRoomIsOptionalForCrownCourts(final UpdateHearingForListing updateHearingForListing) {
+
+        /*We have courtRoom? don't go any further */
+        if (!isNull(updateHearingForListing.getCourtRoomId())) {
+            return;
+        }
+
+        /* We are OK if we have no courtRoom and it's crown*/
+        if (CROWN.equals(updateHearingForListing.getJurisdictionType())) {
+            return;
+        }
+
+        throw new BadRequestException("courtRoomId must not be empty for this case");
+    }
+
     private UUID getCourtCentreId(final UpdateHearingForListing updateHearingForListing) {
         final UUID courtCentreId = updateHearingForListing.getCourtCentreId();
-        final Optional<SelectedCourtCentre> selectedCourtCentre = updateHearingForListing.getSelectedCourtCentre();
+        final Optional<SelectedCourtCentre> selectedCourtCentre = Optional.ofNullable(updateHearingForListing.getSelectedCourtCentre());
         if (selectedCourtCentre.isPresent() && CROWN.equals(updateHearingForListing.getJurisdictionType())) {
             return selectedCourtCentre.get().getId();
         }

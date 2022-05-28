@@ -1,38 +1,9 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import uk.gov.justice.core.courts.BailStatus;
-import uk.gov.justice.core.courts.Defendant;
-import uk.gov.justice.core.courts.Gender;
-import uk.gov.justice.core.courts.LegalEntityDefendant;
-import uk.gov.justice.core.courts.Organisation;
-import uk.gov.justice.core.courts.Person;
-import uk.gov.justice.core.courts.PersonDefendant;
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.HearingData;
-import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
-import uk.gov.moj.cpp.listing.steps.data.UpdateCaseDefendantData;
-import uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData;
-import uk.gov.moj.cpp.listing.utils.QueueUtil;
-
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.json.JsonObject;
-
-import java.util.UUID;
-
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -49,6 +20,38 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
+
+
+import org.junit.Assert;
+import uk.gov.justice.core.courts.BailStatus;
+import uk.gov.justice.core.courts.Defendant;
+import uk.gov.justice.core.courts.Gender;
+import uk.gov.justice.core.courts.LegalEntityDefendant;
+import uk.gov.justice.core.courts.Organisation;
+import uk.gov.justice.core.courts.Person;
+import uk.gov.justice.core.courts.PersonDefendant;
+import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.moj.cpp.listing.it.AbstractIT;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
+import uk.gov.moj.cpp.listing.steps.data.UpdateCaseDefendantData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedDefendantData;
+import uk.gov.moj.cpp.listing.utils.QueueUtil;
+
+import java.util.UUID;
+
+import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.json.JsonObject;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.Filter;
+import com.jayway.restassured.path.json.JsonPath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDefendantSteps.class);
@@ -56,6 +59,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED = "public.progression.case-defendant-changed";
     private static final String EVENT_SELECTOR_DEFENDANTS_TO_BE_UPDATED = "listing.events.defendants-to-be-updated";
     private static final String EVENT_SELECTOR_DEFENDANT_DETAILS_UPDATED = "listing.events.new-defendant-details-updated";
+    public static final String PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI = "public.listing.updated-hearing-in-staging-hmi";
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
@@ -63,6 +67,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
     private final MessageConsumer publicEventMessageConsumerDefendantUpdated;
     private final MessageConsumer privateEventMessageDefendantsToBeUpdated;
     private final MessageConsumer privateEventsMessageDefendantDetailsUpdated;
+    private final MessageConsumer publicMessageConsumerHmiHearingUpdated;
 
     private String request;
 
@@ -85,6 +90,7 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         publicEventMessageConsumerDefendantUpdated = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED);
         privateEventMessageDefendantsToBeUpdated = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANTS_TO_BE_UPDATED);
         privateEventsMessageDefendantDetailsUpdated = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANT_DETAILS_UPDATED);
+        publicMessageConsumerHmiHearingUpdated = publicEvents.createConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -251,32 +257,32 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
             .withDefendant(Defendant.defendant()
                     .withId(defendantData.getDefendantId())
                     .withMasterDefendantId(defendantData.getMasterDefendantId())
-                .withLegalEntityDefendant(of(LegalEntityDefendant.legalEntityDefendant()
+                .withLegalEntityDefendant(LegalEntityDefendant.legalEntityDefendant()
                         .withOrganisation(Organisation.organisation()
                                 .withName(defendantData.getLegalEntityName())
                                 .build())
-                        .build()))
-                .withPersonDefendant(of(PersonDefendant.personDefendant()
+                        .build())
+                .withPersonDefendant(PersonDefendant.personDefendant()
                     .withPersonDetails(Person.person()
                             .withLastName(defendantData.getLastName())
-                            .withFirstName(of(defendantData.getFirstName()))
-                            .withDateOfBirth(of(defendantData.getDateOfBirth()))
-                            .withSpecificRequirements(of(defendantData.getSpecificRequirements()))
+                            .withFirstName(defendantData.getFirstName())
+                            .withDateOfBirth(defendantData.getDateOfBirth())
+                            .withSpecificRequirements(defendantData.getSpecificRequirements())
                             .withGender(Gender.FEMALE)
                         .build()
                     )
-                    .withBailStatus(of(new BailStatus.Builder().withCode(defendantData.getBailStatus().getCode()).withDescription(defendantData.getBailStatus().getDescription()).withId(defendantData.getBailStatus().getId()).build()))
-                    .withCustodyTimeLimit(of(defendantData.getCustodyTimeLimit()))
-                    .build())
+                    .withBailStatus(new BailStatus.Builder().withCode(defendantData.getBailStatus().getCode()).withDescription(defendantData.getBailStatus().getDescription()).withId(defendantData.getBailStatus().getId()).build())
+                    .withCustodyTimeLimit(defendantData.getCustodyTimeLimit())
+                    .build()
                 )
                 .withProsecutionCaseId(caseId)
-                .withDefenceOrganisation(of(organisation()
+                .withDefenceOrganisation(organisation()
                         .withName(defendantData.getOrganisationName())
-                        .build()))
-                .withPncId(of(defendantData.getPncId()))
-                .withIsYouth(defendantData.getYouth())
+                        .build())
+                .withPncId(defendantData.getPncId())
+                .withIsYouth(defendantData.getYouth().orElse(null))
                 .withAliases(defendantData.getAliases())
-                    .withAssociatedDefenceOrganisation(of(defendantData.getAssociatedDefenceOrganisation()))
+                    .withAssociatedDefenceOrganisation(defendantData.getAssociatedDefenceOrganisation())
                 .build()
             ).build();
     }
@@ -321,10 +327,17 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
             publicEventDefendantUpdated.close();
             privateEventMessageDefendantsToBeUpdated.close();
             privateEventsMessageDefendantDetailsUpdated.close();
+            publicMessageConsumerHmiHearingUpdated.close();
         } catch (final JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);
         }
+    }
+
+    public void verifyHmiPublicEventForUpdateHearing() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHmiHearingUpdated);
+        LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
+        Assert.assertThat(jsonResponse.get("hearing.id"), is(hearingData.getId().toString()));
     }
 
 }

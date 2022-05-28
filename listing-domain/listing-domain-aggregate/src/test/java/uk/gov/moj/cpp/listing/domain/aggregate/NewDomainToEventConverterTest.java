@@ -5,6 +5,7 @@ import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.domain.Address.address;
@@ -39,12 +40,12 @@ public class NewDomainToEventConverterTest {
 
         uk.gov.justice.listing.events.CourtApplication courtApplicationBuilt = buildCourtApplications(courtApplication);
 
-        assertThat(courtApplicationBuilt.getApplicationParticulars().get(), is(courtApplicationBuilt.getApplicationParticulars().get()));
-        assertThat(courtApplicationBuilt.getApplicant().getAddress().isPresent(), is(true));
-        checkAddress(courtApplication.getApplicant().getAddress(), courtApplicationBuilt.getApplicant().getAddress().get());
+        assertThat(courtApplicationBuilt.getApplicationParticulars(), is(courtApplicationBuilt.getApplicationParticulars()));
+        assertThat(courtApplicationBuilt.getApplicant().getAddress(), is(notNullValue()));
+        checkAddress(courtApplication.getApplicant().getAddress(), courtApplicationBuilt.getApplicant().getAddress());
         assertThat(courtApplication.getRespondents().size(), equalTo(courtApplicationBuilt.getRespondents().size()));
-        assertThat(courtApplicationBuilt.getRespondents().get(0).getAddress().isPresent(), is(true));
-        checkAddress(courtApplication.getRespondents().get(0).getAddress(), courtApplicationBuilt.getRespondents().get(0).getAddress().get());
+        assertThat(courtApplicationBuilt.getRespondents().get(0).getAddress(), is(notNullValue()));
+        checkAddress(courtApplication.getRespondents().get(0).getAddress(), courtApplicationBuilt.getRespondents().get(0).getAddress());
     }
 
     @Test
@@ -120,46 +121,46 @@ public class NewDomainToEventConverterTest {
 
         final uk.gov.justice.listing.events.Offence eventOffence = NewDomainToEventConverter.buildOffence(offence);
 
-        final uk.gov.justice.listing.events.SeedingHearing seedingHearing = eventOffence.getSeedingHearing().get();
+        final uk.gov.justice.listing.events.SeedingHearing seedingHearing = eventOffence.getSeedingHearing();
         assertThat(seedingHearing.getJurisdictionType().toString(), is("CROWN"));
         assertThat(seedingHearing.getSeedingHearingId(), is(seedingHearingId));
-        assertThat(seedingHearing.getSittingDay().get(), is(sittingDay));
+        assertThat(seedingHearing.getSittingDay(), is(sittingDay));
 
         assertThat(eventOffence.getStartDate(), is(startDate));
-        assertThat(eventOffence.getLaidDate().get(), is(laidDate));
+        assertThat(eventOffence.getLaidDate(), is(laidDate));
         assertThat(eventOffence.getOffenceWording(), is(wording));
         assertThat(eventOffence.getId(), is(offenceId));
-        assertThat(eventOffence.getEndDate().get(), is(endDate));
+        assertThat(eventOffence.getEndDate(), is(endDate));
         assertThat(eventOffence.getOffenceCode(), is(offenceCode));
 
-        final uk.gov.justice.listing.events.CommittingCourt committingCourt = eventOffence.getCommittingCourt().get();
+        final uk.gov.justice.listing.events.CommittingCourt committingCourt = eventOffence.getCommittingCourt();
         assertThat(committingCourt.getCourtCentreId(), is(courtCentreId));
-        assertThat(committingCourt.getCourtHouseCode().get(), is(courtHouseCode));
+        assertThat(committingCourt.getCourtHouseCode(), is(courtHouseCode));
         assertThat(committingCourt.getCourtHouseName(), is(courtHouseName));
-        assertThat(committingCourt.getCourtHouseShortName().get(), is(courtHouseShortName));
+        assertThat(committingCourt.getCourtHouseShortName(), is(courtHouseShortName));
 //        assertThat(committingCourt.getCourtHouseType(), is(uk.gov.justice.listing.events.CourtHouseType.CROWN));
 
         final uk.gov.justice.listing.events.StatementOfOffence statementOfOffence = eventOffence.getStatementOfOffence();
-        assertThat(statementOfOffence.getWelshLegislation().get(), is(welshLegislation));
+        assertThat(statementOfOffence.getWelshLegislation(), is(welshLegislation));
         assertThat(statementOfOffence.getWelshTitle(), is(welshTitle));
-        assertThat(statementOfOffence.getLegislation().get(), is(legislation));
+        assertThat(statementOfOffence.getLegislation(), is(legislation));
         assertThat(statementOfOffence.getTitle(), is(title));
 
-        final uk.gov.justice.listing.events.LaaReference laaReference = eventOffence.getLaaApplnReference().get();
+        final uk.gov.justice.listing.events.LaaReference laaReference = eventOffence.getLaaApplnReference();
         assertThat(laaReference.getStatusId(), is(statusId));
         assertThat(laaReference.getStatusDate(), is(statusDate));
         assertThat(laaReference.getStatusDescription(), is(statusDescription));
         assertThat(laaReference.getStatusCode(), is(statusCode));
-        assertThat(laaReference.getEffectiveStartDate().get(), is(effectiveStartDate));
-        assertThat(laaReference.getEffectiveEndDate().get(), is(effectiveEndDate));
+        assertThat(laaReference.getEffectiveStartDate(), is(effectiveStartDate));
+        assertThat(laaReference.getEffectiveEndDate(), is(effectiveEndDate));
         assertThat(laaReference.getApplicationReference(), is(applicationReference));
 
         assertThat(eventOffence.getReportingRestrictions().size(), is(1));
         final uk.gov.justice.listing.events.ReportingRestriction reportingRestriction = eventOffence.getReportingRestrictions().get(0);
         assertThat(reportingRestriction.getId(), is(reportingRestrictionId));
-        assertThat(reportingRestriction.getJudicialResultId().get(), is(judicialResultId));
+        assertThat(reportingRestriction.getJudicialResultId(), is(judicialResultId));
         assertThat(reportingRestriction.getLabel(), is(label));
-        assertThat(reportingRestriction.getOrderedDate().get(), is(orderedDate));
+        assertThat(reportingRestriction.getOrderedDate(), is(orderedDate));
 
     }
 
@@ -211,25 +212,25 @@ public class NewDomainToEventConverterTest {
         final uk.gov.justice.listing.events.Offence eventOffence = NewDomainToEventConverter.buildOffence(offence);
 
         final uk.gov.justice.listing.events.StatementOfOffence statementOfOffence = eventOffence.getStatementOfOffence();
-        assertThat(statementOfOffence.getWelshLegislation().get(), is(welshLegislation));
+        assertThat(statementOfOffence.getWelshLegislation(), is(welshLegislation));
         assertThat(statementOfOffence.getWelshTitle(), is(welshTitle));
-        assertThat(statementOfOffence.getLegislation().get(), is(legislation));
+        assertThat(statementOfOffence.getLegislation(), is(legislation));
         assertThat(statementOfOffence.getTitle(), is(title));
 
         assertThat(eventOffence.getStartDate(), is(startDate));
-        assertThat(eventOffence.getLaidDate().get(), is(laidDate));
+        assertThat(eventOffence.getLaidDate(), is(laidDate));
         assertThat(eventOffence.getOffenceWording(), is(wording));
         assertThat(eventOffence.getId(), is(offenceId));
-        assertThat(eventOffence.getEndDate().get(), is(endDate));
+        assertThat(eventOffence.getEndDate(), is(endDate));
         assertThat(eventOffence.getOffenceCode(), is(offenceCode));
 
-        final uk.gov.justice.listing.events.LaaReference laaReference = eventOffence.getLaaApplnReference().get();
+        final uk.gov.justice.listing.events.LaaReference laaReference = eventOffence.getLaaApplnReference();
         assertThat(laaReference.getStatusId(), is(statusId));
         assertThat(laaReference.getStatusDate(), is(statusDate));
         assertThat(laaReference.getStatusDescription(), is(statusDescription));
         assertThat(laaReference.getStatusCode(), is(statusCode));
-        assertThat(laaReference.getEffectiveStartDate().get(), is(effectiveStartDate));
-        assertThat(laaReference.getEffectiveEndDate().get(), is(effectiveEndDate));
+        assertThat(laaReference.getEffectiveStartDate(), is(effectiveStartDate));
+        assertThat(laaReference.getEffectiveEndDate(), is(effectiveEndDate));
         assertThat(laaReference.getApplicationReference(), is(applicationReference));
 
 
@@ -266,15 +267,15 @@ public class NewDomainToEventConverterTest {
 
     private void checkAddress(final Address address, final uk.gov.justice.core.courts.Address addressBuilt) {
         assertThat(addressBuilt.getAddress1(), is(address.getAddress1()));
-        assertThat(addressBuilt.getAddress2().isPresent(), is(true));
-        assertThat(addressBuilt.getAddress2().get(), is(address.getAddress2().get()));
-        assertThat(addressBuilt.getAddress3().isPresent(), is(true));
-        assertThat(addressBuilt.getAddress3().get(), is(address.getAddress3().get()));
-        assertThat(addressBuilt.getAddress4().isPresent(), is(true));
-        assertThat(addressBuilt.getAddress4().get(), is(address.getAddress4().get()));
-        assertThat(addressBuilt.getAddress5().isPresent(), is(true));
-        assertThat(addressBuilt.getAddress5().get(), is(address.getAddress5().get()));
-        assertThat(addressBuilt.getPostcode().isPresent(), is(true));
-        assertThat(addressBuilt.getPostcode().get(), is(address.getPostcode().get()));
+        assertThat(addressBuilt.getAddress2(), is(notNullValue()));
+        assertThat(addressBuilt.getAddress2(), is(address.getAddress2().get()));
+        assertThat(addressBuilt.getAddress3(), is(notNullValue()));
+        assertThat(addressBuilt.getAddress3(), is(address.getAddress3().get()));
+        assertThat(addressBuilt.getAddress4(), is(notNullValue()));
+        assertThat(addressBuilt.getAddress4(), is(address.getAddress4().get()));
+        assertThat(addressBuilt.getAddress5(), is(notNullValue()));
+        assertThat(addressBuilt.getAddress5(), is(address.getAddress5().get()));
+        assertThat(addressBuilt.getPostcode(), is(notNullValue()));
+        assertThat(addressBuilt.getPostcode(), is(address.getPostcode().get()));
     }
 }

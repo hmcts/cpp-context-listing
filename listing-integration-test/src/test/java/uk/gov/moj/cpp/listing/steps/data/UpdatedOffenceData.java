@@ -2,10 +2,7 @@ package uk.gov.moj.cpp.listing.steps.data;
 
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
-import uk.gov.justice.core.courts.ReportingRestriction;
-
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,13 +19,15 @@ public class UpdatedOffenceData {
     private final String statementOfOffenceTitleWelsh;
     private final String legislation;
     private final String legislationWelsh;
+    private final Integer count;
+    private final Integer orderIndex;
     private final Optional<LaaReferenceData> laaApplnReference;
     private List<ReportingRestrictionData> reportingRestriction;
 
     private UpdatedOffenceData(final UUID offenceId, final String offenceCode,
                                final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                                final String statementOfOffenceTitleWelsh, final String offenceWording,
-                               final String legislation, final String legislationWelsh, final Optional<LaaReferenceData> laaReferences,
+                               final String legislation, final String legislationWelsh, final Integer count, final Integer orderIndex, final Optional<LaaReferenceData> laaReferences,
                                final List<ReportingRestrictionData> reportingRestriction) {
 
         this.endDate = endDate;
@@ -42,6 +41,8 @@ public class UpdatedOffenceData {
         this.statementOfOffenceTitle = statementOfOffenceTitle;
         this.legislation = legislation;
         this.legislationWelsh = legislationWelsh;
+        this.count = count;
+        this.orderIndex = orderIndex;
         this.reportingRestriction = reportingRestriction;
     }
 
@@ -61,12 +62,17 @@ public class UpdatedOffenceData {
                 .withOffenceWording(STRING.next())
                 .withLegislation(STRING.next())
                 .withLegislationWelsh(STRING.next())
+                .withCount(offenceData.getCount())
+                .withOrderIndex(offenceData.getOrderIndex())
+                .withLegislation(offenceData.getOffenceLegislation())
                 .withLaaApplnReference((offenceData.getLaaApplnReference()))
                 .withReportingRestriction(offenceData.getReportingRestrictionDataList().subList(1, 2))
                 .build();
     }
 
-    public UUID getOffenceId() { return offenceId; }
+    public UUID getOffenceId() {
+        return offenceId;
+    }
 
     public String getOffenceWording() {
         return offenceWording;
@@ -92,6 +98,14 @@ public class UpdatedOffenceData {
 
     public String getLegislationWelsh() { return legislationWelsh; }
 
+    public Integer getCount() {
+        return count;
+    }
+
+    public Integer getOrderIndex() {
+        return orderIndex;
+    }
+
     public List<ReportingRestrictionData> getReportingRestriction() {
         return reportingRestriction;
     }
@@ -106,6 +120,8 @@ public class UpdatedOffenceData {
         private String offenceWording;
         private String legislation;
         private String legislationWelsh;
+        private Integer count;
+        private Integer orderIndex;
         private Optional<LaaReferenceData> laaApplnReference;
         private List<ReportingRestrictionData> reportingRestriction;
 
@@ -159,6 +175,16 @@ public class UpdatedOffenceData {
             return this;
         }
 
+        public Builder withCount(final Integer count) {
+            this.count = count;
+            return this;
+        }
+
+        public Builder withOrderIndex(final Integer orderIndex) {
+            this.orderIndex = orderIndex;
+            return this;
+        }
+
         public Builder withReportingRestriction(final List<ReportingRestrictionData> reportingRestriction) {
             this.reportingRestriction = reportingRestriction;
             return this;
@@ -167,7 +193,7 @@ public class UpdatedOffenceData {
         public UpdatedOffenceData build() {
             return new UpdatedOffenceData(offenceId, offenceCode, startDate, endDate,
                     statementOfOffenceTitle, statementOfOffenceTitleWelsh, offenceWording,
-                    legislation, legislationWelsh, laaApplnReference, reportingRestriction);
+                    legislation, legislationWelsh, count, orderIndex, laaApplnReference, reportingRestriction);
         }
     }
 }

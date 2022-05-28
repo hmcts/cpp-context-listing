@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class ReportingRestrictionHelper {
@@ -103,21 +104,21 @@ public class ReportingRestrictionHelper {
     }
 
     private static String getKey(final ReportingRestriction current) {
-        final String uuid = current.getJudicialResultId().map(UUID::toString).orElse(null);
+        final String uuid = Optional.<UUID>ofNullable(current.getJudicialResultId()).map(UUID::toString).orElse(null);
         return String.format("%s-%s", current.getLabel(), uuid);
     }
 
     @SuppressWarnings("squid:S3655")
     private static ReportingRestriction oldestOf(final ReportingRestriction reportingRestriction1, final ReportingRestriction reportingRestriction2) {
-        if (!reportingRestriction1.getOrderedDate().isPresent()) {
+        if (reportingRestriction1.getOrderedDate()==null) {
             return reportingRestriction2;
         }
 
-        if (!reportingRestriction2.getOrderedDate().isPresent()) {
+        if (reportingRestriction2.getOrderedDate()==null) {
             return reportingRestriction1;
         }
 
-        if (reportingRestriction2.getOrderedDate().get().isBefore(reportingRestriction1.getOrderedDate().get())) {
+        if (reportingRestriction2.getOrderedDate().isBefore(reportingRestriction1.getOrderedDate())) {
             return reportingRestriction2;
         }
 

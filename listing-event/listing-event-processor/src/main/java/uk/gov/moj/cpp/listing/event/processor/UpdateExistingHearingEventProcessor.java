@@ -1,13 +1,22 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
+import static java.util.Objects.nonNull;
+import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
 
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.justice.core.courts.ConfirmedDefendant;
+import uk.gov.justice.core.courts.ConfirmedOffence;
+import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
 import uk.gov.justice.listing.courts.AddCasesToHearing;
+import uk.gov.justice.listing.events.CaseAddedToHearing;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.UpdateExistingHearingRequested;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -17,7 +26,6 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import javax.inject.Inject;
-import javax.json.Json;
 
 @ServiceComponent(EVENT_PROCESSOR)
 public class UpdateExistingHearingEventProcessor {
@@ -67,14 +75,36 @@ public class UpdateExistingHearingEventProcessor {
         }
 
         final CasesAddedToHearing casesAddedToHearing = jsonObjectConverter.convert(envelope.payloadAsJsonObject(), CasesAddedToHearing.class);
-        if (casesAddedToHearing.getSeedingHearingId().isPresent()) {
+
+        if(Optional.ofNullable(casesAddedToHearing.getAddCasesToUnAllocatedHearing()).orElse(false)) {
+            sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName("public.listing.cases-added-to-hearing"),
+                    buildCasesAddedToHearingPublicEventPayload(casesAddedToHearing)));
+        }else if (nonNull(casesAddedToHearing.getSeedingHearingId()) ) {
             sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_CASES_ADDED_FOR_UPDATED_RELATED_HEARING),
-                    Json.createObjectBuilder()
+                    createObjectBuilder()
                             .add("hearingId", casesAddedToHearing.getHearingId().toString())
-                            .add("seedingHearingId", casesAddedToHearing.getSeedingHearingId().get().toString())
+                            .add("seedingHearingId", casesAddedToHearing.getSeedingHearingId().toString())
                             .build()
             ));
         }
+    }
+
+    private JsonObject buildCasesAddedToHearingPublicEventPayload(final CasesAddedToHearing casesAddedToHearing) {
+        final CaseAddedToHearing payload = CaseAddedToHearing.caseAddedToHearing().withExistingHearingId(casesAddedToHearing.getSeedingHearingId())
+                .withHearingId(casesAddedToHearing.getHearingId())
+                .withConfirmedProsecutionCase(casesAddedToHearing.getUnAllocatedListedCases().stream()
+                        .map(listedCase -> ConfirmedProsecutionCase.confirmedProsecutionCase()
+                                .withId(listedCase.getId())
+                                .withDefendants(listedCase.getDefendants().stream().map(defendant -> ConfirmedDefendant.confirmedDefendant()
+                                        .withId(defendant.getId())
+                                        .withOffences(defendant.getOffences().stream().map(offence -> ConfirmedOffence.confirmedOffence()
+                                                .withId(offence.getId())
+                                                .build()).collect(Collectors.toList()))
+                                        .build()).collect(Collectors.toList()))
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+        return objectToJsonObjectConverter.convert(payload);
     }
 
 }

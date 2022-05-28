@@ -90,6 +90,10 @@ protocols: [ HTTP, HTTPS ]
            description: case urn used to search linked cases
            type: string
            required: false
+        returnAllHearings:
+           description: for true returns allocated and unallocated hearings
+           type: boolean
+           required: false
       responses:
             200:
                 description: OK

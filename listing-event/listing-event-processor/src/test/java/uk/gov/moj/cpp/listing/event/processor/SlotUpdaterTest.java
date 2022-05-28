@@ -1,17 +1,15 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static javax.json.Json.createObjectBuilder;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
-import static uk.gov.moj.cpp.listing.event.processor.azure.util.SlotsToJsonStringConverter.toJSONString;
 import static org.mockito.Mockito.when;
+import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUIDAndName;
+import static uk.gov.moj.cpp.listing.event.processor.azure.util.SlotsToJsonStringConverter.toJSONString;
 
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingDay;
@@ -256,9 +254,9 @@ public class SlotUpdaterTest {
                         .build()))
                 .withCourtCentre(CourtCentre.courtCentre()
                         .withId(COURT_CENTRE_ID)
-                        .withRoomId(of(COURT_ROOM_ID))
+                        .withRoomId(COURT_ROOM_ID)
                         .build())
-                .withHearingLanguage(of(HearingLanguage.WELSH))
+                .withHearingLanguage(HearingLanguage.WELSH)
                 .withCourtApplicationIds(Arrays.asList(UUID.randomUUID()))
                 .withJurisdictionType(isMagistrates ? MAGISTRATES : JurisdictionType.CROWN)
                 .withType(HearingType.hearingType().withDescription(TYPE).withId(UUID.randomUUID()).build())
@@ -267,7 +265,7 @@ public class SlotUpdaterTest {
                         .withJudicialRoleType(
                                 uk.gov.justice.core.courts.JudicialRoleType.judicialRoleType()
                                         .withJudiciaryType(CIRCUIT_JUDGE)
-                                        .withJudicialRoleTypeId(empty())
+                                        .withJudicialRoleTypeId(null)
                                         .build())
                         .build()))
                 .withProsecutionCases(Arrays.asList(uk.gov.justice.core.courts.ConfirmedProsecutionCase.confirmedProsecutionCase()

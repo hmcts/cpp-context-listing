@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.util;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
@@ -35,7 +36,7 @@ public class HearingListedToUpdateHearingForListingCommand implements Converter<
                         .withHearingLanguage(getHearingLanguage(hearing))
                         .withJudiciary(convertJudicialRoles(hearing))
                         .withJurisdictionType(JurisdictionType.valueOf(hearing.getJurisdictionType().name()))
-                        .withNonDefaultDays(convertNonDefaultDays(hearing))
+                        .withNonDefaultDays(isNull(hearing.getNonDefaultDays()) ? null : convertNonDefaultDays(hearing))
                         .withNonSittingDays(hearing.getNonSittingDays())
                         .withStartDate(hearing.getStartDate())
                         .withType(HearingType.hearingType()
@@ -59,7 +60,7 @@ public class HearingListedToUpdateHearingForListingCommand implements Converter<
 
 
     private CourtCentreDetails convertCourtCentreDetails(final Hearing hearing) {
-        final Optional<uk.gov.justice.listing.events.CourtCentreDetails> courtCentreDetails = hearing.getCourtCentreDetails();
+        final Optional<uk.gov.justice.listing.events.CourtCentreDetails> courtCentreDetails = Optional.ofNullable(hearing.getCourtCentreDetails());
 
         return courtCentreDetails.isPresent() ? CourtCentreDetails.courtCentreDetails()
                 .withDefaultStartTime(courtCentreDetails.get().getDefaultStartTime())

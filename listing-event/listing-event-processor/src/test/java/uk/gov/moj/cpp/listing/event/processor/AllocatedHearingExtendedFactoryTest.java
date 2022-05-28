@@ -1,7 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Matchers.any;
@@ -84,8 +82,8 @@ public class AllocatedHearingExtendedFactoryTest {
                 .withJudicialRoleType(uk.gov.justice.listing.events.JudicialRoleType.judicialRoleType()
                         .withJudiciaryType(JUDICIAL_ROLE_TYPE)
                         .build())
-                .withIsDeputy(empty())
-                .withIsBenchChairman(empty())
+                .withIsDeputy(null)
+                .withIsBenchChairman(null)
                 .build());
 
         final ListedCase listedCase = ListedCase.listedCase().withId(CASE_ID).build();
@@ -94,7 +92,7 @@ public class AllocatedHearingExtendedFactoryTest {
 
         final AllocatedHearingExtendedForListing allocatedHearingExtendedForListing = allocatedHearingExtendedForListing(judiciary, listedCaseList);
         final JsonEnvelope envelope = mock(JsonEnvelope.class);
-        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name(java.util.Optional.of("test Court Centre")).build());
+        when(referenceDataService.getOrganizationUnitById(any(), eq(envelope))).thenReturn(OrganisationUnit.organisationUnit().withOucodeL3Name("test Court Centre").build());
 
 
         //when
@@ -109,11 +107,11 @@ public class AllocatedHearingExtendedFactoryTest {
         assertThat(extendedHearing.getType().getDescription(), is(TYPE));
         assertThat(extendedHearing.getType().getId(), is(TYPE_ID));
         assertThat(extendedHearing.getCourtCentre().getId(), is(COURT_CENTRE_ID));
-        assertThat(extendedHearing.getCourtCentre().getRoomId().get(), is(COURT_ROOM_ID));
+        assertThat(extendedHearing.getCourtCentre().getRoomId(), is(COURT_ROOM_ID));
         assertThat(extendedHearing.getJudiciary().get(0).getJudicialId(), is(JUDICIAL_ID));
         assertThat(extendedHearing.getJudiciary().get(0).getJudicialRoleType().getJudiciaryType(), is(JUDICIAL_ROLE_TYPE));
-        assertThat(extendedHearing.getReportingRestrictionReason().get(), is(REPORTING_RESTRICTION_REASON));
-        assertThat(extendedHearing.getHearingLanguage().get().toString(), is(HEARING_LANGUAGE.toString()));
+        assertThat(extendedHearing.getReportingRestrictionReason(), is(REPORTING_RESTRICTION_REASON));
+        assertThat(extendedHearing.getHearingLanguage().toString(), is(HEARING_LANGUAGE.toString()));
         assertThat(extendedHearing.getJurisdictionType().toString(), is(JURISDICTION_TYPE.toString()));
 
         ConfirmedProsecutionCase prosecutionCaseDefendantOffenceIds = extendedHearing.getProsecutionCases().get(0);
@@ -146,7 +144,7 @@ public class AllocatedHearingExtendedFactoryTest {
                 .withHearingDays(hearingDays)
                 .withCourtApplicationIds(Collections.singletonList(UUID.randomUUID()))
                 .withHearingLanguage(HEARING_LANGUAGE)
-                .withReportingRestrictionReason(of(REPORTING_RESTRICTION_REASON))
+                .withReportingRestrictionReason(REPORTING_RESTRICTION_REASON)
                 .withCourtCentreId(COURT_CENTRE_ID)
                 .withCourtRoomId(COURT_ROOM_ID)
                 .withHearingId(HEARING_ID)

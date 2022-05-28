@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
-import static java.time.LocalDate.parse;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -10,7 +9,6 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
-import static uk.gov.moj.cpp.listing.command.utils.LocalDateUtils.isYouth;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds.valueFor;
 
 import org.apache.commons.lang3.StringUtils;
@@ -25,7 +23,6 @@ import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.ListDefendantRequest;
 import uk.gov.justice.core.courts.ListHearingRequest;
 import uk.gov.justice.core.courts.Marker;
-import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.core.courts.SeedingHearing;
@@ -49,7 +46,6 @@ import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.Type;
-import uk.gov.moj.cpp.listing.domain.aggregate.converter.ReportingRestrictionConverter;
 import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
 
 import java.time.LocalDate;
@@ -67,11 +63,11 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     @SuppressWarnings({"squid:S3655"})
     public static ZonedDateTime extractStartDate(final HearingListingNeeds commandHearing) {
-        return extractStartDate(commandHearing.getListedStartDateTime(), commandHearing.getEarliestStartDateTime());
+        return extractStartDate(ofNullable(commandHearing.getListedStartDateTime()), ofNullable(commandHearing.getEarliestStartDateTime()));
     }
 
     public static ZonedDateTime extractStartDate(final HearingUnscheduledListingNeeds commandHearing) {
-        final ZonedDateTime startDateTime = extractStartDate(commandHearing.getListedStartDateTime(), commandHearing.getEarliestStartDateTime());
+        final ZonedDateTime startDateTime = extractStartDate(ofNullable(commandHearing.getListedStartDateTime()), ofNullable(commandHearing.getEarliestStartDateTime()));
         return startDateTime != null ? ZonedDateTimes.fromString(startDateTime.toString()) : null;
     }
 
@@ -102,13 +98,13 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .map(prosecutionCase -> buildListedCases(commandHearing, prosecutionCase, shadowListedOffences))
                 .collect(toList());
 
-        final Optional<LocalDate> weekCommencingStartDate = commandHearing.getWeekCommencingDate().isPresent() && nonNull(commandHearing.getWeekCommencingDate().get().getStartDate()) ?
-                of(parse(commandHearing.getWeekCommencingDate().get().getStartDate())) : empty();
+        final Optional<LocalDate> weekCommencingStartDate = nonNull(commandHearing.getWeekCommencingDate()) && nonNull(commandHearing.getWeekCommencingDate().getStartDate()) ?
+                ofNullable(LocalDate.parse(commandHearing.getWeekCommencingDate().getStartDate())) : empty();
 
-        final Optional<Integer> weekCommencingDurationInWeeks = commandHearing.getWeekCommencingDate().isPresent() ? commandHearing.getWeekCommencingDate().get().getDuration() : empty();
+        final Optional<Integer> weekCommencingDurationInWeeks = nonNull(commandHearing.getWeekCommencingDate()) ? ofNullable(commandHearing.getWeekCommencingDate().getDuration()) : empty();
 
         final Optional<LocalDate> weekCommencingEndDate = weekCommencingStartDate.isPresent() && weekCommencingDurationInWeeks.isPresent() ?
-                of(weekCommencingStartDate.get().plusWeeks(weekCommencingDurationInWeeks.get())) : empty();
+                ofNullable(weekCommencingStartDate.get().plusWeeks(weekCommencingDurationInWeeks.get())) : empty();
 
         return Hearing.hearing()
                 .withId(commandHearing.getId())
@@ -117,15 +113,15 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withEstimatedMinutes(commandHearing.getEstimatedMinutes())
                 .withStartDateTime(getHearingStartDateTime(commandHearing))
                 .withCourtCentreId(commandHearing.getCourtCentre().getId())
-                .withCourtRoomId(commandHearing.getCourtCentre().getRoomId())
-                .withListingDirections(commandHearing.getListingDirections())
-                .withProsecutorDatesToAvoid(commandHearing.getProsecutorDatesToAvoid())
-                .withReportingRestrictionReason(commandHearing.getReportingRestrictionReason())
+                .withCourtRoomId(ofNullable(commandHearing.getCourtCentre().getRoomId()))
+                .withListingDirections(ofNullable(commandHearing.getListingDirections()))
+                .withProsecutorDatesToAvoid(ofNullable(commandHearing.getProsecutorDatesToAvoid()))
+                .withReportingRestrictionReason(ofNullable(commandHearing.getReportingRestrictionReason()))
                 .withJudiciary(domainJudicialRoles)
                 .withJurisdictionType(JurisdictionType.valueFor(commandHearing.getJurisdictionType().name())
                         .orElseThrow(IllegalArgumentException::new))
                 .withListedCases(domainListedCases)
-                .withEndDate(getEndDate(commandHearing))
+                .withEndDate(nonNull(commandHearing.getEndDate()) ? ofNullable(LocalDate.parse(commandHearing.getEndDate())) : empty())
                 .withNonSittingDays(emptyList())
                 .withNonDefaultDays(nonDefaultDays)
                 .withHearingDays(emptyList())
@@ -138,10 +134,6 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withWeekCommencingEndDate(weekCommencingEndDate)
                 .withWeekCommencingDurationInWeeks(weekCommencingDurationInWeeks)
                 .build();
-    }
-
-    private Optional<LocalDate> getEndDate(HearingListingNeeds commandHearing) {
-        return commandHearing.getEndDate().isPresent() ? of(parse(commandHearing.getEndDate().get())) : empty();
     }
 
     private ZonedDateTime getHearingStartDateTime(final HearingListingNeeds commandHearing) {
@@ -184,10 +176,10 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     @SuppressWarnings({"squid:S3655"})
     public static ZonedDateTime getStartDateTime(final HearingListingNeeds commandHearing) {
-        final ZonedDateTime listedStartDateTime = commandHearing.getListedStartDateTime().isPresent() ? commandHearing.getListedStartDateTime().get() : null;
-        final ZonedDateTime earliestStartDateTime = commandHearing.getEarliestStartDateTime().isPresent() ? commandHearing.getEarliestStartDateTime().get() : null;
+        final ZonedDateTime listedStartDateTime = commandHearing.getListedStartDateTime();
+        final ZonedDateTime earliestStartDateTime = commandHearing.getEarliestStartDateTime();
 
-        return ofNullable(listedStartDateTime).orElseGet(() -> earliestStartDateTime);
+        return Optional.ofNullable(listedStartDateTime).orElse(earliestStartDateTime);
     }
 
     public Type buildHearingType(final HearingType type) {
@@ -217,11 +209,11 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withJudicialId(judicialRole.getJudicialId())
                 .withJudicialRoleType(JudicialRoleType.judicialRoleType()
                         .withJudiciaryType(judicialRole.getJudicialRoleType().getJudiciaryType())
-                        .withJudicialRoleTypeId(judicialRole.getJudicialRoleType().getJudicialRoleTypeId().orElse(null))
+                        .withJudicialRoleTypeId(judicialRole.getJudicialRoleType().getJudicialRoleTypeId())
                         .build())
-                .withIsDeputy(judicialRole.getIsDeputy())
-                .withIsBenchChairman(judicialRole.getIsBenchChairman())
-                .withUserId(judicialRole.getUserId().orElse(null))
+                .withIsDeputy(ofNullable(judicialRole.getIsDeputy()))
+                .withIsBenchChairman(ofNullable(judicialRole.getIsBenchChairman()))
+                .withUserId(judicialRole.getUserId())
                 .build();
     }
 
@@ -245,7 +237,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                         .build())
                 .withDefendants(defendants)
                 .withShadowListed(of(caseShadowListed))
-                .withTrialReceiptType(prosecutionCase.getTrialReceiptType().orElse(null));
+                .withTrialReceiptType(prosecutionCase.getTrialReceiptType());
 
         if (isNotEmpty(prosecutionCase.getCaseMarkers())) {
             builder.withCaseMarkers(prosecutionCase.getCaseMarkers().stream()
@@ -269,61 +261,55 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingUnscheduledListingNeeds commandHearing, final Defendant d) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
-                .withMasterDefendantId(ofNullable(d.getMasterDefendantId()))
-                .withCourtProceedingsInitiated(ofNullable(d.getCourtProceedingsInitiated()))
-                .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())
-                .withLastName(d.getPersonDefendant().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getLastName()) : empty())
+                .withMasterDefendantId(Optional.ofNullable(d.getMasterDefendantId()))
+                .withCourtProceedingsInitiated(Optional.ofNullable(d.getCourtProceedingsInitiated()))
+                .withFirstName(nonNull(d.getPersonDefendant()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getFirstName()) : empty())
+                .withLastName(nonNull(d.getPersonDefendant()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getLastName()) : empty())
                 .withBailStatus(mapBailStatus(d))
-                .withSpecificRequirements(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getSpecificRequirements() : empty())
-                .withDateOfBirth(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getDateOfBirth() : empty())
-                .withCustodyTimeLimit(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getCustodyTimeLimit() : empty())
-                .withDefenceOrganisation(d.getDefenceOrganisation().isPresent() ? of(d.getDefenceOrganisation().get().getName()) : empty())
-                .withOrganisationName(d.getLegalEntityDefendant().isPresent() ? of(d.getLegalEntityDefendant().get().getOrganisation().getName()) : empty())
+                .withSpecificRequirements(nonNull(d.getPersonDefendant()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getSpecificRequirements()) : empty())
+                .withDateOfBirth(nonNull(d.getPersonDefendant())
+                        && nonNull(d.getPersonDefendant().getPersonDetails())
+                        && nonNull(d.getPersonDefendant().getPersonDetails().getDateOfBirth()) ? Optional.of(d.getPersonDefendant().getPersonDetails().getDateOfBirth()) : empty())
+                .withCustodyTimeLimit(nonNull(d.getPersonDefendant())
+                        && nonNull(d.getPersonDefendant().getCustodyTimeLimit()) ? Optional.of(d.getPersonDefendant().getCustodyTimeLimit()) : empty())
+                .withDefenceOrganisation(nonNull(d.getDefenceOrganisation()) ? ofNullable(d.getDefenceOrganisation().getName()) : empty())
+                .withOrganisationName(nonNull(d.getLegalEntityDefendant()) ? ofNullable(d.getLegalEntityDefendant().getOrganisation().getName()) : empty())
                 .withDatesToAvoid(getDatesToAvoid(commandHearing, d))
                 .withHearingLanguageNeeds(getHearingLanguageNeeds(commandHearing, d))
                 .withOffences(d.getOffences().stream()
                         .map(offence -> buildOffence(offence, null))
                         .collect(toList()))
-                .withIsYouth(d.getIsYouth().isPresent() ? d.getIsYouth() : empty())
+                .withIsYouth(ofNullable(d.getIsYouth()))
                 .withAddress(buildAddress(d))
-                .withNationalityDescription(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getNationalityDescription().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getNationalityDescription() : empty())
+                .withNationalityDescription(nonNull(d.getPersonDefendant()) && nonNull(d.getPersonDefendant().getPersonDetails().getNationalityDescription()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getNationalityDescription()) : empty())
                 .build();
-    }
-
-    private Optional<Boolean> isYouthDefendant(final ZonedDateTime startDate, final Defendant defendant) {
-
-        if(nonNull(startDate)) {
-            final  String dob = defendant.getPersonDefendant().map(d -> d.getPersonDetails()).map(p -> p.getDateOfBirth().orElse("")).orElse("");
-            final Boolean defendantDOB = StringUtils.isNotBlank(dob) ? isYouth( parse(dob), startDate.toLocalDate())  : null;
-            return  ofNullable(defendantDOB);
-
-        }
-       return ofNullable(null);
-
     }
 
     @SuppressWarnings({"squid:S3655", "squid:S1067", "squid:MethodCyclomaticComplexity"})
     private uk.gov.moj.cpp.listing.domain.Defendant buildDefendants(final HearingListingNeeds commandHearing, final Defendant d, final List<UUID> shadowListedOffences) {
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
-                .withMasterDefendantId(ofNullable(d.getMasterDefendantId()))
-                .withCourtProceedingsInitiated(ofNullable(d.getCourtProceedingsInitiated()))
-                .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())
-                .withLastName(d.getPersonDefendant().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getLastName()) : empty())
+                .withMasterDefendantId(Optional.ofNullable(d.getMasterDefendantId()))
+                .withCourtProceedingsInitiated(Optional.ofNullable(d.getCourtProceedingsInitiated()))
+                .withFirstName(nonNull(d.getPersonDefendant()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getFirstName()) : empty())
+                .withLastName(nonNull(d.getPersonDefendant()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getLastName()) : empty())
                 .withBailStatus(mapBailStatus(d))
-                .withSpecificRequirements(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getSpecificRequirements() : empty())
-                .withDateOfBirth(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getDateOfBirth() : empty())
-                .withCustodyTimeLimit(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getCustodyTimeLimit() : empty())
-                .withDefenceOrganisation(d.getDefenceOrganisation().isPresent() ? of(d.getDefenceOrganisation().get().getName()) : empty())
-                .withOrganisationName(d.getLegalEntityDefendant().isPresent() ? of(d.getLegalEntityDefendant().get().getOrganisation().getName()) : empty())
+                .withSpecificRequirements(nonNull(d.getPersonDefendant()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getSpecificRequirements()) : empty())
+                .withDateOfBirth(nonNull(d.getPersonDefendant())
+                        && nonNull(d.getPersonDefendant().getPersonDetails())
+                        && nonNull(d.getPersonDefendant().getPersonDetails().getDateOfBirth()) ? Optional.of(d.getPersonDefendant().getPersonDetails().getDateOfBirth()) : empty())
+                .withCustodyTimeLimit(nonNull(d.getPersonDefendant())
+                        && nonNull(d.getPersonDefendant().getCustodyTimeLimit()) ? Optional.of(d.getPersonDefendant().getCustodyTimeLimit()) : empty())
+                .withDefenceOrganisation(nonNull(d.getDefenceOrganisation()) ? ofNullable(d.getDefenceOrganisation().getName()) : empty())
+                .withOrganisationName(nonNull(d.getLegalEntityDefendant()) ? ofNullable(d.getLegalEntityDefendant().getOrganisation().getName()) : empty())
                 .withDatesToAvoid(getDatesToAvoid(commandHearing, d))
                 .withHearingLanguageNeeds(getHearingLanguageNeeds(commandHearing, d))
                 .withOffences(d.getOffences().stream()
                         .map(offence -> buildOffence(offence, shadowListedOffences))
                         .collect(toList()))
-                .withIsYouth(d.getIsYouth().isPresent() ? d.getIsYouth() : isYouthDefendant(getHearingStartDateTime(commandHearing), d ))
+                .withIsYouth(ofNullable(d.getIsYouth()))
                 .withAddress(buildAddress(d))
-                .withNationalityDescription(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getNationalityDescription().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getNationalityDescription() : empty())
+                .withNationalityDescription(nonNull(d.getPersonDefendant()) && nonNull(d.getPersonDefendant().getPersonDetails().getNationalityDescription()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getNationalityDescription()) : empty())
                 .build();
     }
 
@@ -331,27 +317,27 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     private Optional<uk.gov.moj.cpp.listing.domain.Address> buildAddress(final Defendant defendant) {
         Optional<Address> d = empty();
 
-        if (nonNull(defendant) && defendant.getPersonDefendant().isPresent()) {
-            d = defendant.getPersonDefendant().get().getPersonDetails().getAddress();
+        if (nonNull(defendant) && nonNull(defendant.getPersonDefendant())) {
+            d = ofNullable(defendant.getPersonDefendant().getPersonDetails().getAddress());
 
-        } else if (nonNull(defendant) && defendant.getLegalEntityDefendant().isPresent()) {
-            d = defendant.getLegalEntityDefendant().get().getOrganisation().getAddress();
+        } else if (nonNull(defendant) && nonNull(defendant.getLegalEntityDefendant())) {
+            d = ofNullable(defendant.getLegalEntityDefendant().getOrganisation().getAddress());
         }
 
         return Optional.of(uk.gov.moj.cpp.listing.domain.Address.address().
                 withAddress1(d.isPresent() ? d.get().getAddress1() : "")
-                .withAddress2(d.isPresent() ? d.get().getAddress2() : empty())
-                .withAddress3(d.isPresent() ? d.get().getAddress3() : empty())
-                .withAddress4(d.isPresent() ? d.get().getAddress4() : empty())
-                .withAddress5(d.isPresent() ? d.get().getAddress5() : empty())
-                .withPostcode(d.isPresent() ? d.get().getPostcode() : empty())
+                .withAddress2(d.map(Address::getAddress2))
+                .withAddress3(d.map(Address::getAddress3))
+                .withAddress4(d.map(Address::getAddress4))
+                .withAddress5(d.map(Address::getAddress5))
+                .withPostcode(d.map(Address::getPostcode))
                 .build());
 
     }
 
     private Optional<BailStatus> mapBailStatus(final Defendant defendant) {
-        if (defendant.getPersonDefendant().isPresent()) {
-            final Optional<uk.gov.justice.core.courts.BailStatus> optBailStatus = defendant.getPersonDefendant().map(PersonDefendant::getBailStatus).orElse(Optional.empty());
+        if (nonNull(defendant.getPersonDefendant())) {
+            final Optional<uk.gov.justice.core.courts.BailStatus> optBailStatus = ofNullable(defendant.getPersonDefendant().getBailStatus());
             return optBailStatus.map(bailStatus -> new BailStatus.Builder().withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).withId(bailStatus.getId()).build());
         }
         return empty();
@@ -359,34 +345,32 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     private Optional<String> getDatesToAvoid(final HearingListingNeeds commandHearing, final Defendant d) {
         final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
-        if (listDefendantRequest.isPresent() && listDefendantRequest.get().getDatesToAvoid().isPresent()) {
-            return listDefendantRequest.get().getDatesToAvoid();
+        if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getDatesToAvoid())) {
+            return ofNullable(listDefendantRequest.get().getDatesToAvoid());
         }
         return empty();
     }
 
     private Optional<String> getDatesToAvoid(final HearingUnscheduledListingNeeds commandHearing, final Defendant d) {
         final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
-        if (listDefendantRequest.isPresent() && listDefendantRequest.get().getDatesToAvoid().isPresent()) {
-            return listDefendantRequest.get().getDatesToAvoid();
+        if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getDatesToAvoid())) {
+            return ofNullable(listDefendantRequest.get().getDatesToAvoid());
         }
         return empty();
     }
 
     private Optional<HearingLanguageNeeds> getHearingLanguageNeeds(final HearingListingNeeds commandHearing, final Defendant d) {
         final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
-        if (listDefendantRequest.isPresent() && listDefendantRequest.get().getHearingLanguageNeeds().isPresent()) {
-            return valueFor(listDefendantRequest.orElseThrow(IllegalArgumentException::new)
-                    .getHearingLanguageNeeds().orElseThrow(IllegalArgumentException::new).toString());
+        if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getHearingLanguageNeeds())) {
+            return valueFor(listDefendantRequest.get().getHearingLanguageNeeds().toString());
         }
         return empty();
     }
 
     private Optional<HearingLanguageNeeds> getHearingLanguageNeeds(final HearingUnscheduledListingNeeds commandHearing, final Defendant d) {
         final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
-        if (listDefendantRequest.isPresent() && listDefendantRequest.get().getHearingLanguageNeeds().isPresent()) {
-            return valueFor(listDefendantRequest.orElseThrow(IllegalArgumentException::new)
-                    .getHearingLanguageNeeds().orElseThrow(IllegalArgumentException::new).toString());
+        if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getHearingLanguageNeeds())) {
+            return valueFor(listDefendantRequest.get().getHearingLanguageNeeds().toString());
         }
         return empty();
     }
@@ -402,18 +386,20 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
         final Offence.Builder builder = Offence.offence()
                 .withId(o.getId())
-                .withEndDate(o.getEndDate())
+                .withEndDate(ofNullable(o.getEndDate()))
                 .withStartDate(o.getStartDate())
-                .withLaidDate(o.getLaidDate())
+                .withLaidDate(ofNullable(o.getLaidDate()) )
                 .withOffenceCode(o.getOffenceCode())
+                .withOrderIndex(o.getOrderIndex())
+                .withCount(o.getCount())
                 .withOffenceWording(o.getWording())
                 .withStatementOfOffence(buildStatementOfOffence(o))
-                .withSeedingHearing(o.getSeedingHearing().isPresent() ? buildSeedingHearing(o.getSeedingHearing().get()) : empty())
-                .withLaaApplnReference(o.getLaaApplnReference().isPresent() ? buildLaaReference((o.getLaaApplnReference().get())) : empty())
-                .withShadowListed(of(shadowListed));
+                .withSeedingHearing(buildSeedingHearing(o.getSeedingHearing()))
+                .withLaaApplnReference(buildLaaReference(o.getLaaApplnReference()))
+                .withShadowListed(ofNullable(shadowListed));
 
-        if (nonNull(o.getCommittingCourt()) && o.getCommittingCourt().isPresent()) {
-            builder.withCommittingCourt(buildCommittingCourt(o.getCommittingCourt().get()));
+        if (nonNull(o.getCommittingCourt())) {
+            builder.withCommittingCourt(buildCommittingCourt(o.getCommittingCourt()));
         }
         if (!isNull(o.getReportingRestrictions()) && !o.getReportingRestrictions().isEmpty()) {
             builder.withReportingRestrictions(o.getReportingRestrictions().stream()
@@ -437,9 +423,9 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     private StatementOfOffence buildStatementOfOffence(final uk.gov.justice.core.courts.Offence offence) {
         return StatementOfOffence.statementOfOffence()
                 .withTitle(offence.getOffenceTitle())
-                .withLegislation(offence.getOffenceLegislation())
-                .withWelshLegislation(offence.getOffenceLegislationWelsh())
-                .withWelshTitle(offence.getOffenceTitleWelsh().orElse(offence.getOffenceTitle()))
+                .withLegislation(ofNullable(offence.getOffenceLegislation()))
+                .withWelshLegislation(ofNullable(offence.getOffenceLegislationWelsh()))
+                .withWelshTitle(StringUtils.isNotEmpty(offence.getOffenceTitleWelsh()) ? offence.getOffenceTitleWelsh() : offence.getOffenceTitle())
                 .build();
     }
 
@@ -449,12 +435,12 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     @SuppressWarnings({"squid:S3655"})
     public CourtApplicationPartyListingNeeds buildCourtApplicationPartyNeeds(final uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds partyNeeds) {
-        final Optional<HearingLanguage> hearingLanguageNeeds = partyNeeds.getHearingLanguageNeeds();
+        final HearingLanguage hearingLanguageNeeds = partyNeeds.getHearingLanguageNeeds();
         return CourtApplicationPartyListingNeeds.courtApplicationPartyListingNeeds()
                 .withCourtApplicationId(partyNeeds.getCourtApplicationId())
                 .withCourtApplicationPartyId(partyNeeds.getCourtApplicationPartyId())
                 .withHearingLanguageNeeds(HearingLanguageNeeds.valueFor(
-                        hearingLanguageNeeds.isPresent() ? hearingLanguageNeeds.get().toString() : null).orElse(null))
+                        nonNull(hearingLanguageNeeds) ? hearingLanguageNeeds.toString() : null).orElse(null))
                 .build();
     }
 
@@ -463,17 +449,20 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
         return uk.gov.moj.cpp.listing.domain.Defendant.defendant()
                 .withId(d.getId())
-                .withMasterDefendantId(ofNullable(d.getMasterDefendantId()))
-                .withCourtProceedingsInitiated(ofNullable(d.getCourtProceedingsInitiated()))
-                .withFirstName(d.getPersonDefendant().isPresent() && d.getPersonDefendant().get().getPersonDetails().getFirstName().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getFirstName().get()) : empty())
-                .withLastName(d.getPersonDefendant().isPresent() ? of(d.getPersonDefendant().get().getPersonDetails().getLastName()) : empty())
+                .withMasterDefendantId(Optional.ofNullable(d.getMasterDefendantId()))
+                .withCourtProceedingsInitiated(Optional.ofNullable(d.getCourtProceedingsInitiated()))
+                .withFirstName(nonNull(d.getPersonDefendant()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getFirstName()) : empty())
+                .withLastName(nonNull(d.getPersonDefendant()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getLastName()) : empty())
                 .withBailStatus(mapBailStatus(d))
-                .withDefenceOrganisation(d.getDefenceOrganisation().isPresent() ? of(d.getDefenceOrganisation().get().getName()) : empty())
-                .withOrganisationName(d.getLegalEntityDefendant().isPresent() ? of(d.getLegalEntityDefendant().get().getOrganisation().getName()) : empty())
-                .withSpecificRequirements(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getSpecificRequirements() : empty())
+                .withDefenceOrganisation(nonNull(d.getDefenceOrganisation()) ? ofNullable(d.getDefenceOrganisation().getName()) : empty())
+                .withOrganisationName(nonNull(d.getLegalEntityDefendant()) ? ofNullable(d.getLegalEntityDefendant().getOrganisation().getName()) : empty())
+                .withSpecificRequirements(nonNull(d.getPersonDefendant()) ? ofNullable(d.getPersonDefendant().getPersonDetails().getSpecificRequirements()) : empty())
                 .withDatesToAvoid(getDatesToAvoidForListHearingRequest(listHearingRequests, d))
-                .withDateOfBirth(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getPersonDetails().getDateOfBirth() : empty())
-                .withCustodyTimeLimit(d.getPersonDefendant().isPresent() ? d.getPersonDefendant().get().getCustodyTimeLimit() : empty())
+                .withDateOfBirth(nonNull(d.getPersonDefendant())
+                        && nonNull(d.getPersonDefendant().getPersonDetails())
+                        && nonNull(d.getPersonDefendant().getPersonDetails().getDateOfBirth()) ? Optional.of(d.getPersonDefendant().getPersonDetails().getDateOfBirth()) : empty())
+                .withCustodyTimeLimit(nonNull(d.getPersonDefendant())
+                        && nonNull(d.getPersonDefendant().getCustodyTimeLimit()) ? Optional.of(d.getPersonDefendant().getCustodyTimeLimit()) : empty())
                 .withHearingLanguageNeeds(getHearingLanguageNeeds(listHearingRequests, d))
                 .withOffences(d.getOffences().stream()
                         .map(offence -> buildOffence(offence, null))
@@ -485,8 +474,8 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     private Optional<String> getDatesToAvoidForListHearingRequest(final List<ListHearingRequest> commandHearing, final Defendant d) {
         final Optional<ListDefendantRequest> listDefendantRequest = findListDefendantRequestForDefendantId(
                 commandHearing.stream().flatMap(lhr -> lhr.getListDefendantRequests().stream()).collect(Collectors.toList()), d.getId());
-        if (listDefendantRequest.isPresent() && listDefendantRequest.get().getDatesToAvoid().isPresent()) {
-            return listDefendantRequest.get().getDatesToAvoid();
+        if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getDatesToAvoid())) {
+            return ofNullable(listDefendantRequest.get().getDatesToAvoid());
         }
         return empty();
     }
@@ -494,15 +483,14 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     private Optional<HearingLanguageNeeds> getHearingLanguageNeeds(final List<ListHearingRequest> commandHearing, final Defendant d) {
         final Optional<ListDefendantRequest> listDefendantRequest = findListDefendantRequestForDefendantId(
                 commandHearing.stream().flatMap(lhr -> lhr.getListDefendantRequests().stream()).collect(Collectors.toList()), d.getId());
-        if (listDefendantRequest.isPresent() && listDefendantRequest.get().getHearingLanguageNeeds().isPresent()) {
-            return valueFor(listDefendantRequest.orElseThrow(IllegalArgumentException::new)
-                    .getHearingLanguageNeeds().orElseThrow(IllegalArgumentException::new).toString());
+        if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getHearingLanguageNeeds())) {
+            return valueFor(listDefendantRequest.get().getHearingLanguageNeeds().toString());
         }
         return empty();
     }
 
     public Optional<ListDefendantRequest> findListDefendantRequestForDefendantId(final List<ListDefendantRequest> listDefendantRequests, final UUID defendantId) {
-        return isNull(listDefendantRequests) ? empty() : listDefendantRequests.stream().filter(ldr -> ldr.getDefendantId().toString().equals(defendantId.toString())).findFirst();
+        return isNull(listDefendantRequests) ? empty() : listDefendantRequests.stream().filter(ldr -> nonNull(ldr.getDefendantId()) && ldr.getDefendantId().toString().equals(defendantId.toString())).findFirst();
     }
 
     public List<uk.gov.moj.cpp.listing.domain.Defendant> convertDefendant(final List<Defendant> commandDefendants, final List<ListHearingRequest> listHearingRequests) {
@@ -510,37 +498,41 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     }
 
     private Optional<uk.gov.moj.cpp.listing.domain.LaaReference> buildLaaReference(final LaaReference laaReference) {
-
-        return Optional.of(uk.gov.moj.cpp.listing.domain.LaaReference.laaReference()
-                .withApplicationReference(laaReference.getApplicationReference())
-                .withEffectiveEndDate((laaReference.getEffectiveEndDate()))
-                .withEffectiveStartDate((laaReference.getEffectiveStartDate()))
-                .withStatusCode(laaReference.getStatusCode())
-                .withStatusDate(laaReference.getStatusDate())
-                .withStatusDescription(laaReference.getStatusDescription())
-                .withStatusId(laaReference.getStatusId())
-                .build());
+        if (nonNull(laaReference)) {
+            return Optional.of(uk.gov.moj.cpp.listing.domain.LaaReference.laaReference()
+                    .withApplicationReference(laaReference.getApplicationReference())
+                    .withEffectiveEndDate(nonNull(laaReference.getEffectiveEndDate()) ? Optional.of(laaReference.getEffectiveEndDate()) : empty())
+                    .withEffectiveStartDate(nonNull(laaReference.getEffectiveStartDate()) ? Optional.of(laaReference.getEffectiveStartDate()) : empty())
+                    .withStatusCode(laaReference.getStatusCode())
+                    .withStatusDate(laaReference.getStatusDate())
+                    .withStatusDescription(laaReference.getStatusDescription())
+                    .withStatusId(laaReference.getStatusId())
+                    .build());
+        }
+        return empty();
     }
 
     public Optional<uk.gov.moj.cpp.listing.domain.SeedingHearing> buildSeedingHearing(final SeedingHearing seedingHearing) {
-
-        return Optional.of(uk.gov.moj.cpp.listing.domain.SeedingHearing.seedingHearing()
-                .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
-                .withSittingDay(seedingHearing.getSittingDay())
-                .withSeedingHearingId(seedingHearing.getSeedingHearingId())
-                .build());
+        if (nonNull(seedingHearing)) {
+            return Optional.of(uk.gov.moj.cpp.listing.domain.SeedingHearing.seedingHearing()
+                    .withJurisdictionType(JurisdictionType.valueOf(seedingHearing.getJurisdictionType().name()))
+                    .withSittingDay(seedingHearing.getSittingDay())
+                    .withSeedingHearingId(seedingHearing.getSeedingHearingId())
+                    .build());
+        }
+        return empty();
     }
 
     private NonDefaultDay convertNonDefaultDay(final RotaSlot rotaSlot) {
         return NonDefaultDay.nonDefaultDay()
-                .withSession(rotaSlot.getSession())
-                .withOucode(rotaSlot.getOucode())
-                .withCourtRoomId(rotaSlot.getCourtRoomId())
-                .withDuration(rotaSlot.getDuration())
+                .withSession(ofNullable(rotaSlot.getSession()))
+                .withOucode(ofNullable(rotaSlot.getOucode()))
+                .withCourtRoomId(ofNullable(rotaSlot.getCourtRoomId()))
+                .withDuration(ofNullable(rotaSlot.getDuration()))
                 .withStartTime(rotaSlot.getStartTime())
-                .withCourtScheduleId(rotaSlot.getCourtScheduleId())
-                .withRoomId(rotaSlot.getRoomId())
-                .withCourtCentreId(rotaSlot.getCourtCentreId())
+                .withCourtScheduleId(ofNullable(rotaSlot.getCourtScheduleId()))
+                .withRoomId(ofNullable(rotaSlot.getRoomId()))
+                .withCourtCentreId(ofNullable(rotaSlot.getCourtCentreId()))
                 .build();
     }
 
@@ -586,12 +578,12 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     }
 
     public Optional<Integer> getWeekCommencingDurationInWeeks(final HearingUnscheduledListingNeeds commandHearing) {
-        return commandHearing.getWeekCommencingDate().isPresent() ? commandHearing.getWeekCommencingDate().get().getDuration() : empty();
+        return nonNull(commandHearing.getWeekCommencingDate()) ? ofNullable(commandHearing.getWeekCommencingDate().getDuration()) : empty();
     }
 
     public Optional<LocalDate> getWeekCommencingStartDate(final HearingUnscheduledListingNeeds commandHearing) {
-        return commandHearing.getWeekCommencingDate().isPresent() && nonNull(commandHearing.getWeekCommencingDate().get().getStartDate()) ?
-                of(parse(commandHearing.getWeekCommencingDate().get().getStartDate())) : empty();
+        return nonNull(commandHearing.getWeekCommencingDate()) && nonNull(commandHearing.getWeekCommencingDate().getStartDate()) ?
+                ofNullable(LocalDate.parse(commandHearing.getWeekCommencingDate().getStartDate())) : empty();
     }
 
     public CourtCentreDefaults getCourtCentreDefaults(final Map<UUID, CourtCentreDetails> courtCentres, final HearingUnscheduledListingNeeds commandHearing) {

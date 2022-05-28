@@ -56,7 +56,7 @@ public class HearingMarkedAsDuplicateCommandHandler {
 
         final List<UUID> caseIds = markHearingAsDuplicate.getProsecutionCaseIds();
         updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.markHearingAsDuplicate(hearingId, caseIds));
+                Stream.of(hearing.markHearingAsDuplicate(hearingId, caseIds), hearing.deleteHearingForHmi()).flatMap(i->i));
     }
 
     @Handles("listing.command.mark-unallocated-hearing-as-duplicate")

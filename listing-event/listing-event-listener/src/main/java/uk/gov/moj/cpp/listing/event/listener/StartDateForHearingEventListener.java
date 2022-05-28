@@ -4,6 +4,8 @@ import static java.time.LocalDate.parse;
 import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
+
+import java.util.Optional;
 import uk.gov.justice.listing.events.StartDateChangedForHearing;
 import uk.gov.justice.listing.events.StartDateRemovedForHearing;
 import uk.gov.justice.services.core.annotation.Component;
@@ -17,6 +19,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import javax.inject.Inject;
+import uk.gov.moj.cpp.listing.persistence.repository.JsonNodeUpdater;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class StartDateForHearingEventListener {
@@ -50,12 +53,14 @@ public class StartDateForHearingEventListener {
     public void startDateRemovedForHearing(final Envelope<StartDateRemovedForHearing> event) {
         final StartDateRemovedForHearing startDateRemovedForHearing = event.payload();
         final UUID hearingId = startDateRemovedForHearing.getHearingId();
-
-        using(hearingRepository)
+        final JsonNodeUpdater updater = using(hearingRepository)
                 .find(hearingId)
-                .remove(START_DATE)
-                .save();
+                .remove(START_DATE);
 
+        if (Optional.ofNullable(startDateRemovedForHearing.getUnscheduled()).orElse(false)) {
+            updater.put("unscheduled", true);
+        }
+        updater.save();
         hearingSearchSyncService.sync(hearingId);
     }
 }

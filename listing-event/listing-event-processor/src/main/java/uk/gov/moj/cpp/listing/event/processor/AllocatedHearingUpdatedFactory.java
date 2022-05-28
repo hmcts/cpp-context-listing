@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
-import static java.util.Optional.empty;
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.core.courts.ConfirmedDefendant;
@@ -48,7 +48,7 @@ public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
                 .withHearingDays(hearingUpdatedForListing.getHearingDays().stream()
                         .map(this::buildHearingDay)
                         .collect(toList()))
-                .withHearingLanguage(HearingLanguage.valueFor(hearingUpdatedForListing.getHearingLanguage().toString()))
+                .withHearingLanguage(HearingLanguage.valueFor(hearingUpdatedForListing.getHearingLanguage().toString()).orElse(null))
                 .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingUpdatedForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withCourtApplicationIds(hearingUpdatedForListing.getCourtApplicationIds())
                 .withReportingRestrictionReason(hearingUpdatedForListing.getReportingRestrictionReason())
@@ -62,8 +62,8 @@ public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
                                             .withOffences(d.getOffenceIds().stream()
                                                     .map(o -> ConfirmedOffence.confirmedOffence()
                                                             .withId(o.getId())
-                                                            .withSeedingHearing(o.getSeedingHearing().isPresent() ?
-                                                                    SeedingHearingConverter.convertSeedingHearingForCoreDomain(o.getSeedingHearing().get()) : empty())
+                                                            .withSeedingHearing(nonNull(o.getSeedingHearing()) ?
+                                                                    SeedingHearingConverter.convertSeedingHearingForCoreDomain(o.getSeedingHearing()).orElse(null) : null)
                                                             .build())
                                                     .collect(toList()))
                                             .build())
@@ -88,7 +88,7 @@ public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
                 .withHearingDays(hearingUpdatedForListing.getHearingDays().stream()
                         .map(this::buildHearingDay)
                         .collect(toList()))
-                .withHearingLanguage(HearingLanguage.valueFor(hearingUpdatedForListing.getHearingLanguage().toString()))
+                .withHearingLanguage(HearingLanguage.valueFor(hearingUpdatedForListing.getHearingLanguage().toString()).orElse(null))
                 .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueFor(hearingUpdatedForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new))
                 .withCourtApplicationIds(hearingUpdatedForListing.getCourtApplicationIds())
                 .withReportingRestrictionReason(hearingUpdatedForListing.getReportingRestrictionReason())

@@ -32,9 +32,9 @@ public class ReportingRestrictionConverterTest {
 
         assertNotNull(reportingRestrictionDomain);
         assertThat(reportingRestrictionDomain.getId(), is(reportingRestrictionCourts.getId()));
-        assertThat(reportingRestrictionDomain.getJudicialResultId(), is(reportingRestrictionCourts.getJudicialResultId()));
+        assertThat(reportingRestrictionDomain.getJudicialResultId().get(), is(reportingRestrictionCourts.getJudicialResultId()));
         assertThat(reportingRestrictionDomain.getLabel(), is(reportingRestrictionCourts.getLabel()));
-        assertThat(reportingRestrictionDomain.getOrderedDate().get().toString(), is(reportingRestrictionCourts.getOrderedDate().get()));
+        assertThat(reportingRestrictionDomain.getOrderedDate().get().toString(), is(reportingRestrictionCourts.getOrderedDate()));
     }
 
     @Test
@@ -45,9 +45,9 @@ public class ReportingRestrictionConverterTest {
 
         assertNotNull(reportingRestrictionDomain);
         assertThat(reportingRestrictionDomain.getId(), is(reportingRestrictionEvents.getId()));
-        assertThat(reportingRestrictionDomain.getJudicialResultId(), is(reportingRestrictionEvents.getJudicialResultId()));
+        assertThat(reportingRestrictionDomain.getJudicialResultId().get(), is(reportingRestrictionEvents.getJudicialResultId()));
         assertThat(reportingRestrictionDomain.getLabel(), is(reportingRestrictionEvents.getLabel()));
-        assertThat(reportingRestrictionDomain.getOrderedDate().get(), is(reportingRestrictionEvents.getOrderedDate().get()));
+        assertThat(reportingRestrictionDomain.getOrderedDate().get(), is(reportingRestrictionEvents.getOrderedDate()));
     }
 
     @Test
@@ -58,9 +58,9 @@ public class ReportingRestrictionConverterTest {
 
         assertNotNull(reportingRestrictionEvents);
         assertThat(reportingRestrictionEvents.getId(), is(reportingRestrictionDomain.getId()));
-        assertThat(reportingRestrictionEvents.getJudicialResultId(), is(reportingRestrictionDomain.getJudicialResultId()));
+        assertThat(reportingRestrictionEvents.getJudicialResultId(), is(reportingRestrictionDomain.getJudicialResultId().get()));
         assertThat(reportingRestrictionEvents.getLabel(), is(reportingRestrictionDomain.getLabel()));
-        assertThat(reportingRestrictionEvents.getOrderedDate().get(), is(reportingRestrictionDomain.getOrderedDate().get()));
+        assertThat(reportingRestrictionEvents.getOrderedDate(), is(reportingRestrictionDomain.getOrderedDate().get()));
     }
 
     @Test
@@ -73,7 +73,7 @@ public class ReportingRestrictionConverterTest {
         assertThat(reportingRestrictionEvents.getId(), is(reportingRestrictionCourts.getId()));
         assertThat(reportingRestrictionEvents.getJudicialResultId(), is(reportingRestrictionCourts.getJudicialResultId()));
         assertThat(reportingRestrictionEvents.getLabel(), is(reportingRestrictionCourts.getLabel()));
-        assertThat(reportingRestrictionEvents.getOrderedDate().get().toString(), is(reportingRestrictionCourts.getOrderedDate().get()));
+        assertThat(reportingRestrictionEvents.getOrderedDate().toString(), is(reportingRestrictionCourts.getOrderedDate()));
     }
 
     @Test
@@ -89,9 +89,9 @@ public class ReportingRestrictionConverterTest {
         final ReportingRestriction reportingRestrictionDomain = reportingRestrictionDomainList.get(0);
 
         assertThat(reportingRestrictionDomain.getId(), is(reportingRestrictionEvents.getId()));
-        assertThat(reportingRestrictionDomain.getJudicialResultId(), is(reportingRestrictionEvents.getJudicialResultId()));
+        assertThat(reportingRestrictionDomain.getJudicialResultId().get(), is(reportingRestrictionEvents.getJudicialResultId()));
         assertThat(reportingRestrictionDomain.getLabel(), is(reportingRestrictionEvents.getLabel()));
-        assertThat(reportingRestrictionDomain.getOrderedDate().get(), is(reportingRestrictionEvents.getOrderedDate().get()));
+        assertThat(reportingRestrictionDomain.getOrderedDate().get(), is(reportingRestrictionEvents.getOrderedDate()));
     }
 
     private uk.gov.justice.core.courts.ReportingRestriction getCourtsRRObject() {

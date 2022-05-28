@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.toList;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasSize;
@@ -94,6 +95,7 @@ import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListing;
 import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.CaseIdentifierUpdated;
+import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationToBeUpdated;
 import uk.gov.justice.listing.events.CourtListRestricted;
@@ -205,6 +207,7 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
+import uk.gov.moj.cpp.staginghmi.common.StagingHmiService;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -247,6 +250,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
 
 @SuppressWarnings({"squid:S1607"})
 @RunWith(MockitoJUnitRunner.class)
@@ -338,7 +343,9 @@ public class ListingCommandHandlerTest {
     private static final List NON_DEFAULT_DAYS = Collections.EMPTY_LIST;
     private static final String EARLIEST_START_TIME = "2012-12-12T01:02:33Z";
     private static final String LISTED_START_TIME = "2020-07-01T10:00:00Z";
-
+    private static final String BOOKING_TYPE = "Video";
+    private static final String PRIORITY = "High";
+    private static final List<String> SPECIAL_REQUIREMENTS = Arrays.asList("RVC", "GSN");
 
     private static final UUID JUDICIAL_ID_1 = randomUUID();
     private static final UUID JUDICIAL_ID_2 = randomUUID();
@@ -504,6 +511,8 @@ public class ListingCommandHandlerTest {
     private CourtCentreFactory courtCentreFactory;
     @Mock
     private RotaSLServiceAdapter rotaSLServiceAdapter;
+    @Mock
+    private StagingHmiService stagingHmiService;
     @Spy
     private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CourtListExportRequested.class,
             HearingCounselModified.class);
@@ -535,7 +544,7 @@ public class ListingCommandHandlerTest {
                 CourtApplicationAddedToHearing.class, CourtApplicationToBeUpdated.class, CourtListRestricted.class, CaseEjected.class, ApplicationEjected.class,
                 PublishCourtListExportFailed.class, PublishCourtListExportSuccessful.class, RecordCourtListProduced.class,
                 PublishedCourtListStored.class, TrialVacated.class, HearingRescheduled.class, PublicListNoteChangedForHearing.class,
-                CancelHearingDays.class, VideoLinkDetailsChangedForHearing.class, VideoLinkDetailsRemovedForHearing.class, VideoLinkDetailsAssignedForHearing.class, CancelHearingDays.class, CaseIdentifierUpdated.class);
+                CancelHearingDays.class, VideoLinkDetailsChangedForHearing.class, VideoLinkDetailsRemovedForHearing.class, VideoLinkDetailsAssignedForHearing.class, CancelHearingDays.class, CaseIdentifierUpdated.class, CasesAddedToHearing.class);
 
         setField(this.extendHearingUtils, "prosecutionCasesBuilder", prosecutionCasesBuilder);
 
@@ -543,6 +552,7 @@ public class ListingCommandHandlerTest {
         givenEventStream(eventStream, aCase, Case.class);
         givenEventStream(eventStream, hearing, Hearing.class);
         givenEventStream(eventStream, anApplication, Application.class);
+
     }
 
     @Test
@@ -573,14 +583,15 @@ public class ListingCommandHandlerTest {
         when(hearing.list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(NON_DEFAULT_DAYS), eq(false))).thenReturn(events);
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(NON_DEFAULT_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS))).thenReturn(events);
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(NON_DEFAULT_DAYS), eq(false));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(NON_DEFAULT_DAYS), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS));
 
     }
 
@@ -623,17 +634,18 @@ public class ListingCommandHandlerTest {
         when(eventSource.getStreamById(HEARING_ID_1)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
         when(hearing.list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(nonDefaultDays), eq(true))).thenReturn(events);
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(nonDefaultDays), eq(true), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(nonDefaultDays), eq(true));
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(nonDefaultDays), eq(true), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS));
 
     }
 
@@ -676,17 +688,18 @@ public class ListingCommandHandlerTest {
         when(referenceDataService.getAllCourtRooms(commandEnvelope)).thenReturn(responseEnvelope);
         when(provisionalBookingService.getSlots(any())).thenReturn(Response.ok(createResponseForProvisonalBookSlot()).build());
         when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
         when(hearing.list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(empty()),
-                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(nonDefaultDays), eq(true))).thenReturn(events);
+                eq(of(WEEK_COMMENCING_START_DATE)), eq(of(WEEK_COMMENCING_END_DATE)), eq(of(WEEK_COMMENCING_DURATION)), eq(nonDefaultDays), eq(true), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS))).thenReturn(events);
 
         listingCommandHandler.listCourtHearing(commandEnvelope);
 
         verify(hearing).list(eq(HEARING_ID_1), eq(HEARING_TYPE), eq(INITIAL_ESTIMATE_MINUTES), eq(listedCases), eq(COURT_CENTRE_ID), eq(judicialRoles),
                 eq(COURT_ROOM_ID), eq(LISTING_DIRECTIONS), eq(JURISDICTION_TYPE), eq(PROSECUTOR_DATES_TO_AVOID), eq(REPORTING_RESTRICTIONS),
                 eq(parse(LISTED_START_TIME)), eq(endDate), eq(courtCentreDefaults), eq(courtApplications), eq(courtApplicationPartyListingNeeds), eq(30), eq(empty()),
-                eq(empty()), eq(empty()), eq(empty()), eq(nonDefaultDays), eq(false));
+                eq(empty()), eq(empty()), eq(empty()), eq(nonDefaultDays), eq(false), eq(BOOKING_TYPE), eq(PRIORITY), eq(SPECIAL_REQUIREMENTS));
 
     }
 
@@ -749,11 +762,13 @@ public class ListingCommandHandlerTest {
         final JsonEnvelope commandEnvelope = changeJudiciaryForHearingsCommandEnvelope();
         when(hearing.assignJudiciary(any(), eq(HEARING_ID_1))).thenReturn(events);
         when(hearing.assignJudiciary(any(), eq(HEARING_ID_2))).thenReturn(events);
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
 
         listingCommandHandler.changeJudiciaryForHearings(commandEnvelope);
 
         verify(hearing, atLeast(2)).assignJudiciary(judicialRoleCaptor.capture(), hearingIdCaptor.capture());
         verify(hearing, times(2)).applyAllocationRules(Collections.emptyList());
+        verify(hearing, times(2)).raiseUpdateHearingInStagingHmi(any(Stream.class));
 
         final List<List<JudicialRole>> judicialRoleArguments = judicialRoleCaptor.getAllValues();
 
@@ -847,6 +862,8 @@ public class ListingCommandHandlerTest {
         verify(hearing).removeWeekCommencingDates(HEARING_ID_1);
         verify(hearing).assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1);
         verify(hearing).assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1);
+        verify(hearing).updateHmiFields(HEARING_ID_1, "Video", "High", Arrays.asList("RVC", "GSN"));
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
     }
 
     @Test
@@ -885,15 +902,15 @@ public class ListingCommandHandlerTest {
                 .stream()
                 .map(JsonObject.class::cast)
                 .forEach(judiciaryJsonObject ->
-                    judicialRoles.add(JudicialRole.judicialRole()
-                            .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
-                            .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
-                            .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("judiciaryId")))
-                            .withJudicialRoleType(
-                                    JudicialRoleType.judicialRoleType()
-                                            .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))
-                                            .build())
-                            .build())
+                        judicialRoles.add(JudicialRole.judicialRole()
+                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
+                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
+                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("judiciaryId")))
+                                .withJudicialRoleType(
+                                        JudicialRoleType.judicialRoleType()
+                                                .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))
+                                                .build())
+                                .build())
                 );
 
 
@@ -941,6 +958,100 @@ public class ListingCommandHandlerTest {
         verify(hearing).assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1);
         verify(courtCentreFactory).getOrganisationUnit(COURT_CENTRE_ID, commandEnvelope);
         verify(rotaSLServiceAdapter).getJudicialRoles(anyString(), anyString(), any(), anyString());
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
+    }
+
+    @Test
+    public void listingCommandHandlerShouldUpdateHearingForListingWithoutJudiciariesOnMagistratesAndShouldNotCallRotaForHmiEnabled() throws Exception {
+        final JsonEnvelope commandEnvelope = updateHearingForListingWithoutJudiciariesCommandEnvelope();
+        final UpdateHearingForListingEnriched updateHearingForListingEnriched = jsonObjectConverter.convert(commandEnvelope.payloadAsJsonObject(), UpdateHearingForListingEnriched.class);
+        final CourtCentre defaultCourtCentre = CourtCentre.courtCentre().withId(COURT_CENTRE_ID).withRoomId(COURT_ROOM_ID).build();
+
+        final List<NonDefaultDay> nonDefaultDays = Stream.of(NonDefaultDay.nonDefaultDay()
+                        .withStartTime(parse(NON_DEFAULT_DAY).withZoneSameInstant(ZoneId.of("UTC")))
+                        .withDuration(of(SLOT_DURATION))
+                        .withCourtScheduleId(of(COURT_SCHEDULE_ID_1).map(UUID::toString))
+                        .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
+                        .withOucode(of(SLOT_OUCODE))
+                        .withSession(of(SLOT_SESSION))
+                        .withCourtCentreId(of(COURT_CENTRE_ID).map(UUID::toString))
+                        .withRoomId(of(COURT_ROOM_ID).map(UUID::toString))
+                        .build(),
+                NonDefaultDay.nonDefaultDay()
+                        .withStartTime(parse(NON_DEFAULT_DAY_PM).withZoneSameInstant(ZoneId.of("UTC")))
+                        .withDuration(of(SLOT_DURATION))
+                        .withCourtScheduleId(of(COURT_SCHEDULE_ID_2).map(UUID::toString))
+                        .withCourtRoomId(of(SLOT_COURT_ROOM_ID))
+                        .withOucode(of(SLOT_OUCODE))
+                        .withSession(of(SLOT_SESSION_PM))
+                        .withCourtCentreId(of(COURT_CENTRE_ID).map(UUID::toString))
+                        .withRoomId(of(COURT_ROOM_ID_1).map(UUID::toString))
+                        .build()).collect(toList());
+
+        final JsonObject hearingSlotsResponse = givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
+
+        final List<JudicialRole> judicialRoles = new ArrayList<>();
+        ((JsonObject) hearingSlotsResponse
+                .getJsonArray("hearingSlots").get(0))
+                .getJsonArray("judiciaries")
+                .stream()
+                .map(JsonObject.class::cast)
+                .forEach(judiciaryJsonObject ->
+                        judicialRoles.add(JudicialRole.judicialRole()
+                                .withIsBenchChairman(of(judiciaryJsonObject.getBoolean("benchChairman")))
+                                .withIsDeputy(of(judiciaryJsonObject.getBoolean("deputy")))
+                                .withJudicialId(UUID.fromString(judiciaryJsonObject.getString("judiciaryId")))
+                                .withJudicialRoleType(
+                                        JudicialRoleType.judicialRoleType()
+                                                .withJudiciaryType(judiciaryJsonObject.getString("judiciaryType"))
+                                                .build())
+                                .build())
+                );
+
+
+        when(rotaSLServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(nonDefaultDayDurationBuilder.buildNewUpdateHearingForListingWithNewNonDefaultDays(any(), any())).thenReturn(updateHearingForListingEnriched.getUpdateHearingForListing());
+        when(hearing.changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignCourtRoom(COURT_ROOM_ID, HEARING_ID_1, empty())).thenReturn(mock(Stream.class));
+        when(hearing.changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignNonDefaultDays(nonDefaultDays, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.changeEndDate(LocalDate.parse(END_DATE), HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
+        when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.changeJurisdictionType(JurisdictionType.MAGISTRATES, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignJudiciary(judicialRoles, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS, nonDefaultDays,
+                LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre)).thenReturn(mock(Stream.class));
+        when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), Integer.valueOf(DEFAULT_DURATION)));
+        when(hearing.removeWeekCommencingDates(HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearingFactory.getHearingById(any(), any())).thenReturn(getSampleStoredHearing());
+        when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(stagingHmiService.isHmiListingEnabled(any(Optional.class))).thenReturn(true);
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+
+        verify(hearing).changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1);
+        verify(hearing).changeHearingLanguage(valueFor(HEARING_LANGUAGE).get(), HEARING_ID_1);
+        verify(hearing).assignNonDefaultDays(nonDefaultDays, HEARING_ID_1);
+        verify(hearing).assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1);
+        verify(hearing).changeEndDate(LocalDate.parse(END_DATE), HEARING_ID_1);
+        verify(hearing).changeStartDate(START_DATE, HEARING_ID_1);
+        verify(hearing).changeType(HEARING_TYPE, HEARING_ID_1);
+        verify(hearing).changeJurisdictionType(JurisdictionType.MAGISTRATES, HEARING_ID_1);
+        verify(hearing).applyRescheduledCheck(any());
+        verify(hearing).assignHearingDays(START_DATE, LocalDate.parse(END_DATE), NON_SITTING_DAYS1, nonDefaultDays,
+                LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);
+        verify(hearing).removeWeekCommencingDates(HEARING_ID_1);
+        verify(hearing).assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1);
+        verify(hearing).assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1);
+        verify(courtCentreFactory).getOrganisationUnit(COURT_CENTRE_ID, commandEnvelope);
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
+        verify(rotaSLServiceAdapter, never()).getPanelInfo(any(Optional.class), any(LocalDate.class), any(LocalDate.class), any(UUID.class), anyString());
+        verify(rotaSLServiceAdapter, never()).getJudicialRoles(anyString(), anyString(), any(), anyString());
     }
 
     @Test
@@ -974,7 +1085,7 @@ public class ListingCommandHandlerTest {
         when(hearing.assignNonDefaultDays(nonDefaultDays, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeEndDate(LocalDate.parse(END_DATE), HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(hearing.removeStartDate(HEARING_ID_1)).thenReturn(Stream.of());
+        when(hearing.removeStartDate(HEARING_ID_1, false)).thenReturn(Stream.of());
         when(hearing.removeEndDate(HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeType(HEARING_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1)).thenReturn(mock(Stream.class));
@@ -997,7 +1108,7 @@ public class ListingCommandHandlerTest {
         verify(hearing).assignNonDefaultDays(nonDefaultDays, HEARING_ID_1);
         verify(hearing).assignNonSittingDays(NON_SITTING_DAYS1, HEARING_ID_1);
         verify(hearing).removeEndDate(HEARING_ID_1);
-        verify(hearing).removeStartDate(HEARING_ID_1);
+        verify(hearing).removeStartDate(HEARING_ID_1, false);
         verify(hearing).changeType(HEARING_TYPE, HEARING_ID_1);
         verify(hearing).changeJurisdictionType(JURISDICTION_TYPE, HEARING_ID_1);
         verify(hearing).assignJudiciary(judicialRoles, HEARING_ID_1);
@@ -1005,6 +1116,7 @@ public class ListingCommandHandlerTest {
                 LocalTime.parse(DEFAULT_START_TIME), Integer.valueOf(DEFAULT_DURATION), HEARING_ID_1, defaultCourtCentre);
         verify(hearing).changeWeekCommencingDate(WEEK_COMMENCING_START_DATE, WEEK_COMMENCING_END_DATE, WEEK_COMMENCING_DURATION, HEARING_ID_1);
         verify(hearing).assignVideoLink(anyBoolean(), eq(HEARING_ID_1));
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
     }
 
 
@@ -1022,6 +1134,7 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
         verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
 
     }
 
@@ -1034,21 +1147,26 @@ public class ListingCommandHandlerTest {
                 .build();
         JsonEnvelope commandEnvelope = envelopeFrom(metadataBuilder().withName("listing.command.update-cps-prosecutor-with-associated-hearings").withId(randomUUID()).build(), payload);
         when(hearing.updateCaseIdentifier(any(), any(), any())).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         listingCommandHandler.updateProsecutorForAssociatedHearings(commandEnvelope);
 
         verify(hearing, times(2)).updateCaseIdentifier(any(), any(), any());
+        verify(hearing, times(2)).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     private uk.gov.justice.listing.events.Hearing getSampleStoredHearing() {
+        List<uk.gov.justice.listing.events.Offence> persistedOffenceList = new ArrayList<>();
+        persistedOffenceList.add(uk.gov.justice.listing.events.Offence.offence().withId(fromString("3789ab16-0bb7-4ef1-87ef-c936bf0364f1")).build());
+        persistedOffenceList.add(uk.gov.justice.listing.events.Offence.offence().withId(fromString("4789ab16-0bb7-4ef1-87ef-c936bf0364f2")).build());
+        persistedOffenceList.add(uk.gov.justice.listing.events.Offence.offence().withId(fromString("36606d71-a062-4877-ab9a-b434c9e48876")).build());
+
         return uk.gov.justice.listing.events.Hearing.hearing()
                 .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
                         .withId(fromString("2279b2c3-b0d3-4889-ae8e-1ecc20c39e27"))
                         .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
                                 .withId(fromString("e1d32d9d-29ec-4934-a932-22a50f223966"))
-                                .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offence.offence()
-                                        .withId(fromString("3789ab16-0bb7-4ef1-87ef-c936bf0364f1"))
-                                        .build()))
+                                .withOffences(persistedOffenceList)
                                 .build()))
                         .build()))
                 .build();
@@ -1078,8 +1196,36 @@ public class ListingCommandHandlerTest {
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
         verify(hearing, never()).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
     }
 
+    @Test
+    public void shouldRaiseAllocatedEventWithWhenPartialAllocation() throws Exception {
+        final JsonEnvelope commandEnvelope = updateHearingForListingCommandEnvelope();
+        final List<uk.gov.justice.listing.events.Offence> storedOffenceList = new ArrayList<>();
+        storedOffenceList.add(uk.gov.justice.listing.events.Offence.offence().withId(fromString("3789ab16-0bb7-4ef1-87ef-c936bf0364f1")).build());
+        storedOffenceList.add(uk.gov.justice.listing.events.Offence.offence().withId(fromString("4789ab16-0bb7-4ef1-87ef-c936bf0364f2")).build());
+        storedOffenceList.add(uk.gov.justice.listing.events.Offence.offence().withId(fromString("67c0dce9-0b85-4027-a252-a0d4a3825b77")).build());
+
+        when(hearingFactory.getHearingById(any(), any())).thenReturn(uk.gov.justice.listing.events.Hearing.hearing()
+                .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                        .withId(fromString("2279b2c3-b0d3-4889-ae8e-1ecc20c39e27"))
+                        .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                .withId(fromString("e1d32d9d-29ec-4934-a932-22a50f223966"))
+                                .withOffences(storedOffenceList)
+                                .build()))
+                        .build()))
+                .build());
+        when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
+        when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(hearing.updateUnallocatedHearingPartially(any(), any())).thenReturn(Stream.of(new Object()));
+
+        listingCommandHandler.updateHearingForListing(commandEnvelope);
+        verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
+        verify(hearing).applyAllocationRules(any(), any());
+    }
 
     @Test
     public void listingCommandHandlerShouldTriggerDefendantsToBeUpdatedEvent() throws Exception {
@@ -1133,6 +1279,8 @@ public class ListingCommandHandlerTest {
                 "      \"offenceCode\": \"H8189\",\n" +
                 "      \"offenceWording\": \"on 01/08/2009 at the county public house, unlawfully and maliciously wounded, John Smith\",\n" +
                 "      \"startDate\": \"2010-08-01\",\n" +
+                "      \"count\": 2,\n" +
+                "      \"orderIndex\": 0,\n" +
                 "      \"statementOfOffence\": {" +
                 "        \"legislation\": \"Welsh legislation\",\n" +
                 "        \"title\": \"Wounding with intent\",\n" +
@@ -1145,6 +1293,8 @@ public class ListingCommandHandlerTest {
                 "      \"offenceCode\": \"H8189\",\n" +
                 "      \"offenceWording\": \"on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Fred Smith\",\n" +
                 "      \"startDate\": \"2010-08-01\",\n" +
+                "      \"count\": 2,\n" +
+                "      \"orderIndex\": 1,\n" +
                 "      \"statementOfOffence\": {" +
                 "        " +
                 "        \"legislation\": \"Welsh legislation\",\n" +
@@ -1166,6 +1316,8 @@ public class ListingCommandHandlerTest {
                 "      \"offenceCode\": \"H8189\",\n" +
                 "      \"offenceWording\": \"on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Jack Smith\",\n" +
                 "      \"startDate\": \"2010-08-01\",\n" +
+                "      \"count\": 2,\n" +
+                "      \"orderIndex\": 0,\n" +
                 "      \"statementOfOffence\": {" +
                 "        \"legislation\": \"Welsh legislation\",\n" +
                 "        \"title\": \"Wounding with intent\",\n" +
@@ -1178,6 +1330,8 @@ public class ListingCommandHandlerTest {
                 "      \"offenceCode\": \"H8189\",\n" +
                 "      \"offenceWording\": \"on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Jack Smith\",\n" +
                 "      \"startDate\": \"2010-08-01\",\n" +
+                "      \"count\": 2,\n" +
+                "      \"orderIndex\": 1,\n" +
                 "      \"statementOfOffence\": {" +
                 "        " +
                 "        \"legislation\": \"Welsh legislation\",\n" +
@@ -1200,6 +1354,8 @@ public class ListingCommandHandlerTest {
                         "      \"offenceCode\": \"H8189\",\n" +
                         "      \"offenceWording\": \"on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Billy Smith\",\n" +
                         "      \"startDate\": \"2010-08-01\",\n" +
+                        "      \"count\": 2,\n" +
+                        "      \"orderIndex\": 0,\n" +
                         "      \"statementOfOffence\": {\n" +
                         "        \"legislation\": \"Welsh legislation\",\n" +
                         "        \"title\": \"Wounding with intent\",\n" +
@@ -1221,6 +1377,8 @@ public class ListingCommandHandlerTest {
                         "      \"offenceCode\": \"H8189\",\n" +
                         "      \"offenceWording\": \"on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Jack Smith\",\n" +
                         "      \"startDate\": \"2010-08-01\",\n" +
+                        "      \"count\": 2,\n" +
+                        "      \"orderIndex\": 0,\n" +
                         "      \"statementOfOffence\": {\n" +
                         "        \"legislation\": \"Welsh legislation\",\n" +
                         "        \"title\": \"Wounding with intent\",\n" +
@@ -1234,6 +1392,8 @@ public class ListingCommandHandlerTest {
                         "      \"offenceCode\": \"H8189\",\n" +
                         "      \"offenceWording\": \"on 01/08/2009 at the county public house, unlawfully and maliciously wounded, Jack Smith\",\n" +
                         "      \"startDate\": \"2010-08-01\",\n" +
+                        "      \"count\": 2,\n" +
+                        "      \"orderIndex\": 1,\n" +
                         "      \"statementOfOffence\": {\n" +
                         "        \"legislation\": \"Welsh legislation\",\n" +
                         "        \"title\": \"Wounding with intent\",\n" +
@@ -1289,21 +1449,25 @@ public class ListingCommandHandlerTest {
     public void listingCommandHandlerShouldTriggerDefendantDetailsUpdatedEvents() throws Exception {
         final List<Defendant> defendants = singletonList(createDomainDefendantForUpdateDefendantsForHearing());
         when(hearing.updateDefendants(eq(CASE_ID), anyObject())).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         final JsonEnvelope commandEnvelope = updateDefendantsForHearingCommandEnvelope();
 
         listingCommandHandler.updateDefendantsForHearing(commandEnvelope);
 
         verify(hearing).updateDefendants(CASE_ID, defendants);
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
     public void listingCommandHandlerShouldTriggerOffenceUpdatedEvents() throws Exception {
         when(hearing.updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         final JsonEnvelope commandEnvelope = updateOffencesForHearingCommandEnvelope();
         listingCommandHandler.updateOffencesForHearing(commandEnvelope);
 
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
         verify(hearing, atMost(1)).updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), domainOffencesCaptor.capture());
 
         final List<Offence> capturedDomainOffences = domainOffencesCaptor.getValue();
@@ -1315,6 +1479,8 @@ public class ListingCommandHandlerTest {
                         "    \"id\": \"" + UPDATED_OFFENCE_ID1 + "\",\n" +
                         "    \"offenceCode\": \"H8189\",\n" +
                         "    \"startDate\": \"2010-08-01\",\n" +
+                        "    \"count\": 1,\n" +
+                        "    \"orderIndex\": 0,\n" +
                         "    \"statementOfOffence\": {\n" +
                         "      \"legislation\": \"Welsh legislation\",\n" +
                         "      \"title\": \"Wounding with intent\",\n" +
@@ -1327,6 +1493,8 @@ public class ListingCommandHandlerTest {
                         "    \"id\": \"" + UPDATED_OFFENCE_ID2 + "\",\n" +
                         "    \"offenceCode\": \"H8189X\",\n" +
                         "    \"startDate\": \"2010-08-10\",\n" +
+                        "    \"count\": 1,\n" +
+                        "    \"orderIndex\": 0,\n" +
                         "    \"statementOfOffence\": {\n" +
                         "      \"legislation\": \"Welsh legislation2\",\n" +
                         "      \"title\": \"Wounding with intent2\",\n" +
@@ -1343,10 +1511,11 @@ public class ListingCommandHandlerTest {
     public void listingCommandHandlerShouldTriggerOffenceDeletedEvents() throws Exception {
 
         when(hearing.deleteOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(SimpleOffence.class))).thenReturn(mock(Stream.class));
-
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenAnswer(i -> i.getArguments()[0]);
         final JsonEnvelope commandEnvelope = deleteOffencesForHearingCommandEnvelope();
         listingCommandHandler.deleteOffencesForHearing(commandEnvelope);
 
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
         verify(hearing, atMost(1)).deleteOffences(eq(CASE_ID), eq(DEFENDANT_ID1), domainSimpleOffencesCaptor.capture());
 
         final List<SimpleOffence> capturedDomainOffences = domainSimpleOffencesCaptor.getValue();
@@ -1373,10 +1542,12 @@ public class ListingCommandHandlerTest {
         final CourtApplication courtApplication = getNewCourtApplication();
 
         when(hearing.addCourtApplication(HEARING_ID_1, courtApplication)).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         listingCommandHandler.addCourtApplicationForHearing(commandEnvelope);
 
         verify(hearing).addCourtApplication(HEARING_ID_1, courtApplication);
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
 
         verify(hearing).addCourtApplication(hearingIdCaptor.capture(), courtApplicationCaptor.capture());
         final CourtApplication courtApplicationArguments = courtApplicationCaptor.getValue();
@@ -1394,10 +1565,12 @@ public class ListingCommandHandlerTest {
     @Test
     public void listingCommandHandlerShouldTriggerOffenceAddedEvents() throws Exception {
         when(hearing.addOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         final JsonEnvelope commandEnvelope = addOffencesForHearingCommandEnvelope();
         listingCommandHandler.addOffencesForHearing(commandEnvelope);
 
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
         verify(hearing, atMost(1)).addOffences(eq(CASE_ID), eq(DEFENDANT_ID1), domainOffencesCaptor.capture());
 
         final List<Offence> capturedDomainOffences = domainOffencesCaptor.getValue();
@@ -1409,6 +1582,8 @@ public class ListingCommandHandlerTest {
                         "    \"id\": \"" + UPDATED_OFFENCE_ID1 + "\",\n" +
                         "    \"offenceCode\": \"H8189\",\n" +
                         "    \"startDate\": \"2010-08-01\",\n" +
+                        "    \"count\": 2,\n" +
+                        "    \"orderIndex\": 0,\n" +
                         "    \"statementOfOffence\": {\n" +
                         "      \"legislation\": \"Welsh legislation\",\n" +
                         "      \"title\": \"Wounding with intent\",\n" +
@@ -1421,6 +1596,8 @@ public class ListingCommandHandlerTest {
                         "    \"id\": \"" + UPDATED_OFFENCE_ID2 + "\",\n" +
                         "    \"offenceCode\": \"H8189X\",\n" +
                         "    \"startDate\": \"2010-08-10\",\n" +
+                        "    \"count\": 2,\n" +
+                        "    \"orderIndex\": 1,\n" +
                         "    \"statementOfOffence\": {\n" +
                         "      \"legislation\": \"Welsh legislation2\",\n" +
                         "      \"title\": \"Wounding with intent2\",\n" +
@@ -1482,8 +1659,11 @@ public class ListingCommandHandlerTest {
 
         when(hearing.sequenceHearingDays(sequenceHearing)).thenReturn(Stream.of(HearingDaysSequenced.hearingDaysSequenced().build()));
         when(hearing.applyAllocationRules(anyList())).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
+
         listingCommandHandler.sequenceHearings(commandEnvelope);
         verify(hearing).sequenceHearingDays(sequenceHearing);
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
@@ -1493,8 +1673,11 @@ public class ListingCommandHandlerTest {
         final CourtApplication courtApplication = getCourtApplication();
 
         when(hearing.updateCourtApplication(any(), any())).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
+
         listingCommandHandler.updateCourtApplicationForHearings(commandEnvelope);
 
+        verify(hearing, times(2)).raiseUpdateHearingInStagingHmi(any(Stream.class));
         verify(hearing).updateCourtApplication(HEARING_ID_1, courtApplication);
         verify(hearing, times(1)).updateCourtApplication(HEARING_ID_1, courtApplication);
         verify(hearing).updateCourtApplication(HEARING_ID_2, courtApplication);
@@ -1689,6 +1872,7 @@ public class ListingCommandHandlerTest {
         final List<Defendant> defendants = singletonList(createDomainDefendantForUpdateDefendantsForHearing());
 
         when(hearing.addDefendantsForCourtProceedings(eq(CASE_ID), anyObject())).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         final JsonEnvelope commandEnvelope = addDefendantsForHearingCommandEnvelope();
 
@@ -1701,14 +1885,18 @@ public class ListingCommandHandlerTest {
         Assert.assertThat(CASE_ID, Matchers.is(caseIdCaptor.getValue()));
         final List<Defendant> actualDefendantList = defendantListCaptor.getValue();
         Assert.assertThat(actualDefendantList, Matchers.is(defendants));
+
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
     public void listingCommandHandlerShouldTriggerOffenceUpdatedEventsForLaa() throws Exception {
         when(hearing.updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
         final JsonEnvelope commandEnvelope = updateOffencesWithLaaForHearingCommandEnvelope();
         listingCommandHandler.updateOffencesForHearing(commandEnvelope);
 
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
         verify(hearing, atMost(1)).updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), domainOffencesCaptor.capture());
 
         final List<Offence> capturedDomainOffences = domainOffencesCaptor.getValue();
@@ -1720,6 +1908,8 @@ public class ListingCommandHandlerTest {
                         "    \"id\": \"" + UPDATED_OFFENCE_ID1 + "\",\n" +
                         "    \"offenceCode\": \"H8189\",\n" +
                         "    \"startDate\": \"2010-08-01\",\n" +
+                        "    \"count\": 2,\n" +
+                        "    \"orderIndex\": 0,\n" +
                         "    \"statementOfOffence\": {\n" +
                         "      \"legislation\": \"Welsh legislation\",\n" +
                         "      \"title\": \"Wounding with intent\",\n" +
@@ -1740,6 +1930,8 @@ public class ListingCommandHandlerTest {
                         "    \"id\": \"" + UPDATED_OFFENCE_ID2 + "\",\n" +
                         "    \"offenceCode\": \"H8189X\",\n" +
                         "    \"startDate\": \"2010-08-10\",\n" +
+                        "    \"count\": 2,\n" +
+                        "    \"orderIndex\": 1,\n" +
                         "    \"statementOfOffence\": {\n" +
                         "      \"legislation\": \"Welsh legislation2\",\n" +
                         "      \"title\": \"Wounding with intent2\",\n" +
@@ -1795,10 +1987,10 @@ public class ListingCommandHandlerTest {
     public void shouldUpdateDefendantHearingResultedAndCaseResulted() throws EventStreamException {
         final UUID caseId = randomUUID();
         final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase()
-                .withCaseStatus(of("CASE_CLOSED"))
+                .withCaseStatus("CASE_CLOSED")
                 .withId(caseId)
                 .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
-                        .withProceedingsConcluded(Optional.of(Boolean.TRUE))
+                        .withProceedingsConcluded(true)
                         .build()))
                 .build();
         final JsonObject commandPayload = Json.createObjectBuilder()
@@ -1815,10 +2007,10 @@ public class ListingCommandHandlerTest {
     @Test
     public void shouldUpdateDefendantCourtProceedings() throws EventStreamException {
         final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase()
-                .withCaseStatus(of("CASE_CLOSED"))
+                .withCaseStatus("CASE_CLOSED")
                 .withId(CASE_ID)
                 .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
-                        .withProceedingsConcluded(Optional.of(Boolean.TRUE))
+                        .withProceedingsConcluded(true)
                         .build()))
                 .build();
         final JsonObject commandPayload = Json.createObjectBuilder()
@@ -1828,12 +2020,14 @@ public class ListingCommandHandlerTest {
         final JsonEnvelope envelope = envelopeFrom(metadataWithRandomUUID("listing.command.update-defendant-court-proceedings"), commandPayload);
 
         when(hearing.updateDefendantCourtProceedingForHearing(HEARING_ID_1, prosecutionCase)).thenReturn((mock(Stream.class)));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         given(jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject("prosecutionCase"), ProsecutionCase.class)).willReturn(prosecutionCase);
 
         listingCommandHandler.updateDefendantCourtProceedings(envelope);
 
         verify(hearing).updateDefendantCourtProceedingForHearing(HEARING_ID_1, prosecutionCase);
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
@@ -2029,6 +2223,8 @@ public class ListingCommandHandlerTest {
         doReturn(allocatedHearing).doReturn(unAllocatedHearing).when(hearingFactory)
                 .getHearingById(any(UUID.class), any(JsonEnvelope.class));
 
+        when(hearing.applyAllocationRulesForExtendedHearing(any(), anyBoolean())).thenReturn(Stream.of(new Object()));
+
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
@@ -2049,10 +2245,45 @@ public class ListingCommandHandlerTest {
         doReturn(allocatedHearing).doReturn(unAllocatedHearing).when(hearingFactory)
                 .getHearingById(any(UUID.class), any(JsonEnvelope.class));
 
+        when(hearing.applyAllocationRulesForExtendedHearing(any(), anyBoolean())).thenReturn(Stream.of(new Object()));
+
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
         verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class));
+    }
+
+    @Test
+    public void shouldAmendUnAllocatedHearingToUpdateDefendantOrOffenceWhenAddingDefendantToTheExistingProsecutionCase() throws Exception {
+        final UUID hearingID1 = randomUUID();
+        final UUID hearingID2 = randomUUID();
+        final UUID prosecutionCaseId = randomUUID();
+
+        final JsonEnvelope commandEnvelope = getEnvelopeForExtendPartialHearing(ALLOCATED_HEARING_ID.toString(),
+                UNALLOCATED_HEARING_ID.toString(),
+                CASE_ID1.toString(),
+                CASE_ID2.toString(),
+                DEF_ID1.toString(),
+                DEF_ID2.toString(),
+                DEF_ID3.toString(),
+                OFF_ID1.toString(),
+                OFF_ID2.toString(),
+                OFF_ID3.toString(),
+                OFF_ID4.toString());
+
+        final uk.gov.justice.listing.events.Hearing allocatedHearing = extendHearingHelper.getAllocatedHearingById(hearingID1, prosecutionCaseId, getCaseUrn());
+        final uk.gov.justice.listing.events.Hearing unAllocatedHearing = extendHearingHelper.getUnAllocatedHearingById(hearingID2, prosecutionCaseId, getCaseUrn());
+
+        doReturn(allocatedHearing).doReturn(unAllocatedHearing).when(hearingFactory)
+                .getHearingById(any(UUID.class), any(JsonEnvelope.class));
+
+        when(hearing.applyAllocationRulesForExtendedHearing(any(), anyBoolean())).thenReturn(Stream.empty());
+        when(hearing.addCasesToUnAllocatedHearing(any(), any())).thenReturn(Stream.empty());
+
+        listingCommandHandler.extendHearingForHearing(commandEnvelope);
+
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), anyBoolean());
+        verify(hearing, times(1)).addCasesToUnAllocatedHearing(any(), any());
     }
 
     @Test
@@ -2115,6 +2346,8 @@ public class ListingCommandHandlerTest {
     public void shouldRemovePartiallyMergedOffencesFromOriginalHearing() throws EventStreamException {
         final UUID hearingIdToBeUpdated = randomUUID();
 
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
+
         final JsonObject payload = Json.createObjectBuilder()
                 .add("hearingIdToBeUpdated", hearingIdToBeUpdated.toString())
                 .add("prosecutionCasesToRemove", createArrayBuilder())
@@ -2124,6 +2357,7 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.handleRemovePartiallyMergedOffencesFromOriginalHearing(commandEnvelope);
 
         verify(hearing, times(1)).updateUnallocatedHearingPartially(hearingIdToBeUpdated, Collections.emptyList());
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
@@ -2147,10 +2381,12 @@ public class ListingCommandHandlerTest {
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.vacateTrial(HEARING_ID_1, REASON)).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         listingCommandHandler.vacateTrial(commandEnvelope);
 
         verify(hearing, times(1)).vacateTrial(HEARING_ID_1, REASON);
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
@@ -2158,10 +2394,12 @@ public class ListingCommandHandlerTest {
         final JsonEnvelope commandEnvelope = getEnvelopeForHearingVacateTrial(REASON);
 
         when(hearing.hearingVacateTrial(of(REASON))).thenReturn(events);
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
 
         listingCommandHandler.hearingVacateTrial(commandEnvelope);
 
         verify(hearing).hearingVacateTrial(of(REASON));
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
@@ -2169,19 +2407,24 @@ public class ListingCommandHandlerTest {
         final JsonEnvelope commandEnvelope = getEnvelopeForHearingVacateTrialWithoutReason();
 
         when(hearing.hearingVacateTrial(empty())).thenReturn(events);
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
+
         listingCommandHandler.hearingVacateTrial(commandEnvelope);
 
         verify(hearing).hearingVacateTrial(empty());
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
     public void shouldCancelHearingDaysWhenMultipleHearingDaysRequested() throws Exception {
         final Envelope<CancelHearingDays> envelope = getEnvelopeForCancelHearingDays();
         when(hearing.cancelHearingDays(any(UUID.class), anyListOf(uk.gov.justice.listing.events.HearingDay.class))).thenReturn(events);
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
 
         listingCommandHandler.cancelHearingDays(envelope);
 
         // then
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
         verify(hearing).cancelHearingDays(eq(envelope.payload().getHearingId()), cancelHearingDaysCaptor.capture());
         final List<uk.gov.justice.listing.events.HearingDay> hearingDays = cancelHearingDaysCaptor.getValue();
         assertThat(hearingDays, hasSize(3));
@@ -2189,28 +2432,30 @@ public class ListingCommandHandlerTest {
         assertThat(hearingDays.get(0).getSequence(), is(0));
         assertThat(hearingDays.get(0).getDurationMinutes(), is(30));
         assertThat(ZonedDateTimes.toString(hearingDays.get(0).getStartTime()), is("2020-08-18T01:22:12.381Z"));
-        assertThat(hearingDays.get(0).getIsCancelled().isPresent(), is(false));
+        assertThat(hearingDays.get(0).getIsCancelled(), nullValue());
 
         assertThat(LocalDates.to(hearingDays.get(1).getHearingDate()), is("2020-08-19"));
         assertThat(hearingDays.get(1).getSequence(), is(1));
         assertThat(hearingDays.get(1).getDurationMinutes(), is(10));
         assertThat(ZonedDateTimes.toString(hearingDays.get(1).getStartTime()), is("2020-08-19T01:22:12.381Z"));
-        assertThat(hearingDays.get(1).getIsCancelled().orElse(null), is(false));
+        assertThat(hearingDays.get(1).getIsCancelled(), is(false));
 
         assertThat(LocalDates.to(hearingDays.get(2).getHearingDate()), is("2020-08-20"));
         assertThat(hearingDays.get(2).getSequence(), is(1));
         assertThat(hearingDays.get(2).getDurationMinutes(), is(20));
         assertThat(ZonedDateTimes.toString(hearingDays.get(2).getStartTime()), is("2020-08-20T02:22:12.381Z"));
-        assertThat(hearingDays.get(2).getIsCancelled().orElse(null), is(true));
+        assertThat(hearingDays.get(2).getIsCancelled(), is(true));
     }
 
     @Test
     public void handleAddCasesForHearing() throws Exception {
         final JsonEnvelope commandEnvelope = getJsonEnvelopeForAddCaseForHearing();
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         listingCommandHandler.handleAddCasesToHearing(commandEnvelope);
 
         verify(hearing, times(1)).addCasesToHearing(any(List.class), anyList(), any());
+        verify(hearing, times(1)).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     private JsonEnvelope getEnvelopeForVacateTrial(final UUID reason) {
@@ -3145,7 +3390,7 @@ public class ListingCommandHandlerTest {
                 .withCourtProceedingsInitiated(Optional.of(ZonedDateTimes.fromString("2020-03-05T14:24:03.148Z").withZoneSameInstant(ZoneId.of("UTC"))))
                 .withOrganisationName(empty())
                 .withSpecificRequirements(of("Screen"))
-                .withIsYouth(of(Boolean.FALSE))
+                .withIsYouth(empty())
                 .withNationalityDescription(empty())
                 .withAddress(of(Address
                         .address()
@@ -3161,6 +3406,8 @@ public class ListingCommandHandlerTest {
                         .withOffenceCode("AAA")
                         .withStartDate("2018-01-01")
                         .withEndDate(of("2018-01-01"))
+                        .withCount(1)
+                        .withOrderIndex(0)
                         .withLaidDate(Optional.of("2019-05-01"))
                         .withOffenceWording("No Travel Card")
                         .withLaaApplnReference(empty())
@@ -3222,6 +3469,8 @@ public class ListingCommandHandlerTest {
                         .withEndDate(empty())
                         .withLaaApplnReference(empty())
                         .withLaidDate(Optional.of("2019-05-01"))
+                        .withCount(1)
+                        .withOrderIndex(0)
                         .withSeedingHearing(empty())
                         .withStatementOfOffence(StatementOfOffence.statementOfOffence()
                                 .withWelshTitle("TFL Ticket Dodger")
@@ -3287,10 +3536,12 @@ public class ListingCommandHandlerTest {
     @Test
     public void listingCommandHandlerShouldTriggerOffenceAddedEventsWithCustodyTimeLimitData() throws Exception {
         when(hearing.addOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         final JsonEnvelope commandEnvelope = addOffencesForHearingCommandEnvelopeWithCustodyTimeLimit();
         listingCommandHandler.addOffencesForHearing(commandEnvelope);
 
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
         verify(hearing, atMost(1)).addOffences(eq(CASE_ID), eq(DEFENDANT_ID1), domainOffencesCaptor.capture());
 
         final List<Offence> capturedDomainOffences = domainOffencesCaptor.getValue();
@@ -3301,6 +3552,8 @@ public class ListingCommandHandlerTest {
                         "    \"endDate\": \"2011-08-01\",\n" +
                         "    \"id\": \"" + UPDATED_OFFENCE_ID1 + "\",\n" +
                         "    \"offenceCode\": \"H8189\",\n" +
+                        "    \"count\": 2,\n" +
+                        "    \"orderIndex\": 0,\n" +
                         "    \"startDate\": \"2010-08-01\",\n" +
                         "    \"statementOfOffence\": {\n" +
                         "      \"legislation\": \"Welsh legislation\",\n" +
@@ -3317,6 +3570,8 @@ public class ListingCommandHandlerTest {
                         "    \"endDate\": \"2011-08-20\",\n" +
                         "    \"id\": \"" + UPDATED_OFFENCE_ID2 + "\",\n" +
                         "    \"offenceCode\": \"H8189X\",\n" +
+                        "    \"count\": 2,\n" +
+                        "    \"orderIndex\": 1,\n" +
                         "    \"startDate\": \"2010-08-10\",\n" +
                         "    \"statementOfOffence\": {\n" +
                         "      \"legislation\": \"Welsh legislation2\",\n" +
@@ -3434,7 +3689,13 @@ public class ListingCommandHandlerTest {
 
         final JsonEnvelope commandEnvelope = envelopeFrom(metadataWithRandomUUID("listing.command.correct-hearing-days-without-court-centre"), payloadToBeCorrected);
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
+
         listingCommandHandler.correctHearingDaysWithoutCourtCentre(commandEnvelope);
+
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
+
+        verify(hearing).raiseHearingDaysWithoutCourtCentreCorrected(any(), any());
 
     }
 
@@ -3551,6 +3812,7 @@ public class ListingCommandHandlerTest {
 
         when(eventSource.getStreamById(UUID.fromString(modifyHearingCounselsCommand.getString("hearingId"))))
                 .thenReturn(eventStream);
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenAnswer(i -> i.getArguments()[0]);
 
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
 

@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.listing.steps;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -11,24 +10,24 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
 import uk.gov.justice.core.courts.LaaReference;
 import uk.gov.justice.core.courts.Offence;
+import uk.gov.justice.core.courts.ReportingRestriction;
 import uk.gov.justice.progression.courts.AddedOffences;
 import uk.gov.justice.progression.courts.DeletedOffences;
 import uk.gov.justice.progression.courts.OffencesForDefendantUpdated;
 import uk.gov.justice.progression.courts.UpdatedOffences;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.core.courts.ReportingRestriction;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -42,7 +41,6 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.jms.JMSException;
@@ -194,6 +192,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
                         "          \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "          \"count\": " + offenceData.getCount() + ",\n" +
+                        "          \"orderIndex\": " + offenceData.getOrderIndex() + ",\n" +
                         "          \"offenceDefinitionId\": \"" + offenceData.getOffenceDefinitionId() + "\",\n" +
                         "          \"wording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
                         "      \"laaApplnReference\": {" +
@@ -237,6 +236,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
                         "          \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "          \"count\": " + offenceData.getCount() + ",\n" +
+                        "          \"orderIndex\": " + offenceData.getOrderIndex() + ",\n" +
                         "          \"offenceDefinitionId\": \"" + offenceData.getOffenceDefinitionId() + "\",\n" +
                         "          \"wording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
                         "      \"laaApplnReference\": {" +
@@ -527,6 +527,8 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "      \"id\": \"" + updatedOffenceData.getRandomOffenceId() + "\",\n" +
                         "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
                         "      \"offenceWording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
+                        "      \"count\": " + updatedOffenceData.getCount() + ",\n" +
+                        "      \"orderIndex\": " + updatedOffenceData.getOrderIndex() + ",\n" +
                         "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "      \"reportingRestrictions\": [\n" +
                         "      {\n" +
@@ -712,28 +714,30 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                 .withOffenceCode(updatedOffenceData.getOffenceCode())
                 .withStartDate(updatedOffenceData.getStartDate().toString())
                 .withWording(updatedOffenceData.getOffenceWording())
-                .withEndDate(of(updatedOffenceData.getEndDate().toString()))
+                .withEndDate(updatedOffenceData.getEndDate().toString())
                 .withOffenceTitle(updatedOffenceData.getStatementOfOffenceTitle())
-                .withOffenceTitleWelsh(of(updatedOffenceData.getStatementOfOffenceTitleWelsh()))
+                .withOffenceTitleWelsh(updatedOffenceData.getStatementOfOffenceTitleWelsh())
                 .withWording(updatedOffenceData.getOffenceWording())
-                .withOffenceLegislation(of(updatedOffenceData.getLegislation()))
-                .withOffenceLegislationWelsh(of(updatedOffenceData.getLegislationWelsh()))
-                .withCount(Optional.of(offenceData.getCount()))
+                .withOffenceLegislation(updatedOffenceData.getLegislation())
+                .withOffenceLegislationWelsh(updatedOffenceData.getLegislationWelsh())
+                .withCount(offenceData.getCount())
+                .withOrderIndex(offenceData.getOrderIndex())
+                .withOffenceLegislation(offenceData.getOffenceLegislation())
                 .withOffenceDefinitionId(offenceData.getOffenceDefinitionId())
-                .withLaaApplnReference((buildLaaReference(updatedOffenceData.getLaaReferences().get())))
+                .withLaaApplnReference(buildLaaReference(updatedOffenceData.getLaaReferences().get()))
                 .withReportingRestrictions(buildReportingRestriction(updatedOffenceData.getReportingRestriction()))
                 .build();
     }
 
-    private Optional<LaaReference> buildLaaReference(LaaReferenceData laaReferenceData) {
+    private LaaReference buildLaaReference(LaaReferenceData laaReferenceData) {
 
-        return Optional.ofNullable(LaaReference.laaReference()
+        return LaaReference.laaReference()
                 .withStatusCode(laaReferenceData.getStatusCode())
                 .withStatusDescription(laaReferenceData.getStatusDescription())
                 .withStatusId(laaReferenceData.getStatusId())
                 .withStatusDate(String.valueOf((laaReferenceData.getStatusDate())))
                 .withApplicationReference(laaReferenceData.getApplicationReference())
-                .build());
+                .build();
     }
 
     private List<ReportingRestriction> buildReportingRestriction(final List<ReportingRestrictionData> reportingRestrictionDataList) {
@@ -742,7 +746,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                 .forEach(reportingRestrictionData -> reportingRestrictions.add(ReportingRestriction.reportingRestriction()
                         .withId(reportingRestrictionData.getId())
                         .withLabel(reportingRestrictionData.getLabel())
-                        .withJudicialResultId(reportingRestrictionData.getJudicialResultId())
+                        .withJudicialResultId(reportingRestrictionData.getJudicialResultId().orElse(null))
                         .withOrderedDate(reportingRestrictionData.getOrderedDate().get().toString())
                         .build()));
 

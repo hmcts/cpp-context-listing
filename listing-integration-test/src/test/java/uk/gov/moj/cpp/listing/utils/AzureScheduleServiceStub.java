@@ -14,12 +14,17 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
+import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
+import static org.apache.http.HttpStatus.SC_OK;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
+import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.waitForStubToBeReady;
+
+import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 
 import java.util.Map;
 
@@ -32,6 +37,7 @@ public class AzureScheduleServiceStub {
 
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
     private static final String HEARING_SLOTS = "/hearingSlots";
+    private static final String ORGANISATION_UNIT = "/organisationUnitHMIStatus";
 
     public static final String ROTASL_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES = "stub-data/rotasl.get.hearing.slots.with-judiciaries.json";
     public static final String LISTING_SEARCH_HEARING_SLOTS_JSON = "stub-data/listing.search.hearing.slots.json";
@@ -83,6 +89,20 @@ public class AzureScheduleServiceStub {
                                 .replace("%COURT_ROOM_ID%", courtRoomId))
                         .withHeader("Content-Type", "application/json")
                 ));
+    }
+
+    public static void stubPingForOrganisationUnitHmiSServiceForCache() {
+       InternalEndpointMockUtils.stubPingFor("staginghmi-service");
+
+        String payload = getPayload("stub-data/staginghmi.query.organisation-unit-hmi-status-rota.json");
+
+        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + ORGANISATION_UNIT)))
+                .willReturn(aResponse().withStatus(SC_OK)
+                        .withHeader("CPPID", randomUUID().toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                        .withBody(payload)));
+
+       waitForStubToBeReady(format("%s", ROTA_SL_ENDPOINT_URL + ORGANISATION_UNIT), APPLICATION_JSON);
     }
 
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased() {

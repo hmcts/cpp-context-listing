@@ -1,31 +1,33 @@
 package uk.gov.moj.cpp.listing.domain;
 
 
+import static java.util.Optional.empty;
+
 import java.util.Optional;
 
 @SuppressWarnings({"squid:S1067","squid:S2065"})
 public class Address {
     private final String address1;
 
-    private final transient Optional<String> address2;
+    private transient Optional<String> address2;
 
-    private final transient Optional<String> address3;
+    private transient Optional<String> address3;
 
-    private final transient Optional<String> address4;
+    private transient Optional<String> address4;
 
-    private final transient Optional<String> address5;
+    private transient Optional<String> address5;
 
-    private final transient Optional<String> postcode;
+    private transient Optional<String> postcode;
 
-    private final transient Optional<String> welshAddress1;
+    private transient Optional<String> welshAddress1;
 
-    private final transient Optional<String> welshAddress2;
+    private transient Optional<String> welshAddress2;
 
-    private final transient Optional<String> welshAddress3;
+    private transient Optional<String> welshAddress3;
 
-    private final transient Optional<String> welshAddress4;
+    private transient Optional<String> welshAddress4;
 
-    private final transient Optional<String> welshAddress5;
+    private transient Optional<String> welshAddress5;
 
     public Address(final String address1, final Optional<String> address2, final Optional<String> address3, final Optional<String> address4, final Optional<String> address5, final Optional<String> postcode, final Optional<String> welshAddress1, final Optional<String> welshAddress2, final Optional<String> welshAddress3, final Optional<String> welshAddress4, final Optional<String> welshAddress5) {
         this.address1 = address1;
@@ -46,19 +48,19 @@ public class Address {
     }
 
     public Optional<String> getAddress2() {
-        return address2;
+        return address2.isPresent() ? address2 : empty();
     }
 
     public Optional<String> getAddress3() {
-        return address3;
+        return address3.isPresent() ? address3 : empty();
     }
 
     public Optional<String> getAddress4() {
-        return address4;
+        return address4.isPresent() ? address4 : empty();
     }
 
     public Optional<String> getAddress5() {
-        return address5;
+        return address5.isPresent() ? address5 : empty();
     }
 
     public Optional<String> getPostcode() {
@@ -66,23 +68,23 @@ public class Address {
     }
 
     public Optional<String> getWelshAddress1() {
-        return welshAddress1;
+        return welshAddress1.isPresent() ? welshAddress1 : empty();
     }
 
     public Optional<String> getWelshAddress2() {
-        return welshAddress2;
+        return welshAddress2.isPresent() ? welshAddress2 : empty();
     }
 
     public Optional<String> getWelshAddress3() {
-        return welshAddress3;
+        return welshAddress3.isPresent() ? welshAddress3 : empty();
     }
 
     public Optional<String> getWelshAddress4() {
-        return welshAddress4;
+        return welshAddress4.isPresent()? welshAddress4 : empty();
     }
 
     public Optional<String> getWelshAddress5() {
-        return welshAddress5;
+        return welshAddress5.isPresent() ? welshAddress5 : empty();
     }
 
     public static Builder address() {
@@ -138,25 +140,25 @@ public class Address {
 
         private transient String address1;
 
-        private transient Optional<String> address2;
+        private transient Optional<String> address2 = empty();
 
-        private transient Optional<String> address3;
+        private transient Optional<String> address3 = empty();
 
-        private transient Optional<String> address4;
+        private transient Optional<String> address4 = empty();
 
-        private transient Optional<String> address5;
+        private transient Optional<String> address5 = empty();
 
-        private transient Optional<String> postcode;
+        private transient Optional<String> postcode = empty();
 
-        private transient Optional<String> welshAddress1;
+        private transient Optional<String> welshAddress1 = empty();
 
-        private transient Optional<String> welshAddress2;
+        private transient Optional<String> welshAddress2 = empty();
 
-        private transient Optional<String> welshAddress3;
+        private transient Optional<String> welshAddress3 = empty();
 
-        private transient Optional<String> welshAddress4;
+        private transient Optional<String> welshAddress4 = empty();
 
-        private transient Optional<String> welshAddress5;
+        private transient Optional<String> welshAddress5 = empty();
 
         public Builder withAddress1(final String address1) {
             this.address1 = address1;

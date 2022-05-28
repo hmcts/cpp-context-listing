@@ -1,5 +1,7 @@
 package utils;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.events.HearingDay;
@@ -12,7 +14,7 @@ public final class HearingDayUtil {
 
     public static List<HearingDay> getNotCancelledHearingDays(final List<HearingDay> hearingDays) {
         return hearingDays.stream()
-                .filter(hearingDay -> !hearingDay.getIsCancelled().orElse(false))
+                .filter(hearingDay -> isNull(hearingDay.getIsCancelled()) || !hearingDay.getIsCancelled())
                 .collect(toList());
     }
 }
