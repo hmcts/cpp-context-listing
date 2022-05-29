@@ -45,13 +45,13 @@ public class OrganisationUnitHMICacheTest {
     public void shouldReturnNotHmiEnabledCourtCentreIds(){
 
         OrganisationUnitHmiStatus hmiEnabled = new OrganisationUnitHmiStatus("oucode1", true, true, true,
-                "2022-01-01", "courtCenter1");
+                "2022-01-01", "courtCenter1", "courtId1");
 
         OrganisationUnitHmiStatus notHmiEnabled = new OrganisationUnitHmiStatus("oucode2", false, false, false,
-                "2022-01-01", "courtCenter2");
+                "2022-01-01", "courtCenter2", "courtId2");
 
         OrganisationUnitHmiStatus hmiEnabled2 = new OrganisationUnitHmiStatus("oucode2", true, true, true,
-                "2022-01-01", "courtCenter3");
+                "2022-01-01", "courtCenter3", "courtId3");
 
         final JsonObject hmiList = givenPayload("/mock-data/staginghmi.query.organisation-unit-hmi-status-rota.json");
 
