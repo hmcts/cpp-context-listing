@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.joining;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
+import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubPingForOrganisationUnitHmiSServiceForCache;
 import static uk.gov.moj.cpp.listing.utils.StagingHmiStub.stubGetStagingIsHmiEnabled;
 import static uk.gov.moj.cpp.listing.utils.StagingHmiStub.stubHmiMagsSession;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
@@ -46,6 +47,7 @@ public class AbstractIT {
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased();
         stubGetStagingIsHmiEnabled();
         stubHmiMagsSession();
+        stubPingForOrganisationUnitHmiSServiceForCache();
     }
 
     protected void givenAUserHasLoggedInAsAListingOfficer(final UUID validUserId) {

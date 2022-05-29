@@ -93,7 +93,6 @@ public class ListNextHearingIT extends AbstractIT {
     public void shouldDeleteOldScheduledNextHearingsAndScheduledNextHearings() {
         final ImmutableMap<String, Boolean> features = of("amendReshare", true);
         stubFeaturesFor("listing", features);
-        stubPingForOrganisationUnitHmiSServiceForCache();
 
         final HearingsData oldNextHearings = HearingsData.notHmiEnabledHearingsData();
         final HearingsData nextHearings = HearingsData.notHmiEnabledHearingsData();

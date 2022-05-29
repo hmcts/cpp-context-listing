@@ -129,7 +129,6 @@ public class VacateHearingIT extends AbstractIT {
     @Test
     @UseDataProvider("provideJurisdictionTypes")
     public void shouldVacateUnscheduledHearingAndNotAttemptToFreeHearingSlots(final String jurisdictionType) {
-        stubPingForOrganisationUnitHmiSServiceForCache();
         final HearingsData hearingsData = notHmiEnabledHearingsData(jurisdictionType);
         try (final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();

@@ -72,7 +72,6 @@ public class ListUnscheduledCourtHearingIT extends AbstractIT {
 
     @Test
     public void shouldHideUnscheduledHearingVacatedFromHearingService() {
-        stubPingForOrganisationUnitHmiSServiceForCache();
         final HearingsData hearingsData = notHmiEnabledHearingsData();
         try (final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
@@ -88,7 +87,6 @@ public class ListUnscheduledCourtHearingIT extends AbstractIT {
 
     @Test
     public void shouldNotListHearingWhenAllHmiEnabledCourtCentres() {
-        stubPingForOrganisationUnitHmiSServiceForCache();
         final HearingsData hearingsData = hearingsData();
         try (final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
@@ -101,7 +99,6 @@ public class ListUnscheduledCourtHearingIT extends AbstractIT {
 
     @Test
     public void shouldOnlyListHearingForNotHmiEnabledCourtCentres() {
-        stubPingForOrganisationUnitHmiSServiceForCache();
         final HearingsData hearingsData = mixtureHmiEnabledAndNotHmiEnabledHearingsData();
         try (final ListUnscheduledCourtHearingSteps listCourtHearingSteps = new ListUnscheduledCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForUnscheduledListing();
