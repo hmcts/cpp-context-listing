@@ -14,12 +14,14 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -1488,7 +1490,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.info("jsonResponse from privateMessageConsumerHearingPartiallyUpdated: {}", jsonResponse.prettify());
         assertThat(jsonResponse.get("hearingIdToBeUpdated"), is(hearingData.getId().toString()));
         assertThat(jsonResponse.get("prosecutionCases[0].caseId"), is(hearingData.getListedCases().get(0).getCaseId().toString()));
-        assertThat(jsonResponse.get("prosecutionCases[0].defendants[0].defendantId"), is(hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString()));
+        assertThat(jsonResponse.prettify(), hasJsonPath("$.prosecutionCases[*].defendants[*].defendantId", hasItem(hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString())));
         assertThat(jsonResponse.prettify(), not(hasJsonPath("$.prosecutionCaseDefendantsOffenceIds[*].defendants[*].offenceIds[*]", contains(offenceId.toString()))));
     }
 
