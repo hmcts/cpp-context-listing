@@ -1359,6 +1359,7 @@ public class ListingEventProcessor {
         }
 
         sender.send(publicEvent);
+        sender.send(envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withId(UUID.randomUUID()).withName("public.listing.court-application-added-for-hearing"), jsonEnvelope.payloadAsJsonObject()));
     }
 
 }

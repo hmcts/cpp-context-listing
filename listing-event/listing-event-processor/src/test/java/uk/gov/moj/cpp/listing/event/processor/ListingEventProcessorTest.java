@@ -388,7 +388,7 @@ public class ListingEventProcessorTest {
         listingEventProcessor.handleHearingListedMessage(envelope);
 
         //then
-        verify(sender, times(3)).send(senderJsonEnvelopeCaptor.capture());
+        verify(sender, times(4)).send(senderJsonEnvelopeCaptor.capture());
     }
 
     @Test
@@ -422,7 +422,7 @@ public class ListingEventProcessorTest {
         listingEventProcessor.handleHearingListedMessage(envelope);
 
         //then
-        verify(sender, times(4)).send(senderJsonEnvelopeCaptor.capture());
+        verify(sender, times(5)).send(senderJsonEnvelopeCaptor.capture());
     }
 
     @Test
@@ -448,7 +448,7 @@ public class ListingEventProcessorTest {
         listingEventProcessor.handleHearingListedMessage(envelope);
 
         //then
-        verify(sender, times(4)).send(senderJsonEnvelopeCaptor.capture());
+        verify(sender, times(5)).send(senderJsonEnvelopeCaptor.capture());
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED));
     }
 
@@ -482,7 +482,7 @@ public class ListingEventProcessorTest {
         listingEventProcessor.handleHearingListedMessage(envelope);
 
         //then
-        verify(sender, times(4)).send(senderJsonEnvelopeCaptor.capture());
+        verify(sender, times(5)).send(senderJsonEnvelopeCaptor.capture());
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(COMMAND_UPDATE_HEARING_FOR_LISTING_ENRICHED));
     }
 
