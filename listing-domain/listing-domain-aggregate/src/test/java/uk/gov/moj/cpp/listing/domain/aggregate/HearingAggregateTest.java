@@ -91,6 +91,7 @@ public class HearingAggregateTest {
     private final UUID hearingId = randomUUID();
     private final Type type = Type.type().withDescription("First Hearing").withId(randomUUID()).build();
     private final int estimateMinutes = 30;
+    private final String estimatedDuration = "1 week";
     private final List<ListedCase> listedCases = emptyList();
     private final UUID courtCentreId = randomUUID();
     private final List<JudicialRole> judiciary = emptyList();
@@ -125,7 +126,7 @@ public class HearingAggregateTest {
                 NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), defaultStartTime, UTC).plusDays(6)).withDuration(of(preferredDuration)).build())
                 .collect(Collectors.toList());
 
-        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes,estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
                 adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null);
 
@@ -158,7 +159,7 @@ public class HearingAggregateTest {
                 NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), defaultStartTime, UTC).plusDays(6)).withDuration(of(preferredDuration)).build())
                 .collect(Collectors.toList());
 
-        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes,estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
                 adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null);
 
@@ -180,7 +181,7 @@ public class HearingAggregateTest {
                 NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(2)).withDuration(of(preferredDuration)).build())
                 .collect(Collectors.toList());
 
-        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes,estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
                 adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "", null);
 
@@ -561,6 +562,7 @@ public class HearingAggregateTest {
                         .withEndDate(now().plusDays(1))
                         .withStartDate(now())
                         .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
                         .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
                                         .withId(case1Id)
                                         .withDefendants(new ArrayList<>(asList(Defendant.defendant()
@@ -1023,6 +1025,7 @@ public class HearingAggregateTest {
                         .withStartDate(LocalDate.now().plusDays(1))
                         .withEndDate(LocalDate.now().plusDays(2))
                         .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
                         .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
                                 .withId(case1Id)
                                 .withDefendants(asList(Defendant.defendant()
@@ -1075,6 +1078,7 @@ public class HearingAggregateTest {
 
         final HearingAllocatedForListingV2 allocatedForListingV2 = (HearingAllocatedForListingV2) events.get(0);
         assertThat(allocatedForListingV2.getProsecutionCaseDefendantsOffenceIds().size(), is(2));
+        assertThat(allocatedForListingV2.getEstimatedDuration(), is("30 minutes"));
 
         final ProsecutionCaseDefendantOffenceIdsV2 caseDefendantOffenceIds1 = allocatedForListingV2.getProsecutionCaseDefendantsOffenceIds().get(0);
         assertThat(caseDefendantOffenceIds1.getId(), is(case1Id));
@@ -1135,6 +1139,7 @@ public class HearingAggregateTest {
                         .withStartDate(LocalDate.now().plusDays(1))
                         .withEndDate(LocalDate.now().plusDays(2))
                         .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
                         .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
                                 .withId(case1Id)
                                 .withDefendants(new ArrayList(asList(Defendant.defendant()

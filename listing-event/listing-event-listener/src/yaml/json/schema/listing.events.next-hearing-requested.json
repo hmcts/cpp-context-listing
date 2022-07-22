@@ -116,6 +116,10 @@
         "estimatedMinutes": {
           "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
         },
+        "estimatedDuration": {
+          "description": "Value from the Estimated Duration prompt",
+          "type": "string"
+        },
         "prosecutorDatesToAvoid": {
           "type": "string"
         },

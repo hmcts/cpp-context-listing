@@ -341,6 +341,8 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(Arrays.asList(jsonResponse.get("hearing.id"), jsonResponse2.get("hearing.id")),
                 hasItems(hearingsData.getHearingData().get(0).getId().toString(),
                         hearingsData.getHearingData().get(1).getId().toString()));
+        assertThat(jsonResponse.get("hearing.estimatedDuration"), is(hearingsData.getHearingData().get(0).getEstimatedDuration()));
+        assertThat(jsonResponse2.get("hearing.estimatedDuration"), is(hearingsData.getHearingData().get(1).getEstimatedDuration()));
     }
 
     public void verifyUnscheduledNextHearingRequestedInActiveMQ(final HearingsData hearingsData) {
@@ -625,6 +627,7 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
                 .withEarliestStartDateTime(hearingData.getHearingStartTime() != null ? hearingData.getHearingStartTime() : null)
                 .withEndDate(hearingData.getHearingEndDate() != null ? hearingData.getHearingEndDate().toString() : null)
                 .withEstimatedMinutes(hearingData.getHearingEstimateMinutes())
+                .withEstimatedDuration(hearingData.getEstimatedDuration())
                 .withJudiciary(hearingData.getJudiciary() != null
                         ? singletonList(JudicialRole.judicialRole()
                         .withJudicialId(hearingData.getJudiciary().get(0).getJudicialId())

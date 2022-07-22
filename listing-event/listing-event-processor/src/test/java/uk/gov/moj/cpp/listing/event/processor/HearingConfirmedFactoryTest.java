@@ -71,6 +71,7 @@ public class HearingConfirmedFactoryTest {
     private static final String REPORTING_RESTRICTION_REASON = STRING.next();
     private static final String JUDICIAL_ROLE_TYPE = "MAGISTRATE";
     private static final int DURATION_MINUTES = 60;
+    private static final String ESTIMATED_DURATION = "1 week";
 
 
     @InjectMocks
@@ -168,6 +169,7 @@ public class HearingConfirmedFactoryTest {
         assertThat(listedHearing.getReportingRestrictionReason(), is(REPORTING_RESTRICTION_REASON));
         assertThat(listedHearing.getHearingLanguage().toString(), is(HEARING_LANGUAGE.toString()));
         assertThat(listedHearing.getJurisdictionType().toString(), is(JURISDICTION_TYPE.toString()));
+        assertThat(listedHearing.getEstimatedDuration(), is(ESTIMATED_DURATION));
 
         final ConfirmedProsecutionCase prosecutionCaseDefendantOffenceIds = listedHearing.getProsecutionCases().get(0);
         assertThat(prosecutionCaseDefendantOffenceIds.getId(), is(CASE_ID));
@@ -265,6 +267,7 @@ public class HearingConfirmedFactoryTest {
                         .withIsDeputy(null)
                         .withIsBenchChairman(null)
                         .build()))
+                .withEstimatedDuration(ESTIMATED_DURATION)
                 .build();
     }
 }

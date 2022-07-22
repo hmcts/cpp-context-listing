@@ -1489,9 +1489,9 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingPartiallyUpdated);
         LOGGER.info("jsonResponse from privateMessageConsumerHearingPartiallyUpdated: {}", jsonResponse.prettify());
         assertThat(jsonResponse.get("hearingIdToBeUpdated"), is(hearingData.getId().toString()));
-        assertThat(jsonResponse.get("prosecutionCases[0].caseId"), is(hearingData.getListedCases().get(0).getCaseId().toString()));
+        assertThat(jsonResponse.prettify(),hasJsonPath("$.prosecutionCases[*].caseId", hasItem(hearingData.getListedCases().get(0).getCaseId().toString())));
         assertThat(jsonResponse.prettify(), hasJsonPath("$.prosecutionCases[*].defendants[*].defendantId", hasItem(hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString())));
-        assertThat(jsonResponse.prettify(), not(hasJsonPath("$.prosecutionCaseDefendantsOffenceIds[*].defendants[*].offenceIds[*]", contains(offenceId.toString()))));
+        assertThat(jsonResponse.prettify(), not(hasJsonPath("$.prosecutionCases[*].defendants[*].offences[*].offenceId", hasItem(offenceId.toString()))));
     }
 
     public void verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI() {

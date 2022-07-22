@@ -365,6 +365,7 @@ public class ListingCommandHandler {
                 final Stream<Object> listingEvents = hearing.list(domainHearing.getId(),
                         domainHearing.getType(),
                         domainHearing.getEstimatedMinutes(),
+                        domainHearing.getEstimatedDuration(),
                         domainHearing.getListedCases(), domainHearing.getCourtCentreId(),
                         finalJudiciaries,
                         domainHearing.getCourtRoomId().orElse(null),

@@ -39,6 +39,9 @@
     "estimatedMinutes": {
       "$ref": "listing-definitions.json#/definitions/positiveInteger"
     },
+    "estimatedDuration": {
+      "type": "string"
+    },
     "prosecutorDatesToAvoid": {
       "type": "string"
     },

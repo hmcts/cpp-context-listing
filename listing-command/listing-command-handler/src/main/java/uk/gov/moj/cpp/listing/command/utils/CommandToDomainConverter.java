@@ -111,6 +111,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withType(buildHearingType(commandHearing.getType()))
                 .withHearingLanguage(empty())
                 .withEstimatedMinutes(commandHearing.getEstimatedMinutes())
+                .withEstimatedDuration(commandHearing.getEstimatedDuration())
                 .withStartDateTime(getHearingStartDateTime(commandHearing))
                 .withCourtCentreId(commandHearing.getCourtCentre().getId())
                 .withCourtRoomId(ofNullable(commandHearing.getCourtCentre().getRoomId()))

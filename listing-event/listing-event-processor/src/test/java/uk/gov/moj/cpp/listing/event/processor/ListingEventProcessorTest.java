@@ -210,6 +210,7 @@ public class ListingEventProcessorTest {
     private static final UUID DEFENDANT_ID = randomUUID();
     private static final String TYPE = "Sentence";
     private static final Integer ESTIMATED_MINUTES = RandomGenerator.INTEGER.next();
+    private static final String ESTIMATED_DURATION = "1 week";
     private static final UUID COURT_CENTRE_ID = randomUUID();
     private static final UUID JUDICIAL_ID = randomUUID();
     private static final LocalDate START_DATE = LocalDate.now();
@@ -1043,6 +1044,7 @@ public class ListingEventProcessorTest {
                 .add("hearingId", HEARING_ID.toString())
                 .add("type", TYPE)
                 .add("estimatedMinutes", ESTIMATED_MINUTES)
+                .add("estimatedDuration", ESTIMATED_DURATION)
                 .add("judgeId", JUDICIAL_ID.toString())
                 .add("updateSlot", true)
                 .add("courtRoomId", COURT_ROOM_ID.toString())
@@ -2516,6 +2518,7 @@ public class ListingEventProcessorTest {
         return uk.gov.justice.core.courts.ConfirmedHearing.confirmedHearing()
                 .withExistingHearingId(randomUUID())
                 .withId(HEARING_ID)
+                .withEstimatedDuration(ESTIMATED_DURATION)
                 .withHearingDays(Arrays.asList(hearingDay()
                         .withSittingDay(ZonedDateTimes.fromString(formattedDateTime))
                         .withListedDurationMinutes(0)

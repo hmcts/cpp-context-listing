@@ -45,6 +45,9 @@
     "estimatedMinutes": {
       "type": "integer"
     },
+    "estimatedDuration": {
+      "type": "string"
+    },
     "courtApplicationIds": {
       "type": "array",
       "minItems": 1,

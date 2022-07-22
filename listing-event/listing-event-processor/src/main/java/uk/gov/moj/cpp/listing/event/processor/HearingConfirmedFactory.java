@@ -51,6 +51,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
     private ConfirmedHearing buildConfirmedHearing(HearingAllocatedForListing hearingAllocated, List<uk.gov.justice.listing.events.JudicialRole> judicialRoles, Type type, JsonEnvelope envelope) {
         ConfirmedHearing.Builder builder = ConfirmedHearing.confirmedHearing()
                 .withId(hearingAllocated.getHearingId())
+                .withEstimatedDuration(hearingAllocated.getEstimatedDuration())
                 .withCourtCentre(buildCourtCentre(hearingAllocated.getCourtCentreId(), hearingAllocated.getCourtRoomId(), envelope))
                 .withHearingDays(hearingAllocated.getHearingDays().stream()
                         .map(this::buildHearingDay)
@@ -87,6 +88,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
     private ConfirmedHearing buildConfirmedHearingV2(final HearingAllocatedForListingV2 hearingAllocated, final List<uk.gov.justice.listing.events.JudicialRole> judicialRoles, final Type type, final JsonEnvelope envelope) {
         final ConfirmedHearing.Builder builder = ConfirmedHearing.confirmedHearing()
                 .withId(hearingAllocated.getHearingId())
+                .withEstimatedDuration(hearingAllocated.getEstimatedDuration())
                 .withCourtCentre(buildCourtCentre(hearingAllocated.getCourtCentreId(), hearingAllocated.getCourtRoomId(), envelope))
                 .withHearingDays(hearingAllocated.getHearingDays().stream()
                         .map(this::buildHearingDay)

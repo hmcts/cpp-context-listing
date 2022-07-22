@@ -72,7 +72,6 @@ public class ListNextHearingCommandHandler {
 
     @Inject
     private EventSource eventSource;
-
     @Inject
     private AggregateService aggregateService;
 
@@ -178,6 +177,7 @@ public class ListNextHearingCommandHandler {
             final Stream<Object> listingEvents = hearing.list(domainHearing.getId(),
                     domainHearing.getType(),
                     domainHearing.getEstimatedMinutes(),
+                    domainHearing.getEstimatedDuration(),
                     domainHearing.getListedCases(), domainHearing.getCourtCentreId(),
                     domainHearing.getJudiciary(),
                     domainHearing.getCourtRoomId().orElse(null),

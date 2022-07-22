@@ -30,6 +30,7 @@
     "courtCentreId": "e8821a38-546d-4b56-9992-ebdd772a561f",
     "courtRoomId": "ad80a0b4-d285-4496-a514-43cb8d500051",
     "estimatedMinutes": 15,
+    "estimatedDuration": "15 minutes",
     "hearingLanguage": "WELSH",
     "id": "5c5a1d30-0414-11e7-93ae-92361f002671",
     "jurisdictionType": "CROWN",

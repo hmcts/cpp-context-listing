@@ -21,6 +21,8 @@ public class Hearing {
 
   private final Integer estimatedMinutes;
 
+  private final String estimatedDuration;
+
   private final List<HearingDay> hearingDays;
 
   private final Optional<HearingLanguage> hearingLanguage;
@@ -63,7 +65,7 @@ public class Hearing {
 
   private final Optional<Boolean> isSlotsBooked;
 
-  public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, final List<HearingDay> hearingDays, final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections, final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final ZonedDateTime startDateTime,
+  public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, String estimatedDuration, final List<HearingDay> hearingDays, final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections, final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final ZonedDateTime startDateTime,
                  final Type type, final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds, final Optional<Boolean> hasAdjournmentDate,
                  final Optional<LocalDate> weekCommencingStartDate, final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks, final Optional<Boolean> isSlotsBooked){
     this.allocated = allocated;
@@ -71,6 +73,7 @@ public class Hearing {
     this.courtRoomId = courtRoomId;
     this.endDate = endDate;
     this.estimatedMinutes = estimatedMinutes;
+    this.estimatedDuration = estimatedDuration;
     this.hearingDays = hearingDays;
     this.hearingLanguage = hearingLanguage;
     this.id = id;
@@ -192,6 +195,10 @@ public class Hearing {
     return weekCommencingDurationInWeeks;
   }
 
+  public String getEstimatedDuration() {
+    return estimatedDuration;
+  }
+
   public Optional<Boolean> getIsSlotsBooked() {
     return isSlotsBooked;
   }
@@ -210,6 +217,7 @@ public class Hearing {
             Objects.equals(courtRoomId, hearing.courtRoomId) &&
             Objects.equals(endDate, hearing.endDate) &&
             Objects.equals(estimatedMinutes, hearing.estimatedMinutes) &&
+            Objects.equals(estimatedMinutes, hearing.estimatedDuration) &&
             Objects.equals(hearingDays, hearing.hearingDays) &&
             Objects.equals(hearingLanguage, hearing.hearingLanguage) &&
             Objects.equals(id, hearing.id) &&
@@ -235,7 +243,7 @@ public class Hearing {
 
   @Override
   public int hashCode() {
-    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate, isSlotsBooked);
+    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate, isSlotsBooked);
   }
 
   @Override
@@ -246,6 +254,7 @@ public class Hearing {
             ", courtRoomId=" + courtRoomId +
             ", endDate=" + endDate +
             ", estimatedMinutes=" + estimatedMinutes +
+            ", estimatedDuration=" + estimatedDuration +
             ", hearingDays=" + hearingDays +
             ", hearingLanguage=" + hearingLanguage +
             ", id=" + id +
@@ -280,6 +289,8 @@ public class Hearing {
     private Optional<LocalDate> endDate = empty();
 
     private Integer estimatedMinutes;
+
+    private String estimatedDuration;
 
     private List<HearingDay> hearingDays;
 
@@ -345,6 +356,10 @@ public class Hearing {
 
     public Builder withEstimatedMinutes(final Integer estimatedMinutes) {
       this.estimatedMinutes = estimatedMinutes;
+      return this;
+    }
+    public Builder withEstimatedDuration(final String estimatedDuration) {
+      this.estimatedDuration = estimatedDuration;
       return this;
     }
 
@@ -452,7 +467,7 @@ public class Hearing {
     }
 
     public Hearing build() {
-      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks, this.isSlotsBooked);
+      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks, this.isSlotsBooked);
     }
   }
 }

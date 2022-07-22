@@ -10,6 +10,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOOLEAN;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
+import static java.util.Optional.of;
+
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
 import uk.gov.justice.core.courts.CustodyTimeLimit;
@@ -53,6 +55,7 @@ public class HearingsDataFactory {
     public static final String CROWN_JURISDICTION = "CROWN";
     public static final String MAGISTRATES_JURISDICTION = "MAGISTRATES";
     private static final int HEARING_ESTIMATE_MINUTES = 30;
+    public static final String ESTIMATED_DURATION = "1 week";
     private static final HearingTypeData PTP_HEARING_TYPE = new HearingTypeData(UUID.fromString("52edf232-3c09-4c74-a6ad-737985c2e662"), "PTP", "welshPTP");
     private static final BailStatus BAIL_CONDITIONAL = new BailStatus.Builder().withId(fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).withCode("P").withDescription("Custody or remanded into custody").build();
 
@@ -655,7 +658,7 @@ public class HearingsDataFactory {
     private static HearingData randomHearing(final UUID courtCentreId, final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
         return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
-                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                hearingEndDate, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
                 courtRoomId, ZonedDateTime.now(), listedCaseData,
                 judicialRoles, CROWN_JURISDICTION,
                 STRING.next(),
@@ -666,7 +669,7 @@ public class HearingsDataFactory {
     private static HearingData randomHearing(final UUID courtCentreId, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles, final String jurisdictionType) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
         return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
-                LocalDate.now().plusDays(3), HEARING_ESTIMATE_MINUTES,
+                LocalDate.now().plusDays(3), HEARING_ESTIMATE_MINUTES,ESTIMATED_DURATION,
                 courtRoomId, ZonedDateTime.now(), listedCaseData,
                 judicialRoles, isBlank(jurisdictionType) ? CROWN_JURISDICTION : jurisdictionType,
                 STRING.next(),
@@ -677,7 +680,7 @@ public class HearingsDataFactory {
     private static HearingData randomHearingForHMI(final UUID courtCentreId, final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
         return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
-                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                hearingEndDate, HEARING_ESTIMATE_MINUTES,ESTIMATED_DURATION,
                 null, ZonedDateTime.now(), listedCaseData,
                 judicialRoles, CROWN_JURISDICTION,
                 STRING.next(),
@@ -688,7 +691,7 @@ public class HearingsDataFactory {
     private static HearingData randomHearing(final HearingData hearingData, final UUID courtCentreId, final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(hearingData.getListedCases());
         return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
-                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                hearingEndDate, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
                 courtRoomId, ZonedDateTime.now(), listedCaseData,
                 judicialRoles, CROWN_JURISDICTION,
                 STRING.next(),
@@ -699,7 +702,7 @@ public class HearingsDataFactory {
     private static HearingData randomHearingSingleOffence(final UUID courtCentreId, final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCasesSingleOffence(2);
         return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
-                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                hearingEndDate, HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
                 courtRoomId, ZonedDateTime.now(), listedCaseData,
                 judicialRoles, CROWN_JURISDICTION,
                 STRING.next(),
@@ -710,7 +713,7 @@ public class HearingsDataFactory {
     private static HearingData randomHearingMultipleOffences() {
         final List<ListedCaseData> listedCaseData = manyRandomListingCasesMultipleOffences(1);
         return new HearingData(randomUUID(), randomUUID(), PTP_HEARING_TYPE, LocalDate.now(),
-                LocalDate.now().plusDays(1), HEARING_ESTIMATE_MINUTES,
+                LocalDate.now().plusDays(1), HEARING_ESTIMATE_MINUTES,ESTIMATED_DURATION,
                 null, ZonedDateTime.now(), listedCaseData,
                 null, MAGISTRATES_JURISDICTION,
                 STRING.next(),
@@ -782,7 +785,7 @@ public class HearingsDataFactory {
     private static HearingData randomHearing(final UUID courtCentreId, final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles, final UUID hearingId) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
         return new HearingData(hearingId, courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
-                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                hearingEndDate, HEARING_ESTIMATE_MINUTES,ESTIMATED_DURATION,
                 courtRoomId, ZonedDateTime.now(), listedCaseData,
                 judicialRoles, CROWN_JURISDICTION, STRING.next(),
                 singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
@@ -792,7 +795,7 @@ public class HearingsDataFactory {
     private static HearingData randomHearing(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles, final CaseAndDefendantData caseAndDefendantData) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(1, caseAndDefendantData);
         return new HearingData(caseAndDefendantData.getHearingId(), randomUUID(), PTP_HEARING_TYPE, LocalDate.now(),
-                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                hearingEndDate, HEARING_ESTIMATE_MINUTES,ESTIMATED_DURATION,
                 courtRoomId, ZonedDateTime.now(), listedCaseData,
                 judicialRoles, caseAndDefendantData.getJurisdictionType(), STRING.next(),
                 singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
@@ -802,7 +805,7 @@ public class HearingsDataFactory {
     private static HearingData randomUnAllocatedHearing(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles, final CaseAndDefendantData caseAndDefendantData) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(1, caseAndDefendantData);
         return new HearingData(caseAndDefendantData.getHearingId(), randomUUID(), PTP_HEARING_TYPE, LocalDate.now(),
-                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                hearingEndDate, HEARING_ESTIMATE_MINUTES,ESTIMATED_DURATION,
                 null, ZonedDateTime.now(), listedCaseData,
                 judicialRoles, caseAndDefendantData.getJurisdictionType(), STRING.next(),
                 singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
@@ -814,7 +817,7 @@ public class HearingsDataFactory {
 
         return weekCommencingStartDate == null ?
                 new HearingData(hearingId, randomUUID(), PTP_HEARING_TYPE, now(),
-                        hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                        hearingEndDate, HEARING_ESTIMATE_MINUTES,ESTIMATED_DURATION,
                         courtRoomId, ZonedDateTime.now(), listedCaseData,
                         judicialRoles, CROWN_JURISDICTION, STRING.next(),
                         singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
@@ -830,7 +833,7 @@ public class HearingsDataFactory {
 
     private static HearingData randomHearingWithLegalEntity(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
         return new HearingData(randomUUID(), randomUUID(), PTP_HEARING_TYPE, LocalDate.now(),
-                hearingEndDate, HEARING_ESTIMATE_MINUTES,
+                hearingEndDate, HEARING_ESTIMATE_MINUTES,ESTIMATED_DURATION,
                 courtRoomId, ZonedDateTime.now(), manyRandomListingCasesWithLegalEntity(1),
                 judicialRoles, CROWN_JURISDICTION, STRING.next(),
                 singletonList(randomCourtApplicationDataWithLegalEntity(randomUUID())),
@@ -839,7 +842,7 @@ public class HearingsDataFactory {
 
     private static HearingData randomHearingStandaloneApplication() {
         return new HearingData(randomUUID(), randomUUID(), PTP_HEARING_TYPE, LocalDate.now(),
-                null, HEARING_ESTIMATE_MINUTES,
+                null, HEARING_ESTIMATE_MINUTES,ESTIMATED_DURATION,
                 null, ZonedDateTime.now(), null,
                 null, CROWN_JURISDICTION, STRING.next(),
                 singletonList(randomCourtApplicationData(null)),
