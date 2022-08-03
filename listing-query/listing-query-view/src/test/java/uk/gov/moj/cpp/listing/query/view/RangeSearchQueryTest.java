@@ -147,6 +147,44 @@ public class RangeSearchQueryTest {
         assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
         assertEquals("listing.search.hearings", results.metadata().name());
     }
+    @Test
+    public void searchHearingsforFirmListWhereNoPaginationIsRequired() {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+
+        when(hearingRepository.findHearingsWithNoPagination(
+                ALLOCATEDSTR,
+                COURT_CENTRE_ID.toString(),
+                COURT_ROOM_ID.toString(),
+                AUTHORITY_ID,
+                HEARING_TYPE_ID.toString(),
+                JURISDICTION_TYPE.toString(),
+                SEARCH_DATE,
+                SEARCH_DATE))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add("noPagination", true)
+                        .build());
+
+        final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
+
+        assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
+        assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
+        assertEquals("listing.search.hearings", results.metadata().name());
+    }
 
     @Test
     public void searchHearingsWithWeekCommencingDateRange() {

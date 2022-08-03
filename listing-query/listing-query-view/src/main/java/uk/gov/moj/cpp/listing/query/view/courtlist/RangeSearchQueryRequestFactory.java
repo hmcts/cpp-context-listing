@@ -39,6 +39,10 @@ public class RangeSearchQueryRequestFactory {
                         .add("endDate", startDate.toString());
                 break;
             case FIRM:
+                rangeSearchQueryPayloadBuilder
+                        .add("noPagination", true);
+                addWeekCommencingParameters(startDate, rangeSearchQueryPayloadBuilder);
+                break;
             case WARN:
                 addWeekCommencingParameters(startDate, rangeSearchQueryPayloadBuilder);
                 break;

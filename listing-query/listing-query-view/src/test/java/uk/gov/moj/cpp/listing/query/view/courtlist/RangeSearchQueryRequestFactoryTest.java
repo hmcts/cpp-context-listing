@@ -30,6 +30,7 @@ import org.junit.runners.Parameterized;
 import org.mockito.InjectMocks;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 
 @RunWith(Parameterized.class)
 public class RangeSearchQueryRequestFactoryTest {
@@ -79,10 +80,10 @@ public class RangeSearchQueryRequestFactoryTest {
                 LocalDate.parse(startDate),
                 courtListQueryEnvelope);
 
-        verifyQueryParameters(rangeSearchQueryEnvelope.payloadAsJsonObject(), startDate, courtCentreId);
+        verifyQueryParameters(rangeSearchQueryEnvelope.payloadAsJsonObject(), startDate, courtCentreId, publishCourtListType);
     }
 
-    private void verifyQueryParameters(final JsonObject queryPayload, final String startDate, final UUID courtCentreId) {
+    private void verifyQueryParameters(final JsonObject queryPayload, final String startDate, final UUID courtCentreId, final PublishCourtListType publishCourtListType) {
 
         if (shouldUseWeekCommencingQueryParameters) {
             assertThat(queryPayload.getString("jurisdictionType"), is(CROWN.name()));
@@ -90,7 +91,9 @@ public class RangeSearchQueryRequestFactoryTest {
             assertThat(queryPayload.getString("weekCommencingEndDate"), is(EXPECTED_WEEK_COMMENCING_END_DATE));
             assertThat(queryPayload.containsKey("startDate"), is(false));
             assertThat(queryPayload.containsKey("endDate"), is(false));
-
+            if(FIRM.equals(publishCourtListType)){
+                assertThat(queryPayload.getBoolean("noPagination"), is(true));
+            }
         } else {
             assertThat(queryPayload.getString("startDate"), is(START_DATE));
             assertThat(queryPayload.getString("endDate"), is(START_DATE));
