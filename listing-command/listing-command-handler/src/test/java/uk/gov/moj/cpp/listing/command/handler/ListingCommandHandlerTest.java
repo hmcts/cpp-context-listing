@@ -2286,6 +2286,7 @@ public class ListingCommandHandlerTest {
 
         verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), anyBoolean());
         verify(hearing, times(1)).addCasesToUnAllocatedHearing(any(), any());
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class));
     }
 
     @Test

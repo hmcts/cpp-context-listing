@@ -13,7 +13,7 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+
 
 import static java.util.stream.Collectors.toList;
 
@@ -72,7 +72,7 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
                     .collect(toList()));
         }
         if(Objects.nonNull(hearingExtendedForListingV2.getExistingHearingId())){
-            builder.withExistingHearingId(hearingExtendedForListingV2.getHearingId());
+            builder.withExistingHearingId((hearingExtendedForListingV2.getHearingId()));
         }
         builder.withFullExtension(hearingExtendedForListingV2.getFullExtension());
         return builder.build();
@@ -112,7 +112,7 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
                     .collect(toList()));
         }
         if(Objects.nonNull(hearingExtendedForListing.getExistingHearingId())){
-            builder.withExistingHearingId(hearingExtendedForListing.getHearingId());
+            builder.withExistingHearingId((hearingExtendedForListing.getHearingId()));
         }
         return builder.build();
     }

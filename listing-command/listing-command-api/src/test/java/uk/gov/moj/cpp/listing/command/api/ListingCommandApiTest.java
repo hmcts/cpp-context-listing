@@ -608,6 +608,8 @@ public class ListingCommandApiTest {
         assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is("listing.command.delete-hearing"));
     }
 
+
+
     private List<HearingUnscheduledListingNeeds> createUnscheduledListingNeeds(final UUID hearingId1, final UUID hearingId2) {
         return Arrays.asList(
                 HearingUnscheduledListingNeeds.hearingUnscheduledListingNeeds()
