@@ -426,9 +426,10 @@ public class ListingCommandHandler {
     }
 
     private List<HmiSession> getSessionsFromHmi(final JsonEnvelope command, final uk.gov.moj.cpp.listing.domain.Hearing domainHearing, final String ouCode, final CourtCentreDefaults courtCentreDefaults) {
-        final ZonedDateTime sessionStartDateTime = nonNull(domainHearing.getStartDateTime()) ? domainHearing.getStartDateTime() : buildStartDateTime(domainHearing.getWeekCommencingStartDate().orElse(LocalDate.now()), courtCentreDefaults.getDefaultStartTime());
-        final String sessionType = nonNull(sessionStartDateTime) ? MeridianUtil.getMeridian(sessionStartDateTime) : ALL_DAY;
-        return stagingHmiQueryService.getHmiSessions(sessionStartDateTime, sessionStartDateTime, sessionType, ouCode, PAGE_NUMBER_FOR_SINGLE_SLOT, PAGE_SIZE_FOR_SINGLE_SLOT, Optional.empty(), command);
+        final ZonedDateTime startDateTime = nonNull(domainHearing.getStartDateTime()) ? domainHearing.getStartDateTime() : buildStartDateTime(domainHearing.getWeekCommencingStartDate().orElse(LocalDate.now()), courtCentreDefaults.getDefaultStartTime());
+        final ZonedDateTime sessionsStartDateTime = startDateTime.toLocalDate().atStartOfDay(startDateTime.getZone());
+        final ZonedDateTime sessionsEndDateTime = startDateTime.toLocalDate().plusDays(1).atStartOfDay(startDateTime.getZone());
+                return stagingHmiQueryService.getHmiSessions(sessionsStartDateTime, sessionsEndDateTime, domainHearing.getType().getId().toString(), ouCode, PAGE_NUMBER_FOR_SINGLE_SLOT, PAGE_SIZE_FOR_SINGLE_SLOT, domainHearing.getCourtRoomId(), command);
     }
 
     private ZonedDateTime buildStartDateTime(final LocalDate localDate, final LocalTime localTime) {

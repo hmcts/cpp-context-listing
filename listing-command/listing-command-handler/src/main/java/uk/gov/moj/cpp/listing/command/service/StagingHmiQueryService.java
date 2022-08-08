@@ -38,7 +38,7 @@ public class StagingHmiQueryService {
     private static final String STAGINGHMI_QUERY_SESSIONS = "staginghmi.query.sessions";
     private static final String SESSION_START_DATE = "sessionStartDate";
     public static final String SESSION_END_DATE = "sessionEndDate";
-    public static final String PANEL = "panel";
+    public static final String HEARING_TYPE_ID = "hearingTypeId";
     public static final String OU_CODE = "ouCode";
     public static final String PAGE_NUMBER = "pageNumber";
     public static final String PAGE_SIZE = "pageSize";
@@ -68,14 +68,14 @@ public class StagingHmiQueryService {
     private Requester requester;
 
     @SuppressWarnings("squid:S107")
-    public List<HmiSession> getHmiSessions(final ZonedDateTime sessionStartDate, final ZonedDateTime sessionEndDate, final String panel, final String ouCode, final int pageNumber, final int pageSize, final Optional<UUID> courtRoomId, final JsonEnvelope event) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(format("staginghmi.query.sessions' request with parameters sessionStartDate: %s, sessinEndDate %s, panel: %s, oucode: %s, courtroomId: %s", sessionStartDate, sessionEndDate, panel, ouCode, courtRoomId));
+    public List<HmiSession> getHmiSessions(final ZonedDateTime sessionStartDate, final ZonedDateTime sessionEndDate, final String typeId, final String ouCode, final int pageNumber, final int pageSize, final Optional<UUID> courtRoomId, final JsonEnvelope event) {
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(format("staginghmi.query.sessions' request with parameters sessionStartDate: %s, sessinEndDate %s, panel: %s, oucode: %s, courtroomId: %s", sessionStartDate.toString(), sessionEndDate.toString(), typeId, ouCode, courtRoomId.toString()));
         }
         final JsonObject queryParameters = createObjectBuilder()
-                .add(SESSION_START_DATE, sessionStartDate.toString())
-                .add(SESSION_END_DATE, sessionEndDate.toString())
-                .add(PANEL, panel)
+                .add(SESSION_START_DATE, sessionStartDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")))
+                .add(SESSION_END_DATE, sessionEndDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")))
+                .add(HEARING_TYPE_ID, typeId)
                 .add(OU_CODE, ouCode)
                 .add(PAGE_NUMBER, pageNumber)
                 .add(PAGE_SIZE, pageSize)
