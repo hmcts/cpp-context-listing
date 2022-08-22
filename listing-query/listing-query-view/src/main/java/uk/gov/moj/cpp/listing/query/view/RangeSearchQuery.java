@@ -98,13 +98,14 @@ public class RangeSearchQuery {
                         "startDate: {}, " +
                         "endDate: {}, " +
                         "weekCommencingStartDate: {}, " +
-                        "weekCommencingEndDate: {}, "
+                        "weekCommencingEndDate: {}, " +
+                        "noPagination : {}, "
                 ,
-                allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate);
+                allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate, noPagination);
 
         final List<Hearing> hearings = !weekCommencingStartDate.isEmpty() ?
-                findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, paginationParameter.getOffSet(), paginationParameter.getPageSize()) :
-                findHearings(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, paginationParameter.getOffSet(), paginationParameter.getPageSize(), noPagination);
+                findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, paginationParameter.getOffSet(), paginationParameter.getPageSize(), noPagination) :
+                findHearings(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, paginationParameter.getOffSet(), paginationParameter.getPageSize());
 
         final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
@@ -118,10 +119,10 @@ public class RangeSearchQuery {
     }
 
     @SuppressWarnings("squid:S00107")
-    private List<Hearing> findHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate, final Integer offSet, final Integer pageSize) {
+    private List<Hearing> findHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate, final Integer offSet, final Integer pageSize, boolean noPagination) {
         return isFalse(allocated) ?
                 getUnallocatedHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, offSet, pageSize) :
-                getHearingsByWeekCommencingRange(courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingDate, weekCommencingEndDate, offSet, pageSize);
+                getHearingsByWeekCommencingRange(courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingDate, weekCommencingEndDate, offSet, pageSize, noPagination);
     }
 
     private List<Hearing> getUnallocatedHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final Integer offSet, final Integer pageSize) {
@@ -138,7 +139,18 @@ public class RangeSearchQuery {
                 pageSize);
     }
 
-    private List<Hearing> getHearingsByWeekCommencingRange(final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate, final Integer offSet, final Integer pageSize) {
+    private List<Hearing> getHearingsByWeekCommencingRange(final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate, final Integer offSet, final Integer pageSize, boolean noPagination) {
+        if (noPagination) {
+            return repository.findHearingsByWeekCommencingRangeWithNoPagination(
+                    courtCentreId,
+                    courtRoomId,
+                    authorityId,
+                    hearingTypeId,
+                    jurisdictionType,
+                    isNotBlank(weekCommencingDate) ? parse(weekCommencingDate) : null,
+                    isNotBlank(weekCommencingEndDate) ? parse(weekCommencingEndDate) : null
+                    );
+        }
         return repository.findHearingsByWeekCommencingRange(
                 courtCentreId,
                 courtRoomId,
@@ -152,18 +164,7 @@ public class RangeSearchQuery {
     }
 
     @SuppressWarnings("squid:S00107")
-    private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate, final Integer offSet, final Integer pageSize, final boolean noPagination) {
-        if(noPagination){
-            return repository.findHearingsWithNoPagination(
-                    String.valueOf(allocated),
-                    courtCentreId,
-                    courtRoomId,
-                    authorityId,
-                    hearingTypeId,
-                    ofNullable(jurisdictionType).orElse(null),
-                    parse(startDate),
-                    parse(endDate));
-        }
+    private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate, final Integer offSet, final Integer pageSize) {
         return repository.findHearings(
                 String.valueOf(allocated),
                 courtCentreId,
