@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.it;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
+import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -673,4 +674,19 @@ public class HearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedWithAnyAllocationFromAPI(UNALLOCATED);
         }
     }
+
+    @Test
+    public void shouldFindHearingForCotr() {
+        final HearingsData hearingsData = HearingsData.trialHearingsData();
+        final String courtCentreId = hearingsData.getHearingData().get(0).getCourtCentreId().toString();
+        final String startDate = nonNull(hearingsData.getHearingData().get(0).getHearingStartDate()) ? hearingsData.getHearingData().get(0).getHearingStartDate().toString() : null;
+        final String endDate = nonNull(hearingsData.getHearingData().get(0).getHearingStartDate()) ? hearingsData.getHearingData().get(0).getHearingStartDate().toString() : null;
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedForCotr(courtCentreId, startDate, endDate);
+        }
+    }
+
 }

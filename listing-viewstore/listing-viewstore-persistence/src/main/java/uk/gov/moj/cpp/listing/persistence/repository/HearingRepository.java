@@ -172,6 +172,47 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     /**
      * Find {@link Hearing}s based on the query parameters
      *
+     * @param hearingTypeIds   to search for - mandatory.
+     * @param courtCentreId    to search for - mandatory.
+     * @param startDate        to search for - mandatory.
+     * @param endDate          to search for - mandatory.
+     * @return Hearings.
+     */
+    @Query(value = "select distinct h.id, h.properties,  " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id, " +
+            "count(*) OVER() as totalCount " +
+            "from hearing h " +
+            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
+            "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
+            "LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
+            "where  " +
+            "(h.unscheduled is null or h.unscheduled = false) " +
+            "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and (cast(h.type_id as varchar) in (?1))  " +
+            "and (?2 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?2 as varchar) as uuid))  " +
+            "and (lc.is_ejected is null or lc.is_ejected = false) " +
+            "and (ca.is_ejected is null or ca.is_ejected = false) " +
+            "and (lc.id is not null or ca.id is not null) " +
+            "and ( " +
+            "(h.start_date between ?3 and ?4) or " +
+            "(h.end_date between ?3 and ?4) or " +
+            "((h.start_date <= ?3) and (h.end_date >= ?4)) " +
+            ") order by h.id, h.court_centre_id ASC", isNative = true)
+    public abstract List<Hearing> findHearingsForCotr(final Set<String> hearingTypeIds, final String courtCentreId, final LocalDate startDate, final LocalDate endDate);
+    /**
+     * Find {@link Hearing}s based on the query parameters
+     *
      * @param allocated        property to search for - mandatory.
      * @param courtCentreId    to search for or <code>null</code> for any courtCentreId - optional.
      * @param courtRoomId      to search for or <code>null</code> for any courtRoomId - optional.

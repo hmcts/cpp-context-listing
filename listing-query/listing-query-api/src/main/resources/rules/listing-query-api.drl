@@ -112,3 +112,12 @@ rule "Query - API - listing.any-allocation.search.hearings"
   then
     $outcome.setSuccess(true);
 end
+
+rule "Query - API - listing.cotr.search.hearings"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.cotr.search.hearings");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE, RuleConstants.SYSTEM_USERS));
+  then
+    $outcome.setSuccess(true);
+end

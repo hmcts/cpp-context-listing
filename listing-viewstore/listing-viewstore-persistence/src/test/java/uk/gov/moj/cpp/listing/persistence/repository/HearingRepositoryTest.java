@@ -15,6 +15,7 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals;
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -99,7 +100,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final UUID AUTHORITY_ID = randomUUID();
     private static final UUID OTHER_AUTHORITY_ID = randomUUID();
     private static final UUID TYPE_OF_LIST_ID = randomUUID();
-    private static final Type HEARING_TYPE = type().withId(randomUUID()).withDescription("TRIAL").build();
+    private static final Type HEARING_TYPE = type().withId(fromString("bf8155e1-90b9-4080-b133-bfbad895d6e4")).withDescription("TRIAL").build();
     private static final Type OTHER_HEARING_TYPE = type().withId(randomUUID()).withDescription("SENTENCE").build();
     private static final JurisdictionType JURISDICTION_TYPE = CROWN;
     private static final String JUDICIAL_ID = "0ab98bfb-fc34-44c4-a573-3801343cf123";
@@ -125,10 +126,10 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final ZonedDateTime DAY_2_END_TIME = DAY_2_START_TIME.plusHours(2);
     private static final ZonedDateTime DAY_3_START_TIME = DAY_1_START_TIME.plusDays(2);
     private static final ZonedDateTime DAY_3_END_TIME = DAY_3_START_TIME.plusHours(2);
-    private static final UUID LISTED_CASES_ID_1 = UUID.fromString("cd2a5c26-d2fd-40b3-a8be-6f1e578c5034");
-    private static final UUID COURT_APPLICATION_ID_1 = UUID.fromString("a549f16a-100d-4dca-b206-1454947e20bb");
-    private static final UUID LISTED_CASES_ID_2 = UUID.fromString("563d479b-7483-4216-9f13-aef8d87d68ae");
-    private static final UUID COURT_APPLICATION_ID_2 = UUID.fromString("ce15d9e1-c8ee-44ae-8f28-45d3d8286518");
+    private static final UUID LISTED_CASES_ID_1 = fromString("cd2a5c26-d2fd-40b3-a8be-6f1e578c5034");
+    private static final UUID COURT_APPLICATION_ID_1 = fromString("a549f16a-100d-4dca-b206-1454947e20bb");
+    private static final UUID LISTED_CASES_ID_2 = fromString("563d479b-7483-4216-9f13-aef8d87d68ae");
+    private static final UUID COURT_APPLICATION_ID_2 = fromString("ce15d9e1-c8ee-44ae-8f28-45d3d8286518");
     private static final Boolean UNSCHEDULED = FALSE;
 
     private static final String HEARING_ID_FIELD = "HEARING_ID_FIELD";
@@ -1674,6 +1675,37 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         assertThat(actualHearings.size(), is(1));
         assertTrue(extractFields(actualHearings, "$.id").contains(OTHER_HEARING_ID.toString()));
 
+    }
+
+    @Test
+    public void shouldReturnEmptyHearingsForCotrWhereQueryDoesNotFindResults() {
+        givenHearingsExist();
+
+        final Set<String> hearingTypeIds = new HashSet<>();
+        hearingTypeIds.add("bf8155e1-90b9-4080-b133-bfbad895d6e4");
+
+        final List<Hearing> actualHearings = hearingRepository.findHearingsForCotr(hearingTypeIds, randomUUID().toString(), START_SEARCH_DATE, END_SEARCH_DATE);
+
+        assertThat(actualHearings.size(), is(0));
+    }
+
+    @Test
+    public void shouldSaveAndFindHearingsForCotrWhereQueryFindsResultsJson() {
+        //given
+        givenHearingsExist();
+
+        final Set<String> hearingTypeIds = new HashSet<>();
+        hearingTypeIds.add("bf8155e1-90b9-4080-b133-bfbad895d6e4");
+
+        //when
+        final List<Hearing> actualHearings = hearingRepository.findHearingsForCotr(hearingTypeIds, COURT_CENTRE_ID.toString(), START_SEARCH_DATE, END_SEARCH_DATE);
+
+        //then
+        assertThat(actualHearings.size(), is(1));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
+        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
     }
 
     private List<Hearing> givenAllocatedAndUnallocatedHearings(final UUID caseId, final UUID applicationId) {

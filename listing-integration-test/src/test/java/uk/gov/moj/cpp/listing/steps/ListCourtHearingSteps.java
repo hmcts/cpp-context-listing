@@ -632,6 +632,15 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         verifyHearingListedFromWithApiUrl(hearingData, searchHearingUrl);
     }
 
+    public void verifyHearingListedForCotr(final String courtCentreId, final String startDate, final String endDate) {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.cotr.search.hearings"), courtCentreId, startDate, endDate));
+
+        verifyHearingListedFromWithApiUrl(hearingData, searchHearingUrl);
+    }
+
     public void verifyHearingListedFromWithApiUrl(final HearingData hearingData, final String searchHearingUrl) {
         final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
 

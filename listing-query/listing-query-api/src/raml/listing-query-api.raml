@@ -443,3 +443,32 @@ protocols: [ HTTP, HTTPS ]
                   application/vnd.listing.search.hearings+json:
                     example:  !include json/listing.search.hearings.json
                     schema:  !include  json/schema/listing.search.hearings.json
+
+/hearings/cotr-search:
+   get:
+      description: |
+        ...
+        (mapping):
+            responseType: application/vnd.listing.search.hearings+json
+            name: listing.cotr.search.hearings
+        ...
+      queryParameters:
+        courtCentreId:
+          description: court certre id
+          type: string
+          required: true
+        startDate:
+          description: hearing start date
+          type: date
+          required: true
+        endDate:
+          description: hearing end date
+          type: date
+          required: true
+      responses:
+            200:
+                description: OK
+                body:
+                  application/vnd.listing.search.hearings+json:
+                    example:  !include json/listing.search.hearings.json
+                    schema:  !include  json/schema/listing.search.hearings.json

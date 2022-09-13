@@ -107,6 +107,11 @@ public class HearingQueryApi {
         return hearingQueryView.rangeSearchHearings(query);
     }
 
+    @Handles("listing.cotr.search.hearings")
+    public JsonEnvelope searchHearingsForCotr(final JsonEnvelope query) {
+        return hearingQueryView.searchHearingsForCotr(query);
+    }
+
     @Handles("listing.search.court.list")
     public JsonEnvelope searchHearingsForCourtList(final JsonEnvelope query) {
         return query;

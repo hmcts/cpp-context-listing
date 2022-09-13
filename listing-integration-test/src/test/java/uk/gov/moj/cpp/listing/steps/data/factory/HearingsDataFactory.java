@@ -57,6 +57,7 @@ public class HearingsDataFactory {
     private static final int HEARING_ESTIMATE_MINUTES = 30;
     public static final String ESTIMATED_DURATION = "1 week";
     private static final HearingTypeData PTP_HEARING_TYPE = new HearingTypeData(UUID.fromString("52edf232-3c09-4c74-a6ad-737985c2e662"), "PTP", "welshPTP");
+    private static final HearingTypeData TRIAL_HEARING_TYPE = new HearingTypeData(UUID.fromString("bf8155e1-90b9-4080-b133-bfbad895d6e4"), "Trial", "welsh trial");
     private static final BailStatus BAIL_CONDITIONAL = new BailStatus.Builder().withId(fromString("34443c87-fa6f-34c0-897f-0cce45773df5")).withCode("P").withDescription("Custody or remanded into custody").build();
 
     public static final ZonedDateTime SLOT_START_TIME = ZonedDateTime.now();
@@ -73,6 +74,10 @@ public class HearingsDataFactory {
 
     public static List<HearingData> hearingsData() {
         return manyRandomHearings(2);
+    }
+
+    public static List<HearingData> trialHearingsData() {
+        return manyRandomHearings(2, TRIAL_HEARING_TYPE);
     }
 
     public static List<HearingData> singleHearingsData() {
@@ -324,6 +329,12 @@ public class HearingsDataFactory {
     private static List<HearingData> manyRandomHearings(final Integer numberOfHearings, final String jurisdictionType) {
         return IntStream.range(0, numberOfHearings)
                 .mapToObj((int i) -> randomHearing(jurisdictionType))
+                .collect(toList());
+    }
+
+    private static List<HearingData> manyRandomHearings(final Integer numberOfHearings, final HearingTypeData trialHearingType) {
+        return IntStream.range(0, numberOfHearings)
+                .mapToObj((int i) -> randomHearing(trialHearingType))
                 .collect(toList());
     }
 
@@ -623,6 +634,10 @@ public class HearingsDataFactory {
         return randomHearing(randomUUID(), null, null, jurisdictionType);
     }
 
+    private static HearingData randomHearing(final HearingTypeData trialHearingType) {
+        return randomHearing(randomUUID(), null, null, trialHearingType);
+    }
+
     private static HearingData notHmiEnabledRandomHearing(final String jurisdictionType) {
         return randomHearing(UUID.fromString("6bf56746-cfe8-40bc-a789-3fae393c33ab"), null, null, jurisdictionType);
     }
@@ -719,6 +734,17 @@ public class HearingsDataFactory {
                 STRING.next(),
                 singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
                 singletonList(randomCourtApplicationPartyNeed()), "Wycombe Magistrates Court");
+    }
+
+    private static HearingData randomHearing(final UUID courtCentreId, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles, final HearingTypeData trialHearingType) {
+        final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
+        return new HearingData(randomUUID(), courtCentreId, trialHearingType, LocalDate.now(),
+                LocalDate.now().plusDays(3), HEARING_ESTIMATE_MINUTES, ESTIMATED_DURATION,
+                courtRoomId, ZonedDateTime.now(), listedCaseData,
+                judicialRoles, CROWN_JURISDICTION,
+                STRING.next(),
+                singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court");
     }
 
     private static HearingData randomHearingWithWeekCommencingDates(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles, final LocalDate weekCommencingStartDate, final Integer weekCommencingDuration) {

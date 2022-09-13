@@ -16,6 +16,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData trialHearingsData() {
+        return new HearingsData(HearingsDataFactory.trialHearingsData());
+    }
+
     public static HearingsData notHmiEnabledHearingsData(){
         return new HearingsData(HearingsDataFactory.notHmiEnabledHearingsData());
     }

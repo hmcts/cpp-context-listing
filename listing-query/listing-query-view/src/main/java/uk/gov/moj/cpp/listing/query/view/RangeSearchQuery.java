@@ -17,7 +17,10 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -37,8 +40,10 @@ public class RangeSearchQuery {
     private static final String HEARINGS = "hearings";
     private static final String WEEK_COMMENCING_START_DATE = "weekCommencingStartDate";
     private static final String WEEK_COMMENCING_END_DATE = "weekCommencingEndDate";
-    public static final String EARLIEST_SEARCH_DATE = "1900-01-01";
-    public static final String LATEST_SEARCH_DATE = "9999-01-01";
+    private static final String EARLIEST_SEARCH_DATE = "1900-01-01";
+    private static final String LATEST_SEARCH_DATE = "9999-01-01";
+    private static final String TRIAL_HEARING_TYPE_ID = "bf8155e1-90b9-4080-b133-bfbad895d6e4";
+    private static final Set<String> hearingTypeIds = new HashSet<>(Arrays.asList(TRIAL_HEARING_TYPE_ID));
 
     @SuppressWarnings("squid:S1312")
     @Inject
@@ -60,12 +65,7 @@ public class RangeSearchQuery {
         final String startDate = query.payloadAsJsonObject().getString(START_DATE, EARLIEST_SEARCH_DATE);
         final String endDate = query.payloadAsJsonObject().getString(END_DATE, LATEST_SEARCH_DATE);
 
-        logger.info("Query params -  " +
-                        "courtCentreId: {}, " +
-                        "courtRoomId: {}, " +
-                        "startDate: {}, " +
-                        "endDate: {}, "
-                , courtCentreId, courtRoomId, startDate, endDate);
+        logger.info("Query params -  courtCentreId: {}, courtRoomId: {}, startDate: {}, endDate: {} ", courtCentreId, courtRoomId, startDate, endDate);
 
         final List<Hearing> hearings = findHearings(true, courtCentreId, courtRoomId, authorityId, null, null, startDate, endDate);
 
@@ -112,6 +112,23 @@ public class RangeSearchQuery {
                 createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
                         .add("results", totalCount)
                         .add("pageCount", toPageCount(totalCount, paginationParameter.getPageSize())));
+    }
+
+    public JsonEnvelope searchHearingsForCotr(final JsonEnvelope query) {
+        final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
+        final String startDate = query.payloadAsJsonObject().getString(START_DATE, EARLIEST_SEARCH_DATE);
+        final String endDate = query.payloadAsJsonObject().getString(END_DATE, LATEST_SEARCH_DATE);
+
+        logger.info("Query params -  " +
+                        "courtCentreId: {}, " +
+                        "startDate: {}, " +
+                        "endDate: {} ",
+                courtCentreId, startDate, endDate);
+
+        final List<Hearing> hearings = findHearingsForCotr(hearingTypeIds, courtCentreId, startDate, endDate);
+
+        return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
+                createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings)));
     }
 
     private long toPageCount(final long totalCount, final Integer pageSize) {
@@ -175,6 +192,10 @@ public class RangeSearchQuery {
                 parse(startDate),
                 parse(endDate), offSet, pageSize
         );
+    }
+
+    private List<Hearing> findHearingsForCotr(final Set<String> hearingTypeIds, final String courtCentreId, final String startDate, final String endDate) {
+        return repository.findHearingsForCotr(hearingTypeIds, courtCentreId, parse(startDate), parse(endDate));
     }
 
     @SuppressWarnings("squid:S00107")

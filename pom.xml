@@ -29,10 +29,8 @@
         <sonar.scm.provider>git</sonar.scm.provider>
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <junit4-dataprovider.version>2.6</junit4-dataprovider.version>
-        <coredomain.version>1.0.186</coredomain.version>
-        <referencedata.version>8.0.10</referencedata.version>
-        <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
-        <referencedata.version>8.0.11</referencedata.version>
+        <coredomain.version>1.0.189</coredomain.version>
+        <referencedata.version>8.0.15</referencedata.version>
         <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
         <sardine.version>5.7</sardine.version>
         <test-utils-enveloper-provider.version>5.1.2</test-utils-enveloper-provider.version>

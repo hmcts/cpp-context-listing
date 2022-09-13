@@ -69,6 +69,7 @@ public class HearingQueryApiTest {
     private static final String LISTING_UNSCHEDULED_SEARCH_HEARING = "listing.unscheduled.search.hearings";
     private static final String LISTING_ALLOCATED_AND_UNALLOCATED_HEARING = "listing.allocated.and.unallocated.hearings";
     private static final String LISTING_ANY_ALLOCATION_SEARCH_HEARINGS = "listing.any-allocation.search.hearings";
+    private static final String LISTING_COTR_SEARCH_HEARING = "listing.cotr.search.hearings";
     private static final String LISTING_RANGE_SEARCH = "listing.range";
     private static final String LISTING_COURT_LIST_PUBLISH_STATUS = "listing.court.list.publish.status";
     private static final String HEARING_SLOTS = "listing.search.hearing.slots";
@@ -121,6 +122,7 @@ public class HearingQueryApiTest {
                         || line.contains(LISTING_UNSCHEDULED_SEARCH_HEARING)
                         || line.contains(LISTING_ALLOCATED_AND_UNALLOCATED_HEARING)
                         || line.contains(LISTING_ANY_ALLOCATION_SEARCH_HEARINGS)
+                        || line.contains(LISTING_COTR_SEARCH_HEARING)
                 )
                 .map(line -> line.replaceAll(NAME, "").trim())
                 .collect(toList());
