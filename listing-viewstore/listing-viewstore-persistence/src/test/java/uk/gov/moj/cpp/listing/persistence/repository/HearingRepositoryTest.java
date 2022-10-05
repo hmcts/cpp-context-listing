@@ -1466,7 +1466,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         givenAllocatedAndUnallocatedHearings(LISTED_CASES_ID_2, COURT_APPLICATION_ID_2);
 
         //when
-        final List<Hearing> actualHearings = hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(LISTED_CASES_ID_2.toString(), null);
+        final List<Hearing> actualHearings = hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(LISTED_CASES_ID_2.toString());
         //then
         System.out.println("-->" + HEARING_ID.toString());
 

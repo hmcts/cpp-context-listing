@@ -286,7 +286,11 @@ public class HearingQueryView {
                             .add(HEARINGS, Json.createArrayBuilder().build())
             );
         }
-        hearings = repository.findAllocatedAndUnallocatedHearingsByCaseId(caseIdQueryParam, applicationIdQueryParam);
+        if(nonNull(applicationIdQueryParam)) {
+            hearings = repository.findAllocatedAndUnallocatedHearingsByCaseId(caseIdQueryParam, applicationIdQueryParam);
+        } else {
+            hearings = repository.findAllocatedAndUnallocatedHearingsByCaseId(caseIdQueryParam);
+        }
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
                         .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))

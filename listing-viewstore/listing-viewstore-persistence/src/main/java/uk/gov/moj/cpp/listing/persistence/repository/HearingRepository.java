@@ -389,7 +389,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "count(*) OVER() as totalCount " +
+            "count(1) OVER() as totalCount " +
             "from hearing h " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
@@ -733,6 +733,38 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
 
     /**
      * @param caseId
+     * @return
+     */
+    @Query(value = "select id, properties," +
+            "null as court_centre_id, " +
+            "null as court_room_id, " +
+            "null as type_id, " +
+            "null as start_date, " +
+            "null as end_date, " +
+            "null as is_vacated_trial, " +
+            "null as jurisdiction_type, " +
+            "null as unscheduled, " +
+            "null as week_commencing_start_date, " +
+            "null as week_commencing_end_date, " +
+            "null as allocated, " +
+            "null as type_of_list_id, " +
+            "null as totalCount " +
+            " from ( " +
+            " select distinct h.id as id, h.properties as properties, h.start_date as startDate, h.end_date as endDate " +
+            " from hearing h " +
+            " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
+            " where ((h.allocated is null or h.allocated = false) or (h.allocated = true and (h.unscheduled is null or h.unscheduled = false))) " +
+            " and (?1 is null or lc.case_id = cast(cast(?1 as varchar) as uuid)) " +
+            " ) as all_hearing " +
+            " order by all_hearing.startDate desc, all_hearing.endDate desc "
+            , isNative = true)
+    public abstract List<Hearing> findAllocatedAndUnallocatedHearingsByCaseId(String caseId);
+
+
+
+    /**
+     * @param caseId
+     * @param applicationId
      * @return
      */
     @Query(value = "select id, properties," +
