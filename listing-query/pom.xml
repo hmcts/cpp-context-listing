@@ -14,5 +14,26 @@
         <module>listing-query-view</module>
         <module>listing-query-api</module>
     </modules>
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>uk.gov.justice.framework-generators</groupId>
+                <artifactId>rest-client-generator-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>uk.gov.moj.cpp.progression</groupId>
+                        <artifactId>progression-query-api</artifactId>
+                        <version>${progression.version}</version>
+                        <classifier>raml</classifier>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
 </project>

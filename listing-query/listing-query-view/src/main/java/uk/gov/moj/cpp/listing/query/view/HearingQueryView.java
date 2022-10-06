@@ -30,6 +30,7 @@ import static uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory.n
 import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -50,10 +51,13 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.dto.LinkedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.ProsecutionCase;
 import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
+import uk.gov.moj.cpp.listing.query.view.service.JsonNodeReader;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -62,7 +66,6 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -154,10 +157,20 @@ public class HearingQueryView {
     private NotesService notesService;
 
     @Inject
+    private ProgressionService progressionService;
+
+    @Inject
     private ListToJsonArrayConverter<Notes> listToJsonArrayConverter;
 
     @Inject
     private OrganisationUnitHMICache organisationUnitHMICache;
+
+    @Inject
+    private JsonObjectToObjectConverter jsonObjectToObjectConverter;
+
+    public static final String TYPE = "type";
+
+
 
     @Handles("listing.search.hearings")
     public JsonEnvelope searchHearings(final JsonEnvelope query) {
@@ -291,10 +304,34 @@ public class HearingQueryView {
         } else {
             hearings = repository.findAllocatedAndUnallocatedHearingsByCaseId(caseIdQueryParam);
         }
+
+        final List<Hearing> hearingsToRemove = new ArrayList<>();
+        if (caseIdQueryParam != null) {
+            removedReViewHearings(hearings, caseIdQueryParam, hearingsToRemove);
+        }
+        hearingsToRemove.forEach(hearings::remove);
+
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearingsToRemove))
         );
+    }
+
+    private void removedReViewHearings(final List<Hearing> hearings, final String caseIdQueryParam, final List<Hearing> hearingsToRemove) {
+        hearings.forEach(hearing -> {
+            if (hearing.getListedCases() != null) {
+                hearing.getListedCases().forEach(listedCase -> {
+                    final ProsecutionCase prosecutionCase = progressionService.getProsecutionCaseDetails(UUID.fromString(caseIdQueryParam));
+                    final JsonNodeReader reader = JsonNodeReader.read(hearing.getProperties());
+                    if (nonNull(reader.get(TYPE))) {
+                        final String reviewType = reader.get(TYPE).getText("description");
+                        if ( prosecutionCase!= null && prosecutionCase.getLinkedApplicationsSummary() != null && !prosecutionCase.getLinkedApplicationsSummary().isEmpty() && "Review".equals(reviewType)) {
+                            hearingsToRemove.add(hearing);
+                        }
+                    }
+                });
+            }
+        });
     }
 
     @Handles("listing.available.search.hearings")
