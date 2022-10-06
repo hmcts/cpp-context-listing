@@ -27,8 +27,7 @@
   "required": [
     "hearingId",
     "cancellationReasonCode",
-    "courtCentreId",
-    "courtRoomId"
+    "courtCentreId"
   ],
   "additionalProperties": false
 }

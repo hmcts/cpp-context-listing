@@ -1304,7 +1304,9 @@ public class Hearing implements Aggregate {
                 .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
                 .filter(offence -> isNotSeededOffenceBySeedId(seedingHearingId, offence))
                 .findFirst();
-        if (offenceIdsSeededByOtherHearings.isPresent()) {
+
+
+        if (offenceIdsSeededByOtherHearings.isPresent() && !getOffencesSeededBySeededHeariinig(seedingHearingId).isEmpty()) {
             return getOffencesRemovedFromHearingStream(seedingHearingId, hearingId);
         } else {
             final List<UUID> caseIds = prosecutionCaseDefendants.keySet().stream().collect(toList());
@@ -1820,10 +1822,12 @@ public class Hearing implements Aggregate {
                         .map(lc -> ProsecutionCaseDefendantOffenceIdsV2.prosecutionCaseDefendantOffenceIdsV2()
                                 .withId(lc.getId())
                                 .withDefendants(lc.getDefendants().stream()
+                                        .filter(defendant-> !defendant.getOffences().isEmpty())
                                         .map(this::buildEventDefendantOffenceIdsV2)
                                         .collect(toList()))
                                 .build()
-                        ).collect(toList()))
+                        ).filter(prosecutionCaseDefendantOffenceIdsV2 -> !prosecutionCaseDefendantOffenceIdsV2.getDefendants().isEmpty())
+                        .collect(toList()))
                 .withCourtApplicationIds(this.confirmedCourtApplicationIds.isEmpty() ? null : this.confirmedCourtApplicationIds)
                 .withUpdateSlot(this.updateSlot)
                 .withHasAdjournmentDate(this.hasAdjournmentDate)
@@ -1862,10 +1866,12 @@ public class Hearing implements Aggregate {
                         .map(lc -> uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2.prosecutionCaseDefendantOffenceIdsV2()
                                 .withId(lc.getId())
                                 .withDefendants(lc.getDefendants().stream()
+                                        .filter(defendant-> !defendant.getOffences().isEmpty())
                                         .map(this::buildEventDefendantOffenceIdsV2)
                                         .collect(toList()))
                                 .build()
-                        ).collect(toList()))
+                        ).filter(pc-> !pc.getDefendants().isEmpty())
+                        .collect(toList()))
                 .withCourtApplicationIds(this.confirmedCourtApplicationIds.isEmpty() ? null : this.confirmedCourtApplicationIds)
                 .withUpdateSlot(this.updateSlot)
                 .withSource(source.isPresent() ? source.get() : null)
@@ -2088,10 +2094,12 @@ public class Hearing implements Aggregate {
                     .map(lc -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                             .withId(lc.getId())
                             .withDefendants(lc.getDefendants().stream()
+                                    .filter(defendant -> !defendant.getOffences().isEmpty())
                                     .map(this::buildDomainDefendantOffenceIds)
                                     .collect(toList()))
                             .build()
-                    ).collect(toList());
+                    ).filter(pcd -> !pcd.getDefendants().isEmpty())
+                    .collect(toList());
             hearing.getListedCases().forEach(
                     listedCase -> prosecutionCaseDefendants.put(listedCase.getId(), listedCase.getDefendants().stream()
                             .map(uk.gov.justice.listing.events.Defendant::getId)
@@ -2346,6 +2354,7 @@ public class Hearing implements Aggregate {
                     .map(lc -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                             .withId(lc.getId())
                             .withDefendants(lc.getDefendants().stream()
+                                    .filter(d->!d.getOffenceIds().isEmpty())
                                     .map(d -> DefendantOffenceIds.defendantOffenceIds()
                                             .withId(d.getId())
                                             .withOffences(nonNull(d.getOffenceIds()) ?
@@ -2355,11 +2364,13 @@ public class Hearing implements Aggregate {
                                             .build())
                                     .collect(toList()))
                             .build()
-                    ).collect(toList());
+                    ).filter(pcd ->!pcd.getDefendants().isEmpty())
+                    .collect(toList());
 
             this.prosecutionCaseDefendants.clear();
             event.getProsecutionCaseDefendantsOffenceIds().forEach(
                     prosecutionCase -> this.prosecutionCaseDefendants.put(prosecutionCase.getId(), prosecutionCase.getDefendants().stream()
+                            .filter(defendant -> !defendant.getOffenceIds().isEmpty())
                             .map(uk.gov.justice.listing.events.DefendantOffenceIds::getId)
                             .collect(toList())));
         } else {
@@ -2378,6 +2389,7 @@ public class Hearing implements Aggregate {
                     .map(lc -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                             .withId(lc.getId())
                             .withDefendants(lc.getDefendants().stream()
+                                    .filter(d->!d.getOffenceIds().isEmpty())
                                     .map(d -> DefendantOffenceIds.defendantOffenceIds()
                                             .withId(d.getId())
                                             .withOffences(nonNull(d.getOffenceIds()) ?
@@ -2474,6 +2486,7 @@ public class Hearing implements Aggregate {
         prosecutionCaseDefendantOffenceIds.add(ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                 .withId(listedCase.getId())
                 .withDefendants(listedCase.getDefendants().stream()
+                        .filter(defendant -> !defendant.getOffences().isEmpty())
                         .map(this::buildDomainDefendantOffenceIds)
                         .collect(toList()))
                 .build());
@@ -2484,7 +2497,8 @@ public class Hearing implements Aggregate {
                 .filter(defendantOffenceIds -> defendantOffenceIds.getId().equals(defendant.getId()))
                 .findFirst();
         if (defendantOffenceId.isPresent()) {
-            defendant.getOffences().forEach(offence ->
+            defendant.getOffences()
+                    .forEach(offence ->
                     addOffenceToProsecutionCaseDefendantsOffenceIds(defendantOffenceId, offence));
         } else {
             prosecutionCaseDefendantOffenceId.get().getDefendants().add(buildDomainDefendantOffenceIds(defendant));
@@ -2827,10 +2841,12 @@ public class Hearing implements Aggregate {
                     .map(lc -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                             .withId(lc.getId())
                             .withDefendants(lc.getDefendants().stream()
+                                    .filter(defendant ->!defendant.getOffences().isEmpty())
                                     .map(this::buildDomainDefendantOffenceIds)
                                     .collect(toList()))
                             .build()
-                    ).collect(toList());
+                    ).filter(pcd -> !pcd.getDefendants().isEmpty())
+                    .collect(toList());
         }
         this.hearingDays = convertHearingDaysToDomain(hearing.getHearingDays());
         this.allocated = TRUE;
@@ -2866,10 +2882,12 @@ public class Hearing implements Aggregate {
                         .map(lc -> uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                                 .withId(lc.getId())
                                 .withDefendants(lc.getDefendants().stream()
+                                        .filter(defendant ->!defendant.getOffences().isEmpty())
                                         .map(this::buildEventDefendantOffenceIds)
                                         .collect(toList()))
                                 .build()
-                        ).collect(toList()))
+                        ).filter(pcd-> !pcd.getDefendants().isEmpty())
+                        .collect(toList()))
                 .withCourtApplicationIds(this.confirmedCourtApplicationIds.isEmpty() ? null : this.confirmedCourtApplicationIds)
                 .withUnAllocatedListedCases(this.unAllocatedListedCases.isEmpty() ? null : this.unAllocatedListedCases.stream().map(EventAggregateConverter::buildEventListedCase).collect(toList()))
                 .withExistingHearingId(unallocatedHearing.getId())
@@ -2931,12 +2949,7 @@ public class Hearing implements Aggregate {
      * only seedingHearing Id
      */
     private Stream<Object> getOffencesRemovedFromHearingStream(final UUID seedingHearingId, final UUID hearingId) {
-        final List<UUID> offencesSeededBySeedingHearing = prosecutionCaseDefendantOffenceIds.stream()
-                .flatMap(pc -> pc.getDefendants().stream())
-                .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
-                .filter(offenceIds -> nonNull(offenceIds.getSeedingHearing()) && offenceIds.getSeedingHearing().getSeedingHearingId().equals(seedingHearingId))
-                .map(OffenceIds::getId)
-                .collect(toList());
+        final List<UUID> offencesSeededBySeedingHearing = getOffencesSeededBySeededHeariinig(seedingHearingId);
 
         final List<UUID> caseIdsSeededByOnlyOtherHearings = prosecutionCaseDefendantOffenceIds.stream()
                 .filter(pc -> pc.getDefendants().stream()
@@ -2966,6 +2979,15 @@ public class Hearing implements Aggregate {
         }
 
         return apply(eventStreamBuilder.build());
+    }
+
+    private List<UUID> getOffencesSeededBySeededHeariinig(UUID seedingHearingId) {
+        return prosecutionCaseDefendantOffenceIds.stream()
+                .flatMap(pc -> pc.getDefendants().stream())
+                .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
+                .filter(offenceIds -> nonNull(offenceIds.getSeedingHearing()) && offenceIds.getSeedingHearing().getSeedingHearingId().equals(seedingHearingId))
+                .map(OffenceIds::getId)
+                .collect(toList());
     }
 
     private boolean isNotSeededOffenceBySeedId(final UUID seedingHearingId, final uk.gov.moj.cpp.listing.domain.OffenceIds offence) {
