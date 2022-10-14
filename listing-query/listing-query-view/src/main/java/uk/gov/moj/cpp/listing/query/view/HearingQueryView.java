@@ -313,7 +313,7 @@ public class HearingQueryView {
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
-                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearingsToRemove))
+                        .add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
         );
     }
 
