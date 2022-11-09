@@ -105,6 +105,10 @@
         "estimatedMinutes": {
           "$ref": "http://justice.gov.uk/core/courts/courtsDefinitions.json#/definitions/positiveInteger"
         },
+        "estimatedDuration" :{
+          "description": "Estimated duration",
+          "type": "string"
+        },
         "typeOfList": {
           "description": "Type of Unscheduled Listing Reason (Bench Warrant etc)",
           "type": "object",

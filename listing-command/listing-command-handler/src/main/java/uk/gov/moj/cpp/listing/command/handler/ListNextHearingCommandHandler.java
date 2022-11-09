@@ -152,8 +152,12 @@ public class ListNextHearingCommandHandler {
             if (nonNull(listNextHearing.getAdjournedFromDate()) && nonNull(commandHearing.getBookingReference())) {
                 bookingReference = commandHearing.getBookingReference();
                 final List<CourtSchedule> courtScheduleList = getCourtSchedules(bookingReference.toString());
-                Collections.sort(courtScheduleList);
-                countBasedSlots.set(!courtScheduleList.get(0).getMaxSlots().equals(0));
+                if(!courtScheduleList.isEmpty()) {
+                    Collections.sort(courtScheduleList);
+                    countBasedSlots.set(!courtScheduleList.get(0).getMaxSlots().equals(0));
+                } else {
+                    countBasedSlots.set(false);
+                }
                 generateNonDefaultDays(nonDefaultDaysList, courtScheduleList, countBasedSlots.get(), commandHearing);
             }
 
