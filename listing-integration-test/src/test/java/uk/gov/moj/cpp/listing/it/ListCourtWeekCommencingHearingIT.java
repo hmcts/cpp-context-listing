@@ -185,7 +185,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
                 withJsonPath("$.hearings[2].weekCommencingStartDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
                 withJsonPath("$.hearings[2].weekCommencingEndDate", is(secondUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
         };
-        verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, null, false, matchers);
+        verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, "", false, matchers);
     }
 
     @Test

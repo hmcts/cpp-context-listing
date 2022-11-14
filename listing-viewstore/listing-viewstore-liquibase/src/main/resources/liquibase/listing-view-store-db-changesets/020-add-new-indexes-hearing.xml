@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+    <changeSet author="baris.ozturkmen" id="modify_court_application_indexes" logicalFilePath="020-add-new-indexes-hearing.xml">
+        <sql>DROP INDEX IF EXISTS hearing_idx_1</sql>
+        <sql>CREATE INDEX IF NOT EXISTS hearing_idx_1 ON hearing (allocated, unscheduled, is_vacated_trial, type_id, jurisdiction_type);
+        </sql>
+        <sql>DROP INDEX IF EXISTS hearing_idx_2</sql>
+        <sql>CREATE INDEX IF NOT EXISTS hearing_idx_2 ON hearing (court_centre_id, court_room_id);
+        </sql>
+        <sql>DROP INDEX IF EXISTS hearing_idx_3</sql>
+        <sql>CREATE INDEX IF NOT EXISTS hearing_idx_3 ON hearing (start_date, end_date);
+        </sql>
+    </changeSet>
+</databaseChangeLog>

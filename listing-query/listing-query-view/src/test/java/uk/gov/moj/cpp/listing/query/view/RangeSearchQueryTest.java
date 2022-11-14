@@ -235,8 +235,8 @@ public class RangeSearchQueryTest {
                 AUTHORITY_ID,
                 null,
                 null,
-                parse(EARLIEST_SEARCH_DATE),
-                parse(LATEST_SEARCH_DATE),
+                parse(WEEK_COMMENCING_START_DATE.toString()),
+                parse(WEEK_COMMENCING_END_DATE.toString()),
                 false, 0, paginationParameter.getPageSize()))
                 .thenReturn(hearingsJson);
         when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
@@ -248,7 +248,7 @@ public class RangeSearchQueryTest {
                         .add(ALLOCATED_QUERY_PARAMETER, false)
                         .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
                         .add(WEEK_COMMENCING_START_DATE_QUERY_PARAMETER, WEEK_COMMENCING_START_DATE.toString())
-                        .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, "")
+                        .add(WEEK_COMMENCING_END_DATE_QUERY_PARAMETER, WEEK_COMMENCING_END_DATE.toString())
                         .add(PAGE_SIZE, "50")
                         .add(PAGE_NUMBER, "1")
                         .build());
