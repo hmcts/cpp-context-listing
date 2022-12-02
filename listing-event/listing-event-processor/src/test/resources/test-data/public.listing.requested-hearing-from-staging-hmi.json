@@ -27,6 +27,15 @@
                 "offenceLegislation": "Legislation",
                 "count": 1,
                 "orderIndex": 0,
+                "reportingRestrictions" :
+                [
+                  {
+                    "id" : "34bc50c2-53d6-4b3a-9b48-d26fda463777",
+                    "judicialResultId": "34bc50c2-53d6-4b3a-9b48-d26fda463777",
+                    "label": "label",
+                    "orderedDate" : "2019-03-29"
+                  }
+                ],
                 "startDate": "+999999999-12-31",
                 "wording": "OffenceWording"
               }
@@ -112,6 +121,15 @@
                 "offenceLegislation": "Legislation",
                 "count": 1,
                 "orderIndex": 0,
+                "reportingRestrictions" :
+                [
+                  {
+                    "id" : "34bc50c2-53d6-4b3a-9b48-d26fda463777",
+                    "judicialResultId": "34bc50c2-53d6-4b3a-9b48-d26fda463777",
+                    "label": "label",
+                    "orderedDate" : "2019-03-29"
+                  }
+                ],
                 "startDate": "+999999999-12-31",
                 "wording": "OffenceWording"
               }

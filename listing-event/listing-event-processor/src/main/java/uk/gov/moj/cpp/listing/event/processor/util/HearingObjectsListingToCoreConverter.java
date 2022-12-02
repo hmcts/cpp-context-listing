@@ -32,7 +32,6 @@ import uk.gov.justice.listing.events.Hearing;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataCache;
 
-import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -44,6 +43,8 @@ import javax.inject.Inject;
 
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+
+import org.apache.commons.collections.CollectionUtils;
 
 public class HearingObjectsListingToCoreConverter {
     private static final String HEARING_CODE = "FHG";
@@ -132,7 +133,7 @@ public class HearingObjectsListingToCoreConverter {
         final Defendant.Builder builder = Defendant.defendant()
                 .withId(defendant.getId())
                 .withMasterDefendantId(defendant.getId())
-                .withCourtProceedingsInitiated(ZonedDateTime.parse("2022-03-27T13:38:26.472Z"))
+                .withCourtProceedingsInitiated(defendant.getCourtProceedingsInitiated())
                 .withProsecutionCaseId(caseId);
         if(defendant.getOrganisationName() != null){
             builder.withLegalEntityDefendant(LegalEntityDefendant.legalEntityDefendant().withOrganisation(Organisation.organisation().withName(defendant.getOrganisationName()).build()).build());
@@ -222,6 +223,16 @@ public class HearingObjectsListingToCoreConverter {
                 .withOrderIndex(offence.getOrderIndex())
                 .withCount(offence.getCount())
                 .withOffenceLegislation(offence.getStatementOfOffence().getLegislation())
+                .withReportingRestrictions(CollectionUtils.isNotEmpty(offence.getReportingRestrictions()) ? offence.getReportingRestrictions().stream().map(convertReportingRestriction()).collect(Collectors.toList()) : null)
                 .build();
+    }
+
+    private static Function<uk.gov.justice.listing.events.ReportingRestriction, uk.gov.justice.core.courts.ReportingRestriction> convertReportingRestriction(){
+            return reportingRestriction -> uk.gov.justice.core.courts.ReportingRestriction.reportingRestriction()
+                    .withId(reportingRestriction.getId())
+                    .withJudicialResultId(reportingRestriction.getJudicialResultId())
+                    .withLabel(reportingRestriction.getLabel())
+                    .withOrderedDate(reportingRestriction.getOrderedDate().toString())
+                    .build();
     }
 }

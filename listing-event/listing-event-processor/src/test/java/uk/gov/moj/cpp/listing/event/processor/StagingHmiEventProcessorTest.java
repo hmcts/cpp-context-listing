@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.StringReader;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,6 +43,7 @@ import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.Prosecutor;
+import uk.gov.justice.listing.events.ReportingRestriction;
 import uk.gov.justice.listing.events.RequestedHearingFromStagingHmi;
 import uk.gov.justice.listing.events.StatementOfOffence;
 import uk.gov.justice.listing.events.Type;
@@ -296,6 +298,7 @@ public class StagingHmiEventProcessorTest {
                                 .withId(fromString("245cecac-df76-4da9-9433-49a7b80a005c"))
                                 .withOrganisationName("OrganisationName")
                                 .withOffences(getOffences("665deace-6480-49f6-81f6-63e5215f15a1"))
+                                .withCourtProceedingsInitiated(ZonedDateTime.parse("2022-03-27T13:38:26.472Z"))
                                 .build()))
                         .withProsecutor(Prosecutor.prosecutor()
                                 .withProsecutorId(fromString("490c23eb-79de-4699-80fe-7565e4a3a3a4"))
@@ -318,6 +321,12 @@ public class StagingHmiEventProcessorTest {
     }
 
     private List<Offence> getOffences(final String s) {
+        final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MMM-yyyy");
+        LocalDate date = LocalDate.parse("29-Mar-2019", dtf);
+
+        uk.gov.justice.listing.events.ReportingRestriction reportingRestriction = new
+                ReportingRestriction(fromString("34bc50c2-53d6-4b3a-9b48-d26fda463777"), fromString("34bc50c2-53d6-4b3a-9b48-d26fda463777"), "label", date);
+
         return Collections.singletonList(Offence.offence()
                 .withOffenceWording("OffenceWording")
                 .withId(fromString(s))
@@ -326,6 +335,7 @@ public class StagingHmiEventProcessorTest {
                 .withOrderIndex(0)
                 .withCount(1)
                 .withStartDate(LocalDate.MAX.toString())
+                .withReportingRestrictions(Arrays.asList(reportingRestriction))
                 .build());
     }
 
