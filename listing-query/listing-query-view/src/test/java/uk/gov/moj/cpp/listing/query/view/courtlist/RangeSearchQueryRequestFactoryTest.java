@@ -94,6 +94,9 @@ public class RangeSearchQueryRequestFactoryTest {
             if(FIRM.equals(publishCourtListType)){
                 assertThat(queryPayload.getBoolean("noPagination"), is(true));
             }
+            if(WARN.equals(publishCourtListType)){
+                assertThat(queryPayload.getBoolean("noPagination"), is(true));
+            }
         } else {
             assertThat(queryPayload.getString("startDate"), is(START_DATE));
             assertThat(queryPayload.getString("endDate"), is(START_DATE));
