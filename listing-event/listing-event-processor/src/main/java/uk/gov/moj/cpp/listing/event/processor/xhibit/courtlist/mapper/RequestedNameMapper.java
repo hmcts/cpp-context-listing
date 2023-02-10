@@ -22,7 +22,10 @@ public class RequestedNameMapper {
         if (isNotBlank(requestedName)) {
             return requestedName;
         }
-        return format("%s %s %s %s", judiciary.getString(TITLE_JUDICIAL_PREFIX, judiciary.getString(TITLE_PREFIX, EMPTY)), judiciary.getString(FORENAMES), judiciary.getString(SURNAME), judiciary.getString(TITLE_SUFFIX, EMPTY)).trim();
+
+        final String titleSuffix = judiciary.getString(TITLE_SUFFIX, EMPTY).replace("QC","KC");
+
+        return format("%s %s %s", judiciary.getString(TITLE_JUDICIAL_PREFIX, judiciary.getString(TITLE_PREFIX, EMPTY)),  judiciary.getString(SURNAME), titleSuffix).trim();
     }
 
     public String getRequestedJusticeName(final JsonObject judiciary) {

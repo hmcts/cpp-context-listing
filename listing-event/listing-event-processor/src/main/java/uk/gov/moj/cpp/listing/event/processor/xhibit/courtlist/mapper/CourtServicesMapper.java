@@ -81,6 +81,9 @@ public class CourtServicesMapper {
     public static final String LAST_NAME = "lastName";
     public static final String FORENAMES = "forenames";
     public static final String SURNAME = "surname";
+    private static final String HEARINGS = "hearings";
+    private static final String HEARING_TYPE = "hearingType";
+    private static final String START_TIME = "startTime";
     private static final String CASE_IDENTIFIER = "caseIdentifier";
     private static final String PROSECUTOR = "prosecutor";
     private static final String CASE_REFERENCE = "caseReference";
@@ -88,7 +91,7 @@ public class CourtServicesMapper {
     private static final String JUDICIAL_ID = "judicialId";
     private static final String NONE = "NONE";
     private static final String CPS_PROSECUTOR_CODE = "CPS";
-    private static final List<String> JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER"));
+    private static final List<String> JUDGE_JUDICIARY_TYPES = new ArrayList<>(Arrays.asList("DISTRICT_JUDGE", "CIRCUIT_JUDGE", "RECORDER","DEPUTY_DISTRICT_JUDGE"));
     private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
     private static final ObjectFactory objectFactory = new ObjectFactory();
     private static final int UNMAPPED_COURT_ROOM = 99;
@@ -234,9 +237,9 @@ public class CourtServicesMapper {
         sittingStructure.setJudiciary(generateJudiciaryStructure(sittingJson.getJsonArray("judiciary").getValuesAs(JsonObject.class)));
         sittingStructure.setHearings(generateSittingStructureHearings(sittingJson));
 
-        final Optional<LocalDateTime> minimumStartTime = sittingJson.getJsonArray("hearings")
+        final Optional<LocalDateTime> minimumStartTime = sittingJson.getJsonArray(HEARINGS)
                 .getValuesAs(JsonObject.class).stream()
-                .map(hearingJson -> LocalDateTime.parse(hearingJson.getString("startTime")))
+                .map(hearingJson -> LocalDateTime.parse(hearingJson.getString(START_TIME)))
                 .min(LocalDateTime::compareTo);
 
         if (minimumStartTime.isPresent()) {
@@ -319,10 +322,10 @@ public class CourtServicesMapper {
 
         int hearingSequenceNumber = 1;
 
-        final List<JsonObject> hearingJsonList = sittingJson.getJsonArray("hearings")
+        final List<JsonObject> hearingJsonList = sittingJson.getJsonArray(HEARINGS)
                 .getValuesAs(JsonObject.class)
                 .stream()
-                .sorted(Comparator.comparing(hearing -> LocalDateTime.parse(((JsonObject) hearing).getString("startTime"))))
+                .sorted(Comparator.comparing(hearing -> LocalDateTime.parse(((JsonObject) hearing).getString(START_TIME))))
                 .collect(Collectors.toList());
 
         for (final JsonObject hearingJson : hearingJsonList) {
@@ -467,12 +470,12 @@ public class CourtServicesMapper {
         final HearingTypeStructure hearingTypeStructure = objectFactory.createHearingTypeStructure();
 
         final HearingType xhibitHearingType = commonXhibitReferenceDataService.getXhibitHearingType(
-                fromString(hearing.getJsonObject("hearingType").getString("id")));
+                fromString(hearing.getJsonObject(HEARING_TYPE).getString("id")));
 
         hearingTypeStructure.setHearingDescription(xhibitHearingType.getExhibitHearingDescription());
 
-        if (hearing.containsKey("startTime")) {
-            hearingTypeStructure.setHearingDate(LocalDateTime.parse(hearing.getString("startTime")).toLocalDate());
+        if (hearing.containsKey(START_TIME)) {
+            hearingTypeStructure.setHearingDate(LocalDateTime.parse(hearing.getString(START_TIME)).toLocalDate());
         }
         hearingTypeStructure.setHearingType(getHearingTypeForHearing(hearing));
 
@@ -680,7 +683,7 @@ public class CourtServicesMapper {
 
     public String getHearingTypeForHearing(final JsonObject hearing) {
 
-        final UUID cppHearingId = fromString(hearing.getJsonObject("hearingType").getString("id"));
+        final UUID cppHearingId = fromString(hearing.getJsonObject(HEARING_TYPE).getString("id"));
 
         return getHearingTypeForHearing(cppHearingId);
     }
@@ -715,9 +718,9 @@ public class CourtServicesMapper {
         final List<UUID> processedHearingTypes = new ArrayList<>();
         final CasesStructure casesStructure = objectFactory.createCasesStructure();
 
-        for (final JsonObject hearingJson : sittingJson.getJsonArray("hearings").getValuesAs(JsonObject.class)) {
+        for (final JsonObject hearingJson : sittingJson.getJsonArray(HEARINGS).getValuesAs(JsonObject.class)) {
 
-            final UUID hearingTypeId = fromString(hearingJson.getJsonObject("hearingType").getString("id"));
+            final UUID hearingTypeId = fromString(hearingJson.getJsonObject(HEARING_TYPE).getString("id"));
             verifyCaseStructureGeneration(pHearingTypeId, processedHearingTypes, casesStructure, hearingJson, hearingTypeId);
         }
         return casesStructure;
@@ -788,7 +791,7 @@ public class CourtServicesMapper {
 
     private void generateAndSetTimeMarkingNote(final JsonObject hearingJson,
                                                final HearingStructure hearingStructure) {
-        final ZonedDateTime localTime = DateAndTimeUtils.convertUTCToLocalTime(LocalDateTime.parse(hearingJson.getString("startTime")));
+        final ZonedDateTime localTime = DateAndTimeUtils.convertUTCToLocalTime(LocalDateTime.parse(hearingJson.getString(START_TIME)));
         hearingStructure.setTimeMarkingNote(format(TIME_MARKING_NOTE_TEXT, localTime.format(timeFormatter)));
     }
 

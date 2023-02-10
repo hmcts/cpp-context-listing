@@ -4,7 +4,8 @@ import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -34,7 +35,7 @@ public class RequestedNameMapperTest {
     public void shouldNotReturnRequestedNameAsJudgeName() {
 
         final JsonObject judiciary = createJudiciaryWithoutRequestedName();
-        final String formattedName = format("%s %s %s %s", judiciary.getString(TITLE_JUDICIAL_PREFIX, judiciary.getString(TITLE_PREFIX, EMPTY)), judiciary.getString(FORENAMES), judiciary.getString(SURNAME), judiciary.getString(TITLE_SUFFIX, EMPTY)).trim();
+        final String formattedName = format("%s %s %s", judiciary.getString(TITLE_JUDICIAL_PREFIX, judiciary.getString(TITLE_PREFIX, EMPTY)), judiciary.getString(SURNAME), judiciary.getString(TITLE_SUFFIX, EMPTY)).trim();
         final String judgeName = requestedNameMapper.getRequestedJudgeName(createJudiciaryWithoutRequestedName());
         assertThat(judgeName, is(formattedName));
     }

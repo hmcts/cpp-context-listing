@@ -201,7 +201,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameForename']/text()", sentXml);
         assertXpathEvaluatesTo("Ainsworth", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameSurname']/text()", sentXml);
-        assertXpathEvaluatesTo("Recorder Mark J Ainsworth judge", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+        assertXpathEvaluatesTo("Recorder Ainsworth judge", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameRequestedName']/text()", sentXml);
 
 
@@ -221,7 +221,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameForename']/text()", sentXml);
         assertXpathEvaluatesTo("Ainsworth", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameSurname']/text()", sentXml);
-        assertXpathEvaluatesTo("Recorder Mark J Ainsworth judge", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+        assertXpathEvaluatesTo("Recorder Ainsworth judge", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameRequestedName']/text()", sentXml);
         assertXpathEvaluatesTo("PTP", "/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='HearingDetails']/@HearingType", sentXml);
@@ -247,7 +247,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameForename']/text()", sentXml);
         assertXpathEvaluatesTo("Ainsworth", "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameSurname']/text()", sentXml);
-        assertXpathEvaluatesTo("Recorder Mark J Ainsworth judge", "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
+        assertXpathEvaluatesTo("Recorder Ainsworth judge", "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Judiciary']/*[local-name()='Judge']/*[local-name()='CitizenNameRequestedName']/text()", sentXml);
         assertXpathEvaluatesTo("PTP", "/*[local-name()='DailyList']/*[local-name()='CourtLists']/*[local-name()='CourtList']" +
                 "/*[local-name()='Sittings']/*[local-name()='Sitting']/*[local-name()='Hearings']/*[local-name()='Hearing']/*[local-name()='HearingDetails']/@HearingType", sentXml);
