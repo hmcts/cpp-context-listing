@@ -1522,7 +1522,7 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> updateDefendantCourtProceedingForHearing(final UUID hearingId, final ProsecutionCase prosecutionCase) {
 
-        if (duplicate || isHearingInThePast()) {
+        if (duplicate || isHearingInThePast() || this.deleted) {
             return Stream.empty();
         }
 

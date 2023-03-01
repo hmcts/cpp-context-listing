@@ -20,7 +20,6 @@ import static uk.gov.justice.core.courts.ProsecutionCaseIdentifier.prosecutionCa
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
 
-import io.netty.channel.group.ChannelMatchers;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.ProsecutionCase;
@@ -39,6 +38,7 @@ import uk.gov.justice.listing.events.DefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
+import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
 import uk.gov.justice.listing.events.HearingRequestedForListing;
@@ -128,7 +128,7 @@ public class HearingAggregateTest {
                 NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), defaultStartTime, UTC).plusDays(6)).withDuration(of(preferredDuration)).build())
                 .collect(Collectors.toList());
 
-        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes,estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
                 adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null);
 
@@ -161,7 +161,7 @@ public class HearingAggregateTest {
                 NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), defaultStartTime, UTC).plusDays(6)).withDuration(of(preferredDuration)).build())
                 .collect(Collectors.toList());
 
-        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes,estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
                 adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null);
 
@@ -183,7 +183,7 @@ public class HearingAggregateTest {
                 NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(2)).withDuration(of(preferredDuration)).build())
                 .collect(Collectors.toList());
 
-        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes,estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
                 adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "", null);
 
@@ -967,6 +967,65 @@ public class HearingAggregateTest {
         assertThat(listedHearing.count(), is(0L));
     }
 
+
+    @Test
+    public void shouldReturnNothingWhenHearingisDeletedForUpdateDefendantCourtProceedingForHearing2() {
+
+        final UUID case1Id = randomUUID();
+        final UUID case1Defendant1Id = randomUUID();
+        final UUID case1Defendant1Offence1Id = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+
+        final SeedingHearing seedingHearing = SeedingHearing.seedingHearing()
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                .withSeedingHearingId(seedingHearingId)
+                .build();
+
+        final ProsecutionCase prosecutionCase = prosecutionCase().
+                withId(case1Id).
+                withDefendants(asList(uk.gov.justice.core.courts.Defendant.defendant()
+                        .withId(case1Defendant1Id)
+                        .withOffences(asList(uk.gov.justice.core.courts.Offence.offence()
+                                .withId(case1Defendant1Offence1Id)
+                                .withSeedingHearing(uk.gov.justice.core.courts.SeedingHearing.seedingHearing()
+                                        .withSeedingHearingId(seedingHearingId).build())
+                                .build()))
+                        .build()))
+                .build();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(case1Id)
+                                .withDefendants(asList(Defendant.defendant()
+                                        .withId(case1Defendant1Id)
+                                        .withOffences(asList(Offence.offence()
+                                                .withId(case1Defendant1Offence1Id)
+                                                .withSeedingHearing(seedingHearing)
+                                                .build()))
+                                        .build()))
+                                .build())))
+                        .build())
+                .build());
+
+        hearing.apply(HearingDeleted.hearingDeleted().withHearingIdToBeDeleted(hearingId).build());
+        final Stream<Object> listedHearing = hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase);
+
+        assertThat(listedHearing.count(), is(0L));
+
+
+    }
+
     @Test
     public void shouldReturnNothingWhenDefendantListIsNullForUpdateDefendantCourtProceedingForHearing2() {
         final UUID case1Id = randomUUID();
@@ -1263,7 +1322,6 @@ public class HearingAggregateTest {
                 .build());
 
 
-
         hearing.apply(HearingAllocatedForListingV2.hearingAllocatedForListingV2()
                 .withHearingId(hearingId)
                 .withCourtRoomId(randomUUID())
@@ -1274,7 +1332,7 @@ public class HearingAggregateTest {
                                         .withId(case1Defendant1Id)
                                         .withOffenceIds(new ArrayList<>(asList(OffenceIds.offenceIds()
                                                 .withId(case1Defendant1Offence1Id)
-                                                .build(),OffenceIds.offenceIds().withId(case1Defendant1Offence2Id).build())))
+                                                .build(), OffenceIds.offenceIds().withId(case1Defendant1Offence2Id).build())))
                                         .build())))
                                 .build(),
                         ProsecutionCaseDefendantOffenceIdsV2.prosecutionCaseDefendantOffenceIdsV2()
@@ -1283,13 +1341,10 @@ public class HearingAggregateTest {
                                         .withId(case2Defendant1Id)
                                         .withOffenceIds(new ArrayList<>(asList(
                                                 OffenceIds.offenceIds().withId(case2Defendant1OffenceId).build())
-                                                ))
+                                        ))
                                         .build())))
                                 .build())))
                 .build());
-
-
-
 
 
         hearing.apply(CasesAddedToHearing.casesAddedToHearing()
@@ -1886,7 +1941,7 @@ public class HearingAggregateTest {
     }
 
     @Test
-    public void shouldUpdateCaseIdentifier(){
+    public void shouldUpdateCaseIdentifier() {
         final UUID prosecutionAuthorityId = randomUUID();
         final String prosecutionAuthorityCode = "code";
 
@@ -1903,27 +1958,27 @@ public class HearingAggregateTest {
                         .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
                         .withHearingDays(emptyList())
                         .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
-                                        .withId(case1Id)
-                                        .withCaseIdentifier(CaseIdentifier.caseIdentifier()
-                                                .withCaseReference("caseReference")
-                                                .build())
-                                        .withDefendants(new ArrayList<>(asList(Defendant.defendant()
-                                                .withId(defendant1Id)
-                                                .withOffences(new ArrayList<>(asList(Offence.offence()
-                                                        .withId(offence1Id)
-                                                        .withSeedingHearing(SeedingHearing.seedingHearing()
-                                                                .withJurisdictionType(CROWN)
-                                                                .withSeedingHearingId(seedingHearingId)
-                                                                .build())
-                                                        .build())))
+                                .withId(case1Id)
+                                .withCaseIdentifier(CaseIdentifier.caseIdentifier()
+                                        .withCaseReference("caseReference")
+                                        .build())
+                                .withDefendants(new ArrayList<>(asList(Defendant.defendant()
+                                        .withId(defendant1Id)
+                                        .withOffences(new ArrayList<>(asList(Offence.offence()
+                                                .withId(offence1Id)
+                                                .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                        .withJurisdictionType(CROWN)
+                                                        .withSeedingHearingId(seedingHearingId)
+                                                        .build())
                                                 .build())))
-                                        .build()))
+                                        .build())))
+                                .build()))
                         .build())
                 .build());
 
         Stream<Object> events = hearing.updateCaseIdentifier(prosecutionAuthorityId, prosecutionAuthorityCode, case1Id);
         events = hearing.raiseUpdateHearingInStagingHmi(events);
-        final UpdatedHearingInStagingHmi updatedHearingInStagingHmi = (UpdatedHearingInStagingHmi)events.collect(Collectors.toList()).get(1);
+        final UpdatedHearingInStagingHmi updatedHearingInStagingHmi = (UpdatedHearingInStagingHmi) events.collect(Collectors.toList()).get(1);
         assertThat(updatedHearingInStagingHmi.getHearing().getListedCases().get(0).getCaseIdentifier().getCaseReference(), is("caseReference"));
         assertThat(updatedHearingInStagingHmi.getHearing().getListedCases().get(0).getCaseIdentifier().getAuthorityId(), is(prosecutionAuthorityId));
         assertThat(updatedHearingInStagingHmi.getHearing().getListedCases().get(0).getCaseIdentifier().getAuthorityCode(), is(prosecutionAuthorityCode));
