@@ -97,6 +97,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(numberOfHearings));
     }
 
+    public static HearingsData hearingsDataWithPossibleDisqualification() {
+        return new HearingsData(HearingsDataFactory.singleHearingsDataWithPossibleDisqualification());
+    }
+
     public static HearingsData hearingsDataWithAllocationDataAndAdjournmentFromDateWithoutJudiciary(final Integer numberOfHearings) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndAdjournmentFromDateWithoutJudiciary(numberOfHearings));
     }

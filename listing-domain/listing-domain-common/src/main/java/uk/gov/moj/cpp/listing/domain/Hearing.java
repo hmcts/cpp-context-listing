@@ -65,9 +65,13 @@ public class Hearing {
 
   private final Optional<Boolean> isSlotsBooked;
 
-  public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, String estimatedDuration, final List<HearingDay> hearingDays, final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections, final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final ZonedDateTime startDateTime,
+  private final Optional<Boolean> isPossibleDisqualification;
+
+  public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, String estimatedDuration, final List<HearingDay> hearingDays,
+                 final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections,
+                 final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final ZonedDateTime startDateTime,
                  final Type type, final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds, final Optional<Boolean> hasAdjournmentDate,
-                 final Optional<LocalDate> weekCommencingStartDate, final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks, final Optional<Boolean> isSlotsBooked){
+                 final Optional<LocalDate> weekCommencingStartDate, final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks, final Optional<Boolean> isSlotsBooked, final Optional<Boolean> isPossibleDisqualification){
     this.allocated = allocated;
     this.courtCentreId = courtCentreId;
     this.courtRoomId = courtRoomId;
@@ -95,6 +99,7 @@ public class Hearing {
     this.weekCommencingEndDate = weekCommencingEndDate;
     this.weekCommencingDurationInWeeks = weekCommencingDurationInWeeks;
     this.isSlotsBooked = isSlotsBooked;
+    this.isPossibleDisqualification = isPossibleDisqualification;
   }
 
   public Boolean getAllocated() {
@@ -203,6 +208,10 @@ public class Hearing {
     return isSlotsBooked;
   }
 
+  public Optional<Boolean> getIsPossibleDisqualification() {
+    return isPossibleDisqualification;
+  }
+
   public static Builder hearing() {
     return new Hearing.Builder();
   }
@@ -238,12 +247,13 @@ public class Hearing {
             Objects.equals(weekCommencingStartDate, hearing.weekCommencingStartDate) &&
             Objects.equals(weekCommencingEndDate, hearing.weekCommencingEndDate) &&
             Objects.equals(weekCommencingDurationInWeeks, hearing.weekCommencingDurationInWeeks) &&
-            Objects.equals(isSlotsBooked, hearing.isSlotsBooked);
+            Objects.equals(isSlotsBooked, hearing.isSlotsBooked) &&
+            Objects.equals(isPossibleDisqualification, hearing.isPossibleDisqualification);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate, isSlotsBooked);
+    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate, isSlotsBooked, isPossibleDisqualification);
   }
 
   @Override
@@ -276,6 +286,7 @@ public class Hearing {
             ", weekCommencingEndDate=" + weekCommencingEndDate +
             ", weekCommencingDurationInWeeks=" + weekCommencingDurationInWeeks +
             ", isSlotsBooked=" + isSlotsBooked +
+            ", isPossibleDisqualification=" + isPossibleDisqualification +
             '}';
   }
 
@@ -333,6 +344,8 @@ public class Hearing {
     private Optional<Integer> weekCommencingDurationInWeeks = empty();
 
     private Optional<Boolean> isSlotsBooked = empty();
+
+    private Optional<Boolean> isPossibleDisqualification;
 
     public Builder withAllocated(final Boolean allocated) {
       this.allocated = allocated;
@@ -466,8 +479,13 @@ public class Hearing {
       return this;
     }
 
+    public Builder withIsPossibleDisqualification(final Optional<Boolean> isPossibleDisqualification) {
+      this.isPossibleDisqualification = isPossibleDisqualification;
+      return this;
+    }
+
     public Hearing build() {
-      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks, this.isSlotsBooked);
+      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks, this.isSlotsBooked, this.isPossibleDisqualification);
     }
   }
 }

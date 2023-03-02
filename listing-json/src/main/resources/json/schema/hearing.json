@@ -108,6 +108,9 @@
     "isSlotsBooked": {
       "type": "boolean"
     },
+    "isPossibleDisqualification": {
+      "type": "boolean"
+    },
     "isGroupProceedings": {
       "description": "The hearing is a logical grouping of cases when it is true",
       "type": "boolean"

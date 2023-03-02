@@ -68,6 +68,15 @@ public class ListCourtHearingIT extends AbstractIT {
     }
 
     @Test
+    public void shouldListHearingWithPossibleDisqualification() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithPossibleDisqualification())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedWithPossibleDisqualificationInActiveMQ();
+            listCourtHearingSteps.verifyHearingWithPossibleDisqualificationFromAPI();
+        }
+    }
+
+    @Test
     public void shouldListHearingWithAdjournedDateMultipleCountBasedSlots() {
 
         stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased();

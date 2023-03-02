@@ -1,9 +1,11 @@
 package uk.gov.moj.cpp.listing.query.view;
 
 import static java.time.LocalDate.parse;
+import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
+import static org.apache.commons.lang3.BooleanUtils.isTrue;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
@@ -20,6 +22,7 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterE
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -44,6 +47,7 @@ public class RangeSearchQuery {
     private static final String LATEST_SEARCH_DATE = "9999-01-01";
     private static final String TRIAL_HEARING_TYPE_ID = "bf8155e1-90b9-4080-b133-bfbad895d6e4";
     private static final Set<String> hearingTypeIds = new HashSet<>(Arrays.asList(TRIAL_HEARING_TYPE_ID));
+    private static final String POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER = "possibleDisqualification";
 
     @SuppressWarnings("squid:S1312")
     @Inject
@@ -88,6 +92,11 @@ public class RangeSearchQuery {
         final PaginationParameter paginationParameter = newPaginationParameter(query.payloadAsJsonObject());
         final boolean noPagination = query.payloadAsJsonObject().getBoolean("noPagination", false);
 
+        Optional<Boolean> possibleDisqualificationOpt = Optional.empty();
+        if (nonNull(query.payloadAsJsonObject().get(POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER))) {
+            possibleDisqualificationOpt = Optional.of(query.payloadAsJsonObject().getBoolean(POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER));
+        }
+
         logger.info("Query params -  " +
                         "allocated: {}, " +
                         "courtCentreId: {}, " +
@@ -99,13 +108,13 @@ public class RangeSearchQuery {
                         "endDate: {}, " +
                         "weekCommencingStartDate: {}, " +
                         "weekCommencingEndDate: {}, " +
-                        "noPagination : {}, "
-                ,
-                allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate, noPagination);
+                        "noPagination : {}, " +
+                        "possibleDisqualification : {}, ",
+                allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, weekCommencingStartDate, weekCommencingEndDate, noPagination, possibleDisqualificationOpt);
 
-        final List<Hearing> hearings = !weekCommencingStartDate.isEmpty() ?
-                findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, paginationParameter.getOffSet(), paginationParameter.getPageSize(), noPagination) :
-                findHearings(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, paginationParameter.getOffSet(), paginationParameter.getPageSize());
+        final List<Hearing> hearings = !weekCommencingStartDate.isEmpty()
+                ? findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, possibleDisqualificationOpt, paginationParameter.getOffSet(), paginationParameter.getPageSize(), noPagination)
+                : findHearings(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, paginationParameter.getOffSet(), paginationParameter.getPageSize());
 
         final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
@@ -136,10 +145,18 @@ public class RangeSearchQuery {
     }
 
     @SuppressWarnings("squid:S00107")
-    private List<Hearing> findHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate, final Integer offSet, final Integer pageSize, boolean noPagination) {
-        return isFalse(allocated) ?
-                getUnallocatedHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, offSet, weekCommencingDate, weekCommencingEndDate, pageSize) :
-                getHearingsByWeekCommencingRange(courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingDate, weekCommencingEndDate, offSet, pageSize, noPagination);
+    private List<Hearing> findHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId,
+                                                            final String jurisdictionType, final String weekCommencingDate, final String weekCommencingEndDate,
+                                                            final Optional<Boolean> possibleDisqualificationOpt, final Integer offSet, final Integer pageSize, boolean noPagination) {
+         if (isFalse(allocated)) {
+             if (possibleDisqualificationOpt.isPresent() && isTrue(possibleDisqualificationOpt.get())) {
+                 return getUnallocatedHearingsByWeekCommencingRangeAndPossibleDisqualification(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, offSet, weekCommencingDate, weekCommencingEndDate, possibleDisqualificationOpt.get(), pageSize);
+             }
+
+             return getUnallocatedHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, offSet, weekCommencingDate, weekCommencingEndDate, pageSize);
+         } else {
+             return getHearingsByWeekCommencingRange(courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingDate, weekCommencingEndDate, offSet, pageSize, noPagination);
+         }
     }
 
     private List<Hearing> getUnallocatedHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final Integer offSet, final String weekCommencingStartDate, final String weekCommencingEndDate, final Integer pageSize) {
@@ -152,6 +169,23 @@ public class RangeSearchQuery {
                 isNotBlank(weekCommencingStartDate) ? parse(weekCommencingStartDate) : parse(EARLIEST_SEARCH_DATE),
                 isNotBlank(weekCommencingEndDate) ? parse(weekCommencingEndDate) : parse(LATEST_SEARCH_DATE),
                 allocated,
+                offSet,
+                pageSize);
+    }
+
+    private List<Hearing> getUnallocatedHearingsByWeekCommencingRangeAndPossibleDisqualification(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId,
+                                                                                                 final String hearingTypeId, final String jurisdictionType, final Integer offSet, final String weekCommencingStartDate,
+                                                                                                 final String weekCommencingEndDate, final boolean possibleDisqualification, final Integer pageSize) {
+        return repository.findUnallocatedHearingsByWeekCommencingRangeAndPossibleDisqualification(
+                courtCentreId,
+                courtRoomId,
+                authorityId,
+                hearingTypeId,
+                jurisdictionType,
+                isNotBlank(weekCommencingStartDate) ? parse(weekCommencingStartDate) : parse(EARLIEST_SEARCH_DATE),
+                isNotBlank(weekCommencingEndDate) ? parse(weekCommencingEndDate) : parse(LATEST_SEARCH_DATE),
+                allocated,
+                possibleDisqualification,
                 offSet,
                 pageSize);
     }
@@ -181,7 +215,10 @@ public class RangeSearchQuery {
     }
 
     @SuppressWarnings("squid:S00107")
-    private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate, final Integer offSet, final Integer pageSize) {
+    private List<Hearing> findHearings(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId,
+                                       final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate,
+                                       final Integer offSet, final Integer pageSize) {
+
         return repository.findHearings(
                 String.valueOf(allocated),
                 courtCentreId,
@@ -190,8 +227,7 @@ public class RangeSearchQuery {
                 hearingTypeId,
                 ofNullable(jurisdictionType).orElse(null),
                 parse(startDate),
-                parse(endDate), offSet, pageSize
-        );
+                parse(endDate), offSet, pageSize);
     }
 
     private List<Hearing> findHearingsForCotr(final Set<String> hearingTypeIds, final String courtCentreId, final String startDate, final String endDate) {

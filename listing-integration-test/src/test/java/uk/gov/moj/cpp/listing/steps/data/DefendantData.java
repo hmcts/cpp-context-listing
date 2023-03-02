@@ -23,13 +23,14 @@ public class DefendantData {
     private final LegalEntityDefendantData legalEntityDefendant;
     private final Boolean isYouth;
     private final Boolean proceedingsConcluded;
+    private final String listingReason;
 
     public DefendantData(final UUID defendantId, final String firstName,
                          final String lastName, final LocalDate dateOfBirth,
                          final LocalDate custodyTimeLimit, final BailStatus bailStatus,
                          final String defenceOrganisation, final List<OffenceData> offences, final LegalEntityDefendantData legalEntityDefendant,
-                         final Boolean restrictFromCourtList, final Boolean isYouth, final Boolean proceedingsConcluded
-            , final UUID masterDefendantId, final ZonedDateTime courtProceedingsInitiated) {
+                         final Boolean restrictFromCourtList, final Boolean isYouth, final Boolean proceedingsConcluded,
+                         final UUID masterDefendantId, final ZonedDateTime courtProceedingsInitiated, final String listingReason) {
         this.defendantId = defendantId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -44,6 +45,7 @@ public class DefendantData {
         this.proceedingsConcluded = proceedingsConcluded;
         this.masterDefendantId = masterDefendantId;
         this.courtProceedingsInitiated = courtProceedingsInitiated;
+        this.listingReason = listingReason;
     }
 
     public UUID getDefendantId() {
@@ -108,5 +110,9 @@ public class DefendantData {
 
     public ZonedDateTime getCourtProceedingsInitiated() {
         return courtProceedingsInitiated;
+    }
+
+    public String getListingReason() {
+        return listingReason;
     }
 }

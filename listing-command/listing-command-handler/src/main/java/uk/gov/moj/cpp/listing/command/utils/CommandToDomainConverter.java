@@ -61,6 +61,8 @@ import java.util.stream.Collectors;
 @SuppressWarnings({"pmd:NullAssignment", "squid:S2583", "squid:S1172", "squid:CommentedOutCodeLine", "pmd:NullAssignment", "squid:MethodCyclomaticComplexity", "squid:S3655", "squid:S1067"})
 public class CommandToDomainConverter implements Converter<HearingListingNeeds, Hearing> {
 
+    public static final String REFERRAL_REASON_FOR_DISQUALIFICATION = "For disqualification";
+
     @SuppressWarnings({"squid:S3655"})
     public static ZonedDateTime extractStartDate(final HearingListingNeeds commandHearing) {
         return extractStartDate(ofNullable(commandHearing.getListedStartDateTime()), ofNullable(commandHearing.getEarliestStartDateTime()));
@@ -134,6 +136,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withWeekCommencingStartDate(weekCommencingStartDate)
                 .withWeekCommencingEndDate(weekCommencingEndDate)
                 .withWeekCommencingDurationInWeeks(weekCommencingDurationInWeeks)
+                .withIsPossibleDisqualification(isPossibleDisqualification(commandHearing))
                 .build();
     }
 
@@ -366,6 +369,16 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
             return valueFor(listDefendantRequest.get().getHearingLanguageNeeds().toString());
         }
         return empty();
+    }
+
+    private Optional<Boolean> isPossibleDisqualification(final HearingListingNeeds commandHearing) {
+
+        if (nonNull(commandHearing.getDefendantListingNeeds())){
+            final boolean match = commandHearing.getDefendantListingNeeds().stream()
+                    .anyMatch(defendantListingNeeds -> REFERRAL_REASON_FOR_DISQUALIFICATION.equals(defendantListingNeeds.getListingReason()));
+            return match ? Optional.of(Boolean.TRUE) : Optional.empty();
+        }
+        return Optional.empty();
     }
 
     private Optional<HearingLanguageNeeds> getHearingLanguageNeeds(final HearingUnscheduledListingNeeds commandHearing, final Defendant d) {

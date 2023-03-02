@@ -389,7 +389,8 @@ public class Hearing implements Aggregate {
                                final Boolean isSlotsBooked,
                                final String bookingType,
                                final String priority,
-                               final List<String> specialRequirements) {
+                               final List<String> specialRequirements,
+                               final Optional<Boolean> isPossibleDisqualification) {
 
         if (this.duplicate || this.deleted) {
             return Stream.empty();
@@ -476,6 +477,8 @@ public class Hearing implements Aggregate {
             builder.withBookingType(bookingType);
             builder.withPriority(priority);
             builder.withSpecialRequirements(specialRequirements);
+
+            isPossibleDisqualification.ifPresent(builder::withIsPossibleDisqualification);
             return apply(Stream.of(hearingListed()
                     .withHearing(builder.build())
                     .build()));

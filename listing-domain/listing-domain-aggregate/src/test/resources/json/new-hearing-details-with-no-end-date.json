@@ -129,5 +129,6 @@
   "specialRequirements": [
     "RVC",
     "GSN"
-  ]
+  ],
+  "isPossibleDisqualification": false
 }

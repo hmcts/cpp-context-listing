@@ -130,7 +130,7 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null);
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, of(Boolean.FALSE));
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -163,7 +163,7 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null);
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, of(Boolean.FALSE));
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -175,6 +175,43 @@ public class HearingAggregateTest {
         assertThat(hearing.getNonDefaultDays(), is(emptyList()));
     }
 
+    @Test
+    public void shouldSetPossibleDisqualificationOnTheEventWhenTrue() {
+        nonDefaultDays = Stream.of(
+                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(2)).withDuration(of(preferredDuration)).build(),
+                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(4)).withDuration(of(defaultDuration)).build(),
+                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), defaultStartTime, UTC).plusDays(6)).withDuration(of(preferredDuration)).build())
+                .collect(Collectors.toList());
+
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes,estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, of(Boolean.TRUE));
+
+        final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
+        final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
+
+        assertThat(hearing.getId(), is(hearingId));
+        assertThat(hearing.getIsPossibleDisqualification(), is(Boolean.TRUE));
+    }
+
+    @Test
+    public void shouldNotSetPossibleDisqualificationOnTheEventWhenFalse() {
+        nonDefaultDays = Stream.of(
+                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(2)).withDuration(of(preferredDuration)).build(),
+                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(4)).withDuration(of(defaultDuration)).build(),
+                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), defaultStartTime, UTC).plusDays(6)).withDuration(of(preferredDuration)).build())
+                .collect(Collectors.toList());
+
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes,estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+                reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, Optional.empty());
+
+        final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
+        final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
+
+        assertThat(hearing.getId(), is(hearingId));
+        assertThat(hearing.getIsPossibleDisqualification(), is(nullValue()));
+    }
 
     @Test
     public void shouldCalculateHearingDaysWithStartDateAndSingleNonDefaultDay() {
@@ -185,7 +222,7 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "", null);
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "", null, of(Boolean.FALSE));
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -735,7 +772,7 @@ public class HearingAggregateTest {
 
         hearing.apply(offencesRemovedFromHearing);
 
-        final Stream<Object> allocationStream = hearing.applyAllocationRules(Optional.of(randomUUID()));
+        final Stream<Object> allocationStream = hearing.applyAllocationRules(of(randomUUID()));
 
         final HearingAllocatedForListingV2 hearingAllocatedForListing = (HearingAllocatedForListingV2) allocationStream.collect(Collectors.toList()).get(0);
 

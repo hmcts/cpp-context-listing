@@ -42,6 +42,25 @@ import org.apache.deltaspike.data.api.SingleResultType;
 @Repository
 public abstract class HearingRepository implements EntityRepository<Hearing, UUID>, EntityManagerDelegate<Hearing> {
 
+    private static final String UNALLOCATED_COMMON_SELECT_FROM = "select h.id, h.properties,  " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id, " +
+            "count(1) OVER() as totalCount, " +
+            "h.is_possible_disqualification " +
+            "from hearing h " +
+            "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
+            " LEFT JOIN court_applications ca ON ca.hearing_id = h.id ";
+
     private static final String WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED = "(h.unscheduled is null or h.unscheduled = false)" +
             "and (?3 is null or (lc.authority_id = cast(cast(?3 as varchar) as uuid) or lc.prosecutor_id = cast(cast(?3 as varchar) as uuid)))  " +
             "and (?4 is null or h.type_id = cast(cast(?4 as varchar) as uuid))  " +
@@ -85,7 +104,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "1 as totalCount " +
+            "1 as totalCount, " +
+            "h.is_possible_disqualification " +
             "from hearing h INNER JOIN hearing_days hd on hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
             "where  " +
@@ -138,7 +158,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "count(*) OVER() as totalCount " +
+            "count(*) OVER() as totalCount, " +
+            "h.is_possible_disqualification " +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -159,7 +180,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "(h.start_date between ?7 and ?8 ) or " +
             "(h.end_date between ?7 and ?8 ) or " +
             "((h.start_date <= ?7 ) and (h.end_date >= ?8 ) )  " +
-            ") order by h.id, h.court_centre_id ASC OFFSET (?9) ROWS FETCH NEXT (?10) ROWS ONLY", isNative = true)
+            ") " +
+            " order by h.id, h.court_centre_id ASC OFFSET (?9) ROWS FETCH NEXT (?10) ROWS ONLY", isNative = true)
     public abstract List<Hearing> findHearings(final String allocated,
                                                final String courtCentreId,
                                                final String courtRoomId,
@@ -167,11 +189,81 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
                                                final String hearingTypeId,
                                                final String jurisdictionType,
                                                final LocalDate startDate,
-                                               final LocalDate endDate, final Integer offSet, final Integer pageSize);
+                                               final LocalDate endDate,
+                                               final Integer offSet,
+                                               final Integer pageSize);
 
     /**
      * Find {@link Hearing}s based on the query parameters
      *
+<<<<<<< Updated upstream
+     * @param allocated        property to search for - mandatory.
+     * @param courtCentreId    to search for or <code>null</code> for any courtCentreId - optional.
+     * @param courtRoomId      to search for or <code>null</code> for any courtRoomId - optional.
+     * @param authorityCode    to search for or <code>null</code> for any authorityCode - optional.
+     * @param hearingTypeId    to search for or <code>null</code> for any hearingType - optional.
+     * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType -
+     *                         optional.
+     * @param startDate        to search for - mandatory.
+     * @param endDate          to search for - mandatory.
+     * @param possibleDisqualification  to search for possibleDisqualification.
+     * @return Hearings.
+     */
+    @Query(value = "select distinct h.id, h.properties,  " +
+            "h.court_centre_id, " +
+            "h.court_room_id, " +
+            "h.type_id, " +
+            "h.start_date, " +
+            "h.end_date, " +
+            "h.is_vacated_trial, " +
+            "h.jurisdiction_type, " +
+            "h.unscheduled, " +
+            "h.week_commencing_start_date, " +
+            "h.week_commencing_end_date, " +
+            "h.allocated, " +
+            "h.type_of_list_id, " +
+            "count(*) OVER() as totalCount, " +
+            "h.is_possible_disqualification " +
+            "from hearing h " +
+            "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
+            "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
+            "LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
+            "where  " +
+            "cast(h.allocated as varchar) = cast(?1 as varchar)  " +
+            "and (h.unscheduled is null or h.unscheduled = false) " +
+            "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and (?2 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?2 as varchar) as uuid))  " +
+            "and (?3 is null or coalesce(hd.court_room_id, h.court_room_id) = cast(cast(?3 as varchar) as uuid))  " +
+            "and (?4 is null or (lc.authority_id = cast(cast(?4 as varchar) as uuid) or lc.prosecutor_id = cast(cast(?4 as varchar) as uuid)))  " +
+            "and (?5 is null or h.type_id = cast(cast(?5 as varchar) as uuid))  " +
+            "and (?6 is null or h.jurisdiction_type = cast(?6 as text))  " +
+            "and (lc.is_ejected is null or lc.is_ejected =false) " +
+            "and (ca.is_ejected is null or ca.is_ejected =false) " +
+            "and (lc.id is not null or ca.id is not null) " +
+            "and ( " +
+            "(h.start_date between ?7 and ?8 ) or " +
+            "(h.end_date between ?7 and ?8 ) or " +
+            "((h.start_date <= ?7 ) and (h.end_date >= ?8 ) )  " +
+            ") " +
+            "and h.is_possible_disqualification = ?9 " +
+            " order by h.id, h.court_centre_id ASC OFFSET (?10) ROWS FETCH NEXT (?11) ROWS ONLY", isNative = true)
+    public abstract List<Hearing> findHearings(final String allocated,
+                                               final String courtCentreId,
+                                               final String courtRoomId,
+                                               final String authorityCode,
+                                               final String hearingTypeId,
+                                               final String jurisdictionType,
+                                               final LocalDate startDate,
+                                               final LocalDate endDate,
+                                               final boolean possibleDisqualification,
+                                               final Integer offSet,
+                                               final Integer pageSize);
+
+    /**
+     * Find {@link Hearing}s based on the query parameters
+     *
+=======
+>>>>>>> Stashed changes
      * @param hearingTypeIds   to search for - mandatory.
      * @param courtCentreId    to search for - mandatory.
      * @param startDate        to search for - mandatory.
@@ -191,7 +283,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "count(*) OVER() as totalCount " +
+            "count(*) OVER() as totalCount, " +
+            "h.is_possible_disqualification " +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -237,7 +330,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "1 as totalCount " +
+            "1 as totalCount, " +
+            "h.is_possible_disqualification " +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -294,7 +388,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "count(*) OVER() as totalCount " +
+            "count(*) OVER() as totalCount, " +
+            "h.is_possible_disqualification " +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -332,7 +427,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "count(*) OVER() as totalCount " +
+            "count(*) OVER() as totalCount, " +
+            "h.is_possible_disqualification " +
             "from hearing h " +
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
@@ -376,23 +472,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
      * @param weekCommencingEndDate   to search for - mandatory.
      * @return Hearings.
      */
-    @Query(value = "select h.id, h.properties,  " +
-            "h.court_centre_id, " +
-            "h.court_room_id, " +
-            "h.type_id, " +
-            "h.start_date, " +
-            "h.end_date, " +
-            "h.is_vacated_trial, " +
-            "h.jurisdiction_type, " +
-            "h.unscheduled, " +
-            "h.week_commencing_start_date, " +
-            "h.week_commencing_end_date, " +
-            "h.allocated, " +
-            "h.type_of_list_id, " +
-            "count(1) OVER() as totalCount " +
-            "from hearing h " +
-            "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
-            " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
+    @Query(value = UNALLOCATED_COMMON_SELECT_FROM +
             "where  " +
             "(h.is_vacated_trial is null or h.is_vacated_trial != true) and " +
             "h.allocated = ?8  " +
@@ -415,6 +495,51 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             final LocalDate weekCommencingStartDate,
             final LocalDate weekCommencingEndDate,
             final boolean allocated, final Integer offSet, final Integer pageSize);
+
+    /**
+     * Find {@link Hearing}s based on the query parameters
+     *
+     * @param allocated               property to search for -mandatory.
+     * @param courtCentreId           to search for or <code>null</code> for any courtCentreId -
+     *                                optional.
+     * @param courtRoomId             to search for or <code>null</code> for any courtRoomId -
+     *                                optional.
+     * @param authorityCode           to search for or <code>null</code> for any authorityCode -
+     *                                optional.
+     * @param hearingTypeId           to search for or <code>null</code> for any hearingType -
+     *                                optional.
+     * @param jurisdictionType        to search for or <code>null</code> for any jurisdictionType -
+     *                                optional.
+     * @param weekCommencingStartDate to search for - mandatory.
+     * @param weekCommencingEndDate   to search for - mandatory.
+     * @param possibleDisqualification to search for - mandatory.
+     * @return Hearings.
+     */
+    @Query(value = UNALLOCATED_COMMON_SELECT_FROM +
+            "where  " +
+            "(h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and h.allocated = ?8  " +
+            "and h.is_possible_disqualification = ?9  " +
+            "and (?1 is null or h.court_centre_id = cast(cast(?1 as varchar) as uuid))  " +
+            "and (?2 is null or h.court_room_id = cast(cast(?2 as varchar) as uuid))  " +
+            "  and (lc.is_ejected is null or lc.is_ejected =false) " +
+            "  and (ca.is_ejected is null or ca.is_ejected =false) " +
+            "  and (lc.id is not null or ca.id is not null)" +
+            "and " +
+            WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED +
+            " ASC OFFSET (?10) ROWS FETCH NEXT (?11) ROWS ONLY"
+            , isNative = true)
+    public abstract List<Hearing> findUnallocatedHearingsByWeekCommencingRangeAndPossibleDisqualification(
+            final String courtCentreId,
+            final String courtRoomId,
+            final String authorityCode,
+            final String hearingTypeId,
+            final String jurisdictionType,
+            final LocalDate weekCommencingStartDate,
+            final LocalDate weekCommencingEndDate,
+            final boolean allocated,
+            final boolean possibleDisqualification,
+            final Integer offSet, final Integer pageSize);
 
     /**
      * Find {@link Hearing}s based on the query parameters.  This query will be used by the 'Public
@@ -444,6 +569,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as allocated, " +
             "null as type_of_list_id, " +
             "null as totalCount, " +
+            "null as is_possible_disqualification, " +
             "(select row_to_json(combinedJudiciaryAndHearings) as properties from " +
             "   (select * from " +
             "       (select json_agg(uniqueJudiciary) as judiciary from " +
@@ -490,6 +616,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as allocated, " +
             "null as type_of_list_id, " +
             "null as totalCount, " +
+            "null as is_possible_disqualification, " +
             "(select jsonb_agg(hrngByCourtCentreId) as properties from " +
             "    (select h.hearingDate as \"hearingDate\", " +
             "        (select jsonb_agg(hearings) as \"hearingsByHearingDate\" from  " +
@@ -514,7 +641,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "count(*) OVER() as totalCount" +
+            "count(*) OVER() as totalCount, " +
+            "h.is_possible_disqualification" +
             " from hearing h " +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
@@ -561,7 +689,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "1 as totalCount " +
+            "1 as totalCount, " +
+            "h.is_possible_disqualification " +
             "from hearing h " +
             "where " +
             "h.allocated = :allocated " +
@@ -628,7 +757,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "1 as totalCount " +
+            "1 as totalCount, " +
+            "h.is_possible_disqualification " +
             "from hearing h " +
             "where (h.unscheduled is null or h.unscheduled = false) " +
             "and (h.jurisdiction_type in (:jurisdictionTypes)) " +
@@ -681,7 +811,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "1 as totalCount " +
+            "1 as totalCount, " +
+            "h.is_possible_disqualification " +
             " from hearing h " +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
@@ -711,7 +842,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_end_date, " +
             "h.allocated, " +
             "h.type_of_list_id, " +
-            "count(*) OVER() as totalCount" +
+            "count(*) OVER() as totalCount, " +
+            "h.is_possible_disqualification" +
             " from hearing h" +
             " LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             " LEFT JOIN listed_cases lc ON lc.hearing_id = h.id " +
@@ -748,7 +880,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as week_commencing_end_date, " +
             "null as allocated, " +
             "null as type_of_list_id, " +
-            "null as totalCount " +
+            "null as totalCount, " +
+            "null as is_possible_disqualification " +
             " from ( " +
             " select distinct h.id as id, h.properties as properties, h.start_date as startDate, h.end_date as endDate " +
             " from hearing h " +
@@ -780,7 +913,8 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as week_commencing_end_date, " +
             "null as allocated, " +
             "null as type_of_list_id, " +
-            "null as totalCount " +
+            "null as totalCount, " +
+            "null as is_possible_disqualification " +
             " from ( " +
             " select distinct h.id as id, h.properties as properties, h.start_date as startDate, h.end_date as endDate " +
             " from hearing h " +

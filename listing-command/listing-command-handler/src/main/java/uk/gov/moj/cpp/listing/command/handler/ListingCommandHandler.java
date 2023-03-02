@@ -387,7 +387,8 @@ public class ListingCommandHandler {
                         isSlotsBooked,
                         commandHearing.getBookingType(),
                         commandHearing.getPriority(),
-                        commandHearing.getSpecialRequirements()
+                        commandHearing.getSpecialRequirements(),
+                        domainHearing.getIsPossibleDisqualification()
                 );
 
                 final Stream<Object> allocationEvents = hearing.applyAllocationRules(finalBookingReference);

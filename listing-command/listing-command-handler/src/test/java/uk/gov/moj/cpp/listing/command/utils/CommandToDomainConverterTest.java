@@ -7,6 +7,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
+import static uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter.REFERRAL_REASON_FOR_DISQUALIFICATION;
 
 import uk.gov.justice.core.courts.DefendantListingNeeds;
 import uk.gov.justice.core.courts.HearingListingNeeds;
@@ -405,5 +406,41 @@ public class CommandToDomainConverterTest {
 
 
     }
+
+    @Test
+    public void shouldSetIsPossibleDisqualificationFlagWhenListingReasonForDisqualification(){
+        //given
+        final UUID defendantId = UUID.randomUUID();
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingWithMultipleOffences();
+        commandHearing.getDefendantListingNeeds().add(DefendantListingNeeds.defendantListingNeeds()
+                        .withDefendantId(defendantId)
+                        .withListingReason(REFERRAL_REASON_FOR_DISQUALIFICATION).build());
+        List<UUID> shadowListedOffences = Collections.singletonList(UUID.fromString("3789ab16-0bb7-4ef1-87ef-c936bf0364f1"));
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing, Collections.emptyList(), shadowListedOffences);
+
+        //then
+        assertThat(actual.getIsPossibleDisqualification().isPresent(), is(true));
+        assertThat(actual.getIsPossibleDisqualification().get(), is(Boolean.TRUE));
+    }
+
+    @Test
+    public void shouldNotSetIsPossibleDisqualificationFlagWhenListingReasonNotForDisqualification(){
+        //given
+        final UUID defendantId = UUID.randomUUID();
+        HearingListingNeeds commandHearing = commandBuilder.buildCommandHearingWithMultipleOffences();
+        commandHearing.getDefendantListingNeeds().add(DefendantListingNeeds.defendantListingNeeds()
+                        .withDefendantId(defendantId)
+                        .withListingReason("Random reason").build());
+        List<UUID> shadowListedOffences = Collections.singletonList(UUID.fromString("3789ab16-0bb7-4ef1-87ef-c936bf0364f1"));
+
+        //when
+        uk.gov.moj.cpp.listing.domain.Hearing actual = commandToDomainConverter.convert(commandHearing, Collections.emptyList(), shadowListedOffences);
+
+        //then
+        assertThat(actual.getIsPossibleDisqualification().isPresent(), is(false));
+    }
+
 
 }

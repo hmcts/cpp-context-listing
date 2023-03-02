@@ -184,6 +184,10 @@ protocols: [ HTTP, HTTPS ]
           description: currentPageNumber details
           type: integer
           required: false
+        possibleDisqualification:
+          description: identifier if hearing has cases with the possible disqualification from driving flag
+          type: boolean
+          required: false
       responses:
             200:
                 description: OK

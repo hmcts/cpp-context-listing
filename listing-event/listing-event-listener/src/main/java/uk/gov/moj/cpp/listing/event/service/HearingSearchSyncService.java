@@ -44,6 +44,7 @@ public class HearingSearchSyncService {
     public static final String COURT_APPLICATIONS = "courtApplications";
     public static final String TYPE_OF_LIST ="typeOfList";
     private static final String IS_EJECTED = "isEjected";
+    private static final String IS_POSSIBLE_DISQUALIFICATION = "isPossibleDisqualification";
 
     @Inject
     private HearingRepository hearingRepository;
@@ -75,6 +76,8 @@ public class HearingSearchSyncService {
         if(nonNull(reader.get(TYPE_OF_LIST))){
             hearing.setTypeOfListId(reader.get(TYPE_OF_LIST).getUUID(ID));
         }
+        hearing.setPossibleDisqualification(reader.getBoolean(IS_POSSIBLE_DISQUALIFICATION));
+
         hearingRepository.save(hearing);
     }
 

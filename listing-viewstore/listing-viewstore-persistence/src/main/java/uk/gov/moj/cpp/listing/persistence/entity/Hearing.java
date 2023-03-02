@@ -96,6 +96,9 @@ public class Hearing implements JsonEntity {
     @Column(updatable = false, insertable = false)
     private Long totalCount;
 
+    @Column(name = "is_possible_disqualification")
+    private Boolean isPossibleDisqualification;
+
     public Hearing() {
         // for JPA
 
@@ -123,7 +126,8 @@ public class Hearing implements JsonEntity {
                    final Boolean allocated,
                    final Set<CourtApplications> courtApplications,
                    final UUID typeOfListId,
-                   final JsonNode properties) {
+                   final JsonNode properties,
+                   final Boolean isPossibleDisqualification) {
         this.id = id;
         this.courtCentreId = courtCentreId;
         this.courtRoomId = courtRoomId;
@@ -141,6 +145,7 @@ public class Hearing implements JsonEntity {
         this.setCourtApplications(courtApplications);
         this.typeOfListId = typeOfListId;
         this.properties = properties;
+        this.isPossibleDisqualification = isPossibleDisqualification;
     }
 
     public static HearingBuilder builder() {
@@ -316,6 +321,14 @@ public class Hearing implements JsonEntity {
         this.totalCount = totalCount;
     }
 
+    public Boolean getPossibleDisqualification() {
+        return isPossibleDisqualification;
+    }
+
+    public void setPossibleDisqualification(Boolean possibleDisqualification) {
+        isPossibleDisqualification = possibleDisqualification;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -354,6 +367,7 @@ public class Hearing implements JsonEntity {
         private Set<CourtApplications> courtApplications = new HashSet<>();
         private UUID typeOfListId;
         private JsonNode properties;
+        private Boolean isPossibleDisqualification;
 
         private HearingBuilder() {
         }
@@ -459,8 +473,15 @@ public class Hearing implements JsonEntity {
             return this;
         }
 
+        public HearingBuilder withIsPossibleDisqualification(Boolean isPossibleDisqualification) {
+            this.isPossibleDisqualification = isPossibleDisqualification;
+            return this;
+        }
+
         public Hearing build() {
-            return new Hearing(id, courtCentreId, courtRoomId, isVacatedTrial, unscheduled, typeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, startDate, endDate, hearingDays, listedCases, allocated, courtApplications, typeOfListId, properties);
+            return new Hearing(id, courtCentreId, courtRoomId, isVacatedTrial, unscheduled, typeId, jurisdictionType,
+                    weekCommencingStartDate, weekCommencingEndDate, startDate, endDate, hearingDays, listedCases, allocated,
+                    courtApplications, typeOfListId, properties, isPossibleDisqualification);
         }
     }
 }

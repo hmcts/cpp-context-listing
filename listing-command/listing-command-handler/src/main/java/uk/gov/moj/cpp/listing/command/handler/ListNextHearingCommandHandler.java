@@ -203,7 +203,8 @@ public class ListNextHearingCommandHandler {
                     countBasedSlots.get(),
                     listNextHearing.getHearing().getBookingType(),
                     listNextHearing.getHearing().getPriority(),
-                    listNextHearing.getHearing().getSpecialRequirements()
+                    listNextHearing.getHearing().getSpecialRequirements(),
+                    domainHearing.getIsPossibleDisqualification()
             );
 
             final Stream<Object> allocationEvents = hearing.applyAllocationRules(ofNullable(finalBookingReference));

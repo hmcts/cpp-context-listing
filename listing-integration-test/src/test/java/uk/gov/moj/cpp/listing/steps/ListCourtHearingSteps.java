@@ -31,6 +31,7 @@ import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getU
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.endpoint.UnallocatedHearingsEndpoint.pollForUnallocatedHearings;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -86,6 +87,7 @@ import uk.gov.justice.listing.courts.WeekCommencingDate;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
@@ -180,6 +182,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     public static final int OFFENCE_COUNT = 1;
     public static final int OFFENCE_ORDER_INDEX = 0;
     public static final String OFFENCE_LEGISLATION = "legislation";
+    private static final boolean POSSIBLE_DISQUALIFICATION_FLAG = true;
 
     private HearingsData hearingsData;
     private final MessageConsumer privateMessageConsumerHearingListed;
@@ -278,6 +281,11 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void whenCaseIsSubmittedForListing() {
+        final Response response = getResponseCaseSubmittedForListing(false);
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void whenCaseIsSubmittedWithPossibleDisqualification() {
         final Response response = getResponseCaseSubmittedForListing(false);
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
@@ -536,6 +544,20 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
         assertThat(jsonResponse.get("hearing.id"), is(jsRequest.getString("hearings[0].id")));
         assertThat(jsonResponse.get("hearing.hearingLanguage"), is("ENGLISH"));
+        assertThat(jsonResponse.get("hearing.listedCases[0].id"), is(jsRequest.getString("hearings[0].prosecutionCases[0].id")));
+        assertThat(jsonResponse.get("hearing.listedCases[0].defendants[0].id"), is(jsRequest.getString("hearings[0].prosecutionCases[0].defendants[0].id")));
+    }
+
+    public void verifyHearingListedWithPossibleDisqualificationInActiveMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+//        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingListed);
+//        LOGGER.debug("jsonResponse from privateMessageConsumerHearingListed: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("hearing.id"), is(jsRequest.getString("hearings[0].id")));
+        assertThat(jsonResponse.get("hearing.hearingLanguage"), is("ENGLISH"));
+        assertThat(jsonResponse.getBoolean("hearing.isPossibleDisqualification"), is(Boolean.TRUE));
         assertThat(jsonResponse.get("hearing.listedCases[0].id"), is(jsRequest.getString("hearings[0].prosecutionCases[0].id")));
         assertThat(jsonResponse.get("hearing.listedCases[0].defendants[0].id"), is(jsRequest.getString("hearings[0].prosecutionCases[0].defendants[0].id")));
     }
@@ -1705,6 +1727,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         return DefendantListingNeeds.defendantListingNeeds()
                 .withDefendantId(d.getDefendantId())
                 .withProsecutionCaseId(lc.getCaseId())
+                .withListingReason(d.getListingReason())
                 .build();
     }
 
@@ -1997,6 +2020,26 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         } catch (final JMSException e) {
             LOGGER.error("Error closing privateMessageConsumerHearingListed: {}", e.getMessage());
         }
+    }
+
+    public void verifyHearingWithPossibleDisqualificationFromAPI() {
+        HearingData singleHearingData = hearingsData.getHearingData().get(0);
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.search.hearings.by.allocated.court-centre-id.possible-disqualification"),
+                        false,
+                        singleHearingData.getCourtCentreId(),
+                        POSSIBLE_DISQUALIFICATION_FLAG));
+
+            final Filter idFilter = filter(where("id").is(singleHearingData.getId().toString()));
+            final Filter possibleDisqualificationFilter = filter(where("isPossibleDisqualification").is(POSSIBLE_DISQUALIFICATION_FLAG));
+            final com.jayway.jsonpath.JsonPath hearingFilters = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter, possibleDisqualificationFilter);
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath(hearingFilters)
+                        )));
     }
 
     private static class HearingDefendantFilter {

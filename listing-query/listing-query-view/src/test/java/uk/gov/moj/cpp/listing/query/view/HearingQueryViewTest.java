@@ -99,6 +99,7 @@ public class HearingQueryViewTest {
     private static final UUID COURT_ROOM_ID = randomUUID();
     private static final UUID ID = fromString("7c5e9d0c-9e28-46a9-b139-68fc0813842c");
     private static final boolean ALLOCATED = true;
+    private static final boolean IS_POSSIBLE_DISQUALIFICATION = false;
     private static final String ALLOCATEDSTR = "true";
     private static final String ALLOCATED_QUERY_PARAMETER = "allocated";
     private static final String SEARCH_DATE_QUERY_PARAMETER = "searchDate";

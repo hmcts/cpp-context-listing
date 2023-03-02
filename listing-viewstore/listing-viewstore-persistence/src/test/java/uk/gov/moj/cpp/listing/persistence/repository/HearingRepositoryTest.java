@@ -87,6 +87,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     private static final UtcClock UTC_CLOCK = new UtcClock();
     private static final Boolean ALLOCATED = TRUE;
     private static final Boolean UNALLOCATED = FALSE;
+    private static final Boolean IS_POSSIBLE_DISQUALIFICATION = FALSE;
     private static final Boolean RANDOM_ALLOCATED = BOOLEAN.next();
     private static final Boolean NOT_VACATED = FALSE;
     private static final String UNALLOCATED_STR = "false";
@@ -485,7 +486,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
-                END_SEARCH_DATE, 0, 10);
+                END_SEARCH_DATE,0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -626,7 +627,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 parse(EARLIEST_SEARCH_DATE),
-                parse(LATEST_SEARCH_DATE), 0, 10);
+                parse(LATEST_SEARCH_DATE),0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -790,7 +791,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 HEARING_TYPE.getId().toString(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE.plusDays(1),
-                END_SEARCH_DATE.plusDays(2), 0, 10);
+                END_SEARCH_DATE.plusDays(2),0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -1496,6 +1497,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 .withEndTime(END_TIME)
                 .withHearingDate(HEARING_DATE)
                 .withFileLocation(TEST_DATA_SAMPLE_HEARING_JSON)
+                .withIsPossibleDisqualification(IS_POSSIBLE_DISQUALIFICATION)
                 .build()));
 
         hearingsToBeCreated.add(getHearingJson(hearingRepositoryContext()
@@ -1514,6 +1516,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 .withEndTime(END_TIME)
                 .withHearingDate(HEARING_DATE)
                 .withFileLocation(nonNull(vacated) ? TEST_DATA_SAMPLE_HEARING_JSON : TEST_DATA_SAMPLE_HEARING_NULL_VACATED_JSON)
+                .withIsPossibleDisqualification(IS_POSSIBLE_DISQUALIFICATION)
                 .build()));
 
         hearingsToBeCreated.forEach(hearingToBeCreated -> hearingRepository.save(hearingToBeCreated));
@@ -2126,6 +2129,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 .withAllocated(context.isAllocated())
                 .withTypeOfListId(context.getTypeOfListId())
                 .withUnscheduled(context.isUnscheduled())
+                .withIsPossibleDisqualification(context.isPossibleDisqualification())
                 .build();
         hearing.setHearingDays(getHearingDays(hearing));
         final CaseIdentifier caseIdentifier = new CaseIdentifier();
@@ -2155,6 +2159,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 .withAllocated(context.isAllocated())
                 .withTypeOfListId(context.getTypeOfListId())
                 .withUnscheduled(context.isUnscheduled())
+                .withIsPossibleDisqualification(context.isPossibleDisqualification())
                 .build();
 
         hearing.setHearingDays(getHearingDays(hearing));
@@ -2237,6 +2242,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 .withAllocated(context.isAllocated())
                 .withUnscheduled(context.isUnscheduled())
                 .withTypeOfListId(context.getTypeOfListId())
+                .withIsPossibleDisqualification(context.isPossibleDisqualification())
                 .build();
 
         final CaseIdentifier caseIdentifier = new CaseIdentifier();
@@ -2263,6 +2269,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 .withWeekCommencingEndDate(context.getWeekCommencingEndDate())
                 .withAllocated(context.isAllocated())
                 .withUnscheduled(context.isUnscheduled())
+                .withIsPossibleDisqualification(context.isPossibleDisqualification())
                 .build();
 
         final CaseIdentifier caseIdentifier = new CaseIdentifier();
