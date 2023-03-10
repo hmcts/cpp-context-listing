@@ -192,7 +192,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 5917594778865191713L;
+    private static final long serialVersionUID = 5917594778865191714L;
 
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
@@ -1739,7 +1739,7 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> raiseUpdateHearingInStagingHmi(Stream<Object> actualEvents) {
-        List<Object> eventList =  actualEvents.collect(Collectors.toList());
+        final List<Object> eventList =  actualEvents.collect(Collectors.toList());
         if(eventList.isEmpty()) {
             return Stream.empty();
         }

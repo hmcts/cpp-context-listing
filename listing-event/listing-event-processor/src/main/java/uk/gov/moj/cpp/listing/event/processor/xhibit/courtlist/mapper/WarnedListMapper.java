@@ -57,10 +57,10 @@ public class WarnedListMapper extends AbstractCourtListMapper {
                 courtListJson.getJsonObject("crestCourtSite")));
 
         for (final JsonObject sittingJson : courtListJson.getJsonArray("sittings").getValuesAs(JsonObject.class)) {
-            final List<UUID> hearingTypeIds = sittingJson.getJsonArray(HEARINGS).getValuesAs(JsonObject.class).stream()
+            final Set<UUID> hearingTypeIds = sittingJson.getJsonArray(HEARINGS).getValuesAs(JsonObject.class).stream()
                     .map(j -> j.getJsonObject(HEARING_TYPE).getString("id"))
                     .map(UUID::fromString)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toSet());
 
             final List<UUID> processedHearingTypes4Fixed = new ArrayList<>();
             final List<UUID> processedHearingTypes4WithoutFixed = new ArrayList<>();

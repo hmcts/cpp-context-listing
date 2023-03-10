@@ -25,33 +25,6 @@
                 <cs:CourtHouseCode>457</cs:CourtHouseCode>
                 <cs:CourtHouseName>SWANSEA</cs:CourtHouseName>
             </cs:CourtHouse>
-            <cs:WithFixedDate HearingType="PTP">
-                <cs:Fixture>
-                    <cs:FixedDate>2020-03-30</cs:FixedDate>
-                    <cs:Cases>
-                        <cs:Case>
-                            <cs:CaseNumber>CPP</cs:CaseNumber>
-                            <cs:Hearing HearingType="PTP">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-PTP</cs:HearingDescription>
-                                <cs:HearingDate>2020-03-30</cs:HearingDate>
-                            </cs:Hearing>
-                            <cs:Defendants>
-                                <cs:Defendant>
-                                    <cs:PersonalDetails>
-                                        <cs:Name>
-                                            <apd:CitizenNameForename>Jackson</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>YOSHIDA</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Jackson YOSHIDA</apd:CitizenNameRequestedName>
-                                        </cs:Name>
-                                        <cs:IsMasked>no</cs:IsMasked>
-                                    </cs:PersonalDetails>
-                                    <cs:URN>22JO397611</cs:URN>
-                                </cs:Defendant>
-                            </cs:Defendants>
-                        </cs:Case>
-                    </cs:Cases>
-                </cs:Fixture>
-            </cs:WithFixedDate>
             <cs:WithFixedDate HearingType="TRL">
                 <cs:Fixture>
                     <cs:FixedDate>2020-03-30</cs:FixedDate>
@@ -105,6 +78,33 @@
                                     <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
                                 </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
+                        </cs:Case>
+                    </cs:Cases>
+                </cs:Fixture>
+            </cs:WithFixedDate>
+            <cs:WithFixedDate HearingType="PTP">
+                <cs:Fixture>
+                    <cs:FixedDate>2020-03-30</cs:FixedDate>
+                    <cs:Cases>
+                        <cs:Case>
+                            <cs:CaseNumber>CPP</cs:CaseNumber>
+                            <cs:Hearing HearingType="PTP">
+                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-PTP</cs:HearingDescription>
+                                <cs:HearingDate>2020-03-30</cs:HearingDate>
+                            </cs:Hearing>
+                            <cs:Defendants>
+                                <cs:Defendant>
+                                    <cs:PersonalDetails>
+                                        <cs:Name>
+                                            <apd:CitizenNameForename>Jackson</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>YOSHIDA</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Jackson YOSHIDA</apd:CitizenNameRequestedName>
+                                        </cs:Name>
+                                        <cs:IsMasked>no</cs:IsMasked>
+                                    </cs:PersonalDetails>
+                                    <cs:URN>22JO397611</cs:URN>
+                                </cs:Defendant>
+                            </cs:Defendants>
                         </cs:Case>
                     </cs:Cases>
                 </cs:Fixture>

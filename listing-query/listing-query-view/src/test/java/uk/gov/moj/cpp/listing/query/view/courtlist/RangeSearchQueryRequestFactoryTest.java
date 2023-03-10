@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
+import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -91,7 +92,7 @@ public class RangeSearchQueryRequestFactoryTest {
             assertThat(queryPayload.getString("weekCommencingEndDate"), is(EXPECTED_WEEK_COMMENCING_END_DATE));
             assertThat(queryPayload.containsKey("startDate"), is(false));
             assertThat(queryPayload.containsKey("endDate"), is(false));
-            if(FIRM.equals(publishCourtListType)){
+            if(Lists.newArrayList(FIRM, WARN, DRAFT, FINAL).contains(publishCourtListType)){
                 assertThat(queryPayload.getBoolean("noPagination"), is(true));
             }
             if(WARN.equals(publishCourtListType)){

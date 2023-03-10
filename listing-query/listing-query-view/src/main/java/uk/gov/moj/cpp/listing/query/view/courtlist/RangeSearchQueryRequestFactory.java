@@ -21,6 +21,7 @@ public class RangeSearchQueryRequestFactory {
     @Inject
     private Enveloper enveloper;
 
+    @SuppressWarnings({"squid:S128","squid:S1192","squid:S128","deprecation"})
     public JsonEnvelope buildRangeSearchQueryEnvelope(final UUID courtCentreId,
                                                       final PublishCourtListType listType,
                                                       final LocalDate startDate,
@@ -36,13 +37,17 @@ public class RangeSearchQueryRequestFactory {
             case FINAL:
                 rangeSearchQueryPayloadBuilder
                         .add("startDate", startDate.toString())
-                        .add("endDate", startDate.toString());
+                        .add("endDate", startDate.toString())
+                        .add("noPagination", true);
                 break;
             case FIRM:
-            case WARN:
                 rangeSearchQueryPayloadBuilder
                         .add("noPagination", true);
                 addWeekCommencingParameters(startDate, rangeSearchQueryPayloadBuilder);
+                break;
+            case WARN:
+                addWeekCommencingParameters(startDate, rangeSearchQueryPayloadBuilder);
+                rangeSearchQueryPayloadBuilder.add("noPagination", true);
                 break;
             default:
                 throw new UnsupportedOperationException("Request not supported:" + listType);

@@ -34,7 +34,6 @@
                             <cs:Hearing HearingType="TRL">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
                                 <cs:HearingDate>2020-03-30</cs:HearingDate>
-                                <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
                             </cs:Hearing>
                             <cs:Defendants>
                                 <cs:Defendant>
@@ -124,16 +123,22 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameForename>Robert</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>MACK</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Robert MACK</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameForename>Hettie</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>OLSON</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Hettie OLSON</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
-                                    <cs:URN>39MK773201</cs:URN>
+                                    <cs:URN>82RT142177</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Harrassment</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Armed robbery</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -162,60 +167,16 @@
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameForename>John</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>Protractor-3199234783</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>John Protractor-3199234783</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameForename>Robert</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>MACK</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Robert MACK</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
-                                    <cs:URN>TFL3199234783</cs:URN>
-                                    <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="PS90010">
-                                            <cs:OffenceStatement>Public service vehicle - passenger use altered / defaced   ticket</cs:OffenceStatement>
-                                        </cs:Charge>
-                                    </cs:Charges>
-                                </cs:Defendant>
-                            </cs:Defendants>
-                            <cs:Prosecution ProsecutingAuthority="Other Prosecutor">
-                                <cs:ProsecutingReference>Other Prosecutor</cs:ProsecutingReference>
-                                <cs:ProsecutingOrganisation>
-                                    <cs:OrganisationName>Other Prosecutor</cs:OrganisationName>
-                                </cs:ProsecutingOrganisation>
-                            </cs:Prosecution>
-                        </cs:Case>
-                    </cs:Cases>
-                </cs:Fixture>
-            </cs:WithFixedDate>
-            <cs:WithFixedDate HearingType="TRL">
-                <cs:Fixture>
-                    <cs:FixedDate>2020-03-30</cs:FixedDate>
-                    <cs:Cases>
-                        <cs:Case>
-                            <cs:CaseNumber>CPP</cs:CaseNumber>
-                            <cs:Hearing HearingType="TRL">
-                                <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
-                                <cs:HearingDate>2020-03-30</cs:HearingDate>
-                            </cs:Hearing>
-                            <cs:Defendants>
-                                <cs:Defendant>
-                                    <cs:PersonalDetails>
-                                        <cs:Name>
-                                            <apd:CitizenNameForename>Hettie</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>OLSON</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>Hettie OLSON</apd:CitizenNameRequestedName>
-                                        </cs:Name>
-                                        <cs:IsMasked>no</cs:IsMasked>
-                                    </cs:PersonalDetails>
-                                    <cs:URN>82RT142177</cs:URN>
+                                    <cs:URN>39MK773201</cs:URN>
                                     <cs:Charges>
                                         <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
                                             <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
-                                        </cs:Charge>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Harrassment</cs:OffenceStatement>
-                                        </cs:Charge>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
-                                            <cs:OffenceStatement>Armed robbery</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
@@ -324,44 +285,49 @@
                     </cs:Cases>
                 </cs:Fixture>
             </cs:WithFixedDate>
-            <cs:WithFixedDate HearingType="TRL">
+            <cs:WithoutFixedDate HearingType="TRL">
                 <cs:Fixture>
-                    <cs:FixedDate>2020-04-02</cs:FixedDate>
                     <cs:Cases>
                         <cs:Case>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Hearing HearingType="TRL">
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
-                                <cs:HearingDate>2020-04-02</cs:HearingDate>
+                                <cs:HearingDate>2020-03-07</cs:HearingDate>
                             </cs:Hearing>
                             <cs:Defendants>
                                 <cs:Defendant>
                                     <cs:PersonalDetails>
                                         <cs:Name>
-                                            <apd:CitizenNameForename>John</apd:CitizenNameForename>
-                                            <apd:CitizenNameSurname>Protractor-9475962494</apd:CitizenNameSurname>
-                                            <apd:CitizenNameRequestedName>John Protractor-9475962494</apd:CitizenNameRequestedName>
+                                            <apd:CitizenNameForename>Alan</apd:CitizenNameForename>
+                                            <apd:CitizenNameSurname>FERRONI</apd:CitizenNameSurname>
+                                            <apd:CitizenNameRequestedName>Alan FERRONI</apd:CitizenNameRequestedName>
                                         </cs:Name>
                                         <cs:IsMasked>no</cs:IsMasked>
                                     </cs:PersonalDetails>
-                                    <cs:URN>TFL9475962494</cs:URN>
+                                    <cs:URN>71WK623057</cs:URN>
                                     <cs:Charges>
-                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="PS90010">
-                                            <cs:OffenceStatement>Public service vehicle - passenger use altered / defaced   ticket</cs:OffenceStatement>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Wounding with intent</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Harrassment</cs:OffenceStatement>
+                                        </cs:Charge>
+                                        <cs:Charge IndictmentCountNumber="0" CJSoffenceCode="OF61131">
+                                            <cs:OffenceStatement>Armed robbery</cs:OffenceStatement>
                                         </cs:Charge>
                                     </cs:Charges>
                                 </cs:Defendant>
                             </cs:Defendants>
-                            <cs:Prosecution ProsecutingAuthority="Other Prosecutor">
-                                <cs:ProsecutingReference>Other Prosecutor</cs:ProsecutingReference>
+                            <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
+                                <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
                                 <cs:ProsecutingOrganisation>
-                                    <cs:OrganisationName>Other Prosecutor</cs:OrganisationName>
+                                    <cs:OrganisationName>Crown Prosecution Service</cs:OrganisationName>
                                 </cs:ProsecutingOrganisation>
                             </cs:Prosecution>
                         </cs:Case>
                     </cs:Cases>
                 </cs:Fixture>
-            </cs:WithFixedDate>
+            </cs:WithoutFixedDate>
         </cs:CourtList>
         <cs:CourtList>
             <cs:CourtHouse>
@@ -468,14 +434,7 @@
             <cs:CourtHouse>
                 <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
                 <cs:CourtHouseCode>457</cs:CourtHouseCode>
-                <cs:CourtHouseName>THE CRIMINAL COURT, GUILDHALL</cs:CourtHouseName>
-            </cs:CourtHouse>
-        </cs:CourtList>
-        <cs:CourtList>
-            <cs:CourtHouse>
-                <cs:CourtHouseType>Crown Court</cs:CourtHouseType>
-                <cs:CourtHouseCode>002</cs:CourtHouseCode>
-                <cs:CourtHouseName>MOCKCOURTNAME2</cs:CourtHouseName>
+                <cs:CourtHouseName>THE CRIMINAL COURT GUILDHALL</cs:CourtHouseName>
             </cs:CourtHouse>
         </cs:CourtList>
     </cs:CourtLists>
