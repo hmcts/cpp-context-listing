@@ -1027,6 +1027,190 @@ public class HearingAggregateTest {
     }
 
     @Test
+    public void shouldBeAbleToMarkHearingAsDeletedIfNotDeleted() {
+
+        final UUID case1Id = randomUUID();
+        final UUID case1Defendant1Id = randomUUID();
+        final UUID case1Defendant1Offence1Id = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+
+        final SeedingHearing seedingHearing = SeedingHearing.seedingHearing()
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                .withSeedingHearingId(seedingHearingId)
+                .build();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(case1Id)
+                                .withDefendants(asList(Defendant.defendant()
+                                        .withId(case1Defendant1Id)
+                                        .withOffences(asList(Offence.offence()
+                                                .withId(case1Defendant1Offence1Id)
+                                                .withSeedingHearing(seedingHearing)
+                                                .build()))
+                                        .build()))
+                                .build())))
+                        .build())
+                .build());
+
+        final Stream<Object> listedHearing = hearing.markHearingAsDeleted(hearingId);
+
+        assertThat(listedHearing.count(), is(1L));
+
+
+    }
+
+    @Test
+    public void shouldNotBeAbleToMarkHearingAsDeletedIfAllreadyDeleted() {
+
+        final UUID case1Id = randomUUID();
+        final UUID case1Defendant1Id = randomUUID();
+        final UUID case1Defendant1Offence1Id = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+
+        final SeedingHearing seedingHearing = SeedingHearing.seedingHearing()
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                .withSeedingHearingId(seedingHearingId)
+                .build();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(case1Id)
+                                .withDefendants(asList(Defendant.defendant()
+                                        .withId(case1Defendant1Id)
+                                        .withOffences(asList(Offence.offence()
+                                                .withId(case1Defendant1Offence1Id)
+                                                .withSeedingHearing(seedingHearing)
+                                                .build()))
+                                        .build()))
+                                .build())))
+                        .build())
+                .build());
+
+        hearing.apply(HearingDeleted.hearingDeleted().withHearingIdToBeDeleted(hearingId).build());
+
+        final Stream<Object> listedHearing = hearing.markHearingAsDeleted(hearingId);
+
+        assertThat(listedHearing.count(), is(0L));
+
+
+    }
+
+    @Test
+    public void shouldBeAbleToDeleteHearingIfNotDeleted() {
+
+        final UUID case1Id = randomUUID();
+        final UUID case1Defendant1Id = randomUUID();
+        final UUID case1Defendant1Offence1Id = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+
+        final SeedingHearing seedingHearing = SeedingHearing.seedingHearing()
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                .withSeedingHearingId(seedingHearingId)
+                .build();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(case1Id)
+                                .withDefendants(asList(Defendant.defendant()
+                                        .withId(case1Defendant1Id)
+                                        .withOffences(asList(Offence.offence()
+                                                .withId(case1Defendant1Offence1Id)
+                                                .withSeedingHearing(seedingHearing)
+                                                .build()))
+                                        .build()))
+                                .build())))
+                        .build())
+                .build());
+
+        final Stream<Object> listedHearing = hearing.deleteUnAllocatedHearing();
+
+        assertThat(listedHearing.count(), is(1L));
+
+
+    }
+
+    @Test
+    public void shouldNotBeAbleToDeleteHearingIfAllReadyDeleted() {
+
+        final UUID case1Id = randomUUID();
+        final UUID case1Defendant1Id = randomUUID();
+        final UUID case1Defendant1Offence1Id = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+
+        final SeedingHearing seedingHearing = SeedingHearing.seedingHearing()
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                .withSeedingHearingId(seedingHearingId)
+                .build();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withListedCases(new ArrayList<>(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(case1Id)
+                                .withDefendants(asList(Defendant.defendant()
+                                        .withId(case1Defendant1Id)
+                                        .withOffences(asList(Offence.offence()
+                                                .withId(case1Defendant1Offence1Id)
+                                                .withSeedingHearing(seedingHearing)
+                                                .build()))
+                                        .build()))
+                                .build())))
+                        .build())
+                .build());
+
+        hearing.apply(HearingDeleted.hearingDeleted().withHearingIdToBeDeleted(hearingId).build());
+
+        final Stream<Object> listedHearing = hearing.deleteUnAllocatedHearing();
+
+        assertThat(listedHearing.count(), is(0L));
+
+
+    }
+
+    @Test
     public void shouldReturnNothingWhenDefendantListIsNullForUpdateDefendantCourtProceedingForHearing2() {
         final UUID case1Id = randomUUID();
         final ProsecutionCase prosecutionCase = prosecutionCase().

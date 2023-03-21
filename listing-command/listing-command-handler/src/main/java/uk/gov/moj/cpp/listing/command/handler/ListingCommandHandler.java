@@ -802,6 +802,7 @@ public class ListingCommandHandler {
 
         } else {
             //do the whole extension as in before GPE-13108
+            // do not add the call to delete Unallocated hearing here as we are sending command for the same in progression when hearing confirmation event is processed.
             final List<UUID> allocatedHearingCasesId = extractListCasesId(allocatedHearing);
             final List<UUID> unAllocatedHearingCasesId = extractListCasesId(unAllocatedHearingPersisted);
 
@@ -810,8 +811,7 @@ public class ListingCommandHandler {
                     final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unAllocatedHearingPersisted, unAllocatedHearingPersisted.getListedCases());
                     final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted, fullExtension);
                     final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(unAllocatedHearingPersisted.getListedCases(), unAllocatedHearingId);
-                    final Stream<Object> markUnAllocatedHearingForDelete = hearing.markHearingAsDeleted(unAllocatedHearingId);
-                    return Stream.of(addCaseEvent, updatedHearing, allocationEvents, markUnAllocatedHearingForDelete).flatMap(i -> i);
+                    return Stream.of(addCaseEvent, updatedHearing, allocationEvents).flatMap(i -> i);
                 });
             } else {
                 LOGGER.info("incoming list cases : {} cannot be added in allocated hearing as same case id : {} ", unAllocatedHearingCasesId, allocatedHearingCasesId);

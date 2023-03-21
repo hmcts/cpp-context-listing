@@ -1223,12 +1223,19 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> deleteUnAllocatedHearing() {
+        if (this.deleted)  {
+            return Stream.empty();
+        }
         return apply(Stream.of(HearingDeleted.hearingDeleted()
                 .withHearingIdToBeDeleted(this.hearingId)
                 .build()));
     }
 
     public Stream<Object> markHearingAsDeleted(final UUID hearingId) {
+
+        if (this.deleted)  {
+            return Stream.empty();
+        }
 
         return apply(Stream.of(HearingMarkedAsDeleted.hearingMarkedAsDeleted()
                 .withHearingIdToDelete(hearingId)
