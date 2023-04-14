@@ -36,6 +36,7 @@ import javax.json.JsonObject;
 
 import org.apache.commons.collections.CollectionUtils;
 
+@SuppressWarnings({"squid:CallToDeprecatedMethod"})
 @ApplicationScoped
 public class ReferenceDataLoader {
 
@@ -43,8 +44,9 @@ public class ReferenceDataLoader {
     private static final String REFERENCEDATA_QUERY_XHIBIT_COURT_MAPPINGS = "referencedata.query.cp-xhibit-court-mappings";
     private static final String REFERENCEDATA_QUERY_XHIBIT_MAGS_COURT_MAPPINGS = "referencedata.query.cp-xhibit-mags-court-mapping";
     private static final String REFERENCEDATA_QUERY_CP_XHIBIT_COURTROOM_MAPPINGS = "referencedata.query.cp-xhibit-courtroom-mappings";
-    private static final String REFERENCE_DATA_HEARING_TYPES = "referencedata.query.hearing-types";
     private static final String REFERENCEDATA_QUERY_JUDICIARIES = "referencedata.query.judiciaries";
+
+    private static final String REFERENCE_DATA_ALL_HEARING_TYPES = "referencedata.query.all-hearing-types";
     private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
 
     private static final String XHIBIT_COURT_MAPPINGS_QUERY_PARAM = "ouId";
@@ -160,10 +162,10 @@ public class ReferenceDataLoader {
         return Objects.isNull(response) ? empty() : of(response.payload());
     }
 
-    public Optional<HearingTypesList> getHearingTypesList() {
+    public Optional<HearingTypesList> getAllHearingTypesList() {
         final JsonEnvelope requestEnvelope = envelopeFrom(
                 metadataBuilder()
-                        .withName(REFERENCE_DATA_HEARING_TYPES)
+                        .withName(REFERENCE_DATA_ALL_HEARING_TYPES)
                         .withId(randomUUID())
                         .build(),
                 createObjectBuilder().build());

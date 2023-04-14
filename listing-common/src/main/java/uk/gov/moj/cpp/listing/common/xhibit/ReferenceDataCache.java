@@ -60,7 +60,7 @@ public class ReferenceDataCache {
     @PostConstruct
     public void initReferenceData() {
         initCrownCourtMappingsList();
-        initHearingTypes();
+        initAllHearingTypes();
         initOrganisationUnitList();
     }
 
@@ -119,14 +119,14 @@ public class ReferenceDataCache {
 
     public Optional<HearingType> getHearingTypeCache(final UUID hearingTypeId) {
         if (hearingTypesMapCache.isEmpty()) {
-            initHearingTypes();
+            initAllHearingTypes();
         }
         return Optional.of(hearingTypesMapCache.get(hearingTypeId));
     }
 
     public Optional<HearingType> getHearingTypeCodeCache(final String hearingCode) {
         if (hearingTypesCodesMapCache.isEmpty()) {
-            initHearingTypes();
+            initAllHearingTypes();
         }
         return Optional.of(hearingTypesCodesMapCache.get(hearingCode));
     }
@@ -152,8 +152,8 @@ public class ReferenceDataCache {
         );
     }
 
-    protected void initHearingTypes() {
-        referenceDataLoader.getHearingTypesList().ifPresent(this::getHearingTypes);
+    protected void initAllHearingTypes() {
+        referenceDataLoader.getAllHearingTypesList().ifPresent(this::getHearingTypes);
     }
 
     protected void initOrganisationUnitList() {

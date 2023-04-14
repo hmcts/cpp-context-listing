@@ -38,6 +38,7 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -77,7 +78,7 @@ public class ReferenceDataCacheTest {
 
         initializeTestData();
 
-        when(referenceDataLoader.getHearingTypesList()).thenReturn(hearingTypesList);
+        when(referenceDataLoader.getAllHearingTypesList()).thenReturn(hearingTypesList);
         when(referenceDataLoader.getXhibitCrownCourtMappings()).thenReturn(crownCourtMappingsList);
         when(referenceDataLoader.getXhibitMagsCourtMappings(any())).thenReturn(magsCourtMappingsList);
         when(referenceDataLoader.getOrganisationUnitList()).thenReturn(organisationUnitList);
@@ -249,11 +250,11 @@ public class ReferenceDataCacheTest {
     }
 
     @Test
-    public void shouldInitHearingTypesRemovingDuplicates() {
+    public void shouldInitAllHearingTypesRemovingDuplicates() {
         final HearingTypesList hearingTypeWithDuplicates = new HearingTypesList(asList(getHearingType(), getHearingType()));
-        when(referenceDataLoader.getHearingTypesList()).thenReturn(Optional.of(hearingTypeWithDuplicates));
+        when(referenceDataLoader.getAllHearingTypesList()).thenReturn(Optional.of(hearingTypeWithDuplicates));
 
-        referenceDataCache.initHearingTypes();
+        referenceDataCache.initAllHearingTypes();
 
         Map<UUID, HearingType> actualCachedValues = getValueOfField(referenceDataCache, "hearingTypesMapCache", Map.class);
         assertThat(actualCachedValues.keySet(), hasSize(1));

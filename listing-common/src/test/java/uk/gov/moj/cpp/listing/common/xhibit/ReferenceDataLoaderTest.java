@@ -201,7 +201,7 @@ public class ReferenceDataLoaderTest {
     }
 
     @Test
-    public void shouldGetHearingTypesList() {
+    public void shouldGetAllHearingTypesList() {
         final UUID cppHearingTypeId = randomUUID();
 
         final HearingType hearingType = new HearingType.Builder()
@@ -212,7 +212,7 @@ public class ReferenceDataLoaderTest {
 
         when(requester.requestAsAdmin(any(), eq(HearingTypesList.class)).payload()).thenReturn(expectedHearingTypesList);
 
-        final Optional<HearingTypesList> actualHearingTypesList = referenceDataLoader.getHearingTypesList();
+        final Optional<HearingTypesList> actualHearingTypesList = referenceDataLoader.getAllHearingTypesList();
 
         assertThat(true, equalTo(actualHearingTypesList.isPresent()));
         assertThat(expectedHearingTypesList.getHearingTypes().size(), is(equalTo(actualHearingTypesList.get().getHearingTypes().size())));

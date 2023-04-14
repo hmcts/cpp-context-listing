@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings({"squid:CallToDeprecatedMethod"})
 public class ReferenceDataService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReferenceDataService.class);
-    private static final String REFERENCEDATA_QUERY_HEARING_TYPES = "referencedata.query.hearing-types";
+    private static final String REFERENCEDATA_QUERY_ALL_HEARING_TYPES = "referencedata.query.all-hearing-types";
     private static final String REFERENCEDATA_QUERY_COURT_CENTRES = "referencedata.query.courtrooms";
     private static final String REFERENCEDATA_QUERY_COURTROOM = "referencedata.query.courtroom";
 
@@ -38,7 +38,7 @@ public class ReferenceDataService {
         LOGGER.info("'referencedata.query.hearing-types' request");
 
         final Envelope<JsonObject> requestEnvelope = Enveloper.envelop(createObjectBuilder().build())
-                .withName(REFERENCEDATA_QUERY_HEARING_TYPES)
+                .withName(REFERENCEDATA_QUERY_ALL_HEARING_TYPES)
                 .withMetadataFrom(event);
 
         return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));

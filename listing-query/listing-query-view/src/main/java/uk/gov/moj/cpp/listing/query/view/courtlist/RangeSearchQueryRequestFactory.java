@@ -15,6 +15,7 @@ import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
+@SuppressWarnings({"squid:CallToDeprecatedMethod"})
 @ApplicationScoped
 public class RangeSearchQueryRequestFactory {
 

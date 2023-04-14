@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.command.service;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,6 +13,8 @@ import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+
+import java.util.UUID;
 
 import javax.json.JsonObject;
 
@@ -39,6 +42,25 @@ public class ReferenceDataServiceTest {
         referenceDataService.setEnveloper(enveloper);
     }
 
+    @Test
+    public void getAllHearingTypes() {
+
+        final JsonEnvelope eventEnvelope = generateEmptyEnvelope();
+        final JsonEnvelope returnedResponseEnvelope = generateEmptyEnvelope();
+        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(returnedResponseEnvelope);
+        ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        final JsonEnvelope responseEnvelope = referenceDataService.getHearingTypes(eventEnvelope);
+
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
+        final JsonEnvelope requestEnvelope = argumentCaptorForRequestEnvelope.getValue();
+        assertThat(requestEnvelope.metadata().name(), is("referencedata.query.all-hearing-types"));
+        final JsonObject payloadOfRequestEnvelope = requestEnvelope.payloadAsJsonObject();
+        assertThat(payloadOfRequestEnvelope, notNullValue());
+
+        assertThat(responseEnvelope, is(returnedResponseEnvelope));
+
+    }
 
     @Test
     public void getAllCrownCourtCentresSuccessfully() {

@@ -33,7 +33,7 @@ public class ReferenceDataStub {
     private static final String REFERENCE_DATA_JUDICIARIES_QUERY_URL = "/referencedata-service/query/api/rest/referencedata/judiciaries";
     private static final String REFERENCE_DATA_JUDICIARIES_MEDIA_TYPE = "application/vnd.referencedata.judiciaries+json";
     private static final String REFERENCE_DATA_HEARING_TYPES_URL = "/referencedata-service/query/api/rest/referencedata/hearing-types";
-    private static final String REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE = "application/vnd.referencedata.query.hearing-types+json";
+    private static final String REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE = "application/vnd.referencedata.query.all-hearing-types+json";
     private static final String REFERENCE_DATA_GET_COURTROOM_URL = "/referencedata-service/query/api/rest/referencedata/courtrooms";
     private static final String REFERENCE_DATA_GET_COURTROOM_MAPPINGS_MEDIA_TYPE = "application/vnd.referencedata.ou-courtroom+json";
     private static final String REFERENCE_DATA_ORGANISATIONAL_UNITS_URL = "/referencedata-service/query/api/rest/referencedata/organisationunits";
