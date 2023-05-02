@@ -2132,6 +2132,10 @@ public class Hearing implements Aggregate {
         this.weekCommencingDurationInWeeks = hearing.getWeekCommencingDurationInWeeks();
 
         initialiseCurrentHearingState(hearing);
+        //Users will always start from week commencing and then go fixed date. So if they do the reverse. reset the start date
+        if(nonNull(this.weekCommencingStartDate)){
+            this.startDate = null;
+        }
     }
 
     private void onAddedCasesForHearing(AddedCasesForHearing event) {
