@@ -9,7 +9,9 @@ public enum CourtListType {
   PUBLIC("PUBLIC", "PublicCourtList", "PublicCourtListEnglishWelsh"),
   STANDARD("STANDARD", "BenchAndStandardCourtList", null),
   BENCH("BENCH", "BenchAndStandardCourtList", null),
-  JUDGE("JUDGE", "JudgeList", null);
+  JUDGE("JUDGE", "JudgeList", null),
+  USHERS_CROWN("USHERS_CROWN", "UshersCrownList", null),
+  USHERS_MAGISTRATE("USHERS_MAGISTRATE", "UshersMagistrateList", null);
 
 
   private final String value;
