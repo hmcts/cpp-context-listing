@@ -221,7 +221,7 @@ public class HearingRepositoryContext {
     }
 
     public static Builder hearingRepositoryContext() {
-        return new HearingRepositoryContext.Builder();
+        return new Builder();
     }
 
     public static final class Builder {

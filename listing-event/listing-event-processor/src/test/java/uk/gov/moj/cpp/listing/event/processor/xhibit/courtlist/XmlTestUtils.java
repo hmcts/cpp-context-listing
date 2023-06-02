@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,14 +10,11 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.diff.Diff;
 import org.xmlunit.diff.Difference;
 
 public class XmlTestUtils {
-
-    private static final Logger LOGGER = getLogger(XmlTestUtils.class);
 
     public static void assertXmlEquals(final String actualXml, final String expectedXmlResourceName) throws IOException {
         assertXmlEquals(actualXml, expectedXmlResourceName, Collections.emptyMap());
@@ -39,7 +35,7 @@ public class XmlTestUtils {
         final Iterator<Difference> iter = xmlDiff.getDifferences().iterator();
         int size = 0;
         while (iter.hasNext()) {
-            LOGGER.info(iter.next().toString());
+            iter.next();
             size++;
         }
         assertThat("XML differences", size, is(0));

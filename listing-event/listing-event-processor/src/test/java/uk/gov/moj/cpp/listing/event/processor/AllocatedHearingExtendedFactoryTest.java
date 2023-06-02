@@ -67,7 +67,6 @@ public class AllocatedHearingExtendedFactoryTest {
     private static final String JUDICIAL_ROLE_TYPE = "MAGISTRATE";
     private static final int DURATION_MINUTES = 60;
 
-
     @InjectMocks
     private AllocatedHearingExtendedFactory allocatedHearingExtendedFactory;
 

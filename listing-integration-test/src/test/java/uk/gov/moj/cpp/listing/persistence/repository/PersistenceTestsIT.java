@@ -1,5 +1,58 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Predicate;
+import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import junit.framework.TestCase;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.listing.events.HearingDay;
+import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.common.util.UtcClock;
+import uk.gov.justice.services.test.utils.persistence.BaseTransactionalTest;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
+import uk.gov.moj.cpp.listing.domain.Type;
+import uk.gov.moj.cpp.listing.persistence.entity.CaseIdentifier;
+import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
+import uk.gov.moj.cpp.listing.persistence.entity.Defendant;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.HearingDays;
+import uk.gov.moj.cpp.listing.persistence.entity.LinkedCase;
+import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
+import uk.gov.moj.cpp.listing.persistence.entity.Notes;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil;
+import uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext;
+
+import javax.inject.Inject;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
@@ -28,167 +81,33 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOOLEAN;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.CROWN;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
 import static uk.gov.moj.cpp.listing.domain.Type.type;
 import static uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext.hearingRepositoryContext;
 
-import uk.gov.justice.listing.events.HearingDay;
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.common.util.UtcClock;
-import uk.gov.justice.services.test.utils.persistence.BaseTransactionalTest;
-import uk.gov.moj.cpp.listing.domain.JurisdictionType;
-import uk.gov.moj.cpp.listing.domain.Type;
-import uk.gov.moj.cpp.listing.persistence.entity.CaseIdentifier;
-import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
-import uk.gov.moj.cpp.listing.persistence.entity.Defendant;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.entity.HearingDays;
-import uk.gov.moj.cpp.listing.persistence.entity.LinkedCase;
-import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
-import uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil;
-import uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.inject.Inject;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Predicate;
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
-import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-// It seems that this must only be run with PersistenceTestSuite.
 @RunWith(CdiTestRunner.class)
-public class HearingRepositoryTest extends BaseTransactionalTest {
-    
-    private static final UtcClock UTC_CLOCK = new UtcClock();
-    private static final Boolean ALLOCATED = TRUE;
-    private static final Boolean UNALLOCATED = FALSE;
-    private static final Boolean IS_POSSIBLE_DISQUALIFICATION = FALSE;
-    private static final Boolean RANDOM_ALLOCATED = BOOLEAN.next();
-    private static final Boolean NOT_VACATED = FALSE;
-    private static final String UNALLOCATED_STR = "false";
-    private static final UUID HEARING_ID = randomUUID();
-    private static final UUID OTHER_HEARING_ID = randomUUID();
-    private static final UUID OTHER_HEARING_ID2 = randomUUID();
-    private static final UUID VACATED_HEARING_ID = randomUUID();
-    private static final UUID COURT_ROOM_ID = randomUUID();
-    private static final UUID COURT_CENTRE_ID = randomUUID();
-    private static final UUID OTHER_COURT_CENTRE_ID = randomUUID();
-    private static final UUID AUTHORITY_ID = randomUUID();
-    private static final UUID OTHER_AUTHORITY_ID = randomUUID();
-    private static final UUID TYPE_OF_LIST_ID = randomUUID();
-    private static final Type HEARING_TYPE = type().withId(fromString("bf8155e1-90b9-4080-b133-bfbad895d6e4")).withDescription("TRIAL").build();
-    private static final Type OTHER_HEARING_TYPE = type().withId(randomUUID()).withDescription("SENTENCE").build();
-    private static final JurisdictionType JURISDICTION_TYPE = CROWN;
-    private static final String JUDICIAL_ID = "0ab98bfb-fc34-44c4-a573-3801343cf123";
-    private static final String OTHER_JUDICIAL_ID = "a666923b-bbc1-4ed7-b340-c72f9341035b";
-    private static final JurisdictionType OTHER_JURISDICTION_TYPE = MAGISTRATES;
-    private static final LocalDate START_SEARCH_DATE = now();
-    private static final LocalDate END_SEARCH_DATE = now().plusDays(1);
-    private static final LocalDate START_DATE = now();
-    private static final LocalDate END_DATE = now().plusDays(2);
-    private static final LocalDate WEEK_COMMENCING_START_DATE = now();
-    private static final LocalDate WEEK_COMMENCING_END_DATE = now().plusDays(7);
-    private static final ZonedDateTime START_TIME = UTC_CLOCK.now();
-    private static final ZonedDateTime END_TIME = UTC_CLOCK.now().plusHours(2);
-    private static final ZonedDateTime EARLIEST_SEARCH_DATE_TIME = ZonedDateTime.of(START_SEARCH_DATE, LocalTime.MIN, UTC);
-    private static final ZonedDateTime LATEST_SEARCH_DATE_TIME = ZonedDateTime.of(START_SEARCH_DATE, LocalTime.MAX, UTC);
-    private static final ZonedDateTime HEARING_DATE = UTC_CLOCK.now();
-    private static final ZonedDateTime DAY_1_HEARING_DATE = UTC_CLOCK.now();
-    private static final ZonedDateTime DAY_2_HEARING_DATE = UTC_CLOCK.now();
-    private static final ZonedDateTime DAY_3_HEARING_DATE = UTC_CLOCK.now();
-    private static final ZonedDateTime DAY_1_START_TIME = UTC_CLOCK.now();
-    private static final ZonedDateTime DAY_1_END_TIME = DAY_1_START_TIME.plusHours(2);
-    private static final ZonedDateTime DAY_2_START_TIME = DAY_1_START_TIME.plusDays(1);
-    private static final ZonedDateTime DAY_2_END_TIME = DAY_2_START_TIME.plusHours(2);
-    private static final ZonedDateTime DAY_3_START_TIME = DAY_1_START_TIME.plusDays(2);
-    private static final ZonedDateTime DAY_3_END_TIME = DAY_3_START_TIME.plusHours(2);
-    private static final UUID LISTED_CASES_ID_1 = fromString("cd2a5c26-d2fd-40b3-a8be-6f1e578c5034");
-    private static final UUID COURT_APPLICATION_ID_1 = fromString("a549f16a-100d-4dca-b206-1454947e20bb");
-    private static final UUID LISTED_CASES_ID_2 = fromString("563d479b-7483-4216-9f13-aef8d87d68ae");
-    private static final UUID COURT_APPLICATION_ID_2 = fromString("ce15d9e1-c8ee-44ae-8f28-45d3d8286518");
-    private static final Boolean UNSCHEDULED = FALSE;
-
-    private static final String HEARING_ID_FIELD = "HEARING_ID_FIELD";
-    private static final String JURISDICTION_TYPE_FIELD = "JURISDICTION_TYPE_FIELD";
-    private static final String JUDICIAL_ID_FIELD = "JUDICIAL_ID";
-    private static final String ALLOCATED_FIELD = "ALLOCATED_FIELD";
-    private static final String VACATED_TRIAL_FIELD = "VACATED_TRIAL_FIELD";
-    private static final String COURT_CENTRE_ID_FIELD = "COURT_CENTRE_ID_FIELD";
-    private static final String COURT_ROOM_ID_FIELD = "COURT_ROOM_ID_FIELD";
-    private static final String AUTHORITY_ID_FIELD = "AUTHORITY_ID_FIELD";
-    private static final String HEARING_TYPE_DESCRIPTION_FIELD = "HEARING_TYPE_DESCRIPTION_FIELD";
-    private static final String HEARING_TYPE_ID_FIELD = "HEARING_TYPE_ID_FIELD";
-    private static final String START_DATE_FIELD = "START_DATE_FIELD";
-    private static final String END_DATE_FIELD = "END_DATE_FIELD";
-    private static final String WEEK_COMMENCING_START_FIELD = "WEEK_COMMENCING_START_FIELD";
-    private static final String WEEK_COMMENCING_END_FIELD = "WEEK_COMMENCING_END_FIELD";
-    private static final String START_TIME_FIELD = "START_TIME_FIELD";
-    private static final String END_TIME_FIELD = "END_TIME_FIELD";
-    private static final String HEARING_DATE_FIELD = "HEARING_DATE_FIELD";
-    private static final String FIELD_2_HEARING_DATE = "FIELD_2_HEARING_DATE";
-    private static final String CASE_REFERENCE = "45DI277164";
-    private static final String MASTER_DEFENDANT_ID = "e2b13dc1-de95-11e8-9df5-e56feb0784f6";
-    private static final String LINKED_CASE_URN = "45DI277164";
-    private static final String EMPTY_STRING = "";
-    private static final String DAY_1_HEARING_DATE_FIELD = "DAY_1_HEARING_DATE_FIELD";
-    private static final String DAY_2_HEARING_DATE_FIELD = "DAY_2_HEARING_DATE_FIELD";
-    private static final String DAY_3_HEARING_DATE_FIELD = "DAY_3_HEARING_DATE_FIELD";
-    private static final String DAY_1_START_TIME_FIELD = "DAY_1_START_TIME_FIELD";
-    private static final String DAY_1_END_TIME_FIELD = "DAY_1_END_TIME_FIELD";
-    private static final String DAY_2_START_TIME_FIELD = "DAY_2_START_TIME_FIELD";
-    private static final String DAY_2_END_TIME_FIELD = "DAY_2_END_TIME_FIELD";
-    private static final String DAY_3_START_TIME_FIELD = "DAY_3_START_TIME_FIELD";
-    private static final String DAY_3_END_TIME_FIELD = "DAY_3_END_TIME_FIELD";
-    private static final String DAY_1_IS_CANCELLED_FIELD = "DAY_1_IS_CANCELLED_FIELD";
-    private static final String DAY_2_IS_CANCELLED_FIELD = "DAY_2_IS_CANCELLED_FIELD";
-    private static final String DAY_3_IS_CANCELLED_FIELD = "DAY_3_IS_CANCELLED_FIELD";
-
-    private static final String TEST_DATA_SAMPLE_HEARING_JSON = "test-data/sample-hearing.json";
-    private static final String TEST_DATA_SAMPLE_HEARING_NULL_VACATED_JSON = "test-data/sample-hearing-null-vacated.json";
-    private static final String TEST_DATA_SAMPLE_UNSCHEDULED_HEARING_JSON = "test-data/sample-unscheduled-hearing.json";
-    private static final String TEST_DATA_SAMPLE_UNSCHEDULED_WITHOUT_CASE_HEARING_JSON = "test-data/sample-unscheduled-hearing-without-case.json";
-    private static final String TEST_DATA_SAMPLE_MULTIDAY_HEARING_JSON = "test-data/sample-multiday-hearing.json";
-    private static final String SAMPLE_UNALLOCATED_HEARING_FOR_WEEK_COMMENCING = "test-data/sample-unallocated-hearing-for-week-commencing.json";
-    private static final String TEST_DATA_SAMPLE_HEARING_WITH_COURT_CENTRE_JSON = "test-data/hearing-with-court-centre-details.json";
-
-    public static final String EARLIEST_SEARCH_DATE = "1900-01-01";
-    public static final String LATEST_SEARCH_DATE = "9999-01-01";
-
-
+public class PersistenceTestsIT extends BaseTransactionalTest implements PersistenceTestsInt {
+    @Inject
+    public HearingRepository hearingRepository;
 
     @Inject
-    private HearingRepository hearingRepository;
+    public ObjectToJsonValueConverter objectToJsonValueConverter;
 
     @Inject
-    private ObjectToJsonValueConverter objectToJsonValueConverter;
+    public ObjectMapper objectMapper;
 
     @Inject
-    private ObjectMapper objectMapper;
+    public PublishedCourtListRepository publishedCourtListRepository;
+
+    @Inject
+    NotesRepository notesRepository;
 
     @Test
     public void shouldFindHearingById() {
@@ -952,7 +871,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         assertThat(actualHearings.getProperties().toString(), hasJsonPath("$.hearings[0].hearingsByCourtCentreId[0].hearingsByHearingDate[0].hearing.courtRoomId", equalTo(COURT_ROOM_ID.toString())));
     }
 
-    private void givenHearingsWithMultipleCourtCentres(final UUID courtCentreId, final UUID courtRoomId, final UUID otherCourtCentreId, final LocalDate startDate, final LocalDate endDate) {
+    public void givenHearingsWithMultipleCourtCentres(final UUID courtCentreId, final UUID courtRoomId, final UUID otherCourtCentreId, final LocalDate startDate, final LocalDate endDate) {
         final Hearing hearing1 = givenHearingWithCourtCentreDetails(courtCentreId, courtRoomId, MAGISTRATES, startDate, endDate, true);
         hearing1.setHearingDays(getHearingDays(courtCentreId, courtRoomId, otherCourtCentreId, startDate, endDate, hearing1));
         addHearingDays(courtCentreId, courtRoomId, otherCourtCentreId, startDate, endDate, hearing1);
@@ -968,14 +887,14 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         Stream.of(hearing1, hearing2, hearing3).forEach(hearing -> hearingRepository.save(hearing));
     }
 
-    private void addHearingDays(final UUID courtCentreId, final UUID courtRoomId, final UUID otherCourtCentreId, final LocalDate startDate, final LocalDate endDate, final Hearing hearing1) {
+    public void addHearingDays(final UUID courtCentreId, final UUID courtRoomId, final UUID otherCourtCentreId, final LocalDate startDate, final LocalDate endDate, final Hearing hearing1) {
         ((ObjectNode) hearing1.getProperties()).putArray("hearingDays").addAll(getHearingDays(Stream.of(
                 HearingDay.hearingDay().withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId).withHearingDate(startDate).build(),
                 HearingDay.hearingDay().withCourtCentreId(otherCourtCentreId).withCourtRoomId(courtRoomId).withHearingDate(endDate).build())
                 .collect(Collectors.toList())));
     }
 
-    private Set<HearingDays> getHearingDays(final UUID courtCentreId, final UUID courtRoomId, final UUID otherCourtCentreId, final LocalDate startDate, final LocalDate endDate, final Hearing hearing1) {
+    public Set<HearingDays> getHearingDays(final UUID courtCentreId, final UUID courtRoomId, final UUID otherCourtCentreId, final LocalDate startDate, final LocalDate endDate, final Hearing hearing1) {
         return Stream.of(
                 HearingDays.builder().withId(randomUUID()).withHearing(hearing1)
                         .withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId)
@@ -992,7 +911,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                 .collect(Collectors.toSet());
     }
 
-    private Set<HearingDays> getHearingDays(final Hearing hearing) {
+    public Set<HearingDays> getHearingDays(final Hearing hearing) {
         final Set<HearingDays> hearingDays = new HashSet<>();
         final Iterator<JsonNode> hearingDaysIterator = hearing.getProperties().get("hearingDays").iterator();
 
@@ -1479,7 +1398,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
 
     }
 
-    private List<Hearing> givenHearingsWithVacated(final Boolean vacated) {
+    public List<Hearing> givenHearingsWithVacated(final Boolean vacated) {
         final List<Hearing> hearingsToBeCreated = new ArrayList<>();
         hearingsToBeCreated.add(getHearingJson(hearingRepositoryContext()
                 .withHearingId(HEARING_ID)
@@ -1527,7 +1446,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     @Test
     public void shouldSaveAndFindHearingsWithMultipleCourtCentresForPublicCourList_1() {
 
-        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre().invoke();
+        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre(this).invoke();
 
         UUID courtCentreId = multipleCourtCentre.getCourtCentreId();
         LocalDate startDate = multipleCourtCentre.getStartDate();
@@ -1548,7 +1467,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     @Test
     public void shouldSaveAndFindHearingsWithMultipleCourtCentresForAlphabeticalCourList_1() {
 
-        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre().invoke();
+        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre(this).invoke();
 
         UUID courtCentreId = multipleCourtCentre.getCourtCentreId();
         LocalDate startDate = multipleCourtCentre.getStartDate();
@@ -1566,7 +1485,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     @Test
     public void shouldSaveAndFindHearingsWithMultipleCourtCentresForPublicCourList_2() {
 
-        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre().invoke();
+        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre(this).invoke();
 
         UUID courtCentreId = multipleCourtCentre.getCourtCentreId();
         LocalDate endDate = multipleCourtCentre.getEndDate();
@@ -1587,7 +1506,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     @Test
     public void shouldSaveAndFindHearingsWithMultipleCourtCentresForAlphabeticalCourList_2() {
 
-        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre().invoke();
+        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre(this).invoke();
 
         UUID courtCentreId = multipleCourtCentre.getCourtCentreId();
         LocalDate endDate = multipleCourtCentre.getEndDate();
@@ -1605,7 +1524,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     @Test
     public void shouldSaveAndFindHearingsWithMultipleCourtCentresForPublic_3() {
 
-        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre().invoke();
+        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre(this).invoke();
 
         UUID courtCentreId = multipleCourtCentre.getCourtCentreId();
         LocalDate startDate = multipleCourtCentre.getStartDate();
@@ -1628,7 +1547,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     @Test
     public void shouldSaveAndFindHearingsWithMultipleCourtCentresForPublic_4() {
 
-        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre().invoke();
+        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre(this).invoke();
 
         UUID otherCourtCentreId = multipleCourtCentre.getOtherCourtCentreId();
         LocalDate startDate = multipleCourtCentre.getStartDate();
@@ -1651,7 +1570,7 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
     @Test
     public void shouldSaveAndFindHearingsWithMultipleCourtCentresForAlphabetical_3() {
 
-        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre().invoke();
+        MultipleCourtCentre multipleCourtCentre = new MultipleCourtCentre(this).invoke();
 
         UUID otherCourtCentreId = multipleCourtCentre.getOtherCourtCentreId();
         LocalDate startDate = multipleCourtCentre.getStartDate();
@@ -1709,6 +1628,292 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
+    }
+
+    // Published court list  rep test
+
+
+    @Test
+    public void shouldSuccessfullySaveWhenNoRecordExistsForPrimaryKey() throws Exception {
+
+
+        final PublishedCourtListPrimaryKey publishedCourtListPrimaryKey
+                = new PublishedCourtListPrimaryKey(
+                COURT_CENTRE_ID_ONE,
+                PublishCourtListType.FINAL,
+                APRIL_FOOLS_DAY_2020
+        );
+        final PublishedCourtList proposedPublishedCourtList
+                = generateProposedPublishedCourtList(publishedCourtListPrimaryKey, getContentTwo(), LAST_UPDATED, LAST_EXPORTED, courtListId);
+
+
+        assertNull(publishedCourtListRepository.findBy(publishedCourtListPrimaryKey));
+        final PublishedCourtList savedPublishedCourtList = publishedCourtListRepository.save(proposedPublishedCourtList);
+        assertEquals(proposedPublishedCourtList, savedPublishedCourtList);
+
+        final PublishedCourtList returnedPublishedCourtListForFirstTime =
+                publishedCourtListRepository.findBy(toKey(proposedPublishedCourtList));
+        assertEquals(proposedPublishedCourtList, returnedPublishedCourtListForFirstTime);
+
+    }
+
+    @Test
+    public void shouldSuccessfullySaveEvenWhenARecordAlreadyExistsForPrimaryKey() throws Exception {
+
+        final PublishedCourtListPrimaryKey publishedCourtListPrimaryKey
+                = new PublishedCourtListPrimaryKey(
+                COURT_CENTRE_ID_ONE,
+                PublishCourtListType.FINAL,
+                APRIL_FOOLS_DAY_2020
+        );
+        final PublishedCourtList proposedPublishedCourtListHavingContentOne
+                = generateProposedPublishedCourtList(publishedCourtListPrimaryKey, getContentOne(), LAST_UPDATED, LAST_EXPORTED, courtListId);
+        final PublishedCourtList proposedPublishedCourtListHavingContentTwo
+                = generateProposedPublishedCourtList(publishedCourtListPrimaryKey, getContentTwo(), LAST_UPDATED, LAST_EXPORTED, courtListId);
+
+        assertNull(publishedCourtListRepository.findBy(publishedCourtListPrimaryKey));
+
+        publishedCourtListRepository.save(proposedPublishedCourtListHavingContentOne);
+
+        final PublishedCourtList foundPublishedCourtListForFirstTime =
+                publishedCourtListRepository.findBy(toKey(proposedPublishedCourtListHavingContentOne));
+        assertEquals(proposedPublishedCourtListHavingContentOne, foundPublishedCourtListForFirstTime);
+
+        publishedCourtListRepository.save(proposedPublishedCourtListHavingContentTwo);
+
+        final PublishedCourtList foundPublishedCourtListForSecondTime =
+                publishedCourtListRepository.findBy(toKey(proposedPublishedCourtListHavingContentTwo));
+
+        assertEquals(proposedPublishedCourtListHavingContentTwo, foundPublishedCourtListForSecondTime);
+
+    }
+
+    @Test
+    public void shouldSuccessfullySaveTwoRecordsWithDifferentCourtCentreIds() throws Exception {
+
+        final PublishedCourtListPrimaryKey primaryKeyUsingCourtCentreOne
+                = new PublishedCourtListPrimaryKey(
+                COURT_CENTRE_ID_ONE,
+                PublishCourtListType.FINAL,
+                APRIL_FOOLS_DAY_2020
+        );
+
+        final PublishedCourtListPrimaryKey primaryKeyUsingCourtCentreTwo
+                = new PublishedCourtListPrimaryKey(
+                COURT_CENTRE_ID_TWO,
+                PublishCourtListType.FINAL,
+                APRIL_FOOLS_DAY_2020
+        );
+
+        assertThat(publishedCourtListRepository.count(), Matchers.is(0L));
+
+        final PublishedCourtList publishedCourtListOne =
+                generateAndSave(primaryKeyUsingCourtCentreOne, getContentOne());
+        final PublishedCourtList publishedCourtListTwo
+                = generateAndSave(primaryKeyUsingCourtCentreTwo, getContentTwo());
+
+        assertFoundAsExpected(publishedCourtListOne, primaryKeyUsingCourtCentreOne);
+        assertFoundAsExpected(publishedCourtListTwo, primaryKeyUsingCourtCentreTwo);
+
+        assertThat(publishedCourtListRepository.count(), Matchers.is(2L));
+
+    }
+
+    @Test
+    public void shouldSuccessfullySaveTwoRecordsWithDifferentTypes() throws Exception {
+
+        final PublishedCourtListPrimaryKey primaryKeyUsingCourtCentreOne
+                = new PublishedCourtListPrimaryKey(
+                COURT_CENTRE_ID_ONE,
+                PublishCourtListType.FIRM,
+                APRIL_FOOLS_DAY_2020
+        );
+
+        final PublishedCourtListPrimaryKey primaryKeyUsingCourtCentreTwo
+                = new PublishedCourtListPrimaryKey(
+                COURT_CENTRE_ID_ONE,
+                PublishCourtListType.FINAL,
+                APRIL_FOOLS_DAY_2020
+        );
+
+        assertThat(publishedCourtListRepository.count(), Matchers.is(0L));
+
+        final PublishedCourtList publishedCourtListOne =
+                generateAndSave(primaryKeyUsingCourtCentreOne, getContentOne());
+        final PublishedCourtList publishedCourtListTwo
+                = generateAndSave(primaryKeyUsingCourtCentreTwo, getContentTwo());
+
+        assertFoundAsExpected(publishedCourtListOne, primaryKeyUsingCourtCentreOne);
+        assertFoundAsExpected(publishedCourtListTwo, primaryKeyUsingCourtCentreTwo);
+
+        assertThat(publishedCourtListRepository.count(), Matchers.is(2L));
+
+    }
+
+    @Test
+    public void shouldSuccessfullySaveTwoRecordsWithDifferentStartDates() throws Exception {
+
+        final PublishedCourtListPrimaryKey primaryKeyUsingCourtCentreOne
+                = new PublishedCourtListPrimaryKey(
+                COURT_CENTRE_ID_ONE,
+                PublishCourtListType.FINAL,
+                APRIL_FOOLS_DAY_2020
+        );
+
+        final PublishedCourtListPrimaryKey primaryKeyUsingCourtCentreTwo
+                = new PublishedCourtListPrimaryKey(
+                COURT_CENTRE_ID_ONE,
+                PublishCourtListType.FINAL,
+                BOXING_DAY_2020
+        );
+
+        assertThat(publishedCourtListRepository.count(), Matchers.is(0L));
+
+        final PublishedCourtList publishedCourtListOne =
+                generateAndSave(primaryKeyUsingCourtCentreOne, getContentOne());
+        final PublishedCourtList publishedCourtListTwo
+                = generateAndSave(primaryKeyUsingCourtCentreTwo, getContentTwo());
+
+        assertFoundAsExpected(publishedCourtListOne, primaryKeyUsingCourtCentreOne);
+        assertFoundAsExpected(publishedCourtListTwo, primaryKeyUsingCourtCentreTwo);
+
+        assertThat(publishedCourtListRepository.count(), Matchers.is(2L));
+
+    }
+
+    private void assertFoundAsExpected(final PublishedCourtList expectedPublishedCourtList, final PublishedCourtListPrimaryKey primaryKey) {
+        assertEquals(publishedCourtListRepository.findBy(primaryKey), publishedCourtListRepository.findBy(primaryKey));
+    }
+
+    private PublishedCourtList generateAndSave(final PublishedCourtListPrimaryKey primaryKey, final JsonNode content) {
+        final PublishedCourtList proposedPublishedCourtList
+                = generateProposedPublishedCourtList(primaryKey, content, LAST_UPDATED, LAST_EXPORTED, courtListId);
+        final PublishedCourtList savedPublishedCourtList
+                = publishedCourtListRepository.save(proposedPublishedCourtList);
+        assertEquals(proposedPublishedCourtList, savedPublishedCourtList);
+        return savedPublishedCourtList;
+    }
+
+    private JsonNode getContentOne() throws IOException {
+        return new ObjectMapper().readTree(FileUtil.getPayload("test-data/courtListJson1.txt"));
+    }
+
+    private JsonNode getContentTwo() throws IOException {
+        return new ObjectMapper().readTree(FileUtil.getPayload("test-data/courtListJson2.txt"));
+    }
+
+    private PublishedCourtListPrimaryKey toKey(final PublishedCourtList publishedCourtList) {
+        return new PublishedCourtListPrimaryKey(
+                publishedCourtList.getCourtCentreId(),
+                publishedCourtList.getPublishCourtListType(),
+                publishedCourtList.getStartDate());
+    }
+
+    private void assertEquals(final PublishedCourtList expectedPublishedCourtList, final PublishedCourtList savedPublishedCourtList) {
+
+        assertThat(savedPublishedCourtList.getCourtCentreId(), Matchers.is(expectedPublishedCourtList.getCourtCentreId()));
+        assertThat(savedPublishedCourtList.getPublishCourtListType(), is(expectedPublishedCourtList.getPublishCourtListType()));
+        assertThat(savedPublishedCourtList.getStartDate(), Matchers.is(expectedPublishedCourtList.getStartDate()));
+        assertThat(savedPublishedCourtList.getCourtListJson(), Matchers.is(expectedPublishedCourtList.getCourtListJson()));
+    }
+
+    private PublishedCourtList generateProposedPublishedCourtList(
+            final PublishedCourtListPrimaryKey publishedCourtListPrimaryKey,
+            final JsonNode getCourtListJson,
+            final ZonedDateTime lastUpdated,
+            final ZonedDateTime lastExported,
+            final UUID courtListId) {
+        return new PublishedCourtList(
+                publishedCourtListPrimaryKey.getCourtCentreId(),
+                publishedCourtListPrimaryKey.getPublishCourtListType(),
+                publishedCourtListPrimaryKey.getStartDate(),
+                getCourtListJson,
+                lastUpdated,
+                lastExported,
+                courtListId
+        );
+    }
+
+    //  PublishedCourtListRepositoryTest end
+
+    // Notes Rep test start
+    @Test
+    public void shouldFindNotesId() {
+
+        List<Notes> expectedNotes = IntStream.range(0, 2).mapToObj(i -> new Notes(randomUUID(), randomUUID(), LocalDate.now(), STRING.next())).
+                peek(note -> notesRepository.save(note)).
+                collect(Collectors.toList());
+
+        List<Notes> actualNotes = notesRepository.findNotes(expectedNotes.stream().map(note -> note.getId()).collect(Collectors.toList()));
+
+        TestCase.assertTrue(EqualsBuilder.reflectionEquals(expectedNotes, actualNotes));
+
+    }
+
+    @Test
+    public void shouldFindNoteByCourtRoomAndDate() {
+        final Notes notes = new Notes();
+        final LocalDate date = LocalDate.now();
+        notes.setDate(date);
+        notes.setNote("Note description");
+        notes.setId(randomUUID());
+        final UUID courtRoomId = randomUUID();
+        notes.setCourtRoomId(courtRoomId);
+        notesRepository.save(notes);
+
+        final List<Notes> byCourtRoomCourtCentreAndDate = notesRepository.findByCourtRoomIdAndDate(courtRoomId, date);
+        Assert.assertThat(byCourtRoomCourtCentreAndDate.size(), is(1));
+    }
+
+    @Test
+    public void shouldNotFindNoteByCourtRoomCourtCentreAndDate() {
+        final List<Notes> byCourtRoomCourtCentreAndDate = notesRepository.findByCourtRoomIdAndDate(randomUUID(), LocalDate.now());
+        Assert.assertThat(byCourtRoomCourtCentreAndDate.size(), is(0));
+    }
+
+
+    @Test
+    public void shouldFindNoteById() {
+
+        //Given
+        UUID noteId = randomUUID();
+        String noteDescription = "random note description";
+        Notes note = createNoteObject(noteId, LocalDate.now(), randomUUID(), noteDescription);
+        notesRepository.save(note);
+
+        //When
+        Notes optionalById = notesRepository.findOptionalById(noteId);
+
+        //Then
+        Assert.assertThat(optionalById.getId(), is(noteId));
+        Assert.assertThat(optionalById.getNote(), is("random note description"));
+    }
+
+    @Test
+    public void shouldlUpdateNoteDescription() {
+
+        //Given
+        UUID noteId = randomUUID();
+        String noteDescription = "random note description";
+        Notes note = createNoteObject(noteId, LocalDate.now(), randomUUID(), noteDescription);
+        notesRepository.save(note);
+
+        //When
+        Notes optionalById = notesRepository.findOptionalById(noteId);
+        optionalById.setNote("edited note description");
+        notesRepository.save(note);
+        Notes noteAfterChangingDescription = notesRepository.findOptionalById(noteId);
+
+        //Then
+        Assert.assertThat(noteAfterChangingDescription.getNote(), is("edited note description"));
+        List<Notes> allNotes = notesRepository.findAll();
+        Assert.assertThat(allNotes.size(), is(1));
+
+    }
+
+    private Notes createNoteObject(UUID noteId, LocalDate now, UUID courtCentreId,
+                                   String noteDescription) {
+        return new Notes(noteId, courtCentreId, now, noteDescription);
     }
 
     private List<Hearing> givenAllocatedAndUnallocatedHearings(final UUID caseId, final UUID applicationId) {
@@ -2748,42 +2953,6 @@ public class HearingRepositoryTest extends BaseTransactionalTest {
                     .replaceAll(WEEK_COMMENCING_END_FIELD, to(context.getWeekCommencingEndDate()));
         }
         return updatedHearingString;
-    }
-
-    private class MultipleCourtCentre {
-        private UUID courtCentreId;
-        private LocalDate startDate;
-        private LocalDate endDate;
-        private UUID otherCourtCentreId;
-
-        public UUID getCourtCentreId() {
-            return courtCentreId;
-        }
-
-        public LocalDate getStartDate() {
-            return startDate;
-        }
-
-        public LocalDate getEndDate() {
-            return endDate;
-        }
-
-        public UUID getOtherCourtCentreId() {
-            return otherCourtCentreId;
-        }
-
-        public MultipleCourtCentre invoke() {
-            courtCentreId = randomUUID();
-            final UUID courtRoomId = randomUUID();
-
-            otherCourtCentreId = randomUUID();
-
-            startDate = LocalDate.now();
-            endDate = LocalDate.now().plusDays(1);
-
-            givenHearingsWithMultipleCourtCentres(courtCentreId, courtRoomId, otherCourtCentreId, startDate, endDate);
-            return this;
-        }
     }
 
     private Hearing createHearingJson(final UUID hearingId,

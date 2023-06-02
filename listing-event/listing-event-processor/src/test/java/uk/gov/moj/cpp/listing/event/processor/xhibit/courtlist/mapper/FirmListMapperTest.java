@@ -4,7 +4,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtHouseStructure;
@@ -22,12 +21,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.slf4j.Logger;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FirmListMapperTest extends BaseMapperTest {
-
-    private static final Logger LOGGER = getLogger(FirmListMapperTest.class);
 
     @Mock
     private CourtServicesMapper courtServicesMapper;
@@ -47,8 +43,6 @@ public class FirmListMapperTest extends BaseMapperTest {
 
         String generatedXml = xmlUtils.convertToXml(firmListMapper.generate());
 
-        LOGGER.info("generatedXml:\n{}", generatedXml);
-
         XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListMapperTest.xml");
     }
 
@@ -66,8 +60,6 @@ public class FirmListMapperTest extends BaseMapperTest {
         final FirmListMapper firmListMapper = new FirmListMapper(context, courtListsForPublishing, courtServicesMapper);
 
         String generatedXml = xmlUtils.convertToXml(firmListMapper.generate());
-
-        LOGGER.info("generatedXml:\n{}", generatedXml);
 
         XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListNoHearingsMapperTest.xml");
     }
@@ -101,8 +93,6 @@ public class FirmListMapperTest extends BaseMapperTest {
 
         String generatedXml = xmlUtils.convertToXml(firmListMapper.generate());
 
-        LOGGER.info("generatedXml:\n{}", generatedXml);
-
         XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingWithReserveListMapperTest.xml");
     }
 
@@ -134,8 +124,6 @@ public class FirmListMapperTest extends BaseMapperTest {
         final FirmListMapper firmListMapper = new FirmListMapper(context, courtListsForPublishing, courtServicesMapper);
 
         String generatedXml = xmlUtils.convertToXml(firmListMapper.generate());
-
-        LOGGER.info("generatedXml:\n{}", generatedXml);
 
         XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingWithNoReserveListMapperTest.xml");
     }

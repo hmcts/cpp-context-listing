@@ -9,7 +9,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
-import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersBuilder.withDefaults;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlTestUtils.assertXmlEquals;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
@@ -49,8 +48,6 @@ import org.slf4j.Logger;
 
 @RunWith(MockitoJUnitRunner.class)
 public class WarnedListMapperTest {
-
-    private static final Logger LOGGER = getLogger(WarnedListMapperTest.class);
 
     private static final String HEARING_TYPE_CODE = "ABC";
 
@@ -214,7 +211,6 @@ public class WarnedListMapperTest {
         final List<JsonObject> courtCentreCourtLists = courtListJson.getJsonArray("courtLists").getValuesAs(JsonObject.class);
         warnedListMapper = new WarnedListMapper(context, courtCentreCourtLists, new CourtServicesMapper(context, commonXhibitReferenceDataService));
         final JAXBElement actual = warnedListMapper.generate();
-        LOGGER.info("generatedXml:\n{}", xmlUtils.convertToXml(actual));
         assertXmlEquals(xmlUtils.convertToXml(actual), "xhibit/expectedSingleWarnedListMapper.xml", singletonMap("#TIME_STAMP#", requestParameters.getRequestedTime().toLocalDateTime().toString()));
     }
 }

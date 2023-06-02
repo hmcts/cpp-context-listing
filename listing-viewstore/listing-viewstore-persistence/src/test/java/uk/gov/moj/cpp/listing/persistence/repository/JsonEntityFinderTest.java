@@ -1,21 +1,5 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
-import static java.util.UUID.randomUUID;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
-
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import java.util.function.Function;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
@@ -24,6 +8,21 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Function;
+
+import static java.util.UUID.randomUUID;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 @RunWith(MockitoJUnitRunner.class)
 public class JsonEntityFinderTest {

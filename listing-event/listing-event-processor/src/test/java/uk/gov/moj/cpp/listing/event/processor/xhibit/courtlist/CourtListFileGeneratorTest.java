@@ -7,7 +7,6 @@ import static java.util.UUID.fromString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
-import static org.slf4j.LoggerFactory.getLogger;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.DRAFT;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FINAL;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
@@ -22,16 +21,11 @@ import uk.gov.moj.cpp.listing.domain.referencedata.HearingType;
 import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 
-import java.io.IOException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -52,7 +46,6 @@ import org.slf4j.Logger;
 @RunWith(Parameterized.class)
 public class CourtListFileGeneratorTest {
 
-    private static final Logger LOGGER = getLogger(CourtListFileGeneratorTest.class);
     private static final String DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list.json";
     private static final String DAILY_COURT_LIST_SUMMER_TIME_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list-summer-time.json";
     private static final String WEEK_COMMENCING_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-week-commencing-list.json";
@@ -226,8 +219,6 @@ public class CourtListFileGeneratorTest {
                 "UNIQUEID", parse("2018-01-02T13:04:05+00:00[Europe/London]"));
 
         final String generatedXml = courtListFileGenerator.generateXml(envelope, requestParameters, metadata, courtListJson);
-
-        LOGGER.info("generatedXml:\n{}", generatedXml);
 
         xmlUtils.validate(generatedXml, "xhibit/xsd/" + publishCourtListType.getSchemaName());
         assertXmlEquals(generatedXml, expectedXmlFile, singletonMap("#TIME_STAMP#", requestParameters.getRequestedTime().toLocalDateTime().toString()));
