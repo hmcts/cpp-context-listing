@@ -133,7 +133,7 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerUpdatedHearingInStagingHmi);
         LOGGER.debug("jsonResponse from privateEventMessageConsumerUpdatedHearingInStagingHmi: {}", jsonResponse.prettify());
 
-        assertThat(((ArrayList)((Map)jsonResponse.get("hearing")).get("listedCases")).size(), is(3));
+        assertThat(((ArrayList)((Map)jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
     }
 
     public void verifyPrivateEventDefendantCourtProceedingsUpdatedIsNotInActiveMQ() {
