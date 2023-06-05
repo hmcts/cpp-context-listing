@@ -127,6 +127,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -140,6 +141,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.Boolean.TRUE;
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.isNull;
@@ -192,7 +194,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 5917594778865191714L;
+    private static final long serialVersionUID = 5917594778865191716L;
 
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
@@ -298,7 +300,7 @@ public class Hearing implements Aggregate {
     }
 
     private void onDefendantCourtProceedingsUpdatedV2(final DefendantCourtProceedingsUpdatedV2 defendantCourtProceedingsUpdatedV2) {
-        this.currentHearingEventState.getListedCases().add(buildListedCase(defendantCourtProceedingsUpdatedV2.getProsecutionCase(), emptyList()));
+        updateCurrentHearingEventStateOnCaseAdded(asList(buildListedCase(defendantCourtProceedingsUpdatedV2.getProsecutionCase(), emptyList())));
     }
 
     private void onUpdatedHmiFieldsForHearing(final UpdatedHmiFieldsForHearing updatedHmiFieldsForHearing) {
@@ -2142,7 +2144,7 @@ public class Hearing implements Aggregate {
                             .collect(toList())));
         }
         if(nonNull(this.currentHearingEventState)) {
-            event.getUnAllocatedListedCases().forEach(listedCase -> this.currentHearingEventState.getListedCases().add(listedCase));
+            updateCurrentHearingEventStateOnCaseAdded(event.getUnAllocatedListedCases());
         }
     }
 
@@ -2477,19 +2479,8 @@ public class Hearing implements Aggregate {
         });
 
         if(nonNull(this.currentHearingEventState)) {
-            casesAddedToHearing.getUnAllocatedListedCases().forEach(listedCase -> {
-                final int index = this.currentHearingEventState.getListedCases().stream()
-                        .filter(oldCase -> oldCase.getId().equals(listedCase.getId()))
-                        .findFirst()
-                        .map(oldCase ->this.currentHearingEventState.getListedCases().indexOf(oldCase)).orElse(-1);
-                if(index > -1){
-                    this.currentHearingEventState.getListedCases().set(index, listedCase);
-                }else {
-                    this.currentHearingEventState.getListedCases().add(listedCase);
-                }
-            });
+            updateCurrentHearingEventStateOnCaseAdded(casesAddedToHearing.getUnAllocatedListedCases());
         }
-
     }
 
     private void addCaseToProsecutionCaseDefendantsOffenceIds(final uk.gov.justice.listing.events.ListedCase listedCase) {
@@ -3161,6 +3152,50 @@ public class Hearing implements Aggregate {
 
             currentHearingEventState.getListedCases().forEach(listedCase -> listedCase.getDefendants().removeIf(defendant -> defendant.getOffences().isEmpty()));
             currentHearingEventState.getListedCases().removeIf(pc -> pc.getDefendants().isEmpty());
+        }
+    }
+
+
+
+
+    /**
+     * This method is responsible for merging cases, defendants and offences between HearingListingNeeds which is passed in payload and hearing in aggregate.
+     *  Since the case can be splitted at case, defendant and offence levels when we are merging here we need to compare at every level and merge it back.
+     *
+     * @param listedCases Listed cases from event payload
+     */
+    @SuppressWarnings("squid:S1188")
+    private void updateCurrentHearingEventStateOnCaseAdded(final List<uk.gov.justice.listing.events.ListedCase> listedCases) {
+        if (nonNull(this.currentHearingEventState.getListedCases()) && nonNull(listedCases)) {
+
+            listedCases.forEach(prosecutionCase -> {
+
+                final Optional<uk.gov.justice.listing.events.ListedCase> matchingCaseOptional = this.currentHearingEventState.getListedCases().stream().filter(hearingCase -> hearingCase.getId().equals(prosecutionCase.getId())).findFirst();
+                if (matchingCaseOptional.isPresent()) {
+
+                        prosecutionCase.getDefendants().forEach(defendant -> {
+
+                        final Optional<uk.gov.justice.listing.events.Defendant> matchingDefendantOptional = this.currentHearingEventState.getListedCases().stream()
+                                .flatMap(hearingCase -> hearingCase.getDefendants().stream())
+                                .filter(hearingCaseDefendant -> hearingCaseDefendant.getId().equals(defendant.getId()))
+                                .findFirst();
+
+                        if (matchingDefendantOptional.isPresent()) {
+                            final Set<Offence> offenceSet = new HashSet<>(matchingDefendantOptional.get().getOffences());
+                            offenceSet.addAll(defendant.getOffences());
+                            matchingDefendantOptional.get().getOffences().clear();
+                            matchingDefendantOptional.get().getOffences().addAll(offenceSet);
+
+                        } else {
+                            matchingCaseOptional.get().getDefendants().add(defendant);
+                        }
+                    });
+
+                } else {
+                    this.currentHearingEventState.getListedCases().add(prosecutionCase);
+                }
+
+            });
         }
     }
 
