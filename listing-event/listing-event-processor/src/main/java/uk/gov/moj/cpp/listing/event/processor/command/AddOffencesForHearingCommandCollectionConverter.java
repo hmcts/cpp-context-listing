@@ -42,6 +42,7 @@ public class AddOffencesForHearingCommandCollectionConverter implements Converte
                     .withStartDate(offence.getStartDate())
                     .withOrderIndex(offence.getOrderIndex())
                     .withCount(offence.getCount())
+                    .withIndictmentParticular(offence.getIndictmentParticular())
                     .withStatementOfOffence(soo)
                     .withOffenceWording(offence.getOffenceWording())
                     .withSeedingHearing(nonNull(offence.getSeedingHearing()) ? SeedingHearingConverter.convertSeedingHearing(offence.getSeedingHearing()) : Optional.empty())

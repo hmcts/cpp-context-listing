@@ -189,6 +189,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "          \"offenceLegislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
                         "          \"offenceLegislationWelsh\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
                         "          \"offenceTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
+                        "          \"indictmentParticular\": \"" + updatedOffenceData.getIndictmentParticular() + "\",\n" +
                         "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
                         "          \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "          \"count\": " + offenceData.getCount() + ",\n" +
@@ -233,6 +234,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "          \"offenceLegislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
                         "          \"offenceLegislationWelsh\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
                         "          \"offenceTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
+                        "          \"indictmentParticular\": \"" + updatedOffenceData.getIndictmentParticular() + "\",\n" +
                         "          \"offenceTitleWelsh\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
                         "          \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "          \"count\": " + offenceData.getCount() + ",\n" +
@@ -605,7 +607,9 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[0].offenceCode",
                                         equalTo(updatedOffenceData.getOffenceCode())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[0].offenceWording",
-                                        equalTo(updatedOffenceData.getOffenceWording()))
+                                        equalTo(updatedOffenceData.getOffenceWording())),
+                                withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[0].indictmentParticular",
+                                        equalTo(updatedOffenceData.getIndictmentParticular()))
                         )));
     }
 
@@ -721,6 +725,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                 .withOffenceLegislation(updatedOffenceData.getLegislation())
                 .withOffenceLegislationWelsh(updatedOffenceData.getLegislationWelsh())
                 .withCount(offenceData.getCount())
+                .withIndictmentParticular(offenceData.getIndictmentParticular())
                 .withOrderIndex(offenceData.getOrderIndex())
                 .withOffenceLegislation(offenceData.getOffenceLegislation())
                 .withOffenceDefinitionId(offenceData.getOffenceDefinitionId())
