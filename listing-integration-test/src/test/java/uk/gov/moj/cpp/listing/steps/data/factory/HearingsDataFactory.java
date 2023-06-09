@@ -551,19 +551,19 @@ public class HearingsDataFactory {
     private static OffenceData randomOffence() {
         return new OffenceData(randomUUID(), STRING.next(), LocalDate.now(),
                 LocalDate.now(), STRING.next(), STRING.next(), STRING.next(),
-                OFFENCE_COUNT, OFFENCE_ORDER_INDEX, OFFENCE_LEGISLATION, randomUUID(), Optional.of(randomCustodyTimeLimit()), Optional.of(randomLaaReferenceData()), LocalDate.now(), of(Boolean.FALSE), manyRandomReportingRestriction(2));
+                OFFENCE_COUNT, OFFENCE_ORDER_INDEX, OFFENCE_LEGISLATION, randomUUID(), Optional.of(randomCustodyTimeLimit()), Optional.of(randomLaaReferenceData()), LocalDate.now(), of(Boolean.FALSE), manyRandomReportingRestriction(2), STRING.next());
     }
 
     private static OffenceData randomOffence(OffenceData offence) {
         return new OffenceData(offence.getOffenceId(), STRING.next(), LocalDate.now(),
                 LocalDate.now(), STRING.next(), STRING.next(), STRING.next(),
-                OFFENCE_COUNT, OFFENCE_ORDER_INDEX, OFFENCE_LEGISLATION, randomUUID(), Optional.of(randomCustodyTimeLimit()), Optional.of(randomLaaReferenceData()), LocalDate.now(), of(Boolean.FALSE), manyRandomReportingRestriction(2));
+                OFFENCE_COUNT, OFFENCE_ORDER_INDEX, OFFENCE_LEGISLATION, randomUUID(), Optional.of(randomCustodyTimeLimit()), Optional.of(randomLaaReferenceData()), LocalDate.now(), of(Boolean.FALSE), manyRandomReportingRestriction(2), STRING.next());
     }
 
     private static OffenceData randomOffenceWithoutReportingRestriction() {
         return new OffenceData(randomUUID(), STRING.next(), LocalDate.now(),
                 LocalDate.now(), STRING.next(), STRING.next(), STRING.next(),
-                OFFENCE_COUNT, OFFENCE_ORDER_INDEX, OFFENCE_LEGISLATION, randomUUID(), Optional.of(randomCustodyTimeLimit()), Optional.of(randomLaaReferenceData()), LocalDate.now(), of(Boolean.FALSE), null);
+                OFFENCE_COUNT, OFFENCE_ORDER_INDEX, OFFENCE_LEGISLATION, randomUUID(), Optional.of(randomCustodyTimeLimit()), Optional.of(randomLaaReferenceData()), LocalDate.now(), of(Boolean.FALSE), null, STRING.next());
     }
 
     private static List<ReportingRestrictionData> manyRandomReportingRestriction(final Integer numberOfReportingRestrictions) {

@@ -178,6 +178,7 @@ public class NewDomainToEventConverter {
                 .withOffenceCode(o.getOffenceCode())
                 .withOffenceWording(o.getOffenceWording())
                 .withCount(o.getCount())
+                .withIndictmentParticular(o.getIndictmentParticular())
                 .withOrderIndex(o.getOrderIndex())
                 .withStatementOfOffence(buildStatementOfOffence(o))
                 .withOffenceWording(o.getOffenceWording())

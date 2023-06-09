@@ -155,6 +155,7 @@ public class DefendantOffencesEventListener {
                 .withShadowListed(originalOffence.map(Offence::getShadowListed).orElse(null))
                 .withListingNumber(originalOffence.map( Offence::getListingNumber).orElse(null))
                 .withReportingRestrictions(dedupReportingRestrictions(updatedOffence.getReportingRestrictions()))
+                .withIndictmentParticular(updatedOffence.getIndictmentParticular())
                 .build();
     }
 

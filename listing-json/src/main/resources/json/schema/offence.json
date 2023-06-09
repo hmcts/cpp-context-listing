@@ -57,8 +57,10 @@
     },
     "listingNumber" : {
       "type": "integer"
+    },
+    "indictmentParticular": {
+      "type": "string"
     }
-
   },
   "required": [
     "id",
