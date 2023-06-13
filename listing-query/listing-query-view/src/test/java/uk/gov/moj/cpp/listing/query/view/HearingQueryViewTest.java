@@ -12,8 +12,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -54,8 +54,10 @@ import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtLis
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.ProsecutionCase;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -99,7 +101,6 @@ public class HearingQueryViewTest {
     private static final UUID COURT_ROOM_ID = randomUUID();
     private static final UUID ID = fromString("7c5e9d0c-9e28-46a9-b139-68fc0813842c");
     private static final boolean ALLOCATED = true;
-    private static final boolean IS_POSSIBLE_DISQUALIFICATION = false;
     private static final String ALLOCATEDSTR = "true";
     private static final String ALLOCATED_QUERY_PARAMETER = "allocated";
     private static final String SEARCH_DATE_QUERY_PARAMETER = "searchDate";
@@ -140,10 +141,13 @@ public class HearingQueryViewTest {
     private static final String PUBLISH_DATE = "2012-12-11";
     private static final String PUBLISH_DATE_WEEK_COMMENCING = "2012-12-13";
     private static final String EMPTY_STRING = "";
+    private static final String CASE_ID_QUERY_PARAMETER  = "caseId";
+    private static final String APPLICATION_ID_QUERY_PARAMETER  = "applicationId";
 
     @Mock
     private PaginationParameter paginationParameter;
-
+    @Mock
+    private ProgressionService progressionService;
     @Spy
     private Enveloper enveloper = createEnveloper();
     @Mock
@@ -401,6 +405,64 @@ public class HearingQueryViewTest {
                         withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
                         withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")),
                         withJsonPath("$.notes.size()", equalTo(0)))
+                ))
+        ));
+    }
+
+    @Test
+    public void shouldSearchAllocatedAndUnallocatedHearingsByCaseId() throws Exception {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+
+        final UUID caseId = UUID.randomUUID();
+
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(caseId.toString())).thenReturn(hearingsJson);
+
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(CASE_ID_QUERY_PARAMETER, caseId.toString())
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
+
+        assertThat(results, is(jsonEnvelope(metadata().withName("listing.search.hearings"),
+                payloadIsJson(allOf(
+                        withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
+                        withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")))
+                ))
+        ));
+    }
+
+    @Test
+    public void shouldSearchAllocatedAndUnallocatedHearingsByCaseAndApplicationId() throws Exception {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+
+        final UUID caseId = UUID.randomUUID();
+        final UUID applicationId = UUID.randomUUID();
+
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(caseId.toString(), applicationId.toString())).thenReturn(hearingsJson);
+
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(CASE_ID_QUERY_PARAMETER, caseId.toString())
+                        .add(APPLICATION_ID_QUERY_PARAMETER, applicationId.toString())
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
+
+        assertThat(results, is(jsonEnvelope(metadata().withName("listing.search.hearings"),
+                payloadIsJson(allOf(
+                        withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
+                        withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")))
                 ))
         ));
     }
@@ -979,12 +1041,12 @@ public class HearingQueryViewTest {
                 .build();
 
         final PublishedCourtList publishedCourtList = new PublishedCourtList(courtCentreId,
-                uk.gov.justice.listing.event.PublishCourtListType.valueOf(publishCourtListType.name()), startDate, null,
+                PublishCourtListType.valueOf(publishCourtListType.name()), startDate, null,
                 ZonedDateTime.now(), ZonedDateTime.now(), null);
 
         final PublishedCourtListPrimaryKey primaryKey = new PublishedCourtListPrimaryKey(
                 courtCentreId,
-                uk.gov.justice.listing.event.PublishCourtListType.valueOf(publishCourtListType.name()),
+                PublishCourtListType.valueOf(publishCourtListType.name()),
                 startDate);
 
         when(publishedCourtListRepository.findBy(primaryKey)).thenReturn(publishedCourtList);
@@ -1014,7 +1076,7 @@ public class HearingQueryViewTest {
 
         final PublishedCourtListPrimaryKey primaryKey = new PublishedCourtListPrimaryKey(
                 courtCentreId,
-                uk.gov.justice.listing.event.PublishCourtListType.valueOf(publishCourtListType.name()),
+                PublishCourtListType.valueOf(publishCourtListType.name()),
                 startDate);
 
         final JsonObject emptyCourtListJson = Json.createObjectBuilder().build();

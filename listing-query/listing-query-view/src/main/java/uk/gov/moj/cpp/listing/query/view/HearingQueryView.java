@@ -51,7 +51,6 @@ import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.dto.LinkedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
-import uk.gov.moj.cpp.listing.query.view.dto.ProsecutionCase;
 import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
@@ -128,6 +127,7 @@ public class HearingQueryView {
     private static final String MATCHED_DEFENDANT_IDS = "matchedDefendantIds";
     private static final String CASE_URN_FOR_LINKED_CASES = "caseUrnForLinkedCases";
     private static final String RETURN_ALL_HEARINGS = "returnAllHearings";
+    public static final String LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS = "listing.allocated.and.unallocated.hearings";
 
     @Inject
     private HearingRepository repository;
@@ -288,11 +288,13 @@ public class HearingQueryView {
         return (long) Math.ceil((double) totalCount / (double) pageSize) ;
     }
 
-    @Handles("listing.allocated.and.unallocated.hearings")
+    @Handles(LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS)
     public JsonEnvelope searchAllocatedAndUnallocatedHearings(final JsonEnvelope query) {
+        LOGGER.info("Event: {}", LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS);
         final List<Hearing> hearings;
         final String caseIdQueryParam = query.payloadAsJsonObject().getString(CASE_ID, null);
         final String applicationIdQueryParam = query.payloadAsJsonObject().getString(APPLICATION_ID, null);
+        LOGGER.info("Event: {}, Case Id: {}, Application Id: {}", LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS, caseIdQueryParam, applicationIdQueryParam);
         if (caseIdQueryParam == null && applicationIdQueryParam == null) {
             return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                     createObjectBuilder()
@@ -304,11 +306,14 @@ public class HearingQueryView {
         } else {
             hearings = repository.findAllocatedAndUnallocatedHearingsByCaseId(caseIdQueryParam);
         }
+        LOGGER.info("Event: {}, number of hearing records from query -  {}", LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS, hearings.size());
 
         final List<Hearing> hearingsToRemove = new ArrayList<>();
         if (caseIdQueryParam != null) {
-            removedReViewHearings(hearings, caseIdQueryParam, hearingsToRemove);
+            removedReViewHearings(hearings, hearingsToRemove);
+            LOGGER.info("Event: {}, number of hearing in Review to be removed - {}", LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS, hearingsToRemove.size());
         }
+        LOGGER.info("Event: {}, number of hearing to return - {}", LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS, hearings.size());
         hearingsToRemove.forEach(hearings::remove);
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
@@ -317,19 +322,14 @@ public class HearingQueryView {
         );
     }
 
-    private void removedReViewHearings(final List<Hearing> hearings, final String caseIdQueryParam, final List<Hearing> hearingsToRemove) {
+    private void removedReViewHearings(final List<Hearing> hearings, final List<Hearing> hearingsToRemove) {
         hearings.forEach(hearing -> {
-            if (hearing.getListedCases() != null) {
-                hearing.getListedCases().forEach(listedCase -> {
-                    final ProsecutionCase prosecutionCase = progressionService.getProsecutionCaseDetails(UUID.fromString(caseIdQueryParam));
-                    final JsonNodeReader reader = JsonNodeReader.read(hearing.getProperties());
-                    if (nonNull(reader.get(TYPE))) {
-                        final String reviewType = reader.get(TYPE).getText("description");
-                        if ( prosecutionCase!= null && prosecutionCase.getLinkedApplicationsSummary() != null && !prosecutionCase.getLinkedApplicationsSummary().isEmpty() && "Review".equals(reviewType)) {
-                            hearingsToRemove.add(hearing);
-                        }
-                    }
-                });
+            final JsonNodeReader reader = JsonNodeReader.read(hearing.getProperties());
+            if (nonNull(reader.get(TYPE))) {
+                final String reviewType = reader.get(TYPE).getText("description");
+                if ("Review".equals(reviewType)) {
+                    hearingsToRemove.add(hearing);
+                }
             }
         });
     }
