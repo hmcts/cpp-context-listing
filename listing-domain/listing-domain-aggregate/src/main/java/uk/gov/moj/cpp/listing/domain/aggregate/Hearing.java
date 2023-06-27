@@ -196,9 +196,6 @@ public class Hearing implements Aggregate {
 
     private static final long serialVersionUID = 5917594778865191716L;
 
-    private static final String SUMMONS_APPROVED_RESULT_TYPE_ID = "0f44eeb9-2c81-430d-9a60-bbdaf8c4a093";
-    private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
-
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
     private boolean allocated;
@@ -230,8 +227,6 @@ public class Hearing implements Aggregate {
     private Map<UUID, List<UUID>> prosecutionCaseDefendants = new HashMap<>();
     private Map<UUID, List<UUID>> applicationOffenceIds = new HashMap<>();
     private uk.gov.justice.listing.events.Hearing currentHearingEventState;
-
-    private boolean isSummonsApprovedExists = false;
 
     @Override
     public Object apply(final Object event) {
@@ -306,22 +301,6 @@ public class Hearing implements Aggregate {
 
     private void onDefendantCourtProceedingsUpdatedV2(final DefendantCourtProceedingsUpdatedV2 defendantCourtProceedingsUpdatedV2) {
         updateCurrentHearingEventStateOnCaseAdded(asList(buildListedCase(defendantCourtProceedingsUpdatedV2.getProsecutionCase(), emptyList())));
-
-        if (defendantCourtProceedingsUpdatedV2.getProsecutionCase().getDefendants().stream()
-                .map(uk.gov.justice.core.courts.Defendant::getDefendantCaseJudicialResults)
-                .filter(Objects::nonNull)
-                .flatMap(Collection::stream)
-                .anyMatch(judicialResult -> judicialResult.getJudicialResultTypeId().equals(UUID.fromString(SUMMONS_APPROVED_RESULT_TYPE_ID)))) {
-            isSummonsApprovedExists = true;
-        }
-
-        if (defendantCourtProceedingsUpdatedV2.getProsecutionCase().getDefendants().stream()
-                .map(uk.gov.justice.core.courts.Defendant::getDefendantCaseJudicialResults)
-                .filter(Objects::nonNull)
-                .flatMap(Collection::stream)
-                .anyMatch(judicialResult -> judicialResult.getJudicialResultTypeId().equals(UUID.fromString(SUMMONS_REJECTED_RESULT_TYPE_ID)))) {
-            isSummonsApprovedExists = false;
-        }
     }
 
     private void onUpdatedHmiFieldsForHearing(final UpdatedHmiFieldsForHearing updatedHmiFieldsForHearing) {
@@ -3222,9 +3201,5 @@ public class Hearing implements Aggregate {
 
     public uk.gov.justice.listing.events.Hearing getCurrentHearingEventState(){
         return currentHearingEventState;
-    }
-
-    public boolean getIsSummonsApprovedExists() {
-        return isSummonsApprovedExists;
     }
 }

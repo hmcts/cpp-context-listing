@@ -31,7 +31,6 @@ import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -74,7 +73,6 @@ import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Gender;
-import uk.gov.justice.core.courts.JudicialResult;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.commands.RecordCourtListProduced;
@@ -263,8 +261,6 @@ public class ListingCommandHandlerTest {
     private static final String ADDRESS_LINE_1 = "Address line 1";
     private static final String HEARING_ADDED_TO_CASE_EVENT = "listing.events.hearing-added-to-case";
     private static final String COURT_APPLICATION_ADDED_TO_HEARING_EVENT = "listing.events.court-application-added-to-hearing";
-    private static final UUID SUMMONS_APPROVED_RESULT_TYPE_ID = fromString("0f44eeb9-2c81-430d-9a60-bbdaf8c4a093");
-    private static final UUID SUMMONS_REJECTED_RESULT_TYPE_ID = fromString("d8837a45-8281-49b3-8349-49b423193148");
 
     private static final UUID PERSON_ID = randomUUID();
     private static final UUID DEFENDANT_ID1 = randomUUID();
@@ -2466,93 +2462,6 @@ public class ListingCommandHandlerTest {
 
         verify(hearing, times(1)).addCasesToHearing(any(List.class), anyList(), any());
         verify(hearing, times(1)).raiseUpdateHearingInStagingHmi(any(Stream.class));
-    }
-
-    @Test
-    public void shouldCreateHmiEventForFirstResultHasSummonApprovedAndForSecondResultHasSummonRejected() throws EventStreamException {
-        final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase()
-                .withCaseStatus("CASE_CLOSED")
-                .withId(CASE_ID)
-                .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
-                        .withProceedingsConcluded(true)
-                        .withDefendantCaseJudicialResults(singletonList(JudicialResult.judicialResult()
-                                .withJudicialResultTypeId(SUMMONS_APPROVED_RESULT_TYPE_ID)
-                                .build()))
-                        .build()))
-                .build();
-        final JsonObject commandPayload = Json.createObjectBuilder()
-                .add("hearingId", HEARING_ID_1.toString())
-                .add("prosecutionCase", objectToJsonValueConverter.convert(prosecutionCase))
-                .build();
-        JsonEnvelope envelope = envelopeFrom(metadataWithRandomUUID("listing.command.update-defendant-court-proceedings"), commandPayload);
-
-        when(hearing.updateDefendantCourtProceedingForHearing(HEARING_ID_1, prosecutionCase)).thenReturn((mock(Stream.class)));
-        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
-
-        given(jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject("prosecutionCase"), ProsecutionCase.class)).willReturn(prosecutionCase);
-
-        listingCommandHandler.updateDefendantCourtProceedings(envelope);
-
-        verify(hearing).updateDefendantCourtProceedingForHearing(HEARING_ID_1, prosecutionCase);
-        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
-
-        reset(hearing);
-        final ProsecutionCase secondProsecutionCase = ProsecutionCase.prosecutionCase()
-                .withCaseStatus("CASE_CLOSED")
-                .withId(CASE_ID)
-                .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
-                        .withProceedingsConcluded(true)
-                        .withDefendantCaseJudicialResults(singletonList(JudicialResult.judicialResult()
-                                .withJudicialResultTypeId(SUMMONS_REJECTED_RESULT_TYPE_ID)
-                                .build()))
-                        .build()))
-                .build();
-        final JsonObject secondCommandPayload = Json.createObjectBuilder()
-                .add("hearingId", HEARING_ID_1.toString())
-                .add("prosecutionCase", objectToJsonValueConverter.convert(secondProsecutionCase))
-                .build();
-        envelope = envelopeFrom(metadataWithRandomUUID("listing.command.update-defendant-court-proceedings"), commandPayload);
-
-        when(hearing.updateDefendantCourtProceedingForHearing(HEARING_ID_1, prosecutionCase)).thenReturn((mock(Stream.class)));
-        when(hearing.deleteHearingForHmi()).thenReturn(mock(Stream.class));
-        when(hearing.getIsSummonsApprovedExists()).thenReturn(true);
-
-        given(jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject("prosecutionCase"), ProsecutionCase.class)).willReturn(secondProsecutionCase);
-
-        listingCommandHandler.updateDefendantCourtProceedings(envelope);
-
-        verify(hearing).updateDefendantCourtProceedingForHearing(HEARING_ID_1, secondProsecutionCase);
-        verify(hearing, never()).raiseUpdateHearingInStagingHmi(any(Stream.class));
-        verify(hearing).deleteHearingForHmi();
-    }
-
-    @Test
-    public void shouldNotCreateHmiEventForFirstResultHasSummonRejected() throws EventStreamException {
-        final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase()
-                .withCaseStatus("CASE_CLOSED")
-                .withId(CASE_ID)
-                .withDefendants(singletonList(uk.gov.justice.core.courts.Defendant.defendant()
-                        .withProceedingsConcluded(true)
-                        .withDefendantCaseJudicialResults(singletonList(JudicialResult.judicialResult()
-                                .withJudicialResultTypeId(SUMMONS_REJECTED_RESULT_TYPE_ID)
-                                .build()))
-                        .build()))
-                .build();
-        final JsonObject commandPayload = Json.createObjectBuilder()
-                .add("hearingId", HEARING_ID_1.toString())
-                .add("prosecutionCase", objectToJsonValueConverter.convert(prosecutionCase))
-                .build();
-        JsonEnvelope envelope = envelopeFrom(metadataWithRandomUUID("listing.command.update-defendant-court-proceedings"), commandPayload);
-
-        when(hearing.updateDefendantCourtProceedingForHearing(HEARING_ID_1, prosecutionCase)).thenReturn((mock(Stream.class)));
-        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
-        when(hearing.getIsSummonsApprovedExists()).thenReturn(false);
-        given(jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject("prosecutionCase"), ProsecutionCase.class)).willReturn(prosecutionCase);
-
-        listingCommandHandler.updateDefendantCourtProceedings(envelope);
-
-        verify(hearing).updateDefendantCourtProceedingForHearing(HEARING_ID_1, prosecutionCase);
-        verify(hearing, never()).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     private JsonEnvelope getEnvelopeForVacateTrial(final UUID reason) {
