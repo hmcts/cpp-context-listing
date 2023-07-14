@@ -23,13 +23,12 @@ public class UpdatedOffenceData {
     private final Integer orderIndex;
     private final Optional<LaaReferenceData> laaApplnReference;
     private List<ReportingRestrictionData> reportingRestriction;
-    private final String indictmentParticular;
 
     private UpdatedOffenceData(final UUID offenceId, final String offenceCode,
                                final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                                final String statementOfOffenceTitleWelsh, final String offenceWording,
                                final String legislation, final String legislationWelsh, final Integer count, final Integer orderIndex, final Optional<LaaReferenceData> laaReferences,
-                               final List<ReportingRestrictionData> reportingRestriction, final String indictmentParticular) {
+                               final List<ReportingRestrictionData> reportingRestriction) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
@@ -45,7 +44,6 @@ public class UpdatedOffenceData {
         this.count = count;
         this.orderIndex = orderIndex;
         this.reportingRestriction = reportingRestriction;
-        this.indictmentParticular = indictmentParticular;
     }
 
     public static final Builder builder() {
@@ -69,7 +67,6 @@ public class UpdatedOffenceData {
                 .withLegislation(offenceData.getOffenceLegislation())
                 .withLaaApplnReference((offenceData.getLaaApplnReference()))
                 .withReportingRestriction(offenceData.getReportingRestrictionDataList().subList(1, 2))
-                .withIndictmentParticular(offenceData.getIndictmentParticular())
                 .build();
     }
 
@@ -113,10 +110,6 @@ public class UpdatedOffenceData {
         return reportingRestriction;
     }
 
-    public String getIndictmentParticular() {
-        return indictmentParticular;
-    }
-
     private static class Builder {
         private UUID offenceId;
         private String offenceCode;
@@ -131,7 +124,6 @@ public class UpdatedOffenceData {
         private Integer orderIndex;
         private Optional<LaaReferenceData> laaApplnReference;
         private List<ReportingRestrictionData> reportingRestriction;
-        private String indictmentParticular;
 
         public Builder withOffenceId(final UUID offenceId) {
             this.offenceId = offenceId;
@@ -198,15 +190,10 @@ public class UpdatedOffenceData {
             return this;
         }
 
-        public Builder withIndictmentParticular(final String indictmentParticular) {
-            this.indictmentParticular = indictmentParticular;
-            return this;
-        }
-
         public UpdatedOffenceData build() {
             return new UpdatedOffenceData(offenceId, offenceCode, startDate, endDate,
                     statementOfOffenceTitle, statementOfOffenceTitleWelsh, offenceWording,
-                    legislation, legislationWelsh, count, orderIndex, laaApplnReference, reportingRestriction, indictmentParticular);
+                    legislation, legislationWelsh, count, orderIndex, laaApplnReference, reportingRestriction);
         }
     }
 }

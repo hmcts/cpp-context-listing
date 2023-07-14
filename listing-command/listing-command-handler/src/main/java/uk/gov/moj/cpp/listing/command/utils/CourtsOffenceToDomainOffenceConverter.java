@@ -69,7 +69,6 @@ public abstract class CourtsOffenceToDomainOffenceConverter {
                 .withStartDate(courtOffence.getStartDate())
                 .withEndDate(ofNullable(courtOffence.getEndDate()))
                 .withCount(courtOffence.getCount())
-                .withIndictmentParticular(courtOffence.getIndictmentParticular())
                 .withOrderIndex(courtOffence.getOrderIndex())
                 .withStatementOfOffence(statement)
                 .withOffenceWording(courtOffence.getWording())

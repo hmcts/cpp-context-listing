@@ -38,7 +38,6 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
                 new UpdateOffencesForHearingCommand(offences, hearingId, caseId, defendantId)).collect(toList());
     }
 
-    @SuppressWarnings("squid:S1188")
     private List<Offence> convertOffences(List<uk.gov.justice.listing.events.Offence> offences) {
         return offences.stream().map(offence -> {
             final LocalDate endDate = StringUtils.isNotEmpty(offence.getEndDate()) ? LocalDates.from(offence.getEndDate()) : null;
@@ -50,7 +49,6 @@ public class UpdateOffencesForHearingCommandCollectionConverter implements Conve
                     .withOffenceCode(offence.getOffenceCode())
                     .withStartDate(offence.getStartDate())
                     .withCount(offence.getCount())
-                    .withIndictmentParticular(offence.getIndictmentParticular())
                     .withOrderIndex(offence.getOrderIndex())
                     .withStatementOfOffence(soo)
                     .withOffenceWording(offence.getOffenceWording())

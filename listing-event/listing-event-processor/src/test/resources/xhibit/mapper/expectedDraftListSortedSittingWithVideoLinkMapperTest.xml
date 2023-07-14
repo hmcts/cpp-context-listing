@@ -45,7 +45,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2020-03-16</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:TimeMarkingNote>10:30 AM</cs:TimeMarkingNote>
+                            <cs:TimeMarkingNote>NOT BEFORE 10:30 AM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:ListNote>Pre Conf</cs:ListNote>
                             <cs:Defendants>
@@ -83,7 +83,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION</cs:HearingDescription>
                                 <cs:HearingDate>2020-03-16</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:TimeMarkingNote>12:30 PM</cs:TimeMarkingNote>
+                            <cs:TimeMarkingNote>NOT BEFORE 12:30 PM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
@@ -121,7 +121,7 @@
                                 <cs:HearingDate>2020-03-17</cs:HearingDate>
                                 <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999, ReportingRestriction Applied</cs:ListNote>
                             </cs:HearingDetails>
-                            <cs:TimeMarkingNote>10:00 AM</cs:TimeMarkingNote>
+                            <cs:TimeMarkingNote>NOT BEFORE 10:00 AM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
@@ -171,7 +171,7 @@
                                 <cs:HearingDate>2020-03-18</cs:HearingDate>
                                 <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
                             </cs:HearingDetails>
-                            <cs:TimeMarkingNote>10:00 AM</cs:TimeMarkingNote>
+                            <cs:TimeMarkingNote>NOT BEFORE 10:00 AM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
@@ -221,7 +221,7 @@
                                 <cs:HearingDate>2020-03-20</cs:HearingDate>
                                 <cs:ListNote>Direction under Section 45A of the Youth Justice and Criminal Evidence Act 1999</cs:ListNote>
                             </cs:HearingDetails>
-                            <cs:TimeMarkingNote>10:00 AM</cs:TimeMarkingNote>
+                            <cs:TimeMarkingNote>NOT BEFORE 10:00 AM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>

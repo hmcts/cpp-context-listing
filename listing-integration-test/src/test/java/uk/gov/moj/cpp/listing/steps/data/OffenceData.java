@@ -26,14 +26,13 @@ public class OffenceData {
     private final LocalDate laidDate;
     private Optional<Boolean> shadowListed;
     private List<ReportingRestrictionData> reportingRestriction;
-    private final String indictmentParticular;
 
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
                        final String statementOfOffenceTitleWelsh, final String offenceWording,
                        final Integer count, final Integer orderIndex, final String offenceLegislation, UUID offenceDefinitionId, Optional<CustodyTimeLimit> custodyTimeLimit,
                        final Optional<LaaReferenceData> laaApplnReference, final LocalDate laidDate,
-                       final Optional<Boolean> shadowListed, final List<ReportingRestrictionData> reportingRestrictionData, final String indictmentParticular) {
+                       final Optional<Boolean> shadowListed, final List<ReportingRestrictionData> reportingRestrictionData) {
 
         this.endDate = endDate;
         this.offenceCode = offenceCode;
@@ -52,7 +51,6 @@ public class OffenceData {
         this.laidDate = laidDate;
         this.shadowListed = shadowListed;
         this.reportingRestriction = reportingRestrictionData;
-        this.indictmentParticular = indictmentParticular;
     }
 
     public Optional<LaaReferenceData> getLaaApplnReference() {
@@ -145,9 +143,5 @@ public class OffenceData {
 
     public String getOffenceLegislation() {
         return offenceLegislation;
-    }
-
-    public String getIndictmentParticular() {
-        return indictmentParticular;
     }
 }

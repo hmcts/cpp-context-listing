@@ -59,7 +59,6 @@ public class CommandOffenceToDomainOffence implements Converter<List<Offence>, L
                 .withEndDate(ofNullable(commandOffence.getEndDate()))
                 .withOrderIndex(commandOffence.getOrderIndex())
                 .withCount(commandOffence.getCount())
-                .withIndictmentParticular(commandOffence.getIndictmentParticular())
                 .withStatementOfOffence(statementOfOffence)
                 .withOffenceWording(commandOffence.getOffenceWording())
                 .withCustodyTimeLimit(custodyTimeLimit)

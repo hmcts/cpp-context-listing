@@ -38,13 +38,11 @@ public class Offence {
 
     private Optional<SeedingHearing> seedingHearing;
 
-    private String indictmentParticular;
-
     public Offence(final Optional<String> endDate, final UUID id, final String offenceCode, final String offenceWording,
                    final String startDate, final StatementOfOffence statementOfOffence, final Optional<CustodyTimeLimit> custodyTimeLimit,
                    final Optional<LaaReference> laaApplnReference, final Optional<String> laidDate, final Optional<Boolean> shadowListed,
                    final Optional<CommittingCourt> committingCourt, final List<ReportingRestriction> reportingRestrictions,
-                   final Optional<SeedingHearing> seedingHearing, final Integer count, final Integer orderIndex, String indictmentParticular) {
+                   final Optional<SeedingHearing> seedingHearing, final Integer count, final Integer orderIndex) {
         this.endDate = endDate;
         this.id = id;
         this.offenceCode = offenceCode;
@@ -60,7 +58,6 @@ public class Offence {
         this.seedingHearing = seedingHearing;
         this.count = count;
         this.orderIndex = orderIndex;
-        this.indictmentParticular = indictmentParticular;
     }
 
     public Optional<String> getEndDate() {
@@ -123,10 +120,6 @@ public class Offence {
         return orderIndex;
     }
 
-    public String getIndictmentParticular() {
-        return indictmentParticular;
-    }
-
     public static Builder offence() {
         return new Offence.Builder();
     }
@@ -154,13 +147,12 @@ public class Offence {
                 Objects.equals(reportingRestrictions, offence.reportingRestrictions) &&
                 Objects.equals(count, offence.count) &&
                 Objects.equals(orderIndex, offence.orderIndex) &&
-                Objects.equals(seedingHearing, offence.seedingHearing) &&
-                Objects.equals(indictmentParticular, offence.indictmentParticular);
+                Objects.equals(seedingHearing, offence.seedingHearing);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex, indictmentParticular);
+        return Objects.hash(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex);
     }
 
     @Override
@@ -181,7 +173,6 @@ public class Offence {
                 ", orderIndex=" + orderIndex +
                 ", reportingRestrictions=" + reportingRestrictions +
                 ", seedingHearing=" + seedingHearing +
-                ", indictmentParticular=" + indictmentParticular +
                 '}';
     }
 
@@ -215,7 +206,6 @@ public class Offence {
 
         private Integer count;
         private Integer orderIndex;
-        private String indictmentParticular;
 
         public Builder withEndDate(final Optional<String> endDate) {
             this.endDate = endDate;
@@ -292,13 +282,8 @@ public class Offence {
             return this;
         }
 
-        public Builder withIndictmentParticular(final String indictmentParticular) {
-            this.indictmentParticular = indictmentParticular;
-            return this;
-        }
-
         public Offence build() {
-            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex, indictmentParticular);
+            return new Offence(endDate, id, offenceCode, offenceWording, startDate, statementOfOffence, custodyTimeLimit, laaApplnReference, laidDate, shadowListed, committingCourt, reportingRestrictions, seedingHearing, count, orderIndex);
         }
     }
 }

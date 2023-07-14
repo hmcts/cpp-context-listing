@@ -209,7 +209,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(courtApplicationPartyListingNeeds),
                 eq(30),
                 eq(of(WEEK_COMMENCING_START_DATE)),
-                eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_END_DATE)),
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST));
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
@@ -279,7 +279,7 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(courtApplicationPartyListingNeeds),
                 eq(30),
                 eq(of(WEEK_COMMENCING_START_DATE)),
-                eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_END_DATE)),
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST));
 
@@ -356,7 +356,7 @@ public class UnscheduledListingCommandHandlerTest {
                 anyList(),
                 eq(30),
                 eq(of(WEEK_COMMENCING_START_DATE)),
-                eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_END_DATE)),
                 eq(of(WEEK_COMMENCING_DURATION)),
                 eq(TYPE_OF_LIST));
 

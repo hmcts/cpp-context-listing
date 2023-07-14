@@ -100,6 +100,7 @@ public class CourtServicesMapper {
     private static final String AM_PM_TIME_FORMAT = "h:mm a";
     private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern(AM_PM_TIME_FORMAT, Locale.ENGLISH);
     private static final DateTimeFormatter sittingAtFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final String TIME_MARKING_NOTE_TEXT = "NOT BEFORE %s";
     private static final String COMMITTING_COURT_PATH = "$.defendants[*].offences[*].committingCourt";
     private static final String PUBLIC_LIST_NOTE = "publicListNote";
     private static final String REPORTING_RESTRICTIONS = "reportingRestrictions";
@@ -791,7 +792,7 @@ public class CourtServicesMapper {
     private void generateAndSetTimeMarkingNote(final JsonObject hearingJson,
                                                final HearingStructure hearingStructure) {
         final ZonedDateTime localTime = DateAndTimeUtils.convertUTCToLocalTime(LocalDateTime.parse(hearingJson.getString(START_TIME)));
-        hearingStructure.setTimeMarkingNote(localTime.format(timeFormatter));
+        hearingStructure.setTimeMarkingNote(format(TIME_MARKING_NOTE_TEXT, localTime.format(timeFormatter)));
     }
 
 }

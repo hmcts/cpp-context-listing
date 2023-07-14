@@ -50,7 +50,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
                                 <cs:HearingDate>2020-03-30</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:TimeMarkingNote>11:00 AM</cs:TimeMarkingNote>
+                            <cs:TimeMarkingNote>NOT BEFORE 11:00 AM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Prosecution ProsecutingAuthority="Crown Prosecution Service">
                                 <cs:ProsecutingReference>Crown Prosecution Service</cs:ProsecutingReference>
@@ -108,7 +108,7 @@
                                 <cs:HearingDescription>XHIBIT_HEARING_DESCRIPTION-TRL</cs:HearingDescription>
                                 <cs:HearingDate>2020-03-30</cs:HearingDate>
                             </cs:HearingDetails>
-                            <cs:TimeMarkingNote>1:00 PM</cs:TimeMarkingNote>
+                            <cs:TimeMarkingNote>NOT BEFORE 1:00 PM</cs:TimeMarkingNote>
                             <cs:CaseNumber>CPP</cs:CaseNumber>
                             <cs:Defendants>
                                 <cs:Defendant>
