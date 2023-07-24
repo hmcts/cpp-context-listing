@@ -866,7 +866,7 @@ public class HearingQueryViewTest {
             hearingsQueryView.getHearingById(query);
             fail("Expected a NotFoundException.");
         } catch (NotFoundException ex) {
-            assertEquals("There is no Hearing for that ID.", ex.getMessage());
+            assertEquals("There is no Hearing for this ID: "+ID, ex.getMessage());
         }
         verify(hearingRepository).findBy(eq(ID));
     }

@@ -595,15 +595,16 @@ public class HearingQueryView {
      */
     @SuppressWarnings("WeakerAccess")
     public JsonEnvelope getHearingById(final JsonEnvelope query) {
+        final UUID hearingId = extractUUID(query);
         try {
-            final Hearing hearing = repository.findBy(extractUUID(query));
+            final Hearing hearing = repository.findBy(hearingId);
             if (hearing == null) {
-                throw new NotFoundException("There is no Hearing for that ID.");
+                throw new NotFoundException("There is no Hearing for this ID: " + hearingId);
             }
             return envelopeFrom(metadataFrom(query.metadata()).withName(NAME_LISTING_SEARCH_HEARING),
                     HearingToJsonConverter.convert(hearing));
         } catch (NoResultException e) {
-            throw new NotFoundException("There is no Hearing for that ID.");
+            throw new NotFoundException("There is no Hearing for this ID: " + hearingId);
         }
     }
 

@@ -599,8 +599,12 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
      * @return Hearings.
      */
     @Query(value = "with filtered_hearings as (select distinct h.id, hd.hearing_date as hearingDate, h.properties as properties from hearing h " +
-            "inner join hearing_days hd on hd.hearing_id = h.id where coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(:courtCentreId as varchar) as uuid) " +
-            "and h.allocated = :allocated and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "inner join hearing_days hd on hd.hearing_id = h.id " +
+            "where ((hd.court_centre_id = cast(cast(:courtCentreId as varchar) as uuid)) " +
+            "or (hd.court_centre_id is null " +
+            "and h.court_centre_id = cast(cast(:courtCentreId as varchar) as uuid))) " +
+            "and h.allocated = :allocated " +
+            "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
             "and hd.hearing_date = :hearingDate) " +
             "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id, " +
             ":courtCentreId as court_centre_id, " +
@@ -617,11 +621,12 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as type_of_list_id, " +
             "null as totalCount, " +
             "null as is_possible_disqualification, " +
-            "(select jsonb_agg(hrngByCourtCentreId) as properties from " +
-            "    (select h.hearingDate as \"hearingDate\", " +
-            "        (select jsonb_agg(hearings) as \"hearingsByHearingDate\" from  " +
-            "           (select distinct properties as hearing from filtered_hearings fh where fh.hearingDate = h.hearingDate) hearings) " +
-            "        from (select distinct hearingDate from filtered_hearings) h) " +
+            "(select jsonb_agg(hrngByCourtCentreId) as \"properties\" from " +
+            "(select h.hearingDate as \"hearingDate\", " +
+            "(select jsonb_agg(hearings) as \"hearingsByHearingDate\" from "+
+            "(select distinct properties as hearing from filtered_hearings fh "+
+            "where fh.hearingDate = h.hearingDate) hearings) from " +
+            "(select distinct filtered_hearings.hearingDate from filtered_hearings) h) "+
             "hrngByCourtCentreId)", isNative = true)
     public abstract List<Hearing> findHearingsForAlphabeticalList(@QueryParam("allocated") final boolean allocated,
                                                                   @QueryParam("courtCentreId") final String courtCentreId,
