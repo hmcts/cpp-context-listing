@@ -31,6 +31,9 @@ import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkin
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 import static uk.gov.moj.cpp.listing.domain.utils.HmiConstants.SOURCE_HMI;
 
+
+import java.util.Collection;
+import java.util.Objects;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingListingNeeds;
@@ -191,6 +194,9 @@ import org.slf4j.LoggerFactory;
 public class ListingCommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListingCommandHandler.class);
+
+    private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
+
     public static final String HEARING_ID = "hearingId";
     private static final String PROSECUTION_CASE = "prosecutionCase";
     private static final ZoneId UTC = ZoneId.of("UTC");
@@ -1330,8 +1336,18 @@ public class ListingCommandHandler {
         }
         final UUID hearingId = fromString(envelope.payloadAsJsonObject().getString(HEARING_ID));
         final ProsecutionCase prosecutionCase = jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject(PROSECUTION_CASE), ProsecutionCase.class);
-        updateHearingEventStream(envelope, hearingId, (Hearing hearing) ->
-                hearing.raiseUpdateHearingInStagingHmi(hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase)));
+
+        if (prosecutionCase.getDefendants().stream()
+                .map(uk.gov.justice.core.courts.Defendant::getDefendantCaseJudicialResults)
+                .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
+                .anyMatch(judicialResult -> judicialResult.getJudicialResultTypeId().equals(UUID.fromString(SUMMONS_REJECTED_RESULT_TYPE_ID)))) {
+            updateHearingEventStream(envelope, hearingId, (Hearing hearing) ->
+                    createHmiEvents(hearingId, prosecutionCase, hearing));
+        } else {
+            updateHearingEventStream(envelope, hearingId, (Hearing hearing) ->
+                    hearing.raiseUpdateHearingInStagingHmi(hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase)));
+        }
     }
 
 
@@ -1817,5 +1833,13 @@ public class ListingCommandHandler {
         //prepare a deep copy of unallocated hearing's cases, so we can extract offences to allocate into allocatedHearing
         final List<ListedCase> listedCasesDeepCopy = jsonObjectConverter.convert(objectToJsonObjectConverter.convert(unAllocatedHearingPersisted), uk.gov.justice.listing.events.Hearing.class).getListedCases();
         return extendHearingUtils.extractCasesToMove(listedCasesDeepCopy, unallocatedHearingRequestCaseMap);
+    }
+
+    private static Stream<Object> createHmiEvents(final UUID hearingId, final ProsecutionCase prosecutionCase, final Hearing hearing) {
+        if (hearing.getIsSummonsApprovedExists()) {
+            return Stream.of(hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase), hearing.deleteHearingForHmi()).flatMap(i -> i);
+        } else {
+            return hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase);
+        }
     }
 }
