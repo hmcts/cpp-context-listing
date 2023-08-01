@@ -26,6 +26,7 @@ import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.listing.events.AddedCasesForHearing;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
+import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
 import uk.gov.justice.listing.events.AvailableSlotsForHearingFreed;
 import uk.gov.justice.listing.events.CaseIdentifier;
@@ -40,8 +41,10 @@ import uk.gov.justice.listing.events.HearingAllocatedForListingV2;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
 import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.HearingListedCaseUpdated;
 import uk.gov.justice.listing.events.HearingMarkedAsDeleted;
 import uk.gov.justice.listing.events.HearingRequestedForListing;
+import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.Offence;
 import uk.gov.justice.listing.events.OffenceAdded;
 import uk.gov.justice.listing.events.OffenceDeleted;
@@ -2529,6 +2532,98 @@ public class HearingAggregateTest {
         assertThat(listedCase2.getDefendants().stream().filter(d -> d.getId().equals(defendantId2)).findFirst().get().getId(), is(defendantId2));
         assertThat(listedCase2.getDefendants().get(0).getOffences().size(), is(1));
         assertThat(listedCase2.getDefendants().get(0).getOffences().stream().filter(o-> o.getId().equals(offenceId3)).findFirst().get().getId(), is(offenceId3));
+
+    }
+
+    @Test
+    public void shouldKeepAllOffencesIntoProsecutionCaseDefendantOffenceIdsWhenHearingExtendedWithaNewCase() {
+
+        final UUID defendantId = randomUUID();
+        final UUID prosecutionCaseId = randomUUID();
+        final UUID prosecutionCaseId1 = randomUUID();
+        final UUID defendantId2 = randomUUID();
+        final UUID hearingId = randomUUID();
+        final UUID offenceId = randomUUID();
+        final UUID offenceId2 = randomUUID();
+        final UUID offenceId3 = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+        uk.gov.justice.listing.events.Hearing firstHearing = uk.gov.justice.listing.events.Hearing.hearing()
+                .withId(hearingId)
+                .withType(uk.gov.justice.listing.events.Type.type().build())
+                .withHearingLanguage(HearingLanguage.ENGLISH)
+                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                .withHearingDays(emptyList())
+                .withStartDate(LocalDate.now())
+                .withEndDate(LocalDate.now())
+                .withCourtRoomId(randomUUID())
+                .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                        .withId(prosecutionCaseId)
+                        .withCaseIdentifier(CaseIdentifier.caseIdentifier()
+                                .withCaseReference("caseReference")
+                                .build())
+                        .withDefendants((asList(Defendant.defendant()
+                                .withId(defendantId)
+                                .withOffences((asList(Offence.offence()
+                                        .withId(offenceId)
+                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                .withJurisdictionType(CROWN)
+                                                .withSeedingHearingId(seedingHearingId)
+                                                .build())
+                                        .build(),Offence.offence()
+                                        .withId(offenceId2)
+                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                .withJurisdictionType(CROWN)
+                                                .withSeedingHearingId(seedingHearingId)
+                                                .build())
+                                        .build())))
+                                .build())))
+                        .build()))
+                .build();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(firstHearing)
+                .build());
+
+        uk.gov.justice.listing.events.ListedCase newCase = uk.gov.justice.listing.events.ListedCase.listedCase()
+                .withId(prosecutionCaseId1)
+                .withMarkers(singletonList(Marker.marker().build()))
+                .withDefendants(asList(Defendant.defendant()
+                        .withId(defendantId2)
+                        .withOffences(asList(Offence.offence()
+                                .withId(offenceId3)
+                                .withSeedingHearing(SeedingHearing.seedingHearing().withSeedingHearingId(seedingHearingId).withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN).build())
+                                .build()))
+                        .build()))
+                .build();
+
+        uk.gov.justice.listing.events.Hearing extendedHearing = uk.gov.justice.listing.events.Hearing.hearing()
+                .withValuesFrom(firstHearing)
+                .withListedCases(asList(firstHearing.getListedCases().get(0), newCase))
+                .build();
+
+        hearing.apply(HearingListedCaseUpdated.hearingListedCaseUpdated()
+                .withHearing(extendedHearing)
+                .withUnAllocatedListedCases(asList(newCase))
+                .build());
+
+        AllocatedHearingExtendedForListingV2 allocatedHearingExtendedForListingV2s = hearing.applyAllocationRulesForExtendedHearing(extendedHearing, false).findFirst().map(AllocatedHearingExtendedForListingV2.class::cast).orElse(null);
+
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().size(), is(2));
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(0).getId(), is(prosecutionCaseId));
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(0).getDefendants().size(), is(1));
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(0).getDefendants().get(0).getId(), is(defendantId));
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(0).getDefendants().get(0).getOffenceIds().size(), is(2));
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(0).getDefendants().get(0).getOffenceIds().get(0), is(offenceId));
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(0).getDefendants().get(0).getOffenceIds().get(1), is(offenceId2));
+
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(1).getId(), is(prosecutionCaseId1));
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(1).getDefendants().size(), is(1));
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(1).getDefendants().get(0).getId(), is(defendantId2));
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(1).getDefendants().get(0).getOffenceIds().size(), is(1));
+        assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(1).getDefendants().get(0).getOffenceIds().get(0), is(offenceId3));
+
+
 
     }
 

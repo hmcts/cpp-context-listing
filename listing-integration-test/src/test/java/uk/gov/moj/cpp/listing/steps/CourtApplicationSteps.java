@@ -18,13 +18,16 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMa
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
 
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.ws.rs.core.Response;
-import org.hamcrest.Matcher;
 import org.junit.Assert;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.ApplicationStatus;
@@ -38,9 +41,12 @@ import uk.gov.justice.core.courts.Jurisdiction;
 import uk.gov.justice.core.courts.LinkType;
 import uk.gov.justice.core.courts.OffenceActiveOrder;
 import uk.gov.justice.core.courts.Person;
+import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.core.courts.SummonsTemplateType;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.AddCourtApplicationData;
@@ -82,6 +88,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private static final String PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "public.listing.court-application-added-for-hearing";
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED = "public.progression.court-application-changed";
     private static final String PRIVATE_EVENT_APPLICATION_UPDATED_FOR_HEARING = "listing.events.court-application-updated-for-hearing";
+    private static final String EVENT_SELECTED_CASES_ADDED_TO_HEARING = "listing.event.cases-added-to-hearing";
     private static final String POSTCODE = "CR1 4BX";
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
@@ -93,6 +100,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     private MessageProducer publicEventCourtApplicationAdded;
     private MessageConsumer publicEventMessageConsumerCourtApplicationAdded;
     private MessageConsumer privateMessageConsumerCourtApplicationAddedForHearing;
+    private final MessageConsumer privateMessageConsumerAddedCaseForHearing;
     private MessageConsumer publicMessageConsumerCourtApplicationAddedForHearing;
 
     private MessageConsumer publicMessageConsumerHmiHearingUpdated;
@@ -105,6 +113,8 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
 
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
 
+    JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectToObjectConverter(objectMapper);
+
     public CourtApplicationSteps(HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
@@ -114,6 +124,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
         publicEventCourtApplicationAdded = QueueUtil.publicEvents.createProducer();
         publicEventMessageConsumerCourtApplicationAdded = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED);
         privateMessageConsumerCourtApplicationAddedForHearing = QueueUtil.privateEvents.createConsumer(PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
+        privateMessageConsumerAddedCaseForHearing = privateEvents.createConsumer(EVENT_SELECTED_CASES_ADDED_TO_HEARING);
         publicMessageConsumerCourtApplicationAddedForHearing = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
         publicMessageConsumerHmiHearingUpdated = publicEvents.createConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
 
@@ -122,6 +133,32 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
 
     public void whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended() {
         AddCourtApplicationData addCourtApplicationData = getCourtApplicationForHearingData(hearingsData);
+        final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
+        QueueUtil.sendMessage(
+                publicEventCourtApplicationAdded,
+                PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED,
+                courtApplicationUpdateDataObject,
+                metadataOf(randomUUID(), PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
+        request = courtApplicationUpdateDataObject.toString();
+        LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n, \n\tHeader = {}", PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED, request, getLoggedInHeader());
+    }
+
+    public void whenCaseCourtApplicationAndLinkedCaseAreAddedToListingAndHearingIsExtended() {
+        AddCourtApplicationData addCourtApplicationData = getCourtApplicationForHearingData(hearingsData);
+
+        final String eventPayloadString = getPayload("prosecution-case.json")
+                .replaceAll("HEARING_ID",  hearingsData.getHearingData().get(0).getId().toString())
+                .replaceAll("CASE_ID_1", randomUUID().toString())
+                .replaceAll("DEFENDANT_ID_1", randomUUID().toString())
+                .replaceAll("OFFENCE_ID_1", randomUUID().toString())
+                .replaceAll("CASE_ID_2", randomUUID().toString())
+                .replaceAll("DEFENDANT_ID_2", randomUUID().toString())
+                .replaceAll("OFFENCE_ID_2", randomUUID().toString());
+
+        final JsonObject hearingExtendedDataObject = new StringToJsonObjectConverter().convert(eventPayloadString);
+        ProsecutionCase prosecutionCase = jsonObjectToObjectConverter.convert(hearingExtendedDataObject.getJsonArray("prosecutionCases").getJsonObject(0), ProsecutionCase.class);
+
+        addCourtApplicationData.setProsecutionCases(Stream.of(prosecutionCase).collect(Collectors.toList()));
         final JsonObject courtApplicationUpdateDataObject = (JsonObject) objectToJsonValueConverter.convert(addCourtApplicationData);
         QueueUtil.sendMessage(
                 publicEventCourtApplicationAdded,
@@ -281,6 +318,22 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                         )));
     }
 
+    public void verifyCaseCountFromAPI(final boolean allocated, final int caseCount) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), allocated));
+
+        final Filter idFilter = filter(where("id").is(hearingsData.getHearingData().get(0).getId().toString()));
+        final com.jayway.jsonpath.JsonPath hearingIdFilter = com.jayway.jsonpath.JsonPath.compile("$.hearings[?]", idFilter);
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath(hearingIdFilter),
+                                withJsonPath("$.hearings[0].listedCases.size()", is(caseCount))
+                        )));
+    }
+
     public void verifyHmiPublicEventForUpdateHearing() {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHmiHearingUpdated);
         LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
@@ -301,6 +354,18 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].courtApplications[0].id", is(hearingsData.getCourtApplications().get(0).getId().toString()))
                         )
                 ));
+    }
+
+    public void verifyAddedCaseForHearingInActiveMQ() {
+        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerAddedCaseForHearing);
+        LOGGER.debug("jsonResponse from privateMessageConsumerAddedCaseForHearing: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.get("hearingId"), is(hearingId.toString()));
+        assertThat(jsonResponse.get("unAllocatedListedCases.size()"), is(1));
     }
 
     private CourtApplicationUpdateData getUpdateCourtApplicationForHearingsData(HearingsData hearingsData) {
@@ -405,6 +470,7 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
             publicEventCourtApplicationUpdated.close();
             publicEventMessageConsumerCourtApplicationUpdated.close();
             privateMessageConsumerCourtApplicationUpdatedForHearing.close();
+            privateMessageConsumerAddedCaseForHearing.close();
             publicEventCourtApplicationAdded.close();
             publicEventMessageConsumerCourtApplicationAdded.close();
             privateMessageConsumerCourtApplicationAddedForHearing.close();

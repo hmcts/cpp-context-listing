@@ -327,8 +327,8 @@ public class UpdatedHearingData {
 
 
         return new UpdatedHearingData(hearingData.getId(), courtCentreId, hearingData.getName(), courtRoomId, hearingData.getHearingTypeData(),
-                hearingData.getHearingStartDate().toString(), hearingData.getHearingEndDate().toString(),
-                Collections.singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString))),
+                hearingData.getHearingStartDate().toString(), ofNullable(hearingData.getHearingEndDate()).map(LocalDate::toString).orElse(null),
+                Collections.singletonList(new NonDefaultDayData(hearingData.getHearingStartTime().format(DATE_TIME_FORMAT), of(courtCentreId).map(UUID::toString), ofNullable(courtRoomId).map(UUID::toString))),
                 Collections.emptyList(), HEARING_LANGUAGE_ENGLISH, judiciary, hearingData.getJurisdictionType(), null, null, null, hearingData.getHasVideoLink(), hearingData.getPublicListNote());
 
     }

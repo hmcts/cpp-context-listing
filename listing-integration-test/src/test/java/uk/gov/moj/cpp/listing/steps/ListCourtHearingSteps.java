@@ -31,7 +31,6 @@ import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getU
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-import static uk.gov.moj.cpp.listing.endpoint.UnallocatedHearingsEndpoint.pollForUnallocatedHearings;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -87,7 +86,6 @@ import uk.gov.justice.listing.courts.WeekCommencingDate;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
@@ -2232,17 +2230,6 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 hearingExtendedDataObject,
                 metadataOf(randomUUID(), PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
         LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED, request, getLoggedInHeader());
-    }
-
-    public void verifyAddedCaseForHearingInActiveMQ(final UUID hearingId) {
-        final JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerAddedCaseForHearing);
-        LOGGER.debug("jsonResponse from privateMessageConsumerAddedCaseForHearing: {}", jsonResponse.prettify());
-
-        assertThat(jsonResponse.get("hearingId"), is(hearingId.toString()));
-        assertThat(jsonResponse.get("unAllocatedListedCases.size()"), is(2));
     }
 
     public void verifyHearingUpdatedToCaseInActiveMQ(final UUID allocatedHearingId, final UUID unallocatedHearingId) {

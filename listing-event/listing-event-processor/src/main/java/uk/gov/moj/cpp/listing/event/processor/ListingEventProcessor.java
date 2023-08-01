@@ -224,6 +224,7 @@ public class ListingEventProcessor {
 
     private static final String PRIVATE_LISTING_HEARING_PARTIALLY_UPDATED = "listing.events.hearing-partially-updated";
     private static final String PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED = "public.listing.hearing-partially-updated";
+    public static final String COURT_APPLICATION = "courtApplication";
 
 
     @Inject
@@ -566,11 +567,15 @@ public class ListingEventProcessor {
         final HearingExtended hearingExtended = jsonObjectConverter.convert(payload, HearingExtended.class);
 
         if (isNotBoxWorkRequest(hearingExtended)) {
-            if (isNotEmpty(hearingExtended.getProsecutionCases()) && isNull(hearingExtended.getCourtApplication())) {
+            if (isNotEmpty(hearingExtended.getProsecutionCases()) ) {
+                final JsonObjectBuilder builder = createObjectBuilder();
+                envelope.payloadAsJsonObject().entrySet().stream().filter(entry -> !entry.getKey().equals(COURT_APPLICATION)).forEach(entry -> builder.add(entry.getKey(), entry.getValue()) );
+
                 sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(LISTING_COMMAND_ADD_CASES_TO_HEARING),
-                        envelope.payloadAsJsonObject()));
+                        builder.build()));
                 LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, LISTING_COMMAND_ADD_CASES_TO_HEARING, envelope.toObfuscatedDebugString());
-            } else {
+            }
+            if (nonNull(hearingExtended.getCourtApplication())) {
                 sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING),
                         envelope.payloadAsJsonObject()));
                 LOGGER.info(EVENT_PAYLOAD_DEBUG_STRING, COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING, envelope.toObfuscatedDebugString());

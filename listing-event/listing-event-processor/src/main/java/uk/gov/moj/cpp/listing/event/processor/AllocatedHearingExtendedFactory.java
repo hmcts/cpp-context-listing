@@ -50,14 +50,14 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
                 .withCourtApplicationIds(hearingExtendedForListingV2.getCourtApplicationIds())
                 .withReportingRestrictionReason(hearingExtendedForListingV2.getReportingRestrictionReason())
                 .withType(buildType(type));
-        if (hearingExtendedForListingV2.getProsecutionCaseDefendantsOffenceIds() != null) {
-            builder.withProsecutionCases(hearingExtendedForListingV2.getProsecutionCaseDefendantsOffenceIds().stream()
+        if (hearingExtendedForListingV2.getUnAllocatedListedCases() != null) {
+            builder.withProsecutionCases(hearingExtendedForListingV2.getUnAllocatedListedCases().stream()
                     .map(pcdo -> ConfirmedProsecutionCase.confirmedProsecutionCase()
                             .withDefendants(pcdo.getDefendants().stream()
                                     .map(d -> ConfirmedDefendant.confirmedDefendant()
                                             .withId(d.getId())
-                                            .withOffences(d.getOffenceIds().stream()
-                                                    .map(o -> ConfirmedOffence.confirmedOffence().withId(o).build())
+                                            .withOffences(d.getOffences().stream()
+                                                    .map(o -> ConfirmedOffence.confirmedOffence().withId(o.getId()).build())
                                                     .collect(toList()))
                                             .build())
                                     .collect(toList()))

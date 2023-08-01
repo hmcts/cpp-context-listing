@@ -14,6 +14,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.BDDMockito.given;
@@ -139,7 +140,6 @@ import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher;
 import uk.gov.justice.services.test.utils.core.random.Generator;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
-import uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
@@ -187,7 +187,6 @@ import javax.json.JsonObjectBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -234,11 +233,13 @@ public class ListingEventProcessorTest {
     private static final String SOURCE = "source";
     private static final String COURTCENTRE_ID = "courtCentreId";
 
-
+    ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     @Spy
     private final Enveloper enveloper = createEnveloper();
     @Spy
-    ObjectToJsonObjectConverter objectToJsonObjectConverter;
+    ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(objectMapper);
+    @Spy
+    private JsonObjectToObjectConverter jsonObjectConverterForTest = new JsonObjectToObjectConverter(objectMapper);
     @Mock
     private ObjectToJsonValueConverter objectToJsonValueConverter;
     @Mock
@@ -359,12 +360,6 @@ public class ListingEventProcessorTest {
     @InjectMocks
     private ListingEventProcessor listingEventProcessor;
 
-    @Before
-    public void setUp() {
-        final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
-        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(objectMapper);
-        ReflectionUtil.setField(listingEventProcessor, "objectToJsonObjectConverter", objectToJsonObjectConverter);
-    }
 
     @Test
     public void shouldHandleHearingListedEventMessage() {
@@ -1096,7 +1091,7 @@ public class ListingEventProcessorTest {
         //then
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(COMMAND_UPDATE_CASE_DEFENDANT_DETAILS));
-        final DefendantUpdated resultPayload = jsonObjectConverter
+        final DefendantUpdated resultPayload = jsonObjectConverterForTest
                 .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), DefendantUpdated.class);
 
         assertThat(resultPayload, equalTo(defendantUpdated));
@@ -1152,7 +1147,7 @@ public class ListingEventProcessorTest {
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
 
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(COMMAND_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS));
-        final DefendantsAddedToCourtProceedings resultPayload = jsonObjectConverter
+        final DefendantsAddedToCourtProceedings resultPayload = jsonObjectConverterForTest
                 .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), DefendantsAddedToCourtProceedings.class);
         assertThat(resultPayload, equalTo(defendantsAddedToCourtProceedings));
 
@@ -1212,7 +1207,7 @@ public class ListingEventProcessorTest {
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
 
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(COMMAND_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS));
-        final DefendantsAddedToCourtProceedings resultPayload = jsonObjectConverter
+        final DefendantsAddedToCourtProceedings resultPayload = jsonObjectConverterForTest
                 .convert(senderJsonEnvelopeCaptor.getAllValues().get(0).payloadAsJsonObject(), DefendantsAddedToCourtProceedings.class);
         assertThat(resultPayload, equalTo(defendantsAddedToCourtProceedings));
 
@@ -1235,7 +1230,7 @@ public class ListingEventProcessorTest {
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
 
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(COMMAND_UPDATE_CASE_DEFENDANT_OFFENCES));
-        final OffencesForDefendantUpdated resultPayload = jsonObjectConverter
+        final OffencesForDefendantUpdated resultPayload = jsonObjectConverterForTest
                 .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), OffencesForDefendantUpdated.class);
         assertThat(resultPayload, equalTo(offencesForDefendantUpdated));
         assertThat(resultPayload, not(equalTo(offencesForDefendantUpdated())));
@@ -1258,7 +1253,7 @@ public class ListingEventProcessorTest {
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
 
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(COMMAND_UPDATE_COURT_APPLICATION));
-        final CourtApplicationChanged resultPayload = jsonObjectConverter
+        final CourtApplicationChanged resultPayload = jsonObjectConverterForTest
                 .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), CourtApplicationChanged.class);
 
         assertThat(resultPayload, equalTo(courtApplicationChanged));
@@ -1387,7 +1382,7 @@ public class ListingEventProcessorTest {
 
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(COMMAND_CASE_OR_APPLICATION_EJECTED));
 
-        final CaseOrApplicationEjected resultPayload = jsonObjectConverter
+        final CaseOrApplicationEjected resultPayload = jsonObjectConverterForTest
                 .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), CaseOrApplicationEjected.class);
         assertThat(resultPayload, equalTo(ejectCaseOrApplication));
 
@@ -1448,13 +1443,13 @@ public class ListingEventProcessorTest {
     public void shouldHandleCourtApplicationAddedOnHearingMessage() {
         final CourtApplication courtApplicationAddedForHearings = courtApplicationAdded();
         final List<ProsecutionCase> prosecutionCases = new ArrayList<>();
-        final JsonObject courtApplicationChangedJsonObject = this.objectToJsonObjectConverter.convert(courtApplicationAddedForHearings);
-        final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), courtApplicationChangedJsonObject);
 
         final HearingExtended hearingExtended = HearingExtended.hearingExtended()
                 .withCourtApplication(courtApplicationAddedForHearings)
                 .withProsecutionCases(prosecutionCases)
                 .build();
+        final JsonObject hearingExtendedJsonObject = this.objectToJsonObjectConverter.convert(hearingExtended);
+        final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), hearingExtendedJsonObject);
 
         //given
         given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
@@ -1467,7 +1462,7 @@ public class ListingEventProcessorTest {
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
 
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is(COMMAND_ADD_COURT_APPLICATION_FOR_LISTED_HEARING));
-        final HearingExtended hearingExtendedResult = jsonObjectConverter
+        final HearingExtended hearingExtendedResult = jsonObjectConverterForTest
                 .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), HearingExtended.class);
 
         assertThat(hearingExtendedResult.getCourtApplication(), equalTo(courtApplicationAddedForHearings));
@@ -1480,12 +1475,14 @@ public class ListingEventProcessorTest {
         final List<ProsecutionCase> prosecutionCases = new ArrayList<>();
         final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase().build();
         prosecutionCases.add(prosecutionCase);
-        final JsonObject courtApplicationChangedJsonObject = this.objectToJsonObjectConverter.convert(courtApplicationAddedForHearings);
-        final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), courtApplicationChangedJsonObject);
 
         final HearingExtended hearingExtended = HearingExtended.hearingExtended()
                 .withProsecutionCases(prosecutionCases)
                 .build();
+
+        final JsonObject hearingExtendedJsonObject = this.objectToJsonObjectConverter.convert(hearingExtended);
+        final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), hearingExtendedJsonObject);
+
 
         //given
         given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
@@ -1498,11 +1495,56 @@ public class ListingEventProcessorTest {
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
 
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.add-cases-to-hearing"));
-        final HearingExtended hearingExtendedResult = jsonObjectConverter
+        final HearingExtended hearingExtendedResult = jsonObjectConverterForTest
                 .convert(senderJsonEnvelopeCaptor.getValue().payloadAsJsonObject(), HearingExtended.class);
 
         assertThat(hearingExtendedResult.getProsecutionCases().size(), equalTo(1));
         assertThat(hearingExtendedResult.getProsecutionCases().get(0), equalTo(prosecutionCase));
+    }
+
+    @Test
+    public void shouldHandleBothProsecutionCasesApplicationAddedOnHearingMessage() {
+        final CourtApplication courtApplicationAddedForHearings = courtApplicationAdded();
+        final List<ProsecutionCase> prosecutionCases = new ArrayList<>();
+        final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase().build();
+        prosecutionCases.add(prosecutionCase);
+
+
+        final HearingExtended hearingExtended = HearingExtended.hearingExtended()
+                .withProsecutionCases(prosecutionCases)
+                .withCourtApplication(courtApplicationAddedForHearings)
+                .build();
+        final JsonObject hearingExtendedJsonObject = this.objectToJsonObjectConverter.convert(hearingExtended);
+
+        final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUIDAndName(), hearingExtendedJsonObject);
+
+
+        //given
+        given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
+                HearingExtended.class)).willReturn(hearingExtended);
+
+        //when
+        listingEventProcessor.handleExtendListedHearingForCourtApplication(jsonEnvelope);
+
+        //then
+        verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
+
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is("listing.command.add-cases-to-hearing"));
+        final HearingExtended hearingExtendedResult = jsonObjectConverterForTest
+                .convert(senderJsonEnvelopeCaptor.getAllValues().get(0).payloadAsJsonObject(), HearingExtended.class);
+
+        assertThat(hearingExtendedResult.getProsecutionCases().size(), equalTo(1));
+        assertThat(hearingExtendedResult.getProsecutionCases().get(0), equalTo(prosecutionCase));
+        assertThat(hearingExtendedResult.getCourtApplication(), nullValue());
+
+        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is("listing.command.add-court-application-for-hearing"));
+        final HearingExtended addCourtApplicationForHearing = jsonObjectConverterForTest
+                .convert(senderJsonEnvelopeCaptor.getAllValues().get(1).payloadAsJsonObject(), HearingExtended.class);
+
+        assertThat(addCourtApplicationForHearing.getProsecutionCases().size(), equalTo(1));
+        assertThat(addCourtApplicationForHearing.getProsecutionCases().get(0), equalTo(prosecutionCase));
+        assertThat(addCourtApplicationForHearing.getCourtApplication(), equalTo(courtApplicationAddedForHearings));
+
     }
 
     @Test

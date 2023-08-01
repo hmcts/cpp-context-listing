@@ -1197,6 +1197,13 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 is(hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getOffenceId().toString()));
     }
 
+    public void verifyProsecutionCaseDefendantsOffenceIds(final int count) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerAllocatedHearingUpdatedForListing);
+        LOGGER.info("jsonResponse from privateMessageConsumerAllocatedHearingUpdatedForListing: {}", jsonResponse.prettify());
+
+        assertThat(jsonResponse.getList("prosecutionCaseDefendantsOffenceIds").size(), is(count));
+    }
+
 
     private void verifyAllocatedHearingUpdatedForListing() {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerAllocatedHearingUpdatedForListing);

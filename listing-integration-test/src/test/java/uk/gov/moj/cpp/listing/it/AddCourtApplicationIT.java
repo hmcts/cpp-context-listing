@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
 import java.util.List;
-import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.moj.cpp.listing.steps.CourtApplicationSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
@@ -48,6 +47,29 @@ public class AddCourtApplicationIT extends AbstractIT {
             courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
             courtApplicationSteps.verifyCourtApplicationAddedFromAPI(true);
             courtApplicationSteps.verifyHmiPublicEventForUpdateHearing();
+        }
+    }
+
+    @Test
+    public void shouldAddCourtApplicationAndCaseForHearingIdHmiEnabled() {
+
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(true);
+            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+
+        try (final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData)) {
+            courtApplicationSteps.verifyCaseCountFromAPI(true, 2);
+            courtApplicationSteps.whenCaseCourtApplicationAndLinkedCaseAreAddedToListingAndHearingIsExtended();
+            courtApplicationSteps.verifyCourtApplicationAddedInActiveMQ();
+            courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
+            courtApplicationSteps.verifyCourtApplicationAddedFromAPI(true);
+            courtApplicationSteps.verifyHmiPublicEventForUpdateHearing();
+            courtApplicationSteps.verifyAddedCaseForHearingInActiveMQ();
+            courtApplicationSteps.verifyCaseCountFromAPI(true, 3);
         }
     }
 

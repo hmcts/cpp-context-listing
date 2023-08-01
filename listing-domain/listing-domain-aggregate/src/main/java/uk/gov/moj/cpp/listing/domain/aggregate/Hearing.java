@@ -2859,7 +2859,8 @@ public class Hearing implements Aggregate {
         // Standalone CourtApplication will not have any associated case
 
         if (nonNull(hearing.getListedCases())) {
-            this.prosecutionCaseDefendantOffenceIds = event.getUnAllocatedListedCases().stream()
+            this.prosecutionCaseDefendantOffenceIds = ofNullable(this.prosecutionCaseDefendantOffenceIds).orElseGet(ArrayList::new);
+            event.getUnAllocatedListedCases().stream()
                     .map(lc -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
                             .withId(lc.getId())
                             .withDefendants(lc.getDefendants().stream()
@@ -2868,7 +2869,7 @@ public class Hearing implements Aggregate {
                                     .collect(toList()))
                             .build()
                     ).filter(pcd -> !pcd.getDefendants().isEmpty())
-                    .collect(toList());
+                    .forEach(this.prosecutionCaseDefendantOffenceIds::add);
         }
         this.hearingDays = convertHearingDaysToDomain(hearing.getHearingDays());
         this.allocated = TRUE;

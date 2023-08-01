@@ -4,6 +4,7 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STR
 
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
+import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -16,6 +17,7 @@ import java.util.UUID;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 public class ExtendHearingIT extends AbstractIT {
 
@@ -54,8 +56,8 @@ public class ExtendHearingIT extends AbstractIT {
 
         final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, UUID.randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE,
                 null, null);
-
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(allocatedHearingCaseAndDefendantData))) {
+        final HearingsData allocatedHearingData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(allocatedHearingCaseAndDefendantData);
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(allocatedHearingData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
         }
 
@@ -78,6 +80,12 @@ public class ExtendHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyPublicHearingChangesSavedInPublicMQ(ALLOCATED_HEARING_ID);
             listCourtHearingSteps.verifyPublicHearingUpdatedPartiallyInActiveMQ(unallocatedHearingId);
 
+        }
+
+        final UpdatedHearingData updatedHearingDataWithUpdatedJudiciary = UpdatedHearingData.updatedHearingDataDifferentJudiciary(allocatedHearingData.getHearingData().get(0));
+        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithUpdatedJudiciary)) {
+            updateHearingSteps.whenJudiciaryIsChangedForHearings();
+            updateHearingSteps.verifyProsecutionCaseDefendantsOffenceIds(2);
         }
     }
 
