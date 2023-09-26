@@ -29,14 +29,14 @@
         <sonar.scm.provider>git</sonar.scm.provider>
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <junit4-dataprovider.version>2.6</junit4-dataprovider.version>
-        <coredomain.version>1.0.206</coredomain.version>
+        <coredomain.version>1.0.207</coredomain.version>
         <referencedata.version>8.0.41</referencedata.version>
         <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
         <sardine.version>5.7</sardine.version>
         <test-utils-enveloper-provider.version>5.1.2</test-utils-enveloper-provider.version>
         <test-utils-core.version>5.1.2</test-utils-core.version>
         <test-utils-persistence.version>5.3.0-M1</test-utils-persistence.version>
-        <progression.version>8.0.121</progression.version>
+        <progression.version>8.0.127</progression.version>
         <org.xmlunit.version>2.6.3</org.xmlunit.version>    <!-- Version property added to common-bom:2.2.1.Replace with org.xmlunit.version after upgrade to Framework 6 -->
         <com.sun.xml.bind.jaxb.version>2.2.11</com.sun.xml.bind.jaxb.version>   <!-- Version property added to common-bom:2.2.1. Replace with com.sun.xml.bind.jaxb.version after upgrade to Framework 6 -->
         <slf4j-log4j12.version>1.7.10</slf4j-log4j12.version>
