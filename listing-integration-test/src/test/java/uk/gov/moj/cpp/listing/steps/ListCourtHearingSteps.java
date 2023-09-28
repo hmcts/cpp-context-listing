@@ -43,6 +43,9 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtWithHmiListingEnabledCentreById;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
+import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate;
+import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByPersonDefendant;
+import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByOrganisationDefendant;
 
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.ApplicationStatus;
@@ -142,6 +145,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
     private static final String MEDIA_TYPE_SEARCH_HEARING_JSON = "application/vnd.listing.search.hearing+json";
     private static final String MEDIA_TYPE_LIST_EXTEND_HEARING_FOR_HEARING = "application/vnd.listing.command.extend-hearing-for-hearing+json";
+    private static final String MEDIA_TYPE_SEARCH_BY_PERSON_DEFENDANT_AND_HEARING_DATE = "application/vnd.listing.get.cases-by-person-defendant+json";
+    private static final String MEDIA_TYPE_SEARCH_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE = "application/vnd.listing.get.cases-by-organisation-defendant+json";
 
     private static final String EVENT_SELECTOR_HEARING_LISTED = "listing.events.hearing-listed";
     private static final String EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING = "listing.events.hearing-allocated-for-listing-v2";
@@ -634,6 +639,73 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
 
         verifyHearingListedFromWithApiUrl(hearingData, searchHearingUrl);
+    }
+
+    public void verifyQueryAPIFindCaseByPersonDefendantAndHearingDate() {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final String caseId = hearingData.getListedCases().get(0).getCaseId().toString();
+        final String urn = hearingData.getListedCases().get(0).getCaseReference();
+        final String defendantId = hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString();
+
+        final String firstName = hearingData.getListedCases().get(0).getDefendants().get(0).getFirstName();
+        final String lastName = hearingData.getListedCases().get(0).getDefendants().get(0).getLastName();
+        final LocalDate dateOfBirth = hearingData.getListedCases().get(0).getDefendants().get(0).getDateOfBirth();
+
+
+        verifyCaseByPersonDefendantAndHearingDate(caseId, urn, defendantId, firstName, lastName, dateOfBirth.toString());
+    }
+
+    public void verifyQueryAPIFindCaseByPersonDefendantAndHearingDateForUnallocatedHearing(final String caseId, final String urn, final String defendantId,
+                                                                                           final String firstName, final String lastName, final String dateOfBirth) {
+        verifyCaseByPersonDefendantAndHearingDate(caseId, urn, defendantId, firstName, lastName, dateOfBirth);
+    }
+
+    private void verifyCaseByPersonDefendantAndHearingDate(final String caseId, final String urn, final String defendantId,
+                                                           final String firstName, final String lastName, final String dateOfBirth){
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.get.cases-by-person-defendant"), firstName, lastName, dateOfBirth, LocalDate.now()));
+
+
+        setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate(getLoggedInUser());
+        stubDefenceQueryApiForSearchCasesByPersonDefendant(caseId, defendantId);
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_BY_PERSON_DEFENDANT_AND_HEARING_DATE).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.prosecutionCases[0].caseId",
+                                        equalTo(caseId)),
+                                withJsonPath("$.prosecutionCases[0].urn",
+                                        equalTo(urn))))
+                );
+    }
+
+    public void verifyQueryAPIFindCaseByOrganisationDefendantAndHearingDate() {
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+        final String caseId = hearingData.getListedCases().get(0).getCaseId().toString();
+        final String urn = hearingData.getListedCases().get(0).getCaseReference();
+        final String defendantId = hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString();
+        final String organisationName =  hearingData.getListedCases().get(0).getDefendants().get(0).getLegalEntityDefendant().getOrganisation().getName();
+
+        verifyCaseByOrganisationDefendantAndHearingDate(caseId, urn, defendantId, organisationName);
+    }
+
+    private void verifyCaseByOrganisationDefendantAndHearingDate(final String caseId, final String urn, final String defendantId, final String organisationName){
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.get.cases-by-organisation-defendant"), organisationName, LocalDate.now()));
+
+        stubDefenceQueryApiForSearchCasesByOrganisationDefendant(caseId, defendantId);
+        setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate(getLoggedInUser());
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.prosecutionCases[0].caseId",
+                                        equalTo(caseId)),
+                                withJsonPath("$.prosecutionCases[0].urn",
+                                        equalTo(urn))))
+                );
     }
 
     public void verifyHearingListedPublicEvent() {

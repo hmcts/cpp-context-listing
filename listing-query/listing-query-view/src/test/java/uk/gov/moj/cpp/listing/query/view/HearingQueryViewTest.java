@@ -8,12 +8,13 @@ import static java.time.ZonedDateTime.now;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -33,6 +34,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatch
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
+import static java.util.Arrays.asList;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
@@ -41,11 +43,14 @@ import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory;
 import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
+import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
+import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusResult;
@@ -82,6 +87,7 @@ import com.jayway.jsonpath.ReadContext;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.hamcrest.Matcher;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -164,6 +170,8 @@ public class HearingQueryViewTest {
     private NotesService notesService;
     @Mock
     private OrganisationUnitHMICache organisationUnitHMICache;
+    @Mock
+    private CaseByDefendantRepository caseByDefendantRepository;
     @InjectMocks
     private HearingQueryView hearingsQueryView;
     @Spy
@@ -1028,6 +1036,30 @@ public class HearingQueryViewTest {
         verify(publishedCourtListRepository).findBy(eq(primaryKey));
         verify(courtListService).emptyCourtList(eq(courtCentreId));
 
+    }
+
+    @Test
+    public void shouldGetCasesByDefendantAndHearingDate(){
+        final UUID caseId1 = randomUUID();
+        final String caseUrn1 = randomAlphabetic(5);
+        final UUID caseId2 = randomUUID();
+        final String caseUrn2 = randomAlphabetic(5);
+        final String hearingDate = "2023-05-26";
+
+        final JsonEnvelope envelope = EnvelopeFactory.createEnvelope("listing.get.cases-by-person-defendant", createObjectBuilder().build());
+
+        final CaseByDefendant caseByDefendant1 = CaseByDefendant.caseByDefendant().withCaseId(caseId1).withUrn(caseUrn1).build();
+        final CaseByDefendant caseByDefendant2 = CaseByDefendant.caseByDefendant().withCaseId(caseId2).withUrn(caseUrn2).build();
+
+        when(caseByDefendantRepository.getCasesByDefendantAndHearingDate( any(), any(), any())).thenReturn(Arrays.asList(caseByDefendant1, caseByDefendant2));
+
+        final JsonEnvelope response = hearingsQueryView.getCasesByDefendantAndHearingDate(asList(randomUUID()), asList(randomUUID()), hearingDate, envelope);
+
+        final JsonArray prosecutionCases = response.payloadAsJsonObject().getJsonArray("prosecutionCases");
+        assertThat(prosecutionCases.getJsonObject(0).getString("caseId"), is(caseId1.toString()));
+        assertThat(prosecutionCases.getJsonObject(0).getString("urn"), is(caseUrn1));
+        assertThat(prosecutionCases.getJsonObject(1).getString("caseId"), is(caseId2.toString()));
+        assertThat(prosecutionCases.getJsonObject(1).getString("urn"), is(caseUrn2));
     }
 
     private JsonEnvelope generateQuery(final JsonValue payload) {

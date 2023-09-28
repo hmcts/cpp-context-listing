@@ -1,9 +1,5 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static com.google.common.collect.ImmutableMap.of;
-import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubPingForOrganisationUnitHmiSServiceForCache;
-import static uk.gov.moj.cpp.platform.test.feature.toggle.FeatureStubber.stubFeaturesFor;
-
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.ListNextHearingSteps;
@@ -11,7 +7,6 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.util.UUID;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,8 +27,6 @@ public class ListNextHearingIT extends AbstractIT {
 
     @Test
     public void shouldListNextHearings() {
-        final ImmutableMap<String, Boolean> features = of("amendReshare", true);
-        stubFeaturesFor("listing", features);
         final HearingsData firstHearings = HearingsData.hearingsData();
         final HearingsData nextHearings = HearingsData.hearingsData();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings)) {
@@ -53,8 +46,6 @@ public class ListNextHearingIT extends AbstractIT {
 
     @Test
     public void shouldDeleteOldNextHearingsAndListNextHearings() {
-        final ImmutableMap<String, Boolean> features = of("amendReshare", true);
-        stubFeaturesFor("listing", features);
 
         final HearingsData oldNextHearings = HearingsData.hearingsData();
         final HearingsData nextHearings = HearingsData.hearingsData();
@@ -91,8 +82,6 @@ public class ListNextHearingIT extends AbstractIT {
 
     @Test
     public void shouldDeleteOldScheduledNextHearingsAndScheduledNextHearings() {
-        final ImmutableMap<String, Boolean> features = of("amendReshare", true);
-        stubFeaturesFor("listing", features);
 
         final HearingsData oldNextHearings = HearingsData.notHmiEnabledHearingsData();
         final HearingsData nextHearings = HearingsData.notHmiEnabledHearingsData();
@@ -129,8 +118,6 @@ public class ListNextHearingIT extends AbstractIT {
 
     @Test
     public void shouldDeleteOldRelatedtHearingsAndUpdateRelatedHearings() {
-        final ImmutableMap<String, Boolean> features = of("amendReshare", true);
-        stubFeaturesFor("listing", features);
 
         final HearingsData oldNextHearings = HearingsData.hearingsData();
         final HearingsData nextHearings = HearingsData.hearingsData();

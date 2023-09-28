@@ -42,6 +42,8 @@ import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
+import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
+import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
@@ -80,6 +82,7 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.persistence.NoResultException;
@@ -128,6 +131,8 @@ public class HearingQueryView {
     private static final String MATCHED_DEFENDANT_IDS = "matchedDefendantIds";
     private static final String CASE_URN_FOR_LINKED_CASES = "caseUrnForLinkedCases";
     private static final String RETURN_ALL_HEARINGS = "returnAllHearings";
+    private static final String PROSECUTION_CASES = "prosecutionCases";
+    private static final String URN = "urn";
 
     @Inject
     private HearingRepository repository;
@@ -167,6 +172,9 @@ public class HearingQueryView {
 
     @Inject
     private JsonObjectToObjectConverter jsonObjectToObjectConverter;
+
+    @Inject
+    private CaseByDefendantRepository caseByDefendantRepository;
 
     public static final String TYPE = "type";
 
@@ -492,6 +500,24 @@ public class HearingQueryView {
                 : getUnpublishedCourtListResponsePayload(queryEnvelope, queryPayload);
 
         return envelopeFrom(metadataFrom(queryEnvelope.metadata()).withName("listing.courtlist"), courtListResponsePayload);
+    }
+
+    public JsonEnvelope getCasesByDefendantAndHearingDate(List<UUID> caseIds, List<UUID> defendants, String hearingDate, final JsonEnvelope query) {
+        final List<CaseByDefendant> caseList = caseByDefendantRepository.getCasesByDefendantAndHearingDate(caseIds, defendants, parse(hearingDate));
+        return envelopeFrom(query.metadata(), createCasesByDefendantAndHearingDateResponse(caseList));
+    }
+
+    private JsonObject createCasesByDefendantAndHearingDateResponse(final List<CaseByDefendant> caseList){
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        caseList.forEach(prosecutionCase->{
+            final JsonObjectBuilder objectBuilder = createObjectBuilder();
+            objectBuilder.add(CASE_ID, prosecutionCase.getCaseId().toString());
+            if (nonNull(prosecutionCase.getUrn())) {
+                objectBuilder.add(URN, prosecutionCase.getUrn());
+            }
+            arrayBuilder.add(objectBuilder.build());
+        });
+        return createObjectBuilder().add(PROSECUTION_CASES, arrayBuilder.build()).build();
     }
 
     private JsonObject getPublishedCourtListResponsePayload(final JsonObject queryPayload) {

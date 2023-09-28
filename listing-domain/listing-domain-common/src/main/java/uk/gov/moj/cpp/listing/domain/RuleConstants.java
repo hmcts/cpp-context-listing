@@ -19,6 +19,10 @@ public class RuleConstants {
     public static final String DJMC = "DJMC";
     public static final String DEPUTIES = "Deputies";
     public static final String RECORDERS = "Recorders";
+    public static final String DEFENCE_LAWYER = "Defence Lawyers";
+    public static final String CHAMBERS_CLERK = "Chambers Clerk";
+    public static final String CHAMBERS_ADMIN = "Chambers Admin";
+    public static final String ADVOCATES = "Advocates";
 
     private RuleConstants () {
     }

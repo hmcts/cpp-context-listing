@@ -1,12 +1,15 @@
 package uk.gov.moj.cpp.listing.query.api;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.time.LocalDate.now;
 import static java.util.Arrays.stream;
 import static java.util.UUID.*;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.io.FileUtils.readLines;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -16,6 +19,7 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
@@ -30,8 +34,11 @@ import java.util.Optional;
 
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.core.annotation.Handles;
+import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.MetadataBuilder;
+import uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
@@ -76,6 +83,8 @@ public class HearingQueryApiTest {
     private static final String LISTING_COURT_LIST_PUBLISH_STATUS = "listing.court.list.publish.status";
     private static final String HEARING_SLOTS = "listing.search.hearing.slots";
     private static final String LISTING_AVAILABLE_HEARING_SEARCH = "listing.available";
+    private static final String LISTING_SEARCH_BY_PERSON_DEFENDANT = "listing.get.cases-by-person-defendant";
+    private static final String LISTING_SEARCH_BY_ORGANISATION_DEFENDANT =  "listing.get.cases-by-organisation-defendant";
 
     private static final String COURT_CENTRE_ID = "courtCentreId";
     private static final String COURT_ROOM_ID = "courtRoomId";
@@ -103,6 +112,9 @@ public class HearingQueryApiTest {
     @InjectMocks
     private HearingQueryApi hearingQueryApi;
 
+    @Mock
+    Requester requester;
+
     @Before
     public void setup() {
         apiMethodsToHandlerNames = stream(HearingQueryApi.class.getMethods())
@@ -125,6 +137,8 @@ public class HearingQueryApiTest {
                         || line.contains(LISTING_ALLOCATED_AND_UNALLOCATED_HEARING)
                         || line.contains(LISTING_ANY_ALLOCATION_SEARCH_HEARINGS)
                         || line.contains(LISTING_COTR_SEARCH_HEARING)
+                        || line.contains(LISTING_SEARCH_BY_PERSON_DEFENDANT)
+                        || line.contains(LISTING_SEARCH_BY_ORGANISATION_DEFENDANT)
                 )
                 .map(line -> line.replaceAll(NAME, "").trim())
                 .collect(toList());
@@ -316,6 +330,48 @@ public class HearingQueryApiTest {
 
         assertThat(returnedEnvelope.payloadAsJsonObject().getString("id"), is("id1"));
         assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("PublicCourtListEnglishWelsh"));
+    }
+
+    @Test
+    public void shouldGetCasesByPersonDefendant(){
+        final JsonEnvelope envelope = EnvelopeFactory.createEnvelope("listing.get.cases-by-person-defendant", createObjectBuilder()
+                .add("firstName", randomAlphabetic(5))
+                .add("lastName", randomAlphabetic(5))
+                .add("dateOfBirth", now().toString())
+                .add("hearingDate", now().toString())
+                .build());
+
+        final MetadataBuilder metadataBuilder = metadataBuilder()
+                .withId(randomUUID())
+                .withName("defence.query.get-case-by-person-defendant");
+
+        final Envelope responseEnvelope = Envelope.envelopeFrom(metadataBuilder.build(), createObjectBuilder().add("caseIds", createArrayBuilder().add(randomUUID().toString()).build())
+                .add("defendants", createArrayBuilder().add(randomUUID().toString()).build()).build());
+        when(requester.request(any(), any())).thenReturn(responseEnvelope);
+
+        hearingQueryApi.getCasesByPersonDefendantAndHearingDate(envelope);
+
+        verify(hearingQueryView).getCasesByDefendantAndHearingDate(any(), any(), any(), any());
+    }
+
+    @Test
+    public void shouldGetCasesByOrganisationDefendant(){
+        final JsonEnvelope envelope = EnvelopeFactory.createEnvelope("listing.get.cases-by-organisation-defendant", createObjectBuilder()
+                .add("organisationName", randomAlphabetic(5))
+                .add("hearingDate", now().toString())
+                .build());
+
+        final MetadataBuilder metadataBuilder = metadataBuilder()
+                .withId(randomUUID())
+                .withName("defence.query.get-case-by-organisation-defendant");
+
+        final Envelope responseEnvelope = Envelope.envelopeFrom(metadataBuilder.build(), createObjectBuilder().add("caseIds", createArrayBuilder().add(randomUUID().toString()).build())
+                .add("defendants", createArrayBuilder().add(randomUUID().toString()).build()).build());
+        when(requester.request(any(), any())).thenReturn(responseEnvelope);
+
+        hearingQueryApi.getCasesByOrganisationDefendantAndHearingDate(envelope);
+
+        verify(hearingQueryView).getCasesByDefendantAndHearingDate(any(), any(), any(), any());
     }
 
     private JsonEnvelope generateQuery(JsonValue jsonValue) {

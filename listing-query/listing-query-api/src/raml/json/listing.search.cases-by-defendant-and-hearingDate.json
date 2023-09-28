@@ -1,0 +1,12 @@
+{
+  "prosecutionCases": [
+    {
+      "caseId": "037371cd-74d9-4148-95ce-22a6560192a8",
+      "urn": "TFL1234"
+    },
+    {
+      "caseId": "6fee6477-05c0-49eb-a8d0-c734f0d89e01",
+      "urn": "TFL9876"
+    }
+  ]
+}

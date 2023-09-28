@@ -1,13 +1,9 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static com.google.common.collect.ImmutableMap.of;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static uk.gov.moj.cpp.listing.it.util.HearingHelper.getHearingById;
-import static uk.gov.moj.cpp.platform.test.feature.toggle.FeatureStubber.stubFeaturesFor;
 
-
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -20,9 +16,6 @@ public class RemoveOffencesFromHearingIT extends AbstractIT{
 
     @Test
     public void shouldCallHmiWhenOffencesRemoved() {
-        final ImmutableMap<String, Boolean> features = of("amendReshare", true);
-        stubFeaturesFor("listing", features);
-
         final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
 
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings)) {

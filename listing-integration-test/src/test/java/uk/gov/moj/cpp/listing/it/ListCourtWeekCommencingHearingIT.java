@@ -15,6 +15,7 @@ import static uk.gov.moj.cpp.listing.steps.ListCourtHearingStepsWithWeekCommenci
 import uk.gov.justice.core.courts.Jurisdiction;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
+import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
@@ -24,6 +25,7 @@ import java.util.List;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ListCourtWeekCommencingHearingIT extends AbstractIT {
@@ -198,6 +200,31 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
         };
 
         verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
+    }
+
+    @Ignore(" 23.17 - this will be removed after releasing defence artifacts as there is circular dependency")
+    @Test
+    public void shouldRetrieveCasesByDefendantAndHearingDateForUnallocatedHearing() {
+        final String weekCommencingSearchStartDate = now().toString();
+
+        final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
+
+        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(3)),
+                withJsonPath("$.hearings[1].id", is(firstUpdatedHearingDataWithWeekCommencingDate.getHearingId().toString())),
+                withJsonPath("$.hearings[1].weekCommencingStartDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingStartDate())),
+                withJsonPath("$.hearings[1].weekCommencingEndDate", is(firstUpdatedHearingDataWithWeekCommencingDate.getWeekCommencingEndDate())),
+        };
+        verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, "", false, matchers);
+
+        final String caseId = hearingsData.get(5).getHearingData().get(0).getListedCases().get(1).getCaseId().toString();
+        final String urn = hearingsData.get(5).getHearingData().get(0).getListedCases().get(1).getCaseReference();
+        final String defendantId = hearingsData.get(5).getHearingData().get(0).getListedCases().get(1).getDefendants().get(1).getDefendantId().toString();
+        final String firstName = hearingsData.get(5).getHearingData().get(0).getListedCases().get(1).getDefendants().get(1).getFirstName();
+        final String lastName = hearingsData.get(5).getHearingData().get(0).getListedCases().get(1).getDefendants().get(1).getLastName();
+        final LocalDate dateOfBirth = hearingsData.get(5).getHearingData().get(0).getListedCases().get(1).getDefendants().get(1).getDateOfBirth();
+
+        ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps();
+        listCourtHearingSteps.verifyQueryAPIFindCaseByPersonDefendantAndHearingDateForUnallocatedHearing(caseId, urn, defendantId, firstName, lastName, dateOfBirth.toString());
     }
 
     private static void cleanListingTables() {

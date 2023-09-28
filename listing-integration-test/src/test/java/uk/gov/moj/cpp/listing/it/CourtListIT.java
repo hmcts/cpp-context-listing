@@ -1,13 +1,11 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static com.google.common.collect.ImmutableMap.of;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.util.UUID.fromString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubOrganisationUnit;
-import static uk.gov.moj.cpp.platform.test.feature.toggle.FeatureStubber.stubFeaturesFor;
 
 import uk.gov.moj.cpp.listing.steps.AddDefendantSteps;
 import uk.gov.moj.cpp.listing.steps.CourtListSteps;
@@ -24,7 +22,6 @@ import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 
 import java.util.UUID;
 
-import com.google.common.collect.ImmutableMap;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
@@ -73,15 +70,12 @@ public class CourtListIT extends AbstractIT {
 
     @Test
     public void generatePublicCourtWhenHearingAdjourned() {
-        final ImmutableMap<String, Boolean> features = of("amendReshare", true);
-        stubFeaturesFor("listing", features);
         HearingsData nextHearing = HearingsData.nextHearingsData(firstHearing.getHearingData());
         try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearing.getHearingData().get(0))) {
             listNextHearingSteps.whenNextHearingSubmittedForListing(nextHearing);
             listNextHearingSteps.verifyNextHearingRequestedInActiveMQ(nextHearing);
             listNextHearingSteps.verifyHearingListedInActiveMQ(nextHearing);
             listNextHearingSteps.verifyHearingListedFromAPI(nextHearing);
-
         }
 
         UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(nextHearing.getHearingData().get(0).getId());

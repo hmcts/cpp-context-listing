@@ -67,6 +67,19 @@ public class WireMockStubUtils {
         waitForStubToBeReady(format("/usersgroups-service/query/api/rest/usersgroups/users/{0}/groups", userId), MEDIA_TYPE_QUERY_GROUPS);
     }
 
+    public static void setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate(final UUID userId) {
+        stubPingFor("usersgroups-service");
+
+        stubFor(get(urlPathEqualTo(format("/usersgroups-service/query/api/rest/usersgroups/users/{0}/groups", userId)))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withHeader(ID, randomUUID().toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                        .withBody(getPayload("stub-data/usergroups-get-for-cases-by-defendant-and-hearingdate.json"))));
+
+        waitForStubToBeReady(format("/usersgroups-service/query/api/rest/usersgroups/users/{0}/groups", userId), MEDIA_TYPE_QUERY_GROUPS);
+    }
+
+
     public static void waitForPutStubToBeReady(final String resource, final String contentType, final Response.Status expectedStatus) {
         waitAtMost(TEN_SECONDS)
                 .until(() -> put(BASE_URI + resource, contentType)

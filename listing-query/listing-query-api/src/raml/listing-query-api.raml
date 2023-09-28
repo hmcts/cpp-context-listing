@@ -476,3 +476,57 @@ protocols: [ HTTP, HTTPS ]
                   application/vnd.listing.search.hearings+json:
                     example:  !include json/listing.search.hearings.json
                     schema:  !include  json/schema/listing.search.hearings.json
+
+/cases/by-person-defendant-and-hearingDate:
+   get:
+      description: |
+        Get all cases for the given person defendant details and hearing date
+        ...
+        (mapping):
+            responseType: application/vnd.listing.get.cases-by-person-defendant+json
+            name: listing.get.cases-by-person-defendant
+        ...
+      queryParameters:
+        firstName:
+           type: string
+           required: true
+        lastName:
+           type: string
+           required: true
+        dateOfBirth:
+           type: string
+           required: true
+        hearingDate:
+           type: string
+           required: true
+      responses:
+           200:
+               description: OK
+               body:
+                 application/vnd.listing.get.cases-by-person-defendant+json:
+                   example: !include json/listing.search.cases-by-defendant-and-hearingDate.json
+                   schema: !include json/schema/listing.search.cases-by-defendant-and-hearingDate.json
+
+/cases/by-organisation-defendant-and-hearingDate:
+   get:
+      description: |
+        Get all cases for the given organisation defendant details and hearing date
+        ...
+        (mapping):
+            responseType: application/vnd.listing.get.cases-by-organisation-defendant+json
+            name: listing.get.cases-by-organisation-defendant
+        ...
+      queryParameters:
+        organisationName:
+           type: string
+           required: true
+        hearingDate:
+           type: string
+           required: true
+      responses:
+           200:
+               description: OK
+               body:
+                 application/vnd.listing.get.cases-by-organisation-defendant+json:
+                   example: !include json/listing.search.cases-by-defendant-and-hearingDate.json
+                   schema: !include json/schema/listing.search.cases-by-defendant-and-hearingDate.json

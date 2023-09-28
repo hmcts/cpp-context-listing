@@ -17,6 +17,10 @@ import static uk.gov.moj.cpp.listing.domain.RuleConstants.NPS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.RECORDERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.SYSTEM_USERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.YOTS;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.DEFENCE_LAWYER;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.CHAMBERS_CLERK;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.CHAMBERS_ADMIN;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.ADVOCATES;
 
 import uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider;
 import uk.gov.moj.cpp.accesscontrol.drools.Action;
@@ -37,6 +41,8 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_QUERY_UNSCHEDULED_SEARCH = "listing.unscheduled.search.hearings";
     private static final String RANDOM_GROUP = "Random group";
     private static final String ACTION_ALLOCATED_AND_UNALLOCATED_HEARINGS = "listing.allocated.and.unallocated.hearings";
+    private static final String ACTION_SEARCH_CASE_BY_PERSON_DEFENDANT_AND_HEARING_DATE= "listing.get.cases-by-person-defendant";
+    private static final String ACTION_SEARCH_CASE_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE= "listing.get.cases-by-organisation-defendant";
 
     @Mock
     private UserAndGroupProvider userAndGroupProvider;
@@ -120,6 +126,38 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
         final Action action = createActionFor(ACTION_ALLOCATED_AND_UNALLOCATED_HEARINGS);
         given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
 
+        final ExecutionResults results = executeRulesWith(action);
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToSearchCasesByPersonDefendantAndHearingDate() {
+        final Action action = createActionFor(ACTION_SEARCH_CASE_BY_PERSON_DEFENDANT_AND_HEARING_DATE);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, DEFENCE_LAWYER, CHAMBERS_CLERK, CHAMBERS_ADMIN, ADVOCATES)).willReturn(true);
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowAuthorisedUserToSearchCasesByPersonDefendantAndHearingDate() {
+        final Action action = createActionFor(ACTION_SEARCH_CASE_BY_PERSON_DEFENDANT_AND_HEARING_DATE);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RANDOM_GROUP)).willReturn(false);
+        final ExecutionResults results = executeRulesWith(action);
+        assertFailureOutcome(results);
+    }
+
+    @Test
+    public void shouldAllowAuthorisedUserToSearchCasesByOrganisationDefendantAndHearingDate() {
+        final Action action = createActionFor(ACTION_SEARCH_CASE_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, DEFENCE_LAWYER, CHAMBERS_CLERK, CHAMBERS_ADMIN, ADVOCATES)).willReturn(true);
+        final ExecutionResults results = executeRulesWith(action);
+        assertSuccessfulOutcome(results);
+    }
+
+    @Test
+    public void shouldNotAllowAuthorisedUserToSearchCasesByOrganisationDefendantAndHearingDate() {
+        final Action action = createActionFor(ACTION_SEARCH_CASE_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RANDOM_GROUP)).willReturn(false);
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }

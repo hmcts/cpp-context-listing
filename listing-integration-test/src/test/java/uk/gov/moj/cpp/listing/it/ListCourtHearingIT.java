@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressWarnings("squid:S1607")
@@ -356,6 +357,29 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingExtendedWithShadowListedFlag(ALLOCATED);
             listCourtHearingSteps.verifyHearingExtendedWithReportingRestriction(ALLOCATED);
             listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+        }
+    }
+
+    @Ignore(" 23.17 - this will be removed after releasing defence artifacts as there is circular dependency")
+    @Test
+    public void shouldRetrieveCasesByDefendantAndHearingDateForAllocatedHearing() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyQueryAPIFindCaseByPersonDefendantAndHearingDate();
+        }
+    }
+
+    @Ignore(" 23.17 - this will be removed after releasing defence artifacts as there is circular dependency")
+    @Test
+    public void shouldRetrieveCasesByDefendantAndHearingDateForUnAllocatedHearing() {
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithLegalEntity())) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListingWithLegalEntity();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedWithLegalEntity(UNALLOCATED);
+            listCourtHearingSteps.verifyQueryAPIFindCaseByOrganisationDefendantAndHearingDate();
         }
     }
 }

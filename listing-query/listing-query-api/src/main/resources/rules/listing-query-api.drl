@@ -121,3 +121,21 @@ rule "Query - API - listing.cotr.search.hearings"
   then
     $outcome.setSuccess(true);
 end
+
+rule "Query - API - listing.get.cases-by-person-defendant"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.get.cases-by-person-defendant");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.DEFENCE_LAWYER, RuleConstants.CHAMBERS_CLERK, RuleConstants.CHAMBERS_ADMIN, RuleConstants.ADVOCATES));
+  then
+    $outcome.setSuccess(true);
+end
+
+rule "Query - API - listing.get.cases-by-organisation-defendant"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "listing.get.cases-by-organisation-defendant");
+    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.DEFENCE_LAWYER, RuleConstants.CHAMBERS_CLERK, RuleConstants.CHAMBERS_ADMIN, RuleConstants.ADVOCATES));
+  then
+    $outcome.setSuccess(true);
+end

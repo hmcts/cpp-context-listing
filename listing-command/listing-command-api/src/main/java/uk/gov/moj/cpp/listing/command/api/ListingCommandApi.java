@@ -32,7 +32,6 @@ import uk.gov.justice.listing.courts.UpdateRelatedHearing;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.core.annotation.FeatureControl;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
@@ -109,7 +108,6 @@ public class ListingCommandApi {
     }
 
     @Handles("listing.list-next-hearings-v2")
-    @FeatureControl("amendReshare")
     public void listNextHearings(final JsonEnvelope envelope) {
 
         if (LOGGER.isDebugEnabled()) {
@@ -132,7 +130,6 @@ public class ListingCommandApi {
     }
 
     @Handles("listing.update-related-hearing")
-    @FeatureControl("amendReshare")
     public void updateRelatedHearing(final JsonEnvelope envelope) {
 
         if (LOGGER.isDebugEnabled()) {
@@ -178,7 +175,6 @@ public class ListingCommandApi {
     }
 
     @Handles("listing.list-unscheduled-next-hearings")
-    @FeatureControl("amendReshare")
     public void handleListUnscheduledNextCourtHearings(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
 
@@ -204,7 +200,6 @@ public class ListingCommandApi {
     }
 
     @Handles("listing.delete-next-hearings")
-    @FeatureControl("amendReshare")
     public void handleDeleteNextHearings(final JsonEnvelope envelope) {
         final JsonObject payload = envelope.payloadAsJsonObject();
         if (LOGGER.isDebugEnabled()) {

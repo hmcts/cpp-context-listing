@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.query.api;
 
 import static javax.json.Json.createObjectBuilder;
+import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilderWithFilter;
@@ -13,6 +14,7 @@ import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.enveloper.Enveloper;
+import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataLoader;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
 
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
@@ -46,6 +49,11 @@ public class HearingQueryApi {
     public static final String RESTRICTED = "restricted";
     private static final String LIST_ID = "listId";
     private static final String OU_L2_CODE = "oucodeL2Code";
+    private static final String FIRST_NAME = "firstName";
+    private static final String LAST_NAME = "lastName";
+    private static final String DOB = "dateOfBirth";
+    private static final String ORGANISATION_NAME = "organisationName";
+    private static final String HEARING_DATE = "hearingDate";
 
 
     @Inject
@@ -62,6 +70,12 @@ public class HearingQueryApi {
 
     @Inject
     private ReferenceDataService referenceDataService;
+
+    @Inject
+    @ServiceComponent(QUERY_API)
+    private Requester requester;
+
+
 
     @Handles("listing.search.hearings")
     public JsonEnvelope searchHearings(final JsonEnvelope query) {
@@ -165,6 +179,59 @@ public class HearingQueryApi {
     public JsonEnvelope publishCourtListStatus(final JsonEnvelope query) {
         return hearingQueryView.getCourtListPublishStatus(query);
     }
+
+    @Handles("listing.get.cases-by-person-defendant")
+    public JsonEnvelope getCasesByPersonDefendantAndHearingDate(final JsonEnvelope query) {
+
+        final JsonObject payload = query.payloadAsJsonObject();
+        final String firstName = payload.getString(FIRST_NAME);
+        final String lastName = payload.getString(LAST_NAME);
+        final String dateOfBirth = payload.getString(DOB);
+        final String hearingDate = payload.getString(HEARING_DATE);
+        final JsonObject queryParams = createObjectBuilder()
+                .add(FIRST_NAME, firstName)
+                .add(LAST_NAME, lastName)
+                .add(DOB, dateOfBirth).build();
+
+        final Envelope<JsonObject> response = requester.request(JsonEnvelope.envelopeFrom(metadataFrom(query.metadata())
+                .withName("defence.query.get-case-by-person-defendant"), queryParams), JsonObject.class);
+
+        return processGetCaseByDefendant(response.payload(), hearingDate, query);
+
+    }
+
+    @Handles("listing.get.cases-by-organisation-defendant")
+    public JsonEnvelope getCasesByOrganisationDefendantAndHearingDate(final JsonEnvelope query) {
+
+        final JsonObject payload = query.payloadAsJsonObject();
+        final String firstName = payload.getString(ORGANISATION_NAME);
+        final String hearingDate = payload.getString(HEARING_DATE);
+
+        final JsonObject queryParams = createObjectBuilder()
+                .add(ORGANISATION_NAME, firstName).build();
+
+        final Envelope<JsonObject> response = requester.request(JsonEnvelope.envelopeFrom(metadataFrom(query.metadata())
+                .withName("defence.query.get-case-by-organisation-defendant"), queryParams), JsonObject.class);
+
+        return processGetCaseByDefendant(response.payload(), hearingDate, query);
+    }
+
+    private JsonEnvelope processGetCaseByDefendant(final JsonObject payload, final String hearingDate, final  JsonEnvelope query ){
+        final List<UUID> caseIds = payload.getJsonArray("caseIds").stream()
+                .map(JsonString.class::cast)
+                .map(JsonString::getString)
+                .map(UUID::fromString)
+                .collect(Collectors.toList());
+
+        final List<UUID> defendants = payload.getJsonArray("defendants").stream()
+                .map(JsonString.class::cast)
+                .map(JsonString::getString)
+                .map(UUID::fromString)
+                .collect(Collectors.toList());
+
+        return  this.hearingQueryView.getCasesByDefendantAndHearingDate(caseIds, defendants, hearingDate, query);
+    }
+
 
     private String getTemplateName(final CourtListType courtListType, boolean welsh) {
         if (PUBLIC.equals(courtListType) && welsh) {
