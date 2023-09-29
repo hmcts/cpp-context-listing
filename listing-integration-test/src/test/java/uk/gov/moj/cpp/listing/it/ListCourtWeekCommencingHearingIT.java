@@ -202,7 +202,6 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
         verifyHearingListedForWeekCommencing(Jurisdiction.CROWN.name(), weekCommencingSearchStartDate, weekCommencingSearchEndDate, true, matchers);
     }
 
-    @Ignore(" 23.17 - this will be removed after releasing defence artifacts as there is circular dependency")
     @Test
     public void shouldRetrieveCasesByDefendantAndHearingDateForUnallocatedHearing() {
         final String weekCommencingSearchStartDate = now().toString();

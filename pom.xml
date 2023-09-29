@@ -44,7 +44,7 @@
         <mssql.jdbc.version>7.0.0.jre8</mssql.jdbc.version>
         <commons-csv.version>1.4</commons-csv.version>
         <staginghmi.version>8.0.13</staginghmi.version>
-        <defence.version>8.0.30</defence.version>
+        <defence.version>8.0.32</defence.version>
     </properties>
 
     <modules>

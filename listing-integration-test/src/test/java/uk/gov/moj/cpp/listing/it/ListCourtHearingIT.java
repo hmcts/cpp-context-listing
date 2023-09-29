@@ -360,7 +360,6 @@ public class ListCourtHearingIT extends AbstractIT {
         }
     }
 
-    @Ignore(" 23.17 - this will be removed after releasing defence artifacts as there is circular dependency")
     @Test
     public void shouldRetrieveCasesByDefendantAndHearingDateForAllocatedHearing() {
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary())) {
@@ -372,7 +371,6 @@ public class ListCourtHearingIT extends AbstractIT {
         }
     }
 
-    @Ignore(" 23.17 - this will be removed after releasing defence artifacts as there is circular dependency")
     @Test
     public void shouldRetrieveCasesByDefendantAndHearingDateForUnAllocatedHearing() {
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithLegalEntity())) {
