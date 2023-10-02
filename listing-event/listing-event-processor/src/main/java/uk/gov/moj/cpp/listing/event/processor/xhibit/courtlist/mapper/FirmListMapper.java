@@ -93,8 +93,7 @@ public class FirmListMapper extends AbstractCourtListMapper {
                     sittingList.getSitting().add(courtServicesMapper.generateSittingStructure(sitting, 1));
                 }
                 sittingList.getSitting().sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));
-                firmCourtListStructure.setSittings(sittingList);
-                firmCourtListStructure.setSittingDate(LocalDate.parse(sitting.getString(SITTING_DATE)));
+
 
                 buildFirmCourtListStructureAndReserveList(firmCourtListStructureSittingMap, sitting, sittingList, firmCourtListStructure, sittingDate);
             });
@@ -120,18 +119,32 @@ public class FirmListMapper extends AbstractCourtListMapper {
     }
 
     private void buildFirmCourtListStructureAndReserveList(final HashMap<String, FirmCourtListStructure> firmCourtListStructureSittingMap, final JsonObject sitting, final FirmCourtListStructure.Sittings sittingList, final FirmCourtListStructure firmCourtListStructure, final String key) {
-
+        boolean addedToReserveList = false;
         if (sitting.getBoolean("weekCommencing")) {
             final SittingStructure.Hearings hearings = courtServicesMapper.generateSittingStructureHearings(sitting);
             hearings.getHearing().forEach(hearingStructure -> reserveList.getHearing().add(hearingStructure));
-        } else {
-            if (firmCourtListStructureSittingMap.containsKey(key)) {
-                firmCourtListStructureSittingMap.get(key).getSittings().getSitting().addAll(sittingList.getSitting());
+            addedToReserveList = true;
+        }
 
-            } else {
-                firmCourtListStructureSittingMap.put(key, firmCourtListStructure);
+        if (firmCourtListStructureSittingMap.containsKey(key)) {
+            if (!addedToReserveList) {
+                firmCourtListStructure.setSittingDate(LocalDate.parse(sitting.getString(SITTING_DATE)));
+                firmCourtListStructureSittingMap.get(key).getSittings().getSitting().addAll(sittingList.getSitting());
             }
+        } else {
+            if (!addedToReserveList) {
+                firmCourtListStructure.setSittings(sittingList);
+                firmCourtListStructure.setSittingDate(LocalDate.parse(sitting.getString(SITTING_DATE)));
+            }
+            firmCourtListStructureSittingMap.put(key, firmCourtListStructure);
+        }
+        if (!addedToReserveList) {
             firmCourtListStructureSittingMap.get(key).getSittings().getSitting().sort(Comparator.comparing(SittingStructure::getCourtRoomNumber));
         }
+        if (firmCourtListStructureSittingMap.get(key).getSittings() == null) {
+            final FirmCourtListStructure.Sittings firmCourtListStructureSittings = objectFactory.createFirmCourtListStructureSittings();
+            firmCourtListStructure.setSittings(firmCourtListStructureSittings);
+        }
     }
+
 }

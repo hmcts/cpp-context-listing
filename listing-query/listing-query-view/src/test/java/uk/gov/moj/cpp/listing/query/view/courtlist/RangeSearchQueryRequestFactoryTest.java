@@ -29,21 +29,29 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.slf4j.Logger;
+
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 
 @RunWith(Parameterized.class)
 public class RangeSearchQueryRequestFactoryTest {
 
     final String START_DATE = "2019-12-16";
-    final String EXPECTED_WEEK_COMMENCING_END_DATE = "2019-12-20";
+    final String EXPECTED_WEEK_COMMENCING_END_DATE = "2019-12-22";
 
     @Parameterized.Parameter(0)
     public uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType;
 
     @Parameterized.Parameter(1)
     public boolean shouldUseWeekCommencingQueryParameters;
+
+    @SuppressWarnings("squid:S1312")
+    @Mock
+    private Logger logger;
+
     @InjectMocks
     private RangeSearchQueryRequestFactory rangeSearchQueryRequestFactory;
     @Spy

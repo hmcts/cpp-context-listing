@@ -7,6 +7,7 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -15,12 +16,18 @@ import javax.inject.Inject;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
+import org.slf4j.Logger;
+
 @SuppressWarnings({"squid:CallToDeprecatedMethod"})
 @ApplicationScoped
 public class RangeSearchQueryRequestFactory {
 
     @Inject
     private Enveloper enveloper;
+
+    @SuppressWarnings("squid:S1312")
+    @Inject
+    private Logger logger;
 
     @SuppressWarnings({"squid:S128","squid:S1192","squid:S128","deprecation"})
     public JsonEnvelope buildRangeSearchQueryEnvelope(final UUID courtCentreId,
@@ -60,8 +67,16 @@ public class RangeSearchQueryRequestFactory {
         return enveloper.withMetadataFrom(envelope, "listing.search.hearings").apply(queryPayload);
     }
 
-    private void addWeekCommencingParameters(final LocalDate startDate, final JsonObjectBuilder rangeSearchQueryPayloadBuilder) {
-        final LocalDate weekCommencingEndDate = startDate.plusDays(4);  // The start date is a Monday. Therefore end date should be the Friday.
+    private void addWeekCommencingParameters(LocalDate startDate, final JsonObjectBuilder rangeSearchQueryPayloadBuilder) {
+        LocalDate weekCommencingEndDate = null;
+        if(startDate.getDayOfWeek().equals(DayOfWeek.MONDAY)) {
+            weekCommencingEndDate = startDate.plusDays(6);
+            logger.info("WeekCommencingStartDate is Monday, hence end date is  [{}]  " ,weekCommencingEndDate);
+        }else{
+            startDate = startDate.minusDays(1);
+            weekCommencingEndDate = startDate.plusDays(5);
+            logger.info("WeekCommencingStartDate is not Monday, hence WeekCommencingStartDate is [{}] and WeekCommencingEndDate is  [{}]  " ,startDate, weekCommencingEndDate);
+        }
 
         rangeSearchQueryPayloadBuilder
                 .add("jurisdictionType", CROWN.name())

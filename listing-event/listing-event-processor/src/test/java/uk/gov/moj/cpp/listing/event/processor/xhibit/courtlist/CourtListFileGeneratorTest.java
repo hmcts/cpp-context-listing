@@ -50,6 +50,7 @@ public class CourtListFileGeneratorTest {
     private static final String DAILY_COURT_LIST_SUMMER_TIME_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list-summer-time.json";
     private static final String WEEK_COMMENCING_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-week-commencing-list.json";
     private static final String RESTRICTED_DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-restricted-daily-list.json";
+    private static final String RESTRICTED_DAILY_COURT_LIST_WithMultipleCaseConvertedIntoMultipleHearing_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-restricted-daily-list-with-multiple-case-coverted-into-multiple-hearing.json";
     private static final String COURT_LIST_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-with-fixed-date-corresponding-hearing-types-list.json";
     private static final String COURT_LIST_2_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist2-with-fixed-date-corresponding-hearing-types-list.json";
     private static final String COURT_LIST_WITH_CASE_HIDDEN_INPUT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-case-hidden.json";
@@ -93,7 +94,9 @@ public class CourtListFileGeneratorTest {
                 {FINAL, RESTRICTED_DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedRestrictedFinalList.xml"},
                 {WARN, COURT_LIST_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithDifferentHearingTypesInCase.xml"},
                 {WARN, COURT_LIST_2_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithMultipleHearingTypesInCase.xml"},
-                {WARN, COURT_LIST_WITH_CASE_HIDDEN_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithCaseHidden.xml"}
+                {WARN, COURT_LIST_WITH_CASE_HIDDEN_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithCaseHidden.xml"},
+                {FINAL, RESTRICTED_DAILY_COURT_LIST_WithMultipleCaseConvertedIntoMultipleHearing_JSON_FILE, "xhibit/expectedRestrictedFinalListIeWithMultipleCaseConvertedIntoMultipleHearing.xml"}
+
 
         };
         return asList(data);

@@ -66,10 +66,9 @@ public class RangeSearchQueryTest {
     private static final String PROSECUTOR_ID_SEARCH = String.format("[ { \"prosecutor\": { \"prosecutorId\": \"%s\" } } ]", AUTHORITY_ID);
     private static final UUID HEARING_TYPE_ID = randomUUID();
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
-    private static final LocalDate SEARCH_DATE = LocalDate.now();
-
-    private static final LocalDate WEEK_COMMENCING_START_DATE = LocalDate.now();
-    private static final LocalDate WEEK_COMMENCING_END_DATE = LocalDate.now().plusDays(7);
+    private static final LocalDate WEEK_COMMENCING_START_DATE = LocalDate.parse("2023-08-29");
+    private static final LocalDate SEARCH_DATE = WEEK_COMMENCING_START_DATE;
+    private static final LocalDate WEEK_COMMENCING_END_DATE = WEEK_COMMENCING_START_DATE.plusDays(7);
 
     private static final String EARLIEST_SEARCH_DATE = "1900-01-01";
     private static final String LATEST_SEARCH_DATE = "9999-01-01";
@@ -164,7 +163,7 @@ public class RangeSearchQueryTest {
                         AUTHORITY_ID,
                         null,
                         null,
-                        WEEK_COMMENCING_START_DATE,
+                        WEEK_COMMENCING_START_DATE.minusDays(1),
                         WEEK_COMMENCING_END_DATE,0, paginationParameter.getPageSize());
 
         doReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson))
@@ -202,7 +201,7 @@ public class RangeSearchQueryTest {
                         AUTHORITY_ID,
                         null,
                         null,
-                        WEEK_COMMENCING_START_DATE,
+                        WEEK_COMMENCING_START_DATE.minusDays(1),
                         WEEK_COMMENCING_END_DATE);
 
         doReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson))
@@ -239,7 +238,7 @@ public class RangeSearchQueryTest {
                 AUTHORITY_ID,
                 null,
                 null,
-                parse(WEEK_COMMENCING_START_DATE.toString()),
+                parse(WEEK_COMMENCING_START_DATE.toString()).minusDays(1),
                 parse(WEEK_COMMENCING_END_DATE.toString()),
                 false, 0, paginationParameter.getPageSize()))
                 .thenReturn(hearingsJson);
@@ -275,7 +274,7 @@ public class RangeSearchQueryTest {
                 AUTHORITY_ID,
                 null,
                 null,
-                parse(WEEK_COMMENCING_START_DATE.toString()),
+                parse(WEEK_COMMENCING_START_DATE.toString()).minusDays(1),
                 parse(WEEK_COMMENCING_END_DATE.toString()),
                 false, true,0, paginationParameter.getPageSize()))
                 .thenReturn(hearingsJson);

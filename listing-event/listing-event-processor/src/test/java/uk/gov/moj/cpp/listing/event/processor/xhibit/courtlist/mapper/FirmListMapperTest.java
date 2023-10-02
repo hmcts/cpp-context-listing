@@ -46,6 +46,7 @@ public class FirmListMapperTest extends BaseMapperTest {
         XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListMapperTest.xml");
     }
 
+
     @Test
     public void generateFirmListWithNoHearings() throws Exception {
 
@@ -94,6 +95,64 @@ public class FirmListMapperTest extends BaseMapperTest {
         String generatedXml = xmlUtils.convertToXml(firmListMapper.generate());
 
         XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingWithReserveListMapperTest.xml");
+    }
+
+    @Test
+    public void generateFirmListWithReserveListWithSameHearingList() throws Exception {
+
+        SittingStructure sittingStructure = new SittingStructure();
+        sittingStructure.setSittingNote("TESTNOTE");
+
+        SittingStructure.Hearings hearings = mock(SittingStructure.Hearings.class);
+
+        SittingStructure.Hearings hearings1 = new SittingStructure.Hearings();
+        hearings1.getHearing().add(getHearingStructure(1));
+
+        CourtHouseStructure courtHouseStructure = new CourtHouseStructure();
+        CourtHouseStructure.CourtHouseCode courtHouseCode = new CourtHouseStructure.CourtHouseCode();
+        courtHouseStructure.setCourtHouseCode(courtHouseCode);
+        courtHouseCode.setValue("443");
+
+        CourtHouseStructure courtHouseStructure2 = new CourtHouseStructure();
+        CourtHouseStructure.CourtHouseCode courtHouseCode2 = new CourtHouseStructure.CourtHouseCode();
+        courtHouseStructure2.setCourtHouseCode(courtHouseCode2);
+        courtHouseCode2.setValue("443");
+
+        CourtHouseStructure courtHouseStructure3 = new CourtHouseStructure();
+        CourtHouseStructure.CourtHouseCode courtHouseCode3 = new CourtHouseStructure.CourtHouseCode();
+        courtHouseStructure3.setCourtHouseCode(courtHouseCode3);
+        courtHouseCode3.setValue("6444");
+
+        CourtHouseStructure courtHouseStructure4 = new CourtHouseStructure();
+        CourtHouseStructure.CourtHouseCode courtHouseCode4 = new CourtHouseStructure.CourtHouseCode();
+        courtHouseStructure4.setCourtHouseCode(courtHouseCode4);
+        courtHouseCode4.setValue("1445");
+
+        when(courtServicesMapper.generateSittingStructure(any(JsonObject.class), eq(1))).thenReturn(sittingStructure);
+        when(courtServicesMapper.generateSittingStructureHearings(any(JsonObject.class))).thenReturn(hearings1);
+
+        final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-listWithSameSittingDate.json")
+                .getJsonArray("courtLists").getValuesAs(JsonObject.class);
+
+        final JsonObject crestCourtSite = courtListsForPublishing.get(0).getJsonObject("crestCourtSite");
+        final JsonObject crestCourtSite1 = courtListsForPublishing.get(1).getJsonObject("crestCourtSite");
+        final JsonObject crestCourtSite2 = courtListsForPublishing.get(2).getJsonObject("crestCourtSite");
+        final JsonObject crestCourtSite3 = courtListsForPublishing.get(3).getJsonObject("crestCourtSite");
+
+        when(courtServicesMapper.generateCourtHouseStructure(
+                crestCourtSite)).thenReturn(courtHouseStructure);
+        when(courtServicesMapper.generateCourtHouseStructure(
+                crestCourtSite1)).thenReturn(courtHouseStructure2);
+        when(courtServicesMapper.generateCourtHouseStructure(
+                crestCourtSite2)).thenReturn(courtHouseStructure3);
+        when(courtServicesMapper.generateCourtHouseStructure(
+                crestCourtSite3)).thenReturn(courtHouseStructure4);
+
+        final FirmListMapper firmListMapper = new FirmListMapper(context, courtListsForPublishing, courtServicesMapper);
+
+        String generatedXml = xmlUtils.convertToXml(firmListMapper.generate());
+
+        XmlTestUtils.assertXmlEquals(generatedXml, "xhibit/mapper/expectedFirmListSortedSittingWithReserveListMapperWithSameSittingDateTest.xml");
     }
 
     @Test

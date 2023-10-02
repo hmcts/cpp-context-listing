@@ -54,7 +54,7 @@ public class SittingsPojoBuilder {
 
             if (sitting.isPresent()) {
 
-                sitting.get().getHearings().add(convertFlatHearing(flatHearing, startDate));
+                sitting.get().getHearings().addAll(convertFlatHearing(flatHearing, startDate));
             } else {
                 buildNewSitting(startDate, endDate, sittings, flatHearing);
 
@@ -101,11 +101,7 @@ public class SittingsPojoBuilder {
 
     private static Sitting createNewSitting(final FlatHearing flatHearing, final LocalDate startDate) {
 
-        final Hearing hearing = convertFlatHearing(flatHearing, startDate);
-
-        final List<Hearing> hearings = new ArrayList<>();
-        hearings.add(hearing);
-
+        final List<Hearing> hearings = convertFlatHearing(flatHearing, startDate);
         return new Sitting(
                 buildSittingKey(flatHearing),
                 flatHearing.getJudiciary(),
@@ -169,10 +165,35 @@ public class SittingsPojoBuilder {
         return null;
     }
 
-    private static Hearing convertFlatHearing(final FlatHearing flatHearing, final LocalDate startDate) {
+    private static List<Hearing> convertFlatHearing(final FlatHearing flatHearing, final LocalDate startDate) {
 
         final JsonObject caseHearingsJson = flatHearing.getCaseHearings();
+        final List<Hearing> convertedHearings = new ArrayList<>();
+        if (isCaseHearing(caseHearingsJson)) {
+            caseHearingsJson.getJsonArray(LISTED_CASES).forEach(listedCase -> {
+                final Hearing hearing = getHearingFromFlatHearing(flatHearing, startDate, caseHearingsJson);
+                hearing.setRestrictFromCourtList(((JsonObject) listedCase).getBoolean("restrictFromCourtList", false));
+                hearing.setCaseDetails(buildCaseDetails((JsonObject) listedCase));
+                hearing.setCourtApplicationDetails(empty());
+                convertedHearings.add(hearing);
 
+            });
+
+        } else {
+            caseHearingsJson.getJsonArray("courtApplications").forEach(courtApplication -> {
+                final Hearing hearing = getHearingFromFlatHearing(flatHearing, startDate, caseHearingsJson);
+                hearing.setRestrictFromCourtList(((JsonObject) courtApplication).getBoolean("restrictFromCourtList", false));
+                hearing.setCourtApplicationDetails(buildCourtApplicationDetails((JsonObject) courtApplication));
+                hearing.setCaseDetails(empty());
+                convertedHearings.add(hearing);
+
+            });
+
+        }
+        return convertedHearings;
+    }
+
+    private static Hearing getHearingFromFlatHearing(FlatHearing flatHearing, LocalDate startDate, JsonObject caseHearingsJson) {
         final Hearing hearing = new Hearing();
 
         Optional<JsonObject> jsonObjectByStartDate = empty();
@@ -189,7 +210,7 @@ public class SittingsPojoBuilder {
 
         hearing.setHearingType(caseHearingsJson.getJsonObject("type"));
 
-        hearing.setRestrictFromCourtList(isHearingRestricted(caseHearingsJson));
+
 
         if (caseHearingsJson.containsKey("committingCourtCentreId")) {
             hearing.setCommittingCourtCentreId(
@@ -197,17 +218,6 @@ public class SittingsPojoBuilder {
         } else {
             hearing.setCommittingCourtCentreId(empty());
         }
-
-        if (isCaseHearing(caseHearingsJson)) {
-
-            hearing.setCaseDetails(buildCaseDetails(caseHearingsJson.getJsonArray(LISTED_CASES).getJsonObject(0)));
-            hearing.setCourtApplicationDetails(empty());
-
-        } else {
-            hearing.setCourtApplicationDetails(buildCourtApplicationDetails(caseHearingsJson.getJsonArray("courtApplications").getJsonObject(0)));
-            hearing.setCaseDetails(empty());
-        }
-
         if (caseHearingsJson.containsKey(HAS_VIDEO_LINK)) {
             hearing.setHasVideoLink(caseHearingsJson.getBoolean(HAS_VIDEO_LINK));
         }
@@ -215,8 +225,6 @@ public class SittingsPojoBuilder {
         if (caseHearingsJson.containsKey(PUBLIC_LIST_NOTE)) {
             hearing.setPublicListNote(caseHearingsJson.getString(PUBLIC_LIST_NOTE));
         }
-
-
         return hearing;
     }
 
@@ -232,14 +240,7 @@ public class SittingsPojoBuilder {
         return caseHearingsJson.containsKey(LISTED_CASES);
     }
 
-    private static boolean isHearingRestricted(final JsonObject caseHearingsJson) {
 
-        if (isCaseHearing(caseHearingsJson)) {
-            return caseHearingsJson.getJsonArray(LISTED_CASES).getJsonObject(0).getBoolean("restrictFromCourtList");
-        } else {
-            return caseHearingsJson.getJsonArray("courtApplications").getJsonObject(0).getBoolean("restrictFromCourtList");
-        }
-    }
 
     private static Optional<CaseDetails> buildCaseDetails(final JsonObject caseDetailsJson) {
 

@@ -19,6 +19,8 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -87,10 +89,15 @@ public class RangeSearchQuery {
         final String jurisdictionType = query.payloadAsJsonObject().getString(JURISDICTION_TYPE, null);
         final String startDate = query.payloadAsJsonObject().getString(START_DATE, EARLIEST_SEARCH_DATE);
         final String endDate = query.payloadAsJsonObject().getString(END_DATE, LATEST_SEARCH_DATE);
-        final String weekCommencingStartDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_START_DATE, null));
+        String weekCommencingStartDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_START_DATE, null));
         final String weekCommencingEndDate = trimToEmpty(query.payloadAsJsonObject().getString(WEEK_COMMENCING_END_DATE, null));
         final PaginationParameter paginationParameter = newPaginationParameter(query.payloadAsJsonObject());
         final boolean noPagination = query.payloadAsJsonObject().getBoolean("noPagination", false);
+
+        if (!weekCommencingStartDate.isEmpty() && !LocalDate.parse(weekCommencingStartDate).getDayOfWeek().equals(DayOfWeek.MONDAY)) {
+            weekCommencingStartDate = LocalDate.parse(weekCommencingStartDate).minusDays(1).toString();
+            logger.info("WeekCommencingStartDate is not Monday, hence its being adjusted to previous day [{}]  " ,weekCommencingStartDate);
+        }
 
         Optional<Boolean> possibleDisqualificationOpt = Optional.empty();
         if (nonNull(query.payloadAsJsonObject().get(POSSIBLE_DISQUALIFICATION_QUERY_PARAMETER))) {

@@ -140,7 +140,7 @@ public class HearingQueryViewTest {
     private static final String PROSECUTOR_ID_SEARCH = String.format("[ { \"prosecutor\": { \"prosecutorId\": \"%s\" } } ]", AUTHORITY_ID);
     private static final UUID HEARING_TYPE_ID = randomUUID();
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
-    private static final LocalDate SEARCH_DATE = LocalDate.now();
+    private static final LocalDate SEARCH_DATE = LocalDate.parse("2023-08-29");
     private static final LocalTime START_TIME = LocalTime.now();
     private static final LocalTime END_TIME = LocalTime.now();
     private static final String PUBLISH_DATE = "2012-12-11";

@@ -12,6 +12,7 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListR
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersParser;
 
 import java.io.StringReader;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -84,8 +85,11 @@ public class CourtListEventProcessor {
     }
 
     private LocalDate calculateEndDate(final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType, final LocalDate stateDate) {
-
-        return publishCourtListType.isWeekCommencing() ? stateDate.plusDays(5) : stateDate;
+        if (!stateDate.getDayOfWeek().equals(DayOfWeek.MONDAY)) {
+            return publishCourtListType.isWeekCommencing() ? stateDate.plusDays(5) : stateDate;
+        } else {
+            return publishCourtListType.isWeekCommencing() ? stateDate.plusDays(6) : stateDate;
+        }
     }
 
     private JsonObject courtCentreCourtListJson(final JsonEnvelope envelope) {
