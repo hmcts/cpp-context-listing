@@ -1080,7 +1080,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 withJsonPath("$.hearings[0].id",
                                         equalTo(hearingData.getId().toString())),
                                 withJsonPath("$.hearings[0].weekCommencingStartDate", equalTo(FORMATTER.format(weekCommencingStartDate))),
-                                withJsonPath("$.hearings[0].weekCommencingEndDate", equalTo(FORMATTER.format(weekCommencingStartDate.plusWeeks(weekCommencingDuration)))),
+                                withJsonPath("$.hearings[0].weekCommencingEndDate", equalTo(FORMATTER.format(weekCommencingStartDate.plusWeeks(weekCommencingDuration).minusDays(1)))),
                                 withJsonPath("$.hearings[0].weekCommencingDurationInWeeks", equalTo(weekCommencingDuration))
                         )));
     }

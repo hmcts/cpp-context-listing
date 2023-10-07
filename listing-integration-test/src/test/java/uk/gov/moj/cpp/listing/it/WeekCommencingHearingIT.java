@@ -20,7 +20,6 @@ public class WeekCommencingHearingIT extends AbstractIT {
     @Test
     public void shouldUpdateHearingWithWeekCommencingDatesAndKeepItUnallocated() {
         final HearingsData hearingsData = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 1);
-
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();

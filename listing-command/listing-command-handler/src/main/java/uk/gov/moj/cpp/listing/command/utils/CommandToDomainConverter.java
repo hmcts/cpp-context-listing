@@ -106,7 +106,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
         final Optional<Integer> weekCommencingDurationInWeeks = nonNull(commandHearing.getWeekCommencingDate()) ? ofNullable(commandHearing.getWeekCommencingDate().getDuration()) : empty();
 
         final Optional<LocalDate> weekCommencingEndDate = weekCommencingStartDate.isPresent() && weekCommencingDurationInWeeks.isPresent() ?
-                ofNullable(weekCommencingStartDate.get().plusWeeks(weekCommencingDurationInWeeks.get())) : empty();
+                ofNullable(weekCommencingStartDate.get().plusWeeks(weekCommencingDurationInWeeks.get()).minusDays(1)) : empty();
 
         return Hearing.hearing()
                 .withId(commandHearing.getId())
@@ -588,7 +588,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     public Optional<LocalDate> getWeekCommencingEndDate(final Optional<LocalDate> weekCommencingStartDate, final Optional<Integer> weekCommencingDurationInWeeks) {
         return weekCommencingStartDate.isPresent() && weekCommencingDurationInWeeks.isPresent() ?
-                of(weekCommencingStartDate.get().plusWeeks(weekCommencingDurationInWeeks.get())) : empty();
+                of(weekCommencingStartDate.get().plusWeeks(weekCommencingDurationInWeeks.get()).minusDays(1)) : empty();
     }
 
     public Optional<Integer> getWeekCommencingDurationInWeeks(final HearingUnscheduledListingNeeds commandHearing) {
