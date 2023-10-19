@@ -16,6 +16,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyObject;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.listing.events.ApplicantRespondent.applicantRespondent;
 import static uk.gov.justice.listing.events.CourtApplication.courtApplication;
@@ -166,21 +167,26 @@ public class RestrictCourtListEventListenerTest {
         final String courtApplicationsAsString = MAPPER.writeValueAsString(courtApplications);
         final JsonNode courtApplicationsProperties = MAPPER.readTree(courtApplicationsAsString);
 
+
         final CourtListRestricted payload = courtListRestricted()
                 .withHearingId(HEARING_ID)
                 .withRestrictCourtList(TRUE)
                 .withCourtApplicationRespondentIds(singletonList(RESPONDENT_ID_1))
+                .withCourtApplicationIds(asList(COURT_APPLICATIONS_ID))
                 .withCourtApplicationType(null)
+                .withCourtApplicationApplicantIds(asList(APPLICANT_ID))
+                .withCaseIds(asList(COURT_APPLICATIONS_ID))
                 .build();
         final Envelope<CourtListRestricted> restrictCourtListEnvelope = envelopeFrom(metadataWithRandomUUID(EVENT_NAME), payload);
         final Hearing hearing = new Hearing(payload.getHearingId(), properties);
 
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(properties.get(COURT_APPLICATIONS_FIELD)).willReturn(courtApplicationsProperties);
+        given(properties.get(LISTED_CASES)).willReturn(courtApplicationsProperties);
 
         target.hearingRestrictionForCourt(restrictCourtListEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties, times(4)).replace(anyObject(), objectNodeCaptor.capture());
         final ArrayNode applicationArrayNode = objectNodeCaptor.getValue();
         final List<Matcher<? super ReadContext>> matchers = newArrayList();
         matchers.add(withJsonPath("$", hasSize(1)));
@@ -189,7 +195,7 @@ public class RestrictCourtListEventListenerTest {
         matchers.addAll(getRespondentMatchersForRestricted(expectedCourtApplication));
         assertThat(applicationArrayNode.toString(), isJson(allOf(matchers)));
 
-        verify(hearingRepository).save(hearing);
+        verify(hearingRepository, times(4)).save(hearing);
     }
 
     private Collection<? extends Matcher<? super ReadContext>> getCourtApplicationMatchers(final CourtApplication courtApplication) {

@@ -5,6 +5,7 @@ import static java.util.Optional.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.codehaus.groovy.runtime.InvokerHelper.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -19,6 +20,7 @@ import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMapping;
+import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMapping;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtRoomMappingsList;
 import uk.gov.moj.cpp.listing.domain.referencedata.HearingType;
 import uk.gov.moj.cpp.listing.domain.referencedata.Judiciary;
@@ -31,6 +33,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 
 import org.hamcrest.Matchers;
@@ -357,6 +360,63 @@ public class CommonXhibitReferenceDataServiceTest {
         assertThat(crestCourtSites.get(0).getString("crestCourtSiteCode"), is(courtSiteCode));
         assertThat(crestCourtSites.get(0).getString("courtType"), is(courtType));
     }
+
+    @Test
+    public void shouldGetDefaultCrestCourtSitesCode() {
+        final UUID courtCentreId = randomUUID();
+        final String ouCode = "C01BL00";
+
+        final String courtId = "432";
+        final String courtSiteId = "433";
+        final String crestCourtName = "BLACKFRIARS";
+        final String courtSiteName = "BLACKFRIARS";
+        final String courtShortName = "BLF";
+        final String courtSiteCode = "B";
+        final String courtType = "MAGISTRATES_COURT";
+
+        final CourtMapping courtMapping = new CourtMapping.Builder()
+                .withOucode(ouCode)
+                .withCrestCourtId(courtId)
+                .withCrestCourtSiteId(courtSiteId)
+                .withCrestCourtName(crestCourtName)
+                .withCrestCourtSiteName(courtSiteName)
+                .withCrestCourtShortName(courtShortName)
+                .withCrestCourtSiteCode(courtSiteCode)
+                .withCourtType(courtType)
+                .build();
+
+        when(referenceDataCache.getCrownCourtMappingsMapCache(courtCentreId)).thenReturn(Optional.of(Arrays.asList(courtMapping)));
+
+        final String defaultCrestCourtSiteCode = commonXhibitReferenceDataService.getDefaultCrestCourtSiteCode(courtCentreId);
+
+        assertThat(defaultCrestCourtSiteCode, is(equalTo("B")));
+
+    }
+
+
+
+    @Test
+    public void shouldGetCourtRoom() {
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+
+        final JsonObject courtRoomMappingJson = givenPayload("/mock-data/referencedata.query.cp-xhibit-courtroom-mappings.json");
+        final CourtRoomMappingsList courtRoomMappingsList = jsonObjectConverter.convert(courtRoomMappingJson, CourtRoomMappingsList.class);
+        final JsonObject cpCourtRoom = Json.createObjectBuilder()
+                .add("id", courtRoomId.toString())
+                .add("courtroomId", 1234)
+                .build();
+
+        when(referenceDataCache.getCpCourtRoomCache(courtCentreId)).thenReturn(asList(cpCourtRoom));
+        when(referenceDataCache.getCourtRoomMappingsMapCache(courtCentreId)).thenReturn(courtRoomMappingsList);
+
+        final Optional<CourtRoomMapping> courtRoom = commonXhibitReferenceDataService.getCourtRoom(courtCentreId, courtRoomId);
+
+        assertThat(courtRoom.isPresent(), is(true));
+        assertThat(courtRoom.get().getCourtRoomId(), is(1234));
+
+    }
+
 
     private CourtLocation createCourtLocation(final CourtMapping courtMapping) {
 

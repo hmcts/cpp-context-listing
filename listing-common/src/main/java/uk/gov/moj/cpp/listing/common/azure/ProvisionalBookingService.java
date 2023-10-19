@@ -8,11 +8,13 @@ import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("squid:S1312")
 @ApplicationScoped
 public class ProvisionalBookingService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProvisionalBookingService.class);
+
+    @Inject
+    private  Logger logger;
 
     private static final String SERVICE = "provisionalBooking";
 
@@ -23,16 +25,16 @@ public class ProvisionalBookingService {
     private DefaultRotaslAzureService rotaslAzureService;
 
     public Response bookSlots(final Object payload) {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("provisionalBooking-bookSlots in Azure S & L with payload '{}'", payload);
+        if (logger.isInfoEnabled()) {
+            logger.info("provisionalBooking-bookSlots in Azure S & L with payload '{}'", payload);
         }
 
         return rotaslAzureService.post(SERVICE, rotaslAzureConfig.getSubscriptionKey(), payload);
     }
 
     public Response getSlots(final Map<String, String> params) {
-        if (LOGGER.isInfoEnabled() && Objects.nonNull(params)) {
-            params.forEach((key, value) -> LOGGER.info("provisionalBooking-getSlots in Azure S & L with params '{}-{}'", key, value));
+        if (logger.isInfoEnabled() && Objects.nonNull(params)) {
+            params.forEach((key, value) -> logger.info("provisionalBooking-getSlots in Azure S & L with params '{}-{}'", key, value));
         }
 
         return rotaslAzureService.get(SERVICE, rotaslAzureConfig.getSubscriptionKey(), params);

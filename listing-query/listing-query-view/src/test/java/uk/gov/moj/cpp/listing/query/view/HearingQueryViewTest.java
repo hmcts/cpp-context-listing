@@ -48,6 +48,7 @@ import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
 import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
@@ -58,9 +59,12 @@ import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtLis
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
 import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
+import uk.gov.moj.cpp.listing.query.view.dto.LinkedApplicationsSummary;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.ProsecutionCase;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -171,6 +175,8 @@ public class HearingQueryViewTest {
     private OrganisationUnitHMICache organisationUnitHMICache;
     @Mock
     private CaseByDefendantRepository caseByDefendantRepository;
+    @Mock
+    private ProgressionService progressionService;
     @InjectMocks
     private HearingQueryView hearingsQueryView;
     @Spy
@@ -687,6 +693,97 @@ public class HearingQueryViewTest {
         verify(hearingRepository).findHearings(eq("caseUrnValue"), eq(typeOfListId), eq(courtCentreIdsSet), eq(0), eq(50));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
         assertTrue(((List)results.payload().get("hearings")).size() == 1);
+    }
+
+    @Test
+    public void shouldSearchAllocatedAndUnallocatedHearingsWithCaseIdAndApplicationId() throws IOException {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+        final JsonArray hearingsJsonArray = hearingsJsonArray();
+
+        final ListedCases listedCases1 = new ListedCases();
+        final ListedCases listedCases2 = new ListedCases();
+
+        hearingsJson.get(0).getListedCases().add(listedCases1);
+        hearingsJson.get(1).getListedCases().add(listedCases2);
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+        hearingsJson.get(0).setProperties(objectMapper.readTree("{\"type\":{\"description\":\"Review\"}}"));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add("caseId", "be7866d6-cecb-407c-83dc-34864f7b4ff6")
+                        .add("applicationId", "applicationId")
+                        .build());
+
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(
+                "be7866d6-cecb-407c-83dc-34864f7b4ff6", "applicationId"))
+                .thenReturn(hearingsJson);
+
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(hearingsJsonArray);
+
+        final List<LinkedApplicationsSummary> linkedApplicationsSummaryList = new ArrayList<>();
+        linkedApplicationsSummaryList.add(LinkedApplicationsSummary.linkedApplicationsSummary().build());
+        final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase().withLinkedApplicationsSummary(linkedApplicationsSummaryList).build();
+        when(progressionService.getProsecutionCaseDetails(UUID.fromString("be7866d6-cecb-407c-83dc-34864f7b4ff6")))
+                .thenReturn(prosecutionCase);
+
+        final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
+
+
+        verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("be7866d6-cecb-407c-83dc-34864f7b4ff6"), eq("applicationId"));
+        verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
+        assertTrue(((JsonObject)results.payload()).getJsonArray("hearings").size() == 1);
+    }
+
+    @Test
+    public void shouldSearchAllocatedAndUnallocatedHearingsWithCaseId() {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+        final JsonArray hearingsJsonArray = hearingsJsonArray();
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add("caseId", "caseId")
+                        .build());
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(
+                "caseId"))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(hearingsJsonArray);
+
+        final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
+
+
+        verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("caseId"));
+        verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
+        assertTrue(((JsonObject)results.payload()).getJsonArray("hearings").size() == 1);
+    }
+
+    @Test
+    public void shouldSearchAllocatedAndUnallocatedHearings() {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+        final JsonArray hearingsJsonArray = hearingsJsonArray();
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .build());
+
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(hearingsJsonArray);
+
+        final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
+
+
+        verify(hearingRepository, times(0)).findAllocatedAndUnallocatedHearingsByCaseId(any());
+        verify(hearingRepository, times(0)).findAllocatedAndUnallocatedHearingsByCaseId(any());
+        verify(hearingJsonListConverterFilterEjectCases, times(0)).convert(eq(hearingsJson));
+        assertTrue(((JsonObject)results.payload()).getJsonArray("hearings").size() == 0);
     }
 
     @Test

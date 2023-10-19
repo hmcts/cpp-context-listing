@@ -27,7 +27,10 @@ import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -79,6 +82,9 @@ public class RangeSearchQueryTest {
     private static final String PAGE_NUMBER = "pageNumber";
     private static final boolean IS_POSSIBLE_DISQUALIFICATION = true;
 
+    private static final String TRIAL_HEARING_TYPE_ID = "bf8155e1-90b9-4080-b133-bfbad895d6e4";
+    private static final Set<String> hearingTypeIds = new HashSet<>(Arrays.asList(TRIAL_HEARING_TYPE_ID));
+
     @Spy
     private Enveloper enveloper = createEnveloper();
 
@@ -109,6 +115,73 @@ public class RangeSearchQueryTest {
         FieldUtils.writeField(this.listToJsonArrayConverter, "stringToJsonObjectConverter", stringToJsonObjectConverter, true);
         FieldUtils.writeField(this.rangeSearchQuery, "listToJsonArrayConverter", listToJsonArrayConverter, true);
         paginationParameter = new PaginationParameter(50, 1, 0);
+    }
+
+    @Test
+    public void rangeSearchHearingsForJudgeList() {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+
+        when(hearingRepository.findHearings(
+                ALLOCATEDSTR,
+                COURT_CENTRE_ID.toString(),
+                COURT_ROOM_ID.toString(),
+                AUTHORITY_ID,
+                null,
+                null,
+                SEARCH_DATE,
+                SEARCH_DATE))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .build());
+
+        final JsonEnvelope results = rangeSearchQuery.rangeSearchHearingsForJudgeList(query);
+
+        assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
+        assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
+        assertEquals("listing.range.search.hearings.for.judge", results.metadata().name());
+    }
+
+    @Test
+    public void searchHearingsForCotr() {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+
+        when(hearingRepository.findHearingsForCotr(
+                hearingTypeIds,
+                COURT_CENTRE_ID.toString(),
+                SEARCH_DATE,
+                SEARCH_DATE))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .build());
+
+        final JsonEnvelope results = rangeSearchQuery.searchHearingsForCotr(query);
+
+        assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
+        assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
+        assertEquals("listing.search.hearings", results.metadata().name());
     }
 
 

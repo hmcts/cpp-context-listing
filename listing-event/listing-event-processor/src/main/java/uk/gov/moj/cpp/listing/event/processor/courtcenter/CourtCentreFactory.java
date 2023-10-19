@@ -8,13 +8,15 @@ import java.util.UUID;
 import javax.inject.Inject;
 import javax.json.JsonObject;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.event.processor.service.ReferenceDataService;
 
+@SuppressWarnings("squid:S1312")
 public class CourtCentreFactory {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CourtCentreFactory.class);
+    @Inject
+    private Logger logger;
 
     @Inject
     private ReferenceDataService referenceDataService;
@@ -22,8 +24,8 @@ public class CourtCentreFactory {
     public CourtCentreDetails getCourtCentre(UUID courtCentreId, JsonEnvelope envelope) {
         final JsonEnvelope courtCentreEnvelope = referenceDataService.getCourtCentreById(courtCentreId, envelope);
         final JsonObject jsonObject = courtCentreEnvelope.payloadAsJsonObject();
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("courtCentreEnvelope response: {}", courtCentreEnvelope.toObfuscatedDebugString());
+        if (logger.isInfoEnabled()) {
+            logger.info("courtCentreEnvelope response: {}", courtCentreEnvelope.toObfuscatedDebugString());
         }
 
         final String defaultDurationHoursMins = getJsonObjectString("defaultDurationHrs", jsonObject, courtCentreId);

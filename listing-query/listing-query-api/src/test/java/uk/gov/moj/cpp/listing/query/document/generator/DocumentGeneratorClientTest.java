@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
 import uk.gov.justice.services.core.dispatcher.SystemUserProvider;
+import uk.gov.moj.cpp.listing.query.document.generator.exception.DocumentGenerationFailedException;
 import uk.gov.moj.cpp.system.documentgenerator.client.DocumentGeneratorClientProducer;
 
 import java.io.IOException;
@@ -42,6 +43,15 @@ public class DocumentGeneratorClientTest {
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(randomUUID()));
         byte [] bytes = client.generateDocument(documentPayload, STRING.next());
         assertNotNull(bytes);
+    }
+
+    @Test(expected = DocumentGenerationFailedException.class)
+    public void shouldGenerateDocumentThrowException() throws IOException {
+        final DocumentGeneratorClient client = new DocumentGeneratorClient(documentGeneratorClientProducer, systemUserProvider);
+        when(documentGeneratorClientProducer.documentGeneratorClient()).thenReturn(documentGeneratorClient);
+        when(documentGeneratorClient.generatePdfDocument(any(JsonObject.class),any(String.class),any(UUID.class))).thenThrow(new IOException());
+        when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(randomUUID()));
+        client.generateDocument(documentPayload, STRING.next());
     }
 
 }

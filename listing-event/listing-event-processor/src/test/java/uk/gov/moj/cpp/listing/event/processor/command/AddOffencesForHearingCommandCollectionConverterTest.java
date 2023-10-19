@@ -61,7 +61,16 @@ public class AddOffencesForHearingCommandCollectionConverterTest {
                         "          \"seedingHearingId\": \"97834953-3f0e-4290-9cef-9e6c0a218469\",\n" +
                         "          \"jurisdictionType\": \"CROWN\",\n" +
                         "          \"sittingDay\": \"2016-06-22\"\n" +
-                        "        }\n" +
+                        "        },\n" +
+                        "       \"laaApplnReference\": {\n" +
+                        "           \"applicationReference\": \"AB746921\", \n" +
+                        "           \"effectiveEndDate\": \"2010-09-01\", \n" +
+                        "           \"effectiveStartDate\": \"2011-09-01\", \n" +
+                        "           \"statusCode\": \"FPTP\", \n" +
+                        "           \"statusDate\": \"2010-12-01\", \n" +
+                        "           \"statusDescription\": \"Further Plea & Trial Preparation\", \n" +
+                        "           \"statusId\": \"7e2f843e-d639-40b3-8611-8015f3a18612\", \n" +
+                        "         }\n" +
                         "      }\n" +
                         "    ],\n" +
                         "    \"hearingId\": \"0baecac5-222b-402d-9047-84803679edaf\"\n" +

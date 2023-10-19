@@ -15,6 +15,7 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingDaysWithoutCourtCentreCorrected;
+import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
@@ -29,6 +30,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -91,7 +93,12 @@ public class HearingDaysCorrectedEventListenerTest {
         final Envelope<HearingDaysWithoutCourtCentreCorrected> listenerEnvelope = envelopeFrom(
                 metadataWithRandomUUID("listing.events.hearing-days-without-court-centre-corrected"),
                 corrected);
-        final uk.gov.justice.listing.events.Hearing dbHearingPayload = uk.gov.justice.listing.events.Hearing.hearing().withId(hearingId).withHearingDays(hearingDays).build();
+        final NonDefaultDay nonDefaultDay = new NonDefaultDay(UUID.randomUUID().toString(), 1, UUID.randomUUID().toString(),
+                1, "oucode", "roomId", "session", ZonedDateTime.now());
+        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
+        nonDefaultDays.add(nonDefaultDay);
+        final uk.gov.justice.listing.events.Hearing dbHearingPayload = uk.gov.justice.listing.events.Hearing.hearing().withId(hearingId)
+                .withNonDefaultDays(nonDefaultDays).withHearingDays(hearingDays).build();
         when(hearingRepository.findBy(hearingId)).thenReturn(hearing);
         final JsonNode t = objectMapper.valueToTree(dbHearingPayload);
         when(hearing.getProperties()).thenReturn(t);
@@ -101,6 +108,7 @@ public class HearingDaysCorrectedEventListenerTest {
         final JsonNode properties = hearingDaysCaptor.getValue();
         assertThat(properties.toString(), isJson(allOf(
                 withJsonPath("$.hearingDays", hasSize(1)),
+                withJsonPath("$.nonDefaultDays", hasSize(1)),
                 withJsonPath("$.hearingDays[0].hearingDate", equalTo(LocalDates.to(NOW_DATE))),
                 withJsonPath("$.hearingDays[0].startTime", equalTo(ISO_8601_FORMATTER.format(NOW_DATE_TIME))),
                 withJsonPath("$.hearingDays[0].isCancelled", equalTo(false))

@@ -8,11 +8,13 @@ import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("squid:S1312")
 @ApplicationScoped
 public class HearingSlotsService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HearingSlotsService.class);
+
+    @Inject
+    private Logger logger;
 
     private static final String SERVICE = "hearingSlots";
 
@@ -27,16 +29,16 @@ public class HearingSlotsService {
     }
 
     public Response update(final Object payload) {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Update slots in Azure S & L with slot details '{}'", payload);
+        if (logger.isInfoEnabled()) {
+            logger.info("Update slots in Azure S & L with slot details '{}'", payload);
         }
 
         return rotaslAzureService.put(SERVICE, rotaslAzureConfig.getSubscriptionKey(), payload);
     }
 
     public Response delete(final UUID hearingId) {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Delete slots in Azure S & L with hearing id '{}'", hearingId);
+        if (logger.isInfoEnabled()) {
+            logger.info("Delete slots in Azure S & L with hearing id '{}'", hearingId);
         }
 
         return rotaslAzureService.delete(SERVICE, rotaslAzureConfig.getSubscriptionKey(), hearingId);

@@ -133,6 +133,26 @@ public class JsonUtilsTest {
     }
 
     @Test
+    public void shouldGetInteger() {
+        final Integer expected = 2;
+        final JsonObject jsonObject = Json.createObjectBuilder().add("version", expected).build();
+
+        final Optional<Integer> result = JsonUtils.getInteger(jsonObject, "version");
+
+        assertEquals(expected, result.get());
+    }
+
+    @Test
+    public void shouldGetIntegerReturnEmptyResult() {
+        final Integer expected = 2;
+        final JsonObject jsonObject = Json.createObjectBuilder().add("version", expected).build();
+
+        final Optional<Integer> result = JsonUtils.getInteger(jsonObject, "version2");
+
+        assertEquals(Optional.empty(), result);
+    }
+
+    @Test
     public void shouldGetEmptyStringForGetIntAsString() throws Exception {
         final JsonObject jsonObject = createEmptyPayload();
 

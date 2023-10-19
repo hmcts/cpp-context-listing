@@ -20,9 +20,13 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.slf4j.Logger;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ProvisionalBookingServiceTest {
+
+    @Mock
+    private Logger logger;
 
     @Mock
     private DefaultRotaslAzureService rotaslAzureService;
@@ -39,6 +43,7 @@ public class ProvisionalBookingServiceTest {
     @Before
     public void setUp() {
         when(rotaslAzureConfig.getSubscriptionKey()).thenReturn("75e6ff1510914801b91d176bcbeef0dc");
+        when(logger.isInfoEnabled()).thenReturn(true);
     }
 
     @Test

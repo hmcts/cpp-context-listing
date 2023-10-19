@@ -61,7 +61,15 @@
             "welshLegislation": "legislation in welsh"
           }
         }
-      ]
+      ],
+      "address": {
+        "address1": "defenceOrganisation",
+        "address2": "225",
+        "address3": "FuseRoad",
+        "address4": "East Croydon",
+        "address5": "SouthLondon",
+        "postcode": "LN72 9NG"
+      }
     }
   ]
 }

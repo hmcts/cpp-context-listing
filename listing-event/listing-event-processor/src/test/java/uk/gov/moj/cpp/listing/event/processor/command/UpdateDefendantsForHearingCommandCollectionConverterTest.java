@@ -70,5 +70,14 @@ public class UpdateDefendantsForHearingCommandCollectionConverterTest {
         assertThat(actualDefendant.getId(), is(eventDefendant.getId()));
         assertThat(actualDefendant.getDefenceOrganisation().get(), is(eventDefendant.getDefenceOrganisation()));
         assertThat(actualDefendant.getId(), is(eventDefendant.getId()));
+
+        assertThat(actualDefendant.getAddress().isPresent(), is(true));
+        assertThat(actualDefendant.getAddress().get().getAddress1(), is("defenceOrganisation"));
+        assertThat(actualDefendant.getAddress().get().getAddress2().get(), is("225"));
+        assertThat(actualDefendant.getAddress().get().getAddress3().get(), is("FuseRoad"));
+        assertThat(actualDefendant.getAddress().get().getAddress4().get(), is("East Croydon"));
+        assertThat(actualDefendant.getAddress().get().getAddress5().get(), is("SouthLondon"));
+        assertThat(actualDefendant.getAddress().get().getPostcode().get(), is("LN72 9NG"));
+
     }
 }

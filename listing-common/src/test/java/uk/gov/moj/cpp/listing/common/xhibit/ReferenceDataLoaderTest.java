@@ -87,6 +87,25 @@ public class ReferenceDataLoaderTest {
     }
 
     @Test
+    public void shouldGetOrganisationUnitByOuCode1() {
+        final UUID ouId = randomUUID();
+        final String ouCode = "B01LY00";
+
+        final OrganisationUnit organisationUnit = new OrganisationUnit.Builder()
+                .withId(ouId)
+                .withOucode(ouCode)
+                .build();
+
+        when(requester.requestAsAdmin(any(), eq(OrganisationUnitList.class)).payload()).thenReturn(new OrganisationUnitList(Arrays.asList(organisationUnit)));
+
+        final List<OrganisationUnit> organisationUnits = referenceDataLoader.fetchOrganisationUnitsByOucodeL2Code(ouCode);
+
+
+
+        assertThat(ouId, is(organisationUnits.get(0).getId()));
+    }
+
+    @Test
     public void shouldGetOrganisationUnitList() {
         final UUID ouId = randomUUID();
         final String ouCode = "B01LY00";
@@ -145,6 +164,38 @@ public class ReferenceDataLoaderTest {
         when(requester.requestAsAdmin(any(), eq(CourtMappingsList.class)).payload()).thenReturn(new CourtMappingsList(Arrays.asList(courtMapping)));
 
         final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitCrownCourtMappings();
+
+        assertThat(true, equalTo(courtMappingsList.isPresent()));
+        assertThat(1, is(equalTo(courtMappingsList.get().getCpXhibitCourtMappings().size())));
+        assertThat(ouCode, is(courtMappingsList.get().getCpXhibitCourtMappings().get(0).getOucode()));
+        assertThat(courtId, is(courtMappingsList.get().getCpXhibitCourtMappings().get(0).getCrestCourtId()));
+    }
+
+    @Test
+    public void shouldGetXhibitCourtMappingsWithCourtCenter() {
+        final String ouCode = "OUCODE";
+        final String courtId = "432";
+        final String courtSiteId = "433";
+        final String crestCourtName = "BLACKFRIARS";
+        final String courtSiteName = "BLACKFRIARS";
+        final String courtShortName = "BLF";
+        final String courtSiteCode = "B";
+        final String courtType = "CROWN";
+
+        final CourtMapping courtMapping = new CourtMapping.Builder()
+                .withOucode(ouCode)
+                .withCrestCourtId(courtId)
+                .withCrestCourtSiteId(courtSiteId)
+                .withCrestCourtName(crestCourtName)
+                .withCrestCourtSiteName(courtSiteName)
+                .withCrestCourtShortName(courtShortName)
+                .withCrestCourtSiteCode(courtSiteCode)
+                .withCourtType(courtType)
+                .build();
+
+        when(requester.requestAsAdmin(any(), eq(CourtMappingsList.class)).payload()).thenReturn(new CourtMappingsList(Arrays.asList(courtMapping)));
+
+        final Optional<CourtMappingsList> courtMappingsList = referenceDataLoader.getXhibitCrownCourtMappings(UUID.randomUUID());
 
         assertThat(true, equalTo(courtMappingsList.isPresent()));
         assertThat(1, is(equalTo(courtMappingsList.get().getCpXhibitCourtMappings().size())));

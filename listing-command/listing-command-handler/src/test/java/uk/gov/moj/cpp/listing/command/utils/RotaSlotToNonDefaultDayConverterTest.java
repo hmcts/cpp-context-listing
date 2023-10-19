@@ -31,6 +31,7 @@ public class RotaSlotToNonDefaultDayConverterTest {
     public static final String OUCODE = "ABCD";
     public static final String SESSION = "AM";
     public static final ZonedDateTime START_TIME = ZonedDateTime.now();
+
     @InjectMocks
     RotaSlotToNonDefaultDayConverter rotaSlotToNonDefaultDayConverter;
 

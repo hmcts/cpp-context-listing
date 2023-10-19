@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.service;
 
+import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -13,6 +14,8 @@ import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+
+import java.util.UUID;
 
 import javax.json.JsonObject;
 
@@ -75,6 +78,52 @@ public class ReferenceDataServiceTest {
         assertThat(requestEnvelope.metadata().name(), is("referencedata.query.courtrooms"));
         final JsonObject expectedPayload = createObjectBuilder()
                 .add("oucodeL1Code", "C")
+                .build();
+        final JsonObject payloadOfRequestEnvelope = requestEnvelope.payloadAsJsonObject();
+        assertThat(payloadOfRequestEnvelope, is(expectedPayload));
+
+        assertThat(responseEnvelope, is(returnedResponseEnvelope));
+
+    }
+
+    @Test
+    public void getAllCourtRoomsSuccessfully() {
+
+        final JsonEnvelope eventEnvelope = generateEmptyEnvelope();
+        final JsonEnvelope returnedResponseEnvelope = generateEmptyEnvelope();
+        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(returnedResponseEnvelope);
+        ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        final JsonEnvelope responseEnvelope = referenceDataService.getAllCourtRooms(eventEnvelope);
+
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
+        final JsonEnvelope requestEnvelope = argumentCaptorForRequestEnvelope.getValue();
+        assertThat(requestEnvelope.metadata().name(), is("referencedata.query.courtrooms"));
+        final JsonObject expectedPayload = createObjectBuilder()
+                .build();
+        final JsonObject payloadOfRequestEnvelope = requestEnvelope.payloadAsJsonObject();
+        assertThat(payloadOfRequestEnvelope, is(expectedPayload));
+
+        assertThat(responseEnvelope, is(returnedResponseEnvelope));
+
+    }
+
+    @Test
+    public void getCourtCentreByIdSuccessfully() {
+
+        final JsonEnvelope eventEnvelope = generateEmptyEnvelope();
+        final JsonEnvelope returnedResponseEnvelope = generateEmptyEnvelope();
+        when(requester.requestAsAdmin(any(JsonEnvelope.class))).thenReturn(returnedResponseEnvelope);
+        ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
+
+        final UUID courtCentreId = randomUUID();
+        final JsonEnvelope responseEnvelope = referenceDataService.getCourtCentreById(courtCentreId, eventEnvelope);
+
+        verify(requester).requestAsAdmin(argumentCaptorForRequestEnvelope.capture());
+        final JsonEnvelope requestEnvelope = argumentCaptorForRequestEnvelope.getValue();
+        assertThat(requestEnvelope.metadata().name(), is("referencedata.query.courtroom"));
+        final JsonObject expectedPayload = createObjectBuilder()
+                .add("id", courtCentreId.toString())
                 .build();
         final JsonObject payloadOfRequestEnvelope = requestEnvelope.payloadAsJsonObject();
         assertThat(payloadOfRequestEnvelope, is(expectedPayload));

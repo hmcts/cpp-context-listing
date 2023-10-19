@@ -4,7 +4,10 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThrows;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,5 +37,12 @@ public class JsonPropertyUtilsTest {
         final JsonObject jsonObject = createObjectBuilder().build();
 
         assertThat(JsonPropertyUtils.getOptionalUUID(jsonObject, PROPERTY_NAME), is(Optional.empty()));
+    }
+
+    @Test(expected = InvocationTargetException.class)
+    public void privateConstructorShouldThrowIllegalStateException() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Constructor<JsonPropertyUtils> constructor = JsonPropertyUtils.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        constructor.newInstance(); // This line should throw IllegalStateException
     }
 }

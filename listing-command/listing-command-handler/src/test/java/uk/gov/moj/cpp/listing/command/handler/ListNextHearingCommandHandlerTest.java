@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
+import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -16,8 +17,6 @@ import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.HEARING_TYPE;
 
-
-import java.util.ArrayList;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.HearingLanguage;
@@ -53,6 +52,7 @@ import uk.gov.justice.listing.events.Type;
 import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
 import uk.gov.justice.listing.events.UpdatedHearingInStagingHmi;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.aggregate.AggregateService;
@@ -61,8 +61,10 @@ import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
+import uk.gov.moj.cpp.listing.common.azure.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
@@ -70,6 +72,7 @@ import uk.gov.moj.cpp.listing.domain.aggregate.SeedHearingAggregate;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -77,6 +80,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -119,8 +123,8 @@ public class ListNextHearingCommandHandlerTest {
     @Spy
     private SeedHearingAggregate seedHearingAggregate;
 
-    @Mock
-    private JsonObjectToObjectConverter jsonObjectConverter;
+    @Spy
+    private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
     @Spy
     private final CommandToDomainConverter commandToDomainConverter = new CommandToDomainConverter();
@@ -131,6 +135,12 @@ public class ListNextHearingCommandHandlerTest {
 
     @Mock
     private HearingTypeFactory hearingTypeFactory;
+
+    @Mock
+    private ProvisionalBookingService provisionalBookingService;
+
+    @Mock
+    private ObjectToJsonObjectConverter objectToJsonObjectConverter;
 
     @Test
     public void shouldHandleListNextCourtHearings() throws EventStreamException {
@@ -248,6 +258,20 @@ public class ListNextHearingCommandHandlerTest {
 
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(new Hearing());
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(provisionalBookingService.getSlots(any())).thenReturn(Response.accepted().build());
+        when(objectToJsonObjectConverter.convert(any())).thenReturn(createObjectBuilder()
+                .add("provisionalSlots", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("bookingId", "bookingId")
+                                .add("courtScheduleId", "courtScheduleId")
+                                .add("ouCode", "ouCode")
+                                .add("courtRoomId", "courtRoomId")
+                                .add("courtRoomNumber", 1)
+                                .add("maxSlots", 1)
+                                .add("sessionDate", LocalDate.now().toString())
+                                .build())
+                        .build()
+                ).build());
 
         listNextHearingCommandHandler.listNextCourtHearing(commandEnvelope);
 
@@ -644,6 +668,7 @@ public class ListNextHearingCommandHandlerTest {
     private ListNextHearing buildListNextHearing() {
         final String adjournedFromDate = "2020-01-25";
         final UUID courtCentreId = randomUUID();
+        final UUID bookingReference = randomUUID();
 
         final int estimatedMinutes = 60;
         final HearingLanguage hearingLanguage = HearingLanguage.ENGLISH;
@@ -670,6 +695,7 @@ public class ListNextHearingCommandHandlerTest {
                 .listNextHearing()
                 .withAdjournedFromDate(adjournedFromDate)
                 .withHearing(HearingListingNeeds.hearingListingNeeds()
+                        .withBookingReference(bookingReference)
                         .withCourtCentre(CourtCentre.courtCentre()
                                 .withId(courtCentreId)
                                 .build())

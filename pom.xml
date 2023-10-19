@@ -45,6 +45,39 @@
         <commons-csv.version>1.4</commons-csv.version>
         <staginghmi.version>8.0.13</staginghmi.version>
         <defence.version>8.0.32</defence.version>
+        <sonar.coverage.exclusions>
+            **/uk/gov/justice/api/mapper/**/*,
+            **/uk/gov/justice/api/filter/**/*,
+            **/uk/gov/moj/cpp/listing/common/azure/RotaslAzureConfig.java,
+            **/uk/gov/moj/cpp/listing/domain/**/*,
+            **/uk/gov/justice/listing/event/**/*,
+            **/uk/gov/justice/listing/events/**/*,
+            **/uk/gov/justice/core/courts/**/*,
+            **/uk/gov/justice/listing/courts/**/*,
+            **/uk/gov/moj/cpp/listing/common/xhibit/XhibitSessionConnectionParameters.java,
+            **/uk/gov/moj/cpp/listing/common/xhibit/model/CourtCentreRoomKey.java,
+            **/uk/gov/moj/cpp/listing/common/NoteUUIDService/ListingNotesCollection.java,
+            **/uk/gov/moj/cpp/listing/persistence/entity/**/*,
+            **/uk/gov/moj/cpp/listing/persistence/repository/**/*,
+            **/uk/gov/moj/cpp/listing/query/view/dto/**/*,
+            **/uk/gov/moj/cpp/listing/query/view/courtlist/pojo/**/*,
+            **/uk/gov/moj/cpp/listing/query/view/hearing/HearingDay,
+            **/uk/gov/moj/cpp/listing/query/view/service/JsonNodeReader.java,
+            **/uk/gov/justice/listing/commands/**/*,
+            **/uk/gov/justice/api/**/*,
+            **/uk/gov/moj/cpp/listing/command/utils/LocalDateUtils.java,
+            **/uk/gov/justice/listing/command/**/*,
+            **/uk/gov/moj/cpp/listing/event/processor/xhibit/**/*,
+            **/uk/gov/justice/progression/courts/**/*,
+            **/uk/gov/justice/hearing/courts/**/*,
+            **/uk/gov/moj/cpp/hearing/json/schema/event/**/*,
+            **/uk/gov/justice/staginghmi/courts/**/*,
+            **/uk/gov/moj/cpp/listing/query/api/courtcentre/details/**/*,
+            **/uk/gov/moj/cpp/listing/query/document/generator/courtlist/**/*,
+            **/uk/gov/moj/cpp/listing/query/document/generator/exception/DocumentGenerationFailedException.java,
+            **/uk/gov/moj/cpp/listing/event/processor/command/AddDefendantsForCourtProceedingsCommand.java,
+            **/uk/gov/moj/cpp/listing/event/processor/azure/data/**/*
+        </sonar.coverage.exclusions>
     </properties>
 
     <modules>
