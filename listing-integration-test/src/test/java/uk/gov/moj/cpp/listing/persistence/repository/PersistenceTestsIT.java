@@ -92,6 +92,10 @@ import static uk.gov.moj.cpp.listing.domain.Type.type;
 import static uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext.hearingRepositoryContext;
 
+/*
+* These repository tests needs a direct db connection and has been configured to use listingsystem .
+* CdiTestRunner needs to update db according to entities in the repository and viewstore cannot be used  as IT test requires them for assertions
+* */
 @RunWith(CdiTestRunner.class)
 public class PersistenceTestsIT extends BaseTransactionalTest implements PersistenceTestsInt {
     @Inject
