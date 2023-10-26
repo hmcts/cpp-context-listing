@@ -1,9 +1,9 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
+import static java.util.UUID.randomUUID;
+
 import java.time.LocalDate;
 import java.util.UUID;
-
-import static java.util.UUID.randomUUID;
 
 public class MultipleCourtCentre {
     private final PersistenceTestsIT persistenceTestsIT;

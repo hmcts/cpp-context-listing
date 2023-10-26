@@ -184,6 +184,7 @@ import java.util.function.Function;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonValue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -767,11 +768,17 @@ public class ListingEventProcessorTest {
                 .withUpdateSlot(false)
                 .withHearingDays(hearingDays)
                 .withHasAdjournmentDate(false)
+                .withSendNotificationToParties(true)
                 .build();
         given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListingV2.class)).willReturn(hearingAllocatedForListingV2);
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
         given(hearingConfirmedFactory.createV2(hearingAllocatedForListingV2, event)).willReturn(hearingConfirmed);
+
+        final ObjectToJsonValueConverter jsonValueConverter =  new JsonObjectConvertersFactory().objectToJsonValueConverter();
+        final JsonValue hearingConfirmedJson = jsonValueConverter.convert(hearingConfirmed);
+
+        given(objectToJsonValueConverter.convert(any())).willReturn(hearingConfirmedJson);
 
         when(stagingHmiService.isHmiListingEnabled(OU_CODE)).thenReturn(false);
         //when
@@ -781,8 +788,9 @@ public class ListingEventProcessorTest {
         verify(sender, times(2)).send(senderJsonEnvelopeCaptor.capture());
         verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
         verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
-
-        assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+        final JsonEnvelope jsonEnvelope = senderJsonEnvelopeCaptor.getAllValues().get(0);
+        assertThat(jsonEnvelope.metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
+        assertThat(jsonEnvelope.payloadAsJsonObject().getBoolean("sendNotificationToParties"), is(true));
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
 
     }
@@ -1042,6 +1050,7 @@ public class ListingEventProcessorTest {
                 .add("estimatedDuration", ESTIMATED_DURATION)
                 .add("judgeId", JUDICIAL_ID.toString())
                 .add("updateSlot", true)
+                .add("sendNotificationToParties", true)
                 .add("courtRoomId", COURT_ROOM_ID.toString())
                 .add("hearingDate", hearingDate.build());
 
@@ -2553,6 +2562,7 @@ public class ListingEventProcessorTest {
 
         return HearingConfirmed.hearingConfirmed()
                 .withConfirmedHearing(buildHearing(formattedDateTime, jurisdictionType))
+                .withSendNotificationToParties(true)
                 .build();
     }
 

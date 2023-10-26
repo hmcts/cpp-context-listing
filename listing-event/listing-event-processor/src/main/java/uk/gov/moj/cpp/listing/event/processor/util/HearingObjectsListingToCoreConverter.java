@@ -1,6 +1,14 @@
 package uk.gov.moj.cpp.listing.event.processor.util;
 
 import static java.util.Objects.nonNull;
+import static java.util.stream.Collectors.toList;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static uk.gov.justice.core.courts.Defendant.defendant;
+import static uk.gov.justice.core.courts.Gender.NOT_KNOWN;
+import static uk.gov.justice.core.courts.LegalEntityDefendant.legalEntityDefendant;
+import static uk.gov.justice.core.courts.Organisation.organisation;
+import static uk.gov.justice.core.courts.Person.person;
+import static uk.gov.justice.core.courts.PersonDefendant.personDefendant;
 
 import uk.gov.justice.core.courts.ApplicationStatus;
 import uk.gov.justice.core.courts.BreachType;
@@ -10,19 +18,14 @@ import uk.gov.justice.core.courts.CourtApplicationParty;
 import uk.gov.justice.core.courts.CourtApplicationType;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Defendant;
-import uk.gov.justice.core.courts.Gender;
 import uk.gov.justice.core.courts.HearingDay;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.InitiationCode;
 import uk.gov.justice.core.courts.Jurisdiction;
 import uk.gov.justice.core.courts.JurisdictionType;
-import uk.gov.justice.core.courts.LegalEntityDefendant;
 import uk.gov.justice.core.courts.LinkType;
 import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.core.courts.OffenceActiveOrder;
-import uk.gov.justice.core.courts.Organisation;
-import uk.gov.justice.core.courts.Person;
-import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.core.courts.Prosecutor;
@@ -37,26 +40,22 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import static org.apache.commons.collections.CollectionUtils.isEmpty;
-import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
-
-import org.apache.commons.collections.CollectionUtils;
 
 public class HearingObjectsListingToCoreConverter {
+
     private static final String HEARING_CODE = "FHG";
 
     @Inject
     private ReferenceDataCache referenceDataCache;
 
-    public uk.gov.justice.core.courts.Hearing convert(final Hearing hearing){
+    public uk.gov.justice.core.courts.Hearing convert(final Hearing hearing) {
         final List<uk.gov.justice.listing.events.CourtApplication> courtApplication = hearing.getCourtApplications();
         final List<ListedCase> cases = hearing.getListedCases();
         HearingType currentHearingType = null;
-        if(nonNull(hearing.getType())) {
+        if (nonNull(hearing.getType())) {
             currentHearingType = HearingType.hearingType()
                     .withId(hearing.getType().getId())
                     .withDescription(hearing.getType().getDescription())
@@ -64,7 +63,7 @@ public class HearingObjectsListingToCoreConverter {
                     .build();
         } else {
             final Optional<uk.gov.moj.cpp.listing.domain.referencedata.HearingType> hearingCacheData = referenceDataCache.getHearingTypeCodeCache(HEARING_CODE);
-            if(hearingCacheData.isPresent()) {
+            if (hearingCacheData.isPresent()) {
                 final uk.gov.moj.cpp.listing.domain.referencedata.HearingType firstHearingData = hearingCacheData.get();
                 currentHearingType = HearingType.hearingType()
                         .withId(firstHearingData.getId())
@@ -73,11 +72,10 @@ public class HearingObjectsListingToCoreConverter {
             }
         }
 
-        return uk.gov.justice.core.courts.Hearing.hearing()
-                .withCourtApplications(isEmpty(courtApplication) ? null : courtApplication.stream().map(this::convert).collect(Collectors.toList()))
-                .withProsecutionCases(isEmpty(cases) ? null : cases.stream().map(this::convert).collect(Collectors.toList()))
+        final uk.gov.justice.core.courts.Hearing.Builder hearingBuilder = new uk.gov.justice.core.courts.Hearing.Builder();
+
+        hearingBuilder
                 .withType(currentHearingType)
-                .withHearingDays(isEmpty(hearing.getHearingDays()) ? null :hearing.getHearingDays().stream().map(this::convert).collect(Collectors.toList()))
                 .withId(hearing.getId())
                 .withJurisdictionType(JurisdictionType.valueOf(hearing.getJurisdictionType().name()))
                 .withHearingLanguage(hearing.getHearingLanguage())
@@ -88,10 +86,24 @@ public class HearingObjectsListingToCoreConverter {
                 .withSpecialRequirements(hearing.getSpecialRequirements())
                 .withIsGroupProceedings(hearing.getIsGroupProceedings())
                 .build();
+
+        if (isNotEmpty(courtApplication)) {
+            hearingBuilder.withCourtApplications(courtApplication.stream().map(this::convert).collect(toList()));
+        }
+
+        if (isNotEmpty(cases)) {
+            hearingBuilder.withProsecutionCases(cases.stream().map(this::convert).collect(toList()));
+        }
+
+        if (isNotEmpty(hearing.getHearingDays())) {
+            hearingBuilder.withHearingDays(hearing.getHearingDays().stream().map(this::convert).collect(toList()));
+        }
+
+        return hearingBuilder.build();
     }
 
-    private HearingDay convert(final uk.gov.justice.listing.events.HearingDay hearingDay){
-        return  HearingDay.hearingDay()
+    private HearingDay convert(final uk.gov.justice.listing.events.HearingDay hearingDay) {
+        return HearingDay.hearingDay()
                 .withCourtCentreId(hearingDay.getCourtCentreId())
                 .withCourtRoomId(hearingDay.getCourtRoomId())
                 .withIsCancelled(hearingDay.getIsCancelled())
@@ -101,9 +113,9 @@ public class HearingObjectsListingToCoreConverter {
                 .build();
     }
 
-    private ProsecutionCase convert(final ListedCase listedCase){
+    private ProsecutionCase convert(final ListedCase listedCase) {
         return ProsecutionCase.prosecutionCase()
-                .withDefendants(listedCase.getDefendants().stream().map(defandant -> convert(defandant, listedCase.getId())).collect(Collectors.toList()))
+                .withDefendants(listedCase.getDefendants().stream().map(defendant -> convert(defendant, listedCase.getId())).collect(toList()))
                 .withProsecutor(convert(listedCase.getProsecutor()))
                 .withId(listedCase.getId())
                 .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
@@ -116,10 +128,10 @@ public class HearingObjectsListingToCoreConverter {
 
     }
 
-    private Prosecutor convert(final uk.gov.justice.listing.events.Prosecutor prosecutor){
-        if(prosecutor == null){
+    private Prosecutor convert(final uk.gov.justice.listing.events.Prosecutor prosecutor) {
+        if (prosecutor == null) {
             return null;
-        }else {
+        } else {
             return Prosecutor.prosecutor()
                     .withProsecutorId(prosecutor.getProsecutorId())
                     .withProsecutorName(prosecutor.getProsecutorName())
@@ -128,48 +140,40 @@ public class HearingObjectsListingToCoreConverter {
         }
     }
 
-
-    private Defendant convert(final uk.gov.justice.listing.events.Defendant defendant, final UUID caseId){
-        final Defendant.Builder builder = Defendant.defendant()
+    public Defendant convert(final uk.gov.justice.listing.events.Defendant defendant, final UUID caseId) {
+        final Defendant.Builder builder = defendant()
                 .withId(defendant.getId())
                 .withMasterDefendantId(defendant.getId())
                 .withCourtProceedingsInitiated(defendant.getCourtProceedingsInitiated())
                 .withProsecutionCaseId(caseId);
-        if(defendant.getOrganisationName() != null){
-            builder.withLegalEntityDefendant(LegalEntityDefendant.legalEntityDefendant().withOrganisation(Organisation.organisation().withName(defendant.getOrganisationName()).build()).build());
-        }else{
-            builder.withPersonDefendant(PersonDefendant.personDefendant()
-                    .withPersonDetails(Person.person()
+        if (defendant.getOrganisationName() != null) {
+            builder.withLegalEntityDefendant(legalEntityDefendant().withOrganisation(organisation().withName(defendant.getOrganisationName()).withAddress(defendant.getAddress()).build()).build());
+        } else {
+            builder.withPersonDefendant(personDefendant()
+                    .withPersonDetails(person()
                             .withFirstName(defendant.getFirstName())
                             .withLastName(defendant.getLastName())
-                            .withGender(Gender.NOT_KNOWN)
+                            .withGender(NOT_KNOWN)
+                            .withDateOfBirth(defendant.getDateOfBirth())
+                            .withAddress(defendant.getAddress())
                             .build())
                     .build());
         }
-        builder.withOffences(defendant.getOffences().stream().map(toOffence()).collect(Collectors.toList()));
+        builder.withOffences(defendant.getOffences().stream().map(toOffence()).collect(toList()));
         return builder.build();
     }
 
-    private CourtApplication convert(final uk.gov.justice.listing.events.CourtApplication courtApplication){
+    private CourtApplication convert(final uk.gov.justice.listing.events.CourtApplication courtApplication) {
         List<Offence> offences = null;
-        if(isNotEmpty(courtApplication.getOffences())){
-            offences = courtApplication.getOffences().stream().map(toOffence()).collect(Collectors.toList());
+        if (isNotEmpty(courtApplication.getOffences())) {
+            offences = courtApplication.getOffences().stream().map(toOffence()).collect(toList());
         }
-        return CourtApplication.courtApplication()
+
+        final CourtApplication.Builder courtApplicationBuilder = CourtApplication.courtApplication();
+
+        courtApplicationBuilder
                 .withId(courtApplication.getId())
                 .withApplicant(convert(courtApplication.getApplicant()))
-                .withRespondents(isEmpty(courtApplication.getRespondents()) ? null :courtApplication.getRespondents().stream().map(this::convert).collect(Collectors.toList()))
-                .withCourtApplicationCases(isEmpty(courtApplication.getLinkedCaseIds()) ? null : Collections.singletonList(CourtApplicationCase.courtApplicationCase()
-                        .withProsecutionCaseId(courtApplication.getLinkedCaseIds().get(0))
-                        .withOffences(offences)
-                        .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
-                                .withCaseURN("CASEURN")
-                                .withProsecutionAuthorityId(UUID.fromString("94c71d51-dc29-47e3-ba35-885a535160f3"))
-                                .withProsecutionAuthorityCode("CODE")
-                                .build())
-                        .withIsSJP(false)
-                        .withCaseStatus("ACTIVE")
-                        .build()))
                 .withType(CourtApplicationType.courtApplicationType()
                         .withType(courtApplication.getApplicationType())
                         .withId(courtApplication.getId())
@@ -194,18 +198,37 @@ public class HearingObjectsListingToCoreConverter {
                         .withSummonsRequired(false)
                         .withNotificationRequired(false)
                         .build())
-                .withApplicationStatus(ApplicationStatus.DRAFT)
-                .build();
+                .withApplicationStatus(ApplicationStatus.DRAFT);
+
+        if (isNotEmpty(courtApplication.getRespondents())) {
+            courtApplicationBuilder.withRespondents(courtApplication.getRespondents().stream().map(this::convert).collect(toList()));
+        }
+
+        if (isNotEmpty(courtApplication.getLinkedCaseIds())) {
+            courtApplicationBuilder.withCourtApplicationCases(Collections.singletonList(CourtApplicationCase.courtApplicationCase()
+                    .withProsecutionCaseId(courtApplication.getLinkedCaseIds().get(0))
+                    .withOffences(offences)
+                    .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
+                            .withCaseURN("CASEURN")
+                            .withProsecutionAuthorityId(UUID.fromString("94c71d51-dc29-47e3-ba35-885a535160f3"))
+                            .withProsecutionAuthorityCode("CODE")
+                            .build())
+                    .withIsSJP(false)
+                    .withCaseStatus("ACTIVE")
+                    .build()));
+        }
+
+        return courtApplicationBuilder.build();
     }
 
 
-    private CourtApplicationParty convert(final ApplicantRespondent applicantRespondent){
+    private CourtApplicationParty convert(final ApplicantRespondent applicantRespondent) {
         return CourtApplicationParty.courtApplicationParty()
                 .withId(applicantRespondent.getId())
-                .withPersonDetails(Person.person()
+                .withPersonDetails(person()
                         .withFirstName(applicantRespondent.getFirstName())
                         .withLastName(applicantRespondent.getLastName())
-                        .withGender(Gender.NOT_KNOWN)
+                        .withGender(NOT_KNOWN)
                         .build())
                 .withSummonsRequired(false)
                 .withNotificationRequired(false)
@@ -213,26 +236,32 @@ public class HearingObjectsListingToCoreConverter {
     }
 
     private static Function<uk.gov.justice.listing.events.Offence, Offence> toOffence() {
-        return offence -> Offence.offence()
-                .withWording(offence.getOffenceWording())
-                .withOffenceDefinitionId(offence.getId())
-                .withOffenceTitle(offence.getStatementOfOffence().getTitle())
-                .withId(offence.getId())
-                .withOffenceCode(offence.getOffenceCode())
-                .withStartDate(offence.getStartDate())
-                .withOrderIndex(offence.getOrderIndex())
-                .withCount(offence.getCount())
-                .withOffenceLegislation(offence.getStatementOfOffence().getLegislation())
-                .withReportingRestrictions(CollectionUtils.isNotEmpty(offence.getReportingRestrictions()) ? offence.getReportingRestrictions().stream().map(convertReportingRestriction()).collect(Collectors.toList()) : null)
-                .build();
+        final Offence.Builder offenceBuilder = Offence.offence();
+        return offence -> {
+            offenceBuilder
+                    .withWording(offence.getOffenceWording())
+                    .withOffenceDefinitionId(offence.getId())
+                    .withOffenceTitle(offence.getStatementOfOffence().getTitle())
+                    .withId(offence.getId())
+                    .withOffenceCode(offence.getOffenceCode())
+                    .withStartDate(offence.getStartDate())
+                    .withOrderIndex(offence.getOrderIndex())
+                    .withCount(offence.getCount())
+                    .withOffenceLegislation(offence.getStatementOfOffence().getLegislation());
+
+            if (isNotEmpty(offence.getReportingRestrictions())) {
+                offenceBuilder.withReportingRestrictions(offence.getReportingRestrictions().stream().map(convertReportingRestriction()).collect(toList()));
+            }
+            return offenceBuilder.build();
+        };
     }
 
-    private static Function<uk.gov.justice.listing.events.ReportingRestriction, uk.gov.justice.core.courts.ReportingRestriction> convertReportingRestriction(){
-            return reportingRestriction -> uk.gov.justice.core.courts.ReportingRestriction.reportingRestriction()
-                    .withId(reportingRestriction.getId())
-                    .withJudicialResultId(reportingRestriction.getJudicialResultId())
-                    .withLabel(reportingRestriction.getLabel())
-                    .withOrderedDate(reportingRestriction.getOrderedDate().toString())
-                    .build();
+    private static Function<uk.gov.justice.listing.events.ReportingRestriction, uk.gov.justice.core.courts.ReportingRestriction> convertReportingRestriction() {
+        return reportingRestriction -> uk.gov.justice.core.courts.ReportingRestriction.reportingRestriction()
+                .withId(reportingRestriction.getId())
+                .withJudicialResultId(reportingRestriction.getJudicialResultId())
+                .withLabel(reportingRestriction.getLabel())
+                .withOrderedDate(reportingRestriction.getOrderedDate().toString())
+                .build();
     }
 }

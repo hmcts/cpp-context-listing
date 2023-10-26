@@ -18,13 +18,15 @@ public class PublishCourtListRequestParameters {
     private LocalDate endDate;
     private PublishCourtListType publishCourtListType;
     private ZonedDateTime requestedTime;
+    private Boolean sendNotificationToParties;
 
     public PublishCourtListRequestParameters(final UUID courtListId,
                                              final UUID courtCentreId,
                                              final LocalDate startDate,
                                              final LocalDate endDate,
                                              final PublishCourtListType publishCourtListType,
-                                             final ZonedDateTime requestedTime) {
+                                             final ZonedDateTime requestedTime,
+                                             final Boolean sendNotificationToParties) {
 
         this.courtListId = courtListId;
         this.courtCentreId = courtCentreId;
@@ -32,6 +34,7 @@ public class PublishCourtListRequestParameters {
         this.endDate = endDate;
         this.publishCourtListType = publishCourtListType;
         this.requestedTime = requestedTime;
+        this.sendNotificationToParties = sendNotificationToParties;
     }
 
     public UUID getCourtListId() {
@@ -56,6 +59,10 @@ public class PublishCourtListRequestParameters {
 
     public ZonedDateTime getRequestedTime() {
         return requestedTime;
+    }
+
+    public Boolean getSendNotificationToParties() {
+        return sendNotificationToParties;
     }
 
     @Override

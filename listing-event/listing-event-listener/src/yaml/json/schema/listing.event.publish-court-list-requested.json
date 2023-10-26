@@ -43,6 +43,9 @@
     "weekCommencing": {
       "type": "boolean",
       "default": false
+    },
+    "sendNotificationToParties": {
+      "type": "boolean"
     }
   },
   "required": [

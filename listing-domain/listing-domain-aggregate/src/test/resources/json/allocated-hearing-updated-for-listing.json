@@ -34,5 +34,7 @@
     "description": "Trial",
     "id": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6"
   },
-  "updateSlot": false
+  "updateSlot": false,
+  "sendNotificationToParties":false,
+  "isNotificationAllocationFieldUpdated":false
 }

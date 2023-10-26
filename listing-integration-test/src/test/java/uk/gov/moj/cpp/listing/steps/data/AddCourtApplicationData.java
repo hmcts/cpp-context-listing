@@ -1,10 +1,10 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
-import java.util.List;
 import uk.gov.justice.core.courts.CourtApplication;
-
-import java.util.UUID;
 import uk.gov.justice.core.courts.ProsecutionCase;
+
+import java.util.List;
+import java.util.UUID;
 
 public class AddCourtApplicationData {
 

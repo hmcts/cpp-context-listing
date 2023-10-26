@@ -3,7 +3,8 @@ package uk.gov.moj.cpp.listing.query.api;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.time.LocalDate.now;
 import static java.util.Arrays.stream;
-import static java.util.UUID.*;
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static javax.json.Json.createArrayBuilder;
@@ -29,9 +30,6 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePaylo
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.USHERS_MAGISTRATE;
 
-
-import java.util.Optional;
-
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.requester.Requester;
@@ -51,6 +49,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.json.JsonObject;
 import javax.json.JsonValue;

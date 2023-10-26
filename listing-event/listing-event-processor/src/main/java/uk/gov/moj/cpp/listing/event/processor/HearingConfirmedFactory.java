@@ -42,6 +42,7 @@ public class HearingConfirmedFactory extends PublicHearingFactory {
         final Type type = hearingAllocated.getType();
         return uk.gov.justice.listing.courts.HearingConfirmed.hearingConfirmed()
                 .withConfirmedHearing(buildConfirmedHearingV2(hearingAllocated, judicialRoles, type, envelope))
+                .withSendNotificationToParties(hearingAllocated.getSendNotificationToParties())
                 .build();
 
 

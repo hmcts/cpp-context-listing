@@ -61,6 +61,12 @@
     },
     "source": {
       "type": "string"
+    },
+    "sendNotificationToParties": {
+      "type" : "boolean"
+    },
+    "isNotificationAllocationFieldUpdated": {
+      "type" : "boolean"
     }
   },
   "required": [

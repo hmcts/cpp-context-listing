@@ -88,6 +88,9 @@
     },
     "startDateAndWeekCommencingOptional": {
       "type": "boolean"
+    },
+    "sendNotificationToParties": {
+      "type": "boolean"
     }
   },
   "required": [

@@ -43,6 +43,7 @@ import javax.json.JsonReader;
 import javax.ws.rs.core.Response;
 
 import com.jayway.restassured.path.json.JsonPath;
+import org.hamcrest.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,10 +63,12 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     private static final String PRESTON_COURT_ID = "448";
     private static final String PRESTON_COURT_SITE_ID = "448";
     private static final String EVENT_SELECTED_PUBLIC_COURT_LIST_STAGING_DARTS = "public.listing.court-daily-list";
+    private static final String EVENT_SELECTED_PUBLIC_COURT_LIST_PUBLISHED = "public.listing.court-list-published";
 
 
     private JsonObject commandJsonObject;
     private MessageConsumer publicMessageConsumerStagingDartsUpdated;
+    private MessageConsumer publicMessageConsumerPublishCourtList;
 
     public PublishCourtListSteps(final HearingsData hearingsData, final JsonObject commandJsonObject) {
         super(hearingsData);
@@ -126,7 +129,9 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
     public void createMessageConsumer() {
         publicMessageConsumerStagingDartsUpdated = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_COURT_LIST_STAGING_DARTS);
+        publicMessageConsumerPublishCourtList = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_COURT_LIST_PUBLISHED);
     }
+
 
     public static HearingsData loadHearingDataWithJudiciary(final UUID courtCentreId) {
         final HearingsData hearingsData = hearingsDataWithAllocationDataAndJudiciary(courtCentreId, UUID.randomUUID(), "DISTRICT_JUDGE");
@@ -343,6 +348,7 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 .add("courtCentreId", courtCentreId.toString())
                 .add("startDate", startDate.toString())
                 .add("endDate", startDate.plusDays(5).toString())
+                .add("sendNotificationToParties", true)
                 .add("publishCourtListType", publishCourtListType.name())
                 .build();
     }
@@ -409,6 +415,19 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         assertThat(jsonResponse.get("dailyListDocument"), containsString("DailyList"));
 
     }
+
+    public void verifyPublicEventForCourtListPublished(final String courtCentreId, final String publishCourtListType, final Boolean weekCommencing, final Boolean sendNotificationToParties, final int courtListItems) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerPublishCourtList);
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated ");
+        assertThat(jsonResponse.get("courtCentreId"), is(courtCentreId.toString()));
+        assertThat(jsonResponse.get("publishCourtListType"), is(publishCourtListType));
+        assertThat(jsonResponse.getBoolean("weekCommencing"), is(weekCommencing));
+        assertThat(jsonResponse.getBoolean("sendNotificationToParties"), is(sendNotificationToParties));
+        assertThat(jsonResponse.getList("courtLists"), Matchers.hasSize(courtListItems));
+    }
+
+
 
     public void verifyDefendantNameIsMasked() throws Exception {
 

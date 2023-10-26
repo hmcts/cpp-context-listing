@@ -29,6 +29,9 @@ subscriptions_descriptor:
         - name: public.listing.court-daily-list
           schema_uri: http://justice.gov.uk/listing/courts/court-list-daily-list.json
 
+        - name: public.listing.court-list-published
+          schema_uri: http://justice.gov.uk/listing/courts/public/events/court-list-published.json
+
         - name: public.listing.new-defendant-added-for-court-proceedings
           schema_uri: http://justice.gov.uk/listing/events/listing.events.new-defendant-added-for-court-proceedings.json
 

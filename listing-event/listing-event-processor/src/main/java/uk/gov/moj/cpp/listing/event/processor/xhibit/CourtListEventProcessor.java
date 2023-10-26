@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit;
 
+import static javax.json.Json.createReader;
 import static uk.gov.justice.services.core.annotation.Component.EVENT_PROCESSOR;
 
 import uk.gov.justice.listing.event.CourtListExportRequested;
@@ -17,7 +18,6 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import javax.inject.Inject;
-import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
@@ -57,7 +57,7 @@ public class CourtListEventProcessor {
 
         publishCourtListCommandSender.storePublishedCourtList(parameters, courtListJson);
 
-        publishCourtListCommandSender.requestExportCourtList(parameters, courtListJson);
+        publishCourtListCommandSender.requestExportCourtList(parameters, courtListJson, envelope);
     }
 
     @Handles("listing.event.court-list-export-requested")
@@ -79,9 +79,12 @@ public class CourtListEventProcessor {
                 courtListExportRequested.getStartDate(),
                 calculateEndDate(publishCourtListType, courtListExportRequested.getStartDate()),
                 publishCourtListType,
-                courtListExportRequested.getRequestedTime());
+                courtListExportRequested.getRequestedTime(),
+                courtListExportRequested.getSendNotificationToParties());
 
-        courtListExportService.exportCourtList(envelope, parameters, courtCentreCourtListJson(envelope));
+        final JsonObject courtListJson = courtCentreCourtListJson(envelope);
+        courtListExportService.exportCourtList(envelope, parameters, courtListJson);
+        publishCourtListCommandSender.publishPublicMessageForCourtList(envelope, parameters, courtListJson);
     }
 
     private LocalDate calculateEndDate(final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType, final LocalDate stateDate) {
@@ -96,7 +99,7 @@ public class CourtListEventProcessor {
 
         final String courtListJsonString = envelope.payloadAsJsonObject().getString("courtListJson");
 
-        try (final JsonReader jsonReader = Json.createReader(new StringReader(courtListJsonString))) {
+        try (final JsonReader jsonReader = createReader(new StringReader(courtListJsonString))) {
             return jsonReader.readObject();
         }
     }

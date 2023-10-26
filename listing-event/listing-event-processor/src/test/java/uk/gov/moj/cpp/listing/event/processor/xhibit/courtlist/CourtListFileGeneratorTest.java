@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.time.ZonedDateTime.parse;
 import static java.util.Arrays.asList;
-import static java.util.Collections.*;
+import static java.util.Collections.singletonMap;
 import static java.util.UUID.fromString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;

@@ -4,5 +4,6 @@
   "startDate": "2018-12-06",
   "endDate": "2018-12-20",
   "publishCourtListType": "FIRM",
-  "requestedTime": "2019-10-30T16:34:45.132Z"
+  "requestedTime": "2019-10-30T16:34:45.132Z",
+  "sendNotificationToParties": false
 }

@@ -36,7 +36,8 @@ public class PublishCourtListRequestAggregate implements Aggregate {
                                                    final LocalDate startDate,
                                                    final LocalDate endDate,
                                                    final PublishCourtListType publishCourtListType,
-                                                   final ZonedDateTime requestedTime) {
+                                                   final ZonedDateTime requestedTime,
+                                                   final Boolean sendNotificationToParties) {
 
 
         if (!(startDate.equals(endDate))) {
@@ -52,7 +53,9 @@ public class PublishCourtListRequestAggregate implements Aggregate {
                 .withPublishStatus(COURT_LIST_REQUESTED)
                 .withWeekCommencing(weekCommencing)
                 .withRequestedTime(requestedTime)
+                .withSendNotificationToParties(sendNotificationToParties)
                 .build()));
+
     }
 
     public Stream<Object> recordCourtListProduced(final UUID publishCourtListRequestId,

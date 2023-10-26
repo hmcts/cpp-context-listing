@@ -24,6 +24,9 @@
         "FIRM",
         "FINAL"
       ]
+    },
+    "sendNotificationToParties": {
+      "type": "boolean"
     }
   },
   "additionalProperties": false,

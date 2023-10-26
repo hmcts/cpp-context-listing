@@ -155,6 +155,7 @@ public class HearingConfirmedFactoryTest {
 
         //then
         final ConfirmedHearing listedHearing = actual.getConfirmedHearing();
+        assertThat(actual.getSendNotificationToParties(), is(true) );
         assertThat(listedHearing.getId(), is(listedHearing.getId()));
 
         assertThat(listedHearing.getHearingDays().get(0).getSittingDay().toInstant().toString(),
@@ -268,6 +269,7 @@ public class HearingConfirmedFactoryTest {
                         .withIsBenchChairman(null)
                         .build()))
                 .withEstimatedDuration(ESTIMATED_DURATION)
+                .withSendNotificationToParties(true)
                 .build();
     }
 }

@@ -27,6 +27,9 @@
     },
     "courtListJson": {
       "type": "string"
+    },
+    "sendNotificationToParties": {
+      "type": "boolean"
     }
   },
   "required": [

@@ -7,5 +7,6 @@
   "startDate": "2016-09-09",
   "endDate": "2016-09-09",
   "publishStatus": "COURT_LIST_REQUESTED",
-  "publishCourtListType": "FINAL"
+  "publishCourtListType": "FINAL",
+  "sendNotificationToParties": false
 }

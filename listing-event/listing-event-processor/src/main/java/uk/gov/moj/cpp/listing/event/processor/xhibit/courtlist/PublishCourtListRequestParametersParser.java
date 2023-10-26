@@ -22,6 +22,8 @@ public class PublishCourtListRequestParametersParser {
                 from(payload.getString("startDate")),
                 from(payload.getString("endDate")),
                 valueOf(payload.getString("publishCourtListType")),
-                fromString(payload.getString("requestedTime")));
+                fromString(payload.getString("requestedTime")),
+                payload.get("sendNotificationToParties") != null ? payload.getBoolean("sendNotificationToParties") : false
+        );
     }
 }

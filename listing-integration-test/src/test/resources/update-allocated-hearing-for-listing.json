@@ -15,5 +15,6 @@
   "selectedCourtCentre": {
     "id": "UPDATED_CENTRE_ID",
     "courtRoomId": "UPDATED_ROOM_ID"
-  }
+  },
+  "sendNotificationToParties": false
 }

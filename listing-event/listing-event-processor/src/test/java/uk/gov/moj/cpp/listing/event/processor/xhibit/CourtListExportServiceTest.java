@@ -65,7 +65,8 @@ public class CourtListExportServiceTest {
                 startDate,
                 startDate.plusDays(5),
                 PublishCourtListType.WARN,
-                requestedTime
+                requestedTime,
+                true
         );
 
         final CourtListMetadata courtListMetadata = new CourtListMetadata("TESTFILENAME",
@@ -78,6 +79,8 @@ public class CourtListExportServiceTest {
                 .add("publishCourtListType", PublishCourtListType.WARN.name())
                 .add("startDate", startDate.toString())
                 .add("requestedTime", requestedTime.toString())
+                .add("sendNotificationToParties", true)
+
                 .build();
         final Metadata metadata = metadataBuilder()
                 .withId(randomUUID())

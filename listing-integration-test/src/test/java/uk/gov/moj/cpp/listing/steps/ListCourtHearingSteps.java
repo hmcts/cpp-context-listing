@@ -2151,7 +2151,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         final String extendHearingForHearingUrl = String.format("%s/%s", getBaseUri(), format
                 (readConfig().getProperty(LISTING_COMMAND_EXTEND_HEARING_FOR_HEARING), unAllocatedHearingId));
 
-        final String requestString = "{\n" + "  \"allocatedHearingId\": \"ALLOCATED_HEARING_ID\"\n" + "}";
+        final String requestString = "{\"allocatedHearingId\": \"ALLOCATED_HEARING_ID\", \"sendNotificationToParties\" : true}";
         final String requestBody = requestString.replace("ALLOCATED_HEARING_ID", allocatedHearingId.toString());
 
         LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\tHeader = {}\n\n", extendHearingForHearingUrl, MEDIA_TYPE_LIST_EXTEND_HEARING_FOR_HEARING, requestBody, getLoggedInHeader());
@@ -2229,6 +2229,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         final JsonPath jsonResponse1 = QueueUtil.retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
         LOGGER.debug("jsonResponse from publicMessageConsumerHearingExtended: {}", jsonResponse.prettify());
 
+        assertThat(jsonResponse1.getBoolean("sendNotificationToParties"), is(true));
         assertThat(jsonResponse1.get("confirmedHearing.id"), is(unAllocatedHearingId.toString()));
         assertThat(jsonResponse1.get("confirmedHearing.prosecutionCases.size()"), is(2));
         newCaseIds.add(jsonResponse1.get("confirmedHearing.prosecutionCases[0].id"));

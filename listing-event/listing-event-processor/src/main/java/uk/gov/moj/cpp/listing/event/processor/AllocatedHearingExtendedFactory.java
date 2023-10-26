@@ -1,5 +1,8 @@
 package uk.gov.moj.cpp.listing.event.processor;
 
+import static java.util.Objects.nonNull;
+import static java.util.stream.Collectors.toList;
+
 import uk.gov.justice.core.courts.ConfirmedDefendant;
 import uk.gov.justice.core.courts.ConfirmedHearing;
 import uk.gov.justice.core.courts.ConfirmedOffence;
@@ -12,10 +15,6 @@ import uk.gov.justice.listing.events.Type;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
 import java.util.List;
-import java.util.Objects;
-
-
-import static java.util.stream.Collectors.toList;
 
 
 public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
@@ -33,9 +32,13 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
 
         final List<uk.gov.justice.listing.events.JudicialRole> judicialRoles = hearingExtendedForListingV2.getJudiciary();
         final Type type = hearingExtendedForListingV2.getType();
-        return uk.gov.justice.listing.courts.HearingConfirmed.hearingConfirmed()
-                .withConfirmedHearing(buildConfirmedHearing(hearingExtendedForListingV2, judicialRoles, type, envelope))
-                .build();
+        final HearingConfirmed.Builder hearingBuilder = uk.gov.justice.listing.courts.HearingConfirmed.hearingConfirmed()
+                .withConfirmedHearing(buildConfirmedHearing(hearingExtendedForListingV2, judicialRoles, type, envelope));
+        if (nonNull(hearingExtendedForListingV2.getSendNotificationToParties())) {
+            hearingBuilder.withSendNotificationToParties(hearingExtendedForListingV2.getSendNotificationToParties());
+        }
+
+        return hearingBuilder.build();
     }
 
     private ConfirmedHearing buildConfirmedHearing(AllocatedHearingExtendedForListingV2 hearingExtendedForListingV2, List<uk.gov.justice.listing.events.JudicialRole> judicialRoles, Type type, JsonEnvelope envelope) {
@@ -71,7 +74,7 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
                     .map(this::buildJudicialRole)
                     .collect(toList()));
         }
-        if(Objects.nonNull(hearingExtendedForListingV2.getExistingHearingId())){
+        if (nonNull(hearingExtendedForListingV2.getExistingHearingId())) {
             builder.withExistingHearingId((hearingExtendedForListingV2.getHearingId()));
         }
         builder.withFullExtension(hearingExtendedForListingV2.getFullExtension());
@@ -111,7 +114,7 @@ public class AllocatedHearingExtendedFactory extends PublicHearingFactory {
                     .map(this::buildJudicialRole)
                     .collect(toList()));
         }
-        if(Objects.nonNull(hearingExtendedForListing.getExistingHearingId())){
+        if (nonNull(hearingExtendedForListing.getExistingHearingId())) {
             builder.withExistingHearingId((hearingExtendedForListing.getHearingId()));
         }
         return builder.build();

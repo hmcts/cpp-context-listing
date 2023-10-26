@@ -1,15 +1,5 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
-import uk.gov.justice.services.common.util.UtcClock;
-import uk.gov.moj.cpp.listing.domain.JurisdictionType;
-import uk.gov.moj.cpp.listing.domain.Type;
-
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.Month;
-import java.time.ZonedDateTime;
-import java.util.UUID;
-
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.time.LocalDate.now;
@@ -20,6 +10,16 @@ import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOO
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.CROWN;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
 import static uk.gov.moj.cpp.listing.domain.Type.type;
+
+import uk.gov.justice.services.common.util.UtcClock;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
+import uk.gov.moj.cpp.listing.domain.Type;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.ZonedDateTime;
+import java.util.UUID;
 
 public interface PersistenceTestsInt {
     UtcClock UTC_CLOCK = new UtcClock();

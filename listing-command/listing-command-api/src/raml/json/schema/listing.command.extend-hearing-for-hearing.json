@@ -63,6 +63,9 @@
       "items": {
         "$ref": "http://justice.gov.uk/core/courts/courtApplication.json"
       }
+    },
+    "sendNotificationToParties": {
+      "type": "boolean"
     }
   },
   "required": [

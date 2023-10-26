@@ -14,8 +14,6 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 
-import java.util.UUID;
-
 import javax.json.JsonObject;
 
 import org.junit.Before;

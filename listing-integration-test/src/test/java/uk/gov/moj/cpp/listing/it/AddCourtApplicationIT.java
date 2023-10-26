@@ -1,10 +1,11 @@
 package uk.gov.moj.cpp.listing.it;
 
-import java.util.List;
 import uk.gov.moj.cpp.listing.steps.CourtApplicationSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+
+import java.util.List;
 
 import org.junit.Test;
 

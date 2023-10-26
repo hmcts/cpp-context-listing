@@ -292,7 +292,8 @@ public class ListingCommandApi {
 
         final ExtendHearingForHearingEnriched.Builder builder = ExtendHearingForHearingEnriched
                 .extendHearingForHearingEnriched().withAllocatedHearingId(allocatedHearingId)
-                .withUnAllocatedHearingId(fromString(unAllocatedHearingId));
+                .withUnAllocatedHearingId(fromString(unAllocatedHearingId))
+                .withSendNotificationToParties(extendHearingForHearing.getSendNotificationToParties());
 
         if (extendHearingForHearing.getProsecutionCases() != null) {
             builder.withProsecutionCases(extendHearingForHearing.getProsecutionCases());

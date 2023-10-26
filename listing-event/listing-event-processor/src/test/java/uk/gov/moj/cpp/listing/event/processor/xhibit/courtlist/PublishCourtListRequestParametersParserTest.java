@@ -47,6 +47,7 @@ public class PublishCourtListRequestParametersParserTest {
                 .add("endDate", endDate.toString())
                 .add("publishCourtListType", publishCourtListType.name())
                 .add("requestedTime", requestedTime.toString())
+                .add("sendNotificationToParties", true)
                 .build();
 
         final Metadata metadata = mock(Metadata.class);

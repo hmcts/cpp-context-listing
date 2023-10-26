@@ -11,5 +11,6 @@
   "nonDefaultDays": [],
   "judiciary": [],
   "jurisdictionType": "MAGISTRATES",
-  "hearingLanguage": "WELSH"
+  "hearingLanguage": "WELSH",
+  "sendNotificationToParties": false
 }

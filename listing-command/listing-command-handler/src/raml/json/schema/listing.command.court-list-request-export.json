@@ -20,6 +20,9 @@
     },
     "courtListJson": {
       "type": "string"
+    },
+    "sendNotificationToParties": {
+      "type": "boolean"
     }
   },
   "additionalProperties": false,

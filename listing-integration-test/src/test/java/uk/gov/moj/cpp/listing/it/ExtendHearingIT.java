@@ -9,6 +9,7 @@ import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.io.IOException;
 import java.util.List;
@@ -17,7 +18,6 @@ import java.util.UUID;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 public class ExtendHearingIT extends AbstractIT {
 

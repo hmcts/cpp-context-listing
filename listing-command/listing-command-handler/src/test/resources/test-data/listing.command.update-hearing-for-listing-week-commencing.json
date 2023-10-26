@@ -30,7 +30,8 @@
     "nonSittingDays": [
       "NON_SITTING_DAY"
     ],
-    "courtRoomId": "COURT_ROOM_ID"
+    "courtRoomId": "COURT_ROOM_ID",
+    "sendNotificationToParties": false
   },
   "courtCentreDetails": {
     "id": "f0e04581-8f66-4bbf-b5b4-2d41fcc2ae7c",

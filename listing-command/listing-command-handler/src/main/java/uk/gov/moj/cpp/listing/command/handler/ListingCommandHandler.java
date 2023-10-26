@@ -31,9 +31,6 @@ import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.getNextWorkin
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 import static uk.gov.moj.cpp.listing.domain.utils.HmiConstants.SOURCE_HMI;
 
-
-import java.util.Collection;
-import java.util.Objects;
 import uk.gov.justice.core.courts.CourtApplication;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingListingNeeds;
@@ -165,11 +162,13 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -397,7 +396,7 @@ public class ListingCommandHandler {
                         domainHearing.getIsPossibleDisqualification()
                 );
 
-                final Stream<Object> allocationEvents = hearing.applyAllocationRules(finalBookingReference);
+                final Stream<Object> allocationEvents = hearing.applyAllocationRules(finalBookingReference, false, false);
                 final Stream<Object> stagingHmiEvents = isHmiEnabled ? hearing.sendToHmi() : Stream.empty();
 
                 return Stream.of(listingEvents, allocationEvents, stagingHmiEvents).flatMap(i -> i);
@@ -497,6 +496,7 @@ public class ListingCommandHandler {
         final UpdateHearingForListingEnriched updateHearingForListingEnriched = jsonObjectConverter.convert(command.payloadAsJsonObject(), UpdateHearingForListingEnriched.class);
         UpdateHearingForListing updateHearingForListing = updateHearingForListingEnriched.getUpdateHearingForListing();
         final Optional<String> source = ofNullable(updateHearingForListing.getSource());
+        final Boolean sendNotificationToParties = updateHearingForListing.getSendNotificationToParties();
 
         final CourtCentreDetails courtCentre = updateHearingForListingEnriched.getCourtCentreDetails();
         if (!source.isPresent() && isSchedulingAndListingUpdateRequired(updateHearingForListing.getJurisdictionType(), updateHearingForListing.getNonDefaultDays())) {
@@ -561,6 +561,9 @@ public class ListingCommandHandler {
                 //if its a split the only thing we need to update is the remaining cases
                 return Stream.of(hearingPartiallyEvents).flatMap(i -> i);
             }
+
+            final Boolean isNotificationRelatedAllocatedFieldsUpdated = hearing.isNotificationRelatedAllocatedFieldsUpdated(nonDefaultDays);
+
             final Stream<Object> typeEvents = hearing.changeType(type, hearingId);
             final Stream<Object> jurisdictionTypeEvents = hearing.changeJurisdictionType(jurisdictionType, hearingId);
             final Stream<Object> hearingLanguageEvents = hearing.changeHearingLanguage(hearingLanguage, hearingId);
@@ -599,7 +602,7 @@ public class ListingCommandHandler {
                     hearing.changeWeekCommencingDate(weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingId) : hearing.removeWeekCommencingDates(hearingId);
 
             final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds = prosecutionCaseDefendantOffenceIdsBuilder.buildFromProsecutionCases(updateHearingForListingEnriched.getProsecutionCases());
-            final Stream<Object> allocationEvents = hearing.applyAllocationRules(prosecutionCaseDefendantOffenceIds, source);
+            final Stream<Object> allocationEvents = hearing.applyAllocationRules(prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated);
 
 
             final List<Object> startDateEventList = startDateEvents.collect(toList());
@@ -801,7 +804,7 @@ public class ListingCommandHandler {
 
             updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
                 final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unallocatedHearingPersisted, casesToMove);
-                final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unallocatedHearingPersisted, fullExtension);
+                final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unallocatedHearingPersisted, fullExtension, extendHearingForHearingEnriched.getSendNotificationToParties());
                 final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(casesToMove, unAllocatedHearingId);
                 final Stream<Object> hearingMarkedForPartialUpdated = hearing.markUnallocatedHearingForPartialUpdate(unAllocatedHearingId, prosecutionCasesToBeRemovedFromHearing);
                 return Stream.of(addCaseEvent, updatedHearing, allocationEvents, hearingMarkedForPartialUpdated).flatMap(i -> i);
@@ -816,7 +819,7 @@ public class ListingCommandHandler {
             if (Boolean.FALSE.equals(unAllocatedHearingPersisted.getAllocated())) {
                 updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
                     final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unAllocatedHearingPersisted, unAllocatedHearingPersisted.getListedCases());
-                    final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted, fullExtension);
+                    final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted, fullExtension, extendHearingForHearingEnriched.getSendNotificationToParties());
                     final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(unAllocatedHearingPersisted.getListedCases(), unAllocatedHearingId);
                     return Stream.of(addCaseEvent, updatedHearing, allocationEvents).flatMap(i -> i);
                 });
@@ -1012,7 +1015,7 @@ public class ListingCommandHandler {
         for (final UUID hearingId : hearingIds) {
             updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
                 final Stream<Object> judicialEvents = hearing.assignJudiciary(judicialRoles, hearingId);
-                final Stream<Object> allocationEvents = hearing.applyAllocationRules(Collections.emptyList());
+                final Stream<Object> allocationEvents = hearing.applyAllocationRules(Collections.emptyList(), false, false);
                 return hearing.raiseUpdateHearingInStagingHmi(Stream.of(allocationEvents, judicialEvents).flatMap(i -> i));
             });
         }
@@ -1368,6 +1371,7 @@ public class ListingCommandHandler {
                 courtListRequestExport.getCourtListJson(),
                 uk.gov.justice.listing.event.PublishCourtListType.valueOf(courtListRequestExport.getPublishCourtListType().name()),
                 now(),
+                courtListRequestExport.getSendNotificationToParties(),
                 courtListRequestExport.getStartDate()
         );
 
@@ -1439,7 +1443,8 @@ public class ListingCommandHandler {
                 publishCourtList.getStartDate(),
                 publishCourtList.getEndDate(),
                 valueOf(publishCourtList.getPublishCourtListType().toString()),
-                clock.now());
+                clock.now(),
+                publishCourtList.getSendNotificationToParties());
         appendEventsToStream(commandEnvelope, eventStream, events);
     }
 

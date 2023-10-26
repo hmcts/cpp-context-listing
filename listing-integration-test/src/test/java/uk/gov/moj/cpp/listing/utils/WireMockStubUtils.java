@@ -25,6 +25,7 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
 import java.util.UUID;
 
+import javax.json.Json;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -36,6 +37,7 @@ public class WireMockStubUtils {
 
     private static final String HOST = System.getProperty("INTEGRATION_HOST_KEY", "localhost");
     private static final String MEDIA_TYPE_QUERY_GROUPS = "application/vnd.usersgroups.groups+json";
+    private static final String MEDIA_TYPE_QUERY_PROGRESSION_CASE_ID_BY_URN = "application/vnd.progression.query.case-exists-by-caseurn+json";
     private static final String BASE_URI = "http://" + HOST + ":8080";
 
     static {
@@ -65,6 +67,18 @@ public class WireMockStubUtils {
                         .withBody(getPayload("stub-data/usersgroups.get-unauthorised-group-by-user.json"))));
 
         waitForStubToBeReady(format("/usersgroups-service/query/api/rest/usersgroups/users/{0}/groups", userId), MEDIA_TYPE_QUERY_GROUPS);
+    }
+
+    public static void setupProsecutionCaseByCaseUrn() {
+        stubPingFor("progression-service");
+
+        stubFor(get(urlPathEqualTo(format("/progression-service/query/api/rest/progression/search")))
+                .willReturn(aResponse().withStatus(OK.getStatusCode())
+                        .withHeader(ID, randomUUID().toString())
+                        .withHeader(CONTENT_TYPE, APPLICATION_JSON)
+                        .withBody(Json.createObjectBuilder().add("caseId", randomUUID().toString()).build().toString())));
+
+        waitForStubToBeReady(format("/progression-service/query/api/rest/progression/search"), MEDIA_TYPE_QUERY_PROGRESSION_CASE_ID_BY_URN);
     }
 
     public static void setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate(final UUID userId) {

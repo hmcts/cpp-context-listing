@@ -68,10 +68,7 @@ import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.OFF_ID
 import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.UNALLOCATED_HEARING_ID;
 import static uk.gov.moj.cpp.listing.command.utils.FileUtil.givenPayload;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
-import static java.util.Optional.of;
 
-import org.w3c.dom.Document;
-import org.xml.sax.InputSource;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.Gender;
 import uk.gov.justice.core.courts.JudicialResult;
@@ -776,7 +773,7 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.changeJudiciaryForHearings(commandEnvelope);
 
         verify(hearing, atLeast(2)).assignJudiciary(judicialRoleCaptor.capture(), hearingIdCaptor.capture());
-        verify(hearing, times(2)).applyAllocationRules(Collections.emptyList());
+        verify(hearing, times(2)).applyAllocationRules(Collections.emptyList(), false, false);
         verify(hearing, times(2)).raiseUpdateHearingInStagingHmi(any(Stream.class));
 
         final List<List<JudicialRole>> judicialRoleArguments = judicialRoleCaptor.getAllValues();
@@ -1233,7 +1230,7 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.updateHearingForListing(commandEnvelope);
         verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
-        verify(hearing).applyAllocationRules(any(), any());
+        verify(hearing).applyAllocationRules(any(), any(), anyBoolean(),anyBoolean());
     }
 
     @Test
@@ -1667,7 +1664,7 @@ public class ListingCommandHandlerTest {
                 .build();
 
         when(hearing.sequenceHearingDays(sequenceHearing)).thenReturn(Stream.of(HearingDaysSequenced.hearingDaysSequenced().build()));
-        when(hearing.applyAllocationRules(anyList())).thenReturn(mock(Stream.class));
+        when(hearing.applyAllocationRules(anyList(), anyBoolean(),anyBoolean())).thenReturn(mock(Stream.class));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         listingCommandHandler.sequenceHearings(commandEnvelope);
@@ -2053,6 +2050,7 @@ public class ListingCommandHandlerTest {
                 .add("publishCourtListType", publishCourtListType.name())
                 .add("startDate", startDate.toString())
                 .add("courtListJson", courtListJson)
+                .add("sendNotificationToParties", true)
                 .build();
 
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.court-list-request-export", payload);
@@ -2069,7 +2067,8 @@ public class ListingCommandHandlerTest {
                                 withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
                                 withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
                                 withJsonPath("$.startDate", equalTo(startDate.toString())),
-                                withJsonPath("$.courtListJson", equalTo(courtListJson))
+                                withJsonPath("$.courtListJson", equalTo(courtListJson)),
+                                withJsonPath("$.sendNotificationToParties", equalTo(true))
                         )))));
     }
 
@@ -2142,7 +2141,7 @@ public class ListingCommandHandlerTest {
         final UUID courtCentreId = randomUUID();
 
         when(aggregateService.get(eventStream, PublishCourtListRequestAggregate.class)).thenReturn(publishCourtListRequestAggregate);
-        when(publishCourtListRequestAggregate.recordCourtListRequested(any(UUID.class), any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class)))
+        when(publishCourtListRequestAggregate.recordCourtListRequested(any(UUID.class), any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class), anyBoolean()))
                 .thenReturn(Stream.of(publishCourtListRequested().build()));
 
         final String jsonString = givenPayload("/test-data/listing.command.publish-court-list.json").toString()
@@ -2151,7 +2150,7 @@ public class ListingCommandHandlerTest {
         final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.publish-court-list", jsonReader.readObject());
         listingCommandHandler.publishCourtList(commandEnvelope);
-        verify(publishCourtListRequestAggregate).recordCourtListRequested(any(UUID.class), any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class));
+        verify(publishCourtListRequestAggregate).recordCourtListRequested(any(UUID.class), any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class), anyBoolean());
     }
 
     @Test
@@ -2232,12 +2231,12 @@ public class ListingCommandHandlerTest {
         doReturn(allocatedHearing).doReturn(unAllocatedHearing).when(hearingFactory)
                 .getHearingById(any(UUID.class), any(JsonEnvelope.class));
 
-        when(hearing.applyAllocationRulesForExtendedHearing(any(), anyBoolean())).thenReturn(Stream.of(new Object()));
+        when(hearing.applyAllocationRulesForExtendedHearing(any(), anyBoolean(), anyBoolean())).thenReturn(Stream.of(new Object()));
 
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
-        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class));
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class), any(Boolean.class));
     }
 
     @Test
@@ -2254,12 +2253,12 @@ public class ListingCommandHandlerTest {
         doReturn(allocatedHearing).doReturn(unAllocatedHearing).when(hearingFactory)
                 .getHearingById(any(UUID.class), any(JsonEnvelope.class));
 
-        when(hearing.applyAllocationRulesForExtendedHearing(any(), anyBoolean())).thenReturn(Stream.of(new Object()));
+        when(hearing.applyAllocationRulesForExtendedHearing(any(), anyBoolean(), anyBoolean())).thenReturn(Stream.of(new Object()));
 
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
-        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class));
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class), any(Boolean.class));
     }
 
     @Test
@@ -2286,14 +2285,14 @@ public class ListingCommandHandlerTest {
         doReturn(allocatedHearing).doReturn(unAllocatedHearing).when(hearingFactory)
                 .getHearingById(any(UUID.class), any(JsonEnvelope.class));
 
-        when(hearing.applyAllocationRulesForExtendedHearing(any(), anyBoolean())).thenReturn(Stream.empty());
+        when(hearing.applyAllocationRulesForExtendedHearing(any(), anyBoolean(), anyBoolean())).thenReturn(Stream.empty());
         when(hearing.addCasesToUnAllocatedHearing(any(), any())).thenReturn(Stream.empty());
 
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
-        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), anyBoolean());
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), anyBoolean(), anyBoolean());
         verify(hearing, times(1)).addCasesToUnAllocatedHearing(any(), any());
-        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class));
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class), any(Boolean.class));
     }
 
     @Test
@@ -2348,7 +2347,7 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearingDeepCopy.getListedCases());
-        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), true);
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), true, true);
         verify(hearing, times(1)).updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), anyList());
     }
 
@@ -3848,7 +3847,8 @@ public class ListingCommandHandlerTest {
                         eq(expectedListingDate),
                         eq(expectedListingDate),
                         eq(PublishCourtListType.FINAL),
-                        eq(clock.now())))
+                        eq(clock.now()),
+                        eq(null)))
                 .thenReturn(events);
 
     }
@@ -3861,7 +3861,8 @@ public class ListingCommandHandlerTest {
                         eq(expectedListingDate),
                         eq(expectedListingDate),
                         eq(PublishCourtListType.FINAL),
-                        eq(clock.now())))
+                        eq(clock.now()),
+                        eq(null)))
                 .thenThrow(new RuntimeException("!"));
 
     }
@@ -3874,7 +3875,8 @@ public class ListingCommandHandlerTest {
                 eq(expectedListingDate),
                 eq(expectedListingDate),
                 eq(PublishCourtListType.FINAL),
-                eq(clock.now()));
+                eq(clock.now()),
+                eq(null));
     }
 
 

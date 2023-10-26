@@ -21,7 +21,6 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -120,6 +119,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     public static final String FIELD_START_TIME = "startTime";
     public static final String FIELD_NON_SITTING_DAYS = "nonSittingDays";
     public static final String FIELD_NON_DEFAULT_DAYS = "nonDefaultDays";
+    public static final String FIELD_SEND_NOTIFICATION_TO_PARTIES = "sendNotificationToParties";
     public static final String FIELD_HEARING_LANGUAGE = "hearingLanguage";
     public static final String FIELD_JURISDICTION_TYPE = "jurisdictionType";
     private static final String FIELD_PROSECUTION_CASES = "prosecutionCases";
@@ -262,6 +262,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 .add(FIELD_COURT_CENTRE_ID, updatedHearingData.getCourtCentreId().toString())
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
                 .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDays(updatedHearingData.getNonDefaultDays()))
+                .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
                 .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()));
         if (nonNull(updatedHearingData.getPublicListNote())) {
             builder.add(FIELD_PUBLIC_LIST_NOTE, updatedHearingData.getPublicListNote());
@@ -310,6 +311,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 .add(FIELD_COURT_CENTRE_ID, updatedHearingData.getCourtCentreId().toString())
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
                 .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDaysWithoutCourtRoomSelection(updatedHearingData.getNonDefaultDays()))
+                .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
                 .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()));
         if (nonNull(updatedHearingData.getPublicListNote())) {
             builder.add(FIELD_PUBLIC_LIST_NOTE, updatedHearingData.getPublicListNote());
@@ -338,6 +340,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 .add(FIELD_COURT_CENTRE_ID, updatedHearingData.getCourtCentreId().toString())
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
                 .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDays(updatedHearingData.getNonDefaultDays()))
+                .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
                 .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()))
                 .add(FIELD_HAS_VIDEO_LINK, updatedHearingData.getHasVideoLink());
 
@@ -361,6 +364,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 .add(FIELD_COURT_CENTRE_ID, updatedHearingData.getCourtCentreId().toString())
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
                 .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDays(updatedHearingData.getNonDefaultDays()))
+                .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
                 .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()))
                 .add(FIELD_PROSECUTION_CASES, prepareJsonProsecutionCases(listedCaseDataList));
 

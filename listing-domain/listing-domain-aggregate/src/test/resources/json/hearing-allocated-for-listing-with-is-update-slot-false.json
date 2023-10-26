@@ -45,5 +45,7 @@
     "id": "efa4e01b-1dc5-48c5-80b5-c3858a7622d6",
     "description": "Trial"
   },
-  "applicationOffenceIds": []
+  "applicationOffenceIds": [],
+  "sendNotificationToParties": false,
+  "isNotificationAllocationFieldUpdated":false
 }

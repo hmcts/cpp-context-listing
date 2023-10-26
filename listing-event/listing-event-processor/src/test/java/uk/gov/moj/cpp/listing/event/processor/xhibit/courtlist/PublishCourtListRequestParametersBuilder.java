@@ -16,6 +16,7 @@ public class PublishCourtListRequestParametersBuilder {
     private LocalDate endDate;
     private PublishCourtListType publishCourtListType;
     private ZonedDateTime requestedTime;
+    private Boolean sendNotificationToParties;
 
     private PublishCourtListRequestParametersBuilder() {
         publishCourtListRequestId = randomUUID();
@@ -24,6 +25,7 @@ public class PublishCourtListRequestParametersBuilder {
         endDate = LocalDate.of(2019, 11, 5);
         publishCourtListType = PublishCourtListType.FIRM;
         requestedTime = ZonedDateTime.now();
+        sendNotificationToParties = true;
     }
 
     public static PublishCourtListRequestParametersBuilder withDefaults() {
@@ -55,7 +57,12 @@ public class PublishCourtListRequestParametersBuilder {
         return this;
     }
 
+    public PublishCourtListRequestParametersBuilder withSendNotificationToParties(final Boolean sendNotificationToParties) {
+        this.sendNotificationToParties = sendNotificationToParties;
+        return this;
+    }
+
     public PublishCourtListRequestParameters build() {
-        return new PublishCourtListRequestParameters(publishCourtListRequestId, courtCentreId, startDate, endDate, publishCourtListType, requestedTime);
+        return new PublishCourtListRequestParameters(publishCourtListRequestId, courtCentreId, startDate, endDate, publishCourtListType, requestedTime, sendNotificationToParties);
     }
 }

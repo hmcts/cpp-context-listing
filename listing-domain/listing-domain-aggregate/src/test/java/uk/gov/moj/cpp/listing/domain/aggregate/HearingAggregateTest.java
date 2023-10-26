@@ -11,8 +11,8 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.core.courts.JurisdictionType.CROWN;
 import static uk.gov.justice.core.courts.ProsecutionCase.prosecutionCase;
@@ -775,7 +775,7 @@ public class HearingAggregateTest {
 
         hearing.apply(offencesRemovedFromHearing);
 
-        final Stream<Object> allocationStream = hearing.applyAllocationRules(of(randomUUID()));
+        final Stream<Object> allocationStream = hearing.applyAllocationRules(Optional.of(randomUUID()), true, true);
 
         final HearingAllocatedForListingV2 hearingAllocatedForListing = (HearingAllocatedForListingV2) allocationStream.collect(Collectors.toList()).get(0);
 
@@ -1329,7 +1329,7 @@ public class HearingAggregateTest {
                                         .withId(offence2Id)
                                         .build()))
                                 .build()))
-                        .build())), hearing.sendToHmi()).flatMap(i -> i);
+                        .build()), true, true), hearing.sendToHmi()).flatMap(i -> i);
 
         final List<Object> allocationEvents = allocationStreams.collect(Collectors.toList());
         assertThat(allocationEvents.size(), is(2));
@@ -1361,7 +1361,7 @@ public class HearingAggregateTest {
                                         .withId(offence2Id)
                                         .build()))
                                 .build()))
-                        .build()));
+                        .build()), false, false);
 
         final List<Object> updateAllocationEvents = updateAllocationStreams.collect(Collectors.toList());
         assertThat(updateAllocationEvents.size(), is(1));
@@ -1453,7 +1453,7 @@ public class HearingAggregateTest {
                 .build());
 
 
-        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID())), hearing.sendToHmi()).flatMap(i -> i);
+        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true), hearing.sendToHmi()).flatMap(i -> i);
         final List<Object> events = streams.collect(Collectors.toList());
         assertThat(events.size(), is(2));
 
@@ -1608,7 +1608,7 @@ public class HearingAggregateTest {
                 .build());
 
 
-        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID())), hearing.sendToHmi()).flatMap(i -> i);
+        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true), hearing.sendToHmi()).flatMap(i -> i);
         final List<Object> events = streams.collect(Collectors.toList());
         assertThat(events.size(), is(2));
 
@@ -1677,7 +1677,7 @@ public class HearingAggregateTest {
                 .withOffenceId(case1Defendant1Offence1Id)
                 .build());
 
-        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID())), hearing.sendToHmi()).flatMap(i -> i);
+        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true), hearing.sendToHmi()).flatMap(i -> i);
         final List<Object> events = streams.collect(Collectors.toList());
         assertThat(events.size(), is(2));
 
@@ -2607,7 +2607,7 @@ public class HearingAggregateTest {
                 .withUnAllocatedListedCases(asList(newCase))
                 .build());
 
-        AllocatedHearingExtendedForListingV2 allocatedHearingExtendedForListingV2s = hearing.applyAllocationRulesForExtendedHearing(extendedHearing, false).findFirst().map(AllocatedHearingExtendedForListingV2.class::cast).orElse(null);
+        AllocatedHearingExtendedForListingV2 allocatedHearingExtendedForListingV2s = hearing.applyAllocationRulesForExtendedHearing(extendedHearing, false, false).findFirst().map(AllocatedHearingExtendedForListingV2.class::cast).orElse(null);
 
         assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().size(), is(2));
         assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(0).getId(), is(prosecutionCaseId));

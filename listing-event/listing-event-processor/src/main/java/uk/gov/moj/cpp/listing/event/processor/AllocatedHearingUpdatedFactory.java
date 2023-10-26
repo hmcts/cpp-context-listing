@@ -36,9 +36,9 @@ public class AllocatedHearingUpdatedFactory extends PublicHearingFactory {
         final Type type = hearingUpdatedForListing.getType();
         return uk.gov.justice.listing.courts.HearingUpdated.hearingUpdated()
                 .withUpdatedHearing(buildConfirmedHearingV2(hearingUpdatedForListing, judicialRoles, type, envelope))
+                .withSendNotificationToParties(hearingUpdatedForListing.getSendNotificationToParties())
+                .withIsNotificationAllocationFieldUpdated(hearingUpdatedForListing.getIsNotificationAllocationFieldUpdated())
                 .build();
-
-
     }
 
     private ConfirmedHearing buildConfirmedHearingV2(final AllocatedHearingUpdatedForListingV2 hearingUpdatedForListing, final List<uk.gov.justice.listing.events.JudicialRole> judicialRoles, final Type type, final JsonEnvelope envelope) {

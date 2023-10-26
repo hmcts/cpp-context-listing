@@ -11,6 +11,7 @@ import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubPingForO
 import static uk.gov.moj.cpp.listing.utils.StagingHmiStub.stubGetStagingIsHmiEnabled;
 import static uk.gov.moj.cpp.listing.utils.StagingHmiStub.stubHmiMagsSession;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
+import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProsecutionCaseByCaseUrn;
 
 import uk.gov.justice.services.test.utils.core.rest.RestClient;
 
@@ -48,6 +49,7 @@ public class AbstractIT {
         stubGetStagingIsHmiEnabled();
         stubHmiMagsSession();
         stubPingForOrganisationUnitHmiSServiceForCache();
+        setupProsecutionCaseByCaseUrn();
     }
 
     protected void givenAUserHasLoggedInAsAListingOfficer(final UUID validUserId) {

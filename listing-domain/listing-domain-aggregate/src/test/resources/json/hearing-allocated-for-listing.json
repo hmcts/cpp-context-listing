@@ -45,5 +45,7 @@
   },
   "applicationOffenceIds": [
     "0baecac5-222b-402d-9047-84803679edad"
-  ]
+  ],
+  "sendNotificationToParties": false,
+  "isNotificationAllocationFieldUpdated":false
 }

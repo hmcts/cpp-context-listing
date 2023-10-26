@@ -20,6 +20,7 @@ import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_JURISDICTION
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_NON_DEFAULT_DAYS;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_NON_SITTING_DAYS;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_OUCODE;
+import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_SEND_NOTIFICATION_TO_PARTIES;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_SESSION;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_START_DATE;
 import static uk.gov.moj.cpp.listing.steps.UpdateHearingSteps.FIELD_START_TIME;
@@ -56,6 +57,7 @@ public class JsonObjectBuilderHelper {
                 .add(FIELD_HEARING_LANGUAGE, updatedHearingData.getHearingLanguage())
                 .add(FIELD_COURT_CENTRE_ID, updatedHearingData.getCourtCentreId().toString())
                 .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDays(updatedHearingData.getNonDefaultDays()))
+                .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
                 .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()));
 

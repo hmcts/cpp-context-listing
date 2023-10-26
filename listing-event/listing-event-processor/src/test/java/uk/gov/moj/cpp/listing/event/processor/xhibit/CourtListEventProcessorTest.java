@@ -5,6 +5,7 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -103,7 +104,9 @@ public class CourtListEventProcessorTest {
                 startDate,
                 startDate.plusDays(5),
                 PublishCourtListType.WARN,
-                requestedTime
+                requestedTime,
+                true
+
         );
 
         final JsonObject courtListExportRequested = createObjectBuilder()
@@ -113,6 +116,7 @@ public class CourtListEventProcessorTest {
                 .add("startDate", startDate.toString())
                 .add("requestedTime", requestedTime.toString())
                 .add("courtListJson", courtListJson.toString())
+                .add("sendNotificationToParties", true)
                 .build();
         final Metadata metadata = metadataBuilder()
                 .withId(randomUUID())
@@ -132,6 +136,7 @@ public class CourtListEventProcessorTest {
 
         // Tested method
         courtListEventProcessor.handleCourtListExportRequested(tEnvelope);
+        verify(publishCourtListCommandSender).publishPublicMessageForCourtList(any(),any(),any());
     }
 
     @Test

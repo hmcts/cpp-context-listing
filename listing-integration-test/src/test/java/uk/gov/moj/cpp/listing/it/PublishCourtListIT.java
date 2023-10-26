@@ -116,10 +116,12 @@ public class PublishCourtListIT extends AbstractIT {
         stubGetReferenceDataXhibitCourtRoomMappings(hearingsData.getHearingData().get(0).getCourtRoomId());
 
         final PublishCourtListSteps publishCourtListSteps = new PublishCourtListSteps(hearingsData, publishCourtListCommandPayload);
+        publishCourtListSteps.createMessageConsumer();
         publishCourtListSteps.verifyHearingListedFromAPI(true);
         publishCourtListSteps.acceptCourtListXmlFiles();
         publishCourtListSteps.sendPublishCourtListCommand();
         publishCourtListSteps.verifyCourtListPublishStatus(EXPORT_SUCCESSFUL, "true");
+        publishCourtListSteps.verifyPublicEventForCourtListPublished(courtCentreId.toString(), publishCourtListType.toString(), true, true, 1);
     }
 
     @Test

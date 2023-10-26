@@ -68,6 +68,9 @@
     "fullExtension": {
       "description": "Indicates if all the defendant and offences of unallocated hearing is exxtended in to allocated hearing ",
       "type": "boolean"
+    },
+    "sendNotificationToParties": {
+      "type": "boolean"
     }
   },
   "required": [

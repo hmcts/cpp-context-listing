@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.steps.data.factory;
 
 import static java.time.LocalDate.now;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static java.util.UUID.fromString;
@@ -11,12 +10,9 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOOLEAN;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
-import static java.util.Optional.of;
-
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
 import uk.gov.justice.core.courts.CustodyTimeLimit;
-import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.services.test.utils.core.random.BigDecimalGenerator;
@@ -30,7 +26,6 @@ import uk.gov.moj.cpp.listing.steps.data.CourtApplicationPartyType;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingTypeData;
-import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleData;
 import uk.gov.moj.cpp.listing.steps.data.JudicialRoleTypeData;
 import uk.gov.moj.cpp.listing.steps.data.LaaReferenceData;
