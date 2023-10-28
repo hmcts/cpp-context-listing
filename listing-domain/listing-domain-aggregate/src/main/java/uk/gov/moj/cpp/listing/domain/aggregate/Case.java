@@ -213,7 +213,6 @@ public class Case implements Aggregate {
     }
 
     private void onHearingUpdatedToCase(HearingUpdatedToCase event) {
-        this.hearingIds.remove(event.getId());
         this.hearingIds.add(event.getExistingHearingId());
     }
 

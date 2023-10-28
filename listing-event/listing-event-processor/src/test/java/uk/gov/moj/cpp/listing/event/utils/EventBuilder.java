@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.utils;
 
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
+import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.DefendantsToBeUpdated;
 import uk.gov.justice.listing.events.HearingListed;
 import uk.gov.justice.listing.events.HearingMarkedForPartialUpdate;
@@ -51,5 +52,12 @@ public class EventBuilder {
     public OffencesToBeDeleted buildOffencesToBeDeleted() {
         JsonObject jsonObject = givenPayload("/test-data/listing.events.offences-to-be-deleted.json");
         return jsonObjectToObjectConverter.convert(jsonObject, OffencesToBeDeleted.class);
+    }
+
+    public CasesAddedToHearing buildCasesAddedToHearing() {
+
+        JsonObject jsonObject = givenPayload("/test-data/listing.events.cases-added-to-hearing.json");
+        return jsonObjectToObjectConverter.convert(jsonObject, CasesAddedToHearing.class);
+
     }
 }

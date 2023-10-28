@@ -8,6 +8,7 @@ import static javax.json.Json.createObjectBuilder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
@@ -151,6 +152,56 @@ public class RangeSearchQueryTest {
         assertEquals("listing.search.hearings", results.metadata().name());
     }
 
+
+    @Test
+    public void searchHearingsWithDateRangeWithAllParametersProvidedWithoutPagination() {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+
+        when(hearingRepository.findHearings(
+                ALLOCATEDSTR,
+                COURT_CENTRE_ID.toString(),
+                COURT_ROOM_ID.toString(),
+                AUTHORITY_ID,
+                HEARING_TYPE_ID.toString(),
+                JURISDICTION_TYPE.toString(),
+                SEARCH_DATE,
+                SEARCH_DATE))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(ALLOCATED_QUERY_PARAMETER, ALLOCATED)
+                        .add(COURT_CENTRE_QUERY_PARAMETER, COURT_CENTRE_ID.toString())
+                        .add(COURT_ROOM_QUERY_PARAMETER, COURT_ROOM_ID.toString())
+                        .add(AUTHORITY_ID_QUERY_PARAMETER, AUTHORITY_ID)
+                        .add(HEARING_TYPE_QUERY_PARAMETER, HEARING_TYPE_ID.toString())
+                        .add(JURISDICTION_TYPE_QUERY_PARAMETER, JURISDICTION_TYPE.toString())
+                        .add(START_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(END_DATE_QUERY_PARAMETER, SEARCH_DATE.toString())
+                        .add(PAGE_SIZE, "50")
+                        .add(PAGE_NUMBER, "1")
+                        .add("noPagination", true)
+                        .build());
+
+        final JsonEnvelope results = rangeSearchQuery.rangeSearchHearings(query);
+
+        assertEquals(2, results.payloadAsJsonObject().getJsonArray("hearings").size());
+        assertEquals("2020-09-03", results.payloadAsJsonObject().getJsonArray("hearings").getJsonObject(0).getString("startDate"));
+        assertEquals("listing.search.hearings", results.metadata().name());
+        verify(hearingRepository).findHearings(
+                ALLOCATEDSTR,
+                COURT_CENTRE_ID.toString(),
+                COURT_ROOM_ID.toString(),
+                AUTHORITY_ID,
+                HEARING_TYPE_ID.toString(),
+                JURISDICTION_TYPE.toString(),
+                SEARCH_DATE,
+                SEARCH_DATE);
+    }
     @Test
     public void searchHearingsWithWeekCommencingDateRange() {
 

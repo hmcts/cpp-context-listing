@@ -2879,7 +2879,7 @@ public class Hearing implements Aggregate {
                     .forEach(this.prosecutionCaseDefendantOffenceIds::add);
         }
         this.hearingDays = convertHearingDaysToDomain(hearing.getHearingDays());
-        this.allocated = TRUE;
+        this.allocated = nonNull(hearing.getAllocated()) ? hearing.getAllocated().booleanValue() : false;
 
         if (hearing.getCourtApplications() != null) {
             this.confirmedCourtApplicationIds = hearing.getCourtApplications().stream()

@@ -7,6 +7,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.json.JsonObject;
@@ -15,16 +16,20 @@ import org.slf4j.LoggerFactory;
 import uk.gov.justice.core.courts.ConfirmedDefendant;
 import uk.gov.justice.core.courts.ConfirmedOffence;
 import uk.gov.justice.core.courts.ConfirmedProsecutionCase;
+import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.courts.AddCasesToHearing;
 import uk.gov.justice.listing.events.CaseAddedToHearing;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.UpdateExistingHearingRequested;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.event.processor.command.AddHearingToCaseCommandFromHearingAddedToCaseConverter;
+
 import javax.inject.Inject;
 
 @ServiceComponent(EVENT_PROCESSOR)
@@ -37,6 +42,10 @@ public class UpdateExistingHearingEventProcessor {
 
     private static final String EVENT_PAYLOAD_DEBUG_STRING = "Received '{}' event with payload {}";
     private static final String COMMAND_ADD_CASES_TO_HEARING = "listing.command.add-cases-to-hearing";
+    private static final String COMMAND_PAYLOAD_DEBUG_STRING = "Sending '{}' command with payload {}";
+    private static final String COMMAND_ADD_HEARING_TO_CASE = "listing.command.add-hearing-to-case";
+
+
 
     @Inject
     private Sender sender;
@@ -46,6 +55,12 @@ public class UpdateExistingHearingEventProcessor {
 
     @Inject
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Inject
+    private AddHearingToCaseCommandFromHearingAddedToCaseConverter addHearingToCaseCommandFromHearingAddedToCaseConverter;
+
+    @Inject
+    private ObjectToJsonValueConverter objectToJsonValueConverter;
 
     @Handles(PRIVATE_EVENT_UPDATE_EXISTING_HEARING_REQUESTED)
     public void handleUpdateExistingHearingRequestedEvent(final JsonEnvelope envelope) {
@@ -87,6 +102,15 @@ public class UpdateExistingHearingEventProcessor {
                             .build()
             ));
         }
+
+        final List<AddHearingToCaseCommand> listHearingCommands = addHearingToCaseCommandFromHearingAddedToCaseConverter.convert(casesAddedToHearing);
+        listHearingCommands.forEach(
+                listHearingCommand -> {
+                    LOGGER.debug(COMMAND_PAYLOAD_DEBUG_STRING, COMMAND_ADD_HEARING_TO_CASE, listHearingCommand);
+                    sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_ADD_HEARING_TO_CASE),
+                            objectToJsonValueConverter.convert(listHearingCommand)));
+                }
+        );
     }
 
     private JsonObject buildCasesAddedToHearingPublicEventPayload(final CasesAddedToHearing casesAddedToHearing) {

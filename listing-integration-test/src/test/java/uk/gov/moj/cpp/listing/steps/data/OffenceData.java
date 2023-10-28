@@ -11,22 +11,22 @@ public class OffenceData {
 
     private final UUID offenceId;
     private final UUID randomOffenceId;
-    private final String offenceCode;
-    private final String offenceWording;
-    private final LocalDate startDate;
-    private final LocalDate endDate;
-    private final String statementOfOffenceTitle;
-    private final String statementOfOffenceTitleWelsh;
-    private final Integer count;
-    private final Integer orderIndex;
-    private final String offenceLegislation;
-    private final UUID offenceDefinitionId;
-    private final Optional<CustodyTimeLimit> custodyTimeLimit;
-    private final Optional<LaaReferenceData> laaApplnReference;
-    private final LocalDate laidDate;
+    private String offenceCode;
+    private String offenceWording;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private String statementOfOffenceTitle;
+    private String statementOfOffenceTitleWelsh;
+    private Integer count;
+    private Integer orderIndex;
+    private String offenceLegislation;
+    private UUID offenceDefinitionId;
+    private Optional<CustodyTimeLimit> custodyTimeLimit;
+    private Optional<LaaReferenceData> laaApplnReference;
+    private LocalDate laidDate;
     private Optional<Boolean> shadowListed;
     private List<ReportingRestrictionData> reportingRestriction;
-    private final String indictmentParticular;
+    private String indictmentParticular;
 
     public OffenceData(final UUID offenceId, final String offenceCode,
                        final LocalDate startDate, final LocalDate endDate, final String statementOfOffenceTitle,
@@ -149,5 +149,24 @@ public class OffenceData {
 
     public String getIndictmentParticular() {
         return indictmentParticular;
+    }
+
+    public void copyOffenceData(OffenceData offenceData) {
+        this.count = offenceData.getCount();
+        this.custodyTimeLimit = offenceData.getCustodyTimeLimit();
+        this.offenceCode = offenceData.getOffenceCode();
+        this.offenceDefinitionId = offenceData.getOffenceDefinitionId();
+        this.endDate = offenceData.getEndDate();
+        this.startDate = offenceData.getStartDate();
+        this.custodyTimeLimit = offenceData.getCustodyTimeLimit();
+        this.indictmentParticular = offenceData.getIndictmentParticular();
+        this.laaApplnReference = offenceData.getLaaApplnReference();
+        this.laidDate = offenceData.getLaidDate();
+        this.offenceLegislation = offenceData.getOffenceLegislation();
+        this.offenceWording = offenceData.getOffenceWording();
+        this.reportingRestriction = offenceData.getReportingRestrictionDataList();
+        this.shadowListed = offenceData.getShadowListed();
+        this.statementOfOffenceTitle = offenceData.getStatementOfOffenceTitle();
+        this.statementOfOffenceTitleWelsh = offenceData.getStatementOfOffenceTitleWelsh();
     }
 }

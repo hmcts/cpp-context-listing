@@ -14,7 +14,7 @@ public class HearingData {
 
     private final UUID id;
     private final UUID courtCentreId;
-    private final String name;
+    private  String name;
     private final HearingTypeData hearingTypeData;
     private final int hearingEstimateMinutes;
     private final UUID courtRoomId;
@@ -271,5 +271,9 @@ public class HearingData {
 
     public String getEstimatedDuration() {
         return estimatedDuration;
+    }
+
+    public void setName(final String name) {
+        this.name = name;
     }
 }

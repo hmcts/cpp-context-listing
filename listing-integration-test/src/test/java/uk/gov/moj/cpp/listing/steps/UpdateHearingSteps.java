@@ -341,8 +341,12 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
                 .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
                 .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDays(updatedHearingData.getNonDefaultDays()))
                 .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
-                .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()))
-                .add(FIELD_HAS_VIDEO_LINK, updatedHearingData.getHasVideoLink());
+                .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()));
+
+        if(nonNull(updatedHearingData.getHasVideoLink())) {
+            builder.add(FIELD_HAS_VIDEO_LINK, updatedHearingData.getHasVideoLink());
+        }
+
 
         if (nonNull(updatedHearingData.getPublicListNote())) {
             builder.add(FIELD_PUBLIC_LIST_NOTE, updatedHearingData.getPublicListNote());

@@ -16,6 +16,9 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
+import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
+
+import java.util.UUID;
 
 public class CommonHearingSteps extends AbstractIT {
 
@@ -28,6 +31,18 @@ public class CommonHearingSteps extends AbstractIT {
         this.hearingsData = hearingsData;
     }
 
+    public void verifyHearingListedFromAPI(UpdatedHearingData updatedHearingData, final boolean isAllocated) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), updatedHearingData.getCourtCentreId(), isAllocated));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[0].id",
+                                        equalTo(updatedHearingData.getHearingId().toString()))
+                        )));
+    }
     public void verifyHearingListedFromAPI(final boolean isAllocated) {
 
         final HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -35,6 +50,10 @@ public class CommonHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), hearingData.getCourtCentreId(), isAllocated));
 
+        verifyHearingListed(hearingData, searchHearingUrl);
+    }
+
+    private void verifyHearingListed(final HearingData hearingData, final String searchHearingUrl) {
         poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
                 .until(
                         status().is(OK),

@@ -75,7 +75,7 @@ public class RangeSearchQueryRequestFactory {
         }else{
             startDate = startDate.minusDays(1);
             weekCommencingEndDate = startDate.plusDays(5);
-            logger.info("WeekCommencingStartDate is not Monday, hence WeekCommencingStartDate is [{}] and WeekCommencingEndDate is  [{}]  " ,startDate, weekCommencingEndDate);
+            logger.info("WeekCommencingStartDate is not Monday, hence WeekCommencingStartDate is [{}] and WeekCommencingEndDate is  [{}]  " ,weekCommencingEndDate, weekCommencingEndDate);
         }
 
         rangeSearchQueryPayloadBuilder

@@ -427,6 +427,23 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
                         )));
     }
 
+    public void verifyCasesAddedToHearingFromApiForTwoHearing(HearingsData updatedHearing) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), updatedHearing.getHearingData().get(0).getCourtCentreId(), false));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[1].id",
+                                        equalTo(updatedHearing.getHearingData().get(0).getId().toString())),
+                                withJsonPath("$.hearings[1].listedCases[0].id",
+                                        equalTo(updatedHearing.getHearingData().get(0).getListedCases().get(0).getCaseId().toString())),
+                                withJsonPath("$.hearings[0].listedCases[1].id",
+                                        equalTo(updatedHearing.getHearingData().get(0).getListedCases().get(1).getCaseId().toString()))
+                        )));
+    }
+
     public void verifyUnAllocatedOldHearingDeletedInActiveMQ(final HearingsData hearingsData) {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());

@@ -227,6 +227,20 @@ public class UpdatedHearingData {
                 nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, null, null, false);
     }
 
+    public static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDays(final UUID hearingId, final List<JudicialRoleData> judiciary, UUID courtCentreId, UUID courtRoomId) {
+        final String endDate = "2020-04-23";
+        final LocalDate startDate = LocalDate.parse(endDate);
+        final ZonedDateTime startTimeWithZone = ZonedDateTime.parse("2020-04-23T11:32:41.587Z");
+        final List<String> nonSittingDays = Collections.singletonList(startDate.plusDays(1).toString());
+
+
+        final List<NonDefaultDayData> nonDefaultDays = Collections.singletonList(new NonDefaultDayData(startTimeWithZone.toString(), of(15), of(courtCentreId).map(UUID::toString), of(courtRoomId).map(UUID::toString)));
+
+        return new UpdatedHearingData(hearingId, courtCentreId, "Carmarthen Magistrates Court", courtRoomId, SENTENCE_HEARING_TYPE,
+                startDate.toString(), endDate, nonDefaultDays,
+                nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, null, null, true);
+    }
+
     public static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDaysWithoutCourtRoomSelection(final UUID hearingId, final UUID courtCentreId) {
         final String endDate = LocalDate.now().toString();
         final LocalDate startDate = LocalDate.parse(endDate);

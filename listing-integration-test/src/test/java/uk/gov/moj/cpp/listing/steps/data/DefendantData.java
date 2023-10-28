@@ -11,19 +11,19 @@ public class DefendantData {
 
     private final UUID defendantId;
     private final UUID masterDefendantId;
-    private final ZonedDateTime courtProceedingsInitiated;
-    private final String firstName;
-    private final String lastName;
+    private ZonedDateTime courtProceedingsInitiated;
+    private String firstName;
+    private String lastName;
     private final List<OffenceData> offences;
-    private final BailStatus bailStatus;
-    private final LocalDate dateOfBirth;
-    private final LocalDate custodyTimeLimit;
-    private final String defenceOrganisation;
-    private final Boolean restrictFromCourtList;
-    private final LegalEntityDefendantData legalEntityDefendant;
-    private final Boolean isYouth;
-    private final Boolean proceedingsConcluded;
-    private final String listingReason;
+    private BailStatus bailStatus;
+    private LocalDate dateOfBirth;
+    private LocalDate custodyTimeLimit;
+    private String defenceOrganisation;
+    private Boolean restrictFromCourtList;
+    private LegalEntityDefendantData legalEntityDefendant;
+    private Boolean isYouth;
+    private Boolean proceedingsConcluded;
+    private String listingReason;
 
     public DefendantData(final UUID defendantId, final String firstName,
                          final String lastName, final LocalDate dateOfBirth,
@@ -115,4 +115,26 @@ public class DefendantData {
     public String getListingReason() {
         return listingReason;
     }
+
+    public void copyDefendantData(DefendantData defendantData) {
+        this.firstName = defendantData.getFirstName();
+        this.lastName = defendantData.getLastName();
+        this.bailStatus = defendantData.getBailStatus();
+        this.defenceOrganisation = defendantData.getDefenceOrganisation();
+        this.courtProceedingsInitiated = defendantData.getCourtProceedingsInitiated();
+        this.isYouth = defendantData.getIsYouth();
+        this.custodyTimeLimit = defendantData.getCustodyTimeLimit();
+        this.legalEntityDefendant = defendantData.getLegalEntityDefendant();
+        this.dateOfBirth = defendantData.getDateOfBirth();
+        this.listingReason = defendantData.getListingReason();
+        this.proceedingsConcluded = defendantData.proceedingsConcluded;
+        //Copy one offence only
+        for (OffenceData offenceData : defendantData.getOffences()) {
+            for (OffenceData currentOffenceData : this.getOffences()) {
+                currentOffenceData.copyOffenceData(offenceData);
+            }
+        }
+    }
+
+
 }

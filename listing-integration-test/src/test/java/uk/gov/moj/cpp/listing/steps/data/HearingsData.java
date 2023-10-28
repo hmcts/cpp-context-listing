@@ -16,6 +16,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsData());
     }
 
+    public static HearingsData hearingsData(UUID courtCenterId, UUID courtRoomId) {
+        return new HearingsData(HearingsDataFactory.hearingsData(courtCenterId, courtRoomId));
+    }
+
     public static HearingsData trialHearingsData() {
         return new HearingsData(HearingsDataFactory.trialHearingsData());
     }
@@ -51,6 +55,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing(startDate, duration));
     }
 
+    public static HearingsData hearingsDataForWeekCommencing(final LocalDate startDate, final Integer duration, UUID courtCenterId, UUID courtRoomId, String roles) {
+        return new HearingsData(HearingsDataFactory.hearingsDataForWeekCommencing(startDate, duration, courtCenterId, courtRoomId, roles));
+    }
+
     public static HearingsData hearingsDataForBookedSlot() {
         return new HearingsData(HearingsDataFactory.hearingsDataForBookedSlot());
     }
@@ -69,6 +77,13 @@ public class HearingsData {
 
     public static HearingsData singleHearingDataMultipleCasesWithSingleOffence() {
         return new HearingsData(HearingsDataFactory.singleHearingDataSingleOffence());
+    }
+
+    public static HearingsData singleHearingDataSingleCaseWithTwoDefendantAndTwoOffence(final UUID courtCenterId, final UUID courtRoomId, final String judiciaryType, final String court, final Integer numberOfCases) {
+        return new HearingsData(HearingsDataFactory.singleHearingDataTwoDefendantWithCourtRoomCourtCenterAndJudiciaryType(courtCenterId, courtRoomId, judiciaryType, court, numberOfCases));
+    }
+    public static HearingsData singleHearingDataSingleCaseWithSingleOffence(final UUID courtCenterId, final UUID courtRoomId, final String judiciaryType, final String court, final Integer numberOfCases) {
+        return new HearingsData(HearingsDataFactory.singleHearingDataSingleOffenceWithCourtRoomCourtCenterAndJudiciaryType(courtCenterId, courtRoomId, judiciaryType, court, numberOfCases));
     }
 
     public static HearingsData singleHearingDataSingleCaseMultipleOffences() {
@@ -91,6 +106,15 @@ public class HearingsData {
 
     public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate() {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate());
+    }
+
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDateWithParameters(Integer numberOfHearing, UUID courtCenterId, UUID courtRoomId,String judiciaryTpe) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDateWithParameters(numberOfHearing, courtCenterId, courtRoomId, judiciaryTpe));
+    }
+
+
+    public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDateForCourt(UUID courtCenterId, UUID courtRoomUUID, String court) {
+        return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(courtCenterId, courtRoomUUID, court));
     }
 
     public static HearingsData hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDate(final Integer numberOfHearings) {

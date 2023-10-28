@@ -12,6 +12,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -26,6 +27,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
+import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import uk.gov.moj.cpp.listing.it.util.XmlEditor;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -44,8 +46,11 @@ import javax.ws.rs.core.Response;
 
 import com.jayway.restassured.path.json.JsonPath;
 import org.hamcrest.Matchers;
+import org.custommonkey.xmlunit.XMLUnit;
+import org.custommonkey.xmlunit.XpathEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 
 public class PublishCourtListSteps extends CommonHearingSteps {
 
@@ -171,6 +176,33 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         verifyCourtCourtListDailyList(checkVideoLink, videoLinkDetails);
 
     }
+    public void verifySentPublishedCourtListHearingDataForFirm() throws Exception {
+
+        verifyCourtHeaderFirmList();
+        final String sentXml = getSentXml();
+        XpathEngine simpleXpathEngine = XMLUnit.newXpathEngine();
+        assertEquals("1", simpleXpathEngine.evaluate("count(/*[local-name()='FirmList']/*[local-name()='ReserveList'])", XMLUnit.buildControlDocument(sentXml)));
+        assertEquals("4", simpleXpathEngine.evaluate("count(/*[local-name()='FirmList']/*[local-name()='ReserveList']" +
+                "/*[local-name()='Hearing'])", XMLUnit.buildControlDocument(sentXml)));
+    }
+
+    public void verifySentPublishedCourtListHearingDataFirmWithSittingTagPresent() throws Exception {
+
+        verifyCourtHeaderFirmList();
+        final String sentXml = getSentXml();
+        XpathEngine simpleXpathEngine = XMLUnit.newXpathEngine();
+        assertEquals("4", simpleXpathEngine.evaluate("count(/*[local-name()='FirmList']/*[local-name()='CourtLists']/*[local-name()='CourtList']/*[local-name()='Sittings'])", XMLUnit.buildControlDocument(sentXml)));
+    }
+
+    public void verifySentPublishedCourtListHearingDataForWarn() throws Exception {
+
+        verifyCourtHeaderWarnList();
+        final String sentXml = getSentXml();
+        XpathEngine simpleXpathEngine = XMLUnit.newXpathEngine();
+        assertEquals("2", simpleXpathEngine.evaluate("count(/*[local-name()='WarnedList']/*[local-name()='CourtLists']/*[local-name()='CourtList']/*[local-name()='WithoutFixedDate'])", XMLUnit.buildControlDocument(sentXml)));
+        assertEquals("4", simpleXpathEngine.evaluate("count(/*[local-name()='WarnedList']/*[local-name()='CourtLists']/*[local-name()='CourtList']/*[local-name()='WithoutFixedDate']" +
+                "/*[local-name()='Fixture']/*[local-name()='Cases']/*[local-name()='Case'])", XMLUnit.buildControlDocument(sentXml)));
+    }
 
     private void verifyCourtHeader() throws Exception {
 
@@ -190,6 +222,24 @@ public class PublishCourtListSteps extends CommonHearingSteps {
         assertXpathEvaluatesTo(PRESTON_COURT_ID, "/*[local-name()='DailyList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseCode']/text()", sentXml);
         assertXpathEvaluatesTo(PRESTON_COURT_NAME, "/*[local-name()='DailyList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseName']/text()", sentXml);
 
+    }
+
+    private void verifyCourtHeaderWarnList() throws Exception {
+
+        final String sentXml = getSentXml();
+
+        assertXpathEvaluatesTo(PRESTON_COURT_NAME, "//*[local-name()='CourtHouseName']/text()", sentXml);
+        assertXpathEvaluatesTo(PRESTON_COURT_ID, "/*[local-name()='WarnedList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseCode']/text()", sentXml);
+        assertXpathEvaluatesTo(PRESTON_COURT_NAME, "/*[local-name()='WarnedList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseName']/text()", sentXml);
+    }
+
+    private void verifyCourtHeaderFirmList() throws Exception {
+
+        final String sentXml = getSentXml();
+
+        assertXpathEvaluatesTo(PRESTON_COURT_NAME, "//*[local-name()='CourtHouseName']/text()", sentXml);
+        assertXpathEvaluatesTo(PRESTON_COURT_ID, "/*[local-name()='FirmList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseCode']/text()", sentXml);
+        assertXpathEvaluatesTo(PRESTON_COURT_NAME, "/*[local-name()='FirmList']/*[local-name()='CrownCourt']/*[local-name()='CourtHouseName']/text()", sentXml);
     }
 
     private void verifyCourtCourtList() throws Exception {
@@ -350,6 +400,17 @@ public class PublishCourtListSteps extends CommonHearingSteps {
                 .add("endDate", startDate.plusDays(5).toString())
                 .add("sendNotificationToParties", true)
                 .add("publishCourtListType", publishCourtListType.name())
+                .build();
+    }
+
+    public static JsonObject buildCourtListCommandPayload(final UUID courtCentreId,
+                                                                 final CourtListType courtListType,
+                                                                 final LocalDate startDate) {
+        return createObjectBuilder()
+                .add("courtCentreId", courtCentreId.toString())
+                .add("startDate", startDate.toString())
+                .add("endDate", startDate.plusDays(5).toString())
+                .add("listId", courtListType.name())
                 .build();
     }
 
