@@ -24,6 +24,9 @@
     "requestedTime": {
       "type": "string",
       "format": "date-time"
+    },
+    "sendNotificationToParties": {
+      "type": "boolean"
     }
   },
   "additionalProperties": false,
