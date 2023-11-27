@@ -77,7 +77,7 @@ public class CourtListEventProcessor {
                 courtListId,
                 courtListExportRequested.getCourtCentreId(),
                 courtListExportRequested.getStartDate(),
-                calculateEndDate(publishCourtListType, courtListExportRequested.getStartDate()),
+                calculateEndDate(publishCourtListType, courtListExportRequested),
                 publishCourtListType,
                 courtListExportRequested.getRequestedTime(),
                 courtListExportRequested.getSendNotificationToParties());
@@ -87,11 +87,15 @@ public class CourtListEventProcessor {
         publishCourtListCommandSender.publishPublicMessageForCourtList(envelope, parameters, courtListJson);
     }
 
-    private LocalDate calculateEndDate(final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType, final LocalDate stateDate) {
-        if (!stateDate.getDayOfWeek().equals(DayOfWeek.MONDAY)) {
-            return publishCourtListType.isWeekCommencing() ? stateDate.plusDays(5) : stateDate;
+    private LocalDate calculateEndDate(final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType, final CourtListExportRequested courtListExportRequested) {
+        if (publishCourtListType.isWeekCommencing() && courtListExportRequested.getEndDate() != null) {
+            return courtListExportRequested.getEndDate();
+        }
+        final LocalDate startDate = courtListExportRequested.getStartDate();
+        if (!startDate.getDayOfWeek().equals(DayOfWeek.MONDAY)) {
+            return publishCourtListType.isWeekCommencing() ? startDate.plusDays(5) : startDate;
         } else {
-            return publishCourtListType.isWeekCommencing() ? stateDate.plusDays(6) : stateDate;
+            return publishCourtListType.isWeekCommencing() ? startDate.plusDays(6) : startDate;
         }
     }
 

@@ -13,10 +13,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
+import static uk.gov.moj.cpp.staginghmi.common.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.Metadata;
@@ -48,6 +49,9 @@ public class PublishCourtListCommandSenderTest {
 
     @Mock
     Sender sender;
+
+    @Spy
+    private UtcClock utcClock = new UtcClock();
 
     @Spy
     private ObjectToJsonObjectConverter objectToJsonObjectConverter = new JsonObjectConvertersFactory().objectToJsonObjectConverter();
@@ -289,7 +293,53 @@ public class PublishCourtListCommandSenderTest {
         assertThat(payload, notNullValue());
         verifyCourtListPublicEventDetails(payload, courtCentreId.toString(), startDate.toString(), PublishCourtListType.FIRM.toString(), 6);
 
+    }
 
+    @Test
+    public void shouldSendEndDateInRequestExportCourtListIfItExists() {
+
+        final UUID courtCentreId = randomUUID();
+        final UUID courtListId = randomUUID();
+        final LocalDate startDate = LocalDate.now();
+        final String mockFileContent = "FILE_CONTENT";
+        final ZonedDateTime requestedTime = parse("2018-01-02T13:04:05+00:00[UTC]");
+        final PublishCourtListRequestParameters parameters = new PublishCourtListRequestParameters(
+                courtListId,
+                courtCentreId,
+                startDate,
+                startDate.plusDays(3),
+                PublishCourtListType.FINAL,
+                requestedTime,
+                true
+        );
+        final LocalDate endDate = startDate.plusDays(3);
+        final JsonObject courtListExportRequested = createObjectBuilder()
+                .add("courtCentreId", courtCentreId.toString())
+                .add("courtListId", courtListId.toString())
+                .add("publishCourtListType", PublishCourtListType.FINAL.name())
+                .add("startDate", startDate.toString())
+                .add("endDate", endDate.toString())
+                .add("requestedTime", requestedTime.toString())
+                .add("sendNotificationToParties", true)
+                .build();
+        final Metadata metadata = metadataBuilder()
+                .withId(randomUUID())
+                .withStreamId(courtListId)
+                .withName("DUMMY")
+                .withUserId(randomUUID().toString()).build();
+        final JsonEnvelope tEnvelope = envelopeFrom(metadata, courtListExportRequested);
+        final JsonObject courtListJson = givenPayload("/test-data/listing.event.court-list-export-requested-warn-courtListJson-multiple.json");
+
+        publishCourtListCommandSender.requestExportCourtList(parameters, courtListJson, tEnvelope);
+
+        verify(sender).send(envelopeArgumentCaptor.capture());
+
+        final JsonEnvelope value = this.envelopeArgumentCaptor.getValue();
+
+
+        final JsonObject jsonObject = value.payloadAsJsonObject();
+
+        assertThat(jsonObject.getString("endDate"), is(endDate.toString()));
     }
 
     private void verifyCourtListPublicEventDetails(final JsonObject payload, final String courtCentreId, final String startDate, final String publishCourtListType, final int courtListSize){

@@ -114,6 +114,7 @@ public class CourtListEventProcessorTest {
                 .add("courtListId", courtListId.toString())
                 .add("publishCourtListType", PublishCourtListType.WARN.name())
                 .add("startDate", startDate.toString())
+                .add("endDate", startDate.plusDays(5).toString())
                 .add("requestedTime", requestedTime.toString())
                 .add("courtListJson", courtListJson.toString())
                 .add("sendNotificationToParties", true)
@@ -157,6 +158,7 @@ public class CourtListEventProcessorTest {
                 .add("courtListId", courtListId.toString())
                 .add("publishCourtListType", PublishCourtListType.WARN.name())
                 .add("startDate", startDate.toString())
+                .add("endDate", startDate.plusDays(6).toString())
                 .add("requestedTime", requestedTime.toString())
                 .add("courtListJson", courtListJson.toString())
                 .build();
@@ -174,6 +176,41 @@ public class CourtListEventProcessorTest {
         PublishCourtListRequestParameters parameters = captor.getValue();
 
         assertEquals(parameters.getEndDate(), startDate.plusDays(6));
+    }
+
+    @Test
+    public void shouldHandleCourtListExportRequestedWithCorrectEndDateWhenEndDateIsSupplied() {
+
+        final UUID courtCentreId = randomUUID();
+        final UUID courtListId = randomUUID();
+        final LocalDate startDate = LocalDate.of(2023,9,18);
+        final JsonObject courtListJson = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list.json");
+
+        final ZonedDateTime requestedTime = parse("2018-01-02T13:04:05+00:00[UTC]");
+
+        final JsonObject courtListExportRequested = createObjectBuilder()
+                .add("courtCentreId", courtCentreId.toString())
+                .add("courtListId", courtListId.toString())
+                .add("publishCourtListType", PublishCourtListType.WARN.name())
+                .add("startDate", startDate.toString())
+                .add("endDate", startDate.plusDays(4).toString())
+                .add("requestedTime", requestedTime.toString())
+                .add("courtListJson", courtListJson.toString())
+                .build();
+        final Metadata metadata = metadataBuilder()
+                .withId(randomUUID())
+                .withStreamId(courtListId)
+                .withName("listing.event.court-list-export-requested")
+                .withUserId(randomUUID().toString()).build();
+        final JsonEnvelope tEnvelope = envelopeFrom(metadata, courtListExportRequested);
+
+        // Tested method
+        courtListEventProcessor.handleCourtListExportRequested(tEnvelope);
+        ArgumentCaptor<PublishCourtListRequestParameters> captor = ArgumentCaptor.forClass(PublishCourtListRequestParameters.class);
+        verify(courtListExportService).exportCourtList(eq(tEnvelope), captor.capture(),eq(courtListJson));
+        PublishCourtListRequestParameters parameters = captor.getValue();
+
+        assertEquals(parameters.getEndDate(), startDate.plusDays(4));
     }
 
     @Test

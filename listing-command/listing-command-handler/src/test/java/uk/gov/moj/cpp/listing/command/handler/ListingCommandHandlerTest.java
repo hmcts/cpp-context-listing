@@ -2049,6 +2049,7 @@ public class ListingCommandHandlerTest {
                 .add("courtCentreId", courtCentreId.toString())
                 .add("publishCourtListType", publishCourtListType.name())
                 .add("startDate", startDate.toString())
+                .add("endDate", startDate.plusDays(5).toString())
                 .add("courtListJson", courtListJson)
                 .add("sendNotificationToParties", true)
                 .build();
@@ -2067,6 +2068,7 @@ public class ListingCommandHandlerTest {
                                 withJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())),
                                 withJsonPath("$.publishCourtListType", equalTo(publishCourtListType.name())),
                                 withJsonPath("$.startDate", equalTo(startDate.toString())),
+                                withJsonPath("$.endDate", equalTo(startDate.plusDays(5).toString())),
                                 withJsonPath("$.courtListJson", equalTo(courtListJson)),
                                 withJsonPath("$.sendNotificationToParties", equalTo(true))
                         )))));

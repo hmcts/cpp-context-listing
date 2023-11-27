@@ -195,7 +195,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 4817594778865191000L;
+    private static final long serialVersionUID = 4817594778865191001L;
 
     private static final String SUMMONS_APPROVED_RESULT_TYPE_ID = "0f44eeb9-2c81-430d-9a60-bbdaf8c4a093";
     private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
@@ -1640,7 +1640,7 @@ public class Hearing implements Aggregate {
             return Stream.empty();
         }
 
-        if (nonNull(hearingIdForApplicationToBeEjected)) {
+        if (nonNull(hearingIdForApplicationToBeEjected) && hearingIdForApplicationToBeEjected.equals(this.hearingId)) {
             return apply(Stream.of(ApplicationEjected.applicationEjected()
                     .withApplicationId(applicationId)
                     .withHearingId(hearingIdForApplicationToBeEjected)

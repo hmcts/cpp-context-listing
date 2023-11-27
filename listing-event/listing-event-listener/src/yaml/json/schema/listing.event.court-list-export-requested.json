@@ -30,6 +30,9 @@
     },
     "sendNotificationToParties": {
       "type": "boolean"
+    },
+    "endDate": {
+      "$ref": "#/definitions/localDate"
     }
   },
   "required": [
@@ -40,7 +43,7 @@
     "requestedTime",
     "courtListJson"
   ],
-  "additionalProperties": false,
+  "additionalProperties": true,
   "definitions": {
     "localDate": {
       "type": "string",

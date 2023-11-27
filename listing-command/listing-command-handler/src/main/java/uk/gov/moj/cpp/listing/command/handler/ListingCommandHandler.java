@@ -1369,6 +1369,7 @@ public class ListingCommandHandler {
                 courtListRequestExport.getCourtCentreId(),
                 courtListId,
                 courtListRequestExport.getCourtListJson(),
+                courtListRequestExport.getEndDate(),
                 uk.gov.justice.listing.event.PublishCourtListType.valueOf(courtListRequestExport.getPublishCourtListType().name()),
                 now(),
                 courtListRequestExport.getSendNotificationToParties(),

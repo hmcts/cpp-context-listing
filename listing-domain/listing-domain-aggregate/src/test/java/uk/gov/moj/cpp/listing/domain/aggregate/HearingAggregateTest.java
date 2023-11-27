@@ -28,6 +28,7 @@ import uk.gov.justice.listing.events.AddedCasesForHearing;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListingV2;
 import uk.gov.justice.listing.events.AllocatedHearingUpdatedForListingV2;
+import uk.gov.justice.listing.events.ApplicantRespondent;
 import uk.gov.justice.listing.events.AvailableSlotsForHearingFreed;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
@@ -181,12 +182,12 @@ public class HearingAggregateTest {
     @Test
     public void shouldSetPossibleDisqualificationOnTheEventWhenTrue() {
         nonDefaultDays = Stream.of(
-                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(2)).withDuration(of(preferredDuration)).build(),
-                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(4)).withDuration(of(defaultDuration)).build(),
-                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), defaultStartTime, UTC).plusDays(6)).withDuration(of(preferredDuration)).build())
+                NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(2)).withDuration(of(preferredDuration)).build(),
+                NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(4)).withDuration(of(defaultDuration)).build(),
+                NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), defaultStartTime, UTC).plusDays(6)).withDuration(of(preferredDuration)).build())
                 .collect(Collectors.toList());
 
-        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes,estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
                 adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, of(Boolean.TRUE));
 
@@ -200,12 +201,12 @@ public class HearingAggregateTest {
     @Test
     public void shouldNotSetPossibleDisqualificationOnTheEventWhenFalse() {
         nonDefaultDays = Stream.of(
-                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(2)).withDuration(of(preferredDuration)).build(),
-                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(4)).withDuration(of(defaultDuration)).build(),
-                        NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), defaultStartTime, UTC).plusDays(6)).withDuration(of(preferredDuration)).build())
+                NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(2)).withDuration(of(preferredDuration)).build(),
+                NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), preferredStartTime, UTC).plusDays(4)).withDuration(of(defaultDuration)).build(),
+                NonDefaultDay.nonDefaultDay().withStartTime(ZonedDateTime.of(now(), defaultStartTime, UTC).plusDays(6)).withDuration(of(preferredDuration)).build())
                 .collect(Collectors.toList());
 
-        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes,estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
+        final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
                 adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, Optional.empty());
 
@@ -1108,6 +1109,54 @@ public class HearingAggregateTest {
 
         assertThat(listedHearing.count(), is(1L));
 
+
+    }
+
+
+    @Test
+    public void shouldNotBeAbleToEjectApplicationIfHearingIsNotCreated() {
+
+        final UUID applicationId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final String removalReason = "removal reason";
+
+        final Stream<Object> listedHearing = hearing.ejectApplication(hearingId, applicationId, removalReason);
+
+        assertThat(listedHearing.count(), is(0L));
+
+    }
+
+    @Test
+    public void shouldBeAbleToEjectApplicationIfHearingIsListed() {
+
+        final UUID applicationId = randomUUID();
+        final UUID hearingId = randomUUID();
+        final String removalReason = "removal reason";
+
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withCourtRoomId(randomUUID())
+                        .withStartDate(LocalDate.now().plusDays(1))
+                        .withEstimatedMinutes(30)
+                        .withEstimatedDuration("30 minutes")
+                        .withCourtApplications(new ArrayList<>(asList(uk.gov.justice.listing.events.CourtApplication.courtApplication()
+                                .withId(applicationId)
+                                .withApplicant(ApplicantRespondent.applicantRespondent().build())
+                                .build())))
+                        .build())
+                .build()
+        );
+
+
+        final Stream<Object> listedHearing = hearing.ejectApplication(hearingId,applicationId, removalReason);
+
+        assertThat(listedHearing.count(), is(1L));
 
     }
 
@@ -2052,9 +2101,9 @@ public class HearingAggregateTest {
         ProsecutionCase prosecutionCase = prosecutionCase().withId(case1Id).withProsecutionCaseIdentifier(prosecutionCaseIdentifier).withDefendants(defendants).build();
         hearing.apply(DefendantCourtProceedingsUpdatedV2.defendantCourtProceedingsUpdatedV2().withHearingId(randomUUID()).withProsecutionCase(prosecutionCase).build());
         assertThat(hearing.getCurrentHearingEventState().getListedCases().size(), is(2));
-        uk.gov.justice.listing.events.ListedCase listedCase1 =hearing.getCurrentHearingEventState().getListedCases().stream().filter(lc->lc.getId().equals(case1Id)).findFirst().get();
+        uk.gov.justice.listing.events.ListedCase listedCase1 = hearing.getCurrentHearingEventState().getListedCases().stream().filter(lc -> lc.getId().equals(case1Id)).findFirst().get();
         assertThat(listedCase1.getDefendants().size(), is(2));
-        uk.gov.justice.listing.events.Defendant defendant3  = listedCase1.getDefendants().stream().filter(def -> def.getId().equals(defendant3Id)).findFirst().get();
+        uk.gov.justice.listing.events.Defendant defendant3 = listedCase1.getDefendants().stream().filter(def -> def.getId().equals(defendant3Id)).findFirst().get();
         assertThat(defendant3.getOffences().size(), is(1));
         assertThat(defendant3.getOffences().get(0).getId(), is(offence3Id));
     }
@@ -2321,15 +2370,15 @@ public class HearingAggregateTest {
         hearing.apply(CasesAddedToHearing.casesAddedToHearing()
                 .withHearingId(hearingId)
                 .withUnAllocatedListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
-                                .withId(prosecutionCaseId)
-                                .withDefendants(asList(Defendant.defendant()
-                                                .withId(defendantId2)
-                                                .withOffences(asList(Offence.offence()
-                                                        .withId(offenceId2)
-                                                        .withSeedingHearing(SeedingHearing.seedingHearing().withSeedingHearingId(seedingHearingId).withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN).build())
-                                                        .build()))
-                                                .build()))
+                        .withId(prosecutionCaseId)
+                        .withDefendants(asList(Defendant.defendant()
+                                .withId(defendantId2)
+                                .withOffences(asList(Offence.offence()
+                                        .withId(offenceId2)
+                                        .withSeedingHearing(SeedingHearing.seedingHearing().withSeedingHearingId(seedingHearingId).withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN).build())
+                                        .build()))
                                 .build()))
+                        .build()))
                 .build());
 
         assertThat(hearing.getCurrentHearingEventState().getListedCases().size(), is(1));
@@ -2394,8 +2443,8 @@ public class HearingAggregateTest {
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().size(), is(1));
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().stream().filter(d -> d.getId().equals(defendantId)).findFirst().get().getId(), is(defendantId));
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().size(), is(2));
-        assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().stream().filter(o-> o.getId().equals(offenceId)).findFirst().get().getId(), is(offenceId));
-        assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().stream().filter(o-> o.getId().equals(offenceId2)).findFirst().get().getId(), is(offenceId2));
+        assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().stream().filter(o -> o.getId().equals(offenceId)).findFirst().get().getId(), is(offenceId));
+        assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().stream().filter(o -> o.getId().equals(offenceId2)).findFirst().get().getId(), is(offenceId2));
     }
 
     @Test
@@ -2427,7 +2476,7 @@ public class HearingAggregateTest {
                                                         .withJurisdictionType(CROWN)
                                                         .withSeedingHearingId(seedingHearingId)
                                                         .build())
-                                                .build(),Offence.offence()
+                                                .build(), Offence.offence()
                                                 .withId(offenceId2)
                                                 .withSeedingHearing(SeedingHearing.seedingHearing()
                                                         .withJurisdictionType(CROWN)
@@ -2458,8 +2507,8 @@ public class HearingAggregateTest {
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().size(), is(1));
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().stream().filter(d -> d.getId().equals(defendantId)).findFirst().get().getId(), is(defendantId));
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().size(), is(2));
-        assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().stream().filter(o-> o.getId().equals(offenceId)).findFirst().get().getId(), is(offenceId));
-        assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().stream().filter(o-> o.getId().equals(offenceId2)).findFirst().get().getId(), is(offenceId2));
+        assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().stream().filter(o -> o.getId().equals(offenceId)).findFirst().get().getId(), is(offenceId));
+        assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().stream().filter(o -> o.getId().equals(offenceId2)).findFirst().get().getId(), is(offenceId2));
     }
 
     @Test
@@ -2494,7 +2543,7 @@ public class HearingAggregateTest {
                                                         .withJurisdictionType(CROWN)
                                                         .withSeedingHearingId(seedingHearingId)
                                                         .build())
-                                                .build(),Offence.offence()
+                                                .build(), Offence.offence()
                                                 .withId(offenceId2)
                                                 .withSeedingHearing(SeedingHearing.seedingHearing()
                                                         .withJurisdictionType(CROWN)
@@ -2502,9 +2551,9 @@ public class HearingAggregateTest {
                                                         .build())
                                                 .build())))
                                         .build())))
-                                        .build()))
-                                .build())
-                        .build());
+                                .build()))
+                        .build())
+                .build());
 
         hearing.apply(CasesAddedToHearing.casesAddedToHearing()
                 .withHearingId(hearingId)
@@ -2525,13 +2574,13 @@ public class HearingAggregateTest {
         assertThat(listedCase1.getDefendants().size(), is(1));
         assertThat(listedCase1.getDefendants().stream().filter(d -> d.getId().equals(defendantId)).findFirst().get().getId(), is(defendantId));
         assertThat(listedCase1.getDefendants().get(0).getOffences().size(), is(2));
-        assertThat(listedCase1.getDefendants().get(0).getOffences().stream().filter(o-> o.getId().equals(offenceId)).findFirst().get().getId(), is(offenceId));
-        assertThat(listedCase1.getDefendants().get(0).getOffences().stream().filter(o-> o.getId().equals(offenceId2)).findFirst().get().getId(), is(offenceId2));
+        assertThat(listedCase1.getDefendants().get(0).getOffences().stream().filter(o -> o.getId().equals(offenceId)).findFirst().get().getId(), is(offenceId));
+        assertThat(listedCase1.getDefendants().get(0).getOffences().stream().filter(o -> o.getId().equals(offenceId2)).findFirst().get().getId(), is(offenceId2));
         final uk.gov.justice.listing.events.ListedCase listedCase2 = hearing.getCurrentHearingEventState().getListedCases().stream().filter(pc -> pc.getId().equals(prosecutionCaseId1)).findFirst().get();
         assertThat(listedCase2.getDefendants().size(), is(1));
         assertThat(listedCase2.getDefendants().stream().filter(d -> d.getId().equals(defendantId2)).findFirst().get().getId(), is(defendantId2));
         assertThat(listedCase2.getDefendants().get(0).getOffences().size(), is(1));
-        assertThat(listedCase2.getDefendants().get(0).getOffences().stream().filter(o-> o.getId().equals(offenceId3)).findFirst().get().getId(), is(offenceId3));
+        assertThat(listedCase2.getDefendants().get(0).getOffences().stream().filter(o -> o.getId().equals(offenceId3)).findFirst().get().getId(), is(offenceId3));
 
     }
 
@@ -2571,7 +2620,7 @@ public class HearingAggregateTest {
                                                 .withJurisdictionType(CROWN)
                                                 .withSeedingHearingId(seedingHearingId)
                                                 .build())
-                                        .build(),Offence.offence()
+                                        .build(), Offence.offence()
                                         .withId(offenceId2)
                                         .withSeedingHearing(SeedingHearing.seedingHearing()
                                                 .withJurisdictionType(CROWN)
@@ -2623,7 +2672,6 @@ public class HearingAggregateTest {
         assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(1).getDefendants().get(0).getId(), is(defendantId2));
         assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(1).getDefendants().get(0).getOffenceIds().size(), is(1));
         assertThat(allocatedHearingExtendedForListingV2s.getProsecutionCaseDefendantsOffenceIds().get(1).getDefendants().get(0).getOffenceIds().get(0), is(offenceId3));
-
 
 
     }

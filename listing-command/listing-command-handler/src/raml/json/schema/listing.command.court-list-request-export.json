@@ -9,6 +9,7 @@
     "startDate": {
       "$ref": "#/definitions/localDate"
     },
+
     "publishCourtListType": {
       "type": "string",
       "enum": [
@@ -23,9 +24,12 @@
     },
     "sendNotificationToParties": {
       "type": "boolean"
+    },
+    "endDate": {
+      "$ref": "#/definitions/localDate"
     }
   },
-  "additionalProperties": false,
+  "additionalProperties": true,
   "required": [
     "courtCentreId",
     "startDate",

@@ -147,15 +147,18 @@ public class PublishCourtListCommandSender {
 
     public void requestExportCourtList(final PublishCourtListRequestParameters requestParameters, final JsonObject courtListJson, final JsonEnvelope envelope) {
 
-        final JsonObject payload = createObjectBuilder()
+        final JsonObjectBuilder payload = createObjectBuilder()
                 .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
                 .add(START_DATE, requestParameters.getStartDate().toString())
                 .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
                 .add(COURT_LIST_JSON, courtListJson.toString())
-                .add(SEND_NOTIFICATION_TO_PARTIES, Optional.ofNullable(requestParameters.getSendNotificationToParties()).orElse(false))
-                .build();
+                .add(SEND_NOTIFICATION_TO_PARTIES, Optional.ofNullable(requestParameters.getSendNotificationToParties()).orElse(false));
 
-        sendCommandWithUser(COURT_LIST_REQUEST_EXPORT, requestParameters.getCourtListId(), payload, envelope.metadata().userId());
+        if (requestParameters.getEndDate() != null) {
+            payload.add(END_DATE, requestParameters.getEndDate().toString());
+        }
+
+        sendCommandWithUser(COURT_LIST_REQUEST_EXPORT, requestParameters.getCourtListId(), payload.build(), envelope.metadata().userId());
     }
 
     public void publishPublicMessageForCourtList(final JsonEnvelope envelope, final PublishCourtListRequestParameters requestParameters, final JsonObject courtListJson) {
