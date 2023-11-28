@@ -131,8 +131,7 @@
               "hearingType",
               "restrictFromCourtList",
               "weekCommencing"
-            ],
-            "additionalProperties": false
+            ]
           }
         }
       },
@@ -140,9 +139,7 @@
         "sittingDate",
         "judiciary",
         "hearings"
-      ],
-      "additionalProperties": false
+      ]
     }
-  },
-  "additionalProperties": false
+  }
 }
