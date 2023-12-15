@@ -75,7 +75,7 @@ public class ReferenceDataService {
         return requester.requestAsAdmin(envelopeFrom(requestEnvelope.metadata(), requestEnvelope.payload()));
     }
 
-    public JsonEnvelope getCourtCentreById(final UUID courtCentreId, final JsonEnvelope event) {
+    public JsonEnvelope getCourtCentreById(final UUID courtCentreId, final Envelope event) {
         final JsonObject payload = createObjectBuilder().add("id", courtCentreId.toString()).build();
         LOGGER.info("'referencedata.query.courtroom' request with payload {}", payload);
 

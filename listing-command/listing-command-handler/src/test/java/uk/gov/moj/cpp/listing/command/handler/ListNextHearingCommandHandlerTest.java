@@ -63,6 +63,7 @@ import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamEx
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
 import uk.gov.moj.cpp.listing.common.azure.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
@@ -141,6 +142,9 @@ public class ListNextHearingCommandHandlerTest {
 
     @Mock
     private ObjectToJsonObjectConverter objectToJsonObjectConverter;
+
+    @Mock
+    private HmiService hmiService;
 
     @Test
     public void shouldHandleListNextCourtHearings() throws EventStreamException {
@@ -327,6 +331,8 @@ public class ListNextHearingCommandHandlerTest {
                         .build());
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearingAggregate);
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
+
         listNextHearingCommandHandler.deleteSeededHearing(commandEnvelope);
 
         final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());
@@ -420,6 +426,8 @@ public class ListNextHearingCommandHandlerTest {
                         .build());
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearingAggregate);
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
+
         listNextHearingCommandHandler.deleteSeededHearing(commandEnvelope);
 
         final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());

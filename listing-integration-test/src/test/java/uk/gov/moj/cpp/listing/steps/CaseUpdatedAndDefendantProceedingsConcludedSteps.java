@@ -136,6 +136,15 @@ public class CaseUpdatedAndDefendantProceedingsConcludedSteps extends AbstractIT
         assertThat(((ArrayList)((Map)jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
     }
 
+    public void verifyPrivateEventUpdatedHearingInStagingHmiNotInActiveMQ() {
+        JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerUpdatedHearingInStagingHmi);
+
+        assertThat(jsonResponse, nullValue());
+    }
+
     public void verifyPrivateEventDefendantCourtProceedingsUpdatedIsNotInActiveMQ() {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());

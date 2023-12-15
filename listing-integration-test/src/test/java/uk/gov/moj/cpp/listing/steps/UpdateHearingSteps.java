@@ -65,6 +65,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -164,6 +165,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTOR_PUBLIC_LIST_NOTE_REMOVED = "listing.events.public-list-note-removed-from-hearing";
     private static final String EVENT_SELECTOR_START_DATE_REMOVED = "listing.events.start-date-removed-for-hearing";
     public static final String EVENT_SELECTOR_LISTING_EVENTS_WEEK_COMMENCING_DATE_CHANGED_FOR_HEARING = "listing.events.week-commencing-date-changed-for-hearing";
+    private static final String LISTING_EVENTS_UPDATED_HEARING_IN_STAGING_HMI = "listing.events.updated-hearing-in-staging-hmi";
     private static final String FIELD_HEARINGS = "hearings";
     private static final int DEFAULT_DURATION_MINS = 120;
     private static final ZoneId UTC = ZoneId.of("UTC");
@@ -214,6 +216,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
     private MessageProducer publicEventMessageProducer;
     private MessageConsumer privateMessageConsumerStartDateRemoved;
     private MessageConsumer privateMessageConsumerWeekCommencingDateChanged;
+    private MessageConsumer privateEventMessageConsumerUpdatedHearingInStagingHmi;
 
 
     private String request;
@@ -568,6 +571,7 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         publicEventHearingDaysChangedForHearing = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING);
         privateMessageConsumerStartDateRemoved = privateEvents.createConsumer(EVENT_SELECTOR_START_DATE_REMOVED);
         privateMessageConsumerWeekCommencingDateChanged = privateEvents.createConsumer(EVENT_SELECTOR_LISTING_EVENTS_WEEK_COMMENCING_DATE_CHANGED_FOR_HEARING);
+        privateEventMessageConsumerUpdatedHearingInStagingHmi = privateEvents.createConsumer(LISTING_EVENTS_UPDATED_HEARING_IN_STAGING_HMI);
         publicEventMessageProducer = QueueUtil.publicEvents.createProducer();
     }
 
@@ -892,6 +896,24 @@ public class UpdateHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
         verifyHearingConfirmedEvent();
+    }
+
+    public void verifyPrivateEventUpdatedHearingInStagingHmiInActiveMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerUpdatedHearingInStagingHmi);
+
+        assertThat(((ArrayList)((Map)jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
+    }
+
+    public void verifyPrivateEventUpdatedHearingInStagingHmiNotInActiveMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerUpdatedHearingInStagingHmi);
+
+        assertThat(jsonResponse, nullValue());
     }
 
     public void verifyHearingDaysChangedForHearingEvent() {

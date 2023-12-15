@@ -29,6 +29,7 @@ public class DefendantProceedingConcludedAndCaseStatusIT extends AbstractIT {
             caseUpdatedAndDefendantProceedingsConcludedSteps.whenPublicEventCaseUpdatedAndHearingResultedIsPublished();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventCaseResultedDefendantProceedingsUpdatedInActiveMQ();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventDefendantCourtProceedingsUpdatedInActiveMQ();
+            caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventUpdatedHearingInStagingHmiNotInActiveMQ();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPI(UNALLOCATED);
         }
 

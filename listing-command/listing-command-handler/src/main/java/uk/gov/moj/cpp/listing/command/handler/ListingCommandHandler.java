@@ -110,6 +110,7 @@ import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.listing.command.factory.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.command.service.StagingHmiQueryService;
 import uk.gov.moj.cpp.listing.command.service.UUIDService;
@@ -152,7 +153,6 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil;
-import uk.gov.moj.cpp.staginghmi.common.StagingHmiService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -299,7 +299,7 @@ public class ListingCommandHandler {
     private RotaSLServiceAdapter rotaSLServiceAdapter;
 
     @Inject
-    private StagingHmiService stagingHmiService;
+    private HmiService hmiService;
 
     @Inject
     private StagingHmiQueryService stagingHmiQueryService;
@@ -360,8 +360,9 @@ public class ListingCommandHandler {
                     .withCourtCentreId(courtCentre.getId())
                     .build();
 
-            final String ouCode = getOucode(domainHearing.getCourtCentreId(), command);
-            final boolean isHmiEnabled = stagingHmiService.isHmiListingEnabled(ofNullable(ouCode));
+            final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(domainHearing.getCourtCentreId(), command);
+            final String ouCode = organisationUnitJsonObject.getString(OUCODE);
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(ouCode);
 
             final List<JudicialRole> finalJudiciaries = CollectionUtils.isEmpty(commandHearing.getJudiciary()) ? getJudicialRoles(command, domainHearing, isHmiEnabled, ouCode, courtCentreDefaults) : convertJudicialRolesToDomain(commandHearing.getJudiciary());
 
@@ -426,11 +427,6 @@ public class ListingCommandHandler {
         return judiciaries;
     }
 
-    private String getOucode(final UUID courtCentreId, final JsonEnvelope command) {
-        final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
-        return organisationUnitJsonObject.getString(OUCODE);
-    }
-
     private List<HmiSession> getSessionsFromHmi(final JsonEnvelope command, final uk.gov.moj.cpp.listing.domain.Hearing domainHearing, final String ouCode, final CourtCentreDefaults courtCentreDefaults) {
         final ZonedDateTime startDateTime = nonNull(domainHearing.getStartDateTime()) ? domainHearing.getStartDateTime() : buildStartDateTime(domainHearing.getWeekCommencingStartDate().orElse(LocalDate.now()), courtCentreDefaults.getDefaultStartTime());
         final ZonedDateTime sessionsStartDateTime = startDateTime.toLocalDate().atStartOfDay(startDateTime.getZone());
@@ -473,8 +469,11 @@ public class ListingCommandHandler {
 
         final VacateTrialEnriched vacateTrialEnriched = jsonObjectConverter.convert(command.payloadAsJsonObject(), VacateTrialEnriched.class);
 
-        updateHearingEventStream(command, vacateTrialEnriched.getHearingId(), (Hearing hearing) ->
-                hearing.raiseUpdateHearingInStagingHmi(hearing.vacateTrial(vacateTrialEnriched.getHearingId(), vacateTrialEnriched.getVacatedTrialReasonId())));
+        updateHearingEventStream(command, vacateTrialEnriched.getHearingId(), (Hearing hearing) -> {
+            final Stream<Object> vacateTrialStream = hearing.vacateTrial(vacateTrialEnriched.getHearingId(), vacateTrialEnriched.getVacatedTrialReasonId());
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(vacateTrialStream) : vacateTrialStream;
+        });
 
     }
 
@@ -483,8 +482,11 @@ public class ListingCommandHandler {
         LOGGER.info("'listing.command.hearing-vacate-trial' received with payload {}", command.toObfuscatedDebugString());
         final HearingVacateTrial hearingVacateTrial = jsonObjectConverter.convert(command.payloadAsJsonObject(), HearingVacateTrial.class);
 
-        updateHearingEventStream(command, hearingVacateTrial.getHearingId(), (Hearing hearing) ->
-                hearing.raiseUpdateHearingInStagingHmi(hearing.hearingVacateTrial(ofNullable(hearingVacateTrial.getVacatedTrialReasonId()))));
+        updateHearingEventStream(command, hearingVacateTrial.getHearingId(), (Hearing hearing) -> {
+            final Stream<Object> hearingVacateTrialStream = hearing.hearingVacateTrial(ofNullable(hearingVacateTrial.getVacatedTrialReasonId()));
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearingVacateTrialStream) : hearingVacateTrialStream;
+        });
     }
 
     @SuppressWarnings({"squid:S3776"})
@@ -582,7 +584,7 @@ public class ListingCommandHandler {
             Optional<String> panel = empty();
             final JsonObject organisationUnitJsonObject = courtCentreFactory.getOrganisationUnit(courtCentreId, command);
             final String ouCode = organisationUnitJsonObject.getString(OUCODE);
-            final boolean hmiEnabled = stagingHmiService.isHmiListingEnabled(ofNullable(ouCode));
+            final boolean hmiEnabled = hmiService.isHmiEnabled(ouCode);
             if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && !hmiEnabled) {
                 setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagistrates(judiciary, courtRoomId, nonDefaultDays, ouCode);
                 panel = rotaSLServiceAdapter.getPanelInfo(panelFromCommand, startDate, endDate, courtRoomId, ouCode);
@@ -616,7 +618,8 @@ public class ListingCommandHandler {
             }
             final Stream<Object> videoLinkUpdateEvent = hearing.assignVideoLink(hasVideoLink, hearingId);
             final Stream<Object> hmiFieldsUpdateEvent = hearing.updateHmiFields(hearingId, bookingType, priority, specialRequirements);
-            final Stream<Object> hmiEvent = hearing.raiseUpdateHearingInStagingHmi(source);
+
+            final Stream<Object> hmiEvent = hmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(source) : Stream.empty();
 
             return Stream.of(typeEvents, jurisdictionTypeEvents, hearingLanguageEvents, startDateEventList.stream(), nonDefaultDaysEvents, endDateEvents,
                     nonSittingDaysEvents, courtCentreEvents, judiciaryEvents, courtRoomEvents, hearingDayEvents, allocationEvents, weekCommencingDateEvents, hearingPartiallyEvents,
@@ -839,10 +842,10 @@ public class ListingCommandHandler {
         final RemovePartiallyMergedOffencesFromOriginalHearing removePartiallyMergedOffencesFromOriginalHearing = jsonObjectConverter.convert(payload, RemovePartiallyMergedOffencesFromOriginalHearing.class);
 
         updateHearingEventStream(command, removePartiallyMergedOffencesFromOriginalHearing.getHearingIdToBeUpdated(), (Hearing hearing) -> {
-
             final List<uk.gov.justice.listing.events.ProsecutionCases> prosecutionCases = prosecutionCasesBuilder.buildEventProsecutionCasesToRemove(removePartiallyMergedOffencesFromOriginalHearing.getProsecutionCasesToRemove());
-
-            return hearing.raiseUpdateHearingInStagingHmi(hearing.updateUnallocatedHearingPartially(removePartiallyMergedOffencesFromOriginalHearing.getHearingIdToBeUpdated(), prosecutionCases));
+            final Stream<Object> updateUnallocatedHearingPartiallyStream = hearing.updateUnallocatedHearingPartially(removePartiallyMergedOffencesFromOriginalHearing.getHearingIdToBeUpdated(), prosecutionCases);
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(updateUnallocatedHearingPartiallyStream) : updateUnallocatedHearingPartiallyStream;
         });
 
     }
@@ -873,7 +876,8 @@ public class ListingCommandHandler {
 
         updateHearingEventStream(command, addCasesToHearing.getHearingId(), (Hearing hearing) -> {
             final Stream<Object> addedCases = hearing.addCasesToHearing(addCasesToHearing.getProsecutionCases(), addCasesToHearing.getShadowListedOffences(), ofNullable(addCasesToHearing.getSeedingHearingId()));
-            return hearing.raiseUpdateHearingInStagingHmi(addedCases);
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(addedCases) : addedCases;
         });
     }
 
@@ -946,8 +950,10 @@ public class ListingCommandHandler {
         final List<Defendant> defendants = updateDefendantsForHearing.getDefendants();
         final List<uk.gov.moj.cpp.listing.domain.Defendant> domainDefendants = commandDefendantToDomainConverter.convert(defendants);
 
-        updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.raiseUpdateHearingInStagingHmi(hearing.updateDefendants(caseId, domainDefendants)));
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearing.updateDefendants(caseId, domainDefendants)) : hearing.updateDefendants(caseId, domainDefendants);
+        });
     }
 
     @Handles("listing.command.update-offences-for-hearing")
@@ -964,8 +970,10 @@ public class ListingCommandHandler {
         final List<Offence> offences = updateOffencesForHearing.getOffences();
         final List<uk.gov.moj.cpp.listing.domain.Offence> domainOffences = commandOffenceToDomainOffence.convert(offences);
 
-        updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.raiseUpdateHearingInStagingHmi(hearing.updateOffences(caseId, defendantId, domainOffences)));
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearing.updateOffences(caseId, defendantId, domainOffences)) : hearing.updateOffences(caseId, defendantId, domainOffences);
+        });
     }
 
     @Handles("listing.command.delete-offences-for-hearing")
@@ -981,8 +989,10 @@ public class ListingCommandHandler {
         final List<SimpleOffence> offences = deleteOffencesForHearing.getOffences();
         final List<uk.gov.moj.cpp.listing.domain.SimpleOffence> domainOffences = commandSimpleOffenceToDomainOffence.convert(offences);
 
-        updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.raiseUpdateHearingInStagingHmi(hearing.deleteOffences(caseId, defendantId, domainOffences)));
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearing.deleteOffences(caseId, defendantId, domainOffences)) : hearing.deleteOffences(caseId, defendantId, domainOffences);
+        });
     }
 
     @Handles("listing.command.add-offences-for-hearing")
@@ -998,8 +1008,10 @@ public class ListingCommandHandler {
         final List<Offence> offences = addOffencesForHearing.getOffences();
         final List<uk.gov.moj.cpp.listing.domain.Offence> domainOffences = commandOffenceToDomainOffence.convert(offences);
 
-        updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.raiseUpdateHearingInStagingHmi(hearing.addOffences(caseId, defendantId, domainOffences)));
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearing.addOffences(caseId, defendantId, domainOffences)) : hearing.addOffences(caseId, defendantId, domainOffences);
+        });
     }
 
     @Handles("listing.command.change-judiciary-for-hearings")
@@ -1016,7 +1028,8 @@ public class ListingCommandHandler {
             updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
                 final Stream<Object> judicialEvents = hearing.assignJudiciary(judicialRoles, hearingId);
                 final Stream<Object> allocationEvents = hearing.applyAllocationRules(Collections.emptyList(), false, false);
-                return hearing.raiseUpdateHearingInStagingHmi(Stream.of(allocationEvents, judicialEvents).flatMap(i -> i));
+                final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+                return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(Stream.of(allocationEvents, judicialEvents).flatMap(i -> i)) : Stream.of(allocationEvents, judicialEvents).flatMap(i -> i);
             });
         }
     }
@@ -1030,8 +1043,10 @@ public class ListingCommandHandler {
         final List<uk.gov.moj.cpp.listing.domain.SequenceHearing> sequenceHearingList = convertSequenceHearingsToDomain(sequenceHearings);
 
         for (final uk.gov.moj.cpp.listing.domain.SequenceHearing sequenceHearing : sequenceHearingList) {
-            updateHearingEventStream(command, sequenceHearing.getId(), (Hearing hearing) ->
-                    hearing.raiseUpdateHearingInStagingHmi(hearing.sequenceHearingDays(sequenceHearing)));
+            updateHearingEventStream(command, sequenceHearing.getId(), (Hearing hearing) -> {
+                final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+                return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearing.sequenceHearingDays(sequenceHearing)) : hearing.sequenceHearingDays(sequenceHearing);
+            });
         }
     }
 
@@ -1048,8 +1063,10 @@ public class ListingCommandHandler {
         final uk.gov.moj.cpp.listing.domain.CourtApplication courtApplicationDomain = courtApplicationToDomainConverter.convertListingCoreCourtApplication(courtApplication);
 
         for (final UUID hearingId : hearingIds) {
-            updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                    hearing.raiseUpdateHearingInStagingHmi(hearing.updateCourtApplication(hearingId, courtApplicationDomain)));
+            updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+                final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+                return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearing.updateCourtApplication(hearingId, courtApplicationDomain)) : hearing.updateCourtApplication(hearingId, courtApplicationDomain);
+            });
         }
 
     }
@@ -1067,8 +1084,10 @@ public class ListingCommandHandler {
 
         final uk.gov.moj.cpp.listing.domain.CourtApplication courtApplicationDomain = courtApplicationToDomainConverter.convert(courtApplication);
 
-        updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.raiseUpdateHearingInStagingHmi(hearing.addCourtApplication(hearingId, courtApplicationDomain)));
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearing.addCourtApplication(hearingId, courtApplicationDomain)) : hearing.addCourtApplication(hearingId, courtApplicationDomain);
+        });
 
 
     }
@@ -1099,8 +1118,10 @@ public class ListingCommandHandler {
         final UUID caseId = command.getProsecutionCaseId();
         final List<CaseMarker> caseMarkers = caseMarkersToDomainConverter.convert(command.getCaseMarkers());
 
-        updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) ->
-                hearing.raiseUpdateHearingInStagingHmi(hearing.updateCaseMarkers(caseId, caseMarkers)));
+        updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) -> {
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), commandEnvelope);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearing.updateCaseMarkers(caseId, caseMarkers)) : hearing.updateCaseMarkers(caseId, caseMarkers);
+        });
 
     }
 
@@ -1197,8 +1218,10 @@ public class ListingCommandHandler {
         final List<Defendant> defendants = addDefendantsToCourtProceedingsForHearing.getDefendants();
         final List<uk.gov.moj.cpp.listing.domain.Defendant> domainDefendants = commandDefendantToDomainConverter.convert(defendants);
 
-        updateHearingEventStream(command, hearingId, (Hearing hearing) ->
-                hearing.raiseUpdateHearingInStagingHmi(hearing.addDefendantsForCourtProceedings(caseId, domainDefendants)));
+        updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearing.addDefendantsForCourtProceedings(caseId, domainDefendants)) : hearing.addDefendantsForCourtProceedings(caseId, domainDefendants);
+        });
     }
 
     @Handles("listing.command.restrict-court-list")
@@ -1346,10 +1369,12 @@ public class ListingCommandHandler {
                 .flatMap(Collection::stream)
                 .anyMatch(judicialResult -> judicialResult.getJudicialResultTypeId().equals(UUID.fromString(SUMMONS_REJECTED_RESULT_TYPE_ID)))) {
             updateHearingEventStream(envelope, hearingId, (Hearing hearing) ->
-                    createHmiEvents(hearingId, prosecutionCase, hearing));
+                    createHmiEvents(hearingId, prosecutionCase, hearing, envelope));
         } else {
-            updateHearingEventStream(envelope, hearingId, (Hearing hearing) ->
-                    hearing.raiseUpdateHearingInStagingHmi(hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase)));
+            updateHearingEventStream(envelope, hearingId, (Hearing hearing) -> {
+                final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), envelope);
+                return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase)) : hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase);
+            });
         }
     }
 
@@ -1523,7 +1548,8 @@ public class ListingCommandHandler {
         final EventStream eventStream = eventSource.getStreamById(modifyHearingCounsels.getHearingId());
         final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
 
-        final Stream<Object> events = hearingAggregate.raiseUpdateHearingInStagingHmi(streamOf(event));
+        final boolean isHmiEnabled = hmiService.isHmiEnabled(hearingAggregate.getCurrentHearingEventState(), commandEnvelope);
+        final Stream<Object> events = isHmiEnabled ? hearingAggregate.raiseUpdateHearingInStagingHmi(streamOf(event)) : streamOf(event);
 
         eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
     }
@@ -1535,7 +1561,9 @@ public class ListingCommandHandler {
         final EventStream eventStream = eventSource.getStreamById(payload.getHearingId());
         final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
         final Stream<Object> events = hearingAggregate.cancelHearingDays(payload.getHearingId(), hearingDaysToDomainConverter.convert(payload.getHearingDays()));
-        final Stream<Object> allEvents = hearingAggregate.raiseUpdateHearingInStagingHmi(events);
+
+        final boolean isHmiEnabled = hmiService.isHmiEnabled(hearingAggregate.getCurrentHearingEventState(), envelope);
+        final Stream<Object> allEvents = isHmiEnabled ? hearingAggregate.raiseUpdateHearingInStagingHmi(events) : events;
 
         appendEventsToStream(envelope, eventStream, allEvents);
     }
@@ -1551,8 +1579,9 @@ public class ListingCommandHandler {
                 .forEach(hearingDay -> hearingDays.add(jsonObjectConverter.convert(hearingDay, uk.gov.justice.listing.events.HearingDay.class)));
 
         updateHearingEventStream(commandEnvelope, hearingId, (Hearing hearing) -> {
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), commandEnvelope);
             final Stream<Object> events = hearing.raiseHearingDaysWithoutCourtCentreCorrected(hearingId, hearingDays);
-            return hearing.raiseUpdateHearingInStagingHmi(events);
+            return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(events) : events;
         });
     }
 
@@ -1567,8 +1596,10 @@ public class ListingCommandHandler {
         for (final UUID hearingId : updateCpsProsecutorWithHearings.getHearingIds()) {
             final EventStream eventStream = eventSource.getStreamById(hearingId);
             final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearingAggregate.getCurrentHearingEventState(), envelope);
             final Stream<Object> events = hearingAggregate.updateCaseIdentifier(updateCpsProsecutorWithHearings.getProsecutionAuthorityId(), updateCpsProsecutorWithHearings.getProsecutionAuthorityCode(), updateCpsProsecutorWithHearings.getProsecutionCaseId());
-            appendEventsToStream(envelope, eventStream, hearingAggregate.raiseUpdateHearingInStagingHmi(events));
+            final Stream<Object> eventsWithUpdateHearingInStagingHmiEvent = isHmiEnabled ? hearingAggregate.raiseUpdateHearingInStagingHmi(events) : events;
+            appendEventsToStream(envelope, eventStream, eventsWithUpdateHearingInStagingHmiEvent);
         }
     }
 
@@ -1841,9 +1872,11 @@ public class ListingCommandHandler {
         return extendHearingUtils.extractCasesToMove(listedCasesDeepCopy, unallocatedHearingRequestCaseMap);
     }
 
-    private static Stream<Object> createHmiEvents(final UUID hearingId, final ProsecutionCase prosecutionCase, final Hearing hearing) {
+    private Stream<Object> createHmiEvents(final UUID hearingId, final ProsecutionCase prosecutionCase, final Hearing hearing, final JsonEnvelope envelope) {
         if (hearing.getIsSummonsApprovedExists()) {
-            return Stream.of(hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase), hearing.deleteHearingForHmi()).flatMap(i -> i);
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), envelope);
+            final Stream<Object> deleteHearingForHmiStream = isHmiEnabled ? hearing.deleteHearingForHmi() : Stream.empty();
+            return Stream.of(hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase), deleteHearingForHmiStream).flatMap(i -> i);
         } else {
             return hearing.updateDefendantCourtProceedingForHearing(hearingId, prosecutionCase);
         }

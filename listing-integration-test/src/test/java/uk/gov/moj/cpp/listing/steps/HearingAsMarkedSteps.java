@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -46,6 +47,7 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
     private static final String LISTING_COMMAND_DUPLICATE_UNALLOCATED_HEARING = "listing.mark-unallocated-hearing-as-duplicate";
     private static final String MEDIA_TYPE_DUPLICATE_UNALLOCATED_HEARING = "application/vnd.listing.duplicate-unallocated-hearing+json";
     public static final String PUBLIC_LISTING_DELETED_HEARING_IN_STAGING_HMI = "public.listing.deleted-hearing-in-staging-hmi";
+    public static final String LISTING_EVENTS_DELETED_HEARING_IN_STAGING_HMI = "listing.events.deleted-hearing-in-staging-hmi";
 
 
     private final MessageProducer publicEventHearingMarkedAsDuplicateEvent;
@@ -53,6 +55,7 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
     private final MessageConsumer privateMessageConsumerHearingMarkedAsDuplicateEvent;
     private final MessageConsumer privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent;
     private final MessageConsumer publicMessageConsumerHmiHearingDeleted;
+    private final MessageConsumer privateEventMessageConsumerDeletedHearingInStagingHmi;
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
@@ -68,6 +71,7 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumerHearingMarkedAsDuplicateEvent = privateEvents.createConsumer(PRIVATE_HEARING_MARKED_AS_DUPLICATE_EVENT);
         privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent = privateEvents.createConsumer(PRIVATE_HEARING_MARKED_AS_DUPLICATE_FOR_CASE_EVENT);
         publicMessageConsumerHmiHearingDeleted = publicEvents.createConsumer(PUBLIC_LISTING_DELETED_HEARING_IN_STAGING_HMI);
+        privateEventMessageConsumerDeletedHearingInStagingHmi = privateEvents.createConsumer(LISTING_EVENTS_DELETED_HEARING_IN_STAGING_HMI);
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
@@ -183,5 +187,22 @@ public class HearingAsMarkedSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.getString("hearingId"), is(hearingData.getId().toString()));
         assertThat(jsonResponse.getString("cancellationReasonCode"), is("CNCL"));
         assertThat(jsonResponse.getList("caseAndApplicationIds").size(), is(3));
+    }
+
+    public void verifyPrivateEventDeletedHearingInStagingHmiInActiveMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerDeletedHearingInStagingHmi);
+
+        LOGGER.info("json response : {}", jsonResponse.prettify());
+        assertThat(jsonResponse.getString("hearingId"), is(hearingData.getId().toString()));
+        assertThat(jsonResponse.getString("cancellationReasonCode"), is("CNCL"));
+        assertThat(jsonResponse.getList("caseAndApplicationIds").size(), is(3));
+    }
+
+    public void verifyPrivateEventDeletedHearingInStagingHmiNotInActiveMQ() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerDeletedHearingInStagingHmi);
+        assertThat(jsonResponse, nullValue());
     }
 }

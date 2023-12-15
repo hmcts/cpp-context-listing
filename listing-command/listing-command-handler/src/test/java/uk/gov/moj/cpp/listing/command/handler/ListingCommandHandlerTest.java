@@ -153,6 +153,7 @@ import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFact
 import uk.gov.moj.cpp.listing.command.factory.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.command.service.UUIDService;
 import uk.gov.moj.cpp.listing.command.utils.CaseMarkersToDomainConverter;
@@ -207,7 +208,6 @@ import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
 import uk.gov.moj.cpp.listing.domain.aggregate.PublishCourtListRequestAggregate;
 import uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils;
-import uk.gov.moj.cpp.staginghmi.common.StagingHmiService;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -515,7 +515,7 @@ public class ListingCommandHandlerTest {
     @Mock
     private RotaSLServiceAdapter rotaSLServiceAdapter;
     @Mock
-    private StagingHmiService stagingHmiService;
+    private HmiService hmiService;
     @Spy
     private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CourtListExportRequested.class,
             HearingCounselModified.class);
@@ -552,6 +552,8 @@ public class ListingCommandHandlerTest {
         setField(this.extendHearingUtils, "prosecutionCasesBuilder", prosecutionCasesBuilder);
 
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
+        when(hearing.getCurrentHearingEventState()).thenReturn(uk.gov.justice.listing.events.Hearing.hearing().withValuesFrom(getSampleStoredHearing()).withCourtCentreId(COURT_CENTRE_ID).build());
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
         givenEventStream(eventStream, aCase, Case.class);
         givenEventStream(eventStream, hearing, Hearing.class);
         givenEventStream(eventStream, anApplication, Application.class);
@@ -850,6 +852,8 @@ public class ListingCommandHandlerTest {
         when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(hmiService.isHmiEnabled(any())).thenReturn(true);
+
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
         verify(hearing).changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1);
@@ -941,6 +945,7 @@ public class ListingCommandHandlerTest {
         when(hearingFactory.getHearingById(any(), any())).thenReturn(getSampleStoredHearing());
         when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
+        when(hmiService.isHmiEnabled(any())).thenReturn(false);
 
         when(rotaSLServiceAdapter.getPanelInfo(any(), any(LocalDate.class), any(LocalDate.class), any(UUID.class), anyString())).thenReturn(Optional.of("YOUTH"));
 
@@ -964,7 +969,7 @@ public class ListingCommandHandlerTest {
         verify(hearing).assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1);
         verify(courtCentreFactory).getOrganisationUnit(COURT_CENTRE_ID, commandEnvelope);
         verify(rotaSLServiceAdapter).getJudicialRoles(anyString(), anyString(), any(), anyString());
-        verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
+        verify(hearing, never()).raiseUpdateHearingInStagingHmi(any(Optional.class));
     }
 
     @Test
@@ -1036,7 +1041,7 @@ public class ListingCommandHandlerTest {
         when(hearingFactory.getHearingById(any(), any())).thenReturn(getSampleStoredHearing());
         when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(stagingHmiService.isHmiListingEnabled(any(Optional.class))).thenReturn(true);
+        when(hmiService.isHmiEnabled(any())).thenReturn(true);
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -1105,6 +1110,7 @@ public class ListingCommandHandlerTest {
         when(hearing.assignPublicListNote(any(), eq(HEARING_ID_1))).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(anyBoolean(), eq(HEARING_ID_1))).thenReturn(mock(Stream.class));
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(hmiService.isHmiEnabled(any())).thenReturn(true);
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -1136,6 +1142,7 @@ public class ListingCommandHandlerTest {
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(hmiService.isHmiEnabled(any())).thenReturn(true);
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -1199,6 +1206,7 @@ public class ListingCommandHandlerTest {
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(hmiService.isHmiEnabled(any())).thenReturn(true);
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
         verify(hearing, never()).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
@@ -1226,6 +1234,7 @@ public class ListingCommandHandlerTest {
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
         when(hearing.updateUnallocatedHearingPartially(any(), any())).thenReturn(Stream.of(new Object()));
+        when(hmiService.isHmiEnabled(any())).thenReturn(true);
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
         verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
@@ -1879,6 +1888,7 @@ public class ListingCommandHandlerTest {
 
         when(hearing.addDefendantsForCourtProceedings(eq(CASE_ID), anyObject())).thenReturn(mock(Stream.class));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
 
         final JsonEnvelope commandEnvelope = addDefendantsForHearingCommandEnvelope();
 
@@ -1899,6 +1909,8 @@ public class ListingCommandHandlerTest {
     public void listingCommandHandlerShouldTriggerOffenceUpdatedEventsForLaa() throws Exception {
         when(hearing.updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
+
         final JsonEnvelope commandEnvelope = updateOffencesWithLaaForHearingCommandEnvelope();
         listingCommandHandler.updateOffencesForHearing(commandEnvelope);
 
@@ -2027,6 +2039,7 @@ public class ListingCommandHandlerTest {
 
         when(hearing.updateDefendantCourtProceedingForHearing(HEARING_ID_1, prosecutionCase)).thenReturn((mock(Stream.class)));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
 
         given(jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject("prosecutionCase"), ProsecutionCase.class)).willReturn(prosecutionCase);
 
@@ -2517,6 +2530,8 @@ public class ListingCommandHandlerTest {
         when(hearing.updateDefendantCourtProceedingForHearing(HEARING_ID_1, prosecutionCase)).thenReturn((mock(Stream.class)));
         when(hearing.deleteHearingForHmi()).thenReturn(mock(Stream.class));
         when(hearing.getIsSummonsApprovedExists()).thenReturn(true);
+        when(hearing.getCurrentHearingEventState()).thenReturn(uk.gov.justice.listing.events.Hearing.hearing().withValuesFrom(getSampleStoredHearing()).withCourtCentreId(COURT_CENTRE_ID).build());
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
 
         given(jsonObjectConverter.convert(envelope.payloadAsJsonObject().getJsonObject("prosecutionCase"), ProsecutionCase.class)).willReturn(secondProsecutionCase);
 

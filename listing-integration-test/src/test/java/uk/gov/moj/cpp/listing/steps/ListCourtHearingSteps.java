@@ -17,6 +17,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -166,6 +167,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String PUBLIC_LISTING_HEARING_LISTED = "public.listing.hearing-listed";
     private static final String PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED = "public.listing.hearing-partially-updated";
     private static final String PUBLIC_LISTING_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
+    private static final String LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI = "listing.events.requested-hearing-from-staging-hmi";
 
     protected static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
@@ -205,6 +207,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private final MessageConsumer publicEventHearingListed;
     private final MessageConsumer publicMessageConsumerHearingPartiallyUpdated;
     private final MessageConsumer publicMessageConsumerHearingChangesSaved;
+    private final MessageConsumer privateEventMessageConsumerRequestedHearingFromStagingHmi;
 
     private final MessageProducer publicMessageProducerProgressionHearingExtendedEvent;
 
@@ -235,6 +238,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         publicEventHearingListed = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_LISTED);
         publicMessageConsumerHearingPartiallyUpdated = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
         publicMessageConsumerHearingChangesSaved = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
+        privateEventMessageConsumerRequestedHearingFromStagingHmi = privateEvents.createConsumer(LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -258,6 +262,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         publicEventHearingListed = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_LISTED);
         publicMessageConsumerHearingPartiallyUpdated = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
         publicMessageConsumerHearingChangesSaved = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
+        privateEventMessageConsumerRequestedHearingFromStagingHmi = privateEvents.createConsumer(LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -2486,6 +2491,24 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.debug("jsonResponse from publicMessageConsumerStagingHmiUpdateListRequested: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("id"), is(jsRequest.getString("hearings[0].id")));
+    }
+
+    public void verifyPrivateEventRequestedHearingFromStagingHmiNotInActiveMQ() {
+        JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerRequestedHearingFromStagingHmi);
+
+        assertThat(jsonResponse, nullValue());
+    }
+
+    public void verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerRequestedHearingFromStagingHmi);
+
+        assertThat(((ArrayList)((Map)jsonResponse.get("hearing")).get("listedCases")).size(), is(2));
     }
 
 }

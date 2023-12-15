@@ -61,6 +61,7 @@ import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.command.factory.HearingTypeFactory;
+import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
@@ -127,6 +128,9 @@ public class UnscheduledListingCommandHandlerTest {
     @Mock
     private Stream<Object> events;
 
+    @Mock
+    private HmiService hmiService;
+
     @Spy
     private Clock clock = new StoppedClock(parse("2018-01-02T13:04:05+00:00[Europe/London]"));
 
@@ -188,6 +192,8 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(TYPE_OF_LIST)
         )).thenReturn(events);
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
+        when(hearing.getCurrentHearingEventState()).thenReturn(uk.gov.justice.listing.events.Hearing.hearing().withId(HEARING_ID_1).withCourtCentreId(COURT_CENTRE_ID).build());
 
         unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(commandEnvelope);
 
@@ -258,6 +264,8 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(TYPE_OF_LIST)
         )).thenReturn(events);
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
+        when(hearing.getCurrentHearingEventState()).thenReturn(uk.gov.justice.listing.events.Hearing.hearing().withId(HEARING_ID_1).withCourtCentreId(COURT_CENTRE_ID).build());
 
         unscheduledListingCommandHandler.handleListUnscheduledCourtHearing(commandEnvelope);
 
@@ -335,6 +343,8 @@ public class UnscheduledListingCommandHandlerTest {
         )).thenReturn(events);
 
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
+        when(hearing.getCurrentHearingEventState()).thenReturn(uk.gov.justice.listing.events.Hearing.hearing().withId(HEARING_ID_1).withCourtCentreId(COURT_CENTRE_ID).build());
 
         unscheduledListingCommandHandler.handleListUnscheduledNextHearing(commandEnvelope);
 

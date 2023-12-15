@@ -59,6 +59,7 @@ public class HearingAsMarkedIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+            listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiNotInActiveMQ();
         }
 
         HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -66,6 +67,7 @@ public class HearingAsMarkedIT extends AbstractIT {
             hearingAsMarkedSteps.whenUnallocatedHearingMarkedAsDuplicateCommandIsSent();
             hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
             hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
+            hearingAsMarkedSteps.verifyPrivateEventDeletedHearingInStagingHmiNotInActiveMQ();
         }
     }
 
@@ -77,6 +79,7 @@ public class HearingAsMarkedIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+            listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ();
         }
 
         HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -87,6 +90,7 @@ public class HearingAsMarkedIT extends AbstractIT {
             hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ();
             hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
             hearingAsMarkedSteps.verifyHmiPublicEventForDeleteHearing();
+            hearingAsMarkedSteps.verifyPrivateEventDeletedHearingInStagingHmiInActiveMQ();
         }
     }
 

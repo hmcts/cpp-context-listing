@@ -67,6 +67,7 @@ public class HearingIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+            listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiNotInActiveMQ();
         }
 
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(hearingsData.getHearingData().get(0).getId());
@@ -76,6 +77,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingUpdatedResultsInAllocationInMQ();
             updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingConfirmedInPublicMQ();
+            updateHearingSteps.verifyPrivateEventUpdatedHearingInStagingHmiNotInActiveMQ();
             updateHearingSteps.verifyPublicHearingChangesSaved();
         }
     }
@@ -301,6 +303,7 @@ public class HearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
             listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ();
         }
 
         final UUID hearingId = hearingsData.getHearingData().get(0).getId();
@@ -313,6 +316,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingDaysWhenQueryFromAPI();
             updateHearingSteps.verifyHmiPublicEventForUpdateHearing();
             updateHearingSteps.verifyPublicHearingChangesSaved();
+            updateHearingSteps.verifyPrivateEventUpdatedHearingInStagingHmiInActiveMQ();
         }
     }
 

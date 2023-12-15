@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.command.factory;
 
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.command.service.ReferenceDataService;
-import uk.gov.moj.cpp.listing.common.xhibit.ReferenceDataCache;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -19,10 +19,7 @@ public class CourtCentreFactory {
     @Inject
     private ReferenceDataService referenceDataService;
 
-    @Inject
-    private ReferenceDataCache referenceDataCache;
-
-    public JsonObject getOrganisationUnit(final UUID courtCentreId, final JsonEnvelope envelope) {
+    public JsonObject getOrganisationUnit(final UUID courtCentreId, final Envelope envelope) {
         final JsonEnvelope courtCentreEnvelope = referenceDataService.getCourtCentreById(courtCentreId, envelope);
         final JsonObject jsonObject = courtCentreEnvelope.payloadAsJsonObject();
         if (LOGGER.isInfoEnabled()) {

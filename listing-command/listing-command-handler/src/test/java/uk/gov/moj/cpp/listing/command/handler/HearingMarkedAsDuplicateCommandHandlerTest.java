@@ -23,6 +23,7 @@ import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
+import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.utils.FileUtil;
 import uk.gov.moj.cpp.listing.domain.aggregate.Case;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;
@@ -71,6 +72,9 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
     @Mock
     private Case caseAggregate;
 
+    @Mock
+    private HmiService hmiService;
+
     @Spy
     private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
@@ -100,6 +104,10 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearingAggregate);
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(hearingAggregate.markHearingAsDuplicate(eq(hearingId), eq(caseIds))).thenReturn(mock(Stream.class));
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
+        when(hearingAggregate.getCurrentHearingEventState()).thenReturn(uk.gov.justice.listing.events.Hearing.hearing()
+                .withId(hearingId)
+                .withCourtCentreId(UUID.randomUUID()).build());
 
         hearingMarkedAsDuplicateCommandHandler.handleMarkHearingAsDuplicate(commandEnvelope);
 
@@ -142,6 +150,7 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
         when(aggregateService.get(eventStream, Case.class)).thenReturn(caseAggregate);
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(caseAggregate.markHearingAsDuplicate(eq(hearingId), eq(caseId))).thenReturn(mock(Stream.class));
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
 
         hearingMarkedAsDuplicateCommandHandler.handleMarkHearingAsDuplicateForCase(commandEnvelope);
 
