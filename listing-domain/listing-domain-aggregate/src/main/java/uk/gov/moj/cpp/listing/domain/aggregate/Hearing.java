@@ -195,7 +195,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 4817594778865191001L;
+    private static final long serialVersionUID = -3137792804347527807L;
 
     private static final String SUMMONS_APPROVED_RESULT_TYPE_ID = "0f44eeb9-2c81-430d-9a60-bbdaf8c4a093";
     private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
@@ -1689,20 +1689,20 @@ public class Hearing implements Aggregate {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
-        return Stream.of(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate()
+        return apply(Stream.of(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate()
                 .withHearingId(hearingId)
                 .withCaseIds(caseIds)
-                .build());
+                .build()));
     }
 
     public Stream<Object> deleteHearingForHmi() {
-        return Stream.of(DeletedHearingInStagingHmi.deletedHearingInStagingHmi()
+        return apply(Stream.of(DeletedHearingInStagingHmi.deletedHearingInStagingHmi()
                 .withHearingId(currentHearingEventState.getId())
                 .withCourtRoomId(currentHearingEventState.getCourtRoomId())
                 .withCourtCentreId(currentHearingEventState.getCourtCentreId())
                 .withCancellationReasonCode("CNCL")
                 .withCaseAndApplicationIds(getCaseAndApplicationIds(currentHearingEventState))
-                .build());
+                .build()));
     }
 
     private List<String> getCaseAndApplicationIds(final uk.gov.justice.listing.events.Hearing currentHearingEventState) {
@@ -1717,9 +1717,9 @@ public class Hearing implements Aggregate {
             return Stream.empty();
         }
 
-        return Stream.of(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate()
+        return apply(Stream.of(HearingMarkedAsDuplicate.hearingMarkedAsDuplicate()
                 .withHearingId(hearingId)
-                .build());
+                .build()));
     }
 
     private boolean thisHearingContainsDefendant(final uk.gov.moj.cpp.listing.domain.Defendant defendant) {
