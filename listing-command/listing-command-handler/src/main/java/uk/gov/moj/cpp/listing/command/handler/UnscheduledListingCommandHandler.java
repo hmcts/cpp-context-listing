@@ -110,7 +110,6 @@ public class UnscheduledListingCommandHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("'listing.command.list-unscheduled-next-hearing' received with payload {}", command.toObfuscatedDebugString());
         }
-
         final Map<String, Integer> hearingTypesIdDurationMap = hearingTypeFactory.getHearingTypesIdDurationMap(command);
         final ListUnscheduledNextHearing listUnscheduledNextHearing = jsonObjectConverter.convert(command.payloadAsJsonObject(), ListUnscheduledNextHearing.class);
         final HearingUnscheduledListingNeeds commandHearing = listUnscheduledNextHearing.getHearing();

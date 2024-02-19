@@ -32,11 +32,13 @@ import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBu
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.WEEK_COMMENCING_START_DATE;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.createJudicalRoles;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.createdListedCase;
+import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.createdListedCaseWithProsecutor;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.getCourtApplication;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.getCourtApplicationForApplicationOnly;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.listUnscheduledCourtHearingCommandEnvelope;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.listUnscheduledCourtHearingForApplicationsCommandEnvelope;
 import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.listUnscheduledNextHearingCommandEnvelope;
+import static uk.gov.moj.cpp.listing.command.handler.UnscheduledListingCommandBuilder.listUnscheduledNextHearingWithProsecutorCommandEnvelope;
 
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.JurisdictionType;
@@ -361,6 +363,68 @@ public class UnscheduledListingCommandHandlerTest {
                 eq(REPORTING_RESTRICTIONS),
                 eq(parse(EARLIEST_START_TIME)),
                 eq(endDate),
+                eq(courtCentreDefaults),
+                anyList(),
+                anyList(),
+                eq(30),
+                eq(of(WEEK_COMMENCING_START_DATE)),
+                eq(of(WEEK_COMMENCING_END_DATE.minusDays(1))),
+                eq(of(WEEK_COMMENCING_DURATION)),
+                eq(TYPE_OF_LIST));
+
+        verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
+    }
+
+    @Test
+    public void shouldListUnscheduledNextHearingWithProsecutor() throws EventStreamException {
+        final JsonEnvelope commandEnvelope = listUnscheduledNextHearingWithProsecutorCommandEnvelope();
+
+        final List<ListedCase> listedCases = Arrays.asList(createdListedCaseWithProsecutor());
+        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = createJudicalRoles();
+        final CourtCentreDefaults courtCentreDefaults = createCourtCentreDefaults();
+
+        when(hearing.listUnscheduled(
+                eq(HEARING_ID_1),
+                eq(HEARING_TYPE),
+                eq(listedCases),
+                eq(COURT_CENTRE_ID),
+                eq(judicialRoles),
+                eq(COURT_ROOM_ID),
+                eq(LISTING_DIRECTIONS),
+                eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID),
+                eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)),
+                eq(null),
+                eq(courtCentreDefaults),
+                anyList(),
+                anyList(),
+                eq(30),
+                eq(of(WEEK_COMMENCING_START_DATE)),
+                eq(of(WEEK_COMMENCING_END_DATE)),
+                eq(of(WEEK_COMMENCING_DURATION)),
+                eq(TYPE_OF_LIST)
+        )).thenReturn(events);
+
+        when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
+        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
+        when(hearing.getCurrentHearingEventState()).thenReturn(uk.gov.justice.listing.events.Hearing.hearing().withId(HEARING_ID_1).withCourtCentreId(COURT_CENTRE_ID).build());
+
+        unscheduledListingCommandHandler.handleListUnscheduledNextHearing(commandEnvelope);
+
+        verify(hearing).listUnscheduled(
+                eq(HEARING_ID_1),
+                eq(HEARING_TYPE),
+                eq(listedCases),
+                eq(COURT_CENTRE_ID),
+                eq(judicialRoles),
+                eq(COURT_ROOM_ID),
+                eq(LISTING_DIRECTIONS),
+                eq(JURISDICTION_TYPE),
+                eq(PROSECUTOR_DATES_TO_AVOID),
+                eq(REPORTING_RESTRICTIONS),
+                eq(parse(EARLIEST_START_TIME)),
+                eq(null),
                 eq(courtCentreDefaults),
                 anyList(),
                 anyList(),

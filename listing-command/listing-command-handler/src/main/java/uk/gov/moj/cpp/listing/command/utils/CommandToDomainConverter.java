@@ -43,6 +43,7 @@ import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.Prosecutor;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.Type;
 import uk.gov.moj.cpp.listing.domain.exception.DataValidationException;
@@ -78,6 +79,22 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
         return listedStartDateTime.orElseGet(() -> (earliestStartDateTime.orElse(null)));
     }
 
+    @SuppressWarnings({"squid:S3655"})
+    public static ZonedDateTime getStartDateTime(final HearingListingNeeds commandHearing) {
+        final ZonedDateTime listedStartDateTime = commandHearing.getListedStartDateTime();
+        final ZonedDateTime earliestStartDateTime = commandHearing.getEarliestStartDateTime();
+
+        return Optional.ofNullable(listedStartDateTime).orElse(earliestStartDateTime);
+    }
+
+    private static Optional<uk.gov.moj.cpp.listing.domain.CommittingCourt> buildCommittingCourt(final uk.gov.justice.core.courts.CommittingCourt committingCourt) {
+
+        return of(CommittingCourt.committingCourt().withCourtCentreId(committingCourt.getCourtCentreId())
+                .withCourtHouseCode(committingCourt.getCourtHouseCode())
+                .withCourtHouseName(committingCourt.getCourtHouseName())
+                .withCourtHouseShortName(committingCourt.getCourtHouseShortName())
+                .build());
+    }
 
     @SuppressWarnings({"squid:S3655"})
     @Override
@@ -170,6 +187,13 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                         .map(d -> buildDefendants(commandHearing, d))
                         .collect(toList()));
 
+        if(nonNull(prosecutionCase.getProsecutor())){
+            builder.withProsecutor(Prosecutor.prosecutor()
+                    .withProsecutorId(prosecutionCase.getProsecutor().getProsecutorId())
+                    .withProsecutorCode(prosecutionCase.getProsecutor().getProsecutorCode())
+                    .build());
+        }
+
         if (isNotEmpty(prosecutionCase.getCaseMarkers())) {
             builder.withCaseMarkers(prosecutionCase.getCaseMarkers().stream()
                     .map(this::buildCaseMarker)
@@ -177,14 +201,6 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
         }
 
         return builder.build();
-    }
-
-    @SuppressWarnings({"squid:S3655"})
-    public static ZonedDateTime getStartDateTime(final HearingListingNeeds commandHearing) {
-        final ZonedDateTime listedStartDateTime = commandHearing.getListedStartDateTime();
-        final ZonedDateTime earliestStartDateTime = commandHearing.getEarliestStartDateTime();
-
-        return Optional.ofNullable(listedStartDateTime).orElse(earliestStartDateTime);
     }
 
     public Type buildHearingType(final HearingType type) {
@@ -244,6 +260,12 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withShadowListed(of(caseShadowListed))
                 .withTrialReceiptType(prosecutionCase.getTrialReceiptType());
 
+        if (nonNull(prosecutionCase.getProsecutor())) {
+            builder.withProsecutor(Prosecutor.prosecutor()
+                    .withProsecutorId(prosecutionCase.getProsecutor().getProsecutorId())
+                    .withProsecutorCode(prosecutionCase.getProsecutor().getProsecutorCode())
+                    .build());
+}
         if (isNotEmpty(prosecutionCase.getCaseMarkers())) {
             builder.withCaseMarkers(prosecutionCase.getCaseMarkers().stream()
                     .map(this::buildCaseMarker)
@@ -390,7 +412,6 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
         return empty();
     }
 
-
     @SuppressWarnings({"squid:S3655"})
     public uk.gov.moj.cpp.listing.domain.Offence buildOffence(final uk.gov.justice.core.courts.Offence o, final List<UUID> shadowListedOffences) {
         boolean shadowListed = false;
@@ -424,15 +445,6 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
         }
 
         return builder.build();
-    }
-
-    private static Optional<uk.gov.moj.cpp.listing.domain.CommittingCourt> buildCommittingCourt(final uk.gov.justice.core.courts.CommittingCourt committingCourt) {
-
-        return of(CommittingCourt.committingCourt().withCourtCentreId(committingCourt.getCourtCentreId())
-                .withCourtHouseCode(committingCourt.getCourtHouseCode())
-                .withCourtHouseName(committingCourt.getCourtHouseName())
-                .withCourtHouseShortName(committingCourt.getCourtHouseShortName())
-                .build());
     }
 
     private StatementOfOffence buildStatementOfOffence(final uk.gov.justice.core.courts.Offence offence) {

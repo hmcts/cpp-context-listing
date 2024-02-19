@@ -2992,7 +2992,6 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
                 fileLocation);
         return Hearing.builder()
                 .withId(hearingId)
-                .withAllocated(allocated)
                 .withCourtCentreId(courtCentreId)
                 .withCourtRoomId(courtRoomId)
                 .withJurisdictionType(jurisdictionType.toString())

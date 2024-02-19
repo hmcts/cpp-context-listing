@@ -1,5 +1,67 @@
 package uk.gov.moj.cpp.listing.query.view;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
+import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.core.annotation.Handles;
+import uk.gov.justice.services.core.enveloper.Enveloper;
+import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
+import uk.gov.moj.cpp.listing.domain.CourtListType;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.Notes;
+import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
+import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
+import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
+import uk.gov.moj.cpp.listing.query.view.dto.LinkedCase;
+import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
+import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
+import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
+import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
+import uk.gov.moj.cpp.listing.query.view.service.JsonNodeReader;
+import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+
+import javax.inject.Inject;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.persistence.NoResultException;
+import javax.ws.rs.NotFoundException;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
@@ -28,72 +90,6 @@ import static uk.gov.justice.services.messaging.JsonObjects.toJsonArray;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.valueFor;
 import static uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory.newPaginationParameter;
 import static uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria.MATCHED_DEFENDANTS;
-
-import uk.gov.justice.listing.event.PublishCourtListType;
-import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.services.core.annotation.Handles;
-import uk.gov.justice.services.core.enveloper.Enveloper;
-import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
-import uk.gov.moj.cpp.listing.domain.CourtListType;
-import uk.gov.moj.cpp.listing.domain.JurisdictionType;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.entity.Notes;
-import uk.gov.moj.cpp.listing.persistence.entity.query.CaseByDefendant;
-import uk.gov.moj.cpp.listing.persistence.repository.CaseByDefendantRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.CourtListPublishStatusJdbcRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
-import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
-import uk.gov.moj.cpp.listing.query.view.dto.LinkedCase;
-import uk.gov.moj.cpp.listing.query.view.dto.ListedCase;
-import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
-import uk.gov.moj.cpp.listing.query.view.dto.ProsecutionCase;
-import uk.gov.moj.cpp.listing.query.view.dto.SearchCriteria;
-import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
-import uk.gov.moj.cpp.listing.query.view.hearing.HearingToJsonConverter;
-import uk.gov.moj.cpp.listing.query.view.service.JsonNodeReader;
-import uk.gov.moj.cpp.listing.query.view.service.NotesService;
-import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
-
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.inject.Inject;
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.persistence.NoResultException;
-import javax.ws.rs.NotFoundException;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @SuppressWarnings({"squid:S1192", "squid:S00107", "squid:S1166"})
@@ -162,9 +158,6 @@ public class HearingQueryView {
     private NotesService notesService;
 
     @Inject
-    private ProgressionService progressionService;
-
-    @Inject
     private ListToJsonArrayConverter<Notes> listToJsonArrayConverter;
 
     @Inject
@@ -178,6 +171,7 @@ public class HearingQueryView {
 
     public static final String TYPE = "type";
 
+    public static final String LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS = "listing.allocated.and.unallocated.hearings";
 
 
     @Handles("listing.search.hearings")
@@ -296,7 +290,7 @@ public class HearingQueryView {
         return (long) Math.ceil((double) totalCount / (double) pageSize) ;
     }
 
-    @Handles("listing.allocated.and.unallocated.hearings")
+    @Handles(LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS)
     public JsonEnvelope searchAllocatedAndUnallocatedHearings(final JsonEnvelope query) {
         final List<Hearing> hearings;
         final String caseIdQueryParam = query.payloadAsJsonObject().getString(CASE_ID, null);
@@ -315,9 +309,11 @@ public class HearingQueryView {
 
         final List<Hearing> hearingsToRemove = new ArrayList<>();
         if (caseIdQueryParam != null) {
-            removedReViewHearings(hearings, caseIdQueryParam, hearingsToRemove);
+            removedReViewHearings(hearings, hearingsToRemove);
         }
         hearingsToRemove.forEach(hearings::remove);
+
+        LOGGER.info("Event: {}, number of hearing to return - {}", LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS, hearings.size());
 
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder()
@@ -325,15 +321,14 @@ public class HearingQueryView {
         );
     }
 
-    private void removedReViewHearings(final List<Hearing> hearings, final String caseIdQueryParam, final List<Hearing> hearingsToRemove) {
+    private void removedReViewHearings(final List<Hearing> hearings, final List<Hearing> hearingsToRemove) {
         hearings.forEach(hearing -> {
             if (hearing.getListedCases() != null) {
                 hearing.getListedCases().forEach(listedCase -> {
-                    final ProsecutionCase prosecutionCase = progressionService.getProsecutionCaseDetails(UUID.fromString(caseIdQueryParam));
                     final JsonNodeReader reader = JsonNodeReader.read(hearing.getProperties());
                     if (nonNull(reader.get(TYPE))) {
                         final String reviewType = reader.get(TYPE).getText("description");
-                        if ( prosecutionCase!= null && prosecutionCase.getLinkedApplicationsSummary() != null && !prosecutionCase.getLinkedApplicationsSummary().isEmpty() && "Review".equals(reviewType)) {
+                        if (nonNull(hearing.getCourtApplications())  && !hearing.getCourtApplications().isEmpty() && "Review".equals(reviewType)) {
                             hearingsToRemove.add(hearing);
                         }
                     }

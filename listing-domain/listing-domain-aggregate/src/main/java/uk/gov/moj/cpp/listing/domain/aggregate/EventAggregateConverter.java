@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
+import uk.gov.moj.cpp.listing.domain.Prosecutor;
 
 @SuppressWarnings({"PMD.BeanMembersShouldSerialize", "squid:S3655", "squid:S1067", "PMD.NullAssignment"})
 public final class EventAggregateConverter {
@@ -13,12 +14,15 @@ public final class EventAggregateConverter {
     }
 
     public static uk.gov.justice.listing.events.ListedCase buildEventListedCase(final ListedCase listedCase) {
-        return uk.gov.justice.listing.events.ListedCase.listedCase()
-                .withId(listedCase.getId())
+        final uk.gov.justice.listing.events.ListedCase.Builder builder =  uk.gov.justice.listing.events.ListedCase.listedCase().withId(listedCase.getId())
                 .withDefendants(listedCase.getDefendants().stream().map(EventAggregateConverter::buildEventDefendant).collect(toList()))
                 .withCaseIdentifier(nonNull(listedCase.getCaseIdentifier()) ? buildEventCaseIdentifier(listedCase.getCaseIdentifier()) : null)
-                .withMarkers(listedCase.getCaseMarkers().stream().map(EventAggregateConverter::buildEventCaseMarker).collect(toList()))
-                .build();
+                .withMarkers(listedCase.getCaseMarkers().stream().map(EventAggregateConverter::buildEventCaseMarker).collect(toList()));
+
+        if(nonNull(listedCase.getProsecutor())){
+            builder.withProsecutor(buildEventProsecutor(listedCase.getProsecutor()));
+        }
+        return builder.build();
     }
 
     public static uk.gov.justice.listing.events.Marker buildEventCaseMarker(final CaseMarker caseMarker) {
@@ -175,13 +179,25 @@ public final class EventAggregateConverter {
                 .build();
     }
 
+    public static uk.gov.justice.listing.events.Prosecutor buildEventProsecutor(final Prosecutor prosecutor) {
+        return uk.gov.justice.listing.events.Prosecutor.prosecutor()
+                .withProsecutorCode(prosecutor.getProsecutorCode())
+                .withProsecutorId(prosecutor.getProsecutorId())
+                .withProsecutorName(prosecutor.getProsecutorName())
+                .build();
+    }
+
+
     public static ListedCase buildAggregateListedCase(final uk.gov.justice.listing.events.ListedCase listedCase) {
-        return uk.gov.moj.cpp.listing.domain.aggregate.ListedCase.listedCase()
+        final uk.gov.moj.cpp.listing.domain.aggregate.ListedCase.Builder builder = uk.gov.moj.cpp.listing.domain.aggregate.ListedCase.listedCase()
                 .withId(listedCase.getId())
                 .withDefendants(listedCase.getDefendants().stream().map(EventAggregateConverter::buildAggregateDefendant).collect(toList()))
                 .withCaseIdentifier(nonNull(listedCase.getCaseIdentifier()) ? buildAggregateCaseIdentifier(listedCase.getCaseIdentifier()) : null)
-                .withCaseMarkers(listedCase.getMarkers().stream().map(EventAggregateConverter::buildAggregateCaseMarker).collect(toList()))
-                .build();
+                .withCaseMarkers(listedCase.getMarkers().stream().map(EventAggregateConverter::buildAggregateCaseMarker).collect(toList()));
+        if(nonNull(listedCase.getProsecutor())){
+            builder.withProsecutor(buildAggregateProsecutor(listedCase.getProsecutor()));
+        }
+        return builder.build();
     }
 
     public static CaseMarker buildAggregateCaseMarker(final uk.gov.justice.listing.events.Marker caseMarker) {
@@ -336,4 +352,10 @@ public final class EventAggregateConverter {
                 .build();
     }
 
+    public static Prosecutor buildAggregateProsecutor(final uk.gov.justice.listing.events.Prosecutor prosecutor) {
+        return uk.gov.moj.cpp.listing.domain.Prosecutor.prosecutor()
+                .withProsecutorCode(prosecutor.getProsecutorCode())
+                .withProsecutorId(prosecutor.getProsecutorId())
+                .build();
+    }
 }

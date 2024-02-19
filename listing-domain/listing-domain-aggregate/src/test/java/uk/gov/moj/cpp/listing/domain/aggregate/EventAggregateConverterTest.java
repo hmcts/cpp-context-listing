@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.Is.is;
 
 import uk.gov.justice.listing.events.CaseIdentifier;
@@ -9,10 +10,12 @@ import uk.gov.justice.listing.events.FundingType;
 import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
+import uk.gov.moj.cpp.listing.domain.Prosecutor;
 
 import java.util.List;
 import java.util.UUID;
 
+import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -27,6 +30,9 @@ public class EventAggregateConverterTest {
     private final UUID markerTypeId = UUID.randomUUID();
     private final UUID offenceId = UUID.randomUUID();
     private final UUID laaReferenceStatusId = UUID.randomUUID();
+    private final UUID PROSECUTOR_ID = UUID.randomUUID();
+    private final String PROSECUTOR_CODE = "CPS-SW";
+    private final String PROSECUTOR_NAME = "Prosecution South West";
 
 
     @Test
@@ -45,7 +51,16 @@ public class EventAggregateConverterTest {
         final uk.gov.justice.listing.events.ListedCase result = EventAggregateConverter.buildEventListedCase(createAggregateListedCase());
         final uk.gov.justice.listing.events.ListedCase expected = createEventListedCase();
 
-        Assert.assertThat(result, is(expected));
+        MatcherAssert.assertThat(result, equalTo(expected));
+    }
+
+    @Test
+    public void shouldConvertAggregateListedCaseToEventListedCaseWithProsecutor() {
+
+        final uk.gov.justice.listing.events.ListedCase result = EventAggregateConverter.buildEventListedCase(createAggregateListedCaseWithProsecutor());
+        final uk.gov.justice.listing.events.ListedCase expected = createEventListedCaseWithProsecutor();
+
+        MatcherAssert.assertThat(result, equalTo(expected));
     }
 
     private uk.gov.moj.cpp.listing.domain.aggregate.ListedCase createAggregateListedCase() {
@@ -54,6 +69,17 @@ public class EventAggregateConverterTest {
                 .withDefendants(createAggregateDefendants())
                 .withCaseMarkers(createAggregateCaseMarkers())
                 .withCaseIdentifier(createAggregateCaseIdentifier())
+                .build();
+    }
+
+    private uk.gov.moj.cpp.listing.domain.aggregate.ListedCase createAggregateListedCaseWithProsecutor() {
+        return uk.gov.moj.cpp.listing.domain.aggregate.ListedCase.listedCase()
+                .withValuesFrom(createAggregateListedCase())
+                .withProsecutor(Prosecutor.prosecutor()
+                        .withProsecutorId(PROSECUTOR_ID)
+                        .withProsecutorCode(PROSECUTOR_CODE)
+                        .withProsecutorName(PROSECUTOR_NAME)
+                        .build())
                 .build();
     }
 
@@ -233,6 +259,17 @@ public class EventAggregateConverterTest {
                 .withDefendants(createEventDefendants())
                 .withMarkers(createEventMarkers())
                 .withCaseIdentifier(createEventCaseIdentifier())
+                .build();
+    }
+
+    private uk.gov.justice.listing.events.ListedCase createEventListedCaseWithProsecutor() {
+        return uk.gov.justice.listing.events.ListedCase.listedCase()
+                .withValuesFrom(createEventListedCase())
+                .withProsecutor(uk.gov.justice.listing.events.Prosecutor.prosecutor()
+                        .withProsecutorId(PROSECUTOR_ID)
+                        .withProsecutorCode(PROSECUTOR_CODE)
+                        .withProsecutorName(PROSECUTOR_NAME)
+                        .build())
                 .build();
     }
 

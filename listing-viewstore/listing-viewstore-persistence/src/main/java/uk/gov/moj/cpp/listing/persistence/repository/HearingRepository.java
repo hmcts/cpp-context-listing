@@ -102,14 +102,14 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.unscheduled, " +
             "h.week_commencing_start_date, " +
             "h.week_commencing_end_date, " +
-            "h.allocated, " +
+            "h.properties->>'allocated' as allocated, " +
             "h.type_of_list_id, " +
             "1 as totalCount, " +
             "h.is_possible_disqualification " +
             "from hearing h INNER JOIN hearing_days hd on hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
             "where  " +
-            "h.allocated = :allocated  " +
+            "cast(h.properties->>'allocated' as boolean) = :allocated  " +
             "and (h.unscheduled is null or h.unscheduled = false) " +
             "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
             "and (:courtCentreId is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(:courtCentreId as varchar) as uuid))  " +
@@ -328,7 +328,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.unscheduled, " +
             "h.week_commencing_start_date, " +
             "h.week_commencing_end_date, " +
-            "h.allocated, " +
+            "h.properties ->>'allocated' as allocated, " +
             "h.type_of_list_id, " +
             "1 as totalCount, " +
             "h.is_possible_disqualification " +
@@ -336,7 +336,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
             "where  " +
-            "cast(h.allocated as varchar) = cast(?1 as varchar)  " +
+            "cast(h.properties ->>'allocated' as varchar) = cast(?1 as varchar)  " +
             "and (h.unscheduled is null or h.unscheduled = false) " +
             "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
             "and (?2 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?2 as varchar) as uuid))  " +
@@ -553,7 +553,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
      */
     @Query(value = "with filtered_hearings as (select distinct h.id, hd.hearing_date as hearingDate, h.properties as properties from hearing h " +
             "inner join hearing_days hd on hd.hearing_id = h.id where coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(:courtCentreId as varchar) as uuid) " +
-            "and h.allocated = :allocated and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
+            "and cast(h.properties->>'allocated' as boolean) = :allocated and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
             "and hd.hearing_date between :startDate and :endDate) " +
             "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id, " +
             ":courtCentreId as court_centre_id, " +
@@ -603,7 +603,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "where ((hd.court_centre_id = cast(cast(:courtCentreId as varchar) as uuid)) " +
             "or (hd.court_centre_id is null " +
             "and h.court_centre_id = cast(cast(:courtCentreId as varchar) as uuid))) " +
-            "and h.allocated = :allocated " +
+            "and cast(h.properties->>'allocated' as boolean) = :allocated " +
             "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
             "and hd.hearing_date = :hearingDate) " +
             "select 'd9ea61d4-2441-42bd-9089-510b1c069fb5' as id, " +

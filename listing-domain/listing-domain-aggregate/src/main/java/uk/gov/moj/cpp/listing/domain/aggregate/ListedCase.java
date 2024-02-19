@@ -1,14 +1,18 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import uk.gov.moj.cpp.listing.domain.CaseIdentifier;
+import uk.gov.moj.cpp.listing.domain.Prosecutor;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @SuppressWarnings({"squid:S00107", "squid:S1067", "PMD.BeanMembersShouldSerialize", "squid:S2384"})
 public class ListedCase implements Serializable {
     private final CaseIdentifier caseIdentifier;
+
+    private final Prosecutor prosecutor;
 
     private final List<Defendant> defendants;
 
@@ -16,8 +20,9 @@ public class ListedCase implements Serializable {
 
     private final UUID id;
 
-    public ListedCase(final CaseIdentifier caseIdentifier, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id) {
+    public ListedCase(final CaseIdentifier caseIdentifier, final Prosecutor prosecutor, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id) {
         this.caseIdentifier = caseIdentifier;
+        this.prosecutor = prosecutor;
         this.defendants = defendants;
         this.caseMarkers = caseMarkers;
         this.id = id;
@@ -26,6 +31,8 @@ public class ListedCase implements Serializable {
     public CaseIdentifier getCaseIdentifier() {
         return caseIdentifier;
     }
+
+    public Prosecutor getProsecutor() { return prosecutor; }
 
     public List<Defendant> getDefendants() {
         return defendants;
@@ -55,20 +62,21 @@ public class ListedCase implements Serializable {
 
         final ListedCase that = (ListedCase) obj;
 
-        return java.util.Objects.equals(this.caseIdentifier, that.caseIdentifier) &&
-                java.util.Objects.equals(this.defendants, that.defendants) &&
-                java.util.Objects.equals(this.id, that.id);
+        return Objects.equals(this.caseIdentifier, that.caseIdentifier) &&
+                Objects.equals(this.defendants, that.defendants) &&
+                Objects.equals(this.id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(caseIdentifier, defendants, id);
+        return Objects.hash(caseIdentifier, defendants, id);
     }
 
     @Override
     public String toString() {
         return "ListedCase{" +
                 "caseIdentifier='" + caseIdentifier + "'," +
+                "prosecutor='" + prosecutor + "'," +
                 "defendants='" + defendants + "'," +
                 "id='" + id + "'" +
                 "}";
@@ -78,6 +86,8 @@ public class ListedCase implements Serializable {
     public static final class Builder {
         private CaseIdentifier caseIdentifier;
 
+        private Prosecutor prosecutor;
+
         private List<Defendant> defendants;
 
         private UUID id;
@@ -86,6 +96,11 @@ public class ListedCase implements Serializable {
 
         public Builder withCaseIdentifier(final CaseIdentifier caseIdentifier) {
             this.caseIdentifier = caseIdentifier;
+            return this;
+        }
+
+        public Builder withProsecutor(final Prosecutor val) {
+            prosecutor = val;
             return this;
         }
 
@@ -105,9 +120,17 @@ public class ListedCase implements Serializable {
             return this;
         }
 
+        public Builder withValuesFrom(final ListedCase listedCase) {
+            this.caseIdentifier = listedCase.getCaseIdentifier();
+            this.prosecutor = listedCase.getProsecutor();
+            this.defendants = listedCase.getDefendants();
+            this.caseMarkers = listedCase.getCaseMarkers();
+            this.id = listedCase.getId();
+            return this;
+        }
 
         public ListedCase build() {
-            return new ListedCase(caseIdentifier, defendants, caseMarkers, id);
+            return new ListedCase(caseIdentifier, prosecutor, defendants, caseMarkers, id);
         }
     }
 }

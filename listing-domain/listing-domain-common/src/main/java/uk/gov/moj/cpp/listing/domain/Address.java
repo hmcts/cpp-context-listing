@@ -3,10 +3,11 @@ package uk.gov.moj.cpp.listing.domain;
 
 import static java.util.Optional.empty;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 @SuppressWarnings({"squid:S1067","squid:S2065"})
-public class Address {
+public class Address  implements Serializable {
     private final String address1;
 
     private transient Optional<String> address2;

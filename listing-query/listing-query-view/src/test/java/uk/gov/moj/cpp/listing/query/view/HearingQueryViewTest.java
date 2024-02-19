@@ -1,41 +1,17 @@
 package uk.gov.moj.cpp.listing.query.view;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.time.LocalDate.parse;
-import static java.time.ZoneOffset.UTC;
-import static java.time.ZonedDateTime.now;
-import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
-import static javax.json.Json.createObjectBuilder;
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.AllOf.allOf;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyMapOf;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
-import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
-import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
-import static java.util.Arrays.asList;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.ReadContext;
+import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.hamcrest.Matcher;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.runners.MockitoJUnitRunner;
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
@@ -47,6 +23,7 @@ import uk.gov.justice.services.test.utils.core.enveloper.EnvelopeFactory;
 import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
+import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
@@ -66,6 +43,11 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterE
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonValue;
+import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
@@ -79,25 +61,42 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonValue;
-import javax.ws.rs.NotFoundException;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.ReadContext;
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.hamcrest.Matcher;
-import org.hamcrest.MatcherAssert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import static com.google.common.collect.Lists.newArrayList;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.time.LocalDate.parse;
+import static java.time.ZoneOffset.UTC;
+import static java.time.ZonedDateTime.now;
+import static java.util.Arrays.asList;
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
+import static javax.json.Json.createObjectBuilder;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.apache.deltaspike.core.util.ArraysUtils.asSet;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.AllOf.allOf;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.anyMapOf;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
+import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
+import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
 
 
 @RunWith(MockitoJUnitRunner.class)
@@ -1157,6 +1156,81 @@ public class HearingQueryViewTest {
         assertThat(prosecutionCases.getJsonObject(1).getString("caseId"), is(caseId2.toString()));
         assertThat(prosecutionCases.getJsonObject(1).getString("urn"), is(caseUrn2));
     }
+
+    @Test
+    public void shouldSearchAllocatedAndUnallocatedHearingsWithCaseIdWhenOneOfApplicationHearingTypeIsReview() {
+
+        final UUID applicationId = fromString("72876919-396e-4f9f-8c39-c678d7548120");
+        final String testJsonString1 = "{ \"allocated\":\"" + true + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
+        final String testJsonString2 = "{ \"allocated\":\"" + true + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{\"id\":\"72876919-396e-4f9f-8c39-c678d7548120\"}] , \"listedCases\" : [{}] , \"type\" : {\"id\":\"bd4dab38-ea91-434b-8e73-e0d50ef0cbdf\", \"description\":\"Review\"}}";
+        final Hearing hearing1 = Hearing.builder().withId(randomUUID())
+                .withProperties(JacksonUtil.toJsonNode(testJsonString1))
+                .withListedCases(asSet(new ListedCases(randomUUID(), randomUUID(), null, null, null, null, null, false)))
+                .build();
+        final Hearing hearing2 = Hearing.builder().withId(randomUUID())
+                .withProperties(JacksonUtil.toJsonNode(testJsonString2))
+                .withListedCases(asSet(new ListedCases(randomUUID(), randomUUID(), null, null, null, null, null, false)))
+                .withCourtApplications(asSet(new CourtApplications(randomUUID(), applicationId, null, null, null, null,null, false)))
+                .build();
+
+
+        final List<Hearing> hearingsJson =  newArrayList(hearing1, hearing2);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add("caseId", "caseId")
+                        .build());
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(
+                "caseId"))
+                .thenReturn(hearingsJson);
+        hearingsJson.remove(hearing2);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
+
+        final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
+
+        verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("caseId"));
+        verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
+        assertTrue(((JsonObject)results.payload()).getJsonArray("hearings").size() == 1);
+    }
+
+    @Test
+    public void shouldSearchAllocatedAndUnallocatedHearingsWithCaseIdWhenOneOfCaseHearingTypeIsReview() {
+
+        final String testJsonString1 = "{ \"allocated\":\"" + true + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] }";
+        final String testJsonString2 = "{ \"allocated\":\"" + true + "\", \"startDate\": \"2020-09-03\", \"courtRoomId\": \"6e424105-55f4-4e1a-bb9e-6ffbae3f7c18\", \"courtApplications\" : [{}] , \"listedCases\" : [{}] , \"type\" : {\"id\":\"bd4dab38-ea91-434b-8e73-e0d50ef0cbdf\", \"description\":\"Review\"}}";
+
+        final Hearing hearing1 = Hearing.builder().withId(randomUUID())
+                .withProperties(JacksonUtil.toJsonNode(testJsonString1))
+                .withListedCases(asSet(new ListedCases(randomUUID(), randomUUID(), null, null, null, null, null, false)))
+                .build();
+        final Hearing hearing2 = Hearing.builder().withId(randomUUID())
+                .withProperties(JacksonUtil.toJsonNode(testJsonString2))
+                .withListedCases(asSet(new ListedCases(randomUUID(), randomUUID(), null, null, null, null, null, false)))
+                .build();
+
+
+        final List<Hearing> hearingsJson =  newArrayList(hearing1, hearing2);
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add("caseId", "caseId")
+                        .build());
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(
+                "caseId"))
+                .thenReturn(hearingsJson);
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
+
+        final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
+
+        verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("caseId"));
+        verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
+        assertTrue(((JsonObject)results.payload()).getJsonArray("hearings").size() == 2);
+    }
+
 
     private JsonEnvelope generateQuery(final JsonValue payload) {
         return envelopeFrom(

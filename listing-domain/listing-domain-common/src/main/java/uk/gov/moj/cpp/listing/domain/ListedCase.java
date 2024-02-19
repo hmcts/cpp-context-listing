@@ -11,6 +11,8 @@ import java.util.UUID;
 public class ListedCase {
   private final CaseIdentifier caseIdentifier;
 
+  private final Prosecutor prosecutor;
+
   private final List<Defendant> defendants;
 
   private final List<CaseMarker> caseMarkers;
@@ -22,8 +24,9 @@ public class ListedCase {
   private final String trialReceiptType;
 
   @SuppressWarnings({"squid:S2384"})
-  public ListedCase(final CaseIdentifier caseIdentifier, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id, final Optional<Boolean> shadowListed, final String trialReceiptType) {
+  public ListedCase(final CaseIdentifier caseIdentifier, final Prosecutor prosecutor, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id, final Optional<Boolean> shadowListed, final String trialReceiptType) {
     this.caseIdentifier = caseIdentifier;
+    this.prosecutor = prosecutor;
     this.defendants = defendants;
     this.caseMarkers = caseMarkers;
     this.id = id;
@@ -34,6 +37,8 @@ public class ListedCase {
   public CaseIdentifier getCaseIdentifier() {
     return caseIdentifier;
   }
+
+  public Prosecutor getProsecutor() { return prosecutor; }
 
   @SuppressWarnings({"squid:S2384"})
   public List<Defendant> getDefendants() {
@@ -58,7 +63,7 @@ public class ListedCase {
   }
 
   public static Builder listedCase() {
-    return new ListedCase.Builder();
+    return new Builder();
   }
 
   @Override
@@ -69,22 +74,24 @@ public class ListedCase {
       return false;
     final ListedCase that = (ListedCase) obj;
 
-    return java.util.Objects.equals(this.caseIdentifier, that.caseIdentifier) &&
-    java.util.Objects.equals(this.defendants, that.defendants) &&
-    java.util.Objects.equals(this.id, that.id) &&
-    java.util.Objects.equals(this.trialReceiptType, that.trialReceiptType) &&
-    java.util.Objects.equals(this.shadowListed, that.shadowListed);
+    return Objects.equals(this.caseIdentifier, that.caseIdentifier) &&
+    Objects.equals(this.prosecutor, that.prosecutor) &&
+    Objects.equals(this.defendants, that.defendants) &&
+    Objects.equals(this.id, that.id) &&
+    Objects.equals(this.trialReceiptType, that.trialReceiptType) &&
+    Objects.equals(this.shadowListed, that.shadowListed);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(caseIdentifier, defendants, caseMarkers, id, shadowListed);
+    return Objects.hash(caseIdentifier, prosecutor, defendants, caseMarkers, id, shadowListed);
   }
 
   @Override
   public String toString() {
     return "ListedCase{" +
             "caseIdentifier=" + caseIdentifier +
+            ", prosecutor=" + prosecutor +
             ", defendants=" + defendants +
             ", caseMarkers=" + caseMarkers +
             ", id=" + id +
@@ -96,6 +103,8 @@ public class ListedCase {
   @SuppressWarnings("pmd:BeanMembersShouldSerialize")
   public static class Builder {
     private CaseIdentifier caseIdentifier;
+
+    private Prosecutor prosecutor;
 
     private List<Defendant> defendants;
 
@@ -112,6 +121,11 @@ public class ListedCase {
       return this;
     }
 
+    public Builder withProsecutor(final Prosecutor prosecutor) {
+      this.prosecutor = prosecutor;
+      return this;
+    }
+
     @SuppressWarnings({"squid:S2384"})
     public Builder withDefendants(final List<Defendant> defendants) {
       this.defendants = defendants;
@@ -124,24 +138,34 @@ public class ListedCase {
       return this;
     }
 
-
     public Builder withId(final UUID id) {
       this.id = id;
       return this;
     }
 
-    public Builder withShadowListed(final Optional<Boolean> shadowListed){
+    public Builder withShadowListed(final Optional<Boolean> shadowListed) {
       this.shadowListed = shadowListed;
       return this;
     }
 
-    public Builder withTrialReceiptType(final String trialReceiptType){
+    public Builder withTrialReceiptType(final String trialReceiptType) {
       this.trialReceiptType = trialReceiptType;
       return this;
     }
 
+    public Builder withValuesFrom(final ListedCase listedCase) {
+      this.caseIdentifier = listedCase.caseIdentifier;
+      this.prosecutor = listedCase.getProsecutor();
+      this.defendants = listedCase.getDefendants();
+      this.caseMarkers = listedCase.getCaseMarkers();
+      this.id = listedCase.getId();
+      this.shadowListed = listedCase.getShadowListed();
+      this.trialReceiptType = listedCase.getTrialReceiptType();
+      return this;
+    }
+
     public ListedCase build() {
-      return new ListedCase(caseIdentifier, defendants, caseMarkers, id, shadowListed, trialReceiptType);
+      return new ListedCase(caseIdentifier, prosecutor, defendants, caseMarkers, id, shadowListed, trialReceiptType);
     }
   }
 }

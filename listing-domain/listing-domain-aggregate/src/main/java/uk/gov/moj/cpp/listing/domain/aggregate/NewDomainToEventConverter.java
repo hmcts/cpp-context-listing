@@ -20,6 +20,7 @@ import uk.gov.justice.listing.events.LinkedToCases;
 import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NewBaseDefendant;
 import uk.gov.justice.listing.events.Offence;
+import uk.gov.justice.listing.events.Prosecutor;
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.SimpleOffence;
 import uk.gov.justice.listing.events.StatementOfOffence;
@@ -43,7 +44,7 @@ public class NewDomainToEventConverter {
     }
 
     public static uk.gov.justice.listing.events.ListedCase buildListedCase(final ListedCase lc) {
-        return uk.gov.justice.listing.events.ListedCase.listedCase()
+        final uk.gov.justice.listing.events.ListedCase.Builder builder = uk.gov.justice.listing.events.ListedCase.listedCase()
                 .withId(lc.getId())
                 .withCaseIdentifier(buildCaseIdentifier(lc))
                 .withMarkers(isNull(lc.getCaseMarkers()) ? emptyList() : lc.getCaseMarkers().stream()
@@ -54,8 +55,13 @@ public class NewDomainToEventConverter {
                         .collect(toList()))
                 .withRestrictFromCourtList(false)
                 .withShadowListed(nonNull(lc.getShadowListed()) && lc.getShadowListed().isPresent() ? lc.getShadowListed().get() : null)
-                .withTrialReceiptType(lc.getTrialReceiptType())
-                .build();
+                .withTrialReceiptType(lc.getTrialReceiptType());
+
+        if(nonNull(lc.getProsecutor())){
+            builder.withProsecutor(buildProsecutor(lc));
+        }
+
+        return builder.build();
     }
 
     public static List<Marker> convertCaseMarkersListToMarkers(final List<CaseMarker> caseMarkers) {
@@ -226,6 +232,14 @@ public class NewDomainToEventConverter {
                 .withAuthorityCode(lc.getCaseIdentifier().getAuthorityCode())
                 .withAuthorityId(lc.getCaseIdentifier().getAuthorityId())
                 .withCaseReference(lc.getCaseIdentifier().getCaseReference())
+                .build();
+    }
+
+    private static Prosecutor buildProsecutor(final ListedCase lc) {
+        return Prosecutor.prosecutor()
+                .withProsecutorId(lc.getProsecutor().getProsecutorId())
+                .withProsecutorCode(lc.getProsecutor().getProsecutorCode())
+                .withProsecutorName(lc.getProsecutor().getProsecutorName())
                 .build();
     }
 

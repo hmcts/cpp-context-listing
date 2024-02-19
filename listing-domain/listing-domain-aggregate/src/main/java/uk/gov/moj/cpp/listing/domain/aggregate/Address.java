@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 @SuppressWarnings({"squid:S00107", "squid:S1067", "squid:S1213", "PMD.BeanMembersShouldSerialize"})
 public class Address implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final String address1;
 
     private final String address2;

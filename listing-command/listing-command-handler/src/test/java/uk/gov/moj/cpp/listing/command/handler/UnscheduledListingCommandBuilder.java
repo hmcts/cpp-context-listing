@@ -26,6 +26,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.ListedCase;
 import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.Prosecutor;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 import uk.gov.moj.cpp.listing.domain.Type;
 
@@ -152,6 +153,9 @@ public class UnscheduledListingCommandBuilder {
             .withDescription("Warrant for arrest without bail").build();
 
     private final static Optional<String> APPLICATION_PARTICULARS = of("Application particulars");
+    static final UUID PROSECUTOR_ID = UUID.randomUUID();
+    static final String PROSECUTOR_CODE = "CPS-SW";
+    static final String PROSECUTOR_NAME = "Prosecution South West";
 
 
 
@@ -163,6 +167,10 @@ public class UnscheduledListingCommandBuilder {
         return listUnscheduledNextHearingCommandEnvelopeFor("/test-data/listing.command.list-unscheduled-next-hearing.json");
     }
 
+    static JsonEnvelope listUnscheduledNextHearingWithProsecutorCommandEnvelope() {
+        return listUnscheduledNextHearingCommandEnvelopeFor("/test-data/listing.command.list-unscheduled-next-hearing-with-prosecutor.json");
+    }
+
     static JsonEnvelope listUnscheduledCourtHearingCommandEnvelopeFor(final String testDataFileLocation) {
         final String jsonString = FileUtil.givenPayload(testDataFileLocation).toString()
                 .replace("HEARING_ID", HEARING_ID_1.toString())
@@ -171,6 +179,9 @@ public class UnscheduledListingCommandBuilder {
                 .replace("PROSECUTOR_DATES_TO_AVOID", PROSECUTOR_DATES_TO_AVOID)
                 .replace("JURISDICTION_TYPE", JURISDICTION_TYPE.toString())
                 .replace("JUDICIAL_ID", JUDICIAL_ID_1.toString())
+                .replace("PROSECUTOR_ID", PROSECUTOR_ID.toString())
+                .replace("PROSECUTOR_CODE", PROSECUTOR_CODE)
+                .replace("PROSECUTOR_NAME", PROSECUTOR_NAME)
                 .replace("AUTHORITY_ID", AUTHORITY_ID.toString())
                 .replace("CUSTODY_TIME_LIMIT", CUSTODY_TIME_LIMIT)
                 .replace("DEFAULT_DURATION", DEFAULT_DURATION)
@@ -201,6 +212,9 @@ public class UnscheduledListingCommandBuilder {
                 .replace("JURISDICTION_TYPE", JURISDICTION_TYPE.toString())
                 .replace("JUDICIAL_ID", JUDICIAL_ID_1.toString())
                 .replace("AUTHORITY_ID", AUTHORITY_ID.toString())
+                .replace("PROSECUTOR_ID", PROSECUTOR_ID.toString())
+                .replace("PROSECUTOR_CODE", PROSECUTOR_CODE)
+                .replace("PROSECUTOR_NAME", PROSECUTOR_NAME)
                 .replace("CUSTODY_TIME_LIMIT", CUSTODY_TIME_LIMIT)
                 .replace("DEFAULT_DURATION", DEFAULT_DURATION)
                 .replace("DEFAULT_START_TIME", DEFAULT_START_TIME)
@@ -237,6 +251,16 @@ public class UnscheduledListingCommandBuilder {
                 .build();
     }
 
+    static ListedCase createdListedCaseWithProsecutor() {
+        return ListedCase.listedCase().withValuesFrom(createdListedCase())
+                .withProsecutor(Prosecutor.prosecutor()
+                        .withProsecutorId(PROSECUTOR_ID)
+                        .withProsecutorCode(PROSECUTOR_CODE)
+                        .build()
+                )
+                .withDefendants(Arrays.asList(createDomainDefendant()))
+                .build();
+    }
 
     static Defendant createDomainDefendant() {
         return Defendant.defendant()
