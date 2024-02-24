@@ -1862,6 +1862,10 @@ public class Hearing implements Aggregate {
         return Stream.of(eventList.stream(), hmiEvents).flatMap(i -> i);
     }
 
+    public boolean isDuplicateOrDeleted() {
+       return this.duplicate || this.deleted;
+    }
+
     public Stream<Object> raiseRequestHearingFromStagingHmi() {
         final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
         if (nonNull(currentHearingEventState)) {

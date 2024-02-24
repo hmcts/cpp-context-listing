@@ -4045,6 +4045,22 @@ public class ListingCommandHandlerTest {
     }
 
     @Test
+    public void shouldNotModifyHearingCounsels() throws Exception {
+        final JsonObject modifyHearingCounselsCommand = FileUtil.givenPayload("/test-data/listing.command.handler.modify-hearing-counsel.json");
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.handler.modify-hearing-counsel",
+                modifyHearingCounselsCommand);
+
+        when(eventSource.getStreamById(UUID.fromString(modifyHearingCounselsCommand.getString("hearingId"))))
+                .thenReturn(eventStream);
+        when(hearing.isDuplicateOrDeleted()).thenReturn(true);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+
+        listingCommandHandler.modifyHearingCounsels(commandEnvelope);
+        verify(hearing).isDuplicateOrDeleted();
+        verify(hearing, never()).raiseUpdateHearingInStagingHmi(any(Stream.class));
+    }
+
+    @Test
     public void shouldDeleteHearing() throws EventStreamException {
         final UUID hearingId = randomUUID();
 

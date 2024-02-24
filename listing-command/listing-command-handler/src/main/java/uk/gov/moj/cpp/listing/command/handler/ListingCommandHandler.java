@@ -1592,18 +1592,18 @@ public class ListingCommandHandler {
                 commandEnvelope.toObfuscatedDebugString());
 
         final ModifyHearingCounselCommand modifyHearingCounsels = jsonObjectConverter.convert(payload, ModifyHearingCounselCommand.class);
-        final HearingCounselModified event = new HearingCounselModified(
-                uk.gov.justice.listing.event.Action.valueFor(modifyHearingCounsels.getAction().name()).orElse(null),
-                uk.gov.justice.listing.event.CounselType.valueFor(modifyHearingCounsels.getCounselType().name()).orElse(null),
-                modifyHearingCounsels.getHearingId(),
-                modifyHearingCounsels.getPayload());
-
         final EventStream eventStream = eventSource.getStreamById(modifyHearingCounsels.getHearingId());
         final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
-
-        final boolean isHmiEnabled = hmiService.isHmiEnabled(hearingAggregate.getCurrentHearingEventState(), commandEnvelope);
-        final Stream<Object> events = isHmiEnabled ? hearingAggregate.raiseUpdateHearingInStagingHmi(streamOf(event)) : streamOf(event);
-
+        Stream<Object> events = Stream.empty();
+        if(!hearingAggregate.isDuplicateOrDeleted()) {
+            final HearingCounselModified event = new HearingCounselModified(
+                    uk.gov.justice.listing.event.Action.valueFor(modifyHearingCounsels.getAction().name()).orElse(null),
+                    uk.gov.justice.listing.event.CounselType.valueFor(modifyHearingCounsels.getCounselType().name()).orElse(null),
+                    modifyHearingCounsels.getHearingId(),
+                    modifyHearingCounsels.getPayload());
+            final boolean isHmiEnabled = hmiService.isHmiEnabled(hearingAggregate.getCurrentHearingEventState(), commandEnvelope);
+            events = isHmiEnabled ? hearingAggregate.raiseUpdateHearingInStagingHmi(streamOf(event)) : streamOf(event);
+        }
         eventStream.append(events.map(enveloper.withMetadataFrom(commandEnvelope)));
     }
 
