@@ -39,6 +39,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -93,16 +94,15 @@ public class HearingEventListener {
         LOGGER.info("'listing.events.hearing-listed' received hearingId {}", hearingId);
         final Hearing hearing = new Hearing(hearingId, hearingJsonNode);
         hearingSearchSyncService.syncEntity(hearing);
-        hearingRepository.save(hearing);
     }
 
     private void removeDuplicateOffences(final HearingListed hearingListed) {
-       final List<uk.gov.justice.listing.events.Defendant> allDefendantsList = hearingListed.getHearing().getListedCases() != null ? hearingListed.getHearing().getListedCases().stream().map(c -> c.getDefendants()).flatMap(l -> l.stream()).collect(Collectors.toList()) : null;
+        final List<uk.gov.justice.listing.events.Defendant> allDefendantsList = hearingListed.getHearing().getListedCases() != null ? hearingListed.getHearing().getListedCases().stream().map(c -> c.getDefendants()).flatMap(l -> l.stream()).collect(Collectors.toList()) : null;
         removeForAllDefendants(allDefendantsList);
     }
 
     private void removeForAllDefendants(List<uk.gov.justice.listing.events.Defendant> allDefendantsList) {
-        if(allDefendantsList != null) {
+        if (allDefendantsList != null) {
             allDefendantsList.stream().forEach(d -> {
                 final List<UUID> offenceIds = new ArrayList<>();
                 final Iterator<uk.gov.justice.listing.events.Offence> offenceIterator = d.getOffences().iterator();
@@ -150,7 +150,7 @@ public class HearingEventListener {
         jsonEntityFinder.find(hearingId)
                 .put(FIELD_ALLOCATED, !ALLOCATED)
                 .remove(FIELD_COURT_ROOM_ID)
-                .putSubList("hearingDays", typeHearingDayRef,getHearingDaysWithRemoveCourtRoomIdFunction())
+                .putSubList("hearingDays", typeHearingDayRef, getHearingDaysWithRemoveCourtRoomIdFunction())
                 .save();
         LOGGER.info("'listing.events.hearing-unallocated-for-listing' received hearingId {} ", hearingId);
         hearingSearchSyncService.sync(hearingId);
@@ -340,11 +340,17 @@ public class HearingEventListener {
     private List<ListedCase> getUpdatedListedCaseWithCaseStatusAndDefendantProceedings(
             final ProsecutionCase prosecutionCase,
             final List<ListedCase> cases) {
+
         final List<ListedCase> listedCases = new ArrayList<>(cases);
-        final ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(prosecutionCase.getId()));
-        final List<uk.gov.justice.listing.events.Defendant> listedCaseDefendants = listedCase.getDefendants();
-        updateDefendantWithProceedingsIncluded(prosecutionCase.getDefendants(), listedCaseDefendants);
-        updateCaseStatus(prosecutionCase, listedCases, listedCase);
+        final Optional<ListedCase> listedCaseOpt = listedCases.stream()
+                .filter(ltc -> ltc.getId().equals(prosecutionCase.getId()))
+                .findFirst();
+        if (listedCaseOpt.isPresent()) {
+            final ListedCase listedCase = listedCaseOpt.get();
+            final List<uk.gov.justice.listing.events.Defendant> listedCaseDefendants = listedCase.getDefendants();
+            updateDefendantWithProceedingsIncluded(prosecutionCase.getDefendants(), listedCaseDefendants);
+            updateCaseStatus(prosecutionCase, listedCases, listedCase);
+        }
         return listedCases;
     }
 
@@ -401,7 +407,7 @@ public class HearingEventListener {
     }
 
     private uk.gov.justice.core.courts.Address buildAddress(uk.gov.justice.core.courts.Address a) {
-        if(nonNull(a)) {
+        if (nonNull(a)) {
             return uk.gov.justice.core.courts.Address.address().
                     withAddress1(a.getAddress1())
                     .withAddress2(a.getAddress2())
@@ -419,7 +425,7 @@ public class HearingEventListener {
     }
 
     private ProsecutionCase convertToCourtProsecutionCase(final uk.gov.justice.listing.events.ProsecutionCase listingProsecutionCase) {
-        if(nonNull(listingProsecutionCase)) {
+        if (nonNull(listingProsecutionCase)) {
             return prosecutionCase()
                     .withId(listingProsecutionCase.getId())
                     .withProsecutionCaseIdentifier(listingProsecutionCase.getProsecutionCaseIdentifier())

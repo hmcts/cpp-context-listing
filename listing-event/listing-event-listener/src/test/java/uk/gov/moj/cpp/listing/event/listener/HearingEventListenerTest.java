@@ -194,7 +194,7 @@ public class HearingEventListenerTest {
         hearingEventListener.hearingListed(envelope);
 
         final Hearing hearing = new Hearing(HEARING_ID, jsonNode);
-        verify(hearingRepository).save(hearing);
+        verify(hearingSearchSyncService).syncEntity(hearing);
     }
 
     @Test

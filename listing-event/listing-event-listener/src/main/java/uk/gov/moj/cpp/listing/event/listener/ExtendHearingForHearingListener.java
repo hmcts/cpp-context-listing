@@ -174,7 +174,16 @@ public class ExtendHearingForHearingListener {
 
         //create map from dbListedCases to compare against given request
         //but we will still modify the dbListedCases list
-        final Map<UUID, Map<UUID, List<Offence>>> dbCaseDefendantOffenceMap = dbListedCases.stream().collect(Collectors.toMap(ListedCase::getId, listedCase -> listedCase.getDefendants().stream().collect(Collectors.toMap(Defendant::getId, Defendant::getOffences))));
+        final Map<UUID, Map<UUID, List<Offence>>> dbCaseDefendantOffenceMap = dbListedCases.stream()
+                .collect(Collectors.toMap(
+                        ListedCase::getId,
+                        listedCase -> listedCase.getDefendants().stream()
+                                .collect(Collectors.toMap(
+                                        Defendant::getId,
+                                        Defendant::getOffences,
+                                        (existing, replacement) -> existing
+                                ))
+                ));
 
         listedCasesToAdd.forEach(c -> { //iterate over the requested cases
             if (dbCaseDefendantOffenceMap.containsKey(c.getId())) { //if dbListedCases already has the same case

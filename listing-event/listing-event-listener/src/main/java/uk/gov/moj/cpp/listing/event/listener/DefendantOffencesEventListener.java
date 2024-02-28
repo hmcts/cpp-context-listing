@@ -34,7 +34,8 @@ public class DefendantOffencesEventListener {
 
     private static final String LISTED_CASES_FIELD = "listedCases";
 
-    private static final TypeReference<List<ListedCase>> LISTED_CASE_TYPE = new TypeReference<List<ListedCase>>() {};
+    private static final TypeReference<List<ListedCase>> LISTED_CASE_TYPE = new TypeReference<List<ListedCase>>() {
+    };
 
     @Inject
     private HearingRepository hearingRepository;
@@ -116,11 +117,14 @@ public class DefendantOffencesEventListener {
     private List<ListedCase> getAddedListedCase(UUID caseId, UUID defendantId, Offence updatedOffence, List<ListedCase> listedCases) {
         ListedCase listedCase = Iterables.find(listedCases, caze -> caze.getId().equals(caseId));
         List<Defendant> defendants = listedCase.getDefendants();
-        Defendant originalDefendant = Iterables.find(defendants, defendant -> defendant.getId().equals(defendantId));
 
-        final Optional<Offence> offence = originalDefendant.getOffences().stream().filter(offence1 ->  offence1.getId().equals(updatedOffence.getId())).findFirst();
-        offence.ifPresent(o -> originalDefendant.getOffences().remove(o));
-        originalDefendant.getOffences().add(updatedOffence);
+        final Optional<Defendant> optionalDefendant = defendants.stream().filter(defendant -> defendant.getId().equals(defendantId)).findFirst();
+        if (optionalDefendant.isPresent()) {
+            final Defendant originalDefendant = optionalDefendant.get();
+            final Optional<Offence> offence = originalDefendant.getOffences().stream().filter(offence1 -> offence1.getId().equals(updatedOffence.getId())).findFirst();
+            offence.ifPresent(o -> originalDefendant.getOffences().remove(o));
+            originalDefendant.getOffences().add(updatedOffence);
+        }
         listedCases.replaceAll(
                 listedCase1 -> listedCase1.getId().equals(listedCase.getId()) ? updateShadowListedFlagForListedCase(listedCase) : listedCase1);
 
@@ -139,7 +143,7 @@ public class DefendantOffencesEventListener {
         return listedCases;
     }
 
-    private Offence buildOffence(Offence updatedOffence, Optional<Offence> originalOffence, Optional<Boolean> restrictCourtList){
+    private Offence buildOffence(Offence updatedOffence, Optional<Offence> originalOffence, Optional<Boolean> restrictCourtList) {
         return Offence.offence()
                 .withStatementOfOffence(updatedOffence.getStatementOfOffence())
                 .withOffenceWording(updatedOffence.getOffenceWording())
@@ -150,7 +154,7 @@ public class DefendantOffencesEventListener {
                 .withRestrictFromCourtList(nonNull(restrictCourtList) && restrictCourtList.isPresent() ? restrictCourtList.get() : null)
                 .withLaaApplnReference(updatedOffence.getLaaApplnReference())
                 .withShadowListed(originalOffence.map(Offence::getShadowListed).orElse(null))
-                .withListingNumber(originalOffence.map( Offence::getListingNumber).orElse(null))
+                .withListingNumber(originalOffence.map(Offence::getListingNumber).orElse(null))
                 .withReportingRestrictions(dedupReportingRestrictions(updatedOffence.getReportingRestrictions()))
                 .withIndictmentParticular(updatedOffence.getIndictmentParticular())
                 .build();
@@ -163,7 +167,7 @@ public class DefendantOffencesEventListener {
         return Optional.empty();
     }
 
-    private ListedCase updateShadowListedFlagForListedCase(ListedCase listedCase){
+    private ListedCase updateShadowListedFlagForListedCase(ListedCase listedCase) {
         final boolean caseShadowListed = listedCase.getDefendants().stream()
                 .flatMap(defendant -> defendant.getOffences().stream())
                 .allMatch(offence -> nonNull(offence.getShadowListed()) && offence.getShadowListed());

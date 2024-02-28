@@ -47,24 +47,26 @@ public class CourtApplicationEventListener {
         final TypeReference<List<CourtApplication>> typeRef = new TypeReference<List<CourtApplication>>() {
         };
         final Hearing hearing = hearingRepository.findBy(hearingId);
-        if(nonNull(courtApplication)) {
+        if (nonNull(courtApplication)) {
             filterDuplicateOffencesById(courtApplication.getOffences());
-            if (nonNull(hearing) && nonNull(hearing.getProperties()) && nonNull(hearing.getProperties().get(COURT_APPLICATION_FIELD))) {
-                using(hearingRepository)
-                        .find(hearingId)
-                        .putSubList(COURT_APPLICATION_FIELD, typeRef, getCourtApplicationsFunction(courtApplication))
-                        .save();
-            } else {
-                using(hearingRepository)
-                        .find(hearingId)
-                        .putObject(COURT_APPLICATION_FIELD, singletonList(courtApplication))
-                        .save();
+            if (nonNull(hearing)) {
+                if (nonNull(hearing.getProperties()) && nonNull(hearing.getProperties().get(COURT_APPLICATION_FIELD))) {
+                    using(hearingRepository)
+                            .find(hearingId)
+                            .putSubList(COURT_APPLICATION_FIELD, typeRef, getCourtApplicationsFunction(courtApplication))
+                            .save();
+                } else {
+                    using(hearingRepository)
+                            .find(hearingId)
+                            .putObject(COURT_APPLICATION_FIELD, singletonList(courtApplication))
+                            .save();
+                }
+                hearingSearchSyncService.sync(hearingId);
             }
-            hearingSearchSyncService.sync(hearingId);
         }
     }
 
-    private  void filterDuplicateOffencesById(final List<uk.gov.justice.listing.events.Offence> offences) {
+    private void filterDuplicateOffencesById(final List<uk.gov.justice.listing.events.Offence> offences) {
         if (isNull(offences) || offences.isEmpty()) {
             return;
         }
@@ -97,7 +99,7 @@ public class CourtApplicationEventListener {
                                                                List<CourtApplication> courtApplications) {
 
         final Optional<CourtApplication> origCourtApplication = courtApplications.stream().filter(ca -> ca.getId().equals(updateCourtApplication.getId())).findFirst();
-        if(origCourtApplication.isPresent()) {
+        if (origCourtApplication.isPresent()) {
             filterDuplicateOffencesById(updateCourtApplication.getOffences());
             final CourtApplication newCourtApplication = CourtApplication.courtApplication()
                     .withApplicant(updateCourtApplication.getApplicant())
