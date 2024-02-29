@@ -36,7 +36,7 @@
         <test-utils-enveloper-provider.version>5.1.2</test-utils-enveloper-provider.version>
         <test-utils-core.version>5.1.2</test-utils-core.version>
         <test-utils-persistence.version>5.3.0-M1</test-utils-persistence.version>
-        <progression.version>8.0.156</progression.version>
+        <progression.version>8.0.162</progression.version>
         <org.xmlunit.version>2.6.3</org.xmlunit.version>    <!-- Version property added to common-bom:2.2.1.Replace with org.xmlunit.version after upgrade to Framework 6 -->
         <com.sun.xml.bind.jaxb.version>2.2.11</com.sun.xml.bind.jaxb.version>   <!-- Version property added to common-bom:2.2.1. Replace with com.sun.xml.bind.jaxb.version after upgrade to Framework 6 -->
         <slf4j-log4j12.version>1.7.10</slf4j-log4j12.version>

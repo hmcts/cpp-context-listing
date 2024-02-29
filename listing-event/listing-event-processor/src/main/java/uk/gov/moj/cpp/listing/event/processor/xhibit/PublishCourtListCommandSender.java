@@ -6,10 +6,13 @@ import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static javax.json.JsonValue.ValueType.ARRAY;
 import static javax.json.JsonValue.ValueType.OBJECT;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
+import uk.gov.justice.listing.courts.events.CourtLists;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -25,9 +28,11 @@ import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListR
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -40,6 +45,8 @@ import javax.json.JsonStructure;
 import javax.json.JsonValue;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Stateless
 public class PublishCourtListCommandSender {
@@ -65,6 +72,8 @@ public class PublishCourtListCommandSender {
     private static final String COURT_LISTS = "courtLists";
     private static final String SITTINGS = "sittings";
     private static final String SEND_NOTIFICATION_TO_PARTIES = "sendNotificationToParties";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublishCourtListCommandSender.class);
 
     @Inject
     @FrameworkComponent("EVENT_PROCESSOR")
@@ -162,6 +171,27 @@ public class PublishCourtListCommandSender {
     }
 
     public void publishPublicMessageForCourtList(final JsonEnvelope envelope, final PublishCourtListRequestParameters requestParameters, final JsonObject courtListJson) {
+
+        final JsonArray courtListArray = prepareCourtLists(courtListJson, envelope);
+
+        //SNI-5051 and SNI-5155 : converting courtlistjson to the schema of public event courtlist.
+        if (isEmpty(courtListArray)) {
+            LOGGER.info("There are no courtList elements are present for courtListId {}", requestParameters.getCourtListId());
+            return;
+        }
+        final List<CourtLists> courtListsList = courtListArray.getValuesAs(JsonObject.class).stream()
+                .map(courtListItem -> jsonObjectConverter.convert(courtListItem, CourtLists.class))
+                .filter(courtLists -> isNotEmpty(courtLists.getHearings()))
+                .collect(Collectors.toList());
+        if (isEmpty(courtListsList)) {
+            LOGGER.info("There are not sitting/hearing to be published for courtListId {}", requestParameters.getCourtListId());
+            return;
+        }
+        final  JsonArrayBuilder finalCourtListArrayBuilder = Json.createArrayBuilder();
+        courtListsList.stream()
+                .map(courtListObject -> objectToJsonObjectConverter.convert(courtListObject))
+                .forEach(finalCourtListArrayBuilder::add);
+
         final JsonObject payload = createObjectBuilder()
                 .add(COURT_LIST_ID, requestParameters.getCourtListId().toString())
                 .add(COURT_CENTRE_ID, requestParameters.getCourtCentreId().toString())
@@ -170,15 +200,15 @@ public class PublishCourtListCommandSender {
                 .add(PUBLISH_COURT_LIST_TYPE, requestParameters.getPublishCourtListType().name())
                 .add(REQUESTED_TIME, ZonedDateTimes.toString(requestParameters.getRequestedTime()))
                 .add(WEEK_COMMENCING, requestParameters.getPublishCourtListType().isWeekCommencing())
-                .add(COURT_LISTS, prepareCourtLists(courtListJson, envelope))
+                .add(COURT_LISTS, finalCourtListArrayBuilder.build())
                 .add(SEND_NOTIFICATION_TO_PARTIES, requestParameters.getSendNotificationToParties())
                 .build();
-
         sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName("public.listing.court-list-published"), payload));
     }
 
     private JsonArray prepareCourtLists(final JsonObject courtListJson, final JsonEnvelope envelope) {
         final JsonArrayBuilder courtListJsonArray = courtListJson.getJsonArray(COURT_LISTS).getValuesAs(JsonObject.class).stream()
+                .filter(courtList -> courtList.containsKey(SITTINGS))
                 .flatMap(courtList -> courtList.getJsonArray(SITTINGS).getValuesAs(JsonObject.class).stream())
                 .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
         return (JsonArray) mapListingDefendantToCore(courtListJsonArray.build(), new HashMap<>(), envelope);

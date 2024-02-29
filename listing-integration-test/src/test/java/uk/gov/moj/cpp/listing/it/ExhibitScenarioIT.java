@@ -4,7 +4,6 @@ import static com.google.common.collect.ImmutableMap.of;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildCourtListCommandPayload;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCourtListCommandPayload;
 import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubUpdateAvailableHearingSlotsService;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
@@ -36,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import javax.json.JsonObject;
 
 import com.google.common.collect.ImmutableMap;
-import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 
