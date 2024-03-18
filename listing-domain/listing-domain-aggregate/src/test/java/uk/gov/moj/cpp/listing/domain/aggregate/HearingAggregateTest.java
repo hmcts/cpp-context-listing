@@ -523,6 +523,63 @@ public class HearingAggregateTest {
     }
 
     @Test
+    public void shouldNotRaiseAnyEventsAsHearingIsDelted() {
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+        final UUID defendant1Id = randomUUID();
+        final UUID defendant2Id = randomUUID();
+        final UUID offence1Id = randomUUID();
+        final UUID offence2Id = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(asList(Defendant.defendant()
+                                                .withId(defendant1Id)
+                                                .withOffences(asList(Offence.offence()
+                                                        .withId(offence1Id)
+                                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                                                                .withSeedingHearingId(seedingHearingId)
+                                                                .build())
+                                                        .build()))
+                                                .build()))
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(asList(Defendant.defendant()
+                                                .withId(defendant2Id)
+                                                .withOffences(asList(Offence.offence()
+                                                        .withId(offence2Id)
+                                                        .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                                .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.CROWN)
+                                                                .withSeedingHearingId(seedingHearingId)
+                                                                .build())
+                                                        .build()))
+                                                .build()))
+                                        .build()))
+                        .build())
+                .build());
+
+        hearing.apply(HearingDeleted.hearingDeleted().withHearingIdToBeDeleted(hearingId)
+                .build());
+
+        final Stream<Object> events = hearing.deleteHearing(seedingHearingId, hearingId);
+        final List<Object> eventsList = events.collect(Collectors.toList());
+        assertThat(eventsList.size(), is(0));
+
+    }
+
+
+
+    @Test
     public void shouldCreateAllocatedHearingDeletedWithoutFreeingSlotsOfNonMagistratesJurisdiction() {
         final UUID case1Id = randomUUID();
         final UUID case2Id = randomUUID();
@@ -3060,6 +3117,16 @@ public class HearingAggregateTest {
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().size(), is(1));
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().stream().filter(d -> d.getId().equals(defendantId2)).findFirst().get().getId(), is(defendantId2));
 
+
+    }
+
+    @Test
+    public void shouldNotRaiseHearingVacatedEventAsBoxWorkHearingDoesNotExistInListingContext() {
+
+        final UUID vacatingTrialReasonId = randomUUID();
+        final Stream<Object> events = hearing.hearingVacateTrial(Optional.of(vacatingTrialReasonId));
+        final List<Object> eventsList = events.collect(Collectors.toList());
+        assertThat(eventsList.size(), is(0));
 
     }
 

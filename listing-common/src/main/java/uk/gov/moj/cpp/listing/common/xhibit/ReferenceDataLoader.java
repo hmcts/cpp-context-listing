@@ -68,7 +68,8 @@ public class ReferenceDataLoader {
 
         final Envelope<OrganisationUnitList> response = requester.requestAsAdmin(requestEnvelope, OrganisationUnitList.class);
 
-        return Objects.isNull(response) ? empty() : of(response.payload().getOrganisationunits().get(0));
+        return (!Objects.isNull(response) && !Objects.isNull(response.payload()) && !Objects.isNull(response.payload().getOrganisationunits()) && !response.payload().getOrganisationunits().isEmpty()) ?
+                of(response.payload().getOrganisationunits().get(0)) : empty();
     }
 
     public List<OrganisationUnit> fetchOrganisationUnitsByOucodeL2Code(final String oucodeL2Code) {

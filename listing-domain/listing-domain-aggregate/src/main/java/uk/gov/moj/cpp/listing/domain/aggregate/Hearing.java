@@ -195,7 +195,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = -3137792804347527807L;
+    private static final long serialVersionUID = 5817594778865191001L;
 
     private static final String SUMMONS_APPROVED_RESULT_TYPE_ID = "0f44eeb9-2c81-430d-9a60-bbdaf8c4a093";
     private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
@@ -491,8 +491,8 @@ public class Hearing implements Aggregate {
             }
 
             builder.withCourtApplications(courtApplications.stream()
-                    .map(NewDomainToEventConverter::buildCourtApplications)
-                    .collect((toList())))
+                            .map(NewDomainToEventConverter::buildCourtApplications)
+                            .collect((toList())))
                     .withWeekCommencingDurationInWeeks(weekCommencingDurationInWeeks.orElse(null))
                     .withWeekCommencingStartDate(weekCommencingStartDate.orElse(null))
                     .withWeekCommencingEndDate(weekCommencingEndDate.orElse(null))
@@ -1176,7 +1176,7 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> hearingVacateTrial(final Optional<UUID> vacatingTrialReasonId) {
-        if (this.duplicate || this.deleted) {
+        if (this.duplicate || this.deleted || isNull(this.hearingId)) {
             return Stream.empty();
         }
 
@@ -1334,10 +1334,17 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> deleteHearing(final UUID seedingHearingId, final UUID hearingId) {
-        final Optional<uk.gov.moj.cpp.listing.domain.OffenceIds> offenceIdsSeededByOtherHearings = prosecutionCaseDefendantOffenceIds.stream().flatMap(pc -> pc.getDefendants().stream())
-                .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
-                .filter(offence -> isNotSeededOffenceBySeedId(seedingHearingId, offence))
-                .findFirst();
+        if (deleted) {
+            return Stream.empty();
+        }
+
+        Optional<uk.gov.moj.cpp.listing.domain.OffenceIds> offenceIdsSeededByOtherHearings = Optional.empty();
+        if (!isNull(prosecutionCaseDefendantOffenceIds)) {
+            offenceIdsSeededByOtherHearings = prosecutionCaseDefendantOffenceIds.stream().flatMap(pc -> pc.getDefendants().stream())
+                    .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
+                    .filter(offence -> isNotSeededOffenceBySeedId(seedingHearingId, offence))
+                    .findFirst();
+        }
 
 
         if (offenceIdsSeededByOtherHearings.isPresent() && !getOffencesSeededBySeededHeariinig(seedingHearingId).isEmpty()) {
@@ -2506,7 +2513,7 @@ public class Hearing implements Aggregate {
             }
         });
 
-        if(nonNull(this.currentHearingEventState)) {
+        if (nonNull(this.currentHearingEventState)) {
             updateCurrentHearingEventStateOnCaseAdded(casesAddedToHearing.getUnAllocatedListedCases());
         }
     }

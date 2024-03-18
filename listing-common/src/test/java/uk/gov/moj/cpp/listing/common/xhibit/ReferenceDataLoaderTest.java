@@ -16,6 +16,7 @@ import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.requester.Requester;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMapping;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMappingsList;
@@ -101,7 +102,6 @@ public class ReferenceDataLoaderTest {
         final List<OrganisationUnit> organisationUnits = referenceDataLoader.fetchOrganisationUnitsByOucodeL2Code(ouCode);
 
 
-
         assertThat(ouId, is(organisationUnits.get(0).getId()));
     }
 
@@ -123,6 +123,40 @@ public class ReferenceDataLoaderTest {
         assertThat(true, equalTo(actualOrganisationUnit.isPresent()));
         assertThat(ouId, is(actualOrganisationUnit.get().getOrganisationunits().get(0).getId()));
         assertThat(ouCode, is(actualOrganisationUnit.get().getOrganisationunits().get(0).getOucode()));
+    }
+
+    @Test
+    public void shouldNotFailIfOrganisationUnitByOuCodeIsEmpty() {
+        final String ouCode = "B01LY00";
+
+        when(requester.requestAsAdmin(any(), eq(OrganisationUnitList.class)).payload()).thenReturn(new OrganisationUnitList(Arrays.asList()));
+
+        final Optional<OrganisationUnit> actualOrganisationUnit = referenceDataLoader.getOrganisationUnitByOuCode(ouCode);
+
+        assertThat(false, equalTo(actualOrganisationUnit.isPresent()));
+    }
+
+    @Test
+    public void shouldNotFailIfResponseIsNull() {
+        final String ouCode = "B01LY00";
+
+        when(requester.requestAsAdmin(any(), any())).thenReturn(null);
+
+        final Optional<OrganisationUnit> actualOrganisationUnit = referenceDataLoader.getOrganisationUnitByOuCode(ouCode);
+
+        assertThat(false, equalTo(actualOrganisationUnit.isPresent()));
+    }
+
+
+    @Test
+    public void shouldNotFailIfOrganisationUnitByOuCodePayloadIsNull() {
+        final String ouCode = "B01LY00";
+
+        when(requester.requestAsAdmin(any(), any()).payload()).thenReturn(null);
+
+        final Optional<OrganisationUnit> actualOrganisationUnit = referenceDataLoader.getOrganisationUnitByOuCode(ouCode);
+
+        assertThat(false, equalTo(actualOrganisationUnit.isPresent()));
     }
 
     @Test(expected = InvalidReferenceDataException.class)
@@ -326,10 +360,10 @@ public class ReferenceDataLoaderTest {
 
     private JsonArray getCourtRooms() {
         return createArrayBuilder().add(createObjectBuilder()
-                .add("id", randomUUID().toString())
-                .add(VENUE_NAME_FIELD, "BEXLEY MAGISTRATES' COURT")
-                .add(COURT_ROOM_ID_FIELD, 12)
-                .add(COURT_ROOM_NAME_FIELD, "Courtroom 01"))
+                        .add("id", randomUUID().toString())
+                        .add(VENUE_NAME_FIELD, "BEXLEY MAGISTRATES' COURT")
+                        .add(COURT_ROOM_ID_FIELD, 12)
+                        .add(COURT_ROOM_NAME_FIELD, "Courtroom 01"))
                 .build();
     }
 
