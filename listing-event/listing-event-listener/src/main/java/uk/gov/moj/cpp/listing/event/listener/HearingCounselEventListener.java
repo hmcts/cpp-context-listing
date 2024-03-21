@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static uk.gov.justice.listing.event.Action.ADD;
 import static uk.gov.justice.listing.event.Action.REMOVE;
 import static uk.gov.justice.listing.event.Action.UPDATE;
@@ -59,20 +60,22 @@ public class HearingCounselEventListener {
 
     private void addOrUpdateCounsel(final UUID hearingId, final String payload, final CounselType counselType) throws IOException {
         final Hearing hearing = hearingRepository.findBy(hearingId);
-        final String counselNodeName = counselType.name().toLowerCase() + "Counsels";
-        if (isNull(hearing.getProperties().get(counselNodeName))) {
-            ((ObjectNode) hearing.getProperties()).putArray(counselNodeName);
-        }
+        if(nonNull(hearing)) {
+            final String counselNodeName = counselType.name().toLowerCase() + "Counsels";
+            if (isNull(hearing.getProperties().get(counselNodeName))) {
+                ((ObjectNode) hearing.getProperties()).putArray(counselNodeName);
+            }
 
-        final ArrayNode counsels = (ArrayNode) hearing.getProperties().get(counselNodeName);
-        final JsonNode counsel = mapper.readTree(payload);
-        final int index = removeCounselFromProperties(counsels, counsel.at("/id").textValue());
-        if (index > -1) {
-            counsels.insert(index, counsel);
-        } else {
-            counsels.add(counsel);
+            final ArrayNode counsels = (ArrayNode) hearing.getProperties().get(counselNodeName);
+            final JsonNode counsel = mapper.readTree(payload);
+            final int index = removeCounselFromProperties(counsels, counsel.at("/id").textValue());
+            if (index > -1) {
+                counsels.insert(index, counsel);
+            } else {
+                counsels.add(counsel);
+            }
+            hearingRepository.save(hearing);
         }
-        hearingRepository.save(hearing);
     }
 
     private void removeCounselAndSave(final UUID hearingId, final String payload, final CounselType counselType) throws IOException {

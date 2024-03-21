@@ -414,6 +414,8 @@ public class ListingCommandHandlerTest {
     @Mock
     private EventStream deletedEventStream;
     @Mock
+    private EventStream eventStream2;
+    @Mock
     private EventStream addedEventStream;
     @Mock
     private AggregateService aggregateService;
@@ -477,6 +479,8 @@ public class ListingCommandHandlerTest {
     private final boolean hasCustodyTimeLimit = true;
     @Mock
     private Hearing hearing;
+    @Mock
+    private Hearing unAllocatedHearing;
     @Mock
     private Case aCase;
     @Mock
@@ -2326,6 +2330,42 @@ public class ListingCommandHandlerTest {
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
         verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class), any());
+    }
+
+    @Test
+    public void listingCommandHandlerShouldNotExtendHearingForMissingAllocatedHearings() throws Exception {
+        final UUID hearingID1 = randomUUID();
+        final UUID hearingID2 = randomUUID();
+
+        final JsonEnvelope commandEnvelope = getEnvelopeForExtendWholeHearing(hearingID1, hearingID2);
+
+        when(eventSource.getStreamById(hearingID1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.isDuplicateOrDeleted()).thenReturn(true);
+
+        listingCommandHandler.extendHearingForHearing(commandEnvelope);
+
+        verify(hearing, times(0)).updatedListedCasesInHearing(any(), any(), any());
+    }
+
+    @Test
+    public void listingCommandHandlerShouldNotExtendHearingForMissingUnAllocatedHearings() throws Exception {
+        final UUID hearingID1 = randomUUID();
+        final UUID hearingID2 = randomUUID();
+
+        final JsonEnvelope commandEnvelope = getEnvelopeForExtendWholeHearing(hearingID1, hearingID2);
+
+        when(eventSource.getStreamById(hearingID1)).thenReturn(eventStream);
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
+        when(hearing.isDuplicateOrDeleted()).thenReturn(false);
+
+        when(eventSource.getStreamById(hearingID2)).thenReturn(eventStream2);
+        when(aggregateService.get(eventStream2, Hearing.class)).thenReturn(unAllocatedHearing);
+        when(unAllocatedHearing.isDuplicateOrDeleted()).thenReturn(true);
+
+        listingCommandHandler.extendHearingForHearing(commandEnvelope);
+
+        verify(hearing, times(0)).updatedListedCasesInHearing(any(), any(), any());
     }
 
     @Test

@@ -837,52 +837,67 @@ public class ListingCommandHandler {
 
         final UUID allocatedHearingId = extendHearingForHearingEnriched.getAllocatedHearingId();
         final UUID unAllocatedHearingId = extendHearingForHearingEnriched.getUnAllocatedHearingId();
-        final uk.gov.justice.listing.events.Hearing allocatedHearing = hearingFactory.getHearingById(allocatedHearingId, command);
-        final uk.gov.justice.listing.events.Hearing unAllocatedHearingPersisted = hearingFactory.getHearingById(unAllocatedHearingId, command);
 
-        boolean partialExtension = false;
-        final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap = new HashMap<>();
-        final List<ProsecutionCases> prosecutionCases = extendHearingForHearingEnriched.getProsecutionCases();
+        if (isHearingDeleted(allocatedHearingId, unAllocatedHearingId)) {
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(" listing.command.extend-hearing-for-hearing-enriched one of hearings is deleted for allocatedHearingId {}, or unAllocatedHearingId{} ", allocatedHearingId, unAllocatedHearingId);
+            }
+        } else {
+            final uk.gov.justice.listing.events.Hearing allocatedHearing = hearingFactory.getHearingById(allocatedHearingId, command);
+            final uk.gov.justice.listing.events.Hearing unAllocatedHearingPersisted = hearingFactory.getHearingById(unAllocatedHearingId, command);
+
+            boolean partialExtension = false;
+            final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap = new HashMap<>();
+            final List<ProsecutionCases> prosecutionCases = extendHearingForHearingEnriched.getProsecutionCases();
 
         if (prosecutionCases != null && !prosecutionCases.isEmpty()) {
             partialExtension = comparePersistedAndRequestedCaseMaps(unallocatedHearingRequestCaseMap, unAllocatedHearingPersisted, prosecutionCases, extendHearingForHearingEnriched);
         }
         final boolean fullExtension = !partialExtension;
 
-        if (partialExtension) {
+            if (partialExtension) {
 
-            final List<ListedCase> casesToMove = extractListedCasesToAllocate(unAllocatedHearingPersisted, unallocatedHearingRequestCaseMap);
+                final List<ListedCase> casesToMove = extractListedCasesToAllocate(unAllocatedHearingPersisted, unallocatedHearingRequestCaseMap);
 
-            //remove the cases/defendants/offences given in the request, from persisted hearing
-            final uk.gov.justice.listing.events.Hearing unallocatedHearingPersisted = extendHearingUtils.updateUnallocatedHearing(unAllocatedHearingPersisted, unallocatedHearingRequestCaseMap);
+                //remove the cases/defendants/offences given in the request, from persisted hearing
+                final uk.gov.justice.listing.events.Hearing unallocatedHearingPersisted = extendHearingUtils.updateUnallocatedHearing(unAllocatedHearingPersisted, unallocatedHearingRequestCaseMap);
 
-            final List<uk.gov.justice.listing.events.ProsecutionCases> prosecutionCasesToBeRemovedFromHearing = prosecutionCasesBuilder.buildEventProsecutionCase(unallocatedHearingRequestCaseMap);
+                final List<uk.gov.justice.listing.events.ProsecutionCases> prosecutionCasesToBeRemovedFromHearing = prosecutionCasesBuilder.buildEventProsecutionCase(unallocatedHearingRequestCaseMap);
 
-            updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
-                final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unallocatedHearingPersisted, casesToMove);
-                final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unallocatedHearingPersisted, fullExtension, extendHearingForHearingEnriched.getSendNotificationToParties());
-                final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(casesToMove, unAllocatedHearingId);
-                final Stream<Object> hearingMarkedForPartialUpdated = hearing.markUnallocatedHearingForPartialUpdate(unAllocatedHearingId, prosecutionCasesToBeRemovedFromHearing);
-                return Stream.of(addCaseEvent, updatedHearing, allocationEvents, hearingMarkedForPartialUpdated).flatMap(i -> i);
-            });
-
-        } else {
-            //do the whole extension as in before GPE-13108
-            // do not add the call to delete Unallocated hearing here as we are sending command for the same in progression when hearing confirmation event is processed.
-            final List<UUID> allocatedHearingCasesId = extractListCasesId(allocatedHearing);
-            final List<UUID> unAllocatedHearingCasesId = extractListCasesId(unAllocatedHearingPersisted);
-
-            if (Boolean.FALSE.equals(unAllocatedHearingPersisted.getAllocated())) {
                 updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
-                    final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unAllocatedHearingPersisted, unAllocatedHearingPersisted.getListedCases());
-                    final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted, fullExtension, extendHearingForHearingEnriched.getSendNotificationToParties());
-                    final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(unAllocatedHearingPersisted.getListedCases(), unAllocatedHearingId);
-                    return Stream.of(addCaseEvent, updatedHearing, allocationEvents).flatMap(i -> i);
+                    final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unallocatedHearingPersisted, casesToMove);
+                    final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unallocatedHearingPersisted, fullExtension, extendHearingForHearingEnriched.getSendNotificationToParties());
+                    final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(casesToMove, unAllocatedHearingId);
+                    final Stream<Object> hearingMarkedForPartialUpdated = hearing.markUnallocatedHearingForPartialUpdate(unAllocatedHearingId, prosecutionCasesToBeRemovedFromHearing);
+                    return Stream.of(addCaseEvent, updatedHearing, allocationEvents, hearingMarkedForPartialUpdated).flatMap(i -> i);
                 });
+
             } else {
-                LOGGER.info("incoming list cases : {} cannot be added in allocated hearing as same case id : {} ", unAllocatedHearingCasesId, allocatedHearingCasesId);
+                //do the whole extension as in before GPE-13108
+                // do not add the call to delete Unallocated hearing here as we are sending command for the same in progression when hearing confirmation event is processed.
+                final List<UUID> allocatedHearingCasesId = extractListCasesId(allocatedHearing);
+                final List<UUID> unAllocatedHearingCasesId = extractListCasesId(unAllocatedHearingPersisted);
+
+                if (Boolean.FALSE.equals(unAllocatedHearingPersisted.getAllocated())) {
+                    updateHearingEventStream(command, allocatedHearingId, (Hearing hearing) -> {
+                        final Stream<Object> updatedHearing = hearing.updatedListedCasesInHearing(allocatedHearing, unAllocatedHearingPersisted, unAllocatedHearingPersisted.getListedCases());
+                        final Stream<Object> allocationEvents = hearing.applyAllocationRulesForExtendedHearing(unAllocatedHearingPersisted, fullExtension, extendHearingForHearingEnriched.getSendNotificationToParties());
+                        final Stream<Object> addCaseEvent = hearing.addCasesToUnAllocatedHearing(unAllocatedHearingPersisted.getListedCases(), unAllocatedHearingId);
+                        return Stream.of(addCaseEvent, updatedHearing, allocationEvents).flatMap(i -> i);
+                    });
+                } else {
+                    LOGGER.info("incoming list cases : {} cannot be added in allocated hearing as same case id : {} ", unAllocatedHearingCasesId, allocatedHearingCasesId);
+                }
             }
         }
+    }
+
+    private boolean isHearingDeleted(final UUID allocatedHearingId, final UUID unAllocatedHearingId) {
+        final EventStream allocatedHearingEventStream = eventSource.getStreamById(allocatedHearingId);
+        final Hearing allocatedHearing = aggregateService.get(allocatedHearingEventStream, Hearing.class);
+        final EventStream unAllocatedHearingEventStream = eventSource.getStreamById(unAllocatedHearingId);
+        final Hearing unAllocatedHearing = aggregateService.get(unAllocatedHearingEventStream, Hearing.class);
+        return allocatedHearing.isDuplicateOrDeleted() || unAllocatedHearing.isDuplicateOrDeleted();
     }
 
     @Handles("listing.command.remove-partially-merged-offences-from-original-hearing")
