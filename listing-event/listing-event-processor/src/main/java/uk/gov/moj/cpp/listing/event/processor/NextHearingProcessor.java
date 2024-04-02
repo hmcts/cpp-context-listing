@@ -76,6 +76,7 @@ public class NextHearingProcessor {
     private static final String PRIVATE_EVENT_OFFENCES_REMOVED_FROM_EXISTING_UNALLOCATED_HEARING = "listing.events.offences-removed-from-existing-unallocated-hearing";
     private static final String PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-existing-allocated-hearing";
     private static final String PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_UNALLOCATED_HEARING = "public.events.listing.offences-removed-from-existing-unallocated-hearing";
+    public static final String PUBLIC_EVENTS_LISTING_OFFENCES_REMOVED_FROM_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-allocated-hearing";
 
     @Inject
     private Sender sender;
@@ -211,8 +212,16 @@ public class NextHearingProcessor {
     @Handles(PRIVATE_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING)
     public void handleOffencesRemovedFromExistingAllocatedHearingEvent(final JsonEnvelope envelope) {
         logEventReceived(envelope, PRIVATE_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING);
+        final String sourceContext = envelope.payloadAsJsonObject().getString("sourceContext", "LISTING");
+        final JsonObjectBuilder payloadBuilder = createObjectBuilder();
+        envelope.payloadAsJsonObject().keySet().stream().filter(s -> !"sourceContext".equals(s))
+                .forEach(s -> payloadBuilder.add(s, envelope.payloadAsJsonObject().get(s)));
 
-        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING), envelope.payloadAsJsonObject()));
+        if ("Listing".equals(sourceContext) ) {
+            sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING), payloadBuilder.build()));
+        } else {
+            sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(PUBLIC_EVENTS_LISTING_OFFENCES_REMOVED_FROM_ALLOCATED_HEARING), payloadBuilder.build()));
+        }
     }
 
     @Handles(PRIVATE_EVENT_OFFENCES_REMOVED_FROM_EXISTING_UNALLOCATED_HEARING)

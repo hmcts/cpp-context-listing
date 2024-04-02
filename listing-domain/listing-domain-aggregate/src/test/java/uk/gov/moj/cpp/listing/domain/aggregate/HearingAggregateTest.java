@@ -1866,116 +1866,13 @@ public class HearingAggregateTest {
     }
 
     @Test
-    public void shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearing() {
-        final UUID case1Id = randomUUID();
-        final UUID case2Id = randomUUID();
-        final UUID defendant1Id = randomUUID();
-        final UUID defendant2Id = randomUUID();
-        final UUID offence1Id = randomUUID();
-        final UUID offence2Id = randomUUID();
+    public void shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearingWhenSourceIsListing() {
+        shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearing(Hearing.SOURCE_LISTING);
+    }
 
-        hearing.apply(HearingListed.hearingListed()
-                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
-                        .withId(hearingId)
-                        .withType(uk.gov.justice.listing.events.Type.type().build())
-                        .withHearingLanguage(HearingLanguage.ENGLISH)
-                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
-                        .withHearingDays(emptyList())
-                        .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
-                                        .withId(case1Id)
-                                        .withDefendants(new ArrayList<>(asList(Defendant.defendant()
-                                                .withId(defendant1Id)
-                                                .withOffences(new ArrayList(asList(Offence.offence().withId(offence1Id).build())))
-                                                .build())))
-                                        .build(),
-                                uk.gov.justice.listing.events.ListedCase.listedCase()
-                                        .withId(case2Id)
-                                        .withDefendants(new ArrayList(asList(Defendant.defendant()
-                                                .withId(defendant2Id)
-                                                .withOffences(new ArrayList<>(asList(Offence.offence().withId(offence2Id).build())))
-                                                .build())))
-                                        .build()))
-                        .build())
-                .build());
-
-        hearing.apply(HearingAllocatedForListing.hearingAllocatedForListing()
-                .withHearingId(hearingId)
-                .withProsecutionCaseDefendantsOffenceIds(asList(ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
-                        .withId(case1Id)
-                        .withDefendants(asList(DefendantOffenceIds.defendantOffenceIds()
-                                .withId(defendant1Id)
-                                .withOffenceIds(asList(offence1Id))
-                                .build()))
-                        .build()))
-                .build());
-
-
-        final List<OffencesRemovedFromExistingAllocatedHearing> events = hearing.removeSelectedOffencesFromExistingHearing(hearingId, asList(offence1Id, offence2Id))
-                .map(OffencesRemovedFromExistingAllocatedHearing.class::cast)
-                .collect(Collectors.toList());
-
-        assertThat(events.get(0).getHearingId(), is(hearingId));
-        assertThat(events.get(0).getOffenceIds().get(0), is(offence1Id));
-        assertThat(events.get(0).getOffenceIds().get(1), is(offence2Id));
-        final UUID hearingId = randomUUID();
-        final UUID seedingHearingId = randomUUID();
-        final UUID caseId = randomUUID();
-        final UUID offenceId = randomUUID();
-        final Hearing hearingAggregate = new Hearing();
-        final UUID courtCentreId = randomUUID();
-        final UUID courtRoomId = randomUUID();
-        final ZonedDateTime startDateTime = ZonedDateTime.now();
-        hearingAggregate.apply(HearingListed.hearingListed()
-                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
-                        .withId(hearingId)
-                        .withType(uk.gov.justice.listing.events.Type.type()
-                                .withId(randomUUID())
-                                .withDescription("type")
-                                .build())
-                        .withHearingDays(Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay()
-                                        .withStartTime(startDateTime.plusDays(5))
-                                        .withDurationMinutes(30)
-                                        .withCourtRoomId(courtRoomId)
-                                        .withCourtCentreId(courtCentreId)
-                                        .withSequence(1)
-                                        .build(),
-                                uk.gov.justice.listing.events.HearingDay.hearingDay()
-                                        .withStartTime(startDateTime.plusDays(5))
-                                        .withDurationMinutes(30)
-                                        .withCourtRoomId(courtRoomId)
-                                        .withCourtCentreId(courtCentreId)
-                                        .withSequence(1)
-                                        .build()))
-                        .withJurisdictionType(CROWN)
-                        .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.ENGLISH)
-                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
-                                .withId(caseId)
-                                .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
-                                        .withId(randomUUID())
-                                        .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offence.offence()
-                                                .withId(offenceId)
-                                                .withSeedingHearing(SeedingHearing.seedingHearing()
-                                                        .withSeedingHearingId(seedingHearingId)
-                                                        .withJurisdictionType(CROWN)
-                                                        .build())
-                                                .build()))
-                                        .build()))
-                                .build()))
-                        .build())
-                .build());
-
-        final Stream<Object> eventStream = hearingAggregate.assignHearingDays(LocalDate.now(), LocalDate.now().plusDays(1), emptyList(), emptyList(), LocalTime.now(), 10, hearingId, new CourtCentre.Builder().build());
-        final Object event = eventStream.findFirst().get();
-        assertThat(event, notNullValue());
-        HearingDaysChangedForHearing hearingDaysChangedForHearing = (HearingDaysChangedForHearing) event;
-        assertThat(hearingDaysChangedForHearing.getHearingId(), is(hearingId));
-        final List<Object> events2 = hearing.removeSelectedOffencesFromExistingHearing(hearingId, asList(offence1Id, offence2Id))
-                .collect(Collectors.toList());
-
-        assertThat(events2.isEmpty(), is(true));
-
-        assertThat(hearing.getCurrentHearingEventState().getListedCases().size(), is(0));
-
+    @Test
+    public void shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearingWhenSourceIsHearing() {
+        shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearing(Hearing.SOURCE_HEARING);
     }
 
 
@@ -2013,7 +1910,7 @@ public class HearingAggregateTest {
                 .build());
 
 
-        final List<OffencesRemovedFromExistingUnallocatedHearing> events = hearing.removeSelectedOffencesFromExistingHearing(hearingId, asList(offence1Id, offence2Id))
+        final List<OffencesRemovedFromExistingUnallocatedHearing> events = hearing.removeSelectedOffencesFromExistingHearing(hearingId, asList(offence1Id, offence2Id),  Hearing.SOURCE_LISTING)
                 .map(OffencesRemovedFromExistingUnallocatedHearing.class::cast)
                 .collect(Collectors.toList());
 
@@ -2021,7 +1918,7 @@ public class HearingAggregateTest {
         assertThat(events.get(0).getOffenceIds().get(0), is(offence1Id));
         assertThat(events.get(0).getOffenceIds().get(1), is(offence2Id));
 
-        final List<Object> events2 = hearing.removeSelectedOffencesFromExistingHearing(hearingId, asList(offence1Id, offence2Id))
+        final List<Object> events2 = hearing.removeSelectedOffencesFromExistingHearing(hearingId, asList(offence1Id, offence2Id),  Hearing.SOURCE_LISTING)
                 .collect(Collectors.toList());
 
         assertThat(events2.isEmpty(), is(true));
@@ -3134,4 +3031,118 @@ public class HearingAggregateTest {
     private <T> List<T> asList(T... a) {
         return new ArrayList<>(java.util.Arrays.asList(a));
     }
+
+    private void shouldRaiseOffenceRemovedEventWhenOffenceIsInAllocatedHearing(final String source) {
+        final UUID case1Id = randomUUID();
+        final UUID case2Id = randomUUID();
+        final UUID defendant1Id = randomUUID();
+        final UUID defendant2Id = randomUUID();
+        final UUID offence1Id = randomUUID();
+        final UUID offence2Id = randomUUID();
+
+        hearing.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES)
+                        .withHearingDays(emptyList())
+                        .withListedCases(asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case1Id)
+                                        .withDefendants(new ArrayList<>(asList(Defendant.defendant()
+                                                .withId(defendant1Id)
+                                                .withOffences(new ArrayList(asList(Offence.offence().withId(offence1Id).build())))
+                                                .build())))
+                                        .build(),
+                                uk.gov.justice.listing.events.ListedCase.listedCase()
+                                        .withId(case2Id)
+                                        .withDefendants(new ArrayList(asList(Defendant.defendant()
+                                                .withId(defendant2Id)
+                                                .withOffences(new ArrayList<>(asList(Offence.offence().withId(offence2Id).build())))
+                                                .build())))
+                                        .build()))
+                        .build())
+                .build());
+
+        hearing.apply(HearingAllocatedForListing.hearingAllocatedForListing()
+                .withHearingId(hearingId)
+                .withProsecutionCaseDefendantsOffenceIds(asList(ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
+                        .withId(case1Id)
+                        .withDefendants(asList(DefendantOffenceIds.defendantOffenceIds()
+                                .withId(defendant1Id)
+                                .withOffenceIds(asList(offence1Id))
+                                .build()))
+                        .build()))
+                .build());
+
+
+        final List<OffencesRemovedFromExistingAllocatedHearing> events = hearing.removeSelectedOffencesFromExistingHearing(hearingId, asList(offence1Id, offence2Id), source)
+                .map(OffencesRemovedFromExistingAllocatedHearing.class::cast)
+                .collect(Collectors.toList());
+
+        assertThat(events.get(0).getHearingId(), is(hearingId));
+        assertThat(events.get(0).getOffenceIds().get(0), is(offence1Id));
+        assertThat(events.get(0).getOffenceIds().get(1), is(offence2Id));
+        assertThat(events.get(0).getSourceContext(), is(source));
+        final UUID hearingId = randomUUID();
+        final UUID seedingHearingId = randomUUID();
+        final UUID caseId = randomUUID();
+        final UUID offenceId = randomUUID();
+        final Hearing hearingAggregate = new Hearing();
+        final UUID courtCentreId = randomUUID();
+        final UUID courtRoomId = randomUUID();
+        final ZonedDateTime startDateTime = ZonedDateTime.now();
+        hearingAggregate.apply(HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type()
+                                .withId(randomUUID())
+                                .withDescription("type")
+                                .build())
+                        .withHearingDays(Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay()
+                                        .withStartTime(startDateTime.plusDays(5))
+                                        .withDurationMinutes(30)
+                                        .withCourtRoomId(courtRoomId)
+                                        .withCourtCentreId(courtCentreId)
+                                        .withSequence(1)
+                                        .build(),
+                                uk.gov.justice.listing.events.HearingDay.hearingDay()
+                                        .withStartTime(startDateTime.plusDays(5))
+                                        .withDurationMinutes(30)
+                                        .withCourtRoomId(courtRoomId)
+                                        .withCourtCentreId(courtCentreId)
+                                        .withSequence(1)
+                                        .build()))
+                        .withJurisdictionType(CROWN)
+                        .withHearingLanguage(uk.gov.justice.core.courts.HearingLanguage.ENGLISH)
+                        .withListedCases(Arrays.asList(uk.gov.justice.listing.events.ListedCase.listedCase()
+                                .withId(caseId)
+                                .withDefendants(Arrays.asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                        .withId(randomUUID())
+                                        .withOffences(Arrays.asList(uk.gov.justice.listing.events.Offence.offence()
+                                                .withId(offenceId)
+                                                .withSeedingHearing(SeedingHearing.seedingHearing()
+                                                        .withSeedingHearingId(seedingHearingId)
+                                                        .withJurisdictionType(CROWN)
+                                                        .build())
+                                                .build()))
+                                        .build()))
+                                .build()))
+                        .build())
+                .build());
+
+        final Stream<Object> eventStream = hearingAggregate.assignHearingDays(LocalDate.now(), LocalDate.now().plusDays(1), emptyList(), emptyList(), LocalTime.now(), 10, hearingId, new CourtCentre.Builder().build());
+        final Object event = eventStream.findFirst().get();
+        assertThat(event, notNullValue());
+        HearingDaysChangedForHearing hearingDaysChangedForHearing = (HearingDaysChangedForHearing) event;
+        assertThat(hearingDaysChangedForHearing.getHearingId(), is(hearingId));
+        final List<Object> events2 = hearing.removeSelectedOffencesFromExistingHearing(hearingId, asList(offence1Id, offence2Id), source)
+                .collect(Collectors.toList());
+
+        assertThat(events2.isEmpty(), is(true));
+
+        assertThat(hearing.getCurrentHearingEventState().getListedCases().size(), is(0));
+
+    }
+
 }

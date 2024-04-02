@@ -50,6 +50,9 @@ subscriptions_descriptor:
         - name: public.events.listing.offences-removed-from-unallocated-hearing
           schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.offences-removed-from-unallocated-hearing.json
 
+        - name: public.events.listing.offences-removed-from-allocated-hearing
+          schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.offences-removed-from-allocated-hearing.json
+
         - name: public.events.listing.next-hearing-day-changed
           schema_uri: http://justice.gov.uk/listing/courts/public.events.listing.next-hearing-day-changed.json
 

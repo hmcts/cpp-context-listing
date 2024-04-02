@@ -129,8 +129,12 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String EVENT_SELECTOR_DELETE_NEXT_HEARING_REQUESTED = "listing.events.delete_nect_hearing_requested";
     private static final String EVENT_SELECTOR_MARKED_AS_DUPLICATE_FOR_CASE_EVENT = "listing.events.hearing-marked-as-duplicate-for-case";
     private static final String EVENT_SELECTOR_CASES_ADDED_TO_HEARING = "listing.event.cases-added-to-hearing";
+    private static final String EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING = "listing.events.offences-removed-from-existing-allocated-hearing";
     private static final String PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED = "public.events.listing.unallocated-hearing-deleted";
     private static final String PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.events.listing.offences-removed-from-existing-unallocated-hearing";
+    private static final String PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-existing-allocated-hearing";
+
+
 
     private final MessageConsumer privateMessageConsumerNextHearingRequested;
     private final MessageConsumer privateMessageConsumerUnscheduledNextHearingRequested;
@@ -142,9 +146,11 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
     private final MessageConsumer privateMessageConsumeOffencesRemovedFromExistingHearing;
     private final MessageConsumer privateMessageConsumerDeleteNextHearingRequested;
     private final MessageConsumer privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent;
+    private final MessageConsumer privateMessageConsumerOffencesRemovedFromExistingAllocatedHearing;
 
     private final MessageConsumer publicMessageConsumerUnallocatedHearingDeleted;
     private final MessageConsumer publicMessageConsumerOffencesRemovedFromExistingHearing;
+    private final MessageConsumer publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing;
 
 
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -166,9 +172,11 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
         privateMessageConsumeOffencesRemovedFromExistingHearing = privateEvents.createConsumer(EVENT_SELECTOR_OFFENCES_REMOVED_FROM_EXISTING_HEARING);
         privateMessageConsumerDeleteNextHearingRequested = privateEvents.createConsumer(EVENT_SELECTOR_DELETE_NEXT_HEARING_REQUESTED);
         privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent = privateEvents.createConsumer(EVENT_SELECTOR_MARKED_AS_DUPLICATE_FOR_CASE_EVENT);
+        privateMessageConsumerOffencesRemovedFromExistingAllocatedHearing = privateEvents.createConsumer(EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING);
 
         publicMessageConsumerUnallocatedHearingDeleted = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED);
         publicMessageConsumerOffencesRemovedFromExistingHearing = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING);
+        publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING);
 
     }
 
@@ -186,9 +194,11 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
             privateMessageConsumeOffencesRemovedFromExistingHearing.close();
             privateMessageConsumerDeleteNextHearingRequested.close();
             privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent.close();
+            privateMessageConsumerOffencesRemovedFromExistingAllocatedHearing.close();
 
             publicMessageConsumerUnallocatedHearingDeleted.close();
             publicMessageConsumerOffencesRemovedFromExistingHearing.close();
+            publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing.close();
         } catch (final JMSException e) {
             LOGGER.error("Error closing privateMessageConsumerHearingListed: {}", e.getMessage());
         }
@@ -427,6 +437,23 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
                         )));
     }
 
+    public void verifyCasesAddedToAllocatedHearingFromApi(HearingsData existedHearingsData, final HearingsData hearingsData) {
+        final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
+                format(readConfig().getProperty("listing.range.search.hearings"), existedHearingsData.getHearingData().get(0).getCourtCentreId(), true));
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath("$.hearings[0].id",
+                                        equalTo(existedHearingsData.getHearingData().get(0).getId().toString())),
+                                withJsonPath("$.hearings[0].listedCases[2].id",
+                                        equalTo(hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId().toString())),
+                                withJsonPath("$.hearings[0].listedCases[3].id",
+                                        equalTo(hearingsData.getHearingData().get(0).getListedCases().get(1).getCaseId().toString()))
+                        )));
+    }
+
     public void verifyCasesAddedToHearingFromApiForTwoHearing(HearingsData updatedHearing) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), updatedHearing.getHearingData().get(0).getCourtCentreId(), false));
@@ -476,6 +503,21 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
 
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumeOffencesRemovedFromExistingHearing);
         LOGGER.debug("jsonResponse from privateMessageConsumeOffencesRemovedFromExistingHearing: {}", jsonResponse.prettify());
+
+        final List<String> offenceIds = hearingsData.getHearingData().get(0).getListedCases().stream()
+                .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())
+                .flatMap(defendantData -> defendantData.getOffences().stream())
+                .map(OffenceData::getOffenceId)
+                .map(UUID::toString)
+                .collect(Collectors.toList());
+        assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
+        assertThat(jsonResponse.get("offenceIds"), is(offenceIds));
+    }
+
+    public void verifyOffencesRemovedFromAllocatedHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData) {
+        final JsonPath jsRequest = new JsonPath(request);
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerOffencesRemovedFromExistingAllocatedHearing);
 
         final List<String> offenceIds = hearingsData.getHearingData().get(0).getListedCases().stream()
                 .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())
@@ -551,6 +593,20 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
 
     }
 
+    public void verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(final UUID existedHearingId, final HearingsData hearingsData) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing);
+
+        final List<String> offenceIds = hearingsData.getHearingData().get(0).getListedCases().stream()
+                .flatMap(listedCaseData -> listedCaseData.getDefendants().stream())
+                .flatMap(defendantData -> defendantData.getOffences().stream())
+                .map(OffenceData::getOffenceId)
+                .map(UUID::toString)
+                .collect(Collectors.toList());
+
+        assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
+        assertThat(jsonResponse.get("offenceIds"), is(offenceIds));
+
+    }
 
     private void verifyHearingListedFromAPI(final HearingData hearingData) {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),

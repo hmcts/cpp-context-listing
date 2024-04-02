@@ -15,7 +15,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 public class RemoveOffencesFromHearingIT extends AbstractIT{
 
     @Test
-    public void shouldCallHmiWhenOffencesRemoved() {
+    public void shouldCallHmiWhenOffencesRemovedFromAllocatedHearing() {
         final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
 
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings)) {
@@ -35,6 +35,7 @@ public class RemoveOffencesFromHearingIT extends AbstractIT{
         try(final RemoveOffencesFromHearingSteps removeOffencesFromHearingSteps = new RemoveOffencesFromHearingSteps()){
             removeOffencesFromHearingSteps.whenRaisedOffencesRemovedPublicEvent(existedHearingId, offences);
             removeOffencesFromHearingSteps.verifyHmiPublicEventForUpdateHearing();
+            removeOffencesFromHearingSteps.verifyPublicListingOffencesRemovedFromAllocatedHearing();
         }
 
         getHearingById(USER_ID_VALUE, UUID.fromString(existedHearingId), withJsonPath("$.listedCases[0].defendants[0].offences.length()", equalTo(2)));

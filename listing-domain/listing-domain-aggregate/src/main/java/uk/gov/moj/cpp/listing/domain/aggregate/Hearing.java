@@ -195,10 +195,12 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 5817594778865191001L;
+    private static final long serialVersionUID = 5817594778865191002L;
 
     private static final String SUMMONS_APPROVED_RESULT_TYPE_ID = "0f44eeb9-2c81-430d-9a60-bbdaf8c4a093";
     private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
+    public static final String SOURCE_LISTING = "Listing";
+    public static final String SOURCE_HEARING = "Hearing";
 
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
@@ -1384,11 +1386,11 @@ public class Hearing implements Aggregate {
                 .map(OffenceIds::getId)
                 .collect(toList());
 
-        return removeSelectedOffencesFromExistingHearing(hearingId, offenceIds);
+        return removeSelectedOffencesFromExistingHearing(hearingId, offenceIds, SOURCE_LISTING);
 
     }
 
-    public Stream<Object> removeSelectedOffencesFromExistingHearing(final UUID hearingId, final List<UUID> offenceIds) {
+    public Stream<Object> removeSelectedOffencesFromExistingHearing(final UUID hearingId, final List<UUID> offenceIds, final String source) {
 
         final List<UUID> existingOffenceIds = prosecutionCaseDefendantOffenceIds
                 .stream().flatMap(pc -> pc.getDefendants().stream())
@@ -1408,6 +1410,7 @@ public class Hearing implements Aggregate {
                 eventStreamBuilder.add(OffencesRemovedFromExistingAllocatedHearing.offencesRemovedFromExistingAllocatedHearing()
                         .withHearingId(hearingId)
                         .withOffenceIds(offenceIds)
+                        .withSourceContext(source)
                         .build());
             } else {
                 eventStreamBuilder.add(OffencesRemovedFromExistingUnallocatedHearing.offencesRemovedFromExistingUnallocatedHearing()

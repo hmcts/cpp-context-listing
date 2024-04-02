@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
@@ -35,6 +36,7 @@ import uk.gov.justice.listing.courts.DeleteSeededHearing;
 import uk.gov.justice.listing.courts.ListNextHearing;
 import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
 import uk.gov.justice.listing.courts.ListNextHearingsV2;
+import uk.gov.justice.listing.courts.RemoveSelectedOffencesFromExistingHearing;
 import uk.gov.justice.listing.courts.WeekCommencingDate;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
@@ -43,9 +45,12 @@ import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.listing.events.HearingDaysChangedForHearing;
 import uk.gov.justice.listing.events.HearingListed;
+import uk.gov.justice.listing.events.HearingListedCaseUpdated;
 import uk.gov.justice.listing.events.ListedCase;
+import uk.gov.justice.listing.events.Marker;
 import uk.gov.justice.listing.events.NextHearingDayChanged;
 import uk.gov.justice.listing.events.NextHearingRequested;
+import uk.gov.justice.listing.events.OffencesRemovedFromExistingAllocatedHearing;
 import uk.gov.justice.listing.events.OffencesRemovedFromHearing;
 import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.Type;
@@ -110,7 +115,8 @@ public class ListNextHearingCommandHandlerTest {
             DeleteNextHearingRequested.class,
             NextHearingDayChanged.class,
             UpdatedHearingInStagingHmi.class,
-            DeletedHearingInStagingHmi.class);
+            DeletedHearingInStagingHmi.class,
+            OffencesRemovedFromExistingAllocatedHearing.class);
 
     @Mock
     private EventSource eventSource;
@@ -671,6 +677,97 @@ public class ListNextHearingCommandHandlerTest {
         assertThat(asList(eventObject.getString("seedingHearingId"), eventObject2.getString("seedingHearingId")).containsAll(
                 asList(seedingHearingId.toString(), seedingHearingId2.toString())) , is(true));
         }
+
+    @Test
+    public void shouldHandleRemoveSelectedOffencesFromExistingHearing() throws EventStreamException {
+        final UUID hearingId = randomUUID();
+        final UUID offenceId1 = randomUUID();
+        final UUID offenceId2 = randomUUID();
+
+        final JsonObject commandPayload = createObjectBuilder().build();
+        final JsonEnvelope commandEnvelope = createEnvelope("listing.command.remove-selected-offences-from-existing-hearing", commandPayload);
+        final Hearing hearingAggregate = new Hearing();
+
+        when(jsonObjectConverter.convert(commandPayload, RemoveSelectedOffencesFromExistingHearing.class))
+                .thenReturn(RemoveSelectedOffencesFromExistingHearing.removeSelectedOffencesFromExistingHearing()
+                        .withHearingId(hearingId)
+                        .withOffenceIds(asList(offenceId1, offenceId2))
+                        .build());
+        when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearingAggregate);
+        when(eventSource.getStreamById(any())).thenReturn(eventStream);
+
+        hearingAggregate.apply(HearingListedCaseUpdated.hearingListedCaseUpdated()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withAllocated(true)
+                        .withType(Type.type().build())
+                        .withHearingDays(emptyList())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN)
+                        .withListedCases(asList(ListedCase.listedCase()
+                                        .withId(randomUUID())
+                                        .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                                .withId(randomUUID())
+                                                .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
+                                                        .withId(offenceId1)
+                                                        .build(), uk.gov.justice.listing.events.Offence.offence()
+                                                        .withId(offenceId2)
+                                                        .build()))
+                                                .build()))
+                                        .build(),
+                                ListedCase.listedCase()
+                                        .withId(randomUUID())
+                                        .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                                .withId(randomUUID())
+                                                .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
+                                                        .withId(offenceId1)
+                                                        .build(), uk.gov.justice.listing.events.Offence.offence()
+                                                        .withId(offenceId2)
+                                                        .build()))
+                                                .build()))
+                                        .build()))
+                        .build())
+                    .withUnAllocatedListedCases(asList(ListedCase.listedCase()
+                                    .withId(randomUUID())
+                                    .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                            .withId(randomUUID())
+                                            .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
+                                                    .withId(offenceId1)
+                                                    .build(), uk.gov.justice.listing.events.Offence.offence()
+                                                    .withId(offenceId2)
+                                                    .build()))
+                                            .build()))
+                                    .withMarkers(singletonList(Marker.marker().build()))
+                                    .build(),
+                            ListedCase.listedCase()
+                                    .withId(randomUUID())
+                                    .withDefendants(asList(uk.gov.justice.listing.events.Defendant.defendant()
+                                            .withId(randomUUID())
+                                            .withOffences(asList(uk.gov.justice.listing.events.Offence.offence()
+                                                    .withId(offenceId1)
+                                                    .build(), uk.gov.justice.listing.events.Offence.offence()
+                                                    .withId(offenceId2)
+                                                    .build()))
+                                            .build()))
+                                    .withMarkers(singletonList(Marker.marker().build()))
+                                    .build()))
+                .build());
+
+        listNextHearingCommandHandler.removeSelectedOffencesFromExistingHearing(commandEnvelope);
+
+        final List<JsonEnvelope> events = verifyAppendAndGetArgumentFrom(eventStream).collect(Collectors.toList());
+        assertThat(events.size(), is(1));
+        final JsonEnvelope eventProduced1 = events.get(0);
+        assertThat(eventProduced1.metadata().name(), is("listing.events.offences-removed-from-existing-allocated-hearing"));
+        final JsonObject eventObject = eventProduced1.payloadAsJsonObject();
+        assertThat(eventObject.getString("hearingId"), is(hearingId.toString()));
+        assertThat(eventObject.getJsonArray("offenceIds").getString(0), is(offenceId1.toString()));
+        assertThat(eventObject.getJsonArray("offenceIds").getString(1), is(offenceId2.toString()));
+        assertThat(eventObject.getString("sourceContext"), is("Hearing"));
+
+
+
+
+    }
 
 
     private ListNextHearing buildListNextHearing() {

@@ -25,14 +25,17 @@ public class RemoveOffencesFromHearingSteps extends AbstractIT implements AutoCl
     public static final String PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.hearing.selected-offences-removed-from-existing-hearing";
     private static final String PUBLIC_HEARING_MARKED_AS_DUPLICATE_EVENT = "public.events.hearing.marked-as-duplicate";
     private static final String PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI = "public.listing.updated-hearing-in-staging-hmi";
+    public static final String PUBLIC_EVENTS_LISTING_OFFENCES_REMOVED_FROM_ALLOCATED_HEARING = "public.events.listing.offences-removed-from-allocated-hearing";
 
     private final MessageProducer publicHearingEventOffencesRemovedFromHearing;
     private final MessageConsumer publicMessageConsumerHmiHearingUpdated;
+    private final MessageConsumer publicSelectedOffenceRemovedFromHearing;
     private String hearingId;
 
     public RemoveOffencesFromHearingSteps() {
         publicHearingEventOffencesRemovedFromHearing = publicEvents.createProducer();
         publicMessageConsumerHmiHearingUpdated = publicEvents.createConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
+        publicSelectedOffenceRemovedFromHearing = publicEvents.createConsumer(PUBLIC_EVENTS_LISTING_OFFENCES_REMOVED_FROM_ALLOCATED_HEARING);
     }
 
     public void whenRaisedOffencesRemovedPublicEvent(final String hearingId, final List<String> offences ){
@@ -49,8 +52,9 @@ public class RemoveOffencesFromHearingSteps extends AbstractIT implements AutoCl
                 metadataOf(randomUUID(), PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING).withUserId(randomUUID().toString()).build());
     }
 
-    public void verifySelectedOffenceRemovedFromHearing(final String offenceId){
-
+    public void verifyPublicListingOffencesRemovedFromAllocatedHearing(){
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicSelectedOffenceRemovedFromHearing);
+        Assert.assertThat(jsonResponse.get("hearingId"), is(hearingId));
     }
 
     public void verifyHmiPublicEventForUpdateHearing() {
@@ -64,6 +68,7 @@ public class RemoveOffencesFromHearingSteps extends AbstractIT implements AutoCl
         try {
             publicHearingEventOffencesRemovedFromHearing.close();
             publicMessageConsumerHmiHearingUpdated.close();
+            publicSelectedOffenceRemovedFromHearing.close();
         } catch (final JMSException e) {
             LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
             throw new RuntimeException(e);

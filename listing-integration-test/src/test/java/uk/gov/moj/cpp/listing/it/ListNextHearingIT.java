@@ -160,4 +160,44 @@ public class ListNextHearingIT extends AbstractIT {
         }
     }
 
+
+    @Test
+    public void shouldDeleteOldAllocatedRelatedHearingsAndUpdateRelatedHearings() {
+
+        final HearingsData oldNextHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+        final HearingsData nextHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+
+        final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+        final HearingsData existedHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(existedHearings)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        }
+
+
+        final UUID existedHearingId = existedHearings.getHearingData().get(0).getId();
+        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
+            listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(existedHearingId, oldNextHearings);
+            listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(existedHearingId);
+            listNextHearingSteps.verifyCasesAddedToHearingInActiveMQ(existedHearingId, oldNextHearings);
+            listNextHearingSteps.verifyCasesAddedToAllocatedHearingFromApi(existedHearings, oldNextHearings);
+
+        }
+
+        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
+            listNextHearingSteps.whenDeleteNextHearingSubmittedForListing();
+            listNextHearingSteps.verifyRemoveOffencesFromExistingHearingRequestedInActiveMQ(existedHearingId);
+            listNextHearingSteps.verifyOffencesRemovedFromAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
+            listNextHearingSteps.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
+        }
+    }
+
 }
