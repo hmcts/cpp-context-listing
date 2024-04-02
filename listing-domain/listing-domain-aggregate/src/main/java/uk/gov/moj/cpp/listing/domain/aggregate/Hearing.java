@@ -1392,6 +1392,9 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> removeSelectedOffencesFromExistingHearing(final UUID hearingId, final List<UUID> offenceIds, final String source) {
 
+        if ( deleted ) {
+            return Stream.empty();
+        }
         final List<UUID> existingOffenceIds = prosecutionCaseDefendantOffenceIds
                 .stream().flatMap(pc -> pc.getDefendants().stream())
                 .flatMap(defendantOffenceIds -> defendantOffenceIds.getOffences().stream())
