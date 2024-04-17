@@ -290,7 +290,6 @@ public class ListingCommandHandlerTest {
     private static final String FIRST_NAME = "Test Recipe";
     private static final String LAST_NAME = "Last Name";
     private static final String DATE_OF_BIRTH = "1980-07-15";
-    private static final String DATE_OF_BIRTH_YOUTH = "2015-07-15";
     private static final String PTP_TYPE = "PTP";
     private static final String SENTENCE_TYPE = "Sentence";
     private static final String INITIAL_START_DATE = "2018-05-30";
@@ -2646,7 +2645,7 @@ public class ListingCommandHandlerTest {
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replace("COURT_ROOM_ID", COURT_ROOM_ID.toString())
                 .replace("LISTING_DIRECTIONS", LISTING_DIRECTIONS)
-                .replace("DATE_OF_BIRTH", DATE_OF_BIRTH_YOUTH)
+                .replace("DATE_OF_BIRTH", DATE_OF_BIRTH)
                 .replaceAll("DEFENDANT_ID", DEFENDANT_ID1.toString())
                 .replaceAll("CASE_ID", CASE_ID.toString())
                 .replace("EARLIEST_START_TIME", EARLIEST_START_TIME)
@@ -2675,7 +2674,7 @@ public class ListingCommandHandlerTest {
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replace("COURT_ROOM_ID", COURT_ROOM_ID.toString())
                 .replace("LISTING_DIRECTIONS", LISTING_DIRECTIONS)
-                .replace("DATE_OF_BIRTH", DATE_OF_BIRTH_YOUTH)
+                .replace("DATE_OF_BIRTH", DATE_OF_BIRTH)
                 .replaceAll("DEFENDANT_ID", DEFENDANT_ID1.toString())
                 .replaceAll("CASE_ID", CASE_ID.toString())
                 .replace("EARLIEST_START_TIME", EARLIEST_START_TIME)
@@ -2711,7 +2710,7 @@ public class ListingCommandHandlerTest {
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replace("COURT_ROOM_ID", COURT_ROOM_ID.toString())
                 .replace("LISTING_DIRECTIONS", LISTING_DIRECTIONS)
-                .replace("DATE_OF_BIRTH", DATE_OF_BIRTH_YOUTH)
+                .replace("DATE_OF_BIRTH", DATE_OF_BIRTH)
                 .replaceAll("DEFENDANT_ID", DEFENDANT_ID1.toString())
                 .replaceAll("CASE_ID", CASE_ID.toString())
                 .replace("LISTED_START_TIME", LISTED_START_TIME);
@@ -3493,7 +3492,7 @@ public class ListingCommandHandlerTest {
         return Defendant.defendant()
                 .withBailStatus(of(new BailStatus.Builder().withCode("C").withDescription("Custody or remanded into custody").withId(fromString("12e69486-4d01-3403-a50a-7419ca040635")).build()))
                 .withCustodyTimeLimit(of(CUSTODY_TIME_LIMIT))
-                .withDateOfBirth(of(DATE_OF_BIRTH_YOUTH))
+                .withDateOfBirth(of(DATE_OF_BIRTH))
                 .withDatesToAvoid(of("wednesdays"))
                 .withDefenceOrganisation(empty())
                 .withFirstName(of("Harry"))
@@ -3504,7 +3503,7 @@ public class ListingCommandHandlerTest {
                 .withCourtProceedingsInitiated(Optional.of(ZonedDateTimes.fromString("2020-03-05T14:24:03.148Z").withZoneSameInstant(ZoneId.of("UTC"))))
                 .withOrganisationName(empty())
                 .withSpecificRequirements(of("Screen"))
-                .withIsYouth(of(Boolean.TRUE))
+                .withIsYouth(empty())
                 .withNationalityDescription(empty())
                 .withAddress(of(Address
                         .address()
