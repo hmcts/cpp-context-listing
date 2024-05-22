@@ -11,6 +11,7 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataBuilder;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.ALPHABETICAL;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.JUDGE;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.ONLINE_PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 
 import uk.gov.justice.services.core.annotation.Adapter;
@@ -146,7 +147,7 @@ public class DefaultQueryApiCourtlistResource implements QueryApiCourtList {
     }
 
     private String getTemplateName(final CourtListType courtListType, boolean welsh) {
-        if ((ALPHABETICAL.equals(courtListType) || PUBLIC.equals(courtListType)) && welsh) {
+        if ((ALPHABETICAL.equals(courtListType) || PUBLIC.equals(courtListType) || ONLINE_PUBLIC.equals(courtListType)) && welsh) {
             return courtListType.getWelshTemplateName();
         }
         return courtListType.getTemplateName();

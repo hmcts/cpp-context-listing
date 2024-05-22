@@ -492,7 +492,7 @@ public class StandardPublicCourtListTemplateAssembler {
     }
 
     private boolean isPublicAndRestricted(final CourtListType courtListType, final JsonObject jsonObject) {
-        return CourtListType.PUBLIC.equals(courtListType) && jsonObject.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE);
+        return (CourtListType.PUBLIC.equals(courtListType) || CourtListType.ONLINE_PUBLIC.equals(courtListType)) && jsonObject.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE);
     }
 
     private Defendant createDefendant(final JsonObject hearingJson, final JsonObject defendant, final String dateOfBirth, final boolean defendantRestricted,

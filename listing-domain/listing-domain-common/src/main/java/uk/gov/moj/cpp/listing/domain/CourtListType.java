@@ -11,7 +11,8 @@ public enum CourtListType {
   BENCH("BENCH", "BenchAndStandardCourtList", null),
   JUDGE("JUDGE", "JudgeList", null),
   USHERS_CROWN("USHERS_CROWN", "UshersCrownList", null),
-  USHERS_MAGISTRATE("USHERS_MAGISTRATE", "UshersMagistrateList", null);
+  USHERS_MAGISTRATE("USHERS_MAGISTRATE", "UshersMagistrateList", null),
+  ONLINE_PUBLIC("ONLINE_PUBLIC", "OnlinePublicCourtList", "OnlinePublicCourtListEnglishWelsh");
 
 
   private final String value;

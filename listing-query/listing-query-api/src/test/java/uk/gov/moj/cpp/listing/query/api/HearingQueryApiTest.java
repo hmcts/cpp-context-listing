@@ -27,6 +27,7 @@ import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadata
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.ONLINE_PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.USHERS_MAGISTRATE;
 
@@ -311,6 +312,25 @@ public class HearingQueryApiTest {
         assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("UshersMagistrateList"));
     }
 
+    @Test
+    public void shouldReturnPayloadWithTemplateNameWhenOnlinePublicCourtList() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withName("listing.search.court.list.payload"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(LIST_ID, ONLINE_PUBLIC.toString())
+                        .build());
+
+        when(standardPublicCourtListAssembler.assemble(any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(boolean.class))).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(referenceDataService.isHearingLanguageWelsh(any(JsonEnvelope.class), any(String.class))).thenReturn(Optional.empty());
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
+
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("id"), is("id1"));
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("OnlinePublicCourtList"));
+    }
     @Test
     public void shouldReturnPayloadWithBilingualTemplateNameWhenCallPayloadApi() {
         final JsonEnvelope query = envelopeFrom(

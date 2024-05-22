@@ -5,6 +5,7 @@ import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.Envelope.metadataFrom;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilderWithFilter;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.ONLINE_PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 
 import java.util.Optional;
@@ -234,7 +235,7 @@ public class HearingQueryApi {
 
 
     private String getTemplateName(final CourtListType courtListType, boolean welsh) {
-        if (PUBLIC.equals(courtListType) && welsh) {
+        if ((PUBLIC.equals(courtListType)|| ONLINE_PUBLIC.equals(courtListType)) && welsh) {
             return courtListType.getWelshTemplateName();
         }
         return courtListType.getTemplateName();
