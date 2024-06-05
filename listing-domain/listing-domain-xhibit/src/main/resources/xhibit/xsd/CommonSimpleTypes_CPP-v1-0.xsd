@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XML Spy v4.2 U (http://www.xmlspy.com) by Paul Spencer (alphaXML Ltd.) -->
 <!-- Schema module for common simple types -->
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcq="http://purl.org/dc/terms/" xmlns:gms="http://www.govtalk.gov.uk/CM/gms" elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.2" id="CommonSimpleTypes">
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails" targetNamespace="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcq="http://purl.org/dc/terms/" xmlns:gms="http://www.govtalk.gov.uk/CM/gms" elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.2" id="CommonSimpleTypes">
     <xsd:annotation>
         <xsd:appinfo>
             <dc:contributor>e-champions,Government Schema Group, IDeA</dc:contributor>
