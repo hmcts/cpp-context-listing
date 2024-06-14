@@ -7,6 +7,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
@@ -177,6 +178,28 @@ public class HearingAggregateTest {
         assertThat(hearing.getHearingDays(), is(emptyList()));
         assertThat(hearing.getNonSittingDays(), is(emptyList()));
         assertThat(hearing.getNonDefaultDays(), is(emptyList()));
+    }
+
+    @Test
+    public void shouldNotProduceAnyEventForUpdateHearingInStagingHmiWhenHearingIsDeleted() {
+        final UUID hearingId = randomUUID();
+        final HearingListed hearingListed = HearingListed.hearingListed()
+                .withHearing(uk.gov.justice.listing.events.Hearing.hearing()
+                        .withId(hearingId)
+                        .withType(uk.gov.justice.listing.events.Type.type().withId(randomUUID()).build())
+                        .withHearingLanguage(HearingLanguage.ENGLISH)
+                        .withJurisdictionType(CROWN)
+                        .withHearingDays(emptyList())
+                        .build())
+                .build();
+        final HearingDeleted hearingDeleted = HearingDeleted.hearingDeleted()
+                .withHearingIdToBeDeleted(hearingId)
+                .build();
+        hearing.apply(hearingListed);
+        hearing.apply(hearingDeleted);
+        final Stream<Object> listedHearing = hearing.raiseUpdateHearingInStagingHmi(ofNullable("source"));
+        assertThat(listedHearing.count(), is(0L) );
+
     }
 
     @Test

@@ -534,7 +534,9 @@ public class ListingCommandHandler {
 
         final JsonEnvelope jsonEnvelope = JsonEnvelope.envelopeFrom(command.metadata(), JsonValue.NULL);
 
-        final uk.gov.justice.listing.events.Hearing storedHearing = hearingFactory.getHearingById(hearingId, command);
+        final EventStream eventStream = eventSource.getStreamById(hearingId);
+        final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);
+        final uk.gov.justice.listing.events.Hearing storedHearing = hearingAggregate.getCurrentHearingEventState();
 
         final boolean hasVideoLink = nonNull(updateHearingForListing.getHasVideoLink());
         final String publicListNote = updateHearingForListing.getPublicListNote();
@@ -553,7 +555,7 @@ public class ListingCommandHandler {
 
         LOGGER.info("HearingUpdateOperationType for hearing id: {}  is {}", updateHearingForListing.getHearingId(), operationType);
 
-        updateHearingEventStream(jsonEnvelope, hearingId, (Hearing hearing) -> {
+        updateHearingEventStream(jsonEnvelope, eventStream, hearingAggregate, (Hearing hearing) -> {
             final Stream<Object> hearingPartiallyEvents = extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing,
                     hearingId,
                     unallocatedHearingRequestCaseMap,
@@ -632,7 +634,7 @@ public class ListingCommandHandler {
             //raisenewHearing
             final List<ListedCase> listedCases = extendHearingUtils.extractCasesToMove(storedHearing.getListedCases(), unallocatedHearingRequestCaseMap);
             final List<uk.gov.justice.core.courts.JudicialRole> judiciaryInfoByUpdate = updateHearingForListing.getJudiciary();
-            updateHearingEventStream(command, hearingId, (Hearing hearing) -> {
+            updateHearingEventStream(command, eventStream, hearingAggregate, (Hearing hearing) -> {
                 final Stream<Object> hearingListedEvent = hearing.listForSplit(type,
                         listedCases,
                         courtCentreId,
@@ -1753,7 +1755,12 @@ public class ListingCommandHandler {
                                           final Function<Hearing, Stream<Object>> aggregatorFunction) throws EventStreamException {
         final EventStream eventStream = eventSource.getStreamById(hearingId);
         final Hearing hearing = aggregateService.get(eventStream, Hearing.class);
+        final Stream<Object> events = aggregatorFunction.apply(hearing);
+        eventStream.append(events.map(enveloper.withMetadataFrom(command)));
+    }
 
+    private void updateHearingEventStream(final JsonEnvelope command, final EventStream eventStream, final Hearing hearing,
+                                          final Function<Hearing, Stream<Object>> aggregatorFunction) throws EventStreamException {
         final Stream<Object> events = aggregatorFunction.apply(hearing);
         eventStream.append(events.map(enveloper.withMetadataFrom(command)));
     }
