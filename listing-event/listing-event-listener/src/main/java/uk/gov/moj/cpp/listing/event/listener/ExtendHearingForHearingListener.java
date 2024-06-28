@@ -1,8 +1,10 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
+import uk.gov.justice.core.courts.DefenceCounsel;
 import uk.gov.justice.listing.events.AddedCasesForHearing;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.Defendant;
@@ -52,11 +54,12 @@ public class ExtendHearingForHearingListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExtendHearingForHearingListener.class);
     private final HearingRepository hearingRepository;
     private static final String LISTED_CASES_FIELD = "listedCases";
+    private static final String DEFENCE_COUNSELS_FIELD = "defenceCounsels";
     private final JsonObjectToObjectConverter jsonObjectConverter;
     private final ObjectMapper objectMapper;
-    private HearingSearchSyncService hearingSearchSyncService;
+    private final HearingSearchSyncService hearingSearchSyncService;
 
-    private OffenceComparator offenceComparator;
+    private final OffenceComparator offenceComparator;
 
     @Inject
     public ExtendHearingForHearingListener(final HearingRepository hearingRepository, final JsonObjectToObjectConverter jsonObjectConverter, final ObjectMapper objectMapper,
@@ -107,13 +110,26 @@ public class ExtendHearingForHearingListener {
                         storedListCases.add(extractListedCases(objectMapper, node, hearingIdToBeUpdated.toString()))
                 );
 
-                //remove cases in the request from persisted hearing
-                removeCasesFromPersistedHearing(casesToRemove, storedListCases);
+                final Set<UUID> removedDefendantIdsFromHearing = new HashSet<>();
+                // remove cases in the request from persisted hearing
+                removeCasesFromPersistedHearing(casesToRemove, storedListCases, removedDefendantIdsFromHearing);
+
+                final List<DefenceCounsel> storedDefenceCounsel = new ArrayList<>();
+                final JsonNode jsonNodeDefenceCounsel = hearingToBeUpdated.getProperties().get(DEFENCE_COUNSELS_FIELD);
+                if(!removedDefendantIdsFromHearing.isEmpty() && nonNull(jsonNodeDefenceCounsel)) {
+                    jsonNodeDefenceCounsel.forEach(node ->
+                            storedDefenceCounsel.add(extractDefenceCounsel(objectMapper, node, hearingIdToBeUpdated.toString()))
+                    );
+                    // remove defence counsels for removed defendants from persisted hearing
+                    removeDefenceCounselsFromHearing(storedDefenceCounsel, removedDefendantIdsFromHearing);
+                }
 
                 using(hearingRepository)
                         .find(hearingIdToBeUpdated)
                         .remove(LISTED_CASES_FIELD)
                         .putObjectList(LISTED_CASES_FIELD, storedListCases)
+                        .remove(DEFENCE_COUNSELS_FIELD)
+                        .putObjectList(DEFENCE_COUNSELS_FIELD, storedDefenceCounsel)
                         .save();
                 LOGGER.info("Hearing with id {} has been updated", hearingIdToBeUpdated);
                 LOGGER.info("Hearing with id {} is now as {}", hearingIdToBeUpdated, hearingToBeUpdated);
@@ -254,9 +270,23 @@ public class ExtendHearingForHearingListener {
         return jsonObjectConverter.convert(hearingJson, ListedCase.class);
     }
 
+    private DefenceCounsel extractDefenceCounsel(final ObjectMapper objectMapper,
+                                          final JsonNode node, final String hearingIdToBeUpdated) {
+        final JsonObject hearingJson;
+        String valueAsString = "";
+        try {
+            valueAsString = objectMapper.writeValueAsString(node);
+        } catch (final JsonProcessingException jpe) {
+            LOGGER.error("Hearing with id {} could not be updated. Could not parse stored hearing json.", hearingIdToBeUpdated, jpe);
+        }
+        try (final JsonReader reader = Json.createReader(new StringReader(valueAsString))) {
+            hearingJson = reader.readObject();
+        }
+        return jsonObjectConverter.convert(hearingJson, DefenceCounsel.class);
+    }
+
     @SuppressWarnings({"squid:S3776", "squid:S134"})
-    private void removeCasesFromPersistedHearing(final List<ProsecutionCases> casesToRemove,
-                                                 final List<ListedCase> storedListCases) {
+    private void removeCasesFromPersistedHearing(final List<ProsecutionCases> casesToRemove, final List<ListedCase> storedListCases, final Set<UUID> removedDefendantIdsFromHearing) {
         for (final ProsecutionCases pc : casesToRemove) {//cases in the request
             for (final Defendants defendant : pc.getDefendants()) {//defendants in the request
                 for (final Offences offence : defendant.getOffences()) {//offences in the request
@@ -266,6 +296,9 @@ public class ExtendHearingForHearingListener {
                             lc.getDefendants().forEach(d -> { //traverse persisted defendants
                                 if (d.getId().toString().equals(defendant.getDefendantId().toString())) {
                                     d.getOffences().removeIf(o -> o.getId().toString().equals(offence.getOffenceId().toString())); //remove persisted offence from persisted defendant
+                                }
+                                if (d.getOffences().isEmpty()) {
+                                    removedDefendantIdsFromHearing.add(d.getId());
                                 }
                             });//end traverse persisted defendants
                             lc.getDefendants().removeIf(d -> d.getOffences().isEmpty()); //remove persisted defendant if all persisted offences deleted
@@ -277,4 +310,8 @@ public class ExtendHearingForHearingListener {
         }
     }
 
+    private void removeDefenceCounselsFromHearing(final List<DefenceCounsel> storedDefenceCounsel, final Set<UUID> removedDefendantIdsFromHearing) {
+        storedDefenceCounsel.forEach(defenceCounsel -> defenceCounsel.getDefendants().removeIf(defendantId -> removedDefendantIdsFromHearing.contains(defendantId)));
+        storedDefenceCounsel.removeIf(defenceCounsel -> defenceCounsel.getDefendants().isEmpty());
+    }
 }

@@ -1,7 +1,5 @@
 package uk.gov.moj.cpp.listing.event.listener.utils;
 
-import static com.google.common.io.Resources.getResource;
-import static java.nio.charset.Charset.defaultCharset;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -21,7 +19,6 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.Resources;
 import org.apache.commons.io.IOUtils;
 
 public class HearingUtils {
@@ -77,6 +74,18 @@ public class HearingUtils {
                 .replaceAll("OFF_ID1", OFF_ID1.toString())
                 .replaceAll("OFF_ID2", OFF_ID2.toString())
                 .replaceAll("OFF_ID3", OFF_ID3.toString());
+        final ObjectMapper mapper = new ObjectMapper();
+        return mapper.readTree(hearingString);
+    }
+
+    public static JsonNode buildHearingEntityProperties() throws IOException {
+        final String hearingString = getStringFromResource("hearing-payload-coming-from-db-with-defence-counsels.json")
+                .replaceAll("HEARING_ID", HEARING_ID.toString())
+                .replaceAll("CASE_ID", CASE_ID1.toString())
+                .replaceAll("DEFENDANT_ID1", DEF_ID1.toString())
+                .replaceAll("DEFENDANT_ID2", DEF_ID2.toString())
+                .replaceAll("OFFENCE_ID1", OFF_ID1.toString())
+                .replaceAll("OFFENCE_ID2", OFF_ID2.toString());
         final ObjectMapper mapper = new ObjectMapper();
         return mapper.readTree(hearingString);
     }

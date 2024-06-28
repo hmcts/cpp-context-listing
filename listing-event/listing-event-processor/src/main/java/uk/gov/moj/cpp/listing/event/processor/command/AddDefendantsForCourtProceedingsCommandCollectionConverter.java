@@ -12,6 +12,7 @@ import uk.gov.moj.cpp.listing.domain.Offence;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
 import java.util.List;
+import java.util.Optional;
 
 public class AddDefendantsForCourtProceedingsCommandCollectionConverter implements Converter<DefendantsToBeAddedForCourtProceedings, List<AddDefendantsForCourtProceedingsCommand>> {
 
@@ -39,6 +40,7 @@ public class AddDefendantsForCourtProceedingsCommandCollectionConverter implemen
                         .withBailStatus(ofNullable(defendant.getBailStatus()).map(bailStatus -> new BailStatus.Builder().withId(bailStatus.getId()).withCode(bailStatus.getCode()).withDescription(bailStatus.getDescription()).build()))
                         .withOffences(defendant.getOffences().stream().map(this::buildOffence).collect(toList()))
                         .withId(defendant.getId())
+                        .withIsYouth(Optional.ofNullable(defendant.getIsYouth()))
                         .withMasterDefendantId(ofNullable(defendant.getMasterDefendantId()))
                         .withCourtProceedingsInitiated(ofNullable(defendant.getCourtProceedingsInitiated()))
                         .build()).collect(toList());

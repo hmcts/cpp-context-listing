@@ -1,6 +1,8 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.UUID.randomUUID;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
@@ -8,9 +10,12 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.DEF_ID1;
+import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.DEF_ID2;
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.HEARING_ID;
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.buildEventProsecutionCases;
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.buildHearingEntity;
+import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.buildHearingEntityProperties;
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.createListedCases;
 
 import uk.gov.justice.listing.events.AddedCasesForHearing;
@@ -37,7 +42,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -70,6 +74,7 @@ public class ExtendHearingForHearingListenerTest {
     ObjectNode properties;
 
     private static final String LISTED_CASES_FIELD = "listedCases";
+    private static final String DEFENCE_COUNSELS = "defenceCounsels";
 
     @Spy
     private ObjectMapper mapper = new ObjectMapperProducer().objectMapper();
@@ -209,6 +214,34 @@ public class ExtendHearingForHearingListenerTest {
 
         verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
         verify(hearingRepository).save(hearingEntity);
+    }
+
+    @Test
+    public void shouldHearingWithDefenceCounselsBeUpdatedPartially() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        final JsonNode hearingEntityProperties = buildHearingEntityProperties();
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCases())
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingEntityProperties).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+        verify(hearingRepository).save(hearingEntity);
+
+        assertFalse(hearingEntity.getProperties().get(DEFENCE_COUNSELS).toString().contains(DEF_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get(DEFENCE_COUNSELS).toString().contains(DEF_ID2.toString()));
     }
 
 
