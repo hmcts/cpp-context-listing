@@ -13,6 +13,7 @@ import static uk.gov.moj.cpp.listing.domain.RuleConstants.GROUP_VICTIMS_WITNESS_
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.JUDGE;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LEGAL_ADVISERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.LISTING_OFFICERS;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.NON_CPS_PROSECUTOR_GROUP;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.NPS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.RECORDERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.SYSTEM_USERS;
@@ -55,7 +56,7 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldAllowAuthorisedUserToListHearing() {
         final Action action = createActionFor(ACTION_QUERY_RANGE_SEARCH);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, YOTS, CPS, NPS, COURT_ASSOCIATE, GROUP_POLICE_ADMIN, GROUP_VICTIMS_WITNESS_CARE_ADMIN)).willReturn(true);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, YOTS, CPS, NPS, COURT_ASSOCIATE, GROUP_POLICE_ADMIN, GROUP_VICTIMS_WITNESS_CARE_ADMIN, NON_CPS_PROSECUTOR_GROUP)).willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);
         assertSuccessfulOutcome(results);
@@ -73,7 +74,7 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldAllowAuthorisedUserToSearchHearing() {
         final Action action = createActionFor(ACTION_QUERY_SEARCH);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, YOTS, CPS, NPS, COURT_ASSOCIATE)).willReturn(true);
+        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, LISTING_OFFICERS, COURT_CLERKS, LEGAL_ADVISERS, COURT_ADMINISTRATORS, CROWN_COURT_ADMIN, YOTS, CPS, NPS, COURT_ASSOCIATE, NON_CPS_PROSECUTOR_GROUP)).willReturn(true);
 
         final ExecutionResults results = executeRulesWith(action);
         assertSuccessfulOutcome(results);
