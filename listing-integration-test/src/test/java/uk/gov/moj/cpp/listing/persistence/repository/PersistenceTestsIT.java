@@ -126,10 +126,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
-                randomUUID().toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                randomUUID(),
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 OTHER_JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
                 END_SEARCH_DATE, 0, 10);
@@ -145,10 +145,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
                 END_SEARCH_DATE, 0, 10);
@@ -168,11 +168,11 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
-                RANDOM_ALLOCATED.toString(),
-                OTHER_COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                OTHER_HEARING_TYPE.getId().toString(),
+                RANDOM_ALLOCATED,
+                OTHER_COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                OTHER_HEARING_TYPE.getId(),
                 OTHER_JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
                 END_SEARCH_DATE, 0, 10);
@@ -188,10 +188,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         //when
         List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
                 END_SEARCH_DATE, 0, 10);
@@ -200,11 +200,11 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(HEARING_ID.toString())));
 
         actualHearings = hearingRepository.findHearings(
-                RANDOM_ALLOCATED.toString(),
-                OTHER_COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                OTHER_HEARING_TYPE.getId().toString(),
+                RANDOM_ALLOCATED,
+                OTHER_COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                OTHER_HEARING_TYPE.getId(),
                 OTHER_JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
                 END_SEARCH_DATE, 0, 10);
@@ -264,7 +264,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         final List<Hearing> actualHearings = hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
                 null,
                 null,
-                AUTHORITY_ID.toString(),
+                AUTHORITY_ID,
                 null,
                 CROWN.toString(),
                 parse(EARLIEST_SEARCH_DATE),
@@ -289,10 +289,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
-                COURT_CENTRE_ID.toString(),
+                COURT_CENTRE_ID,
                 null,
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 CROWN.toString(),
                 parse(EARLIEST_SEARCH_DATE),
                 parse(LATEST_SEARCH_DATE),
@@ -307,10 +307,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         givenHearingsWithWeekCommencing(OTHER_HEARING_ID, OTHER_COURT_CENTRE_ID, AUTHORITY_ID, OTHER_HEARING_TYPE, CROWN, JUDICIAL_ID, null);
 
         List<Hearing> actualHearings = hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
-                COURT_CENTRE_ID.toString(),
+                COURT_CENTRE_ID,
                 null,
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 CROWN.toString(),
                 parse(EARLIEST_SEARCH_DATE),
                 parse(LATEST_SEARCH_DATE),
@@ -320,10 +320,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(HEARING_ID.toString())));
 
         actualHearings = hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
-                OTHER_COURT_CENTRE_ID.toString(),
+                OTHER_COURT_CENTRE_ID,
                 null,
-                AUTHORITY_ID.toString(),
-                OTHER_HEARING_TYPE.getId().toString(),
+                AUTHORITY_ID,
+                OTHER_HEARING_TYPE.getId(),
                 CROWN.toString(),
                 parse(EARLIEST_SEARCH_DATE),
                 parse(LATEST_SEARCH_DATE),
@@ -378,9 +378,9 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
                 null,
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
                 END_SEARCH_DATE, 0, 10);
@@ -401,10 +401,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
+                COURT_CENTRE_ID,
                 null,
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
                 END_SEARCH_DATE,0, 10);
@@ -424,10 +424,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
                 END_SEARCH_DATE, 0, 10);
@@ -447,9 +447,9 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
                 null,
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE,
@@ -470,9 +470,9 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
+                COURT_CENTRE_ID,
                 null,
-                AUTHORITY_ID.toString(),
+                AUTHORITY_ID,
                 null,
                 null,
                 parse(EARLIEST_SEARCH_DATE),
@@ -518,10 +518,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 null,
                 START_SEARCH_DATE,
                 END_SEARCH_DATE, 0, 10);
@@ -542,10 +542,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 JURISDICTION_TYPE.toString(),
                 parse(EARLIEST_SEARCH_DATE),
                 parse(LATEST_SEARCH_DATE),0, 10);
@@ -662,10 +662,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE.plusDays(10),
                 END_SEARCH_DATE.plusDays(10), 0, 10);
@@ -682,10 +682,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE.minusDays(1),
                 END_SEARCH_DATE, 0, 10);
@@ -706,10 +706,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE.plusDays(1),
                 END_SEARCH_DATE.plusDays(2),0, 10);
@@ -730,10 +730,10 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         //when
         final List<Hearing> actualHearings = hearingRepository.findHearings(
                 UNALLOCATED_STR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID.toString(),
-                HEARING_TYPE.getId().toString(),
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                AUTHORITY_ID,
+                HEARING_TYPE.getId(),
                 JURISDICTION_TYPE.toString(),
                 START_SEARCH_DATE.plusDays(1),
                 END_SEARCH_DATE, 0, 10);

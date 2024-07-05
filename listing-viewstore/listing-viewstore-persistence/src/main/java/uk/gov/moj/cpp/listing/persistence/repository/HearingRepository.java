@@ -1,19 +1,15 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
+import org.apache.deltaspike.data.api.*;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.HearingJdbcRepository;
 
+import javax.inject.Inject;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-
-import org.apache.deltaspike.data.api.EntityManagerDelegate;
-import org.apache.deltaspike.data.api.EntityRepository;
-import org.apache.deltaspike.data.api.Query;
-import org.apache.deltaspike.data.api.QueryParam;
-import org.apache.deltaspike.data.api.Repository;
-import org.apache.deltaspike.data.api.SingleResultType;
 
 /**
  * Repository for {@link Hearing}
@@ -76,6 +72,9 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "h.week_commencing_start_date," +
             "h.week_commencing_end_date";
 
+    @Inject
+    private HearingJdbcRepository hearingJdbcRepository;
+
     /**
      * Find {@link Hearing}s based on the following parameters
      *
@@ -130,7 +129,6 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
                                                @QueryParam("startTime") ZonedDateTime startTime,
                                                @QueryParam("endTime") final ZonedDateTime endTime);
 
-
     /**
      * Find {@link Hearing}s based on the query parameters
      *
@@ -165,48 +163,51 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
             "LEFT JOIN court_applications ca ON ca.hearing_id = h.id " +
             "where  " +
-            "cast(h.allocated as varchar) = cast(?1 as varchar)  " +
+            "(h.allocated = ?1)  " +
             "and (h.unscheduled is null or h.unscheduled = false) " +
             "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
-            "and (?2 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?2 as varchar) as uuid))  " +
-            "and (?3 is null or coalesce(hd.court_room_id, h.court_room_id) = cast(cast(?3 as varchar) as uuid))  " +
-            "and (?4 is null or (lc.authority_id = cast(cast(?4 as varchar) as uuid) or lc.prosecutor_id = cast(cast(?4 as varchar) as uuid)))  " +
-            "and (?5 is null or h.type_id = cast(cast(?5 as varchar) as uuid))  " +
-            "and (?6 is null or h.jurisdiction_type = cast(?6 as text))  " +
+            "and (?2 is null or coalesce(hd.court_centre_id, h.court_centre_id) = ?2)  " +
+            "and (?3 is null or coalesce(hd.court_room_id, h.court_room_id) = ?3)  " +
+            "and (?4 is null or (lc.authority_id = ?4 or lc.prosecutor_id = ?4))  " +
+            "and (?5 is null or h.type_id = ?5)  " +
+            "and (?6 is null or h.jurisdiction_type = ?6)  " +
             "and (lc.is_ejected is null or lc.is_ejected =false) " +
             "and (ca.is_ejected is null or ca.is_ejected =false) " +
-            "and (lc.id is not null or ca.id is not null) " +
             "and ( " +
             "(h.start_date between ?7 and ?8 ) or " +
             "(h.end_date between ?7 and ?8 ) or " +
             "((h.start_date <= ?7 ) and (h.end_date >= ?8 ) )  " +
             ") " +
             " order by h.id, h.court_centre_id ASC OFFSET (?9) ROWS FETCH NEXT (?10) ROWS ONLY", isNative = true)
-    public abstract List<Hearing> findHearings(final String allocated,
-                                               final String courtCentreId,
-                                               final String courtRoomId,
-                                               final String authorityCode,
-                                               final String hearingTypeId,
-                                               final String jurisdictionType,
-                                               final LocalDate startDate,
-                                               final LocalDate endDate,
-                                               final Integer offSet,
-                                               final Integer pageSize);
+    public List<Hearing> findHearings(final boolean allocated,
+                                      final UUID courtCentreId,
+                                      final UUID courtRoomId,
+                                      final UUID authorityCode,
+                                      final UUID hearingTypeId,
+                                      final String jurisdictionType,
+                                      final LocalDate startDate,
+                                      final LocalDate endDate,
+                                      final Integer offSet,
+                                      final Integer pageSize) {
+        return hearingJdbcRepository.findHearings(allocated, courtCentreId, courtRoomId,
+                authorityCode, hearingTypeId, jurisdictionType, startDate, endDate, offSet, pageSize);
+    }
 
     /**
      * Find {@link Hearing}s based on the query parameters
+     * <p>
+     * <<<<<<< Updated upstream
      *
-<<<<<<< Updated upstream
-     * @param allocated        property to search for - mandatory.
-     * @param courtCentreId    to search for or <code>null</code> for any courtCentreId - optional.
-     * @param courtRoomId      to search for or <code>null</code> for any courtRoomId - optional.
-     * @param authorityCode    to search for or <code>null</code> for any authorityCode - optional.
-     * @param hearingTypeId    to search for or <code>null</code> for any hearingType - optional.
-     * @param jurisdictionType to search for or <code>null</code> for any jurisdictionType -
-     *                         optional.
-     * @param startDate        to search for - mandatory.
-     * @param endDate          to search for - mandatory.
-     * @param possibleDisqualification  to search for possibleDisqualification.
+     * @param allocated                property to search for - mandatory.
+     * @param courtCentreId            to search for or <code>null</code> for any courtCentreId - optional.
+     * @param courtRoomId              to search for or <code>null</code> for any courtRoomId - optional.
+     * @param authorityCode            to search for or <code>null</code> for any authorityCode - optional.
+     * @param hearingTypeId            to search for or <code>null</code> for any hearingType - optional.
+     * @param jurisdictionType         to search for or <code>null</code> for any jurisdictionType -
+     *                                 optional.
+     * @param startDate                to search for - mandatory.
+     * @param endDate                  to search for - mandatory.
+     * @param possibleDisqualification to search for possibleDisqualification.
      * @return Hearings.
      */
     @Query(value = "select distinct h.id, h.properties,  " +
@@ -261,13 +262,14 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
 
     /**
      * Find {@link Hearing}s based on the query parameters
+     * <p>
+     * =======
+     * >>>>>>> Stashed changes
      *
-=======
->>>>>>> Stashed changes
-     * @param hearingTypeIds   to search for - mandatory.
-     * @param courtCentreId    to search for - mandatory.
-     * @param startDate        to search for - mandatory.
-     * @param endDate          to search for - mandatory.
+     * @param hearingTypeIds to search for - mandatory.
+     * @param courtCentreId  to search for - mandatory.
+     * @param startDate      to search for - mandatory.
+     * @param endDate        to search for - mandatory.
      * @return Hearings.
      */
     @Query(value = "select distinct h.id, h.properties,  " +
@@ -303,6 +305,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "((h.start_date <= ?3) and (h.end_date >= ?4)) " +
             ") order by h.id, h.court_centre_id ASC", isNative = true)
     public abstract List<Hearing> findHearingsForCotr(final Set<String> hearingTypeIds, final String courtCentreId, final LocalDate startDate, final LocalDate endDate);
+
     /**
      * Find {@link Hearing}s based on the query parameters
      *
@@ -477,41 +480,58 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "(h.is_vacated_trial is null or h.is_vacated_trial != true) and " +
             "h.allocated = ?8  " +
             "and " +
-            "(?1 is null or h.court_centre_id = cast(cast(?1 as varchar) as uuid))  " +
-            "and (?2 is null or h.court_room_id = cast(cast(?2 as varchar) as uuid))  " +
+            "(?1 is null or h.court_centre_id = ?1)  " +
+            "and (?2 is null or h.court_room_id = ?2)  " +
             "  and (lc.is_ejected is null or lc.is_ejected =false) " +
             "  and (ca.is_ejected is null or ca.is_ejected =false) " +
-            "  and (lc.id is not null or ca.id is not null)" +
             "and " +
-            WEEK_COMMENCING_CORE_QUERY_FOR_ALLOCATED +
+            "(h.unscheduled is null or h.unscheduled = false)" +
+            "and (?3 is null or (lc.authority_id = ?3 or lc.prosecutor_id = ?3))  " +
+            "and (?4 is null or h.type_id = ?4)  " +
+            "and (?5 is null or h.jurisdiction_type = ?5)  " +
+            "and ( " +
+            "   ( h.week_commencing_start_date >= ?6 and h.week_commencing_start_date <= ?7 ) or " +
+            "   ( h.week_commencing_end_date >= ?6 and h.week_commencing_end_date <= ?7 ) or " +
+            "   ( h.start_date >= ?6 and h.start_date <= ?7 )  or " +
+            "   ( h.end_date >= ?6 and h.end_date <= ?7 ) ) " +
+            "group by h.id, h.properties " +
+            "order by h.start_date," +
+            "h.end_date," +
+            "h.week_commencing_start_date," +
+            "h.week_commencing_end_date" +
             " ASC OFFSET (?9) ROWS FETCH NEXT (?10) ROWS ONLY"
             , isNative = true)
-    public abstract List<Hearing> findUnallocatedHearingsByWeekCommencingRange(
-            final String courtCentreId,
-            final String courtRoomId,
-            final String authorityCode,
-            final String hearingTypeId,
+    public List<Hearing> findUnallocatedHearingsByWeekCommencingRange(
+            final UUID courtCentreId,
+            final UUID courtRoomId,
+            final UUID authorityCode,
+            final UUID hearingTypeId,
             final String jurisdictionType,
             final LocalDate weekCommencingStartDate,
             final LocalDate weekCommencingEndDate,
-            final boolean allocated, final Integer offSet, final Integer pageSize);
+            final boolean allocated,
+            final Integer offSet,
+            final Integer pageSize) {
+        return hearingJdbcRepository.findUnallocatedHearingsByWeekCommencingRange(courtCentreId, courtRoomId, authorityCode, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, allocated, offSet, pageSize);
+    }
+
 
     /**
      * Find {@link Hearing}s based on the query parameters
      *
-     * @param allocated               property to search for -mandatory.
-     * @param courtCentreId           to search for or <code>null</code> for any courtCentreId -
-     *                                optional.
-     * @param courtRoomId             to search for or <code>null</code> for any courtRoomId -
-     *                                optional.
-     * @param authorityCode           to search for or <code>null</code> for any authorityCode -
-     *                                optional.
-     * @param hearingTypeId           to search for or <code>null</code> for any hearingType -
-     *                                optional.
-     * @param jurisdictionType        to search for or <code>null</code> for any jurisdictionType -
-     *                                optional.
-     * @param weekCommencingStartDate to search for - mandatory.
-     * @param weekCommencingEndDate   to search for - mandatory.
+     * @param allocated                property to search for -mandatory.
+     * @param courtCentreId            to search for or <code>null</code> for any courtCentreId -
+     *                                 optional.
+     * @param courtRoomId              to search for or <code>null</code> for any courtRoomId -
+     *                                 optional.
+     * @param authorityCode            to search for or <code>null</code> for any authorityCode -
+     *                                 optional.
+     * @param hearingTypeId            to search for or <code>null</code> for any hearingType -
+     *                                 optional.
+     * @param jurisdictionType         to search for or <code>null</code> for any jurisdictionType -
+     *                                 optional.
+     * @param weekCommencingStartDate  to search for - mandatory.
+     * @param weekCommencingEndDate    to search for - mandatory.
      * @param possibleDisqualification to search for - mandatory.
      * @return Hearings.
      */
@@ -623,10 +643,10 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "null as is_possible_disqualification, " +
             "(select jsonb_agg(hrngByCourtCentreId) as \"properties\" from " +
             "(select h.hearingDate as \"hearingDate\", " +
-            "(select jsonb_agg(hearings) as \"hearingsByHearingDate\" from "+
-            "(select distinct properties as hearing from filtered_hearings fh "+
+            "(select jsonb_agg(hearings) as \"hearingsByHearingDate\" from " +
+            "(select distinct properties as hearing from filtered_hearings fh " +
             "where fh.hearingDate = h.hearingDate) hearings) from " +
-            "(select distinct filtered_hearings.hearingDate from filtered_hearings) h) "+
+            "(select distinct filtered_hearings.hearingDate from filtered_hearings) h) " +
             "hrngByCourtCentreId)", isNative = true)
     public abstract List<Hearing> findHearingsForAlphabeticalList(@QueryParam("allocated") final boolean allocated,
                                                                   @QueryParam("courtCentreId") final String courtCentreId,
@@ -899,7 +919,6 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     public abstract List<Hearing> findAllocatedAndUnallocatedHearingsByCaseId(String caseId);
 
 
-
     /**
      * @param caseId
      * @param applicationId
@@ -936,7 +955,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
     @Query(value = "select *, 1 as totalCount from hearing where id = cast(cast(?1 as varchar) as uuid)", isNative = true, singleResult = SingleResultType.ANY)
     abstract Hearing findByHearingId(final String hearingId);
 
-    public Hearing findBy(final UUID hearingId){
-        return  findByHearingId(hearingId.toString());
+    public Hearing findBy(final UUID hearingId) {
+        return findByHearingId(hearingId.toString());
     }
 }

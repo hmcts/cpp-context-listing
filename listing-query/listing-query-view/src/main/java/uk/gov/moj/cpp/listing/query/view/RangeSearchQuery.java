@@ -21,11 +21,7 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterE
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import javax.inject.Inject;
 
@@ -96,7 +92,7 @@ public class RangeSearchQuery {
 
         if (!weekCommencingStartDate.isEmpty() && !LocalDate.parse(weekCommencingStartDate).getDayOfWeek().equals(DayOfWeek.MONDAY)) {
             weekCommencingStartDate = LocalDate.parse(weekCommencingStartDate).minusDays(1).toString();
-            logger.info("WeekCommencingStartDate is not Monday, hence its being adjusted to previous day [{}]  " ,weekCommencingStartDate);
+            logger.info("WeekCommencingStartDate is not Monday, hence its being adjusted to previous day [{}]  ", weekCommencingStartDate);
         }
 
         Optional<Boolean> possibleDisqualificationOpt = Optional.empty();
@@ -168,16 +164,20 @@ public class RangeSearchQuery {
 
     private List<Hearing> getUnallocatedHearingsByWeekCommencingRange(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId, final String hearingTypeId, final String jurisdictionType, final Integer offSet, final String weekCommencingStartDate, final String weekCommencingEndDate, final Integer pageSize) {
         return repository.findUnallocatedHearingsByWeekCommencingRange(
-                courtCentreId,
-                courtRoomId,
-                authorityId,
-                hearingTypeId,
+                getUUID(courtCentreId),
+                getUUID(courtRoomId),
+                getUUID(authorityId),
+                getUUID(hearingTypeId),
                 jurisdictionType,
                 isNotBlank(weekCommencingStartDate) ? parse(weekCommencingStartDate) : parse(EARLIEST_SEARCH_DATE),
                 isNotBlank(weekCommencingEndDate) ? parse(weekCommencingEndDate) : parse(LATEST_SEARCH_DATE),
                 allocated,
                 offSet,
                 pageSize);
+    }
+
+    private UUID getUUID(String str) {
+        return str == null ? null : UUID.fromString(str);
     }
 
     private List<Hearing> getUnallocatedHearingsByWeekCommencingRangeAndPossibleDisqualification(final boolean allocated, final String courtCentreId, final String courtRoomId, final String authorityId,
@@ -238,11 +238,11 @@ public class RangeSearchQuery {
 
         } else {
             return repository.findHearings(
-                    String.valueOf(allocated),
-                    courtCentreId,
-                    courtRoomId,
-                    authorityId,
-                    hearingTypeId,
+                    allocated,
+                    getUUID(courtCentreId),
+                    getUUID(courtRoomId),
+                    getUUID(authorityId),
+                    getUUID(hearingTypeId),
                     ofNullable(jurisdictionType).orElse(null),
                     parse(startDate),
                     parse(endDate), offSet, pageSize);

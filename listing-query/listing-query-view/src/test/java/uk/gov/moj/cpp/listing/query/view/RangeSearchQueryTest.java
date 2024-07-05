@@ -191,11 +191,11 @@ public class RangeSearchQueryTest {
         final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
 
         when(hearingRepository.findHearings(
-                ALLOCATEDSTR,
-                COURT_CENTRE_ID.toString(),
-                COURT_ROOM_ID.toString(),
-                AUTHORITY_ID,
-                HEARING_TYPE_ID.toString(),
+                ALLOCATED,
+                COURT_CENTRE_ID,
+                COURT_ROOM_ID,
+                UUID.fromString(AUTHORITY_ID),
+                HEARING_TYPE_ID,
                 JURISDICTION_TYPE.toString(),
                 SEARCH_DATE,
                 SEARCH_DATE, 0, paginationParameter.getPageSize()))
@@ -360,7 +360,7 @@ public class RangeSearchQueryTest {
         when(hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
                 null,
                 null,
-                AUTHORITY_ID,
+                fromString(AUTHORITY_ID),
                 null,
                 null,
                 parse(WEEK_COMMENCING_START_DATE.toString()).minusDays(1),
@@ -433,7 +433,7 @@ public class RangeSearchQueryTest {
         UUID uuid = fromString(AUTHORITY_ID);
 
         when(hearingRepository.findHearings(
-                ALLOCATEDSTR,
+                ALLOCATED,
                 null,
                 null,
                 null,
@@ -467,7 +467,7 @@ public class RangeSearchQueryTest {
 
         final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR, POSSIBLE_DISQUALIFICATION_STR);
         when(hearingRepository.findHearings(
-                ALLOCATEDSTR, null, null,
+                ALLOCATED, null, null,
                 null, null, null,
                 parse(EARLIEST_SEARCH_DATE), parse(LATEST_SEARCH_DATE),
                 0, paginationParameter.getPageSize())
@@ -572,6 +572,6 @@ public class RangeSearchQueryTest {
     }
 
     private List<Notes> createNotesList() {
-        return newArrayList(new Notes(UUID.randomUUID(), UUID.fromString("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18"), LocalDates.from("2020-09-03"), "Note 1"));
+        return newArrayList(new Notes(UUID.randomUUID(), fromString("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18"), LocalDates.from("2020-09-03"), "Note 1"));
     }
 }

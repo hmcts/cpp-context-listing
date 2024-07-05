@@ -11,6 +11,7 @@ import static uk.gov.moj.cpp.listing.domain.JurisdictionType.CROWN;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
 import static uk.gov.moj.cpp.listing.domain.Type.type;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.Type;
@@ -28,7 +29,8 @@ public interface PersistenceTestsInt {
     Boolean IS_POSSIBLE_DISQUALIFICATION = FALSE;
     Boolean RANDOM_ALLOCATED = BOOLEAN.next();
     Boolean NOT_VACATED = FALSE;
-    String UNALLOCATED_STR = "false";
+    Boolean UNALLOCATED_STR = FALSE;
+
     UUID HEARING_ID = randomUUID();
     UUID OTHER_HEARING_ID = randomUUID();
     UUID OTHER_HEARING_ID2 = randomUUID();
