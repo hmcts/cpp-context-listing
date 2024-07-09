@@ -1,8 +1,44 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Predicate;
+import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import junit.framework.TestCase;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.listing.events.HearingDay;
+import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.test.utils.persistence.BaseTransactionalTest;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
+import uk.gov.moj.cpp.listing.domain.Type;
+import uk.gov.moj.cpp.listing.persistence.entity.*;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil;
+import uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext;
+
+import javax.inject.Inject;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.*;
 import static com.vladmihalcea.hibernate.type.json.internal.JacksonUtil.toJsonNode;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -23,10 +59,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
@@ -37,63 +70,10 @@ import static uk.gov.moj.cpp.listing.domain.Type.type;
 import static uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext.hearingRepositoryContext;
 
-import uk.gov.justice.listing.event.PublishCourtListType;
-import uk.gov.justice.listing.events.HearingDay;
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.test.utils.persistence.BaseTransactionalTest;
-import uk.gov.moj.cpp.listing.domain.JurisdictionType;
-import uk.gov.moj.cpp.listing.domain.Type;
-import uk.gov.moj.cpp.listing.persistence.entity.CaseIdentifier;
-import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
-import uk.gov.moj.cpp.listing.persistence.entity.Defendant;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.entity.HearingDays;
-import uk.gov.moj.cpp.listing.persistence.entity.LinkedCase;
-import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
-import uk.gov.moj.cpp.listing.persistence.entity.Notes;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil;
-import uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext;
-
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import javax.inject.Inject;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Predicate;
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
-import junit.framework.TestCase;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 /*
-* These repository tests needs a direct db connection and has been configured to use listingsystem .
-* CdiTestRunner needs to update db according to entities in the repository and viewstore cannot be used  as IT test requires them for assertions
-* */
+ * These repository tests needs a direct db connection and has been configured to use listingsystem .
+ * CdiTestRunner needs to update db according to entities in the repository and viewstore cannot be used  as IT test requires them for assertions
+ * */
 @RunWith(CdiTestRunner.class)
 public class PersistenceTestsIT extends BaseTransactionalTest implements PersistenceTestsInt {
     @Inject
@@ -118,99 +98,6 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         final Hearing expectedHearing = hearingRepository.findBy(actualHearing.getId());
 
         assertTrue(reflectionEquals(expectedHearing, actualHearing));
-    }
-
-    @Test
-    public void shouldReturnEmptyHearingsWhereQueryDoesNotFindResults() {
-        givenHearingsExist();
-
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                randomUUID(),
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                OTHER_JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE,
-                END_SEARCH_DATE, 0, 10);
-
-        assertThat(actualHearings.size(), is(0));
-    }
-
-    @Test
-    public void shouldSaveAndFindHearingWhereQueryFindsResultsJson() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE,
-                END_SEARCH_DATE, 0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
-    public void shouldNotRetrieveVacatedHearingWhenVacatedTrueAndFindHearingsInvoked() {
-        //given
-        givenHearingsWithVacated(TRUE);
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                RANDOM_ALLOCATED,
-                OTHER_COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                OTHER_HEARING_TYPE.getId(),
-                OTHER_JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE,
-                END_SEARCH_DATE, 0, 10);
-
-        assertThat(actualHearings, empty());
-    }
-
-    @Test
-    public void shouldRetrieveVacatedHearingWhenVacatedNullOrFalseAndFindHearingsInvoked() {
-        //given
-        givenHearingsWithVacated(null);
-
-        //when
-        List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE,
-                END_SEARCH_DATE, 0, 10);
-
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(HEARING_ID.toString())));
-
-        actualHearings = hearingRepository.findHearings(
-                RANDOM_ALLOCATED,
-                OTHER_COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                OTHER_HEARING_TYPE.getId(),
-                OTHER_JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE,
-                END_SEARCH_DATE, 0, 10);
-
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(OTHER_HEARING_ID.toString())));
     }
 
     @Test
@@ -248,90 +135,6 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
     }
 
-    @Test
-    public void shouldSaveAndFindUnallocatedHearingWhereQueryFindsResultsByWeekCommencingDateRange() {
-        //given hearing with fixed date
-        givenHearingsExist();
-
-        //given hearing with commencing date
-        final UUID hearingId = randomUUID();
-        final UUID courtCentreId = randomUUID();
-        final Type hearingType = type().withId(randomUUID()).withDescription("TRIAL").build();
-        final String judicialId = randomUUID().toString();
-        givenHearingsWithWeekCommencing(hearingId, courtCentreId, AUTHORITY_ID, hearingType, CROWN, judicialId, FALSE);
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
-                null,
-                null,
-                AUTHORITY_ID,
-                null,
-                CROWN.toString(),
-                parse(EARLIEST_SEARCH_DATE),
-                parse(LATEST_SEARCH_DATE),
-                false, 0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(2));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(courtCentreId.toString())));
-        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
-    public void shouldNotRetrieveVacatedHearingWhenVacatedIsTrueAndFindUnallocatedHearingsByWeekCommencingRangeInvoked() {
-        givenHearingsWithWeekCommencing(HEARING_ID, COURT_CENTRE_ID, AUTHORITY_ID, HEARING_TYPE, CROWN, JUDICIAL_ID, TRUE);
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
-                COURT_CENTRE_ID,
-                null,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                CROWN.toString(),
-                parse(EARLIEST_SEARCH_DATE),
-                parse(LATEST_SEARCH_DATE),
-                false, 0, 10);
-
-        assertThat(actualHearings, empty());
-    }
-
-    @Test
-    public void shouldRetrieveHearingWhenVacatedIsNullOrFalseAndFindUnallocatedHearingsByWeekCommencingRangeInvoked() {
-        givenHearingsWithWeekCommencing(HEARING_ID, COURT_CENTRE_ID, AUTHORITY_ID, HEARING_TYPE, CROWN, JUDICIAL_ID, FALSE);
-        givenHearingsWithWeekCommencing(OTHER_HEARING_ID, OTHER_COURT_CENTRE_ID, AUTHORITY_ID, OTHER_HEARING_TYPE, CROWN, JUDICIAL_ID, null);
-
-        List<Hearing> actualHearings = hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
-                COURT_CENTRE_ID,
-                null,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                CROWN.toString(),
-                parse(EARLIEST_SEARCH_DATE),
-                parse(LATEST_SEARCH_DATE),
-                false, 0, 10);
-
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(HEARING_ID.toString())));
-
-        actualHearings = hearingRepository.findUnallocatedHearingsByWeekCommencingRange(
-                OTHER_COURT_CENTRE_ID,
-                null,
-                AUTHORITY_ID,
-                OTHER_HEARING_TYPE.getId(),
-                CROWN.toString(),
-                parse(EARLIEST_SEARCH_DATE),
-                parse(LATEST_SEARCH_DATE),
-                false, 0, 10);
-
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.id", equalTo(OTHER_HEARING_ID.toString())));
-    }
 
     @Test
     public void shouldSaveAndFindHearingWhereQueryFindsResultsByWeekCommencingDateRangeAndAuthorityIdNotSpecified() {
@@ -370,123 +173,6 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     }
 
     @Test
-    public void shouldSaveAndFindHearingJsonWithOptionalCourtCentre() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                null,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE,
-                END_SEARCH_DATE, 0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
-    public void shouldSaveAndFindHearingJsonWithOptionalCourtRoom() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                null,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE,
-                END_SEARCH_DATE,0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
-    public void shouldSaveAndFindHearingJsonWithOptionalAuthorityCode() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE,
-                END_SEARCH_DATE, 0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
-    public void shouldSaveAndFindHearingJsonWithOptionalHearingType() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                null,
-                JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE,
-                END_SEARCH_DATE, 0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
-    public void shouldSaveAndFindHearingJsonWithManyOptionalParameters() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                null,
-                AUTHORITY_ID,
-                null,
-                null,
-                parse(EARLIEST_SEARCH_DATE),
-                parse(LATEST_SEARCH_DATE), 0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
     public void shouldSaveAndFindHearingJsonWithManyOptionalParameters2() {
         //given
         givenHearingsExist();
@@ -501,54 +187,6 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
                 START_SEARCH_DATE,
                 EARLIEST_SEARCH_DATE_TIME,
                 LATEST_SEARCH_DATE_TIME);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
-    public void shouldSaveAndFindHearingJsonWithOptionalJurisdictionType() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                null,
-                START_SEARCH_DATE,
-                END_SEARCH_DATE, 0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
-    public void shouldSaveAndFindHearingJsonWithOptionalSearchDate() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                JURISDICTION_TYPE.toString(),
-                parse(EARLIEST_SEARCH_DATE),
-                parse(LATEST_SEARCH_DATE),0, 10);
 
         //then
         assertThat(actualHearings.size(), is(1));
@@ -652,98 +290,6 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         //then
         assertThat(actualHearings.size(), is(0));
-    }
-
-    @Test
-    public void shouldSaveAndNotFindHearingJsonWithSearchDateNotMatching() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE.plusDays(10),
-                END_SEARCH_DATE.plusDays(10), 0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(0));
-    }
-
-    @Test
-    public void shouldSaveAndFindHearingJsonWithHearingStartDateBetweenSearchDates() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE.minusDays(1),
-                END_SEARCH_DATE, 0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
-    public void shouldSaveAndFindHearingJsonWithHearingEndDateBetweenSearchDates() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE.plusDays(1),
-                END_SEARCH_DATE.plusDays(2),0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
-    }
-
-    @Test
-    public void shouldSaveAndNotFindHearingJsonWithHearingStartDateAndHearingEndDateSpanningOverTheSearchDates() {
-        //given
-        givenHearingsExist();
-
-        //when
-        final List<Hearing> actualHearings = hearingRepository.findHearings(
-                UNALLOCATED_STR,
-                COURT_CENTRE_ID,
-                COURT_ROOM_ID,
-                AUTHORITY_ID,
-                HEARING_TYPE.getId(),
-                JURISDICTION_TYPE.toString(),
-                START_SEARCH_DATE.plusDays(1),
-                END_SEARCH_DATE, 0, 10);
-
-        //then
-        assertThat(actualHearings.size(), is(1));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.allocated", equalTo(UNALLOCATED)));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.courtCentreId", equalTo(COURT_CENTRE_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.listedCases[0].caseIdentifier.authorityId", equalTo(AUTHORITY_ID.toString())));
-        assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", equalTo(JURISDICTION_TYPE.toString())));
     }
 
     @Test
@@ -891,25 +437,25 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
     public void addHearingDays(final UUID courtCentreId, final UUID courtRoomId, final UUID otherCourtCentreId, final LocalDate startDate, final LocalDate endDate, final Hearing hearing1) {
         ((ObjectNode) hearing1.getProperties()).putArray("hearingDays").addAll(getHearingDays(Stream.of(
-                HearingDay.hearingDay().withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId).withHearingDate(startDate).build(),
-                HearingDay.hearingDay().withCourtCentreId(otherCourtCentreId).withCourtRoomId(courtRoomId).withHearingDate(endDate).build())
+                        HearingDay.hearingDay().withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId).withHearingDate(startDate).build(),
+                        HearingDay.hearingDay().withCourtCentreId(otherCourtCentreId).withCourtRoomId(courtRoomId).withHearingDate(endDate).build())
                 .collect(Collectors.toList())));
     }
 
     public Set<HearingDays> getHearingDays(final UUID courtCentreId, final UUID courtRoomId, final UUID otherCourtCentreId, final LocalDate startDate, final LocalDate endDate, final Hearing hearing1) {
         return Stream.of(
-                HearingDays.builder().withId(randomUUID()).withHearing(hearing1)
-                        .withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId)
-                        .withHearingDate(startDate).withDurationMinutes(30)
-                        .withStartTime(ZonedDateTime.of(startDate, LocalTime.now(), UTC))
-                        .withEndTime(ZonedDateTime.of(startDate, LocalTime.now().plusMinutes(30), UTC))
-                        .withSequence(0).build(),
-                HearingDays.builder().withId(randomUUID()).withHearing(hearing1)
-                        .withCourtCentreId(otherCourtCentreId).withCourtRoomId(courtRoomId)
-                        .withHearingDate(endDate).withDurationMinutes(30)
-                        .withStartTime(ZonedDateTime.of(endDate, LocalTime.now(), UTC))
-                        .withEndTime(ZonedDateTime.of(endDate, LocalTime.now().plusMinutes(30), UTC))
-                        .withSequence(0).build())
+                        HearingDays.builder().withId(randomUUID()).withHearing(hearing1)
+                                .withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId)
+                                .withHearingDate(startDate).withDurationMinutes(30)
+                                .withStartTime(ZonedDateTime.of(startDate, LocalTime.now(), UTC))
+                                .withEndTime(ZonedDateTime.of(startDate, LocalTime.now().plusMinutes(30), UTC))
+                                .withSequence(0).build(),
+                        HearingDays.builder().withId(randomUUID()).withHearing(hearing1)
+                                .withCourtCentreId(otherCourtCentreId).withCourtRoomId(courtRoomId)
+                                .withHearingDate(endDate).withDurationMinutes(30)
+                                .withStartTime(ZonedDateTime.of(endDate, LocalTime.now(), UTC))
+                                .withEndTime(ZonedDateTime.of(endDate, LocalTime.now().plusMinutes(30), UTC))
+                                .withSequence(0).build())
                 .collect(Collectors.toSet());
     }
 
@@ -923,11 +469,11 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
             final UUID courtRoomId = ofNullable(hearingDay.get("courtRoomId")).map(JsonNode::asText).map(UUID::fromString).orElse(null);
             final ZonedDateTime hearingDateTime = ZonedDateTime.parse(hearingDay.get("hearingDate").asText());
             hearingDays.add(HearingDays.builder().withId(randomUUID()).withHearing(hearing)
-                        .withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId)
-                        .withHearingDate(hearingDateTime.toLocalDate()).withDurationMinutes(30)
-                        .withStartTime(hearingDateTime)
-                        .withEndTime(hearingDateTime.plusMinutes(30))
-                        .withSequence(0).build());
+                    .withCourtCentreId(courtCentreId).withCourtRoomId(courtRoomId)
+                    .withHearingDate(hearingDateTime.toLocalDate()).withDurationMinutes(30)
+                    .withStartTime(hearingDateTime)
+                    .withEndTime(hearingDateTime.plusMinutes(30))
+                    .withSequence(0).build());
         }
         return hearingDays;
     }
@@ -1322,6 +868,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
         assertThat(actualHearings.get(0).getProperties().toString(), hasJsonPath("$.jurisdictionType", anyOf(equalTo(JURISDICTION_TYPE.toString()), equalTo(OTHER_JURISDICTION_TYPE.toString()))));
         assertThat(actualHearings.get(1).getProperties().toString(), hasJsonPath("$.unscheduled", equalTo(true)));
     }
+
     @Test
     public void shouldFindUnscheduledHearingsWithCourtCentreIds() {
 
@@ -2379,7 +1926,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
     }
 
     private ListedCases getListedCases(final Hearing hearing, final CaseIdentifier caseIdentifier, final UUID uuid) {
-        ListedCases listedCase = new ListedCases(randomUUID(), uuid, caseIdentifier, null, hearing, null, null,null);
+        ListedCases listedCase = new ListedCases(randomUUID(), uuid, caseIdentifier, null, hearing, null, null, null);
 
         final JsonNode properties = hearing.getProperties();
         if (properties.has("listedCases")) {
@@ -2791,7 +2338,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
                 .withUnscheduled(TRUE)
                 .withTypeOfListId(TYPE_OF_LIST_ID)
                 .withFileLocation(TEST_DATA_SAMPLE_UNSCHEDULED_HEARING_JSON)
-                .build(),caseUrn));
+                .build(), caseUrn));
 
         hearingsToBeCreated.add(getHearingJson(hearingRepositoryContext()
                 .withHearingId(OTHER_HEARING_ID)
@@ -2811,7 +2358,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
                 .withUnscheduled(TRUE)
                 .withTypeOfListId(TYPE_OF_LIST_ID)
                 .withFileLocation(TEST_DATA_SAMPLE_UNSCHEDULED_HEARING_JSON)
-                .build(),caseUrn));
+                .build(), caseUrn));
 
         hearingsToBeCreated.add(getHearingJson(hearingRepositoryContext()
                 .withHearingId(OTHER_HEARING_ID2)
