@@ -195,7 +195,7 @@ public class Hearing implements Aggregate {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Hearing.class);
 
-    private static final long serialVersionUID = 5817594778865191002L;
+    private static final long serialVersionUID = 5817594778865191003L;
 
     private static final String SUMMONS_APPROVED_RESULT_TYPE_ID = "0f44eeb9-2c81-430d-9a60-bbdaf8c4a093";
     private static final String SUMMONS_REJECTED_RESULT_TYPE_ID = "d8837a45-8281-49b3-8349-49b423193148";
@@ -3230,7 +3230,7 @@ public class Hearing implements Aggregate {
 
                         if (matchingDefendantOptional.isPresent()) {
                             final Set<Offence> offenceSet = new HashSet<>(matchingDefendantOptional.get().getOffences());
-                            offenceSet.addAll(defendant.getOffences());
+                            offenceSet.addAll(defendant.getOffences().stream().filter(offence1-> offenceSet.stream().noneMatch(offence2 -> offence2.getId().equals(offence1.getId()))).collect(toList()));
                             matchingDefendantOptional.get().getOffences().clear();
                             matchingDefendantOptional.get().getOffences().addAll(offenceSet);
 
