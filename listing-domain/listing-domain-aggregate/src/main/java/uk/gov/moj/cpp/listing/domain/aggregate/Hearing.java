@@ -1787,11 +1787,6 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> raiseUpdateHearingInStagingHmi(Stream<Object> actualEvents) {
-
-        if (duplicate || deleted) {
-            return Stream.empty();
-        }
-
         final List<Object> eventList =  actualEvents.collect(Collectors.toList());
         if(eventList.isEmpty()) {
             return Stream.empty();
