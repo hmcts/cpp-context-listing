@@ -512,6 +512,9 @@ public class ListingCommandHandler {
         // Mandatory fields that always require a value
         final UUID courtCentreId = getCourtCentreId(updateHearingForListing);
         final UUID hearingId = updateHearingForListing.getHearingId();
+
+        LOGGER.info("UpdateHearingForListing for hearing id : {}", hearingId);
+
         final Type type = convertTypeToDomain(updateHearingForListing.getType());
         final Integer defaultDuration = hearingTypesIdDurationMap.get(type.getId().toString());
         final JurisdictionType jurisdictionType = JurisdictionType.valueFor(updateHearingForListing.getJurisdictionType().toString()).orElseThrow(IllegalArgumentException::new);
@@ -556,11 +559,16 @@ public class ListingCommandHandler {
         LOGGER.info("HearingUpdateOperationType for hearing id: {}  is {}", updateHearingForListing.getHearingId(), operationType);
 
         updateHearingEventStream(jsonEnvelope, eventStream, hearingAggregate, (Hearing hearing) -> {
+
+            LOGGER.info("UpdateHearingEventStream for hearing id: {} with operationType: {} ", hearingId, operationType);
+
             final Stream<Object> hearingPartiallyEvents = extendHearingUtils.createPartiallyAllocationEventForUpdateHearing(hearing,
                     hearingId,
                     unallocatedHearingRequestCaseMap,
                     persistedUnallocatedHearingCasesMap,
                     operationType);
+
+
             if (HearingUpdateOperationType.SPLIT.equals(operationType)) {
                 //if its a split the only thing we need to update is the remaining cases
                 return Stream.of(hearingPartiallyEvents).flatMap(i -> i);
@@ -630,6 +638,7 @@ public class ListingCommandHandler {
 
 
         if (HearingUpdateOperationType.SPLIT.equals(operationType)) {
+            LOGGER.info("SPLIT hearing raising a new Hearing from hearing id: {}", hearingId);
             final ZonedDateTime newHearingStartTime = nonNull(startDate) ? ZonedDateTime.of(startDate.atTime(defaultStartTime), ZoneOffset.UTC) : null;
             //raisenewHearing
             final List<ListedCase> listedCases = extendHearingUtils.extractCasesToMove(storedHearing.getListedCases(), unallocatedHearingRequestCaseMap);

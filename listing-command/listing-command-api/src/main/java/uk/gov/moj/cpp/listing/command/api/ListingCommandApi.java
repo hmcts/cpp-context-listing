@@ -222,6 +222,8 @@ public class ListingCommandApi {
 
         final UpdateHearingForListing updateHearingForListing = jsonObjectConverter.convert(payload, UpdateHearingForListing.class);
 
+        LOGGER.info("HandleUpdateHearingForListing for the hearing: {} ", updateHearingForListing.getHearingId());
+
         checkCourtRoomIsOptionalForCrownCourts(updateHearingForListing);
 
         final JsonArray prosecutionCases = payload.getJsonArray(PROSECUTION_CASES);
