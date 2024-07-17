@@ -1,0 +1,6 @@
+{
+  "groupId": "GROUP_ID",
+  "masterCaseId": "MASTER_CASE_ID",
+  "removedCase": REMOVED_CASE,
+  "newGroupMaster": NEW_GROUP_MASTER
+}

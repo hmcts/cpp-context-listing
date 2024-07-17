@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.command.utils;
 
 import static java.util.Objects.nonNull;
-import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 

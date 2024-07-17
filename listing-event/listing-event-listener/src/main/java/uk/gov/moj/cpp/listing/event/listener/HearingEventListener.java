@@ -357,6 +357,10 @@ public class HearingEventListener {
     private void updateCaseStatus(final ProsecutionCase prosecutionCase, final List<ListedCase> listedCases, final ListedCase listedCase) {
         final ListedCase newListedCase = ListedCase.listedCase()
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
+                .withIsCivil(listedCase.getIsCivil())
+                .withGroupId(listedCase.getGroupId())
+                .withIsGroupMember(listedCase.getIsGroupMember())
+                .withIsGroupMaster(listedCase.getIsGroupMaster())
                 .withProsecutor(listedCase.getProsecutor())
                 .withCaseStatus(prosecutionCase.getCaseStatus())
                 .withDefendants(listedCase.getDefendants())

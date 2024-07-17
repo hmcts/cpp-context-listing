@@ -126,6 +126,11 @@ public class JsonNodeUpdater {
         return this;
     }
 
+    public JsonNodeUpdater put(String fieldName, Integer value) {
+        updatedProperties.put(fieldName, value);
+        return this;
+    }
+
     public JsonNodeUpdater remove(String fieldName) {
         updatedProperties.remove(fieldName);
         return this;

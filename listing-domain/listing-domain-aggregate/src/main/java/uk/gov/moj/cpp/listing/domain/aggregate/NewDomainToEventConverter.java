@@ -47,6 +47,10 @@ public class NewDomainToEventConverter {
         final uk.gov.justice.listing.events.ListedCase.Builder builder = uk.gov.justice.listing.events.ListedCase.listedCase()
                 .withId(lc.getId())
                 .withCaseIdentifier(buildCaseIdentifier(lc))
+                .withIsCivil(lc.getIsCivil().orElse(null))
+                .withGroupId(lc.getGroupId().orElse(null))
+                .withIsGroupMember(lc.getIsGroupMember().orElse(null))
+                .withIsGroupMaster(lc.getIsGroupMaster().orElse(null))
                 .withMarkers(isNull(lc.getCaseMarkers()) ? emptyList() : lc.getCaseMarkers().stream()
                         .map(NewDomainToEventConverter::convertCaseMarkersToMarkers)
                         .collect(toList()))
@@ -61,7 +65,26 @@ public class NewDomainToEventConverter {
             builder.withProsecutor(buildProsecutor(lc));
         }
 
+        constructCivilInfo(lc, builder);
+
         return builder.build();
+    }
+
+    private static void constructCivilInfo(final ListedCase lc, final uk.gov.justice.listing.events.ListedCase.Builder builder) {
+        if (nonNull(lc.getIsCivil()) && lc.getIsCivil().isPresent()) {
+            builder.withIsCivil(lc.getIsCivil().get());
+        }
+
+        if (nonNull(lc.getIsGroupMaster()) && lc.getIsGroupMaster().isPresent()) {
+            builder.withIsGroupMaster(lc.getIsGroupMaster().get());
+        }
+
+        if (nonNull(lc.getIsGroupMember()) && lc.getIsGroupMember().isPresent()) {
+            builder.withIsGroupMember(lc.getIsGroupMember().get());
+        }
+        if (nonNull(lc.getGroupId()) && lc.getGroupId().isPresent()) {
+            builder.withGroupId(lc.getGroupId().get());
+        }
     }
 
     public static List<Marker> convertCaseMarkersListToMarkers(final List<CaseMarker> caseMarkers) {

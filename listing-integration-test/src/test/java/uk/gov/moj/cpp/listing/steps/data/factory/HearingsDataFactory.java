@@ -576,38 +576,38 @@ public class HearingsDataFactory {
     }
 
     private static ListedCaseData randomListedCase() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendants(2), false, false, manyRandomCaseMarkers(1), STRING.next());
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendants(2), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
     }
 
     private static ListedCaseData randomListedCase(final ListedCaseData listedCaseData) {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendants(listedCaseData.getDefendants()), false, false, manyRandomCaseMarkers(1), STRING.next());
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendants(listedCaseData.getDefendants()), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
     }
 
     private static ListedCaseData randomListedCaseWithoutReportingRestriction() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantsWithoutReportingRestriction(2), true, false, manyRandomCaseMarkers(1), STRING.next());
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantsWithoutReportingRestriction(2), true, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
     }
 
     private static ListedCaseData randomListedCaseWithGivenDefendantAndOffences(Integer numberOfDefendants, Integer numberOfOffences) {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantWithGivenOffence(numberOfDefendants, numberOfOffences), false, false, manyRandomCaseMarkers(1), STRING.next());
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantWithGivenOffence(numberOfDefendants, numberOfOffences), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
     }
     private static ListedCaseData randomListedCaseWithSingleOffence() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantSingleOffence(1), false, false, manyRandomCaseMarkers(1), STRING.next());
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantSingleOffence(1), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
     }
 
     private static ListedCaseData randomListedCaseWithMultipleOffences() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantsWithMultipleOffences(1), false, false, manyRandomCaseMarkers(1), STRING.next());
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantsWithMultipleOffences(1), false, false, manyRandomCaseMarkers(1), STRING.next(), randomUUID(), false, false, false);
     }
 
     private static ListedCaseData randomListedCase(final CaseAndDefendantData caseAndDefendantData) {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), caseAndDefendantData.getCaseUrn(), manyRandomDefendants(1, caseAndDefendantData), false, false, manyRandomCaseMarkers(1), STRING.next());
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), caseAndDefendantData.getCaseUrn(), manyRandomDefendants(1, caseAndDefendantData), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
     }
 
     private static ListedCaseData randomListedCaseWithLegalEntity() {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantsWithLegalEntity(1), false, false, manyRandomCaseMarkers(1), STRING.next());
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantsWithLegalEntity(1), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
     }
 
     private static ListedCaseData randomListedCaseWithDefendantHavingListingReason(final String listingReason) {
-        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantsWithListingReason(listingReason), false, false, manyRandomCaseMarkers(1), STRING.next());
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantsWithListingReason(listingReason), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
     }
 
     private static LaaReferenceData randomLaaReferenceData() {

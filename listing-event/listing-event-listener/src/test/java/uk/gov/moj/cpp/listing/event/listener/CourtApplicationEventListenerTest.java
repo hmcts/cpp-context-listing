@@ -12,8 +12,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
-
-import javax.inject.Inject;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.listing.events.ApplicantRespondent;
 import uk.gov.justice.listing.events.CourtApplication;

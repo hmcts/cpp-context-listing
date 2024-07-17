@@ -67,7 +67,7 @@ public class RangeSearchQueryTest {
     private static final String HEARING_TYPE_QUERY_PARAMETER = "hearingTypeId";
     private static final String JURISDICTION_TYPE_QUERY_PARAMETER = "jurisdictionType";
     private static final String AUTHORITY_ID = "efa4e01b-1dc5-48c5-80b5-c3858a7622d6";
-    private  static final String AUTHORITY_ID_SEARCH = String.format("[ { \"caseIdentifier\": { \"authorityId\": \"%s\" } } ]", AUTHORITY_ID);
+    private static final String AUTHORITY_ID_SEARCH = String.format("[ { \"caseIdentifier\": { \"authorityId\": \"%s\" } } ]", AUTHORITY_ID);
     private static final String PROSECUTOR_ID_SEARCH = String.format("[ { \"prosecutor\": { \"prosecutorId\": \"%s\" } } ]", AUTHORITY_ID);
     private static final UUID HEARING_TYPE_ID = randomUUID();
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
@@ -84,6 +84,10 @@ public class RangeSearchQueryTest {
 
     private static final String TRIAL_HEARING_TYPE_ID = "bf8155e1-90b9-4080-b133-bfbad895d6e4";
     private static final Set<String> hearingTypeIds = new HashSet<>(Arrays.asList(TRIAL_HEARING_TYPE_ID));
+
+    private static final String IS_CIVIL = "isCivil";
+    private static final String IS_GROUP_MEMBER = "isGroupMember";
+    private static final String IS_GROUP_MASTER = "isGroupMaster";
 
     @Spy
     private Enveloper enveloper = createEnveloper();

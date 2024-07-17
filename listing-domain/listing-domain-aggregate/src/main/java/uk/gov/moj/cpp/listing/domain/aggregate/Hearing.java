@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -66,6 +67,7 @@ import uk.gov.justice.listing.events.ApplicationEjected;
 import uk.gov.justice.listing.events.CaseEjected;
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.CaseIdentifierUpdated;
+import uk.gov.justice.listing.events.CaseRemovedFromGroupCases;
 import uk.gov.justice.listing.events.CaseUpdateDefendantProceedingsUpdated;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
@@ -304,6 +306,7 @@ public class Hearing implements Aggregate {
                 when(DefendantCourtProceedingsUpdatedV2.class).apply(this::onDefendantCourtProceedingsUpdatedV2),
                 when(AllocatedHearingExtendedForListingV2.class).apply(this::onAllocatedHearingExtendedForListingV2),
                 when(AllocatedHearingExtendedForListing.class).apply(this::onAllocatedHearingExtendedForListing),
+                when(CaseRemovedFromGroupCases.class).apply(this::onCaseRemovedFromGroupCases),
                 otherwiseDoNothing());
     }
 
@@ -416,7 +419,9 @@ public class Hearing implements Aggregate {
                                final String bookingType,
                                final String priority,
                                final List<String> specialRequirements,
-                               final Optional<Boolean> isPossibleDisqualification) {
+                               final Optional<Boolean> isPossibleDisqualification,
+                               final Optional<Boolean> isGroupProceedings,
+                               final Optional<Integer> numberOfGroupCases) {
 
         if (this.duplicate || this.deleted) {
             return Stream.empty();
@@ -454,6 +459,8 @@ public class Hearing implements Aggregate {
                     .withJurisdictionType(valueFor(jurisdictionType.name()).orElse(null))
                     .withEndDate(endDate)
                     .withIsSlotsBooked(isSlotsBooked)
+                    .withIsGroupProceedings(isGroupProceedings.orElse(null))
+                    .withNumberOfGroupCases(numberOfGroupCases.orElse(null))
                     .withCourtCentreDetails(nonNull(courtCentreDefaults) ? CourtCentreDetails.courtCentreDetails()
                             .withDefaultDuration(courtCentreDefaults.getDefaultDuration())
                             .withId(courtCentreDefaults.getCourtCentreId())
@@ -1073,13 +1080,14 @@ public class Hearing implements Aggregate {
     }
 
 
-    public Stream<Object> applyAllocationRules(final Optional<UUID> bookingReference, final Boolean sendNotificationToParties,final Boolean isNotificationRelatedAllocatedFieldsUpdated) {
+    public Stream<Object> applyAllocationRules(final Optional<UUID> bookingReference, final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated,
+                                               final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds, Optional<String> source, final Boolean isGroupProceedings) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
 
         if (canAllocate()) {
-            return onAllocationEvents(bookingReference, emptyList(), empty(), sendNotificationToParties,isNotificationRelatedAllocatedFieldsUpdated);
+            return onAllocationEvents(bookingReference, prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, isGroupProceedings);
         } else if (canUnallocate()) {
             return onUnallocationEvents(empty());
         } else {
@@ -1092,19 +1100,19 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> applyAllocationRules(final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds, final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated) {
-        return getAllocationEvents(prosecutionCaseDefendantOffenceIds, empty(), sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated);
+        return getAllocationEvents(prosecutionCaseDefendantOffenceIds, empty(), sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, null);
     }
 
-    public Stream<Object> applyAllocationRules(final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds, final Optional<String> source, final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated) {
-        return getAllocationEvents(prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated);
+    public Stream<Object> applyAllocationRules(final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds, final Optional<String> source, final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated, final Boolean isGroupProceedings) {
+        return getAllocationEvents(prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, isGroupProceedings);
     }
 
-    private Stream<Object> getAllocationEvents(final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds, final Optional<String> source, final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated) {
+    private Stream<Object> getAllocationEvents(final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds, final Optional<String> source, final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated, final Boolean isGroupProceedings) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
         if (canAllocate()) {
-            return onAllocationEvents(empty(), prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated);
+            return onAllocationEvents(empty(), prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, isGroupProceedings);
         } else if (canUnallocate()) {
             return onUnallocationEvents(source);
         } else {
@@ -1771,11 +1779,11 @@ public class Hearing implements Aggregate {
     }
 
     private Stream<Object> onAllocationEvents(final Optional<UUID> bookingReference, final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds, final Optional<String> source, final Boolean sendNotificationToParties,
-                                              final Boolean isNotificationRelatedAllocatedFieldsUpdated) {
+                                              final Boolean isNotificationRelatedAllocatedFieldsUpdated, final Boolean isGroupProceedings) {
         if (allocated) {
             return apply(Stream.of(allocatedHearingUpdatedForListingEvent(source, sendNotificationToParties,isNotificationRelatedAllocatedFieldsUpdated)));
         }
-        return apply(Stream.of(Stream.of(hearingAllocatedForListingEvent(bookingReference, prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated))).flatMap(i -> i));
+        return apply(Stream.of(Stream.of(hearingAllocatedForListingEvent(bookingReference, prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, isGroupProceedings))).flatMap(i -> i));
     }
 
     public Stream<Object> raiseUpdateHearingInStagingHmi(final Optional<String> source) {
@@ -1845,7 +1853,7 @@ public class Hearing implements Aggregate {
     // Helper methods to create events
 
     private HearingAllocatedForListingV2 hearingAllocatedForListingEvent(final Optional<UUID> bookingReference, List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds, final Optional<String> source,
-                                                                         final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated) {
+                                                                         final Boolean sendNotificationToParties, final Boolean isNotificationRelatedAllocatedFieldsUpdated, final Boolean isGroupProceedings) {
 
         if (isEmpty(prosecutionCaseDefendantOffenceIds)) {
             prosecutionCaseDefendantOffenceIds = this.prosecutionCaseDefendantOffenceIds;
@@ -1870,6 +1878,10 @@ public class Hearing implements Aggregate {
                 .withProsecutionCaseDefendantsOffenceIds(isEmpty(prosecutionCaseDefendantOffenceIds) ? null : prosecutionCaseDefendantOffenceIds.stream()
                         .map(lc -> ProsecutionCaseDefendantOffenceIdsV2.prosecutionCaseDefendantOffenceIdsV2()
                                 .withId(lc.getId())
+                                .withGroupId(lc.getGroupId())
+                                .withIsGroupMaster(lc.getIsGroupMaster())
+                                .withIsGroupMember(lc.getIsGroupMember())
+                                .withIsCivil(lc.getIsCivil())
                                 .withDefendants(lc.getDefendants().stream()
                                         .filter(defendant -> !defendant.getOffences().isEmpty())
                                         .map(this::buildEventDefendantOffenceIdsV2)
@@ -1881,6 +1893,8 @@ public class Hearing implements Aggregate {
                 .withUpdateSlot(this.updateSlot)
                 .withHasAdjournmentDate(this.hasAdjournmentDate)
                 .withApplicationOffenceIds(getAllOffenceIds())
+                .withSource(source.orElse(null))
+                .withIsGroupProceedings(isGroupProceedings)
                 .withSource(source.isPresent() ? source.get() : null)
                 .withSendNotificationToParties(sendNotificationToParties)
                 .withIsNotificationAllocationFieldUpdated(isNotificationRelatedAllocatedFieldsUpdated)
@@ -3266,4 +3280,48 @@ public class Hearing implements Aggregate {
         }
         return false;
     }
+
+    public Stream<Object> removeCaseFromGroupCases(final UUID hearingId, final UUID groupId,
+                                                   final ListedCase removedCase,
+                                                   final ListedCase newGroupMaster) {
+        return apply(Stream.of(CaseRemovedFromGroupCases.caseRemovedFromGroupCases()
+                .withHearingId(hearingId)
+                .withGroupId(groupId)
+                .withRemovedCase(NewDomainToEventConverter.buildListedCase(removedCase))
+                .withNewGroupMaster(nonNull(newGroupMaster) ? NewDomainToEventConverter.buildListedCase(newGroupMaster) : null)
+                .build()));
+    }
+
+    private void onCaseRemovedFromGroupCases(final CaseRemovedFromGroupCases caseRemovedFromGroupCases) {
+        if (isNotEmpty(this.unAllocatedListedCases)) {
+            final UUID removedCaseId = caseRemovedFromGroupCases.getRemovedCase().getId();
+            if (this.unAllocatedListedCases.stream()
+                    .anyMatch(lc -> removedCaseId.equals(lc.getId()))) {
+                updateListedCase(this.unAllocatedListedCases, removedCaseId, FALSE, FALSE);
+            }
+
+            if (nonNull(caseRemovedFromGroupCases.getNewGroupMaster())) {
+                final UUID newGroupMasterId = caseRemovedFromGroupCases.getNewGroupMaster().getId();
+                if (this.unAllocatedListedCases.stream()
+                        .anyMatch(lc -> newGroupMasterId.equals(lc.getId()))) {
+                    updateListedCase(this.unAllocatedListedCases, newGroupMasterId, TRUE, TRUE);
+                }
+            }
+        }
+    }
+
+    private void updateListedCase(final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> cases,
+                                  final UUID caseId, final Boolean isGroupMember, final Boolean isGroupMaster) {
+        final uk.gov.moj.cpp.listing.domain.aggregate.ListedCase updatedCase =
+                uk.gov.moj.cpp.listing.domain.aggregate.ListedCase.listedCase()
+                        .withValuesFrom(cases.stream()
+                                .filter(lc -> lc.getId().equals(caseId))
+                                .findFirst().get())
+                        .withIsGroupMember(isGroupMember)
+                        .withIsGroupMaster(isGroupMaster)
+                        .build();
+        cases.removeIf(lc -> lc.getId().equals(caseId));
+        cases.add(updatedCase);
+    }
+
 }

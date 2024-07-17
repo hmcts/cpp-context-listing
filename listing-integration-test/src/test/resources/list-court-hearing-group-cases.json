@@ -1,0 +1,143 @@
+{
+  "adjournedFromDate": "2021-07-02",
+  "hearings": [
+    {
+      "bookingReference": "a7c5ff53-1a0d-4cd7-9c6f-a895c3e3ccb4",
+      "isGroupProceedings": true,
+      "numberOfGroupCases" : 1000,
+      "courtApplicationPartyListingNeeds": [
+        {
+          "courtApplicationId": "14190e1e-5396-4327-b41d-1aa36d70564c",
+          "courtApplicationPartyId": "5ccaba77-2cce-4f39-8fc8-558a1d8719e7"
+        }
+      ],
+      "courtApplications": [
+        {
+          "courtApplicationPayment": {
+            "isFeeExempt": false,
+            "isFeePaid": false,
+            "isFeeUndertakingAttached": false,
+            "paymentReference": "TEST101"
+          },
+          "courtCivilApplication": {
+            "isCivil": true,
+            "isExParte": true
+          },
+          "applicant": {
+            "id": "5454e017-c3ce-41c2-87b5-1885d886cf7f",
+            "notificationRequired": false,
+            "personDetails": {
+              "address": {
+                "address1": "Rou6Vlzkqc",
+                "address2": "JwFe0zEBK9",
+                "address3": "y0iCfcoUmC",
+                "address4": "sm05nE5ASN",
+                "address5": "NnaIerLCqz",
+                "postcode": "SW13 0AA"
+              },
+              "firstName": "CSAzVjDOIg",
+              "gender": "FEMALE",
+              "lastName": "9fZtOy4R9H"
+            },
+            "summonsRequired": false
+          },
+          "applicationParticulars": "g4Pa1tBnQq",
+          "applicationReceivedDate": "2021-07-02",
+          "applicationReference": "DgRsIbrCfW",
+          "applicationStatus": "LISTED",
+          "courtApplicationCases": [
+            {
+              "caseStatus": "ACTIVE",
+              "isSJP": false,
+              "prosecutionCaseId": "88028869-d30d-44dc-af6c-0459e1d7dfa1",
+              "prosecutionCaseIdentifier": {
+                "prosecutionAuthorityCode": "9wXkpYuKVy",
+                "prosecutionAuthorityId": "ea978bdb-4a83-46d9-ad8c-5b2c7e0b16d0",
+                "caseURN": "fRZqDXzjbT"
+              }
+            }
+          ],
+          "id": "4153cfa3-2e20-42be-8d41-c3f788e2aa14",
+          "parentApplicationId": "0e3d71a3-17a5-4b15-bd85-5e4c2db69b1c",
+          "respondents": [
+            {
+              "id": "dc3061a2-8520-4651-a672-27bb807d9528",
+              "notificationRequired": false,
+              "personDetails": {
+                "address": {
+                  "address1": "Zon5wCuohS",
+                  "address2": "XFtSgltUqd",
+                  "address3": "krVHiIwu47",
+                  "address4": "XHe3vRYd66",
+                  "address5": "XtLzj5n2b3",
+                  "postcode": "SW13 0AA"
+                },
+                "firstName": "NMQN2dNber",
+                "gender": "FEMALE",
+                "lastName": "72IsdFdc1Q"
+              },
+              "summonsRequired": false
+            }
+          ],
+          "subject": {
+            "id": "5454e017-c3ce-41c2-87b5-1885d886cf7f",
+            "notificationRequired": false,
+            "personDetails": {
+              "address": {
+                "address1": "Rou6Vlzkqc",
+                "address2": "JwFe0zEBK9",
+                "address3": "y0iCfcoUmC",
+                "address4": "sm05nE5ASN",
+                "address5": "NnaIerLCqz",
+                "postcode": "SW13 0AA"
+              },
+              "firstName": "CSAzVjDOIg",
+              "gender": "FEMALE",
+              "lastName": "9fZtOy4R9H"
+            },
+            "summonsRequired": false
+          },
+          "type": {
+            "appealFlag": false,
+            "applicantAppellantFlag": false,
+            "breachType": "GENERIC_BREACH",
+            "categoryCode": "MMsKoB9Xi8",
+            "code": "bP5Ld8tgvW",
+            "commrOfOathFlag": false,
+            "courtExtractAvlFlag": false,
+            "courtOfAppealFlag": false,
+            "id": "851616b9-7c75-4a5d-b6ac-1b64798e02bc",
+            "jurisdiction": "CROWN",
+            "legislation": "SayEczN5Oq",
+            "linkType": "LINKED",
+            "offenceActiveOrder": "COURT_ORDER",
+            "pleaApplicableFlag": false,
+            "prosecutorThirdPartyFlag": false,
+            "spiOutApplicableFlag": false,
+            "summonsTemplateType": "GENERIC_APPLICATION",
+            "type": "MPqNb2p15H"
+          }
+        }
+      ],
+      "courtCentre": {
+        "id": "COURT_CENTRE_ID",
+        "name": "Preston Crown Court",
+        "roomId": "c59afbdc-afbd-3f0c-a97d-2bd97e475fc5"
+      },
+      "defendantListingNeeds": [DEFENDANT_LISTING_NEEDS],
+      "earliestStartDateTime": "EARLIEST_START_TIME",
+      "estimatedMinutes": ESTIMATED_MINUTES,
+      "id": "HEARING_ID",
+      "jurisdictionType": "CROWN",
+      "prosecutionCases": [PROSECUTION_CASES],
+      "reportingRestrictionReason": "2ogRjVmKe1",
+      "type": {
+        "description": "PTP",
+        "id": "HEARING_TYPE_ID",
+        "welshDescription": "welshPTP"
+      }
+    }
+  ],
+  "shadowListedOffences": [
+  ]
+}

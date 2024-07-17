@@ -8,7 +8,6 @@ import uk.gov.justice.listing.events.StatementOfOffence;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static java.util.Collections.singletonList;

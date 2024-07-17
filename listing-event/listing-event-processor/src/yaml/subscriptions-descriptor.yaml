@@ -254,5 +254,7 @@ subscriptions_descriptor:
 
         - name: public.staginghmi.hearing-updated-from-hmi
           schema_uri: http://justice.gov.uk/staginghmi/courts/public.staginghmi.hearing-updated-from-hmi.json
+        - name: public.progression.case-removed-from-group-cases
+          schema_uri: http://moj.gov.uk/cpp/progression/events/public.progression.case-removed-from-group-cases.json
 
       event_source_name: public.event.source

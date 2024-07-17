@@ -19,7 +19,6 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;

@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.steps;
 
 import static java.util.Collections.singletonList;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
@@ -24,7 +23,6 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.jms.JMSException;

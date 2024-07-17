@@ -10,6 +10,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import uk.gov.justice.listing.events.CaseIdentifier;
+import uk.gov.justice.listing.events.ListedCase;
 import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
 import uk.gov.moj.cpp.listing.persistence.entity.Defendant;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
@@ -19,15 +21,18 @@ import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonWriter;
 
 import java.io.IOException;
 import java.io.StringWriter;
 import java.time.LocalDate;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,12 +48,18 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
+import static java.util.Arrays.asList;
 import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.COURT_APPLICATIONS;
 import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.COURT_CENTRE_ID;
 import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.END_DATE;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.GROUP_ID;
 import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.HEARING_DAYS_FIELD;
 import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.ID;
 import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.COURT_ROOM_ID;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_CIVIL;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_GROUP_MASTER;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_GROUP_MEMBER;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_GROUP_PROCEEDINGS;
 import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_VACATED_TRIAL;
 import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.LISTED_CASES_FIELD;
 import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.START_DATE;
@@ -199,6 +210,86 @@ public class HearingSearchSyncServiceTest {
         assertThat(hearingDays2, is(notNullValue()));
     }
 
+    @Test
+    public void syncWithGroupCases() throws IOException {
+        final UUID groupId = UUID.randomUUID();
+        final UUID masterCaseId = UUID.randomUUID();
+        final List<UUID> removedCaseIds = asList(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        final List<UUID> memberCaseIds = asList(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+
+        when(hearingRepository.findBy(eq(hearingId))).thenReturn(buildHearingWithGroupCases(hearingId, groupId, masterCaseId, removedCaseIds, memberCaseIds));
+        hearingSearchSyncService.sync(hearingId);
+        verify(hearingRepository).save(hearingArgumentCaptor.capture());
+        final Hearing actual = hearingArgumentCaptor.getValue();
+
+        assertThat(actual.getListedCases().size(), is(1 + removedCaseIds.size()));
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).size(), is(1 + removedCaseIds.size()));
+
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(0).get(ID).asText(), is(masterCaseId.toString()));
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(0).get(GROUP_ID).asText(), is(groupId.toString()));
+        for (int i = 1; i < (1 + removedCaseIds.size()); i++) {
+            assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(i).get(IS_CIVIL).booleanValue(), is(true));
+            assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(i).get(GROUP_ID).asText(), is(groupId.toString()));
+            assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(i).get(IS_GROUP_MEMBER).booleanValue(), is(false));
+            assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(i).get(IS_GROUP_MASTER).booleanValue(), is(false));
+        }
+
+        final ListedCases masterCase = actual.getListedCases().stream().filter(lc -> masterCaseId.equals(lc.getCaseId())).findFirst().orElse(null);
+        assertThat(masterCase, notNullValue());
+    }
+
+    @Test
+    public void syncWithGroupCasesWhenCaseRemovedFromGroup() throws IOException {
+        final UUID groupId = UUID.randomUUID();
+        final UUID masterCaseId = UUID.randomUUID();
+        final UUID newGroupMasterCaseId = UUID.randomUUID();
+        final List<UUID> previouslyRemovedCaseIds = asList(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        final List<UUID> previouslyMemberCaseIds = asList(UUID.randomUUID(), UUID.randomUUID(), newGroupMasterCaseId);
+
+        final Hearing hearing = buildHearingWithGroupCases(hearingId, groupId, masterCaseId, previouslyRemovedCaseIds, previouslyMemberCaseIds);
+        final List<ListedCase> listedCasesToUpdate = getListedCasesToUpdate(groupId, masterCaseId, newGroupMasterCaseId);
+
+        hearingSearchSyncService.syncEntity(hearing, listedCasesToUpdate);
+        verify(hearingRepository).save(hearingArgumentCaptor.capture());
+        final Hearing actual = hearingArgumentCaptor.getValue();
+
+        assertThat(actual.getListedCases().size(), is(2 + previouslyRemovedCaseIds.size()));
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).size(), is(2 + previouslyRemovedCaseIds.size()));
+
+        int index = 0;
+        for (; index < previouslyRemovedCaseIds.size(); index++) {
+            assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(IS_CIVIL).booleanValue(), is(true));
+            assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(GROUP_ID).asText(), is(groupId.toString()));
+            assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(IS_GROUP_MEMBER).booleanValue(), is(false));
+            assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(IS_GROUP_MASTER).booleanValue(), is(false));
+        }
+
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(ID).asText(), is(masterCaseId.toString()));
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(GROUP_ID).asText(), is(groupId.toString()));
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(IS_GROUP_MEMBER).booleanValue(), is(false));
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(IS_GROUP_MASTER).booleanValue(), is(false));
+        index++;
+
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(ID).asText(), is(newGroupMasterCaseId.toString()));
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(GROUP_ID).asText(), is(groupId.toString()));
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(IS_GROUP_MEMBER).booleanValue(), is(true));
+        assertThat(actual.getProperties().get(LISTED_CASES_FIELD).get(index).get(IS_GROUP_MASTER).booleanValue(), is(true));
+
+        index = 0;
+        for (; index < previouslyRemovedCaseIds.size(); index++) {
+            final UUID removedCaseId = previouslyRemovedCaseIds.get(index);
+            final ListedCases previouslyRemovedCase = actual.getListedCases().stream().filter(lc -> removedCaseId.equals(lc.getCaseId())).findFirst().orElse(null);
+            assertThat(previouslyRemovedCase, notNullValue());
+        }
+
+        final ListedCases previousGroupMasterCase = actual.getListedCases().stream().filter(lc -> masterCaseId.equals(lc.getCaseId())).findFirst().orElse(null);
+        assertThat(previousGroupMasterCase, notNullValue());
+
+        final ListedCases newGroupMasterCase = actual.getListedCases().stream().filter(lc -> newGroupMasterCaseId.equals(lc.getCaseId())).findFirst().orElse(null);
+        assertThat(newGroupMasterCase, notNullValue());
+    }
+
     private Hearing buildHearing(final UUID hearingId) throws IOException {
         final JsonObject properties = createObjectBuilder()
                 .add(COURT_CENTRE_ID, courtCentreId.toString())
@@ -256,6 +347,85 @@ public class HearingSearchSyncServiceTest {
                 .withId(hearingId)
                 .withProperties(toJsonNode(properties))
                 .build();
+    }
+
+    private Hearing buildHearingWithGroupCases(final UUID hearingId, final UUID groupId, final UUID masterCaseId,
+                                               final List<UUID> removedCaseIds, final List<UUID> memberCaseIds) throws IOException {
+        final JsonObject properties = createObjectBuilder()
+                .add(COURT_CENTRE_ID, courtCentreId.toString())
+                .add(COURT_ROOM_ID, courtRoomId.toString())
+                .add(IS_VACATED_TRIAL, "false")
+                .add(TYPE, createObjectBuilder().add(ID, typeId.toString()))
+                .add(START_DATE, startDate)
+                .add(END_DATE, endDate)
+                .add(TYPE_OF_LIST, createObjectBuilder().add(ID, typeOfListId.toString()))
+                .add(IS_GROUP_PROCEEDINGS, "true")
+                .add(LISTED_CASES_FIELD, getListedCasesWithGroupCases(groupId, masterCaseId, removedCaseIds, memberCaseIds))
+                .add(HEARING_DAYS_FIELD, createArrayBuilder()
+                        .add(createObjectBuilder().add("sequence", "1"))
+                        .add(createObjectBuilder().add("sequence", "2")))
+                .build();
+
+        return Hearing.builder()
+                .withId(hearingId)
+                .withProperties(toJsonNode(properties))
+                .build();
+    }
+
+    private JsonArray getListedCasesWithGroupCases(final UUID groupId, final UUID masterCaseId, final List<UUID> removedCaseIds, final List<UUID> memberCaseIds) {
+        final JsonArrayBuilder builder = createArrayBuilder();
+
+        for (int i = 0; i < (1 + removedCaseIds.size() + memberCaseIds.size()); i++) {
+            UUID currentCaseId = i == 0 ? masterCaseId :
+                    i < (1 + removedCaseIds.size()) ? removedCaseIds.get(i - 1) : memberCaseIds.get(i - 1 - removedCaseIds.size());
+            builder.add(createObjectBuilder()
+                    .add("id", currentCaseId.toString())
+                    .add("isCivil", true)
+                    .add("groupId", groupId.toString())
+                    .add("isGroupMember", masterCaseId.equals(currentCaseId) || memberCaseIds.contains(currentCaseId) ? true : false)
+                    .add("isGroupMaster", masterCaseId.equals(currentCaseId) ? true : false)
+                    .add("caseIdentifier", createObjectBuilder()
+                            .add("authorityId", UUID.randomUUID().toString())
+                            .add("authorityCode", "AUTH_CODE_".concat(Integer.toString(i + 1)))
+                            .add("caseReference", "CASE_REF_".concat(Integer.toString(i + 1)))));
+        }
+
+        return builder.build();
+    }
+
+    private List<ListedCase> getListedCasesToUpdate(final UUID groupId, final UUID removedCaseId,
+                                                    final UUID newGroupMasterCaseId) {
+        final List<ListedCase> listedCasesToUpdate = new ArrayList<>();
+
+        listedCasesToUpdate.add(ListedCase.listedCase()
+                .withId(removedCaseId)
+                .withGroupId(groupId)
+                .withIsCivil(Boolean.TRUE)
+                .withIsGroupMember(Boolean.FALSE)
+                .withIsGroupMaster(Boolean.FALSE)
+                .withCaseIdentifier(CaseIdentifier.caseIdentifier()
+                        .withAuthorityId(UUID.randomUUID())
+                        .withAuthorityCode("AUTH_CODE_REMOVED")
+                        .withCaseReference("CASE_REF_REMOVED")
+                        .build())
+                .build());
+
+        if (Objects.nonNull(newGroupMasterCaseId)) {
+            listedCasesToUpdate.add(ListedCase.listedCase()
+                    .withId(newGroupMasterCaseId)
+                    .withGroupId(groupId)
+                    .withIsCivil(Boolean.TRUE)
+                    .withIsGroupMember(Boolean.TRUE)
+                    .withIsGroupMaster(Boolean.TRUE)
+                    .withCaseIdentifier(CaseIdentifier.caseIdentifier()
+                            .withAuthorityId(UUID.randomUUID())
+                            .withAuthorityCode("AUTH_CODE_NEW_GROUP_MASTER")
+                            .withCaseReference("CASE_REF_NEW_GROUP_MASTER")
+                            .build())
+                    .build());
+        }
+
+        return listedCasesToUpdate;
     }
 
     public JsonNode toJsonNode(JsonObject jsonObject) throws IOException {

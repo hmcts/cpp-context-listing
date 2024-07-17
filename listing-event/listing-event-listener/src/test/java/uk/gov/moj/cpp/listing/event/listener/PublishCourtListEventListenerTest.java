@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.time.ZonedDateTime.now;
-import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

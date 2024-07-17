@@ -1,6 +1,9 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -30,6 +33,7 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.io.IOException;
@@ -42,15 +46,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.hamcrest.CoreMatchers;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(DataProviderRunner.class)
 public class ExtendHearingForHearingListenerTest {
     @Spy
     private OffenceComparator manageOffence;
@@ -82,8 +91,22 @@ public class ExtendHearingForHearingListenerTest {
     @Spy
     private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
+    @DataProvider
+    public static Object[][] listingNumberVariations() {
+        return new Object[][]{
+                {"true", 1},
+                {"false", 0}
+        };
+    }
+
+    @Before
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
+    }
+
     @Test
-    public void shouldAddedCasesForHearing() throws IOException {
+    @UseDataProvider("listingNumberVariations")
+    public void shouldAddedCasesForHearing(final String allocated, final int listingNumber) throws IOException {
 
         final UUID caseId1 = randomUUID();
         final UUID caseId2 = randomUUID();
@@ -112,22 +135,41 @@ public class ExtendHearingForHearingListenerTest {
         final List<uk.gov.justice.listing.events.ListedCase> testCases = createListedCases(caseId1, caseId2, defId1, defId2, offId1, offId2, offId3);
         final String testCasesString = mapper.writeValueAsString(testCases);
         final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+        final JsonNode allocatedValue = objectMapper.readTree(allocated);
 
         given(envelope.payload()).willReturn(addedCasesForHearing);
         given(hearingRepository.findBy(any((UUID.class)))).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
         given(properties.get(LISTED_CASES_FIELD)).willReturn(testCasesProperties);
-
+        given(properties.get("allocated")).willReturn(allocatedValue);
         final ArgumentCaptor<ArrayNode> objectNodeCaptor =
                 ArgumentCaptor.forClass(ArrayNode.class);
 
         extendHearingForHearingListener.hearingAddedCasesForHearing(envelope);
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         verify(hearingRepository).save(any(uk.gov.moj.cpp.listing.persistence.entity.Hearing.class));
+
+        final ArrayNode cases = objectNodeCaptor.getValue();
+
+        if (listingNumber > 0) {
+            assertNull(cases.get(0).get("defendants").get(0).get("offences").get(0).get("listingNumber"));
+            assertNull(cases.get(0).get("defendants").get(0).get("offences").get(1).get("listingNumber"));
+            assertNull(cases.get(1).get("defendants").get(0).get("offences").get(0).get("listingNumber"));
+            assertThat(cases.get(1).get("defendants").get(0).get("offences").get(1).get("id").asText(), equalTo(offId5.toString()));
+            assertThat(cases.get(1).get("defendants").get(1).get("offences").get(0).get("id").asText(), equalTo(offId6.toString()));
+            assertThat(cases.get(2).get("defendants").get(0).get("offences").get(0).get("id").asText(), equalTo(offId4.toString()));
+        } else {
+            assertThat(cases.get(1).get("defendants").get(0).get("offences").get(1).get("id").asText(), equalTo(offId5.toString()));
+            assertThat(cases.get(1).get("defendants").get(1).get("offences").get(0).get("id").asText(), equalTo(offId6.toString()));
+            assertThat(cases.get(2).get("defendants").get(0).get("offences").get(0).get("id").asText(), equalTo(offId4.toString()));
+
+        }
+
     }
 
     @Test
-    public void shouldHandleCasesAddedToHearing() throws IOException {
+    @UseDataProvider("listingNumberVariations")
+    public void shouldHandleCasesAddedToHearing(final String allocated, final int listingNumber) throws IOException {
 
         final UUID caseId1 = randomUUID();
         final UUID caseId2 = randomUUID();
@@ -156,6 +198,7 @@ public class ExtendHearingForHearingListenerTest {
         final List<uk.gov.justice.listing.events.ListedCase> testCases = createListedCases(caseId1, caseId2, defId1, defId2, offId1, offId2, offId3);
         final String testCasesString = mapper.writeValueAsString(testCases);
         final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+        final JsonNode allocatedValue = objectMapper.readTree(allocated);
 
         given(envelope.payload()).willReturn(casesAddedToHearing);
         given(hearingRepository.findBy(any((UUID.class)))).willReturn(hearing);
@@ -164,10 +207,147 @@ public class ExtendHearingForHearingListenerTest {
 
         final ArgumentCaptor<ArrayNode> objectNodeCaptor =
                 ArgumentCaptor.forClass(ArrayNode.class);
-
+        given(properties.get("allocated")).willReturn(allocatedValue);
         extendHearingForHearingListener.handleCasesAddedToHearingEvent(envelope);
         verify(properties).replace(anyObject(), objectNodeCaptor.capture());
         verify(hearingRepository).save(any(uk.gov.moj.cpp.listing.persistence.entity.Hearing.class));
+
+        final ArrayNode cases = objectNodeCaptor.getValue();
+
+        assertNull(cases.get(0).get("defendants").get(0).get("offences").get(0).get("listingNumber"));
+        assertNull(cases.get(0).get("defendants").get(0).get("offences").get(1).get("listingNumber"));
+        assertNull(cases.get(1).get("defendants").get(0).get("offences").get(0).get("listingNumber"));
+        if (listingNumber > 0) {
+            assertThat(cases.get(1).get("defendants").get(0).get("offences").get(1).get("id").asText(), equalTo(offId5.toString()));
+            assertThat(cases.get(1).get("defendants").get(1).get("offences").get(0).get("id").asText(), equalTo(offId6.toString()));
+            assertThat(cases.get(2).get("defendants").get(0).get("offences").get(0).get("id").asText(), equalTo(offId4.toString()));
+        } else {
+
+            assertThat(cases.get(1).get("defendants").get(0).get("offences").get(1).get("id").asText(), equalTo(offId5.toString()));
+            assertThat(cases.get(1).get("defendants").get(1).get("offences").get(0).get("id").asText(), equalTo(offId6.toString()));
+            assertThat(cases.get(2).get("defendants").get(0).get("offences").get(0).get("id").asText(), equalTo(offId4.toString()));
+        }
+
+    }
+
+    @Test
+    @UseDataProvider("listingNumberVariations")
+    public void shouldReplaceOffenceWithLatestListingNumber(final String allocated, final int listingNumber) throws IOException {
+
+        final UUID caseId1 = randomUUID();
+        final UUID defId1 = randomUUID();
+        final UUID offId1 = randomUUID();
+        final UUID offId2 = randomUUID();
+        final UUID offId3 = randomUUID();
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<ListedCase> testCases = createListedCaseWithADefendantAndThreeOffencesToAdd(caseId1, defId1, offId1, 1, offId2, 1, offId3, 1);
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+        final JsonNode allocatedValue = objectMapper.readTree(allocated);
+
+        given(hearingRepository.findBy(any((UUID.class)))).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES_FIELD)).willReturn(testCasesProperties);
+        given(properties.get("allocated")).willReturn(allocatedValue);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        final Envelope<CasesAddedToHearing> envelope = (Envelope<CasesAddedToHearing>) mock(Envelope.class);
+
+        final List<ListedCase> listedCasesToAdd = createListedCaseWithADefendantAndThreeOffencesToAdd(caseId1, defId1, offId1, 1, offId2, 2, offId3, 1);
+
+        final CasesAddedToHearing casesAddedToHearing = CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(randomUUID())
+                .withUnAllocatedListedCases(listedCasesToAdd)
+                .build();
+        given(envelope.payload()).willReturn(casesAddedToHearing);
+
+        extendHearingForHearingListener.handleCasesAddedToHearingEvent(envelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(hearingRepository).save(any(Hearing.class));
+
+        final ArrayNode cases = objectNodeCaptor.getValue();
+        assertThat(cases.get(0).get("defendants").get(0).get("offences").size(), CoreMatchers.is(3));
+
+        final JsonNode defendant = cases.get(0).get("defendants").get(0);
+        if (listingNumber > 0) {
+            assertThat(defendant.get("offences").get(0).get("id").asText(), equalTo(offId1.toString()));
+            assertThat(defendant.get("offences").get(0).get("listingNumber").asInt(), equalTo(1));
+            assertThat(defendant.get("offences").get(1).get("id").asText(), equalTo(offId2.toString()));
+            assertThat(defendant.get("offences").get(1).get("listingNumber").asInt(), equalTo(2));
+            assertThat(defendant.get("offences").get(2).get("id").asText(), equalTo(offId3.toString()));
+            assertThat(defendant.get("offences").get(2).get("listingNumber").asInt(), equalTo(1));
+        }
+
+    }
+
+
+    @Test
+    @UseDataProvider("listingNumberVariations")
+    public void shouldAddNewOffenceToExistingDBOffences(final String allocated, final int listingNumber) throws IOException {
+
+        final UUID caseId1 = randomUUID();
+        final UUID defId1 = randomUUID();
+        final UUID offId1 = randomUUID();
+        final UUID offId2 = randomUUID();
+        final UUID offId3 = randomUUID();
+        final UUID offId4 = randomUUID();
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<ListedCase> testCases = createListedCaseWithADefendantAndThreeOffencesToAdd(caseId1, defId1, offId1, 1, offId2, 1, offId3, 1);
+        final String testCasesString = mapper.writeValueAsString(testCases);
+        final JsonNode testCasesProperties = objectMapper.readTree(testCasesString);
+        final JsonNode allocatedValue = objectMapper.readTree(allocated);
+
+        given(hearingRepository.findBy(any((UUID.class)))).willReturn(hearing);
+        given(hearing.getProperties()).willReturn(properties);
+        given(properties.get(LISTED_CASES_FIELD)).willReturn(testCasesProperties);
+        given(properties.get("allocated")).willReturn(allocatedValue);
+
+        final ArgumentCaptor<ArrayNode> objectNodeCaptor = ArgumentCaptor.forClass(ArrayNode.class);
+
+        final Envelope<CasesAddedToHearing> envelope = (Envelope<CasesAddedToHearing>) mock(Envelope.class);
+
+        final List<ListedCase> listedCasesToAdd = createListedCaseWithADefendantAndFourOffencesToAdd(caseId1, defId1, offId1, 1, offId2, 2, offId3, 1, offId4, 1);
+
+        final CasesAddedToHearing casesAddedToHearing = CasesAddedToHearing.casesAddedToHearing()
+                .withHearingId(randomUUID())
+                .withUnAllocatedListedCases(listedCasesToAdd)
+                .build();
+        given(envelope.payload()).willReturn(casesAddedToHearing);
+
+        extendHearingForHearingListener.handleCasesAddedToHearingEvent(envelope);
+
+        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(hearingRepository).save(any(Hearing.class));
+
+        final ArrayNode cases = objectNodeCaptor.getValue();
+        assertThat(cases.get(0).get("defendants").get(0).get("offences").size(), CoreMatchers.is(4));
+
+        final JsonNode defendant = cases.get(0).get("defendants").get(0);
+        if (listingNumber > 0) {
+
+            assertThat(defendant.get("offences").get(0).get("id").asText(), equalTo(offId1.toString()));
+            assertThat(defendant.get("offences").get(0).get("listingNumber").asInt(), equalTo(1));
+            assertThat(defendant.get("offences").get(1).get("id").asText(), equalTo(offId2.toString()));
+            assertThat(defendant.get("offences").get(1).get("listingNumber").asInt(), equalTo(2));
+            assertThat(defendant.get("offences").get(2).get("id").asText(), equalTo(offId3.toString()));
+            assertThat(defendant.get("offences").get(2).get("listingNumber").asInt(), equalTo(1));
+            assertThat(defendant.get("offences").get(3).get("id").asText(), equalTo(offId4.toString()));
+            assertThat(defendant.get("offences").get(3).get("listingNumber").asInt(), equalTo(1));
+        } else {
+
+            assertThat(defendant.get("offences").get(0).get("id").asText(), equalTo(offId1.toString()));
+            assertThat(defendant.get("offences").get(0).get("listingNumber").asInt(), equalTo(1));
+            assertThat(defendant.get("offences").get(1).get("id").asText(), equalTo(offId2.toString()));
+            assertThat(defendant.get("offences").get(1).get("listingNumber").asInt(), equalTo(2));
+            assertThat(defendant.get("offences").get(2).get("id").asText(), equalTo(offId3.toString()));
+            assertThat(defendant.get("offences").get(2).get("listingNumber").asInt(), equalTo(1));
+            assertThat(defendant.get("offences").get(3).get("id").asText(), equalTo(offId4.toString()));
+            assertThat(defendant.get("offences").get(3).get("listingNumber").asInt(), equalTo(1));
+        }
     }
 
     @Test
@@ -246,9 +426,9 @@ public class ExtendHearingForHearingListenerTest {
 
 
     private List<ListedCase> createListedCaseWithADefendantAndThreeOffencesToAdd(final UUID caseId, final UUID defendantId,
-                                                                                   final UUID offId1, final int listingNumber1,
-                                                                                   final UUID offId2, final int listingNumber2,
-                                                                                   final UUID offId3, final int listingNumber3) {
+                                                                                 final UUID offId1, final int listingNumber1,
+                                                                                 final UUID offId2, final int listingNumber2,
+                                                                                 final UUID offId3, final int listingNumber3) {
         final List<ListedCase> listedCasesToAdd = new ArrayList<>();
         listedCasesToAdd.add(ListedCase.listedCase().withId(caseId)
                 .withDefendants(Arrays.asList(Defendant.defendant().withId(defendantId)
@@ -264,10 +444,10 @@ public class ExtendHearingForHearingListenerTest {
     }
 
     private List<ListedCase> createListedCaseWithADefendantAndFourOffencesToAdd(final UUID caseId, final UUID defendantId,
-                                                                                  final UUID offId1, final int listingNumber1,
-                                                                                  final UUID offId2, final int listingNumber2,
-                                                                                  final UUID offId3, final int listingNumber3,
-                                                                                  final UUID offId4, final int listingNumber4) {
+                                                                                final UUID offId1, final int listingNumber1,
+                                                                                final UUID offId2, final int listingNumber2,
+                                                                                final UUID offId3, final int listingNumber3,
+                                                                                final UUID offId4, final int listingNumber4) {
         final List<ListedCase> listedCasesToAdd = new ArrayList<>();
         listedCasesToAdd.add(ListedCase.listedCase().withId(caseId)
                 .withDefendants(Arrays.asList(Defendant.defendant().withId(defendantId)

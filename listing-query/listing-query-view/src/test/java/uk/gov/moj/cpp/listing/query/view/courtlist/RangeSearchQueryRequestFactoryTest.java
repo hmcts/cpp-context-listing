@@ -35,8 +35,6 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.slf4j.Logger;
 
-import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
-
 @RunWith(Parameterized.class)
 public class RangeSearchQueryRequestFactoryTest {
 

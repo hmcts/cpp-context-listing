@@ -2,12 +2,10 @@ package uk.gov.moj.cpp.listing.steps.data;
 
 import uk.gov.justice.core.courts.CourtApplicationPartyListingNeeds;
 import uk.gov.justice.core.courts.RotaSlot;
-import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public class HearingData {

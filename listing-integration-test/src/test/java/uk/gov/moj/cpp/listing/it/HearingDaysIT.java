@@ -49,7 +49,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jayway.jsonpath.Filter;
 import org.hamcrest.Matcher;
-import org.junit.Before;
 import org.junit.Test;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 

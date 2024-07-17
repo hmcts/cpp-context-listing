@@ -5,7 +5,6 @@ import static javax.json.Json.createObjectBuilder;
 import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 
-import java.util.Objects;
 import uk.gov.justice.listing.events.OrganisationUnit;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -14,7 +13,9 @@ import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.requester.Requester;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -22,8 +23,8 @@ import javax.json.JsonObject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 
+@SuppressWarnings({"squid:CallToDeprecatedMethod"})
 public class ReferenceDataService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReferenceDataService.class);
     private static final String REFERENCEDATA_QUERY_ORGANISATION_UNIT = "referencedata.query.organisation-unit";
@@ -76,7 +77,7 @@ public class ReferenceDataService {
     }
 
     public String getOucodeFromEnvelope(final UUID courtCentreId, final JsonEnvelope event){
-        JsonEnvelope jsonEnvelope = getCourtCentreById(courtCentreId, event);
+        final JsonEnvelope jsonEnvelope = getCourtCentreById(courtCentreId, event);
         final JsonObject organisationUnitJsonObject = jsonEnvelope.payloadAsJsonObject();
         return organisationUnitJsonObject.getString("oucode");
     }

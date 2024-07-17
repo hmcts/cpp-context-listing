@@ -11,7 +11,6 @@ import static uk.gov.moj.cpp.listing.domain.JurisdictionType.CROWN;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
 import static uk.gov.moj.cpp.listing.domain.Type.type;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import uk.gov.justice.services.common.util.UtcClock;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.Type;

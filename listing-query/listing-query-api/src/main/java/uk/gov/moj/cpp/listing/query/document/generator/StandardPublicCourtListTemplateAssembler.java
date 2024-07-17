@@ -156,6 +156,9 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String DEFENCE_COUNSELS = "defenceCounsels";
     private static final String REPORTING_RESTRICTIONS = "reportingRestrictions";
     private static final String LABEL = "label";
+    private static final String IS_GROUP_MASTER = "isGroupMaster";
+    private static final String IS_GROUP_PROCEEDINGS = "isGroupProceedings";
+    private static final String NUMBER_OF_GROUP_CASES = "numberOfGroupCases";
 
     @Inject
     private CourtCentreFactory courtCentreFactory;
@@ -389,8 +392,9 @@ public class StandardPublicCourtListTemplateAssembler {
         final boolean restrictedByCase = listedCase.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE);
         final boolean caseRestricted = restrictedByCase && isRestricted(restrictedListRequired, courtListType, listedCase);
         final String adjournedHearingDate = hearingJson.getString(ADJOURNED_HEARING_DATE, BLANK_STRING);
+        final boolean isGroupMaster = listedCase.getBoolean(IS_GROUP_MASTER, false);
         return Hearing.hearing()
-                .withCaseNumber(caseRestricted ? EMPTY : listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE))
+                .withCaseNumber(caseRestricted || isGroupMaster ? EMPTY : listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE))
                 .withCaseId(caseRestricted ? null : fromString(listedCase.getString(ID)))
                 .withHearingType(caseRestricted ? HEARING_STRING : hearingType)
                 .withWelshHearingType(caseRestricted ? HEARING_STRING : (StringUtils.isEmpty(hearingWelshType) ? hearingType : hearingWelshType))
@@ -456,7 +460,7 @@ public class StandardPublicCourtListTemplateAssembler {
                     final String dateOfBirth = defendant.getString(DATE_OF_BIRTH, null);
                     final boolean defendantRestricted = isRestricted(restrictedListRequired, courtListType, defendant);
                     return createDefendant(hearingJson, defendant, dateOfBirth, defendantRestricted,
-                            defendantRestricted ? getNameSuffixForRestrictedCase(restrictedDefendantCount, namePositionOnRestricted) : EMPTY, restrictedListRequired, courtListType, listedCase.getString(ID));
+                            defendantRestricted ? getNameSuffixForRestrictedCase(restrictedDefendantCount, namePositionOnRestricted) : EMPTY, restrictedListRequired, courtListType, listedCase);
                 })
                 .filter(defendant -> restrictedListRequired && (STANDARD.equals(courtListType) || BENCH.equals(courtListType)) ? isNotEmpty(defendant.getOffences()) : TRUE)
                 .collect(toList());
@@ -496,32 +500,17 @@ public class StandardPublicCourtListTemplateAssembler {
     }
 
     private Defendant createDefendant(final JsonObject hearingJson, final JsonObject defendant, final String dateOfBirth, final boolean defendantRestricted,
-                                      final String defendantSuffix, final boolean restrictedListRequired, final CourtListType courtListType, final String caseId) {
+                                      final String defendantSuffix, final boolean restrictedListRequired, final CourtListType courtListType, final JsonObject listedCase) {
+        final String caseId = listedCase.getString(ID);
+        final boolean isGroupMaster = listedCase.getBoolean(IS_GROUP_MASTER, false);
         final Defendant.Builder builder = Defendant.defendant();
         builder.withId(fromString(defendant.getString(ID)));
         final Set<ReportingRestriction> reportingRestrictions = new HashSet<>();
         final String legalEntityDefendant = defendant.getString(ORGANISATION_NAME, BLANK_STRING);
         if (defendantRestricted) {
-            if (!StringUtils.isBlank(legalEntityDefendant)) {
-                builder.withOrganisationName((DEFENDANT + SPACE + defendantSuffix).trim());
-            } else {
-                builder.withFirstName(EMPTY)
-                        .withSurname((DEFENDANT + SPACE + defendantSuffix).trim());
-                builder.withDateOfBirth(EMPTY);
-                builder.withAge(EMPTY);
-            }
+            setDefendantDetails(defendantSuffix, builder, legalEntityDefendant);
         } else {
-            builder.withFirstName(defendant.getString(FIRST_NAME, BLANK_STRING))
-                    .withSurname(defendant.getString(LAST_NAME, BLANK_STRING))
-                    .withOrganisationName(defendant.getString(ORGANISATION_NAME, BLANK_STRING));
-            if (nonNull(dateOfBirth)) {
-                builder.withDateOfBirth(parse(dateOfBirth).format(DOB_FORMATTER));
-                builder.withAge(valueOf(Period.between(parse(dateOfBirth), LocalDate.now()).getYears()));
-            }
-            builder.withNationality(defendant.getString(NATIONALITY_DESCRIPTION, BLANK_STRING));
-            if (nonNull(defendant.getJsonObject(ADDRESS))) {
-                builder.withAddress(buildAddress(defendant.getJsonObject(ADDRESS)));
-            }
+            setDefendantDetails(hearingJson, defendant, dateOfBirth, isGroupMaster, builder);
         }
         final List<Offence> offenceList = new ArrayList<>();
         defendant.getJsonArray(OFFENCES).getValuesAs(JsonObject.class)
@@ -549,6 +538,37 @@ public class StandardPublicCourtListTemplateAssembler {
         }
 
         return builder.build();
+    }
+
+    private void setDefendantDetails(final JsonObject hearingJson, final JsonObject defendant, final String dateOfBirth, final boolean isGroupMaster, final Defendant.Builder builder) {
+        final boolean isGroupProceedings = hearingJson.getBoolean(IS_GROUP_PROCEEDINGS, false);
+        if (isGroupProceedings && isGroupMaster) {
+            final int numberOfGroupCases = hearingJson.getInt(NUMBER_OF_GROUP_CASES, 0);
+            builder.withSurname(numberOfGroupCases + " Defendants");
+        } else {
+            builder.withFirstName(defendant.getString(FIRST_NAME, BLANK_STRING))
+                    .withSurname(defendant.getString(LAST_NAME, BLANK_STRING))
+                    .withOrganisationName(defendant.getString(ORGANISATION_NAME, BLANK_STRING));
+        }
+        if (nonNull(dateOfBirth) && (!isGroupProceedings && !isGroupMaster)) {
+            builder.withDateOfBirth(parse(dateOfBirth).format(DOB_FORMATTER));
+            builder.withAge(valueOf(Period.between(parse(dateOfBirth), LocalDate.now()).getYears()));
+        }
+        builder.withNationality(defendant.getString(NATIONALITY_DESCRIPTION, BLANK_STRING));
+        if (nonNull(defendant.getJsonObject(ADDRESS)) && (!isGroupProceedings && !isGroupMaster)) {
+            builder.withAddress(buildAddress(defendant.getJsonObject(ADDRESS)));
+        }
+    }
+
+    private void setDefendantDetails(final String defendantSuffix, final Defendant.Builder builder, final String legalEntityDefendant) {
+        if (!StringUtils.isBlank(legalEntityDefendant)) {
+            builder.withOrganisationName((DEFENDANT + SPACE + defendantSuffix).trim());
+        } else {
+            builder.withFirstName(EMPTY)
+                    .withSurname((DEFENDANT + SPACE + defendantSuffix).trim());
+            builder.withDateOfBirth(EMPTY);
+            builder.withAge(EMPTY);
+        }
     }
 
     private void addDefenceAndProsecutionCounsels(final JsonObject hearingJson, final JsonObject defendant, final String caseId, final Defendant.Builder builder) {

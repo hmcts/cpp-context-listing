@@ -239,4 +239,7 @@ subscriptions_descriptor:
         - name: listing.events.updated-hmi-fields-for-hearing
           schema_uri: http://justice.gov.uk/listing/events/listing.events.updated-hmi-fields-for-hearing.json
 
+        - name: listing.events.case-removed-from-group-cases
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.case-removed-from-group-cases.json
+
       event_source_name: listing

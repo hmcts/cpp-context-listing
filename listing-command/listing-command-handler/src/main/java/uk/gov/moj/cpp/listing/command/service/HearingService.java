@@ -19,6 +19,7 @@ import static uk.gov.justice.services.core.annotation.Component.COMMAND_API;
 import static uk.gov.justice.services.core.annotation.Component.QUERY_API;
 import static uk.gov.justice.services.messaging.JsonEnvelope.metadataFrom;
 
+@SuppressWarnings({"squid:CallToDeprecatedMethod"})
 public class HearingService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HearingService.class);
@@ -30,7 +31,7 @@ public class HearingService {
     @Inject
     @ServiceComponent(QUERY_API)
     private HearingQueryView hearingQueryView;
-
+    @SuppressWarnings({"squid:CallToDeprecatedMethod"})
     public JsonEnvelope getHearingById(final UUID hearingId, final JsonEnvelope event) {
         final JsonObject payload = createObjectBuilder().add("id", hearingId.toString()).build();
         LOGGER.info("listing.search.hearing request with payload {}", payload);

@@ -8,8 +8,6 @@ import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilderW
 import static uk.gov.moj.cpp.listing.domain.CourtListType.ONLINE_PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 
-import java.util.Optional;
-import javax.json.Json;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.justice.services.core.annotation.Handles;
@@ -27,10 +25,12 @@ import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
@@ -55,6 +55,8 @@ public class HearingQueryApi {
     private static final String DOB = "dateOfBirth";
     private static final String ORGANISATION_NAME = "organisationName";
     private static final String HEARING_DATE = "hearingDate";
+    private static final String IS_CIVIL = "isCivil";
+    private static final String IS_GROUP_MEMBER = "isGroupMember";
 
 
     @Inject
@@ -189,10 +191,21 @@ public class HearingQueryApi {
         final String lastName = payload.getString(LAST_NAME);
         final String dateOfBirth = payload.getString(DOB);
         final String hearingDate = payload.getString(HEARING_DATE);
-        final JsonObject queryParams = createObjectBuilder()
+        final boolean isCivilParameterExists = payload.containsKey(IS_CIVIL);
+        final boolean isGroupMemberParameterExists = payload.containsKey(IS_GROUP_MEMBER);
+
+        final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
                 .add(FIRST_NAME, firstName)
                 .add(LAST_NAME, lastName)
-                .add(DOB, dateOfBirth).build();
+                .add(DOB, dateOfBirth);
+
+        if (isCivilParameterExists) {
+            jsonObjectBuilder.add(IS_CIVIL, payload.getBoolean(IS_CIVIL));
+        }
+        if (isGroupMemberParameterExists) {
+            jsonObjectBuilder.add(IS_GROUP_MEMBER, payload.getBoolean(IS_GROUP_MEMBER));
+        }
+        final JsonObject queryParams = jsonObjectBuilder.build();
 
         final Envelope<JsonObject> response = requester.request(JsonEnvelope.envelopeFrom(metadataFrom(query.metadata())
                 .withName("defence.query.get-case-by-person-defendant"), queryParams), JsonObject.class);
@@ -207,9 +220,18 @@ public class HearingQueryApi {
         final JsonObject payload = query.payloadAsJsonObject();
         final String firstName = payload.getString(ORGANISATION_NAME);
         final String hearingDate = payload.getString(HEARING_DATE);
+        final boolean isGroupMemberParameterExists = payload.containsKey(IS_GROUP_MEMBER);
+        final boolean isCivilParameterExists = payload.containsKey(IS_CIVIL);
+        final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
+                .add(ORGANISATION_NAME, firstName);
 
-        final JsonObject queryParams = createObjectBuilder()
-                .add(ORGANISATION_NAME, firstName).build();
+        if (isCivilParameterExists) {
+            jsonObjectBuilder.add(IS_CIVIL,payload.getBoolean(IS_CIVIL));
+        }
+        if (isGroupMemberParameterExists) {
+            jsonObjectBuilder.add(IS_GROUP_MEMBER, payload.getBoolean(IS_GROUP_MEMBER));
+        }
+        final JsonObject queryParams = jsonObjectBuilder.build();
 
         final Envelope<JsonObject> response = requester.request(JsonEnvelope.envelopeFrom(metadataFrom(query.metadata())
                 .withName("defence.query.get-case-by-organisation-defendant"), queryParams), JsonObject.class);

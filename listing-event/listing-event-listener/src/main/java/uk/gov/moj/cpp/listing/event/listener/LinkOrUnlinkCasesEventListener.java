@@ -95,6 +95,10 @@ public class LinkOrUnlinkCasesEventListener {
     private ListedCase rebuildListedCase(final ListedCase listedCase, final List<LinkedCases> linkedCases){
         return ListedCase.listedCase()
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
+                .withIsCivil(listedCase.getIsCivil())
+                .withGroupId(listedCase.getGroupId())
+                .withIsGroupMember(listedCase.getIsGroupMember())
+                .withIsGroupMaster(listedCase.getIsGroupMaster())
                 .withDefendants(listedCase.getDefendants())
                 .withId(listedCase.getId())
                 .withIsEjected(listedCase.getIsEjected())

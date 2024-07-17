@@ -5,7 +5,6 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
 import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
@@ -135,7 +134,7 @@ public class AlphabeticalCourtListService {
         if (hearing.containsKey(LISTED_CASES) && !hearing.getJsonArray(LISTED_CASES).isEmpty()) {
             final List<AlphabeticalListDefendant> defendantsFromListedCases = hearing.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class).stream()
                     .filter(listedCase -> !listedCase.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE))
-                    .flatMap(listedCase -> getAlphabeticalListDefendantFromListedCase(listedCase, courtRoomDetail, hearingStartTime.orElse(EMPTY), welsh))
+                    .flatMap(listedCase -> getAlphabeticalListDefendantFromListedCase(hearing, listedCase, courtRoomDetail, hearingStartTime.orElse(EMPTY), welsh))
                     .collect(toList());
             defendantsFromHearing.addAll(defendantsFromListedCases);
         }
@@ -166,12 +165,16 @@ public class AlphabeticalCourtListService {
         return Stream.empty();
     }
 
-    private Stream<AlphabeticalListDefendant> getAlphabeticalListDefendantFromListedCase(final JsonObject listedCase, final CourtRoomDetails courtRoomDetails,
+    private Stream<AlphabeticalListDefendant> getAlphabeticalListDefendantFromListedCase(final JsonObject hearing, final JsonObject listedCase, final CourtRoomDetails courtRoomDetails,
                                                                                          final String hearingStartTime, final boolean welsh) {
+        final boolean isGroupProceedings = hearing.getBoolean("isGroupProceedings", false);
+        final int numberOfGroupCases = hearing.getInt("numberOfGroupCases", 0);
+        final boolean isGroupMaster = listedCase.getBoolean("isGroupMaster", false);
+
         final String caseReference = listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE);
         return listedCase.getJsonArray(DEFENDANTS).getValuesAs(JsonObject.class).stream()
                 .filter(defendant -> !defendant.getBoolean(RESTRICT_FROM_COURT_LIST, FALSE))
-                .map(defendant -> getAlphabeticalListDefendant(defendant, hearingStartTime, caseReference, courtRoomDetails,
+                .map(defendant -> getAlphabeticalListDefendant(isGroupProceedings, numberOfGroupCases, isGroupMaster, defendant, hearingStartTime, caseReference, courtRoomDetails,
                         welsh))
                 .collect(toList()).stream();
     }
@@ -215,19 +218,31 @@ public class AlphabeticalCourtListService {
         return builder.build();
     }
 
-    private AlphabeticalListDefendant getAlphabeticalListDefendant(final JsonObject defendant, final String startTime, final String caseReference,
+    private AlphabeticalListDefendant getAlphabeticalListDefendant(final boolean isGroupProceedings, final int numberOfGroupCases, final boolean isGroupMaster, final JsonObject defendant, final String startTime, final String caseReference,
                                                                    final CourtRoomDetails courtRoomDetails, final boolean isWelsh) {
+        final String fullName = getDefendantFullName(isGroupProceedings, numberOfGroupCases, isGroupMaster, defendant);
         final AlphabeticalListDefendantBuilder alphabeticalListDefendantBuilder = anAlphabeticalListDefendant();
-        alphabeticalListDefendantBuilder.withDefendantFullName(
-                isNotBlank(defendant.getString(ORGANISATION_NAME, EMPTY)) ? upperCase(defendant.getString(ORGANISATION_NAME)) :
-                        upperCase(defendant.getString(LAST_NAME)) + "," + SPACE + defendant.getString(FIRST_NAME))
+        alphabeticalListDefendantBuilder.withDefendantFullName(fullName)
                 .withCourtRoomName(courtRoomDetails.getCourtRoomName())
                 .withHearingStartTime(startTime)
-                .withCaseReference(caseReference);
+                .withCaseReference((isGroupProceedings && isGroupMaster) ? EMPTY : caseReference);
         if (isWelsh) {
             alphabeticalListDefendantBuilder.withCourtRoomNameWelsh(courtRoomDetails.getWelshCourtRoomName());
         }
         return alphabeticalListDefendantBuilder.build();
+    }
+
+    private String getDefendantFullName(final boolean isGroupProceedings, final int numberOfGroupCases, final boolean isGroupMaster, final JsonObject defendant) {
+        if (isGroupProceedings && isGroupMaster) {
+            return numberOfGroupCases + " DEFENDANTS";
+        }
+        else {
+            if (isNotBlank(defendant.getString(ORGANISATION_NAME, EMPTY))) {
+                return upperCase(defendant.getString(ORGANISATION_NAME));
+            } else {
+                return upperCase(defendant.getString(LAST_NAME)) + "," + SPACE + defendant.getString(FIRST_NAME);
+            }
+        }
     }
 
     private AlphabeticalCourtList getAlphabeticalCourtList(final List<AlphabeticalListDefendant> defendants, final LocalDate hearingDate,

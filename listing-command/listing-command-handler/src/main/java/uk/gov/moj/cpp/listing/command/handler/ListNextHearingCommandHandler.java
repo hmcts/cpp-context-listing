@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.command.handler;
 
 
 import static java.util.Objects.nonNull;
+import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
@@ -210,10 +211,12 @@ public class ListNextHearingCommandHandler {
                     listNextHearing.getHearing().getBookingType(),
                     listNextHearing.getHearing().getPriority(),
                     listNextHearing.getHearing().getSpecialRequirements(),
-                    domainHearing.getIsPossibleDisqualification()
+                    domainHearing.getIsPossibleDisqualification(),
+                    domainHearing.getGroupProceedings(),
+                    domainHearing.getNumberOfGroupCases()
             );
 
-            final Stream<Object> allocationEvents = hearing.applyAllocationRules(ofNullable(finalBookingReference), false, false);
+            final Stream<Object> allocationEvents = hearing.applyAllocationRules(ofNullable(finalBookingReference), false, false, Collections.emptyList(), empty(), commandHearing.getIsGroupProceedings());
 
             return Stream.of(listingEvents, allocationEvents).flatMap(i -> i);
         });

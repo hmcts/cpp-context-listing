@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import static java.util.Optional.empty;
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;

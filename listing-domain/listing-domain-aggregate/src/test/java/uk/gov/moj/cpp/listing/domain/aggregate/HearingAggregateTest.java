@@ -136,7 +136,8 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, of(Boolean.FALSE));
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked,
+                "", "'", null, of(Boolean.FALSE),of(false),empty());
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -169,7 +170,7 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, of(Boolean.FALSE));
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, of(Boolean.FALSE),of(false), empty());
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -213,7 +214,8 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, of(Boolean.TRUE));
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked,
+                "", "'", null, of(Boolean.TRUE),of(false), empty());
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -232,7 +234,7 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, Optional.empty());
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "'", null, Optional.empty(),of(false), empty());
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -250,7 +252,7 @@ public class HearingAggregateTest {
 
         final Stream<Object> listedHearing = hearing.list(hearingId, type, estimateMinutes, estimatedDuration, listedCases, courtCentreId, judiciary, courtRoomId, listingDirections, jurisdictionType, prosecutorDatesToAvoid,
                 reportingRestrictionReason, startDate, endDate, courtCentreDefaults, courtApplications, courtApplicationPartyListingNeeds, hearingTypeDuration,
-                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "", null, of(Boolean.FALSE));
+                adjournedFromDate, weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, nonDefaultDays, isSlotsBooked, "", "", null, of(Boolean.FALSE),of(false), empty());
 
         final HearingListed hearingListed = (HearingListed) listedHearing.findFirst().get();
         final uk.gov.justice.listing.events.Hearing hearing = hearingListed.getHearing();
@@ -856,7 +858,7 @@ public class HearingAggregateTest {
 
         hearing.apply(offencesRemovedFromHearing);
 
-        final Stream<Object> allocationStream = hearing.applyAllocationRules(Optional.of(randomUUID()), true, true);
+        final Stream<Object> allocationStream = hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(), empty(), null);
 
         final HearingAllocatedForListingV2 hearingAllocatedForListing = (HearingAllocatedForListingV2) allocationStream.collect(Collectors.toList()).get(0);
 
@@ -1582,7 +1584,7 @@ public class HearingAggregateTest {
                 .build());
 
 
-        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true), hearing.sendToHmi()).flatMap(i -> i);
+        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(),empty(), null), hearing.sendToHmi()).flatMap(i -> i);
         final List<Object> events = streams.collect(Collectors.toList());
         assertThat(events.size(), is(2));
 
@@ -1736,8 +1738,7 @@ public class HearingAggregateTest {
                 .withOffenceIds(asList(case2Defendant1OffenceId))
                 .build());
 
-
-        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true), hearing.sendToHmi()).flatMap(i -> i);
+        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(),empty(), null), hearing.sendToHmi()).flatMap(i -> i);
         final List<Object> events = streams.collect(Collectors.toList());
         assertThat(events.size(), is(2));
 
@@ -1806,7 +1807,7 @@ public class HearingAggregateTest {
                 .withOffenceId(case1Defendant1Offence1Id)
                 .build());
 
-        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true), hearing.sendToHmi()).flatMap(i -> i);
+        final Stream<Object> streams = Stream.of(hearing.applyAllocationRules(of(randomUUID()), true, true, emptyList(),empty(), null), hearing.sendToHmi()).flatMap(i -> i);
         final List<Object> events = streams.collect(Collectors.toList());
         assertThat(events.size(), is(2));
 

@@ -18,7 +18,6 @@ import uk.gov.moj.cpp.listing.domain.Address;
 import uk.gov.moj.cpp.listing.domain.CommittingCourt;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtHouseType;
-import uk.gov.moj.cpp.listing.domain.CustodyTimeLimit;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.LaaReference;
 import uk.gov.moj.cpp.listing.domain.Offence;

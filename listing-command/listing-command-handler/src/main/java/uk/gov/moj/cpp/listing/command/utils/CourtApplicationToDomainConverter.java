@@ -6,7 +6,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
@@ -28,6 +27,7 @@ import uk.gov.moj.cpp.listing.domain.Address;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType;
+import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
 import org.apache.commons.lang3.StringUtils;
 

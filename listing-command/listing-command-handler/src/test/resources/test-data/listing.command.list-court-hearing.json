@@ -3,6 +3,7 @@
     "hearings": [
       {
         "id": "HEARING_ID",
+        "numberOfGroupCases": 2,
         "type": {
           "id": "6e1bef55-7e13-4615-b3ba-8663f4438e16",
           "description": "Trial"

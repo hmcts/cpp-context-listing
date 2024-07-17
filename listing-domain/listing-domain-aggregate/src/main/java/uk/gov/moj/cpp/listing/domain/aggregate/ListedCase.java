@@ -20,12 +20,22 @@ public class ListedCase implements Serializable {
 
     private final UUID id;
 
-    public ListedCase(final CaseIdentifier caseIdentifier, final Prosecutor prosecutor, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id) {
+    private final Boolean isCivil;
+    private final UUID groupId;
+    private final Boolean isGroupMember;
+    private final Boolean isGroupMaster;
+
+    public ListedCase(final CaseIdentifier caseIdentifier, final Prosecutor prosecutor, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id,
+                        final Boolean isCivil, final UUID groupId, final Boolean isGroupMember, final Boolean isGroupMaster) {
         this.caseIdentifier = caseIdentifier;
         this.prosecutor = prosecutor;
         this.defendants = defendants;
         this.caseMarkers = caseMarkers;
         this.id = id;
+        this.isCivil = isCivil;
+        this.groupId = groupId;
+        this.isGroupMember = isGroupMember;
+        this.isGroupMaster = isGroupMaster;
     }
 
     public CaseIdentifier getCaseIdentifier() {
@@ -44,6 +54,22 @@ public class ListedCase implements Serializable {
 
     public UUID getId() {
         return id;
+    }
+
+    public Boolean getIsCivil() {
+        return isCivil;
+    }
+
+    public UUID getGroupId() {
+        return groupId;
+    }
+
+    public Boolean getIsGroupMember() {
+        return isGroupMember;
+    }
+
+    public Boolean getIsGroupMaster() {
+        return isGroupMaster;
     }
 
 
@@ -69,7 +95,7 @@ public class ListedCase implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(caseIdentifier, defendants, id);
+        return Objects.hash(caseIdentifier, defendants, id, isCivil, groupId, isGroupMember, isGroupMaster);
     }
 
     @Override
@@ -79,6 +105,10 @@ public class ListedCase implements Serializable {
                 "prosecutor='" + prosecutor + "'," +
                 "defendants='" + defendants + "'," +
                 "id='" + id + "'" +
+                "isCivil='" + isCivil + "'" +
+                "groupId='" + groupId + "'" +
+                "isGroupMember='" + isGroupMember + "'" +
+                "isGroupMaster='" + isGroupMaster + "'" +
                 "}";
     }
 
@@ -93,6 +123,10 @@ public class ListedCase implements Serializable {
         private UUID id;
         private List<CaseMarker> caseMarkers;
 
+        private Boolean isCivil;
+        private UUID groupId;
+        private Boolean isGroupMember;
+        private Boolean isGroupMaster;
 
         public Builder withCaseIdentifier(final CaseIdentifier caseIdentifier) {
             this.caseIdentifier = caseIdentifier;
@@ -120,17 +154,42 @@ public class ListedCase implements Serializable {
             return this;
         }
 
+        public Builder withIsCivil(final Boolean isCivil) {
+            this.isCivil = isCivil;
+            return this;
+        }
+
+        public Builder withGroupId(final UUID groupId) {
+            this.groupId = groupId;
+            return this;
+        }
+
+        public Builder withIsGroupMember(final Boolean isGroupMember) {
+            this.isGroupMember = isGroupMember;
+            return this;
+        }
+
+        public Builder withIsGroupMaster(final Boolean isGroupMaster) {
+            this.isGroupMaster = isGroupMaster;
+            return this;
+        }
+
         public Builder withValuesFrom(final ListedCase listedCase) {
             this.caseIdentifier = listedCase.getCaseIdentifier();
             this.prosecutor = listedCase.getProsecutor();
             this.defendants = listedCase.getDefendants();
             this.caseMarkers = listedCase.getCaseMarkers();
             this.id = listedCase.getId();
+            this.isCivil = listedCase.getIsCivil();
+            this.groupId = listedCase.getGroupId();
+            this.isGroupMember = listedCase.getIsGroupMember();
+            this.isGroupMaster = listedCase.getIsGroupMaster();
             return this;
         }
 
         public ListedCase build() {
-            return new ListedCase(caseIdentifier, prosecutor, defendants, caseMarkers, id);
+            return new ListedCase(caseIdentifier, prosecutor, defendants, caseMarkers, id,
+                    isCivil, groupId, isGroupMember, isGroupMaster);
         }
     }
 }

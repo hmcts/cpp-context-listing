@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.domain.aggregate;
 
 
 import static java.util.Collections.emptyList;
-import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;

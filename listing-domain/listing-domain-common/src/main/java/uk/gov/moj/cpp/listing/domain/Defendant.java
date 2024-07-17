@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.domain;
 
 import static java.util.Collections.emptyList;
 import static java.util.Optional.empty;
-import static java.util.Optional.of;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -10,7 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067", "squid:S2065", "pmd:BeanMembersShouldSerialize"})
+@SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067", "squid:S2065", "PMD.BeanMembersShouldSerialize"})
 public class Defendant {
     private Optional<BailStatus> bailStatus;
 

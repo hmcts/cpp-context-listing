@@ -139,6 +139,7 @@ import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
+import uk.gov.moj.cpp.listing.domain.DefendantOffenceIds;
 import uk.gov.moj.cpp.listing.domain.HearingLanguage;
 import uk.gov.moj.cpp.listing.domain.HmiJudiciary;
 import uk.gov.moj.cpp.listing.domain.HmiSession;
@@ -146,6 +147,7 @@ import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
 import uk.gov.moj.cpp.listing.domain.NonDefaultDay;
+import uk.gov.moj.cpp.listing.domain.OffenceIds;
 import uk.gov.moj.cpp.listing.domain.ProsecutionCaseDefendantOffenceIds;
 import uk.gov.moj.cpp.listing.domain.Type;
 import uk.gov.moj.cpp.listing.domain.aggregate.Application;
@@ -394,10 +396,12 @@ public class ListingCommandHandler {
                         commandHearing.getBookingType(),
                         commandHearing.getPriority(),
                         commandHearing.getSpecialRequirements(),
-                        domainHearing.getIsPossibleDisqualification()
+                        domainHearing.getIsPossibleDisqualification(),
+                        domainHearing.getGroupProceedings(),
+                        domainHearing.getNumberOfGroupCases()
                 );
-
-                final Stream<Object> allocationEvents = hearing.applyAllocationRules(finalBookingReference, false, false);
+                final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds = buildFromProsecutionCases(commandHearing.getProsecutionCases());
+                final Stream<Object> allocationEvents = hearing.applyAllocationRules(finalBookingReference, false, false, prosecutionCaseDefendantOffenceIds, empty(), commandHearing.getIsGroupProceedings());
                 final Stream<Object> stagingHmiEvents = isHmiEnabled ? hearing.sendToHmi() : Stream.empty();
 
                 return Stream.of(listingEvents, allocationEvents, stagingHmiEvents).flatMap(i -> i);
@@ -436,6 +440,27 @@ public class ListingCommandHandler {
 
     private ZonedDateTime buildStartDateTime(final LocalDate localDate, final LocalTime localTime) {
         return ZonedDateTime.of(localDate, localTime, ZoneOffset.UTC);
+    }
+
+    public List<ProsecutionCaseDefendantOffenceIds> buildFromProsecutionCases(final List<ProsecutionCase> prosecutionCases) {
+        return Objects.isNull(prosecutionCases) ? Collections.emptyList() :
+                prosecutionCases.stream()
+                        .map(p -> ProsecutionCaseDefendantOffenceIds.prosecutionCaseDefendantOffenceIds()
+                                .withId(p.getId())
+                                .withIsCivil(p.getIsCivil())
+                                .withGroupId(p.getGroupId())
+                                .withIsGroupMaster(p.getIsGroupMaster())
+                                .withIsGroupMember(p.getIsGroupMember())
+                                .withDefendants(p.getDefendants().stream()
+                                        .map(d -> DefendantOffenceIds.defendantOffenceIds()
+                                                .withId(d.getId())
+                                                .withOffences(d.getOffences().stream()
+                                                        .map(o -> OffenceIds.offenceIds()
+                                                                .withId(o.getId())
+                                                                .build()).collect(toList()))
+                                                .build()).collect(toList()))
+                                .build())
+                        .collect(toList());
     }
 
     private AddHearingToCaseCommand getAddHearingToCaseCommand(final JsonEnvelope envelope) {
@@ -612,7 +637,7 @@ public class ListingCommandHandler {
                     hearing.changeWeekCommencingDate(weekCommencingStartDate, weekCommencingEndDate, weekCommencingDurationInWeeks, hearingId) : hearing.removeWeekCommencingDates(hearingId);
 
             final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds = prosecutionCaseDefendantOffenceIdsBuilder.buildFromProsecutionCases(updateHearingForListingEnriched.getProsecutionCases());
-            final Stream<Object> allocationEvents = hearing.applyAllocationRules(prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated);
+            final Stream<Object> allocationEvents = hearing.applyAllocationRules(prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, null);
 
 
             final List<Object> startDateEventList = startDateEvents.collect(toList());

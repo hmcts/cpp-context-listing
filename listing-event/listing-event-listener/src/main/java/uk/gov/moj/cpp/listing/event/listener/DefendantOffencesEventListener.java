@@ -29,6 +29,7 @@ import javax.inject.Inject;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Iterables;
 
+@SuppressWarnings("PMD.NullAssignment")
 @ServiceComponent(Component.EVENT_LISTENER)
 public class DefendantOffencesEventListener {
 
@@ -174,6 +175,10 @@ public class DefendantOffencesEventListener {
 
         return ListedCase.listedCase()
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
+                .withIsCivil(listedCase.getIsCivil())
+                .withGroupId(listedCase.getGroupId())
+                .withIsGroupMember(listedCase.getIsGroupMember())
+                .withIsGroupMaster(listedCase.getIsGroupMaster())
                 .withCaseStatus(listedCase.getCaseStatus())
                 .withDefendants(listedCase.getDefendants())
                 .withIsEjected(listedCase.getIsEjected())

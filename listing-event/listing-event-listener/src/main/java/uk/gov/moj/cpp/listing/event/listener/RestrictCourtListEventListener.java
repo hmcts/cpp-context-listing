@@ -98,6 +98,10 @@ public class RestrictCourtListEventListener {
         final ListedCase listedCase = Iterables.find(cases, lc -> lc.getId().equals(caseId));
         final ListedCase newListedCase = listedCase()
                 .withCaseIdentifier(listedCase.getCaseIdentifier())
+                .withIsCivil(listedCase.getIsCivil())
+                .withGroupId(listedCase.getGroupId())
+                .withIsGroupMember(listedCase.getIsGroupMember())
+                .withIsGroupMaster(listedCase.getIsGroupMaster())
                 .withDefendants(listedCase.getDefendants())
                 .withId(listedCase.getId())
                 .withRestrictFromCourtList(restrictDetailsFromCourt)

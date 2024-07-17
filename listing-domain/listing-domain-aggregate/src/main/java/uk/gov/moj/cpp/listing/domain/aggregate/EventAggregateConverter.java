@@ -15,6 +15,10 @@ public final class EventAggregateConverter {
 
     public static uk.gov.justice.listing.events.ListedCase buildEventListedCase(final ListedCase listedCase) {
         final uk.gov.justice.listing.events.ListedCase.Builder builder =  uk.gov.justice.listing.events.ListedCase.listedCase().withId(listedCase.getId())
+                .withIsCivil(listedCase.getIsCivil())
+                .withGroupId(listedCase.getGroupId())
+                .withIsGroupMember(listedCase.getIsGroupMember())
+                .withIsGroupMaster(listedCase.getIsGroupMaster())
                 .withDefendants(listedCase.getDefendants().stream().map(EventAggregateConverter::buildEventDefendant).collect(toList()))
                 .withCaseIdentifier(nonNull(listedCase.getCaseIdentifier()) ? buildEventCaseIdentifier(listedCase.getCaseIdentifier()) : null)
                 .withMarkers(listedCase.getCaseMarkers().stream().map(EventAggregateConverter::buildEventCaseMarker).collect(toList()));
@@ -191,6 +195,10 @@ public final class EventAggregateConverter {
     public static ListedCase buildAggregateListedCase(final uk.gov.justice.listing.events.ListedCase listedCase) {
         final uk.gov.moj.cpp.listing.domain.aggregate.ListedCase.Builder builder = uk.gov.moj.cpp.listing.domain.aggregate.ListedCase.listedCase()
                 .withId(listedCase.getId())
+                .withIsCivil(listedCase.getIsCivil())
+                .withGroupId(listedCase.getGroupId())
+                .withIsGroupMember(listedCase.getIsGroupMember())
+                .withIsGroupMaster(listedCase.getIsGroupMaster())
                 .withDefendants(listedCase.getDefendants().stream().map(EventAggregateConverter::buildAggregateDefendant).collect(toList()))
                 .withCaseIdentifier(nonNull(listedCase.getCaseIdentifier()) ? buildAggregateCaseIdentifier(listedCase.getCaseIdentifier()) : null)
                 .withCaseMarkers(listedCase.getMarkers().stream().map(EventAggregateConverter::buildAggregateCaseMarker).collect(toList()));

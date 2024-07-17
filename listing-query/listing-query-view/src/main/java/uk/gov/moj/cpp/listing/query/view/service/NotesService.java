@@ -59,7 +59,7 @@ public class NotesService {
     }
 
     private Stream<NoteUUIDService.ListingNotesCollection> createNoteListCollection(JsonNode node ){
-        String roomTextValue = node.get(COURT_ROOM_ID) != null ? node.get(COURT_ROOM_ID).textValue() : null;
+        final String roomTextValue = node.get(COURT_ROOM_ID) != null ? node.get(COURT_ROOM_ID).textValue() : null;
 
         if(roomTextValue == null){
             return Stream.empty();

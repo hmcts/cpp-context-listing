@@ -134,7 +134,7 @@ public class StagingHmiEventProcessor {
 
         if (isHmiListingEnabled(deletedHearingInStagingHmi.getCourtCentreId(), deletedHearingInStagingHmi.getCourtRoomId(), envelope)) {
             LOGGER.info(LOG_PUBLISHING, "public.listing.delete-hearing-in-staging-hmi", deletedHearingInStagingHmi);
-            JsonArrayBuilder builder = createArrayBuilder();
+            final JsonArrayBuilder builder = createArrayBuilder();
             deletedHearingInStagingHmi.getCaseAndApplicationIds().forEach(builder::add );
             final JsonObject publicEvent = Json.createObjectBuilder()
                     .add("hearingId", deletedHearingInStagingHmi.getHearingId().toString())

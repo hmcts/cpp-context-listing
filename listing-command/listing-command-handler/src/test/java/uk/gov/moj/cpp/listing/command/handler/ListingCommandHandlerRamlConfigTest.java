@@ -33,6 +33,7 @@ public class ListingCommandHandlerRamlConfigTest {
                 ListingNoteCommandHandler.class,
                 HearingMarkedAsDuplicateCommandHandler.class,
                 ListNextHearingCommandHandler.class,
+                RemoveCaseFromGroupCasesCommandHandler.class,
                 UpdateExistingHearingCommandHandler.class);
     }
 

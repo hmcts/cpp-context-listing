@@ -4,6 +4,8 @@
   },
   "hearing": {
     "adjournedFromDate": "2020-02-27",
+    "isGroupProceedings" : false,
+    "numberOfGroupCases" : 0,
     "allocated": false,
     "courtApplications": [
       {

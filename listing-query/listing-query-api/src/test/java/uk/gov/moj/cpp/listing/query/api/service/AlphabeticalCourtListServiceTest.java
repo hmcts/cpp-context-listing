@@ -24,6 +24,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.BOOLEAN;
@@ -93,6 +94,7 @@ public class AlphabeticalCourtListServiceTest {
     private static final String ADDRESS_1_WELSH = "22 Welsh Street";
     private static final ZoneId BST = ZoneId.of("Europe/London");
     private static final String HH_MM = "HH:mm";
+    private static final String EMPTY = "";
 
     private final UUID COURT_CENTRE_ID = randomUUID();
     private final UUID COURT_ROOM_ID = randomUUID();
@@ -157,6 +159,57 @@ public class AlphabeticalCourtListServiceTest {
                 withJsonPath("$.defendants[2].caseReference", equalTo(CASE_URN_1)),
                 withJsonPath("$.defendants[2].courtRoomName", equalTo(COURT_ROOM_NAME)),
                 withJsonPath("$.defendants[2].hearingStartTime", equalTo(format("%02d:%02d", START_DATE_TIME_1.getHour(), START_DATE_TIME_1.getMinute())))
+        )));
+        verify(courtCentreFactory).getCourtCentre(eq(COURT_CENTRE_ID), eq(envelope));
+    }
+
+    @Test
+    public void shouldBuildDataForBulkCaseWithOnlyGroupMasterCaseInAlphabeticalList() {
+        final JsonEnvelope envelope = buildOneBulkCaseRequestEnvelope(false, true, true);
+        when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(false));
+
+        final Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
+
+        assertThat(listJson.orElse(createObjectBuilder().build()).toString(), isJson(allOf(
+                withJsonPath("$.courtCentreName", equalTo(COURT_CENTRE_NAME)),
+                withJsonPath("$.hearingDate", equalTo(HEARING_DATE.getDayOfMonth() + SPACE + capitalize(lowerCase(HEARING_DATE.getMonth().name())) + SPACE + HEARING_DATE.getYear())),
+                withJsonPath("$.courtCentreAddress1", equalTo(ADDRESS_1 + ",")),
+                withJsonPath("$.courtCentreAddress2", equalTo(POST_CODE)),
+                withJsonPath("$.defendants", hasSize(1)),
+
+                withJsonPath("$.defendants[0].defendantFullName", equalTo("1000 DEFENDANTS")),
+                withJsonPath("$.defendants[0].caseReference", equalTo(EMPTY)),
+                withJsonPath("$.defendants[0].courtRoomName", equalTo(COURT_ROOM_NAME)),
+                withJsonPath("$.defendants[0].hearingStartTime", equalTo(format("%02d:%02d", START_DATE_TIME_1.getHour(), START_DATE_TIME_1.getMinute())))
+
+        )));
+        verify(courtCentreFactory).getCourtCentre(eq(COURT_CENTRE_ID), eq(envelope));
+    }
+
+    @Test
+    public void shouldBuildDataForBulkCaseWithGroupMasterCaseAndAnotherRemovedGroupCaseInAlphabeticalList() {
+        final JsonEnvelope envelope = buildTwoBulkCasesRequestEnvelope(false, true, true);
+        when(courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope)).thenReturn(getCourtCentreDetails(false));
+
+        final Optional<JsonObject> listJson = service.buildAlphabeticalCourtListData(envelope, COURT_CENTRE_ID.toString());
+
+        assertThat(listJson.orElse(createObjectBuilder().build()).toString(), isJson(allOf(
+                withJsonPath("$.courtCentreName", equalTo(COURT_CENTRE_NAME)),
+                withJsonPath("$.hearingDate", equalTo(HEARING_DATE.getDayOfMonth() + SPACE + capitalize(lowerCase(HEARING_DATE.getMonth().name())) + SPACE + HEARING_DATE.getYear())),
+                withJsonPath("$.courtCentreAddress1", equalTo(ADDRESS_1 + ",")),
+                withJsonPath("$.courtCentreAddress2", equalTo(POST_CODE)),
+                withJsonPath("$.defendants", hasSize(2)),
+
+                withJsonPath("$.defendants[0].defendantFullName", equalTo("1000 DEFENDANTS")),
+                withJsonPath("$.defendants[0].caseReference", equalTo(EMPTY)),
+                withJsonPath("$.defendants[0].courtRoomName", equalTo(COURT_ROOM_NAME)),
+                withJsonPath("$.defendants[0].hearingStartTime", equalTo(format("%02d:%02d", START_DATE_TIME_1.getHour(), START_DATE_TIME_1.getMinute()))),
+
+                withJsonPath("$.defendants[1].defendantFullName", equalTo(upperCase(LAST_NAME_2) + "," + SPACE + FIRST_NAME_2)),
+                withJsonPath("$.defendants[1].caseReference", equalTo(CASE_URN_2)),
+                withJsonPath("$.defendants[1].courtRoomName", equalTo(COURT_ROOM_NAME)),
+                withJsonPath("$.defendants[1].hearingStartTime", equalTo(format("%02d:%02d", START_DATE_TIME_1.getHour(), START_DATE_TIME_1.getMinute())))
+
         )));
         verify(courtCentreFactory).getCourtCentre(eq(COURT_CENTRE_ID), eq(envelope));
     }
@@ -356,12 +409,12 @@ public class AlphabeticalCourtListServiceTest {
         final boolean defendantRestricted = false;
         final JsonObject queryPayload = createObjectBuilder()
                 .add("hearings", createArrayBuilder().add(createObjectBuilder()
-                        .add("hearingDate", isBST ? LocalDates.to(SUMMER_HEARING_DATE) : LocalDates.to(HEARING_DATE))
+                        .add("hearingDate", isBST ? to(SUMMER_HEARING_DATE) : to(HEARING_DATE))
                         .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
                                 .add("hearing", createObjectBuilder()
                                         .add("id", randomUUID().toString())
-                                        .add("startDate", LocalDates.to(HEARING_DATE))
-                                        .add("endDate", LocalDates.to(HEARING_DATE))
+                                        .add("startDate", to(HEARING_DATE))
+                                        .add("endDate", to(HEARING_DATE))
                                         .add("allocated", true)
                                         .add("courtRoomId", COURT_ROOM_ID.toString())
                                         .add("hearingDays", generateHearingDays(isBST ? SUMMER_START_DATE_TIME : START_DATE_TIME_1))
@@ -378,13 +431,71 @@ public class AlphabeticalCourtListServiceTest {
                 queryPayload);
     }
 
+    private JsonEnvelope buildOneBulkCaseRequestEnvelope(final boolean isBST, final boolean isGroupProceedings, final boolean isGroupMaster) {
+        final boolean caseRestricted = false;
+        final boolean defendantRestricted = false;
+        final JsonObject queryPayload = createObjectBuilder()
+                .add("hearings", createArrayBuilder().add(createObjectBuilder()
+                        .add("hearingDate", isBST ? to(SUMMER_HEARING_DATE) : to(HEARING_DATE))
+                        .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
+                                .add("hearing", createObjectBuilder()
+                                        .add("id", randomUUID().toString())
+                                        .add("startDate", to(HEARING_DATE))
+                                        .add("endDate", to(HEARING_DATE))
+                                        .add("allocated", true)
+                                        .add("courtRoomId", COURT_ROOM_ID.toString())
+                                        .add("hearingDays", generateHearingDays(isBST ? SUMMER_START_DATE_TIME : START_DATE_TIME_1))
+                                        .add("courtCentreId", COURT_CENTRE_ID.toString())
+                                        .add("listedCases", generateListedCaseForBulkCase(caseRestricted, defendantRestricted, isGroupMaster))
+                                        .add("isGroupProceedings", isGroupProceedings)
+                                        .add("numberOfGroupCases", 1000)
+                                )
+                        ))
+                        .build()).build()).build();
+
+        return envelopeFrom(
+                metadataOf(randomUUID(), QUERY_NAME)
+                        .withUserId(randomUUID().toString())
+                        .build(),
+                queryPayload);
+    }
+
+    private JsonEnvelope buildTwoBulkCasesRequestEnvelope(final boolean isBST, final boolean isGroupProceedings, final boolean isGroupMaster) {
+        final boolean caseRestricted = false;
+        final boolean defendantRestricted = false;
+        final JsonObject queryPayload = createObjectBuilder()
+                .add("hearings", createArrayBuilder().add(createObjectBuilder()
+                        .add("hearingDate", isBST ? to(SUMMER_HEARING_DATE) : to(HEARING_DATE))
+                        .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
+                                .add("hearing", createObjectBuilder()
+                                        .add("id", randomUUID().toString())
+                                        .add("startDate", to(HEARING_DATE))
+                                        .add("endDate", to(HEARING_DATE))
+                                        .add("allocated", true)
+                                        .add("courtRoomId", COURT_ROOM_ID.toString())
+                                        .add("hearingDays", generateHearingDays(isBST ? SUMMER_START_DATE_TIME : START_DATE_TIME_1))
+                                        .add("courtCentreId", COURT_CENTRE_ID.toString())
+                                        .add("listedCases", generateListedCasesForBulkCase(caseRestricted, defendantRestricted, isGroupMaster))
+                                        .add("isGroupProceedings", isGroupProceedings)
+                                        .add("numberOfGroupCases", 1000)
+                                )
+                        ))
+                        .build()).build()).build();
+
+        return envelopeFrom(
+                metadataOf(randomUUID(), QUERY_NAME)
+                        .withUserId(randomUUID().toString())
+                        .build(),
+                queryPayload);
+    }
+
     private JsonObjectBuilder getHearingBuilder(final Map<String, String> hearingDetails) {
         final JsonObjectBuilder objectBuilder = createObjectBuilder()
                 .add("id", randomUUID().toString());
 
         if (MapUtils.isEmpty(hearingDetails)) {
-            objectBuilder.add("startDate", LocalDates.to(HEARING_DATE))
-                    .add("endDate", LocalDates.to(HEARING_DATE))
+            objectBuilder.add("startDate", to(HEARING_DATE))
+                    .add("endDate", to(HEARING_DATE))
                     .add("courtRoomId", COURT_ROOM_ID.toString())
                     .add("courtCentreId", COURT_CENTRE_ID.toString());
         } else {
@@ -397,7 +508,7 @@ public class AlphabeticalCourtListServiceTest {
     private JsonEnvelope buildRequestEnvelope(boolean isBST) {
         final JsonObject queryPayload = createObjectBuilder()
                 .add("hearings", createArrayBuilder().add(createObjectBuilder()
-                        .add("hearingDate", isBST ? LocalDates.to(SUMMER_HEARING_DATE) : LocalDates.to(HEARING_DATE))
+                        .add("hearingDate", isBST ? to(SUMMER_HEARING_DATE) : to(HEARING_DATE))
                         .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
                                         .add("hearing", getHearingBuilder(emptyMap())
                                                 .add("allocated", true)
@@ -512,7 +623,7 @@ public class AlphabeticalCourtListServiceTest {
         final boolean defendantRestricted = false;
         final JsonObject queryPayload = createObjectBuilder()
                 .add("hearings", createArrayBuilder().add(createObjectBuilder()
-                        .add("hearingDate", LocalDates.to(HEARING_DATE))
+                        .add("hearingDate", to(HEARING_DATE))
                         .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
                                         .add("hearing", getHearingBuilder(emptyMap())
                                                 .add("allocated", true)
@@ -546,7 +657,7 @@ public class AlphabeticalCourtListServiceTest {
                         createObjectBuilder()
                                 .add("startTime", ZonedDateTimes.toString(startTime))
                                 .add("endTime", ZonedDateTimes.toString(startTime.plusMinutes(20)))
-                                .add("hearingDate", LocalDates.to(startTime.toLocalDate()))
+                                .add("hearingDate", to(startTime.toLocalDate()))
                                 .add("durationMinutes", 20)
                                 .add("sequence", integer(1, 10).next());
                     });
@@ -554,7 +665,7 @@ public class AlphabeticalCourtListServiceTest {
         return builder.add(createObjectBuilder()
                 .add("startTime", ZonedDateTimes.toString(startDateTime))
                 .add("endTime", ZonedDateTimes.toString(startDateTime.plusMinutes(20)))
-                .add("hearingDate", LocalDates.to(startDateTime.toLocalDate()))
+                .add("hearingDate", to(startDateTime.toLocalDate()))
                 .add("durationMinutes", 20)
                 .add("sequence", integer(1, 10).next())
         );
@@ -609,6 +720,52 @@ public class AlphabeticalCourtListServiceTest {
                 );
     }
 
+    private JsonArrayBuilder generateListedCaseForBulkCase(final boolean caseRestricted, final boolean defendantRestricted, final boolean isGroupMaster) {
+        return createArrayBuilder().add(createObjectBuilder()
+                .add("id", randomUUID().toString())
+                .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN_1))
+                .add("prosecutor", createObjectBuilder().add("prosecutorId", randomUUID().toString()).add("prosecutorCode", "CPS"))
+                .add("restrictFromCourtList", caseRestricted ? TRUE : FALSE)
+                .add("isGroupMaster", isGroupMaster)
+                .add("isGroupMember", true)
+                .add("defendants", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("firstName", FIRST_NAME_1)
+                                .add("lastName", LAST_NAME_1)
+                                .add("restrictFromCourtList", defendantRestricted ? TRUE : FALSE))
+                ));
+    }
+
+    private JsonArrayBuilder generateListedCasesForBulkCase(final boolean caseRestricted, final boolean defendantRestricted, final boolean isGroupMaster) {
+        return createArrayBuilder().add(createObjectBuilder()
+                .add("id", randomUUID().toString())
+                .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN_1))
+                .add("prosecutor", createObjectBuilder().add("prosecutorId", randomUUID().toString()).add("prosecutorCode", "CPS"))
+                .add("restrictFromCourtList", FALSE)
+                .add("isGroupMaster", isGroupMaster)
+                .add("isGroupMember", true)
+                .add("defendants", createArrayBuilder()
+                        .add(createObjectBuilder()
+                                .add("firstName", FIRST_NAME_1)
+                                .add("lastName", LAST_NAME_1)
+                                .add("restrictFromCourtList", defendantRestricted ? TRUE : FALSE))
+                ))
+                .add(createObjectBuilder()
+                        .add("id", randomUUID().toString())
+                        .add("caseIdentifier", createObjectBuilder().add("caseReference", CASE_URN_2))
+                        .add("prosecutor", createObjectBuilder().add("prosecutorId", randomUUID().toString()).add("prosecutorCode", "CPS"))
+                        .add("restrictFromCourtList", caseRestricted ? TRUE : FALSE)
+                        .add("isGroupMaster", false)
+                        .add("isGroupMember", true)
+                        .add("defendants", createArrayBuilder().add(createObjectBuilder()
+                                        .add("firstName", FIRST_NAME_2)
+                                        .add("lastName", LAST_NAME_2)
+                                        .add("restrictFromCourtList", defendantRestricted ? TRUE : FALSE)
+                                )
+                        )
+                );
+    }
+
     private JsonArrayBuilder generateCourtApplications(final boolean caseRestricted, final boolean defendantRestricted) {
         return createArrayBuilder().add(createObjectBuilder()
                 .add("id", randomUUID().toString())
@@ -650,7 +807,7 @@ public class AlphabeticalCourtListServiceTest {
 
         final JsonObject queryPayload = createObjectBuilder()
                 .add("hearings", createArrayBuilder().add(createObjectBuilder()
-                        .add("hearingDate", LocalDates.to(HEARING_DATE))
+                        .add("hearingDate", to(HEARING_DATE))
                         .add("hearingsByHearingDate", createArrayBuilder().add(createObjectBuilder()
                                         .add("hearing", getHearingBuilder(emptyMap())
                                                 .add("allocated", true)

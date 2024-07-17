@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:p2="http://www.govtalk.gov.uk/people/bs7666" xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails">
+<cs:FirmList xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice">
     <cs:CourtLists>
         <cs:CourtList>
             <cs:CourtHouse/>

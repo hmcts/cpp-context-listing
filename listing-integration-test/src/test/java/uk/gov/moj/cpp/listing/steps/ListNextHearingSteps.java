@@ -845,6 +845,10 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
         final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
         return hearingData.getListedCases().stream()
                 .map(lc -> ProsecutionCase.prosecutionCase().withId(lc.getCaseId())
+                        .withIsCivil(lc.getCivil())
+                        .withGroupId(lc.getAuthorityId())
+                        .withIsGroupMaster(lc.getGroupMaster())
+                        .withIsGroupMember(lc.getGroupMember())
                         .withInitiationCode(InitiationCode.C)
                         .withProsecutionCaseIdentifier(ProsecutionCaseIdentifier.prosecutionCaseIdentifier()
                                 .withProsecutionAuthorityCode(lc.getAuthorityCode())

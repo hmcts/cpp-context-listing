@@ -32,6 +32,8 @@ import static uk.gov.justice.services.test.utils.core.messaging.JsonObjects.getU
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByOrganisationDefendant;
+import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByPersonDefendant;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
@@ -45,8 +47,6 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorizedUserToQueryCaseByDefendantAndHearingDate;
-import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByPersonDefendant;
-import static uk.gov.moj.cpp.listing.utils.DefenceServiceStub.stubDefenceQueryApiForSearchCasesByOrganisationDefendant;
 
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.ApplicationStatus;
@@ -1493,8 +1493,8 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                         .build())
                         .withType(getHearingType(hearingData))
                         .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
-                        .build()))
-                .build();
+                        .withIsGroupProceedings(false)
+                        .build())).build();
     }
 
     private JudicialRole getJudicialRole(final HearingData hearingData) {
@@ -1648,8 +1648,9 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
                         .withType(getHearingType(hearingData))
                         .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
-                        .build()))
-                .build();
+                        .withIsGroupProceedings(false)
+                        .build())).build();
+
     }
 
     private Person getPerson(final DefendantData d) {
@@ -1787,8 +1788,9 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
 
                         .withType(getHearingType(hearingData))
                         .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
-                        .build()))
-                .build();
+                        .withIsGroupProceedings(false)
+                        .build())).build();
+
     }
 
     private WeekCommencingDate getWeekCommencingDate(final HearingData hearingData, final Integer weekCommencingDuration) {
@@ -1872,8 +1874,9 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                         .withJurisdictionType(hearingData.getJurisdictionType() != null ? JurisdictionType.valueFor(hearingData.getJurisdictionType()).get() : null)
                         .withType(getHearingType(hearingData))
                         .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
-                        .build()))
-                .build();
+                        .withIsGroupProceedings(false)
+                        .build())).build();
+
     }
 
     private HearingType getHearingType(final HearingData hearingData) {
@@ -1970,8 +1973,9 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                                 .collect(Collectors.toList()))
                         .withType(getHearingType(hearingData))
                         .withReportingRestrictionReason(hearingData.getReportingRestrictionReason())
-                        .build()))
-                .build();
+                        .withIsGroupProceedings(false)
+                        .build())).build();
+
     }
 
     private CourtApplication getCourtApplication(final HearingData hearingData) {
@@ -2372,6 +2376,16 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         verifyHearingConfirmedEvent();
     }
 
+    public JsonPath verifyPublicHearingConfirmedInMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingConfirmedForExtendHearing);
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingConfirmed: {}", jsonResponse.prettify());
+
+        return jsonResponse;
+    }
+
     public void verifyHearingDeletedInPublicMQ(final UUID hearingId) {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
@@ -2440,6 +2454,23 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
+    public void listCourtHearing(final JsonObject listCourtHearingJsonObject, final UUID courtCentreId, final UUID hearingTypeId) {
+
+        final CourtCentreData courtCentreData = new CourtCentreData(courtCentreId, DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, null, "City of London Magistrates' Court");
+        stubGetReferenceDataCourtCentreById(courtCentreData);
+        stubGetReferenceDataHearingTypes(hearingTypeId);
+
+        final String listCaseForHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_LIST_COURT_HEARING)));
+
+        request = listCourtHearingJsonObject.toString();
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\tHeader = {}\n\n", listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING, request, getLoggedInHeader());
+
+        final Response response = restClient.postCommand(listCaseForHearingUrl, MEDIA_TYPE_LIST_COURT_HEARING,
+                request, getLoggedInHeader());
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
     public JsonObject preparePayloadToListCourtHearing(final String fileName, final Map<String, String> values) throws IOException {
 
         final String eventPayloadString = getStringFromResource(fileName)
@@ -2448,9 +2479,78 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 .replaceAll("COURT_CENTRE_ID", values.get("courtCentreId"))
                 .replaceAll("CASE_URN", values.get("caseUrn"))
                 .replaceAll("EARLIEST_START_TIME", values.get("hearingStartTime"))
-                .replaceAll("ESTIMATED_MINUTES", values.get("estimatedMinutes"));
+                .replaceAll("ESTIMATED_MINUTES", values.get("estimatedMinutes"))
+                .replaceAll("HEARING_TYPE_ID", values.get("hearingTypeId"));
 
         return new StringToJsonObjectConverter().convert(eventPayloadString);
+    }
+
+    public JsonObject preparePayloadToListCourtHearingForGroupCases(final String fileName, final Map<String, String> values, final UUID groupId,
+                                                                    final UUID masterCaseId) throws IOException {
+
+        String needString = getStringFromResource(fileName.concat("-part-defendant-listing-needs.json"));
+        String caseString = getStringFromResource(fileName.concat("-part-cases.json"));
+        String eventPayloadString = getStringFromResource(fileName.concat(".json"))
+                .replaceAll("HEARING_ID", values.get("hearingId"))
+                .replaceAll("COURT_CENTRE_ID", values.get("courtCentreId"))
+                .replaceAll("EARLIEST_START_TIME", values.get("hearingStartTime"))
+                .replaceAll("ESTIMATED_MINUTES", values.get("estimatedMinutes"))
+                .replaceAll("HEARING_TYPE_ID", values.get("hearingTypeId"));
+
+        StringBuilder casesBuilder = new StringBuilder();
+        StringBuilder needsBuilder = new StringBuilder();
+
+        UUID defendantId = randomUUID();
+        casesBuilder.append(getGroupCase(caseString, groupId, masterCaseId, defendantId, true, true, true));
+        needsBuilder.append(getGroupCaseListingNeeds(needString, masterCaseId, defendantId));
+
+        eventPayloadString = eventPayloadString.replace("DEFENDANT_LISTING_NEEDS", needsBuilder.toString());
+        eventPayloadString = eventPayloadString.replace("PROSECUTION_CASES", casesBuilder.toString());
+
+        return new StringToJsonObjectConverter().convert(eventPayloadString);
+    }
+
+    public JsonObject preparePayloadCaseRemovedFromGroupCases(final String fileName, final String casesFileName,
+                                                              final UUID groupId, final UUID masterCaseId,
+                                                              final UUID removedCaseId, final UUID newGroupMasterCaseId) throws IOException {
+
+        String eventPayloadString = getStringFromResource(fileName)
+                .replaceAll("GROUP_ID", groupId.toString())
+                .replaceAll("MASTER_CASE_ID", masterCaseId.toString());
+
+        String casePayloadString = getStringFromResource(casesFileName);
+        StringBuilder removedCaseBuilder = new StringBuilder();
+        StringBuilder newGroupMasterCaseBuilder = new StringBuilder();
+
+        removedCaseBuilder.append(getGroupCase(casePayloadString, groupId, removedCaseId, randomUUID(), true, false, false));
+        newGroupMasterCaseBuilder.append(getGroupCase(casePayloadString, groupId, newGroupMasterCaseId, randomUUID(), true, true, true));
+
+        eventPayloadString = eventPayloadString.replace("REMOVED_CASE", removedCaseBuilder.toString());
+        eventPayloadString = eventPayloadString.replace("NEW_GROUP_MASTER", newGroupMasterCaseBuilder.toString());
+
+        return new StringToJsonObjectConverter().convert(eventPayloadString);
+    }
+
+    private String getGroupCase(final String caseString, final UUID groupId, final UUID caseId, final UUID defendantId,
+                                final Boolean isCivil, final Boolean isGroupMember, final Boolean isGroupMaster) {
+        String newCase = new String(caseString);
+        newCase = newCase.replaceAll("CASE_ID", caseId.toString());
+        newCase = newCase.replaceAll("IS_CIVIL", isCivil.toString());
+        newCase = newCase.replaceAll("IS_GROUP_MEMBER", isGroupMember.toString());
+        newCase = newCase.replaceAll("IS_GROUP_MASTER", isGroupMaster.toString());
+        newCase = newCase.replaceAll("GROUP_ID", groupId.toString());
+        newCase = newCase.replaceAll("CASE_MARKER_ID", randomUUID().toString());
+        newCase = newCase.replaceAll("DEFENDANT_ID", defendantId.toString());
+        newCase = newCase.replaceAll("OFFENCE_ID", randomUUID().toString());
+        newCase = newCase.replaceAll("CASE_URN", randomUUID().toString().substring(0, 10));
+        return newCase;
+    }
+
+    private String getGroupCaseListingNeeds(final String needString, final UUID defendantId, final UUID caseId) {
+        String defendantNeed = new String(needString);
+        defendantNeed = defendantNeed.replaceAll("DEFENDANT_ID", defendantId.toString());
+        defendantNeed = defendantNeed.replaceAll("CASE_ID", caseId.toString());
+        return defendantNeed;
     }
 
     public void verifyUnallocatedHearingFound(final String hearingId, final Matcher[] matchers) {

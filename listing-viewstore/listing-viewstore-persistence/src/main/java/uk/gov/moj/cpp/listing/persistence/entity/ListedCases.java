@@ -18,7 +18,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-@SuppressWarnings({"squid:S1948"})
+@SuppressWarnings({"squid:S1948", "pmd:BeanMembersShouldSerialize "})
 @Entity
 @Table(name = "listed_cases")
 public class ListedCases implements Serializable {
@@ -48,9 +48,8 @@ public class ListedCases implements Serializable {
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "listedCase", orphanRemoval = true)
     private Set<Defendant> defendants = new HashSet<>();
 
-    @Column(name="is_ejected")
+    @Column(name = "is_ejected")
     private Boolean isEjected;
-
 
     public ListedCases() {
         // for JPA
@@ -111,7 +110,7 @@ public class ListedCases implements Serializable {
     }
 
     public void setLinkedCases(final Set<LinkedCase> linkedCases) {
-        if(isNull(linkedCases)){
+        if (isNull(linkedCases)) {
             return;
         }
 
@@ -127,7 +126,7 @@ public class ListedCases implements Serializable {
     }
 
     public void setDefendants(final Set<Defendant> defendants) {
-        if(isNull(defendants)){
+        if (isNull(defendants)) {
             return;
         }
 
@@ -151,6 +150,6 @@ public class ListedCases implements Serializable {
     }
 
     public void setEjected(final Boolean ejected) {
-        isEjected = ejected;
+        this.isEjected = ejected;
     }
 }

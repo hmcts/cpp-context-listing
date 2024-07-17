@@ -16,7 +16,6 @@ import uk.gov.justice.listing.events.DefendantOffenceIds;
 import uk.gov.justice.listing.events.DefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.HearingDay;
 import uk.gov.justice.core.courts.HearingLanguage;
-import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.events.JudicialRole;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.events.OffenceIds;
@@ -38,8 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;

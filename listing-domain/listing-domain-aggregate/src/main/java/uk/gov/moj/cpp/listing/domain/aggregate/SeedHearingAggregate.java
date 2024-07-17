@@ -1,6 +1,15 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
-import org.apache.commons.collections.CollectionUtils;
+import static java.util.Collections.emptyList;
+import static java.util.Objects.nonNull;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.empty;
+import static java.util.stream.Stream.of;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
+import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
+
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
 import uk.gov.justice.core.courts.ProsecutionCase;
@@ -22,15 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static java.util.Collections.emptyList;
-import static java.util.Objects.nonNull;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Stream.concat;
-import static java.util.stream.Stream.empty;
-import static java.util.stream.Stream.of;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
-import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
+import org.apache.commons.collections.CollectionUtils;
 
 /**
  * This aggregate streams based on resulted hearing (H1).
@@ -42,13 +43,13 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
  * existingHearingIds - All the hearing ids (H4) of already existing hearings when adjourning. This
  * happens when one of the offences is adjourned to already existing hearing (H4) when resulting.
  */
-@SuppressWarnings({"PMD.BeanMembersShouldSerialize", "squid:S3655"})
+@SuppressWarnings({"PMD:BeanMembersShouldSerialize","PMD.NullAssignment", "squid:S3655"})
 public class SeedHearingAggregate implements Aggregate {
 
 
     private static final long serialVersionUID = 2;
-    private Map<String, Set<UUID>> seededHearingIdsMapForHearingDay = new HashMap<>();
-    private Map<String, Set<UUID>> existingHearingIdsMapForHearingDay = new HashMap<>();
+    private transient Map<String, Set<UUID>> seededHearingIdsMapForHearingDay = new HashMap<>();
+    private transient Map<String, Set<UUID>> existingHearingIdsMapForHearingDay = new HashMap<>();
 
     @Override
     public Object apply(final Object event) {
@@ -84,9 +85,9 @@ public class SeedHearingAggregate implements Aggregate {
     }
 
     private List<HearingListingNeeds> removeDuplicateApplicationFromHearing(List<HearingListingNeeds> hearingListingNeeds) {
-        return hearingListingNeeds.stream().map(HearingListingNeed -> HearingListingNeeds.hearingListingNeeds()
-                 .withValuesFrom(HearingListingNeed)
-                 .withCourtApplications(nonNull(HearingListingNeed.getCourtApplications())? HearingListingNeed.getCourtApplications().stream().distinct().collect(toList()) :null)
+        return hearingListingNeeds.stream().map(currentHearingListingNeed -> HearingListingNeeds.hearingListingNeeds()
+                 .withValuesFrom(currentHearingListingNeed)
+                 .withCourtApplications(nonNull(currentHearingListingNeed.getCourtApplications())? currentHearingListingNeed.getCourtApplications().stream().distinct().collect(toList()) :null)
                  .build()
          ).collect(toList());
     }

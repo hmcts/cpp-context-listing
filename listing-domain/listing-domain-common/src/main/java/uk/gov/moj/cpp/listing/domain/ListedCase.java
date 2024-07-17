@@ -23,8 +23,17 @@ public class ListedCase {
 
   private final String trialReceiptType;
 
+  private final Optional<Boolean> isCivil;
+
+  private final Optional<UUID> groupId;
+
+  private final Optional<Boolean> isGroupMaster;
+
+  private final Optional<Boolean> isGroupMember;
+
   @SuppressWarnings({"squid:S2384"})
-  public ListedCase(final CaseIdentifier caseIdentifier, final Prosecutor prosecutor, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id, final Optional<Boolean> shadowListed, final String trialReceiptType) {
+  public ListedCase(final CaseIdentifier caseIdentifier, final Prosecutor prosecutor, final List<Defendant> defendants, final List<CaseMarker> caseMarkers, final UUID id, final Optional<Boolean> shadowListed, final String trialReceiptType,
+                    final Optional<Boolean> isCivil, final Optional<UUID> groupId, final Optional<Boolean> isGroupMember, final Optional<Boolean> isGroupMaster) {
     this.caseIdentifier = caseIdentifier;
     this.prosecutor = prosecutor;
     this.defendants = defendants;
@@ -32,6 +41,10 @@ public class ListedCase {
     this.id = id;
     this.shadowListed = shadowListed;
     this.trialReceiptType = trialReceiptType;
+    this.isCivil = isCivil;
+    this.groupId = groupId;
+    this.isGroupMember = isGroupMember;
+    this.isGroupMaster = isGroupMaster;
   }
 
   public CaseIdentifier getCaseIdentifier() {
@@ -60,6 +73,22 @@ public class ListedCase {
 
   public String getTrialReceiptType() {
     return trialReceiptType;
+  }
+
+  public Optional<Boolean> getIsCivil() {
+    return isCivil;
+  }
+
+  public Optional<UUID> getGroupId() {
+    return groupId;
+  }
+
+  public Optional<Boolean> getIsGroupMember() {
+    return isGroupMember;
+  }
+
+  public Optional<Boolean> getIsGroupMaster() {
+    return isGroupMaster;
   }
 
   public static Builder listedCase() {
@@ -97,6 +126,10 @@ public class ListedCase {
             ", id=" + id +
             ", shadowListed=" + shadowListed +
             ", trialReceiptType=" + trialReceiptType +
+            ", isCivil=" + isCivil +
+            ", groupId=" + groupId +
+            ", isGroupMember=" + isGroupMember +
+            ", isGroupMaster=" + isGroupMaster +
             '}';
   }
 
@@ -115,6 +148,14 @@ public class ListedCase {
     private Optional<Boolean> shadowListed = empty();
 
     private String trialReceiptType;
+
+    private Optional<Boolean> isCivil;
+
+    private Optional<UUID> groupId;
+
+    private Optional<Boolean> isGroupMember;
+
+    private Optional<Boolean> isGroupMaster;
 
     public Builder withCaseIdentifier(final CaseIdentifier caseIdentifier) {
       this.caseIdentifier = caseIdentifier;
@@ -153,6 +194,26 @@ public class ListedCase {
       return this;
     }
 
+    public Builder withIsCivil(final Optional<Boolean> isCivil){
+      this.isCivil = isCivil;
+      return this;
+    }
+
+    public Builder withGroupId(final Optional<UUID> groupId) {
+      this.groupId = groupId;
+      return this;
+    }
+
+    public Builder withIsGroupMember(final Optional<Boolean> isGroupMember){
+      this.isGroupMember = isGroupMember;
+      return this;
+    }
+
+    public Builder withIsGroupMaster(final Optional<Boolean> isGroupMaster){
+      this.isGroupMaster = isGroupMaster;
+      return this;
+    }
+
     public Builder withValuesFrom(final ListedCase listedCase) {
       this.caseIdentifier = listedCase.caseIdentifier;
       this.prosecutor = listedCase.getProsecutor();
@@ -161,11 +222,16 @@ public class ListedCase {
       this.id = listedCase.getId();
       this.shadowListed = listedCase.getShadowListed();
       this.trialReceiptType = listedCase.getTrialReceiptType();
+      this.isCivil = listedCase.getIsCivil();
+      this.groupId = listedCase.getGroupId();
+      this.isGroupMember = listedCase.getIsGroupMember();
+      this.isGroupMaster = listedCase.getIsGroupMaster();
       return this;
     }
 
     public ListedCase build() {
-      return new ListedCase(caseIdentifier, prosecutor, defendants, caseMarkers, id, shadowListed, trialReceiptType);
+      return new ListedCase(caseIdentifier, prosecutor, defendants, caseMarkers, id, shadowListed, trialReceiptType,
+              isCivil, groupId, isGroupMember, isGroupMaster);
     }
   }
 }

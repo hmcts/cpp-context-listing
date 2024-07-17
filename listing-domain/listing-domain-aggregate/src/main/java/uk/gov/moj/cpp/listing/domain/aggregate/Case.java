@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableList;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
@@ -19,6 +20,7 @@ import uk.gov.justice.listing.events.HearingAddedToCase;
 import uk.gov.justice.listing.events.HearingMarkedAsDuplicateForCase;
 import uk.gov.justice.listing.events.HearingUpdatedToCase;
 import uk.gov.justice.listing.events.LinkedCasesToBeUpdated;
+import uk.gov.justice.listing.events.MasterCaseUpdatedForGroup;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
@@ -44,6 +46,10 @@ public class Case implements Aggregate {
 
     private final List<UUID> hearingIds = new ArrayList<>();
 
+    public List<UUID> getHearingIds() {
+        return unmodifiableList(this.hearingIds);
+    }
+
     @Override
     public Object apply(final Object event) {
         return match(event).with(
@@ -58,6 +64,7 @@ public class Case implements Aggregate {
                 when(CaseResultedDefendantProceedingsConcluded.class).apply(e -> onCaseResultedDefendantProceedingsUpdated()),
                 when(CaseEjectedForHearings.class).apply(e -> onCaseEjectedForHearings()),
                 when(HearingMarkedAsDuplicateForCase.class).apply(this::onHearingMarkedAsDuplicateForCase),
+                when(MasterCaseUpdatedForGroup.class).apply(this::onMasterCaseUpdatedForGroup),
                 otherwiseDoNothing());
     }
 
@@ -206,6 +213,18 @@ public class Case implements Aggregate {
                 .build());
     }
 
+    /* when the master case of a group is changed, newGroupMaster comes to hearing context for the first time
+    this method is here just to initiate the aggregate for that new case (newGroupMaster)
+    and the event created (MasterCaseUpdatedForHearing) is not being consumed by any listener/processor
+    * */
+    public Stream<Object> updateMasterCaseForGroup(final UUID newGroupMaster, final List<UUID> hearingIds) {
+        return apply(Stream.of(MasterCaseUpdatedForGroup.masterCaseUpdatedForGroup()
+                .withCaseId(newGroupMaster)
+                .withHearingIds(hearingIds)
+                .build())
+        );
+    }
+
     // Methods to apply aggregate state
 
     private void onHearingAddedToCase(HearingAddedToCase event) {
@@ -251,4 +270,7 @@ public class Case implements Aggregate {
         this.hearingIds.remove(hearingMarkedAsDuplicateForCase.getHearingId());
     }
 
+    private void onMasterCaseUpdatedForGroup(MasterCaseUpdatedForGroup masterCaseUpdatedForGroup) {
+        this.hearingIds.addAll(masterCaseUpdatedForGroup.getHearingIds());
+    }
 }

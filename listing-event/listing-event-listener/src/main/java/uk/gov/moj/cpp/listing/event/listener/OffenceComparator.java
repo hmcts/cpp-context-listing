@@ -1,5 +1,7 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import static java.util.Objects.nonNull;
+
 import uk.gov.justice.listing.events.Offence;
 
 import java.util.List;
@@ -40,6 +42,6 @@ public class OffenceComparator {
     }
 
     private int getListingNumber(final Offence offence) {
-        return (offence.getListingNumber() != null ? offence.getListingNumber() : INITIAL_OFFENCE_LISTING_NUMBER);
+        return nonNull(offence.getListingNumber()) ? offence.getListingNumber() : INITIAL_OFFENCE_LISTING_NUMBER;
     }
 }

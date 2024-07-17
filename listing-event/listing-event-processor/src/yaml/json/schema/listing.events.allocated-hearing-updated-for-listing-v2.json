@@ -67,6 +67,14 @@
     },
     "isNotificationAllocationFieldUpdated": {
       "type" : "boolean"
+    },
+    "isGroupProceedings": {
+      "description": "The hearing is a logical grouping of cases when it is true",
+      "type": "boolean"
+    },
+    "numberOfGroupCases": {
+      "description": "The number of group cases",
+      "type": "integer"
     }
   },
   "required": [

@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://justice.gov.uk/listing/events/listing.events.master-case-updated-for-group.json",
+  "type": "object",
+  "properties": {
+    "caseId": {
+      "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+    },
+    "hearingIds": {
+      "type": "array",
+      "items": {
+        "$ref": "http://justice.gov.uk/listing/events/listing-definitions.json#/definitions/uuid"
+      }
+    }
+  },
+  "required": [
+    "caseId",
+    "hearingIds"
+  ],
+  "additionalProperties": false
+}

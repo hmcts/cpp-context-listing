@@ -1,7 +1,6 @@
 package utils;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 
 import uk.gov.justice.listing.events.HearingDay;

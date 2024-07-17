@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-@SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067" })
+@SuppressWarnings({"squid:S00107", "squid:S00121", "squid:S1067", "PMD:BeanMembersShouldSerialize", "PMD.NullAssignment"})
 public class Hearing {
   private final Boolean allocated;
 
@@ -67,11 +67,16 @@ public class Hearing {
 
   private final Optional<Boolean> isPossibleDisqualification;
 
+  private final Optional<Boolean> isGroupProceedings;
+
+  private final Optional<Integer> numberOfGroupCases;
+
   public Hearing(final Boolean allocated, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Optional<LocalDate> endDate, final Integer estimatedMinutes, String estimatedDuration, final List<HearingDay> hearingDays,
                  final Optional<HearingLanguage> hearingLanguage, final UUID id, final List<JudicialRole> judiciary, final JurisdictionType jurisdictionType, final List<ListedCase> listedCases, final Optional<String> listingDirections,
                  final List<NonDefaultDay> nonDefaultDays, final List<LocalDate> nonSittingDays, final Optional<String> prosecutorDatesToAvoid, final Optional<String> reportingRestrictionReason, final Optional<Integer> sequence, final ZonedDateTime startDateTime,
                  final Type type, final List<CourtApplication> courtApplications, final List<CourtApplicationPartyListingNeeds> courtApplicationPartyListingNeeds, final Optional<Boolean> hasAdjournmentDate,
-                 final Optional<LocalDate> weekCommencingStartDate, final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks, final Optional<Boolean> isSlotsBooked, final Optional<Boolean> isPossibleDisqualification){
+                 final Optional<LocalDate> weekCommencingStartDate, final Optional<LocalDate> weekCommencingEndDate, final Optional<Integer> weekCommencingDurationInWeeks, final Optional<Boolean> isSlotsBooked, final Optional<Boolean> isPossibleDisqualification,
+                 final Optional<Boolean> isGroupProceedings, final Optional<Integer> numberOfGroupCases){
     this.allocated = allocated;
     this.courtCentreId = courtCentreId;
     this.courtRoomId = courtRoomId;
@@ -100,6 +105,8 @@ public class Hearing {
     this.weekCommencingDurationInWeeks = weekCommencingDurationInWeeks;
     this.isSlotsBooked = isSlotsBooked;
     this.isPossibleDisqualification = isPossibleDisqualification;
+    this.isGroupProceedings = isGroupProceedings;
+    this.numberOfGroupCases = numberOfGroupCases;
   }
 
   public Boolean getAllocated() {
@@ -212,6 +219,14 @@ public class Hearing {
     return isPossibleDisqualification;
   }
 
+  public Optional<Boolean> getGroupProceedings() {
+    return isGroupProceedings;
+  }
+
+  public Optional<Integer> getNumberOfGroupCases() {
+    return numberOfGroupCases;
+  }
+
   public static Builder hearing() {
     return new Hearing.Builder();
   }
@@ -248,12 +263,14 @@ public class Hearing {
             Objects.equals(weekCommencingEndDate, hearing.weekCommencingEndDate) &&
             Objects.equals(weekCommencingDurationInWeeks, hearing.weekCommencingDurationInWeeks) &&
             Objects.equals(isSlotsBooked, hearing.isSlotsBooked) &&
-            Objects.equals(isPossibleDisqualification, hearing.isPossibleDisqualification);
+            Objects.equals(isPossibleDisqualification, hearing.isPossibleDisqualification) &&
+            Objects.equals(isGroupProceedings, hearing.isGroupProceedings) &&
+            Objects.equals(numberOfGroupCases, hearing.numberOfGroupCases);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate, isSlotsBooked, isPossibleDisqualification);
+    return Objects.hash(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, courtApplicationPartyListingNeeds, hasAdjournmentDate, isSlotsBooked, isPossibleDisqualification,isGroupProceedings, numberOfGroupCases);
   }
 
   @Override
@@ -287,6 +304,8 @@ public class Hearing {
             ", weekCommencingDurationInWeeks=" + weekCommencingDurationInWeeks +
             ", isSlotsBooked=" + isSlotsBooked +
             ", isPossibleDisqualification=" + isPossibleDisqualification +
+            ", isGroupProceedings=" + isGroupProceedings +
+            ", numberOfGroupCases=" + numberOfGroupCases +
             '}';
   }
 
@@ -346,6 +365,15 @@ public class Hearing {
     private Optional<Boolean> isSlotsBooked = empty();
 
     private Optional<Boolean> isPossibleDisqualification;
+
+    private Optional<Boolean>  isGroupProceedings;
+
+    private Optional<Integer> numberOfGroupCases;
+
+    public Builder withIsGroupProceedings(final Optional<Boolean> isGroupProceedings) {
+      this.isGroupProceedings = isGroupProceedings;
+      return this;
+    }
 
     public Builder withAllocated(final Boolean allocated) {
       this.allocated = allocated;
@@ -484,8 +512,13 @@ public class Hearing {
       return this;
     }
 
+    public Builder withNumberOfGroupCases(final Optional<Integer> numberOfGroupCases) {
+      this.numberOfGroupCases = numberOfGroupCases;
+      return this;
+    }
+
     public Hearing build() {
-      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks, this.isSlotsBooked, this.isPossibleDisqualification);
+      return new Hearing(allocated, courtCentreId, courtRoomId, endDate, estimatedMinutes, estimatedDuration, hearingDays, hearingLanguage, id, judiciary, jurisdictionType, listedCases, listingDirections, nonDefaultDays, nonSittingDays, prosecutorDatesToAvoid, reportingRestrictionReason, sequence, startDateTime, type, courtApplications, this.courtApplicationPartyListingNeeds, this.hasAdjournmentDate, this.weekCommencingStartDate, this.weekCommencingEndDate, this.weekCommencingDurationInWeeks, this.isSlotsBooked, this.isPossibleDisqualification, this.isGroupProceedings, this.numberOfGroupCases);
     }
   }
 }

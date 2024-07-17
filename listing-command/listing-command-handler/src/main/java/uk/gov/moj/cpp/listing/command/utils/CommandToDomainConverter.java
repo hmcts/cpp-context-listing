@@ -157,6 +157,8 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withWeekCommencingEndDate(weekCommencingEndDate)
                 .withWeekCommencingDurationInWeeks(weekCommencingDurationInWeeks)
                 .withIsPossibleDisqualification(isPossibleDisqualification(commandHearing))
+                .withIsGroupProceedings(nonNull(commandHearing.getIsGroupProceedings()) ? of(commandHearing.getIsGroupProceedings()) : empty())
+                .withNumberOfGroupCases(nonNull(commandHearing.getNumberOfGroupCases()) ? of(commandHearing.getNumberOfGroupCases()) : empty())
                 .build();
     }
 
@@ -185,6 +187,10 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                                 ? prosecutionCase.getProsecutionCaseIdentifier().getProsecutionAuthorityReference()
                                 : prosecutionCase.getProsecutionCaseIdentifier().getCaseURN())
                         .build())
+                .withIsCivil(nonNull(prosecutionCase.getIsCivil())?of(prosecutionCase.getIsCivil()):empty())
+                .withGroupId(nonNull(prosecutionCase.getGroupId())? of(prosecutionCase.getGroupId()):empty())
+                .withIsGroupMember(nonNull(prosecutionCase.getIsGroupMember())? of(prosecutionCase.getIsGroupMember()):empty())
+                .withIsGroupMaster(nonNull(prosecutionCase.getIsGroupMaster())? of(prosecutionCase.getIsGroupMaster()):empty())
                 .withDefendants(prosecutionCase.getDefendants().stream()
                         .map(d -> buildDefendants(commandHearing, d))
                         .collect(toList()));
@@ -240,6 +246,14 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .build();
     }
 
+    public ListedCase buildListedCases(final ProsecutionCase prosecutionCase) {
+        if (nonNull(prosecutionCase)) {
+            return buildListedCases(null, prosecutionCase, emptyList());
+        } else {
+            return null;
+        }
+    }
+
     private ListedCase buildListedCases(final HearingListingNeeds commandHearing, final ProsecutionCase prosecutionCase, final List<UUID> shadowListedOffences) {
         final List<uk.gov.moj.cpp.listing.domain.Defendant> defendants = prosecutionCase.getDefendants().stream()
                 .map(d -> buildDefendants(commandHearing, d, shadowListedOffences))
@@ -260,7 +274,11 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                         .build())
                 .withDefendants(defendants)
                 .withShadowListed(of(caseShadowListed))
-                .withTrialReceiptType(prosecutionCase.getTrialReceiptType());
+                .withTrialReceiptType(prosecutionCase.getTrialReceiptType())
+                .withIsCivil(nonNull(prosecutionCase.getIsCivil()) ? of(prosecutionCase.getIsCivil()):empty())
+                .withGroupId(nonNull(prosecutionCase.getGroupId()) ? of(prosecutionCase.getGroupId()): empty())
+                .withIsGroupMaster(nonNull(prosecutionCase.getIsGroupMaster())? of(prosecutionCase.getIsGroupMaster()): empty())
+                .withIsGroupMember(nonNull(prosecutionCase.getIsGroupMember())? of(prosecutionCase.getIsGroupMember()): empty());
 
         if (nonNull(prosecutionCase.getProsecutor())) {
             builder.withProsecutor(Prosecutor.prosecutor()
@@ -373,9 +391,11 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     }
 
     private Optional<String> getDatesToAvoid(final HearingListingNeeds commandHearing, final Defendant d) {
-        final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
-        if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getDatesToAvoid())) {
-            return ofNullable(listDefendantRequest.get().getDatesToAvoid());
+        if(nonNull(commandHearing)) {
+            final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
+            if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getDatesToAvoid())) {
+                return ofNullable(listDefendantRequest.get().getDatesToAvoid());
+            }
         }
         return empty();
     }
@@ -389,9 +409,11 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     }
 
     private Optional<HearingLanguageNeeds> getHearingLanguageNeeds(final HearingListingNeeds commandHearing, final Defendant d) {
-        final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
-        if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getHearingLanguageNeeds())) {
-            return valueFor(listDefendantRequest.get().getHearingLanguageNeeds().toString());
+        if(nonNull(commandHearing)) {
+            final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
+            if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getHearingLanguageNeeds())) {
+                return valueFor(listDefendantRequest.get().getHearingLanguageNeeds().toString());
+            }
         }
         return empty();
     }

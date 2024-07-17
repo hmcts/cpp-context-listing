@@ -3,6 +3,8 @@
     "name": "listing.events.hearing-listed"
   },
   "hearing": {
+    "isGroupProceedings" : false,
+    "numberOfGroupCases" : 0,
     "adjournedFromDate": "2020-02-27",
     "allocated": false,
     "isSlotsBooked": false,
