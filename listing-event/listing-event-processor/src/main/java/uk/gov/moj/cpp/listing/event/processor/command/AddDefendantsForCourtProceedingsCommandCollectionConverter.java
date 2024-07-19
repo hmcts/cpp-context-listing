@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.event.processor.command;
 
+import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
@@ -9,6 +10,7 @@ import uk.gov.moj.cpp.listing.domain.BailStatus;
 import uk.gov.moj.cpp.listing.domain.Defendant;
 import uk.gov.moj.cpp.listing.domain.HearingLanguageNeeds;
 import uk.gov.moj.cpp.listing.domain.Offence;
+import uk.gov.moj.cpp.listing.domain.ReportingRestriction;
 import uk.gov.moj.cpp.listing.domain.StatementOfOffence;
 
 import java.util.List;
@@ -46,15 +48,33 @@ public class AddDefendantsForCourtProceedingsCommandCollectionConverter implemen
                         .build()).collect(toList());
     }
 
-    private uk.gov.moj.cpp.listing.domain.Offence buildOffence(final uk.gov.justice.listing.events.Offence o) {
-        return Offence.offence()
-                .withId(o.getId())
-                .withEndDate(ofNullable(o.getEndDate()))
-                .withStartDate(o.getStartDate())
-                .withOffenceCode(o.getOffenceCode())
-                .withOffenceWording(o.getOffenceWording())
-                .withStatementOfOffence(buildStatementOfOffence(o))
-                .build();
+    private uk.gov.moj.cpp.listing.domain.Offence buildOffence(final uk.gov.justice.listing.events.Offence offence) {
+
+        final Offence.Builder builder =  Offence.offence()
+                .withId(offence.getId())
+                .withEndDate(ofNullable(offence.getEndDate()))
+                .withStartDate(offence.getStartDate())
+                .withOffenceCode(offence.getOffenceCode())
+                .withOffenceWording(offence.getOffenceWording())
+                .withStatementOfOffence(buildStatementOfOffence(offence))
+                .withReportingRestrictions(nonNull(offence.getReportingRestrictions()) ? buildReportingRestrictions(offence) : null);
+
+        if (nonNull(offence.getReportingRestrictions()) && !offence.getReportingRestrictions().isEmpty()) {
+            builder.withReportingRestrictions(buildReportingRestrictions(offence));
+        }
+        return builder.build();
+    }
+
+    private List<ReportingRestriction> buildReportingRestrictions(uk.gov.justice.listing.events.Offence offence) {
+        return offence.getReportingRestrictions()
+                .stream()
+                .map(restriction ->
+                        ReportingRestriction.reportingRestriction()
+                                .withId(restriction.getId())
+                                .withLabel(restriction.getLabel())
+                                .withJudicialResultId(ofNullable(restriction.getJudicialResultId()))
+                                .withOrderedDate(ofNullable(restriction.getOrderedDate()))
+                                .build()).collect(toList());
     }
 
     private StatementOfOffence buildStatementOfOffence(final uk.gov.justice.listing.events.Offence offence) {
