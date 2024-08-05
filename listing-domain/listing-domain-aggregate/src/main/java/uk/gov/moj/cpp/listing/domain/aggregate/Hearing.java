@@ -15,6 +15,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Stream.concat;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.BooleanUtils.toBoolean;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static uk.gov.justice.core.courts.JurisdictionType.valueFor;
@@ -206,7 +207,6 @@ public class Hearing implements Aggregate {
 
     private final List<uk.gov.moj.cpp.listing.domain.aggregate.ListedCase> unAllocatedListedCases = new ArrayList<>();
     private UUID hearingId;
-    private boolean allocated;
     private Type type;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -1174,10 +1174,10 @@ public class Hearing implements Aggregate {
         Stream<Object> eventsStream = Stream.of(trialVacated()
                 .withHearingId(hearingId)
                 .withVacatedTrialReasonId(vacatingTrialReasonId)
-                .withAllocated(this.allocated)
+                .withAllocated(isAllocated())
                 .build());
 
-        if (this.allocated && MAGISTRATES == jurisdictionType) {
+        if (isAllocated() && MAGISTRATES == jurisdictionType) {
             eventsStream = concat(eventsStream, Stream.of(availableSlotsForHearingFreed()
                     .withHearingId(hearingId).build()));
         }
@@ -1209,7 +1209,7 @@ public class Hearing implements Aggregate {
         if (isReschedulingEvent(occurredEventList)) {
             return apply(Stream.of(HearingRescheduled.hearingRescheduled()
                     .withHearingId(this.hearingId)
-                    .withAllocated(this.allocated)
+                    .withAllocated(isAllocated())
                     .build()));
         }
 
@@ -1247,7 +1247,7 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> addCasesToUnAllocatedHearing(final List<uk.gov.justice.listing.events.ListedCase> listedCases, final UUID existingHearingId) {
-        if (this.duplicate || this.deleted || (canAllocate() && allocated)) {
+        if (this.duplicate || this.deleted || (canAllocate() && isAllocated())) {
             return Stream.empty();
         }
         return apply(Stream.of(CasesAddedToHearing.casesAddedToHearing()
@@ -1260,7 +1260,7 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> deleteUnAllocatedHearing() {
-        if (this.deleted)  {
+        if (this.deleted) {
             return Stream.empty();
         }
         return apply(Stream.of(HearingDeleted.hearingDeleted()
@@ -1270,7 +1270,7 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> markHearingAsDeleted(final UUID hearingId) {
 
-        if (this.deleted)  {
+        if (this.deleted) {
             return Stream.empty();
         }
 
@@ -1301,7 +1301,7 @@ public class Hearing implements Aggregate {
             return Stream.empty();
         }
 
-        if (canAllocate() && allocated) {
+        if (canAllocate() && isAllocated()) {
             return apply(Stream.of(allocatedHearingExtendedForListingEvent(unallocatedHearing, fullExtension, sendNotificationToParties)));
         } else {
             LOGGER.info("Incoming hearing cannot allocated with new list cases");
@@ -1364,7 +1364,7 @@ public class Hearing implements Aggregate {
 
             final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
 
-            if (allocated) {
+            if (isAllocated()) {
                 eventStreamBuilder.add(AllocatedHearingDeleted.allocatedHearingDeleted()
                         .withHearingId(hearingId)
                         .withCaseIds(caseIds)
@@ -1400,7 +1400,7 @@ public class Hearing implements Aggregate {
 
     public Stream<Object> removeSelectedOffencesFromExistingHearing(final UUID hearingId, final List<UUID> offenceIds, final String source) {
 
-        if ( deleted ) {
+        if (deleted) {
             return Stream.empty();
         }
         final List<UUID> existingOffenceIds = prosecutionCaseDefendantOffenceIds
@@ -1417,7 +1417,7 @@ public class Hearing implements Aggregate {
         final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
 
         if (isNotEmpty(offenceIds)) {
-            if (allocated) {
+            if (isAllocated()) {
                 eventStreamBuilder.add(OffencesRemovedFromExistingAllocatedHearing.offencesRemovedFromExistingAllocatedHearing()
                         .withHearingId(hearingId)
                         .withOffenceIds(offenceIds)
@@ -1728,13 +1728,13 @@ public class Hearing implements Aggregate {
 
     private List<String> getCaseAndApplicationIds(final uk.gov.justice.listing.events.Hearing currentHearingEventState) {
         return Stream.concat(ofNullable(currentHearingEventState.getListedCases()).map(Collection::stream).orElseGet(Stream::empty).map(uk.gov.justice.listing.events.ListedCase::getId),
-                ofNullable(currentHearingEventState.getCourtApplications()).map(Collection::stream).orElseGet(Stream::empty).map(uk.gov.justice.listing.events.CourtApplication::getId))
+                        ofNullable(currentHearingEventState.getCourtApplications()).map(Collection::stream).orElseGet(Stream::empty).map(uk.gov.justice.listing.events.CourtApplication::getId))
                 .map(UUID::toString)
                 .collect(toList());
     }
 
     public Stream<Object> markUnallocatedHearingAsDuplicate(final UUID hearingId) {
-        if (duplicate || allocated) {
+        if (duplicate || isAllocated()) {
             return Stream.empty();
         }
 
@@ -1743,8 +1743,19 @@ public class Hearing implements Aggregate {
                 .build()));
     }
 
+    private boolean isAllocated() {
+        return nonNull(currentHearingEventState) && toBoolean(currentHearingEventState.getAllocated());
+    }
+
+    private void updateAllocated(final Boolean allocated) {
+        this.currentHearingEventState = uk.gov.justice.listing.events.Hearing.hearing()
+                .withValuesFrom(ofNullable(currentHearingEventState).orElse(uk.gov.justice.listing.events.Hearing.hearing().build()))
+                .withAllocated(allocated)
+                .build();
+    }
+
     private boolean thisHearingContainsDefendant(final uk.gov.moj.cpp.listing.domain.Defendant defendant) {
-        return isEmpty(this.prosecutionCaseDefendantOffenceIds) ? Boolean.FALSE : this.prosecutionCaseDefendantOffenceIds.stream()
+        return isEmpty(this.prosecutionCaseDefendantOffenceIds) ? FALSE : this.prosecutionCaseDefendantOffenceIds.stream()
                 .anyMatch(prosecutionCaseDefendantOffenceId ->
                         prosecutionCaseDefendantOffenceId.getDefendants().stream()
                                 .anyMatch(defendantOffenceId ->
@@ -1758,7 +1769,7 @@ public class Hearing implements Aggregate {
     }
 
     private boolean thisHearingContainsDefendant(final UUID caseId, final UUID defendantId) {
-        return isEmpty(this.prosecutionCaseDefendantOffenceIds) ? Boolean.FALSE : this.prosecutionCaseDefendantOffenceIds.stream()
+        return isEmpty(this.prosecutionCaseDefendantOffenceIds) ? FALSE : this.prosecutionCaseDefendantOffenceIds.stream()
                 .anyMatch(prosecutionCaseDefendantOffenceId ->
                         prosecutionCaseDefendantOffenceId.getId().equals(caseId) && prosecutionCaseDefendantOffenceId.getDefendants().stream().anyMatch(defendantOffenceIds ->
                                 defendantOffenceIds.getId().equals(defendantId))
@@ -1766,7 +1777,7 @@ public class Hearing implements Aggregate {
     }
 
     private boolean thisHearingContainsDefendantAndOffence(final UUID caseId, final UUID defendantId, final UUID offenceId) {
-        return isEmpty(this.prosecutionCaseDefendantOffenceIds) ? Boolean.FALSE : this.prosecutionCaseDefendantOffenceIds.stream()
+        return isEmpty(this.prosecutionCaseDefendantOffenceIds) ? FALSE : this.prosecutionCaseDefendantOffenceIds.stream()
                 .anyMatch(prosecutionCaseDefendantOffenceId ->
                         prosecutionCaseDefendantOffenceId.getId().equals(caseId) && prosecutionCaseDefendantOffenceId.getDefendants().stream().anyMatch(defendantOffenceIds ->
                                 defendantOffenceIds.getId().equals(defendantId) && defendantOffenceIds.getOffences().stream().anyMatch(offence ->
@@ -1780,8 +1791,8 @@ public class Hearing implements Aggregate {
 
     private Stream<Object> onAllocationEvents(final Optional<UUID> bookingReference, final List<ProsecutionCaseDefendantOffenceIds> prosecutionCaseDefendantOffenceIds, final Optional<String> source, final Boolean sendNotificationToParties,
                                               final Boolean isNotificationRelatedAllocatedFieldsUpdated, final Boolean isGroupProceedings) {
-        if (allocated) {
-            return apply(Stream.of(allocatedHearingUpdatedForListingEvent(source, sendNotificationToParties,isNotificationRelatedAllocatedFieldsUpdated)));
+        if (isAllocated()) {
+            return apply(Stream.of(allocatedHearingUpdatedForListingEvent(source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated)));
         }
         return apply(Stream.of(Stream.of(hearingAllocatedForListingEvent(bookingReference, prosecutionCaseDefendantOffenceIds, source, sendNotificationToParties, isNotificationRelatedAllocatedFieldsUpdated, isGroupProceedings))).flatMap(i -> i));
     }
@@ -1795,8 +1806,13 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> raiseUpdateHearingInStagingHmi(Stream<Object> actualEvents) {
-        final List<Object> eventList =  actualEvents.collect(Collectors.toList());
-        if(eventList.isEmpty()) {
+
+        if (duplicate || deleted) {
+            return Stream.empty();
+        }
+
+        final List<Object> eventList = actualEvents.collect(Collectors.toList());
+        if (eventList.isEmpty()) {
             return Stream.empty();
         }
         final Stream<Object> hmiEvents = raiseUpdateHearingInStagingHmi(Optional.empty());
@@ -1829,7 +1845,7 @@ public class Hearing implements Aggregate {
 
     @SuppressWarnings({"squid:S1067"})
     private boolean canUnallocate() {
-        return this.allocated && (notCurrentlyAssigned(this.hearingLanguage) || notCurrentlyAssigned(this.courtRoomId)
+        return isAllocated() && (notCurrentlyAssigned(this.hearingLanguage) || notCurrentlyAssigned(this.courtRoomId)
                 || notCurrentlyAssigned(this.jurisdictionType) || notCurrentlyAssigned(this.endDate));
     }
 
@@ -2173,7 +2189,6 @@ public class Hearing implements Aggregate {
                             .collect(toList())));
         }
         this.hearingDays = convertHearingDaysToDomain(hearing.getHearingDays());
-        this.allocated = Boolean.FALSE;
 
         if (hearing.getCourtApplications() != null) {
             this.confirmedCourtApplicationIds = hearing.getCourtApplications().stream().distinct()
@@ -2198,7 +2213,7 @@ public class Hearing implements Aggregate {
                             .map(uk.gov.justice.listing.events.Defendant::getId)
                             .collect(toList())));
         }
-        if(nonNull(this.currentHearingEventState)) {
+        if (nonNull(this.currentHearingEventState)) {
             updateCurrentHearingEventStateOnCaseAdded(event.getUnAllocatedListedCases());
         }
     }
@@ -2414,7 +2429,7 @@ public class Hearing implements Aggregate {
 
     @SuppressWarnings({"squid:S1172"})
     private void onHearingAllocatedForListing(final HearingAllocatedForListing event) {
-        this.allocated = Boolean.TRUE;
+        updateAllocated(TRUE);
 
         if (isNotEmpty(event.getProsecutionCaseDefendantsOffenceIds())) {
             this.prosecutionCaseDefendantOffenceIds = event.getProsecutionCaseDefendantsOffenceIds().stream()
@@ -2447,7 +2462,7 @@ public class Hearing implements Aggregate {
 
     @SuppressWarnings({"squid:S1172"})
     private void onHearingAllocatedForListingV2(final HearingAllocatedForListingV2 event) {
-        this.allocated = Boolean.TRUE;
+        updateAllocated(TRUE);
 
         if (isNotEmpty(event.getProsecutionCaseDefendantsOffenceIds())) {
             final Map<UUID, SeedingHearing> seedingHearingMap = getOffencesSeedingHearingMap();
@@ -2517,7 +2532,7 @@ public class Hearing implements Aggregate {
 
     @SuppressWarnings({"squid:S1172"})
     private void onHearingUnallocatedForListing(final HearingUnallocatedForListing event) {
-        this.allocated = Boolean.FALSE;
+        updateAllocated(FALSE);
     }
 
     private void onCasesAddedToHearing(final CasesAddedToHearing casesAddedToHearing) {
@@ -2571,7 +2586,7 @@ public class Hearing implements Aggregate {
     }
 
     private void onOffencesRemovedFromHearing(final OffencesRemovedFromHearing event) {
-        this.allocated = Boolean.FALSE;
+        updateAllocated(FALSE);
         removeSeededOffences(event);
     }
 
@@ -2906,7 +2921,6 @@ public class Hearing implements Aggregate {
                     .forEach(this.prosecutionCaseDefendantOffenceIds::add);
         }
         this.hearingDays = convertHearingDaysToDomain(hearing.getHearingDays());
-        this.allocated = nonNull(hearing.getAllocated()) ? hearing.getAllocated().booleanValue() : false;
 
         if (hearing.getCourtApplications() != null) {
             this.confirmedCourtApplicationIds = hearing.getCourtApplications().stream()
@@ -3027,11 +3041,11 @@ public class Hearing implements Aggregate {
                 .withHearingId(hearingId)
                 .withSeedingHearingId(seedingHearingId)
                 .withCaseIdsSeededByOnlySeedingHearingId(caseIdsSeededBySeedingHearingId)
-                .withUnallocated(allocated)
+                .withUnallocated(isAllocated())
                 .withSeededOffences(offencesSeededBySeedingHearing)
                 .build());
 
-        if (allocated && MAGISTRATES == jurisdictionType) {
+        if (isAllocated() && MAGISTRATES == jurisdictionType) {
             eventStreamBuilder.add(availableSlotsForHearingFreed()
                     .withHearingId(hearingId).build());
         }
