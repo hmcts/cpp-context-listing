@@ -339,7 +339,7 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "LEFT JOIN hearing_days hd ON hd.hearing_id = h.id  " +
             "LEFT JOIN listed_cases lc ON lc.hearing_id = h.id  " +
             "where  " +
-            "cast(h.properties ->>'allocated' as varchar) = cast(?1 as varchar)  " +
+            "cast(h.allocated as varchar) = cast(?1 as varchar)  " +
             "and (h.unscheduled is null or h.unscheduled = false) " +
             "and (h.is_vacated_trial is null or h.is_vacated_trial != true) " +
             "and (?2 is null or coalesce(hd.court_centre_id, h.court_centre_id) = cast(cast(?2 as varchar) as uuid))  " +

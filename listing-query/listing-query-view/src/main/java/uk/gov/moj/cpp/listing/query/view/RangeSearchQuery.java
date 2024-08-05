@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.query.view;
 import static java.time.LocalDate.parse;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
 import static org.apache.commons.lang3.BooleanUtils.isTrue;
@@ -71,8 +72,13 @@ public class RangeSearchQuery {
 
         final List<Hearing> hearings = findHearings(true, courtCentreId, courtRoomId, authorityId, null, null, startDate, endDate);
 
+        final List<Hearing> allocatedHearings = hearings.stream()
+                .filter(hearing->nonNull(hearing.getAllocated()))
+                .filter(hearing ->hearing.getAllocated().equals(true))
+                .collect(toList());
+
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.range.search.hearings.for.judge"),
-                createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings)));
+                createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(allocatedHearings)));
     }
 
 
@@ -118,6 +124,7 @@ public class RangeSearchQuery {
         final List<Hearing> hearings = !weekCommencingStartDate.isEmpty()
                 ? findHearingsByWeekCommencingRange(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, possibleDisqualificationOpt, paginationParameter.getOffSet(), paginationParameter.getPageSize(), noPagination)
                 : findHearings(allocated, courtCentreId, courtRoomId, authorityId, hearingTypeId, jurisdictionType, startDate, endDate, paginationParameter.getOffSet(), paginationParameter.getPageSize(), noPagination);
+
 
         final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
@@ -226,7 +233,7 @@ public class RangeSearchQuery {
                                        final String hearingTypeId, final String jurisdictionType, final String startDate, final String endDate,
                                        final Integer offSet, final Integer pageSize, final boolean noPagination) {
         if (noPagination) {
-            return repository.findHearings(
+            final List<Hearing> hearings = repository.findHearings(
                     String.valueOf(allocated),
                     courtCentreId,
                     courtRoomId,
@@ -235,9 +242,13 @@ public class RangeSearchQuery {
                     ofNullable(jurisdictionType).orElse(null),
                     parse(startDate),
                     parse(endDate));
+            return  hearings.stream()
+                    .filter(hearing->nonNull(hearing.getAllocated()))
+                    .filter(hearing ->hearing.getAllocated().equals(allocated))
+                    .collect(toList());
 
         } else {
-            return repository.findHearings(
+            final List<Hearing> hearings =  repository.findHearings(
                     allocated,
                     getUUID(courtCentreId),
                     getUUID(courtRoomId),
@@ -246,7 +257,13 @@ public class RangeSearchQuery {
                     ofNullable(jurisdictionType).orElse(null),
                     parse(startDate),
                     parse(endDate), offSet, pageSize);
+            return  hearings.stream()
+                    .filter(hearing->nonNull(hearing.getAllocated()))
+                    .filter(hearing ->hearing.getAllocated().equals(allocated))
+                    .collect(toList());
         }
+
+
 
     }
 

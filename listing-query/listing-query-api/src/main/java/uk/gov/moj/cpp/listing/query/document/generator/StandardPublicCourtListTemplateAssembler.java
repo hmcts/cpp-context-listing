@@ -259,7 +259,9 @@ public class StandardPublicCourtListTemplateAssembler {
                             .filter(hearingDay -> isNotBlank(getString(hearingDay, COURT_ROOM_ID)))
                             .map(hearingDay -> hearingDay.getString(COURT_ROOM_ID))
                             .collect(Collectors.toSet());
-                    courtRoomIds.add(hearing.getString(COURT_ROOM_ID));
+                    if (isNotBlank(getString(hearing, COURT_ROOM_ID))) {
+                        courtRoomIds.add(hearing.getString(COURT_ROOM_ID));
+                    }
                     courtRoomIds.stream()
                             .filter(courtRoomId -> ofNullable(courtCentre.getCourtRooms().get(fromString(courtRoomId))).isPresent())
                             .forEach(courtRoomId -> hearingsByCourtRoomIdMap.computeIfAbsent(courtRoomId, k -> new ArrayList<>()).add(hearing));
