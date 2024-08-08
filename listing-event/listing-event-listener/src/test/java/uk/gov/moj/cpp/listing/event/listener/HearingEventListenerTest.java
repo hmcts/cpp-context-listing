@@ -51,7 +51,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -60,7 +59,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class HearingEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
-    private static final UUID COURT_ROOM_ID  = randomUUID();
     private static final String LISTED_CASES = "listedCases";
     private static final UUID VACATE_TRIAL_REASON = randomUUID();
 
@@ -137,7 +135,6 @@ public class HearingEventListenerTest {
 
         given(envelope.payload()).willReturn(hearingAllocatedV2);
         given(hearingAllocatedV2.getHearingId()).willReturn(HEARING_ID);
-        given(hearingAllocatedV2.getCourtRoomId()).willReturn(COURT_ROOM_ID);
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
@@ -145,7 +142,6 @@ public class HearingEventListenerTest {
         hearingEventListener.hearingAllocatedV2(envelope);
 
         verify(properties).put(eq("allocated"), eq(true));
-        verify(properties).put(eq("courtRoomId"), eq(COURT_ROOM_ID.toString()));
         verify(hearingRepository).save(hearing);
     }
 
