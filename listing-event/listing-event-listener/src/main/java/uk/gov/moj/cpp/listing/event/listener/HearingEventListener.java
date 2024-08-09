@@ -131,7 +131,7 @@ public class HearingEventListener {
     public void hearingAllocatedV2(final Envelope<HearingAllocatedForListingV2> event) {
         final HearingAllocatedForListingV2 hearingAllocatedForListing = event.payload();
         final UUID hearingId = hearingAllocatedForListing.getHearingId();
-        jsonEntityFinder.find(hearingId).put(FIELD_ALLOCATED, ALLOCATED).remove("unscheduled").save();
+        jsonEntityFinder.find(hearingId).put(FIELD_ALLOCATED, ALLOCATED).put(FIELD_COURT_ROOM_ID,hearingAllocatedForListing.getCourtRoomId()).remove("unscheduled").save();
         LOGGER.info("'listing.events.hearing-allocated-for-listing-v2' received hearingId {}", hearingId);
         hearingSearchSyncService.sync(hearingId);
     }

@@ -119,7 +119,7 @@ public class ExtendHearingUtils {
                 persistedCasesMap.put(listedCase.getId(), defendantOffencesMap);
             }
         }
-        LOGGER.info("Map of <case<defendants,List<offences>>> created from hearing {} in the viewstore: {}", unAllocatedHearingStored.getId(), persistedCasesMap);
+        LOGGER.info("Map of <case<defendants,List<offences>>> created from hearing {} in the aggregate: {}", unAllocatedHearingStored.getId(), persistedCasesMap);
         return persistedCasesMap;
     }
 

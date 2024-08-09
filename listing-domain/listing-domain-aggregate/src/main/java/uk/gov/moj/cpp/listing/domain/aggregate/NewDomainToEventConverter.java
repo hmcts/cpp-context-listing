@@ -168,6 +168,16 @@ public class NewDomainToEventConverter {
                 .withFirstName(newDefendant.getFirstName())
                 .withLastName(newDefendant.getLastName())
                 .withOrganisationName(newDefendant.getOrganisationName())
+                .withBailStatus(newDefendant.getBailStatus())
+                .withCustodyTimeLimit(newDefendant.getCustodyTimeLimit())
+                .withId(newDefendant.getId())
+                .withDateOfBirth(newDefendant.getDateOfBirth())
+                .withDefenceOrganisation(newDefendant.getDefenceOrganisation())
+                .withSpecificRequirements(newDefendant.getSpecificRequirements())
+                .withIsYouth(newDefendant.getIsYouth())
+                .withAddress(newDefendant.getAddress())
+                .withNationalityDescription(newDefendant.getNationalityDescription())
+                .withMasterDefendantId(newDefendant.getMasterDefendantId())
                 .build();
 
     }
