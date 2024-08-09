@@ -48,7 +48,7 @@ import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.core.courts.SummonsTemplateType;
 import uk.gov.justice.listing.courts.ListUnscheduledCourtHearing;
 import uk.gov.justice.listing.courts.TypeOfList;
-import uk.gov.justice.listing.courts.WeekCommencingDate;
+import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;

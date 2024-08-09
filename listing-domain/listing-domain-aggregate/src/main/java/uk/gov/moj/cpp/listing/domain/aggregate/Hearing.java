@@ -141,7 +141,7 @@ import uk.gov.justice.listing.events.VideoLinkChangedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsAssignedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsChangedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsRemovedForHearing;
-import uk.gov.justice.listing.events.WeekCommencingDate;
+import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing;
 import uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;

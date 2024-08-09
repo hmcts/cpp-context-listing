@@ -37,7 +37,7 @@ import uk.gov.justice.listing.courts.ListNextHearing;
 import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
 import uk.gov.justice.listing.courts.ListNextHearingsV2;
 import uk.gov.justice.listing.courts.RemoveSelectedOffencesFromExistingHearing;
-import uk.gov.justice.listing.courts.WeekCommencingDate;
+import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
 import uk.gov.justice.listing.events.DeletedHearingInStagingHmi;

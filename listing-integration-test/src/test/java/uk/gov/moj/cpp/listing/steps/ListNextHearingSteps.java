@@ -63,7 +63,7 @@ import uk.gov.justice.core.courts.ReportingRestriction;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.core.courts.SummonsTemplateType;
 import uk.gov.justice.listing.courts.TypeOfList;
-import uk.gov.justice.listing.courts.WeekCommencingDate;
+import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
