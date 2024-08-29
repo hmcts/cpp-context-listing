@@ -242,4 +242,7 @@ subscriptions_descriptor:
         - name: listing.events.case-removed-from-group-cases
           schema_uri: http://justice.gov.uk/listing/events/listing.events.case-removed-from-group-cases.json
 
+        - name: listing.events.court-application-hearing-deleted
+          schema_uri: http://justice.gov.uk/listing/event/listing.events.court-application-hearing-deleted.json
+
       event_source_name: listing

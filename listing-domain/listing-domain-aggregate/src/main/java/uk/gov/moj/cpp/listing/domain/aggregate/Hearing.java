@@ -58,6 +58,7 @@ import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.ListDefendantRequest;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.domain.aggregate.Aggregate;
+import uk.gov.justice.listing.event.CourtApplicationHearingDeleted;
 import uk.gov.justice.listing.events.AddedCasesForHearing;
 import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.AllocatedHearingExtendedForListing;
@@ -3006,6 +3007,13 @@ public class Hearing implements Aggregate {
 
         }
         return events;
+    }
+
+    public Stream<Object> deleteCourtApplicationHearing(final UUID hearingId) {
+        return apply(Stream.of(CourtApplicationHearingDeleted.courtApplicationHearingDeleted()
+                .withHearingId(hearingId)
+                .build()
+        ));
     }
 
     private ZonedDateTime getEarliestHearingStartDate() {

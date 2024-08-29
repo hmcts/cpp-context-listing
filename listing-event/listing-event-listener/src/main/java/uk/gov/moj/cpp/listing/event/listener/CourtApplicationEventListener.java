@@ -6,6 +6,8 @@ import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.event.util.ReportingRestrictionHelper.dedupAllReportingRestrictions;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
+
+import uk.gov.justice.listing.event.CourtApplicationHearingDeleted;
 import uk.gov.justice.listing.events.CourtApplication;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
 import uk.gov.justice.listing.events.CourtApplicationUpdatedForHearing;
@@ -19,6 +21,7 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -27,9 +30,12 @@ import java.util.function.Function;
 import javax.inject.Inject;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServiceComponent(Component.EVENT_LISTENER)
 public class CourtApplicationEventListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CourtApplicationEventListener.class);
 
 
     private static final String COURT_APPLICATION_FIELD = "courtApplications";
@@ -63,6 +69,17 @@ public class CourtApplicationEventListener {
                 }
                 hearingSearchSyncService.sync(hearingId);
             }
+        }
+    }
+
+    @Handles("listing.events.court-application-hearing-deleted")
+    public void processCourtApplicationDeleted(final Envelope<CourtApplicationHearingDeleted> event) {
+        final UUID hearingId = event.payload().getHearingId();
+        final Hearing hearingToBeDeleted = hearingRepository.findBy(hearingId);
+
+        if (Objects.nonNull(hearingToBeDeleted)) {
+            hearingRepository.remove(hearingToBeDeleted);
+            LOGGER.info("Hearing with id {} has been deleted ", hearingId);
         }
     }
 

@@ -10,9 +10,12 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
+
 import uk.gov.justice.core.courts.Address;
+import uk.gov.justice.listing.event.CourtApplicationHearingDeleted;
 import uk.gov.justice.listing.events.ApplicantRespondent;
 import uk.gov.justice.listing.events.CourtApplication;
 import uk.gov.justice.listing.events.CourtApplicationAddedForHearing;
@@ -365,6 +368,24 @@ public class CourtApplicationEventListenerTest {
         validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
         verify(hearingSearchSyncService).sync(HEARING_ID);
+    }
+
+    @Test
+    public void shouldProcessCourtApplicationDeleted() {
+        Envelope<CourtApplicationHearingDeleted> envelope = (Envelope<CourtApplicationHearingDeleted>) mock(Envelope.class);
+
+        final UUID hearingId = randomUUID();
+        final CourtApplicationHearingDeleted courtApplicationHearingDeleted = CourtApplicationHearingDeleted.courtApplicationHearingDeleted()
+                .withHearingId(hearingId)
+                .build();
+        given(envelope.payload()).willReturn(courtApplicationHearingDeleted);
+        final Hearing hearing = Hearing.builder()
+                .withId(hearingId)
+                .build();
+        when(hearingRepository.findBy(hearingId)).thenReturn(hearing);
+        courtApplicationEventListener.processCourtApplicationDeleted(envelope);
+
+        verify(hearingRepository).remove(hearing);
     }
 
     private List<CourtApplication> createCourtApplications() {

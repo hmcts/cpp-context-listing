@@ -19,6 +19,7 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtRoom;
 
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
+import uk.gov.moj.cpp.listing.steps.DeleteCourtApplicationHearingSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.SequenceHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateHearingSteps;
@@ -329,8 +330,8 @@ public class HearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         }
 
-        final UUID hearingId =  hearingsData.getHearingData().get(0).getId();
-        final UpdatedHearingData updatedHearingDataForSplit = UpdatedHearingData.updatedHearingDataForAllocationWithJurisdictionType(hearingId,CROWN_JURISDICTION);
+        final UUID hearingId = hearingsData.getHearingData().get(0).getId();
+        final UpdatedHearingData updatedHearingDataForSplit = UpdatedHearingData.updatedHearingDataForAllocationWithJurisdictionType(hearingId, CROWN_JURISDICTION);
         try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForSplit)) {
             updateHearingSteps.whenHearingIsUpdatedFromHmiWithoutCourtRoomSelection();
             updateHearingSteps.whenHearingIsUpdatedForListingHmiEnabledWithoutCourtRoomSelection();
@@ -478,7 +479,7 @@ public class HearingIT extends AbstractIT {
                     withJsonPath("$.hearings[0].weekCommencingDurationInWeeks", is("1")),
                     withoutJsonPath("$.hearings[0].startDate"),
                     withoutJsonPath("$.hearings[0].endDate")
-            ),LocalDate.now().toString(), LocalDate.now().plusWeeks(1).toString());
+            ), LocalDate.now().toString(), LocalDate.now().plusWeeks(1).toString());
         }
     }
 
@@ -541,7 +542,7 @@ public class HearingIT extends AbstractIT {
 
     @Test
     public void updateAllocatedHearingWithNoCourtRoomResultsInUnallocatedListing() {
-       final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(CROWN_JURISDICTION);
+        final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(CROWN_JURISDICTION);
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
@@ -690,6 +691,26 @@ public class HearingIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedForCotr(courtCentreId, startDate, endDate);
+        }
+    }
+
+    @Test
+    public void shouldDeleteCourtApplicationHearing() {
+        final HearingsData hearingsData = HearingsData.hearingsData();
+
+        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        }
+
+        try (final DeleteCourtApplicationHearingSteps deleteCourtApplicationHearingSteps = new DeleteCourtApplicationHearingSteps()) {
+            final String hearingId = hearingsData.getHearingData().get(0).getId().toString();
+            final String courtCenterId = hearingsData.getHearingData().get(0).getCourtCentreId().toString();
+            final String applicationId = hearingsData.getHearingData().get(0).getCourtApplications().get(0).getId().toString();
+            deleteCourtApplicationHearingSteps.whenRaisedCourtApplicationHearingPublicEvent(hearingId, applicationId);
+            deleteCourtApplicationHearingSteps.verifyCourtApplicationHearingDeletedPrivateEvent(hearingId);
+            deleteCourtApplicationHearingSteps.verifyOldHearingDeleted(hearingId, courtCenterId );
         }
     }
 
