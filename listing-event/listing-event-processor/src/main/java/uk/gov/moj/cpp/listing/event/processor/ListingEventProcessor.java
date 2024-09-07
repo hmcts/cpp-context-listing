@@ -67,7 +67,7 @@ import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
 import uk.gov.moj.cpp.listing.event.processor.command.AddDefendantsForCourtProceedingsCommand;
@@ -282,7 +282,7 @@ public class ListingEventProcessor {
     private UpdateUnallocatedHearingPartiallyCommandConverter updateUnallocatedHearingPartiallyCommandConverter;
 
     @Inject
-    private RotaSLServiceAdapter rotaSLServiceAdapter;
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
     @Inject
     private HearingObjectsListingToCoreConverter hearingListingToCoreConverter;
@@ -1284,7 +1284,7 @@ public class ListingEventProcessor {
         if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && isEmpty(judiciary)) {
             slotDetailsOptional.ifPresent(slotDetails ->
                     slotDetails.forEach(slotDetail -> {
-                        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciariesFromRota = rotaSLServiceAdapter.getJudicialRoles(slotDetail.getSessionDate(),
+                        final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judiciariesFromRota = courtSchedulerServiceAdapter.getJudicialRoles(slotDetail.getSessionDate(),
                                 slotDetail.getOuCode(),
                                 Optional.of(slotDetail.getSession()),
                                 hearingConfirmed.getConfirmedHearing().getCourtCentre().getRoomId().toString());
@@ -1328,13 +1328,13 @@ public class ListingEventProcessor {
 
     private void convertHearingDayEventToCourtEvent(final JsonEnvelope jsonEnvelope, final HearingDaysChangedForHearing hearingDaysChangedForHearing) {
 
-        List<uk.gov.justice.core.courts.HearingDay> courtHearingDays = new ArrayList<>();
-        for (HearingDay hearingDayEvent : hearingDaysChangedForHearing.getHearingDays()) {
-            uk.gov.justice.core.courts.HearingDay courtHearingDay = allocatedHearingExtendedFactory.buildHearingDay(hearingDayEvent);
+        final List<uk.gov.justice.core.courts.HearingDay> courtHearingDays = new ArrayList<>();
+        for (final HearingDay hearingDayEvent : hearingDaysChangedForHearing.getHearingDays()) {
+            final uk.gov.justice.core.courts.HearingDay courtHearingDay = allocatedHearingExtendedFactory.buildHearingDay(hearingDayEvent);
             courtHearingDays.add(courtHearingDay);
         }
 
-        uk.gov.justice.listing.courts.HearingDaysChangedForHearing hearingDaysForHearingChanged = uk.gov.justice.listing.courts.HearingDaysChangedForHearing.hearingDaysChangedForHearing().withHearingDays(courtHearingDays).withHearingId(hearingDaysChangedForHearing.getHearingId()).build();
+        final uk.gov.justice.listing.courts.HearingDaysChangedForHearing hearingDaysForHearingChanged = uk.gov.justice.listing.courts.HearingDaysChangedForHearing.hearingDaysChangedForHearing().withHearingDays(courtHearingDays).withHearingId(hearingDaysChangedForHearing.getHearingId()).build();
 
         //This public event is used by UI only as of now,
         final JsonEnvelope publicEvent = envelopeFrom(metadataFrom(jsonEnvelope.metadata()).withName(PUBLIC_LISTING_HEARING_DAYS_CHANGED_FOR_HEARING),

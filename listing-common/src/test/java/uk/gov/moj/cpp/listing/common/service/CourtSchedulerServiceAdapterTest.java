@@ -1,4 +1,4 @@
-package uk.gov.moj.cpp.listing.common.azure.adapter;
+package uk.gov.moj.cpp.listing.common.service;
 
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
@@ -12,7 +12,6 @@ import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
-import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 
 import java.time.LocalDate;
@@ -37,10 +36,10 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 
 @RunWith(MockitoJUnitRunner.class)
-public class RotaSLServiceAdapterTest {
+public class CourtSchedulerServiceAdapterTest {
 
     @InjectMocks
-    private RotaSLServiceAdapter rotaSLServiceAdapter;
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
     @Mock
     private HearingSlotsService hearingSlotsService;
@@ -64,7 +63,7 @@ public class RotaSLServiceAdapterTest {
         when(response.getEntity()).thenReturn(hearingSlotsResponse);
         when(hearingSlotsService.search(anyMap())).thenReturn(response);
 
-        final List<JudicialRole> judicialRoleList = rotaSLServiceAdapter.getJudicialRoles(startDate, ouCode, courtSessionOptional, courtRoomId);
+        final List<JudicialRole> judicialRoleList = courtSchedulerServiceAdapter.getJudicialRoles(startDate, ouCode, courtSessionOptional, courtRoomId);
 
         assertThat(judicialRoleList.size(), is(3));
 
@@ -95,7 +94,7 @@ public class RotaSLServiceAdapterTest {
         when(response.getEntity()).thenReturn("entity response");
         when(hearingSlotsService.search(anyMap())).thenReturn(response);
 
-        final List<JudicialRole> judicialRoleList = rotaSLServiceAdapter.getJudicialRoles(startDate, ouCode, courtSessionOptional, courtRoomId);
+        final List<JudicialRole> judicialRoleList = courtSchedulerServiceAdapter.getJudicialRoles(startDate, ouCode, courtSessionOptional, courtRoomId);
 
         assertTrue(CollectionUtils.isEmpty(judicialRoleList));
     }
@@ -112,7 +111,7 @@ public class RotaSLServiceAdapterTest {
         when(response.getEntity()).thenReturn(hearingSlotsResponse);
         when(hearingSlotsService.search(anyMap())).thenReturn(response);
 
-        final Response response = rotaSLServiceAdapter.getHearingSlotResponse(startDate, startDate, ouCode, courtRoomId);
+        final Response response = courtSchedulerServiceAdapter.getHearingSlotResponse(startDate, startDate, ouCode, courtRoomId);
 
         final JsonObject responseJson = objectToJsonObjectConverter.convert(response.getEntity());
         final JsonObject object = responseJson.getJsonArray("hearingSlots").getValuesAs(JsonObject.class).get(0);
@@ -136,7 +135,7 @@ public class RotaSLServiceAdapterTest {
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.getEntity()).thenReturn(hearingSlotsResponseJsonObject);
 
-        final Optional<String> actualPanelInfo = rotaSLServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
+        final Optional<String> actualPanelInfo = courtSchedulerServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
 
 
         assertTrue(actualPanelInfo.isPresent());
@@ -152,7 +151,7 @@ public class RotaSLServiceAdapterTest {
         final UUID courtRoomId = UUID.fromString("a91a93e6-d704-3cf1-9f20-e267b5a7eeeb");
         final String ouCode = "B06AN00";
 
-        final Optional<String> actualPanelInfo = rotaSLServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
+        final Optional<String> actualPanelInfo = courtSchedulerServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
 
 
         assertTrue(actualPanelInfo.isPresent());
@@ -171,7 +170,7 @@ public class RotaSLServiceAdapterTest {
         when(hearingSlotsService.search(anyMapOf(String.class, String.class))).thenReturn(response);
         when(response.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 
-        final Optional<String> actualPanelInfo = rotaSLServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
+        final Optional<String> actualPanelInfo = courtSchedulerServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
 
 
         assertTrue(!actualPanelInfo.isPresent());
@@ -192,7 +191,7 @@ public class RotaSLServiceAdapterTest {
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.getEntity()).thenReturn(hearingSlotsResponseJsonObject);
 
-        final Optional<String> actualPanelInfo = rotaSLServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
+        final Optional<String> actualPanelInfo = courtSchedulerServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
 
 
         assertTrue(!actualPanelInfo.isPresent());

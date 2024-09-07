@@ -1,14 +1,12 @@
 package uk.gov.moj.cpp.listing.utils;
 
-import java.io.IOException;
-import java.time.LocalDate;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
-import static com.github.tomakehurst.wiremock.client.WireMock.put;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
@@ -26,19 +24,23 @@ import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.waitForStubToBeRead
 
 import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Map;
 
 import javax.json.JsonObject;
 
-public class AzureScheduleServiceStub {
+public class CourtSchedulerServiceStub {
 
     private static final String ROTA_SL_ENDPOINT_URL = "/fa-ste-ccm-scsl";
+    private static final String COURT_SCHEDULER_ENDPOINT = "/listingcourtscheduler-api/rest/courtscheduler";
     private static final String HOST = System.getProperty("INTEGRATION_HOST_KEY", "localhost");
 
     private static final String PROVISIONAL_BOOKING = "/provisionalBooking";
-    private static final String HEARING_SLOTS = "/hearingSlots";
+    private static final String HEARING_SLOTS = "/hearingslots";
     private static final String ORGANISATION_UNIT = "/organisationUnitHMIStatus";
-
+    private static final String COURTSCHEDULER_GET_HEARING_SLOTS_TYPE = "application/vnd.courtscheduler.get.hearing.slots+json";
+    public static final String COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE = "application/vnd.courtscheduler.get.provisional.booking+json";
     public static final String ROTASL_GET_HEARING_SLOTS_RESPONSE_JSON_WITH_JUDICIARIES = "stub-data/rotasl.get.hearing.slots.with-judiciaries.json";
     public static final String LISTING_SEARCH_HEARING_SLOTS_JSON = "stub-data/listing.search.hearing.slots.json";
     public static final String LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON = "stub-data/listing.search.hearing.slots.empty.json";
@@ -53,18 +55,19 @@ public class AzureScheduleServiceStub {
     }
 
     public static void stubUpdateAvailableHearingSlotsService() {
-        stubFor(put(urlPathMatching(ROTA_SL_ENDPOINT_URL))
+        stubFor(post(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .willReturn(aResponse().withStatus(NO_CONTENT.getStatusCode())));
     }
 
     public static void stubGetAvailableHearingSlots(boolean isEmpty) {
-        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + HEARING_SLOTS)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .withQueryParam("sessionStartDate", matching("2017-10-11"))
                 .withQueryParam("pageNumber", matching("1"))
                 .withQueryParam("pageSize", matching("20"))
                 .withQueryParam("panel", matching("ADULT"))
                 .withQueryParam("oucodeL2Code", matching("Z01KR05"))
                 .withQueryParam("sessionEndDate", matching("2020-10-11"))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(isEmpty ? LISTING_SEARCH_HEARING_EMPTY_SLOTS_JSON : LISTING_SEARCH_HEARING_SLOTS_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -72,7 +75,8 @@ public class AzureScheduleServiceStub {
     }
 
     public static void stubGetAvailableHearingSlots() {
-        stubFor(get(urlPathEqualTo(format("%s", ROTA_SL_ENDPOINT_URL + HEARING_SLOTS)))
+        stubFor(get(urlPathEqualTo(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(LISTING_SEARCH_HEARING_SLOTS_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -81,8 +85,9 @@ public class AzureScheduleServiceStub {
 
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate sessionDate, final Map<String, String> values) {
         final String courtRoomId = ofNullable(values.get("courtRoomId")).orElse("fce80cd4-0c00-3c30-9471-2c2ee7a52453");
-        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", notMatching("null"))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_WITH_SESSION_DATE_JSON)
                                 .replace("%SESSION_DATE%",sessionDate.toString())
@@ -106,8 +111,9 @@ public class AzureScheduleServiceStub {
     }
 
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased() {
-        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", notMatching("null"))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_COUNT_BASED_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -115,8 +121,9 @@ public class AzureScheduleServiceStub {
     }
 
     public static void stubGetProvisionalBookedSlotsMultipleCourtSchedulesCountBased() {
-        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", notMatching("null"))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_MULTIPLE_COURT_SCHEDULES_COUNT_BASED_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -124,8 +131,9 @@ public class AzureScheduleServiceStub {
     }
 
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleDurationBased() {
-        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", notMatching("null"))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getPayload(STUB_DATA_PROVISIONAL_BOOKING_SAMPLE_DATA_SINGLE_COURT_SCHEDULE_DURATION_BASED_JSON))
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -143,8 +151,9 @@ public class AzureScheduleServiceStub {
             payload = payload.replace("COURT_CENTRE_ID", courtCentreId);
         }
 
-        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + PROVISIONAL_BOOKING)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + PROVISIONAL_BOOKING)))
                 .withQueryParam("bookingIds", notMatching("null"))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_PROVISIONAL_BOOKING_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(payload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -162,13 +171,14 @@ public class AzureScheduleServiceStub {
                 .replaceAll("OU_CODE", ouCode)
                 .replaceAll("SESSION_DATE", sessionStartDate);
 
-        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + HEARING_SLOTS)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .withQueryParam("sessionStartDate", matching(sessionStartDate))
                 .withQueryParam("sessionEndDate", matching(sessionEndDate))
                 .withQueryParam("ouCode", matching(ouCode))
                 .withQueryParam("pageSize", matching("1"))
                 .withQueryParam("pageNumber", matching("1"))
                 .withQueryParam("courtRoomId", matching(courtRoomId))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
                 .willReturn(aResponse().withStatus(OK.getStatusCode())
                         .withBody(getHearingSlotsPayload)
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
@@ -178,12 +188,13 @@ public class AzureScheduleServiceStub {
     }
 
     public static void stubSessionEndDateEmptyRequest() {
-        stubFor(get(urlPathMatching(format("%s", ROTA_SL_ENDPOINT_URL + HEARING_SLOTS)))
+        stubFor(get(urlPathMatching(format("%s", COURT_SCHEDULER_ENDPOINT + HEARING_SLOTS)))
                 .withQueryParam("sessionStartDate", matching("2017-10-11"))
                 .withQueryParam("pageNumber", matching("1"))
                 .withQueryParam("pageSize", matching("20"))
                 .withQueryParam("panel", matching("ADULT"))
                 .withQueryParam("oucodeL2Code", matching("Z01KR05"))
+                .withHeader("Accept", containing(COURTSCHEDULER_GET_HEARING_SLOTS_TYPE))
                 .willReturn(aResponse().withStatus(BAD_REQUEST.getStatusCode())
                         .withBody("Mandatory Search Criteria sessionEndDate cannot be null")
                 ));

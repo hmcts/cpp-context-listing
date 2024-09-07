@@ -1,11 +1,21 @@
 package uk.gov.moj.cpp.listing.event.processor.azure.util;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import static com.jayway.jsonassert.JsonAssert.with;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.UUID.randomUUID;
+import static javax.json.Json.createArrayBuilder;
+import static javax.json.Json.createObjectBuilder;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.BDDMockito.given;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithDefaults;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
+import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
+import static uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil.getMeridian;
+
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.HearingDay;
 import uk.gov.justice.core.courts.HearingLanguage;
@@ -22,10 +32,6 @@ import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
@@ -34,21 +40,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import static com.jayway.jsonassert.JsonAssert.with;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.UUID.randomUUID;
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.BDDMockito.given;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithDefaults;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
-import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
-import static uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil.getMeridian;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SlotsToJsonStringConverterTest {
@@ -167,7 +170,8 @@ public class SlotsToJsonStringConverterTest {
     @Test
     public void shouldTestConvertNonDefaultDaysToJson() {
 
-        final String payload = converter.convertNonDefaultDaysToJson(HEARING_ID, nonDefaultDays());
+        final JsonArrayBuilder builder = converter.convertNonDefaultDaysToJson(HEARING_ID, nonDefaultDays());
+        final String payload = builder.build().toString();
         assertNotNull(payload);
         with(payload)
                 .assertThat("$[0].duration", equalTo(1))

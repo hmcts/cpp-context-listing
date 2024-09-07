@@ -129,12 +129,12 @@ public class CancelHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyAzureUpdateApiInvoked() {
-        final RequestPatternBuilder nonCancelledDaysBuilder = putRequestedFor(urlEqualTo("/fa-ste-ccm-scsl/hearingSlots"));
+        final RequestPatternBuilder nonCancelledDaysBuilder = putRequestedFor(urlEqualTo("/listingcourtscheduler-api/rest/courtscheduler/hearingslots"));
         nonCancelledHearingDays.forEach(day -> nonCancelledDaysBuilder.withRequestBody(containing("\"sessionDate\":\"" + day.getSittingDay().toLocalDate().toString() + "\"")));
 
         verify(2, nonCancelledDaysBuilder); // non cancelled days must be within azure api request body twice.
 
-        final RequestPatternBuilder cancelledDaysBuilder = putRequestedFor(urlEqualTo("/fa-ste-ccm-scsl/hearingSlots"));
+        final RequestPatternBuilder cancelledDaysBuilder = putRequestedFor(urlEqualTo("/listingcourtscheduler-api/rest/courtscheduler/hearingslots"));
         cancelledHearingDays.forEach(day -> cancelledDaysBuilder.withRequestBody(containing("\"sessionDate\":\"" + day.getSittingDay().toLocalDate().toString() + "\"")));
 
         verify(1,  cancelledDaysBuilder); // cancelled days must be within azure api request body once.

@@ -1,10 +1,9 @@
-package uk.gov.moj.cpp.listing.common.azure.adapter;
+package uk.gov.moj.cpp.listing.common.service;
 
 import static java.lang.String.format;
 import static java.util.Optional.empty;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
-import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
 import uk.gov.moj.cpp.listing.domain.JudicialRole;
 import uk.gov.moj.cpp.listing.domain.JudicialRoleType;
 
@@ -31,9 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
-public class RotaSLServiceAdapter {
+public class CourtSchedulerServiceAdapter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RotaSLServiceAdapter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CourtSchedulerServiceAdapter.class);
 
     @Inject
     private HearingSlotsService hearingSlotsService;
@@ -142,7 +141,7 @@ public class RotaSLServiceAdapter {
         return panelOptional;
     }
 
-    private Response hearingSlotsSearch(final Map<String, String> queryParams) {
+    public Response hearingSlotsSearch(final Map<String, String> queryParams) {
         final Response hearingSlotResponse = hearingSlotsService.search(queryParams);
 
         if (HttpStatus.SC_OK == hearingSlotResponse.getStatus()) {

@@ -43,12 +43,11 @@
         <postgresql.version>42.1.4</postgresql.version>
         <mssql.jdbc.version>7.0.0.jre8</mssql.jdbc.version>
         <commons-csv.version>1.4</commons-csv.version>
-        <staginghmi.version>8.0.34</staginghmi.version>
+        <staginghmi.version>8.0.37</staginghmi.version>
         <defence.version>8.0.55</defence.version>
         <sonar.coverage.exclusions>
             **/uk/gov/justice/api/mapper/**/*,
             **/uk/gov/justice/api/filter/**/*,
-            **/uk/gov/moj/cpp/listing/common/azure/RotaslAzureConfig.java,
             **/uk/gov/moj/cpp/listing/domain/**/*,
             **/uk/gov/justice/listing/event/**/*,
             **/uk/gov/justice/listing/events/**/*,

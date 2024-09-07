@@ -37,7 +37,7 @@ import uk.gov.moj.cpp.listing.command.service.HmiService;
 import uk.gov.moj.cpp.listing.command.utils.CommandToDomainConverter;
 import uk.gov.moj.cpp.listing.command.utils.NonDefaultDayDurationBuilder;
 import uk.gov.moj.cpp.listing.command.utils.RotaSlotToNonDefaultDayConverter;
-import uk.gov.moj.cpp.listing.common.azure.ProvisionalBookingService;
+import uk.gov.moj.cpp.listing.common.service.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
 import uk.gov.moj.cpp.listing.domain.CourtSchedule;
 import uk.gov.moj.cpp.listing.domain.aggregate.Hearing;

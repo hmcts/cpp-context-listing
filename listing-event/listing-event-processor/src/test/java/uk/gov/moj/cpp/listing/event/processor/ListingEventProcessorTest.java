@@ -141,7 +141,7 @@ import uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher;
 import uk.gov.justice.services.test.utils.core.random.Generator;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
-import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.event.processor.azure.builder.SlotDetailBuilder;
 import uk.gov.moj.cpp.listing.event.processor.command.AddCourtApplicationToHearingCommandCollectionConverter;
@@ -320,7 +320,7 @@ public class ListingEventProcessorTest {
     @Mock
     private SlotUpdater slotUpdater;
     @Mock
-    private RotaSLServiceAdapter rotaSLServiceAdapter;
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
     @Captor
     private ArgumentCaptor<PublicListingNewDefendantAddedForCourtProceedings> publicEventPayloadCaptor;
     @Captor
@@ -673,7 +673,7 @@ public class ListingEventProcessorTest {
 
         verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
         verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
-        verify(rotaSLServiceAdapter, never()).getJudicialRoles(anyString(), anyString(), any(), anyString());
+        verify(courtSchedulerServiceAdapter, never()).getJudicialRoles(anyString(), anyString(), any(), anyString());
 
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
@@ -694,7 +694,7 @@ public class ListingEventProcessorTest {
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = prepareRotaSLJudiciaryInfo(hearingSlotsResponse);
 
-        when(rotaSLServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
+        when(courtSchedulerServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
         when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays))
                 .thenReturn(Optional.of(Collections.singletonList(
                         SlotDetailBuilder.slotDetail()
@@ -713,7 +713,7 @@ public class ListingEventProcessorTest {
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS));
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
 
-        verify(rotaSLServiceAdapter, times(1)).getJudicialRoles(anyString(), anyString(), any(), anyString());
+        verify(courtSchedulerServiceAdapter, times(1)).getJudicialRoles(anyString(), anyString(), any(), anyString());
         verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays);
         verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays);
     }
@@ -735,7 +735,7 @@ public class ListingEventProcessorTest {
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = prepareRotaSLJudiciaryInfo(hearingSlotsResponse);
 
-        when(rotaSLServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
+        when(courtSchedulerServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
         when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays))
                 .thenReturn(Optional.of(Collections.singletonList(
                         SlotDetailBuilder.slotDetail()
@@ -754,7 +754,7 @@ public class ListingEventProcessorTest {
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
 
-        verify(rotaSLServiceAdapter, times(1)).getJudicialRoles(anyString(), anyString(), any(), anyString());
+        verify(courtSchedulerServiceAdapter, times(1)).getJudicialRoles(anyString(), anyString(), any(), anyString());
         verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
         verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
 

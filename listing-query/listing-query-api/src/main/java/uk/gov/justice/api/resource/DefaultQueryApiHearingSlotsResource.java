@@ -1,38 +1,37 @@
 package uk.gov.justice.api.resource;
 
+import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toMap;
 import static uk.gov.justice.services.common.converter.LocalDates.from;
-import static java.util.UUID.fromString;
 
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-
-import javax.json.JsonObjectBuilder;
-import org.apache.http.HttpStatus;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.core.annotation.Adapter;
 import uk.gov.justice.services.core.annotation.Component;
 import uk.gov.moj.cpp.listing.common.NoteUUIDService;
-import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
+import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
-import uk.gov.moj.cpp.listing.query.view.service.NotesService;
+
+import org.apache.http.HttpStatus;
 
 @SuppressWarnings({"squid:S1612"})
 @Adapter(Component.QUERY_API)
 public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlotsResource {
 
     @Inject
-    private HearingSlotsService hearingSlotsService;
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
     @Inject
     private NotesService notesService;
@@ -54,7 +53,7 @@ public class DefaultQueryApiHearingSlotsResource implements QueryApiHearingSlots
                                     final String pageNumber) {
 
         final Map<String, String> params = buildParamsMap(panel, sessionStartDate, sessionEndDate, oucodeL2Code, ouCode, courtRoomId, courtRoomNumber, businessType, courtSession, pageSize, pageNumber);
-        final Response response = hearingSlotsService.search(params);
+        final Response response = courtSchedulerServiceAdapter.hearingSlotsSearch(params);
         if(response.getStatusInfo().getStatusCode() != HttpStatus.SC_OK ){
             return response;
         }

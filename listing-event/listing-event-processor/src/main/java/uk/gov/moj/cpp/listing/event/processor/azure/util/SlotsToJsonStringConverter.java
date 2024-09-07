@@ -5,6 +5,8 @@ import static java.util.Objects.nonNull;
 import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
+import static javax.json.Json.createArrayBuilder;
+import static javax.json.Json.createObjectBuilder;
 import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.toIsoString;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.HearingDayDetailConverter.getHearingDayDetails;
 
@@ -29,6 +31,8 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 import javax.inject.Inject;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +44,7 @@ import org.slf4j.LoggerFactory;
 public class SlotsToJsonStringConverter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SlotsToJsonStringConverter.class);
+    private static final String BOOKING_ID = "bookingId";
 
     @Inject
     private ListingReferenceDataService listingReferenceDataService;
@@ -69,7 +74,7 @@ public class SlotsToJsonStringConverter {
         }
 
         final String hearingId = confirmedHearing.getId().toString();
-        final Optional<String> bookingId = jsonEnvelope.payloadAsJsonObject().keySet().contains("bookingId") ? Optional.of(jsonEnvelope.payloadAsJsonObject().getString("bookingId")) : empty();
+        final Optional<String> bookingId = jsonEnvelope.payloadAsJsonObject().keySet().contains(BOOKING_ID) ? Optional.of(jsonEnvelope.payloadAsJsonObject().getString(BOOKING_ID)) : empty();
 
         hearingDayDetails.stream().filter(hearingDay -> hearingDay.getCourtCentreId().isPresent()).forEach(hearingDay -> {
             final UUID courtCentreId = UUID.fromString(hearingDay.getCourtCentreId().get());
@@ -104,13 +109,13 @@ public class SlotsToJsonStringConverter {
         return dayDetail -> !dayDetail.getCourtRoomId().isPresent() && !dayDetail.getCourtCentreId().isPresent();
     }
 
-    public String convertNonDefaultDaysToJson(final UUID hearingId, final List<NonDefaultDay> nonDefaultDays) {
+    public JsonArrayBuilder convertNonDefaultDaysToJson(final UUID hearingId, final List<NonDefaultDay> nonDefaultDays) {
 
         final List<SlotDetail> slots = nonDefaultDays.stream().
                 map(nonDefaultDay -> buildSlotDetailFromNonDefaultDay(hearingId, nonDefaultDay))
                 .collect(toList());
 
-        return toJSONString(slots);
+        return buildJsonArrayBuilder(slots);
     }
 
     private static SlotDetail retrieveSlotDetail(final HearingDayDetail hearingDayDetail,
@@ -159,6 +164,43 @@ public class SlotsToJsonStringConverter {
 
         return jsonSlotArray.toString();
     }
+
+    public static JsonArrayBuilder buildJsonArrayBuilder(final List<SlotDetail> slotDetail) {
+        final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+        slotDetail.forEach(
+                slot -> addBuilderParams(slot, arrayBuilder));
+
+        return arrayBuilder;
+    }
+
+    private static void addBuilderParams(final SlotDetail slot, final JsonArrayBuilder arrayBuilder) {
+        JsonObjectBuilder objectBuilder = createObjectBuilder();
+        objectBuilder.add("duration", slot.getDuration());
+        objectBuilder.add("courtRoomId", slot.getCourtRoomId());
+        if (nonNull(slot.getHearingStartTime())){
+            objectBuilder.add("hearingStartTime", slot.getHearingStartTime());
+        }
+        if (nonNull(slot.getSessionDate())) {
+            objectBuilder.add("sessionDate", slot.getSessionDate());
+        }
+        if (nonNull(slot.getSession())) {
+            objectBuilder.add("session", slot.getSession());
+        }
+        if (nonNull(slot.getOuCode())) {
+            objectBuilder.add("ouCode", slot.getOuCode());
+        }
+        if (nonNull(slot.getHearingId())) {
+            objectBuilder.add("hearingId", slot.getHearingId());
+        }
+        if (nonNull(slot.getBookingId())) {
+            objectBuilder.add(BOOKING_ID, slot.getBookingId());
+        }
+        if (nonNull(slot.getCourtScheduleId())) {
+            objectBuilder.add("courtScheduleId", slot.getCourtScheduleId());
+        }
+        arrayBuilder.add(objectBuilder.build());
+    }
+
 
     private static JSONArray buildJsonArray(final List<SlotDetail> slotDetail) {
         final ObjectMapper objectMapper = new ObjectMapper();

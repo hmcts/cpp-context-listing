@@ -132,8 +132,8 @@ import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
 import uk.gov.moj.cpp.listing.command.utils.RotaSlotToNonDefaultDayConverter;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
 import uk.gov.moj.cpp.listing.command.utils.hearing.HearingUpdateOperationType;
-import uk.gov.moj.cpp.listing.common.azure.ProvisionalBookingService;
-import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
+import uk.gov.moj.cpp.listing.common.service.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
 import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import uk.gov.moj.cpp.listing.domain.CaseSimpleOffences;
@@ -299,7 +299,7 @@ public class ListingCommandHandler {
     private CourtCentreFactory courtCentreFactory;
 
     @Inject
-    private RotaSLServiceAdapter rotaSLServiceAdapter;
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
     @Inject
     private HmiService hmiService;
@@ -623,7 +623,7 @@ public class ListingCommandHandler {
             final boolean hmiEnabled = hmiService.isHmiEnabled(ouCode);
             if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && !hmiEnabled) {
                 setJudiciaryFromRotaSLIfJudiciaryIsEmptyAndMagistrates(judiciary, courtRoomId, nonDefaultDays, ouCode);
-                panel = rotaSLServiceAdapter.getPanelInfo(panelFromCommand, startDate, endDate, courtRoomId, ouCode);
+                panel = courtSchedulerServiceAdapter.getPanelInfo(panelFromCommand, startDate, endDate, courtRoomId, ouCode);
             }
 
             final Stream<Object> judiciaryEvents = getJudiciaryEvents(hearingId, judiciary, hearing);
@@ -709,7 +709,7 @@ public class ListingCommandHandler {
                     .min(Comparator.comparing(NonDefaultDay::getStartTime))
                     .ifPresent(firstStartTimeNonDefaultDay -> {
                         final LocalDate firstStartDate = firstStartTimeNonDefaultDay.getStartTime().toLocalDate();
-                        judiciary.addAll(rotaSLServiceAdapter.getJudicialRoles(firstStartDate.toString(),
+                        judiciary.addAll(courtSchedulerServiceAdapter.getJudicialRoles(firstStartDate.toString(),
                                 ouCode,
                                 Optional.of(MeridianUtil.getMeridian(firstStartTimeNonDefaultDay.getStartTime())),
                                 courtRoomId.toString()));

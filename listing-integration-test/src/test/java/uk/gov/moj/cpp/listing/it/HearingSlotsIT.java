@@ -12,8 +12,8 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
-import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetAvailableHearingSlots;
-import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubSessionEndDateEmptyRequest;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetAvailableHearingSlots;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubSessionEndDateEmptyRequest;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 
 import java.util.UUID;
@@ -24,7 +24,6 @@ import uk.gov.justice.services.test.utils.core.http.RequestParams;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.justice.services.test.utils.core.rest.RestClient;
 
-import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
@@ -35,7 +34,7 @@ import org.apache.http.HttpStatus;
 import org.junit.Test;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.NotesSteps;
-import uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub;
+import uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub;
 
 public class HearingSlotsIT extends AbstractIT {
 
@@ -165,7 +164,7 @@ public class HearingSlotsIT extends AbstractIT {
     }
 
     private void createListingNotes(){
-        final JsonObject payload = stringToJsonObjectConverter.convert(getPayload(AzureScheduleServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON));
+        final JsonObject payload = stringToJsonObjectConverter.convert(getPayload(CourtSchedulerServiceStub.LISTING_SEARCH_HEARING_SLOTS_JSON));
         payload.getJsonArray("hearingSlots").stream().map(h -> (JsonObject) h).forEach(hearing -> {
             notesSteps.createNoteForListing(UUID.fromString(hearing.getString("courtRoomId")), hearing.getString("sessionDate"), "Note 1");
         });

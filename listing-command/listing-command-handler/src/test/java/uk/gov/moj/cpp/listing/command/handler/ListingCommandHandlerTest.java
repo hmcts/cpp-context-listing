@@ -176,8 +176,8 @@ import uk.gov.moj.cpp.listing.command.utils.ProsecutionCaseDefendantOffenceIdsBu
 import uk.gov.moj.cpp.listing.command.utils.ProsecutionCasesBuilder;
 import uk.gov.moj.cpp.listing.command.utils.RotaSlotToNonDefaultDayConverter;
 import uk.gov.moj.cpp.listing.command.utils.hearing.ExtendHearingUtils;
-import uk.gov.moj.cpp.listing.common.azure.ProvisionalBookingService;
-import uk.gov.moj.cpp.listing.common.azure.adapter.RotaSLServiceAdapter;
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
+import uk.gov.moj.cpp.listing.common.service.ProvisionalBookingService;
 import uk.gov.moj.cpp.listing.domain.Address;
 import uk.gov.moj.cpp.listing.domain.ApplicantRespondent;
 import uk.gov.moj.cpp.listing.domain.BailStatus;
@@ -514,7 +514,7 @@ public class ListingCommandHandlerTest {
     @Mock
     private CourtCentreFactory courtCentreFactory;
     @Mock
-    private RotaSLServiceAdapter rotaSLServiceAdapter;
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
     @Mock
     private HmiService hmiService;
     @Spy
@@ -925,7 +925,7 @@ public class ListingCommandHandlerTest {
                 );
 
 
-        when(rotaSLServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
+        when(courtSchedulerServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
         when(nonDefaultDayDurationBuilder.buildNewUpdateHearingForListingWithNewNonDefaultDays(any(), any())).thenReturn(updateHearingForListingEnriched.getUpdateHearingForListing());
         when(hearing.changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
@@ -948,7 +948,7 @@ public class ListingCommandHandlerTest {
         when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hmiService.isHmiEnabled(any())).thenReturn(false);
 
-        when(rotaSLServiceAdapter.getPanelInfo(any(), any(LocalDate.class), any(LocalDate.class), any(UUID.class), anyString())).thenReturn(Optional.of("YOUTH"));
+        when(courtSchedulerServiceAdapter.getPanelInfo(any(), any(LocalDate.class), any(LocalDate.class), any(UUID.class), anyString())).thenReturn(Optional.of("YOUTH"));
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -969,7 +969,7 @@ public class ListingCommandHandlerTest {
         verify(hearing).assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1);
         verify(hearing).assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1);
         verify(courtCentreFactory).getOrganisationUnit(COURT_CENTRE_ID, commandEnvelope);
-        verify(rotaSLServiceAdapter).getJudicialRoles(anyString(), anyString(), any(), anyString());
+        verify(courtSchedulerServiceAdapter).getJudicialRoles(anyString(), anyString(), any(), anyString());
         verify(hearing, never()).raiseUpdateHearingInStagingHmi(any(Optional.class));
     }
 
@@ -1021,7 +1021,7 @@ public class ListingCommandHandlerTest {
                 );
 
 
-        when(rotaSLServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
+        when(courtSchedulerServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
         when(nonDefaultDayDurationBuilder.buildNewUpdateHearingForListingWithNewNonDefaultDays(any(), any())).thenReturn(updateHearingForListingEnriched.getUpdateHearingForListing());
         when(hearing.changeCourtCentre(COURT_CENTRE_ID, HEARING_ID_1)).thenReturn(mock(Stream.class));
@@ -1062,8 +1062,8 @@ public class ListingCommandHandlerTest {
         verify(hearing).assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1);
         verify(courtCentreFactory).getOrganisationUnit(COURT_CENTRE_ID, commandEnvelope);
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
-        verify(rotaSLServiceAdapter, never()).getPanelInfo(any(Optional.class), any(LocalDate.class), any(LocalDate.class), any(UUID.class), anyString());
-        verify(rotaSLServiceAdapter, never()).getJudicialRoles(anyString(), anyString(), any(), anyString());
+        verify(courtSchedulerServiceAdapter, never()).getPanelInfo(any(Optional.class), any(LocalDate.class), any(LocalDate.class), any(UUID.class), anyString());
+        verify(courtSchedulerServiceAdapter, never()).getJudicialRoles(anyString(), anyString(), any(), anyString());
     }
 
     @Test

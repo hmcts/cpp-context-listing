@@ -2,11 +2,13 @@ package uk.gov.moj.cpp.listing.event.processor;
 
 import static java.time.ZonedDateTime.now;
 import static java.util.UUID.randomUUID;
+import static javax.json.Json.createArrayBuilder;
+import static javax.json.Json.createObjectBuilder;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.events.AvailableSlotsForHearingFreed.availableSlotsForHearingFreed;
 import static uk.gov.justice.listing.events.NonDefaultDay.nonDefaultDay;
 
@@ -15,7 +17,7 @@ import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.listing.events.NonDefaultDaysAssignedToHearing;
 import uk.gov.justice.listing.events.NonDefaultDaysChangedForHearing;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
+import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.event.processor.azure.util.SlotsToJsonStringConverter;
 
 import java.time.ZonedDateTime;
@@ -23,6 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
 import javax.ws.rs.core.Response;
 
 import org.junit.Test;
@@ -32,11 +36,12 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class AzureListingEventProcessorTest {
+public class CourtSchedulerListingEventProcessorTest {
 
     private static final UUID HEARING_ID = randomUUID();
     private static final ZonedDateTime START_DATE_TIME = now();
-    private static final String TEST_OUTPUT = "sample";
+    private static final JsonArrayBuilder TEST_OUTPUT_ARRAY = createArrayBuilder();
+    private final JsonObjectBuilder TEST_OUTPUT = createObjectBuilder().add("hearingSlots", TEST_OUTPUT_ARRAY.build());
 
     @Mock
     private SlotsToJsonStringConverter slotsToJsonStringConverter;
@@ -48,7 +53,7 @@ public class AzureListingEventProcessorTest {
     private Response response;
 
     @InjectMocks
-    private AzureListingEventProcessor azureListingEventProcessor;
+    private CourtSchedulerListingEventProcessor courtSchedulerListingEventProcessor;
 
     @Test
     public void shouldUpdateSlotsInAzureWhenNonDefaultDaysAssigned() {
@@ -60,11 +65,11 @@ public class AzureListingEventProcessorTest {
                 .build();
         given(envelope.payload()).willReturn(hearing);
 
-        given(slotsToJsonStringConverter.convertNonDefaultDaysToJson(HEARING_ID, hearing.getNonDefaultDays())).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.convertNonDefaultDaysToJson(HEARING_ID, hearing.getNonDefaultDays())).willReturn(TEST_OUTPUT_ARRAY);
 
-        azureListingEventProcessor.nonDefaultDaysAssignedForHearing(envelope);
+        courtSchedulerListingEventProcessor.nonDefaultDaysAssignedForHearing(envelope);
 
-        verify(hearingSlotsService).update(TEST_OUTPUT);
+        verify(hearingSlotsService).update(TEST_OUTPUT.build());
     }
 
     @Test
@@ -76,24 +81,24 @@ public class AzureListingEventProcessorTest {
                 .withHearingId(HEARING_ID)
                 .build();
         given(envelope.payload()).willReturn(hearing);
-        given(slotsToJsonStringConverter.convertNonDefaultDaysToJson(HEARING_ID, hearing.getNonDefaultDays())).willReturn(TEST_OUTPUT);
+        given(slotsToJsonStringConverter.convertNonDefaultDaysToJson(HEARING_ID, hearing.getNonDefaultDays())).willReturn(TEST_OUTPUT_ARRAY);
 
-        azureListingEventProcessor.nonDefaultDaysChangedForHearing(envelope);
+        courtSchedulerListingEventProcessor.nonDefaultDaysChangedForHearing(envelope);
 
-        verify(hearingSlotsService).update(TEST_OUTPUT);
+        verify(hearingSlotsService).update(TEST_OUTPUT.build());
     }
 
     @Test
     public void shouldDeleteSlotsInAzureWhenHearingSlotsAvailable() {
         final Envelope<AvailableSlotsForHearingFreed> envelope = (Envelope<AvailableSlotsForHearingFreed>) mock(Envelope.class);
-        when(hearingSlotsService.delete(any(UUID.class))).thenReturn(response);
+        doNothing().when(hearingSlotsService).delete(any(UUID.class));
 
         final AvailableSlotsForHearingFreed hearing = availableSlotsForHearingFreed()
                 .withHearingId(HEARING_ID)
                 .build();
         given(envelope.payload()).willReturn(hearing);
 
-        azureListingEventProcessor.freeAvailableHearingSlots(envelope);
+        courtSchedulerListingEventProcessor.freeAvailableHearingSlots(envelope);
 
         verify(hearingSlotsService).delete(HEARING_ID);
     }

@@ -8,7 +8,7 @@ import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsDataWithAll
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingDayFactory.buildHearingDaysWithCancelledFlag;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.MAGISTRATES_JURISDICTION;
-import static uk.gov.moj.cpp.listing.utils.AzureScheduleServiceStub.stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased;
+import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased;
 
 import uk.gov.moj.cpp.listing.steps.CancelHearingSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -19,6 +19,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.junit.Test;
 
 

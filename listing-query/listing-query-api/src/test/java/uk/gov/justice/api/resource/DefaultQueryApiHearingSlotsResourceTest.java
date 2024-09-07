@@ -20,7 +20,6 @@ import org.junit.Before;
 import org.mockito.Spy;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
-import uk.gov.moj.cpp.listing.common.azure.HearingSlotsService;
 
 import java.util.Map;
 
@@ -33,6 +32,9 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
+import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
@@ -43,7 +45,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
 
 
     @Mock
-    private HearingSlotsService hearingSlotsService;
+    private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
 
     @Mock
     private NotesService notesService;
@@ -71,7 +73,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
 
     @Test
     public void searchHearingSlots() {
-        when(hearingSlotsService.search(any(Map.class))).thenReturn(response);
+        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
         when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
 
         Response result = resource.getHearingSlots("ADULT",
@@ -86,7 +88,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
                 "20",
                 "1");
 
-        verify(hearingSlotsService).search(any(Map.class));
+        verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
         JsonObject payload = (JsonObject) result.getEntity();
         assertNotNull(payload.getJsonNumber("results"));
@@ -98,7 +100,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
 
     @Test
     public void shouldReturnListingNotesWhenRelevantListingNotesExist(){
-        when(hearingSlotsService.search(any(Map.class))).thenReturn(response);
+        when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
         when(notesService.findNotes(any(List.class))).thenReturn(createNotes(response));
 
         Response result = resource.getHearingSlots("ADULT",
@@ -113,7 +115,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
                 "20",
                 "1");
 
-        verify(hearingSlotsService).search(any(Map.class));
+        verify(courtSchedulerServiceAdapter).hearingSlotsSearch(any(Map.class));
         verify(notesService).findNotes(any(List.class));
         JsonObject payload = (JsonObject) result.getEntity();
         assertNotNull(payload.getJsonNumber("results"));
