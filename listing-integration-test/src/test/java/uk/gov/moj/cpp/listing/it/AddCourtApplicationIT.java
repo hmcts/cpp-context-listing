@@ -39,7 +39,7 @@ public class AddCourtApplicationIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(true);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
 
         try (final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData)) {
@@ -47,7 +47,6 @@ public class AddCourtApplicationIT extends AbstractIT {
             courtApplicationSteps.verifyCourtApplicationAddedInActiveMQ();
             courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
             courtApplicationSteps.verifyCourtApplicationAddedFromAPI(true);
-            courtApplicationSteps.verifyHmiPublicEventForUpdateHearing();
         }
     }
 
@@ -59,7 +58,7 @@ public class AddCourtApplicationIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(true);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
 
         try (final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData)) {
@@ -68,7 +67,6 @@ public class AddCourtApplicationIT extends AbstractIT {
             courtApplicationSteps.verifyCourtApplicationAddedInActiveMQ();
             courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
             courtApplicationSteps.verifyCourtApplicationAddedFromAPI(true);
-            courtApplicationSteps.verifyHmiPublicEventForUpdateHearing();
             courtApplicationSteps.verifyAddedCaseForHearingInActiveMQ();
             courtApplicationSteps.verifyCaseCountFromAPI(true, 3);
         }

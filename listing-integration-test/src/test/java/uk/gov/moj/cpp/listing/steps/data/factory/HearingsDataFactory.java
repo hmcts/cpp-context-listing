@@ -760,7 +760,7 @@ public class HearingsDataFactory {
     }
 
     private static HearingData notHmiEnabledRandomHearing(final String jurisdictionType) {
-        return randomHearing(UUID.fromString("6bf56746-cfe8-40bc-a789-3fae393c33ab"), null, null, jurisdictionType);
+        return randomHearing(UUID.fromString("16ed5e59-40bb-3e05-b525-4ddfbb8fca13"), null, null, jurisdictionType);
     }
 
     private static HearingData randomHearingWithLegalEntity() {
@@ -772,7 +772,7 @@ public class HearingsDataFactory {
     }
 
     private static HearingData randomHearingNotHmiEnabled(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {
-        return randomHearing(UUID.fromString("6bf56746-cfe8-40bc-a789-3fae393c33ab"), hearingEndDate, courtRoomId, judicialRoles);
+        return randomHearing(UUID.fromString("16ed5e59-40bb-3e05-b525-4ddfbb8fca13"), hearingEndDate, courtRoomId, judicialRoles);
     }
 
     private static HearingData randomHearingForHMI(final LocalDate hearingEndDate, final UUID courtRoomId, final List<JudicialRoleData> judicialRoles) {

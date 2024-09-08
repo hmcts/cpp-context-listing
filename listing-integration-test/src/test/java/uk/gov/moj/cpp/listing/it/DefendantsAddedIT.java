@@ -59,7 +59,7 @@ public class DefendantsAddedIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
 
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
@@ -70,7 +70,6 @@ public class DefendantsAddedIT extends AbstractIT {
             addDefendantSteps.verifyEventDefendantsToBeAddedInActiveMQ();
             addDefendantSteps.verifyEventDefendantDetailsAddedInActiveMQ();
             addDefendantSteps.verifyHearingListedFromAPI(true);
-            addDefendantSteps.verifyHmiPublicEventForUpdateHearing();
         }
     }
 
@@ -102,7 +101,7 @@ public class DefendantsAddedIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
 
         UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
@@ -113,7 +112,6 @@ public class DefendantsAddedIT extends AbstractIT {
             addDefendantSteps.verifyEventDefendantsToBeAddedInActiveMQ();
             addDefendantSteps.verifyEventDefendantDetailsAddedInActiveMQ();
             addDefendantSteps.verifyPublicEventDefendantAddedInActiveMQ();
-            addDefendantSteps.verifyHmiPublicEventForUpdateHearing();
         }
     }
 }

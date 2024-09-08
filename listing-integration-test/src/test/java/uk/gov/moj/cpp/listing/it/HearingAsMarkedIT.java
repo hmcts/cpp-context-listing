@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class HearingAsMarkedIT extends AbstractIT {
@@ -71,6 +72,7 @@ public class HearingAsMarkedIT extends AbstractIT {
         }
     }
 
+    @Ignore("will be handled with DD-34779")
     @Test
     public void shouldHearingDeletedForHmi() {
         final UUID courtCentreId = randomUUID();

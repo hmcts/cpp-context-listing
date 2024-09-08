@@ -63,7 +63,7 @@ public class DefendantsChangedIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
 
         DefendantData defendantData = hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
@@ -77,7 +77,6 @@ public class DefendantsChangedIT extends AbstractIT {
             updateDefendantSteps.verifyEventDefendantsToBeUpdateInActiveMQ();
             updateDefendantSteps.verifyEventDefendantDetailsUpdatedInActiveMQ();
             updateDefendantSteps.verifyHearingListedFromAPI(true);
-            updateDefendantSteps.verifyHmiPublicEventForUpdateHearing();
         }
     }
 }

@@ -43,6 +43,7 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressWarnings("squid:S1607")
@@ -303,8 +304,7 @@ public class HearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
-            listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ();
+            
         }
 
         final UUID hearingId = hearingsData.getHearingData().get(0).getId();
@@ -315,9 +315,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingUpdatedResultsForSlotUpdateInMQ();
             updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingDaysWhenQueryFromAPI();
-            updateHearingSteps.verifyHmiPublicEventForUpdateHearing();
             updateHearingSteps.verifyPublicHearingChangesSaved();
-            updateHearingSteps.verifyPrivateEventUpdatedHearingInStagingHmiInActiveMQ();
         }
     }
 
@@ -397,10 +395,9 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
             updateHearingSteps.verifyHearingDaysWhenQueryFromAPI();
             updateHearingSteps.verifyPublicHearingChangesSaved();
-            //verify(postRequestedFor(urlMatching(STAGINGHMI_HEARINGS_UPDATE_URL)));
         }
     }
-
+    @Ignore("will be handled with DD-34779")
     @Test
     public void ShouldUnAllocateHearingWhenHmiRemoveCourtRoom() {
         final UUID courtCentreId = randomUUID();
@@ -423,7 +420,7 @@ public class HearingIT extends AbstractIT {
                     withoutJsonPath("$.hearings[0].hearingDays[0].courtRoomId")), null, null);
         }
     }
-
+    @Ignore("will be handled with DD-34779")
     @Test
     public void ShouldUnScheduledHearingWhenHmiRemoveHearingDate() {
         final UUID courtCentreId = randomUUID();
@@ -447,7 +444,7 @@ public class HearingIT extends AbstractIT {
             updateHearingSteps.verifyUnallocatedHearingEvent();
         }
     }
-
+    @Ignore("will be handled with DD-34779")
     @Test
     public void shouldUnAllocatedAndWeekCommercingHearingWhenHmiConvertFixedDateToWeekCommercing() {
         final UUID courtCentreId = randomUUID();

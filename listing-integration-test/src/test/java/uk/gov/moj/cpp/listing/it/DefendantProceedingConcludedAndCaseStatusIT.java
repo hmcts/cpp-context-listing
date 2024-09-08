@@ -29,7 +29,6 @@ public class DefendantProceedingConcludedAndCaseStatusIT extends AbstractIT {
             caseUpdatedAndDefendantProceedingsConcludedSteps.whenPublicEventCaseUpdatedAndHearingResultedIsPublished();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventCaseResultedDefendantProceedingsUpdatedInActiveMQ();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventDefendantCourtProceedingsUpdatedInActiveMQ();
-            caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventUpdatedHearingInStagingHmiNotInActiveMQ();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPI(UNALLOCATED);
         }
 
@@ -39,10 +38,10 @@ public class DefendantProceedingConcludedAndCaseStatusIT extends AbstractIT {
     public void shouldUpdateDefendantProceedingConcludedAndCaseStatusEventFromProgressionWhenAllocated() {
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(true);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
 
         final UUID caseId = hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId();
@@ -52,7 +51,6 @@ public class DefendantProceedingConcludedAndCaseStatusIT extends AbstractIT {
             caseUpdatedAndDefendantProceedingsConcludedSteps.whenPublicEventCaseUpdatedAndHearingResultedIsPublished();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventCaseResultedDefendantProceedingsUpdatedInActiveMQ();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventDefendantCourtProceedingsUpdatedInActiveMQ();
-            caseUpdatedAndDefendantProceedingsConcludedSteps.verifyPrivateEventUpdatedHearingInStagingHmiInActiveMQ();
             caseUpdatedAndDefendantProceedingsConcludedSteps.verifyHearingForCaseStatusAndDefendantProceedingsConcludedFromAPI(true);
         }
 

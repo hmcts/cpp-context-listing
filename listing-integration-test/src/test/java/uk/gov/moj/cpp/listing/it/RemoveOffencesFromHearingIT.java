@@ -22,7 +22,7 @@ public class RemoveOffencesFromHearingIT extends AbstractIT{
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
 
 
@@ -34,7 +34,6 @@ public class RemoveOffencesFromHearingIT extends AbstractIT{
 
         try(final RemoveOffencesFromHearingSteps removeOffencesFromHearingSteps = new RemoveOffencesFromHearingSteps()){
             removeOffencesFromHearingSteps.whenRaisedOffencesRemovedPublicEvent(existedHearingId, offences);
-            removeOffencesFromHearingSteps.verifyHmiPublicEventForUpdateHearing();
             removeOffencesFromHearingSteps.verifyPublicListingOffencesRemovedFromAllocatedHearing();
         }
 

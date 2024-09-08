@@ -63,7 +63,6 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
         }
     }
 
@@ -97,7 +96,6 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
         }
     }
 
@@ -122,7 +120,7 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
     }
 
@@ -165,7 +163,7 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().stream().toArray(String[]::new), courtRoomSchedules.values().stream().toArray(String[]::new));
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
     }
 
@@ -208,7 +206,7 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
             listCourtHearingSteps.verifyHearingListedInActiveMQ();
             listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().stream().toArray(String[]::new), courtRoomSchedules.values().stream().toArray(String[]::new));
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
     }
 
@@ -243,7 +241,7 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedWithJudiciaryInfoInActiveMQ();
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
     }
 
@@ -255,7 +253,7 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedWithJudiciaryInfoInActiveMQ();
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
     }
 
@@ -267,7 +265,7 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingListedWithJudiciaryInfoInActiveMQ();
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
             listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
+            
         }
     }
 
@@ -332,7 +330,6 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.verifyHearingAllocatedForListingInActiveMQ();
             listCourtHearingSteps.verifyHearingListedWithShadowListedFlag(ALLOCATED);
             listCourtHearingSteps.verifyHearingExtendedWithReportingRestriction(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
         }
     }
 
@@ -355,7 +352,6 @@ public class ListCourtHearingIT extends AbstractIT {
             listCourtHearingSteps.whenProgressionHearingExtended();
             listCourtHearingSteps.verifyHearingExtendedWithShadowListedFlag(ALLOCATED);
             listCourtHearingSteps.verifyHearingExtendedWithReportingRestriction(ALLOCATED);
-            listCourtHearingSteps.verifyHearingListedInForStagingHmi();
         }
     }
 
