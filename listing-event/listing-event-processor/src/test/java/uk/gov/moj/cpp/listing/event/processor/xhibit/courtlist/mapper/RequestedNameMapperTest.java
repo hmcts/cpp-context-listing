@@ -6,12 +6,11 @@ import static org.apache.commons.lang3.StringUtils.SPACE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RequestedNameMapperTest {
     private static final String REQUESTED_NAME = "requestedName";

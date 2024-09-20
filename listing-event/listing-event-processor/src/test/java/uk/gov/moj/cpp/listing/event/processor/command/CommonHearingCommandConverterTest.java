@@ -11,7 +11,7 @@ import uk.gov.justice.listing.events.ReportingRestriction;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 
 public class CommonHearingCommandConverterTest {

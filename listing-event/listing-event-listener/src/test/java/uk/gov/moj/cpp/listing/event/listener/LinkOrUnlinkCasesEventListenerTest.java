@@ -1,18 +1,18 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import static java.util.Collections.singletonList;
+import static java.util.UUID.randomUUID;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.listing.events.Marker.marker;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.LinkedCases;
@@ -30,22 +30,22 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import static java.util.Collections.singletonList;
-import static java.util.UUID.randomUUID;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static uk.gov.justice.listing.events.Marker.marker;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class LinkOrUnlinkCasesEventListenerTest {
     private static final String LISTED_CASES = "listedCases";
     private static final UUID CASE_ID = randomUUID();
@@ -85,7 +85,7 @@ public class LinkOrUnlinkCasesEventListenerTest {
 
     private JsonNode testCasesProperties;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         final List<ListedCase> testCases = createListedCases();
         final String testCasesString = mapper.writeValueAsString(testCases);
@@ -102,7 +102,7 @@ public class LinkOrUnlinkCasesEventListenerTest {
         when(envelope.payload()).thenReturn(event);
 
         linkOrUnlinkCasesEventListener.handleLinkedCasesUpdated(envelope);
-        verify(properties).replace(anyObject(), argumentCaptor.capture());
+        verify(properties).replace(any(), argumentCaptor.capture());
 
         final JsonNode caseNode = argumentCaptor.getValue().get(0);
         assertThat(caseNode.get("id").textValue(), equalTo(CASE_ID.toString()));
@@ -128,7 +128,7 @@ public class LinkOrUnlinkCasesEventListenerTest {
 
         linkOrUnlinkCasesEventListener.handleLinkedCasesUpdated(envelope);
 
-        verify(properties).replace(anyObject(), argumentCaptor.capture());
+        verify(properties).replace(any(), argumentCaptor.capture());
 
         final JsonNode caseNode = argumentCaptor.getValue().get(0);
         assertThat(caseNode.get("id").textValue(), equalTo(CASE_ID.toString()));

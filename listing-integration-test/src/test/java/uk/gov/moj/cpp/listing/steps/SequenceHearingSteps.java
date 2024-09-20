@@ -9,9 +9,9 @@ import static java.time.ZoneOffset.UTC;
 import static javax.json.Json.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
 import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -23,6 +23,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.SequenceHearingData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
@@ -33,20 +34,18 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
+public class SequenceHearingSteps extends AbstractIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SequenceHearingSteps.class);
 
@@ -60,9 +59,9 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
             ".search.hearings+json";
 
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
-    private MessageConsumer privateMessageConsumerHearingDaysSequenced;
-    private MessageConsumer privateMessageConsumerAllocatedHearingUpdatedForListing;
-    private MessageConsumer publicMessageConsumerHearingUpdated;
+    private JmsMessageConsumerClient privateMessageConsumerHearingDaysSequenced;
+    private JmsMessageConsumerClient privateMessageConsumerAllocatedHearingUpdatedForListing;
+    private JmsMessageConsumerClient publicMessageConsumerHearingUpdated;
 
 
     private SequenceHearingData sequenceHearingData;
@@ -134,17 +133,6 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
         verifyHearingPublicDetails(jsonResponse);
     }
 
-    @Override
-    public void close() {
-        try {
-
-            closeMessageConsumers();
-
-        } catch (JMSException e) {
-            LOGGER.error("Error closing privateMessageConsumerHearingListed: {}", e.getMessage());
-        }
-    }
-
     private void verifyAllocatedHearingUpdatedForListing() {
         JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerAllocatedHearingUpdatedForListing);
         LOGGER.info("jsonResponse from privateMessageConsumerAllocatedHearingUpdatedForListing: {}", jsonResponse.prettify());
@@ -160,7 +148,7 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get("judiciary[0].isDeputy"), is(sequenceHearingData.getUpdatedHearingData().getJudiciary().get(0).getIsDeputy().get()));
         assertThat(jsonResponse.get("judiciary[0].isBenchChairman"), is(sequenceHearingData.getUpdatedHearingData().getJudiciary().get(0).getIsBenchChairman().get()));
 
-        assertThat(jsonResponse.get("hearingDays.size"), is(2));
+        assertThat(jsonResponse.get("hearingDays.size()"), is(2));
         assertThat(jsonResponse.get("hearingDays[0].hearingDate"), is(sequenceHearingData.getUpdatedHearingData().getStartDate()));
         assertThat(jsonResponse.get("hearingDays[0].sequence"), is(sequenceHearingData.getSequencedDays().get(parse(sequenceHearingData.getUpdatedHearingData().getStartDate()))));
         assertThat(jsonResponse.get("hearingDays[1].hearingDate"), is(sequenceHearingData.getUpdatedHearingData().getEndDate()));
@@ -169,20 +157,10 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
 
 
     private void createMessageConsumers() {
-        privateMessageConsumerHearingDaysSequenced = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_DAYS_SEQUENCED);
-        publicMessageConsumerHearingUpdated = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_HEARING_UPDATED);
-        privateMessageConsumerAllocatedHearingUpdatedForListing = privateEvents.createConsumer(EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING);
-
-
+        privateMessageConsumerHearingDaysSequenced = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_DAYS_SEQUENCED);
+        publicMessageConsumerHearingUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_UPDATED);
+        privateMessageConsumerAllocatedHearingUpdatedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING);
     }
-
-    private void closeMessageConsumers() throws JMSException {
-        privateMessageConsumerHearingDaysSequenced.close();
-        publicMessageConsumerHearingUpdated.close();
-        privateMessageConsumerAllocatedHearingUpdatedForListing.close();
-    }
-
-
 
 
     private String prepareJsonForSequenceHearingDays() {
@@ -218,7 +196,7 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
 
         assertThat(jsonResponse.get("updatedHearing.id"), is(sequenceHearingData.getHearingId().toString()));
 
-        assertThat(jsonResponse.get("updatedHearing.hearingDays.size"), is(2));
+        assertThat(jsonResponse.get("updatedHearing.hearingDays.size()"), is(2));
         assertThat(jsonResponse.get("updatedHearing.hearingDays[0].listingSequence"), is(sequence));
         assertThat(jsonResponse.get("updatedHearing.hearingDays[0].sittingDay"), is(fromString(startDateTime).format(ZONED_DATE_TIME_FORMAT)));
         assertThat(jsonResponse.get("updatedHearing.hearingDays[1].listingSequence"), is(sequence1));
@@ -232,7 +210,7 @@ public class SequenceHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.info("jsonResponse from privateMessageConsumerHearingDaysSequenced: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("hearingId"), is(sequenceHearingData.getHearingId().toString()));
-        assertThat(jsonResponse.get("hearingDays.size"), is(2));
+        assertThat(jsonResponse.get("hearingDays.size()"), is(2));
         assertThat(jsonResponse.get("hearingDays[0].hearingDate"), is(sequenceHearingData.getUpdatedHearingData().getStartDate()));
         assertThat(jsonResponse.get("hearingDays[0].sequence"), is(sequenceHearingData.getSequencedDays().get(parse(sequenceHearingData.getUpdatedHearingData().getStartDate()))));
         assertThat(jsonResponse.get("hearingDays[1].hearingDate"), is(sequenceHearingData.getUpdatedHearingData().getEndDate()));

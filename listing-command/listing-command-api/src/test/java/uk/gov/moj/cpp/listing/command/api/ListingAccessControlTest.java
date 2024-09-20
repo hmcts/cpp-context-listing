@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api;
 
+import static java.util.Collections.singletonMap;
 import static org.mockito.BDDMockito.given;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ADMINISTRATORS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ASSOCIATE;
@@ -23,8 +24,7 @@ import uk.gov.moj.cpp.listing.domain.RuleConstants;
 
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.kie.api.runtime.ExecutionResults;
 import org.mockito.Mock;
 
@@ -51,6 +51,15 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Mock
     private UserAndGroupProvider userAndGroupProvider;
 
+    public ListingAccessControlTest() {
+        super("COMMAND_API_SESSION");
+    }
+
+    @Override
+    protected Map<Class<?>, Object> getProviderMocks() {
+        return singletonMap(UserAndGroupProvider.class, userAndGroupProvider);
+    }
+
     @Test
     public void shouldAllowAuthorisedUserToListCourtHearing() {
         final Action action = createActionFor(ACTION_LIST_COURT_HEARING);
@@ -65,8 +74,6 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowUnauthorisedUserToListCourtHearing() {
         final Action action = createActionFor(ACTION_LIST_COURT_HEARING);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
-
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }
@@ -85,8 +92,6 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowUnauthorisedUserToListUnscheduledCourtHearing() {
         final Action action = createActionFor(ACTION_LIST_UNSCHEDULED_COURT_HEARING);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
-
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }
@@ -133,7 +138,6 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
         assertSuccessfulOutcome(results);
     }
 
-
     @Test
     public void shouldAllowAuthorisedUserToPublishCourtList() {
         final Action action = createActionFor(ACTION_PUBLISH_COURT_LIST);
@@ -159,8 +163,6 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowAuthorisedUserToCreateListingNote() {
         final Action action = createActionFor(ACTION_CREATE_LISTING_NOTE);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RANDOM_GROUP)).willReturn(false);
-
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }
@@ -180,8 +182,6 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowAuthorisedUserToDeleteListingNote() {
         final Action action = createActionFor(ACTION_DELETE_LISTING_NOTE);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RANDOM_GROUP)).willReturn(false);
-
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }
@@ -264,11 +264,6 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
     public void shouldNotAllowUnauthorisedUsersToEditNote() {
 
         final Action action = createActionFor(ACTION_EDIT_NOTE_FOR_LISTING);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action,
-                RuleConstants.YOTS, CPS,
-                NPS))
-                .willReturn(false);
-
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }
@@ -291,10 +286,5 @@ public class ListingAccessControlTest extends BaseDroolsAccessControlTest {
         final ExecutionResults results = executeRulesWith(action);
 
         assertFailureOutcome(results);
-    }
-
-    @Override
-    protected Map<Class, Object> getProviderMocks() {
-        return ImmutableMap.<Class, Object>builder().put(UserAndGroupProvider.class, userAndGroupProvider).build();
     }
 }

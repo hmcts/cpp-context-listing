@@ -7,7 +7,7 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.helper.EventStreamMockHelper.verifyAppendAndGetArgumentFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
@@ -48,16 +48,16 @@ import java.util.stream.Stream;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class RemoveCaseFromGroupCasesCommandHandlerTest {
     private static final UUID HEARING1_ID = randomUUID();
     private static final UUID HEARING2_ID = randomUUID();
@@ -118,31 +118,16 @@ public class RemoveCaseFromGroupCasesCommandHandlerTest {
     private final ProsecutionCase case1 = getProsecutionCase(GROUP_ID, CASE1_ID, Boolean.FALSE, Boolean.FALSE);
     private final ProsecutionCase case2 = getProsecutionCase(GROUP_ID, CASE2_ID, Boolean.FALSE, Boolean.FALSE);
 
-    @Before
+    @BeforeEach
     public void setup() {
         masterCaseAggregate = new Case();
         case1Aggregate = new Case();
         case2Aggregate = new Case();
 
-        when(eventSource.getStreamById(MASTER_CASE_ID)).thenReturn(masterCaseEventStream);
-        when(eventSource.getStreamById(CASE1_ID)).thenReturn(case1EventStream);
-        when(eventSource.getStreamById(CASE2_ID)).thenReturn(case2EventStream);
-
-        when(aggregateService.get(masterCaseEventStream, Case.class)).thenReturn(masterCaseAggregate);
-        when(aggregateService.get(case1EventStream, Case.class)).thenReturn(case1Aggregate);
-        when(aggregateService.get(case2EventStream, Case.class)).thenReturn(case2Aggregate);
-
         hearing1Aggregate = new Hearing();
         hearing2Aggregate = new Hearing();
         hearing3Aggregate = new Hearing();
 
-        when(eventSource.getStreamById(HEARING1_ID)).thenReturn(hearing1EventStream);
-        when(eventSource.getStreamById(HEARING2_ID)).thenReturn(hearing2EventStream);
-        when(eventSource.getStreamById(HEARING3_ID)).thenReturn(hearing3EventStream);
-
-        when(aggregateService.get(hearing1EventStream, Hearing.class)).thenReturn(hearing1Aggregate);
-        when(aggregateService.get(hearing2EventStream, Hearing.class)).thenReturn(hearing2Aggregate);
-        when(aggregateService.get(hearing3EventStream, Hearing.class)).thenReturn(hearing3Aggregate);
 
         setField(this.jsonObjectToObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
@@ -150,6 +135,12 @@ public class RemoveCaseFromGroupCasesCommandHandlerTest {
 
     @Test
     public void shouldCreatePrivateEvent_WhenCaseRemovedFromGroupCases() throws EventStreamException {
+
+        when(eventSource.getStreamById(MASTER_CASE_ID)).thenReturn(masterCaseEventStream);
+        when(aggregateService.get(masterCaseEventStream, Case.class)).thenReturn(masterCaseAggregate);
+        when(eventSource.getStreamById(HEARING1_ID)).thenReturn(hearing1EventStream);
+        when(aggregateService.get(hearing1EventStream, Hearing.class)).thenReturn(hearing1Aggregate);
+
         setInitialDataIntoCaseAggregate(MASTER_CASE_ID, asList(HEARING1_ID));
         setInitialDataIntoHearingAggregate(hearing1Aggregate, asList(masterCase, case1, case2));
 
@@ -175,6 +166,17 @@ public class RemoveCaseFromGroupCasesCommandHandlerTest {
 
     @Test
     public void shouldCreatePrivateEvent_WhenGroupMasterRemoved() throws EventStreamException {
+
+        when(eventSource.getStreamById(MASTER_CASE_ID)).thenReturn(masterCaseEventStream);
+        when(eventSource.getStreamById(CASE2_ID)).thenReturn(case2EventStream);
+
+        when(aggregateService.get(masterCaseEventStream, Case.class)).thenReturn(masterCaseAggregate);
+        when(aggregateService.get(case2EventStream, Case.class)).thenReturn(case2Aggregate);
+
+        when(eventSource.getStreamById(HEARING1_ID)).thenReturn(hearing1EventStream);
+
+        when(aggregateService.get(hearing1EventStream, Hearing.class)).thenReturn(hearing1Aggregate);
+
         setInitialDataIntoCaseAggregate(MASTER_CASE_ID, asList(HEARING1_ID));
         setInitialDataIntoHearingAggregate(hearing1Aggregate, asList(masterCase, case1, case2));
 
@@ -215,6 +217,21 @@ public class RemoveCaseFromGroupCasesCommandHandlerTest {
 
     @Test
     public void shouldCreatePrivateEvent_WhenCaseRemovedWithMultipleHearings() throws EventStreamException {
+
+        when(eventSource.getStreamById(MASTER_CASE_ID)).thenReturn(masterCaseEventStream);
+        when(eventSource.getStreamById(CASE2_ID)).thenReturn(case2EventStream);
+
+        when(aggregateService.get(masterCaseEventStream, Case.class)).thenReturn(masterCaseAggregate);
+        when(aggregateService.get(case2EventStream, Case.class)).thenReturn(case2Aggregate);
+
+        when(eventSource.getStreamById(HEARING1_ID)).thenReturn(hearing1EventStream);
+        when(eventSource.getStreamById(HEARING2_ID)).thenReturn(hearing2EventStream);
+        when(eventSource.getStreamById(HEARING3_ID)).thenReturn(hearing3EventStream);
+
+        when(aggregateService.get(hearing1EventStream, Hearing.class)).thenReturn(hearing1Aggregate);
+        when(aggregateService.get(hearing2EventStream, Hearing.class)).thenReturn(hearing2Aggregate);
+        when(aggregateService.get(hearing3EventStream, Hearing.class)).thenReturn(hearing3Aggregate);
+
         setInitialDataIntoCaseAggregate(MASTER_CASE_ID, asList(HEARING1_ID, HEARING2_ID, HEARING3_ID));
         setInitialDataIntoHearingAggregate(hearing1Aggregate, asList(masterCase, case1, case2));
         setInitialDataIntoHearingAggregate(hearing2Aggregate, asList(masterCase, case1, case2));

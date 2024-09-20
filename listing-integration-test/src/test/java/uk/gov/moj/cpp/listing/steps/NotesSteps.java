@@ -1,17 +1,19 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import java.util.UUID;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.ws.rs.core.Response;
-import uk.gov.justice.services.test.utils.core.http.RequestParams;
-import uk.gov.moj.cpp.listing.it.AbstractIT;
-
 import static java.text.MessageFormat.format;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
+
+import uk.gov.justice.services.test.utils.core.http.RequestParams;
+import uk.gov.moj.cpp.listing.it.AbstractIT;
+
+import java.util.UUID;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
 
 public class NotesSteps extends AbstractIT {
     private static final String LISTING_COMMAND_CREATE_LISTING_NOTE = "listing.command.create-listing-note";

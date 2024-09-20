@@ -4,9 +4,8 @@ import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyMapOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 
@@ -26,16 +25,16 @@ import javax.ws.rs.core.Response;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.http.HttpStatus;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CourtSchedulerServiceAdapterTest {
 
     @InjectMocks
@@ -131,7 +130,7 @@ public class CourtSchedulerServiceAdapterTest {
 
         final JsonObject hearingSlotsResponseJsonObject = givenPayload("/mock-data/azure.rotasl.getHearingSlots.stub-data.json");
 
-        when(hearingSlotsService.search(anyMapOf(String.class, String.class))).thenReturn(response);
+        when(hearingSlotsService.search(anyMap())).thenReturn(response);
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.getEntity()).thenReturn(hearingSlotsResponseJsonObject);
 
@@ -167,7 +166,7 @@ public class CourtSchedulerServiceAdapterTest {
         final UUID courtRoomId = UUID.fromString("a91a93e6-d704-3cf1-9f20-e267b5a7eeeb");
         final String ouCode = "B06AN00";
 
-        when(hearingSlotsService.search(anyMapOf(String.class, String.class))).thenReturn(response);
+        when(hearingSlotsService.search(anyMap())).thenReturn(response);
         when(response.getStatus()).thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 
         final Optional<String> actualPanelInfo = courtSchedulerServiceAdapter.getPanelInfo(panelInfoFromPayload, startDate, endDate, courtRoomId, ouCode);
@@ -187,7 +186,7 @@ public class CourtSchedulerServiceAdapterTest {
 
         final JsonObject hearingSlotsResponseJsonObject = givenPayload("/mock-data/azure.rotasl.getHearingSlots.empty-response.json");
 
-        when(hearingSlotsService.search(anyMapOf(String.class, String.class))).thenReturn(response);
+        when(hearingSlotsService.search(anyMap())).thenReturn(response);
         when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.getEntity()).thenReturn(hearingSlotsResponseJsonObject);
 

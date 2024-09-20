@@ -23,9 +23,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ListCourtWeekCommencingHearingIT extends AbstractIT {
     private final static String WEEK_COMMENCING_END_DATE_FOR_ONE_WEEK = LocalDate.now().plusDays(7L).toString();
@@ -36,7 +37,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
     private List<HearingsData> hearingsData;
     private List<UpdatedHearingData> updatedHearingDataList;
 
-    @Before
+    @BeforeEach
     public void initialize() {
         cleanListingTables();
         hearingsData = loadFixedHearingData();
@@ -51,7 +52,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
         updatedHearingDataList = asList(updatedHearingData1, updatedHearingData2, updatedHearingData3);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         cleanListingTables();
     }

@@ -18,42 +18,27 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
-
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DeleteCourtApplicationHearingSteps extends AbstractIT implements AutoCloseable {
+public class DeleteCourtApplicationHearingSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(DeleteCourtApplicationHearingSteps.class);
 
-    private final MessageProducer publicCourtApplicationHearingDeleted;
-    private final MessageConsumer privateMessageConsumerCourtApplicationHearingDeleted;
-
-    @Override
-    public void close() {
-        try {
-
-            publicCourtApplicationHearingDeleted.close();
-            privateMessageConsumerCourtApplicationHearingDeleted.close();
-        } catch (final JMSException e) {
-            LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
-    }
+    private final JmsMessageProducerClient publicCourtApplicationHearingDeleted;
+    private final JmsMessageConsumerClient privateMessageConsumerCourtApplicationHearingDeleted;
 
     public DeleteCourtApplicationHearingSteps() {
-        publicCourtApplicationHearingDeleted = publicEvents.createProducer();
-        privateMessageConsumerCourtApplicationHearingDeleted = QueueUtil.privateEvents.createConsumer("listing.events.court-application-hearing-deleted");
+        publicCourtApplicationHearingDeleted = publicEvents.createPublicProducer();
+        privateMessageConsumerCourtApplicationHearingDeleted = QueueUtil.privateEvents.createPrivateConsumer("listing.events.court-application-hearing-deleted");
     }
 
     public void whenRaisedCourtApplicationHearingPublicEvent(final String hearingId, final String applicationId) {

@@ -1,21 +1,48 @@
 package uk.gov.moj.cpp.listing.query.view;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.ReadContext;
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import static com.google.common.collect.Lists.newArrayList;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.time.LocalDate.parse;
+import static java.time.ZoneOffset.UTC;
+import static java.time.ZonedDateTime.now;
+import static java.util.Arrays.asList;
+import static java.util.UUID.fromString;
+import static java.util.UUID.randomUUID;
+import static javax.json.Json.createObjectBuilder;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.apache.deltaspike.core.util.ArraysUtils.asSet;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.AllOf.allOf;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
+import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
+import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
+import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
+import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
+import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
+
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.LocalDates;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -43,11 +70,6 @@ import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterE
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonValue;
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
@@ -61,45 +83,27 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
-import static java.time.LocalDate.parse;
-import static java.time.ZoneOffset.UTC;
-import static java.time.ZonedDateTime.now;
-import static java.util.Arrays.asList;
-import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
-import static javax.json.Json.createObjectBuilder;
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
-import static org.apache.deltaspike.core.util.ArraysUtils.asSet;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.AllOf.allOf;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyMapOf;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static uk.gov.justice.listing.event.PublishCourtListType.FINAL;
-import static uk.gov.justice.listing.event.PublishStatus.EXPORT_SUCCESSFUL;
-import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
-import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
-import static uk.gov.justice.services.test.utils.core.enveloper.EnveloperFactory.createEnveloper;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher.jsonEnvelope;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.withMetadataEnvelopedFrom;
-import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonValue;
+import javax.ws.rs.NotFoundException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.ReadContext;
+import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HearingQueryViewTest {
 
     private static final UUID COURT_CENTRE_ID = randomUUID();
@@ -182,16 +186,14 @@ public class HearingQueryViewTest {
     private StringToJsonObjectConverter stringToJsonObjectConverter;
     private ListToJsonArrayConverter listToJsonArrayConverter = new ListToJsonArrayConverter();
 
-    @Before
+    @BeforeEach
     public void setup() throws IllegalAccessException {
-        final ObjectMapper objectMapper = new ObjectMapper();
+        final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
         FieldUtils.writeField(this.listToJsonArrayConverter, "mapper", objectMapper, true);
         FieldUtils.writeField(this.listToJsonArrayConverter, "stringToJsonObjectConverter", stringToJsonObjectConverter, true);
         FieldUtils.writeField(this.hearingsQueryView, "listToJsonArrayConverter", listToJsonArrayConverter, true);
         paginationParameter = new PaginationParameter(50, 1, 0);
     }
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     public void shouldReturnCorrectPublishCourtListStatusForWeekCommencing() {
@@ -284,7 +286,7 @@ public class HearingQueryViewTest {
                 SEARCH_DATE.atTime(END_TIME).atZone(UTC)))
                 .thenReturn(hearingsJson);
 
-        when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyListOf(Hearing.class), anyMapOf(String.class, String.class))).thenReturn(hearingsJsonArray);
+        when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyList(), anyMap())).thenReturn(hearingsJsonArray);
 
         final JsonEnvelope query = envelopeFrom(
                 metadataBuilder().withId(randomUUID()).withName("event.name"),
@@ -309,7 +311,7 @@ public class HearingQueryViewTest {
         verify(hearingRepository).findHearings(eq(ALLOCATED), eq(COURT_CENTRE_ID.toString()), eq(COURT_ROOM_ID.toString()),
                 eq(fromString(AUTHORITY_ID).toString()), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE),
                 eq(SEARCH_DATE.atTime(LocalTime.MIN).atZone(UTC)), eq(SEARCH_DATE.atTime(END_TIME).atZone(UTC)));
-        verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMapOf(String.class, String.class));
+        verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMap());
     }
 
     @Test
@@ -335,7 +337,7 @@ public class HearingQueryViewTest {
                 SEARCH_DATE.atTime(END_TIME).atZone(UTC)))
                 .thenReturn(hearingsJson);
 
-        when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyListOf(Hearing.class), anyMapOf(String.class, String.class))).thenReturn(hearingsJsonArray);
+        when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyList(), anyMap())).thenReturn(hearingsJsonArray);
         when(notesService.findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class))).thenReturn(createNotesList());
 
         final JsonEnvelope query = envelopeFrom(
@@ -362,7 +364,7 @@ public class HearingQueryViewTest {
         verify(hearingRepository).findHearings(eq(ALLOCATED), eq(COURT_CENTRE_ID.toString()), eq(COURT_ROOM_ID.toString()),
                 eq(AUTHORITY_ID), eq(HEARING_TYPE_ID.toString()),eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE),
                 eq(SEARCH_DATE.atTime(START_TIME).atZone(UTC)), eq(SEARCH_DATE.atTime(END_TIME).atZone(UTC)));
-        verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMapOf(String.class, String.class));
+        verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMap());
         verify(notesService, times(1)).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class));
     }
 
@@ -726,15 +728,13 @@ public class HearingQueryViewTest {
         final List<LinkedApplicationsSummary> linkedApplicationsSummaryList = new ArrayList<>();
         linkedApplicationsSummaryList.add(LinkedApplicationsSummary.linkedApplicationsSummary().build());
         final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase().withLinkedApplicationsSummary(linkedApplicationsSummaryList).build();
-        when(progressionService.getProsecutionCaseDetails(UUID.fromString("be7866d6-cecb-407c-83dc-34864f7b4ff6")))
-                .thenReturn(prosecutionCase);
 
         final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
 
 
         verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("be7866d6-cecb-407c-83dc-34864f7b4ff6"), eq("applicationId"));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
-        assertTrue(((JsonObject)results.payload()).getJsonArray("hearings").size() == 1);
+        assertEquals(1, ((JsonObject) results.payload()).getJsonArray("hearings").size());
     }
 
     @Test
@@ -759,7 +759,7 @@ public class HearingQueryViewTest {
 
         verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("caseId"));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
-        assertTrue(((JsonObject)results.payload()).getJsonArray("hearings").size() == 1);
+        assertEquals(1, ((JsonObject) results.payload()).getJsonArray("hearings").size());
     }
 
     @Test
@@ -773,16 +773,13 @@ public class HearingQueryViewTest {
                 createObjectBuilder()
                         .build());
 
-        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
-                .thenReturn(hearingsJsonArray);
-
         final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
 
 
         verify(hearingRepository, times(0)).findAllocatedAndUnallocatedHearingsByCaseId(any());
         verify(hearingRepository, times(0)).findAllocatedAndUnallocatedHearingsByCaseId(any());
         verify(hearingJsonListConverterFilterEjectCases, times(0)).convert(eq(hearingsJson));
-        assertTrue(((JsonObject)results.payload()).getJsonArray("hearings").size() == 0);
+        assertEquals(0, ((JsonObject) results.payload()).getJsonArray("hearings").size());
     }
 
     @Test
@@ -823,7 +820,7 @@ public class HearingQueryViewTest {
 
         final Envelope<JsonObject> results = hearingsQueryView.searchUnscheduledHearings(query);
 
-        assertTrue(((List)results.payload().get("hearings")).size() == 1);
+        assertEquals(1, ((List) results.payload().get("hearings")).size());
     }
 
     @Test
@@ -901,7 +898,7 @@ public class HearingQueryViewTest {
                 SEARCH_DATE.atTime(END_TIME).atZone(UTC)))
                 .thenReturn(hearingsJson);
 
-        when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyListOf(Hearing.class), anyMapOf(String.class, String.class))).thenCallRealMethod();
+        when(hearingJsonListConverterFilterEjectCases.convertForSearchHearing(anyList(), anyMap())).thenCallRealMethod();
         when(notesService.findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class))).thenReturn(createNotesList());
 
         final JsonEnvelope query = envelopeFrom(
@@ -925,18 +922,18 @@ public class HearingQueryViewTest {
                 eq(AUTHORITY_ID), eq(HEARING_TYPE_ID.toString()), eq(JURISDICTION_TYPE.toString()), eq(SEARCH_DATE),
                 eq(SEARCH_DATE.atTime(START_TIME).atZone(UTC)), eq(SEARCH_DATE.atTime(END_TIME).atZone(UTC)));
 
-        verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMapOf(String.class, String.class));
+        verify(hearingJsonListConverterFilterEjectCases).convertForSearchHearing(eq(hearingsJson), anyMap());
         verify(notesService, times(1)).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), any(List.class));
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void findHearingByIdWhenIdIsAbsent() {
 
         final JsonEnvelope query = generateQuery(
                 createObjectBuilder()
                         .build());
 
-        hearingsQueryView.getHearingById(query);
+        assertThrows(NullPointerException.class, () -> hearingsQueryView.getHearingById(query));
     }
 
     @Test
@@ -1192,7 +1189,7 @@ public class HearingQueryViewTest {
 
         verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("caseId"));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
-        assertTrue(((JsonObject)results.payload()).getJsonArray("hearings").size() == 1);
+        assertEquals(1, ((JsonObject) results.payload()).getJsonArray("hearings").size());
     }
 
     @Test
@@ -1228,7 +1225,7 @@ public class HearingQueryViewTest {
 
         verify(hearingRepository).findAllocatedAndUnallocatedHearingsByCaseId(eq("caseId"));
         verify(hearingJsonListConverterFilterEjectCases).convert(eq(hearingsJson));
-        assertTrue(((JsonObject)results.payload()).getJsonArray("hearings").size() == 2);
+        assertEquals(2, ((JsonObject) results.payload()).getJsonArray("hearings").size());
     }
 
 

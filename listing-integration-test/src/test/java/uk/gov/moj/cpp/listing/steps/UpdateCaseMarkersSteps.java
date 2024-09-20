@@ -7,13 +7,12 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
-
-import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import uk.gov.justice.core.courts.CaseMarkersUpdated;
 import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CaseMarkerData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -24,13 +23,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.skyscreamer.jsonassert.comparator.CustomComparator;
@@ -38,26 +36,20 @@ import org.skyscreamer.jsonassert.comparator.JSONComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UpdateCaseMarkersSteps extends AbstractIT implements AutoCloseable {
+public class UpdateCaseMarkersSteps extends AbstractIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateCaseMarkersSteps.class);
     private static final String PUBLIC_EVENT_CASE_PUBLIC_PROGRESSION_CASE_MARKERS_UPDATED = "public.progression.case-markers-updated";
-
     private static final String PRIVATE_EVENT_CASE_MARKERS_TO_BE_UPDATED = "listing.events.case-markers-to-be-updated";
-
-    private static final String EVENT_SELECTOR_CASE_MARKERS_TO_BE_UPDATED = "listing.events.case-markers-to-be-updated";
     public static final String PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI = "public.listing.updated-hearing-in-staging-hmi";
-
     JSONComparator ignoreMetaDataComparator = new CustomComparator(JSONCompareMode.LENIENT, new Customization("_metadata", (o1, o2) -> true));
 
 
-    private MessageProducer publicEventCaseMarkersToBeUpdated;
-    private MessageConsumer publicEventMessageConsumerCaseMarkersToBeUpdated;
+    private JmsMessageProducerClient publicEventCaseMarkersToBeUpdated;
+    private JmsMessageConsumerClient publicEventMessageConsumerCaseMarkersToBeUpdated;
 
-    private MessageConsumer privateEventMessageCaseMarkersToBeUpdated;
-
-    private MessageConsumer privateEventsMessageCaseMarkersToBeUpdated;
-    private MessageConsumer publicMessageConsumerHmiHearingUpdated;
+    private JmsMessageConsumerClient privateEventMessageCaseMarkersToBeUpdated;
+    private JmsMessageConsumerClient publicMessageConsumerHmiHearingUpdated;
 
     private String request;
 
@@ -80,13 +72,10 @@ public class UpdateCaseMarkersSteps extends AbstractIT implements AutoCloseable 
         metadataId = randomUUID();
         userId = randomUUID();
 
-        publicEventCaseMarkersToBeUpdated = QueueUtil.publicEvents.createProducer();
-        publicEventMessageConsumerCaseMarkersToBeUpdated = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_CASE_PUBLIC_PROGRESSION_CASE_MARKERS_UPDATED);
-
-        privateEventMessageCaseMarkersToBeUpdated = privateEvents.createConsumer(PRIVATE_EVENT_CASE_MARKERS_TO_BE_UPDATED);
-
-        privateEventsMessageCaseMarkersToBeUpdated = privateEvents.createConsumer(EVENT_SELECTOR_CASE_MARKERS_TO_BE_UPDATED);
-        publicMessageConsumerHmiHearingUpdated = publicEvents.createConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
+        publicEventCaseMarkersToBeUpdated = publicEvents.createPublicProducer();
+        publicEventMessageConsumerCaseMarkersToBeUpdated = publicEvents.createPublicConsumer(PUBLIC_EVENT_CASE_PUBLIC_PROGRESSION_CASE_MARKERS_UPDATED);
+        privateEventMessageCaseMarkersToBeUpdated = privateEvents.createPrivateConsumer(PRIVATE_EVENT_CASE_MARKERS_TO_BE_UPDATED);
+        publicMessageConsumerHmiHearingUpdated = publicEvents.createPublicConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -160,44 +149,9 @@ public class UpdateCaseMarkersSteps extends AbstractIT implements AutoCloseable 
         assertThat(jsRequest.get("caseMarkers[0].markerTypeCode"), is(caseMarkerData.getCaseMarkerCode()));
     }
 
-    public void verifyEventCaseMarkersUpdatedInActiveMQ() throws Exception {
-        final JsonPath jsRequest = new JsonPath(request);
-        LOGGER.debug("Request payload: {}", jsRequest.prettify());
-
-        final String jsonResponse = QueueUtil.retrieveMessageString(privateEventsMessageCaseMarkersToBeUpdated);
-        LOGGER.debug("jsonResponse from privateEventsMessageOffenceUpdated: {}", jsonResponse);
-
-        assertThat(jsRequest.getString("hearingId"), is(hearingData.getId().toString()));
-        assertThat(jsRequest.getString("prosecutionCaseId"), is(caseId.toString()));
-        assertThat(jsRequest.getList("caseMarkers").size(), is(1));
-        assertThat(jsRequest.get("caseMarkers[0].id"), is(caseMarkerData.getId().toString()));
-        assertThat(jsRequest.get("caseMarkers[0].markerTypeid"), is(caseMarkerData.getCaseMarkerTypeId().toString()));
-        assertThat(jsRequest.get("caseMarkers[0].markerTypeDescription"), is(caseMarkerData.getCaseMarkerDescription()));
-        assertThat(jsRequest.get("caseMarkers[0].markerTypeCode"), is(caseMarkerData.getCaseMarkerCode()));
-
-    }
-
     public void verifyHmiPublicEventForUpdateHearing() {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHmiHearingUpdated);
         LOGGER.info("jsonResponse from publicMessageConsumerHmiHearingUpdated: {}", jsonResponse.prettify());
         Assert.assertThat(jsonResponse.get("hearing.id"), CoreMatchers.is(hearingData.getId().toString()));
     }
-
-    @Override
-    public void close() {
-        try {
-            publicEventCaseMarkersToBeUpdated.close();
-            publicEventMessageConsumerCaseMarkersToBeUpdated.close();
-
-            privateEventMessageCaseMarkersToBeUpdated.close();
-
-            privateEventsMessageCaseMarkersToBeUpdated.close();
-
-            publicMessageConsumerHmiHearingUpdated.close();
-        } catch (JMSException e) {
-            LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
-    }
-
 }

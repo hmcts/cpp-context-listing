@@ -1,11 +1,16 @@
 package uk.gov.moj.cpp.listing.query;
 
+import static java.util.Collections.singletonMap;
 import static org.mockito.BDDMockito.given;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.ADVOCATES;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.CHAMBERS_ADMIN;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.CHAMBERS_CLERK;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ADMINISTRATORS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ASSOCIATE;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_CLERKS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.CPS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.CROWN_COURT_ADMIN;
+import static uk.gov.moj.cpp.listing.domain.RuleConstants.DEFENCE_LAWYER;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.DEPUTIES;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.DJMC;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.GROUP_POLICE_ADMIN;
@@ -18,10 +23,6 @@ import static uk.gov.moj.cpp.listing.domain.RuleConstants.NPS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.RECORDERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.SYSTEM_USERS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.YOTS;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.DEFENCE_LAWYER;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.CHAMBERS_CLERK;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.CHAMBERS_ADMIN;
-import static uk.gov.moj.cpp.listing.domain.RuleConstants.ADVOCATES;
 
 import uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider;
 import uk.gov.moj.cpp.accesscontrol.drools.Action;
@@ -29,8 +30,7 @@ import uk.gov.moj.cpp.accesscontrol.test.utils.BaseDroolsAccessControlTest;
 
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.kie.api.runtime.ExecutionResults;
 import org.mockito.Mock;
 
@@ -42,15 +42,19 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     private static final String ACTION_QUERY_UNSCHEDULED_SEARCH = "listing.unscheduled.search.hearings";
     private static final String RANDOM_GROUP = "Random group";
     private static final String ACTION_ALLOCATED_AND_UNALLOCATED_HEARINGS = "listing.allocated.and.unallocated.hearings";
-    private static final String ACTION_SEARCH_CASE_BY_PERSON_DEFENDANT_AND_HEARING_DATE= "listing.get.cases-by-person-defendant";
-    private static final String ACTION_SEARCH_CASE_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE= "listing.get.cases-by-organisation-defendant";
+    private static final String ACTION_SEARCH_CASE_BY_PERSON_DEFENDANT_AND_HEARING_DATE = "listing.get.cases-by-person-defendant";
+    private static final String ACTION_SEARCH_CASE_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE = "listing.get.cases-by-organisation-defendant";
 
     @Mock
     private UserAndGroupProvider userAndGroupProvider;
 
+    public QueryAccessControlTest() {
+        super("QUERY_API_SESSION");
+    }
+
     @Override
-    protected Map<Class, Object> getProviderMocks() {
-        return ImmutableMap.<Class, Object>builder().put(UserAndGroupProvider.class, userAndGroupProvider).build();
+    protected Map<Class<?>, Object> getProviderMocks() {
+        return singletonMap(UserAndGroupProvider.class, userAndGroupProvider);
     }
 
     @Test
@@ -65,8 +69,6 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowUnauthorisedUserToListHearing() {
         final Action action = createActionFor(ACTION_QUERY_RANGE_SEARCH);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
-
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }
@@ -84,11 +86,11 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowAuthorisedUserToSearchHearing() {
         final Action action = createActionFor(ACTION_QUERY_SEARCH);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }
+
     @Test
     public void shouldAllowAuthorisedUserToSearchUnscheduledHearing() {
         final Action action = createActionFor(ACTION_QUERY_UNSCHEDULED_SEARCH);
@@ -101,7 +103,6 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowAuthorisedUserToSearchUnscheduledHearing() {
         final Action action = createActionFor(ACTION_QUERY_UNSCHEDULED_SEARCH);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
@@ -125,7 +126,6 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowUnauthorisedUserToGetAllocatedAndUnallocatedHearings() {
         final Action action = createActionFor(ACTION_ALLOCATED_AND_UNALLOCATED_HEARINGS);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, COURT_ADMINISTRATORS, COURT_CLERKS, RANDOM_GROUP)).willReturn(false);
 
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
@@ -142,7 +142,6 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowAuthorisedUserToSearchCasesByPersonDefendantAndHearingDate() {
         final Action action = createActionFor(ACTION_SEARCH_CASE_BY_PERSON_DEFENDANT_AND_HEARING_DATE);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RANDOM_GROUP)).willReturn(false);
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }
@@ -158,7 +157,6 @@ public class QueryAccessControlTest extends BaseDroolsAccessControlTest {
     @Test
     public void shouldNotAllowAuthorisedUserToSearchCasesByOrganisationDefendantAndHearingDate() {
         final Action action = createActionFor(ACTION_SEARCH_CASE_BY_ORGANISATION_DEFENDANT_AND_HEARING_DATE);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, RANDOM_GROUP)).willReturn(false);
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
     }

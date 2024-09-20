@@ -7,8 +7,8 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 
 public class ListNextHearingIT extends AbstractIT {
@@ -16,7 +16,7 @@ public class ListNextHearingIT extends AbstractIT {
     private static final String CONTEXT_NAME = "listing";
     private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
 
-    @Before
+    @BeforeEach
     public void cleanPublishedEventTable() {
         databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
         databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
@@ -29,18 +29,15 @@ public class ListNextHearingIT extends AbstractIT {
     public void shouldListNextHearings() {
         final HearingsData firstHearings = HearingsData.hearingsData();
         final HearingsData nextHearings = HearingsData.hearingsData();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        }
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
-            listNextHearingSteps.whenNextHearingSubmittedForListing(nextHearings);
-            listNextHearingSteps.verifyNextHearingRequestedInActiveMQ(nextHearings);
-            listNextHearingSteps.verifyHearingListedInActiveMQ(nextHearings);
-            listNextHearingSteps.verifyHearingListedFromAPI(nextHearings);
-
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps.whenNextHearingSubmittedForListing(nextHearings);
+        listNextHearingSteps.verifyNextHearingRequestedInActiveMQ(nextHearings);
+        listNextHearingSteps.verifyHearingListedInActiveMQ(nextHearings);
+        listNextHearingSteps.verifyHearingListedFromAPI(nextHearings);
     }
 
 
@@ -51,32 +48,28 @@ public class ListNextHearingIT extends AbstractIT {
         final HearingsData nextHearings = HearingsData.hearingsData();
 
         final HearingsData firstHearings = HearingsData.hearingsData();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
-            listNextHearingSteps.whenNextHearingSubmittedForListing(oldNextHearings);
-            listNextHearingSteps.verifyNextHearingRequestedInActiveMQ(oldNextHearings);
-            listNextHearingSteps.verifyHearingListedInActiveMQ(oldNextHearings);
-            listNextHearingSteps.verifyHearingListedFromAPI(oldNextHearings);
+        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps1.whenNextHearingSubmittedForListing(oldNextHearings);
+        listNextHearingSteps1.verifyNextHearingRequestedInActiveMQ(oldNextHearings);
+        listNextHearingSteps1.verifyHearingListedInActiveMQ(oldNextHearings);
+        listNextHearingSteps1.verifyHearingListedFromAPI(oldNextHearings);
 
-        }
+        final ListNextHearingSteps listNextHearingSteps2 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps2.whenDeleteNextHearingSubmittedForListing();
+        listNextHearingSteps2.verifyUnAllocatedOldHearingDeletedInActiveMQ(oldNextHearings);
+        listNextHearingSteps2.verifyOldHearingDeleted(oldNextHearings);
+        listNextHearingSteps2.verifyHearingMarkedAsDuplicateForCaseInActiveMQ(oldNextHearings);
+        listNextHearingSteps2.verifyPublicUnallocatedOldHearingDeletedInPublicMQ(oldNextHearings);
 
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
-            listNextHearingSteps.whenDeleteNextHearingSubmittedForListing();
-            listNextHearingSteps.verifyUnAllocatedOldHearingDeletedInActiveMQ(oldNextHearings);
-            listNextHearingSteps.verifyOldHearingDeleted(oldNextHearings);
-            listNextHearingSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ(oldNextHearings);
-            listNextHearingSteps.verifyPublicUnallocatedOldHearingDeletedInPublicMQ(oldNextHearings);
-
-            listNextHearingSteps.whenNextHearingSubmittedForListing(nextHearings);
-            listNextHearingSteps.verifyNextHearingRequestedInActiveMQ(nextHearings);
-            listNextHearingSteps.verifyHearingListedInActiveMQ(nextHearings);
-            listNextHearingSteps.verifyHearingListedFromAPI(nextHearings);
-        }
+        listNextHearingSteps2.whenNextHearingSubmittedForListing(nextHearings);
+        listNextHearingSteps2.verifyNextHearingRequestedInActiveMQ(nextHearings);
+        listNextHearingSteps2.verifyHearingListedInActiveMQ(nextHearings);
+        listNextHearingSteps2.verifyHearingListedFromAPI(nextHearings);
     }
 
 
@@ -87,32 +80,28 @@ public class ListNextHearingIT extends AbstractIT {
         final HearingsData nextHearings = HearingsData.notHmiEnabledHearingsData();
         final HearingsData firstHearings = HearingsData.notHmiEnabledHearingsData();
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
-            listNextHearingSteps.whenUnscheduledNextHearingSubmittedForListing(oldNextHearings);
-            listNextHearingSteps.verifyUnscheduledNextHearingRequestedInActiveMQ(oldNextHearings);
-            listNextHearingSteps.verifyHearingListedInActiveMQ(oldNextHearings);
-            listNextHearingSteps.verifyUnscheduledHearingListedFromApi(oldNextHearings);
+        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps1.whenUnscheduledNextHearingSubmittedForListing(oldNextHearings);
+        listNextHearingSteps1.verifyUnscheduledNextHearingRequestedInActiveMQ(oldNextHearings);
+        listNextHearingSteps1.verifyHearingListedInActiveMQ(oldNextHearings);
+        listNextHearingSteps1.verifyUnscheduledHearingListedFromApi(oldNextHearings);
 
-        }
+        final ListNextHearingSteps listNextHearingSteps2 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps2.whenDeleteNextHearingSubmittedForListing();
+        listNextHearingSteps2.verifyUnAllocatedOldHearingDeletedInActiveMQ(oldNextHearings);
+        listNextHearingSteps2.verifyOldHearingDeleted(oldNextHearings);
+        listNextHearingSteps2.verifyHearingMarkedAsDuplicateForCaseInActiveMQ(oldNextHearings);
+        listNextHearingSteps2.verifyPublicUnallocatedOldHearingDeletedInPublicMQ(oldNextHearings);
 
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
-            listNextHearingSteps.whenDeleteNextHearingSubmittedForListing();
-            listNextHearingSteps.verifyUnAllocatedOldHearingDeletedInActiveMQ(oldNextHearings);
-            listNextHearingSteps.verifyOldHearingDeleted(oldNextHearings);
-            listNextHearingSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ(oldNextHearings);
-            listNextHearingSteps.verifyPublicUnallocatedOldHearingDeletedInPublicMQ(oldNextHearings);
-
-            listNextHearingSteps.whenUnscheduledNextHearingSubmittedForListing(nextHearings);
-            listNextHearingSteps.verifyUnscheduledNextHearingRequestedInActiveMQ(nextHearings);
-            listNextHearingSteps.verifyHearingListedInActiveMQ(nextHearings);
-            listNextHearingSteps.verifyUnscheduledHearingListedFromApi(nextHearings);
-        }
+        listNextHearingSteps2.whenUnscheduledNextHearingSubmittedForListing(nextHearings);
+        listNextHearingSteps2.verifyUnscheduledNextHearingRequestedInActiveMQ(nextHearings);
+        listNextHearingSteps2.verifyHearingListedInActiveMQ(nextHearings);
+        listNextHearingSteps2.verifyUnscheduledHearingListedFromApi(nextHearings);
     }
 
 
@@ -125,39 +114,34 @@ public class ListNextHearingIT extends AbstractIT {
         final HearingsData firstHearings = HearingsData.hearingsData();
         final HearingsData existedHearings = HearingsData.hearingsData();
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(firstHearings);
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps1.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps1.verifyHearingListedFromAPI(UNALLOCATED);
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(existedHearings)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(existedHearings);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps2.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps2.verifyHearingListedFromAPI(UNALLOCATED);
 
 
         final UUID existedHearingId = existedHearings.getHearingData().get(0).getId();
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
-            listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(existedHearingId, oldNextHearings);
-            listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(existedHearingId);
-            listNextHearingSteps.verifyCasesAddedToHearingInActiveMQ(existedHearingId, oldNextHearings);
-            listNextHearingSteps.verifyCasesAddedToHearingFromApi(existedHearings, oldNextHearings);
+        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps1.whenUpdateRelatedHearingSubmittedForListing(existedHearingId, oldNextHearings);
+        listNextHearingSteps1.verifyUpdateRelatedHearingRequestedInActiveMQ(existedHearingId);
+        listNextHearingSteps1.verifyCasesAddedToHearingInActiveMQ(existedHearingId, oldNextHearings);
+        listNextHearingSteps1.verifyCasesAddedToHearingFromApi(existedHearings, oldNextHearings);
 
-        }
+        final ListNextHearingSteps listNextHearingSteps2 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps2.whenDeleteNextHearingSubmittedForListing();
+        listNextHearingSteps2.verifyRemoveOffencesFromExistingHearingRequestedInActiveMQ(existedHearingId);
+        listNextHearingSteps2.verifyOffencesRemovedFromExistingHearingInActiveMQ(existedHearingId, oldNextHearings);
+        listNextHearingSteps2.verifyPublicOffencesRemovedFromExistingHearingInActiveMQ(existedHearingId, oldNextHearings);
 
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
-            listNextHearingSteps.whenDeleteNextHearingSubmittedForListing();
-            listNextHearingSteps.verifyRemoveOffencesFromExistingHearingRequestedInActiveMQ(existedHearingId);
-            listNextHearingSteps.verifyOffencesRemovedFromExistingHearingInActiveMQ(existedHearingId, oldNextHearings);
-            listNextHearingSteps.verifyPublicOffencesRemovedFromExistingHearingInActiveMQ(existedHearingId, oldNextHearings);
-
-            listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(existedHearingId, nextHearings);
-            listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(existedHearingId);
-            listNextHearingSteps.verifyCasesAddedToHearingInActiveMQ(existedHearingId, nextHearings);
-            listNextHearingSteps.verifyCasesAddedToHearingFromApi(existedHearings, nextHearings);
-        }
+        listNextHearingSteps2.whenUpdateRelatedHearingSubmittedForListing(existedHearingId, nextHearings);
+        listNextHearingSteps2.verifyUpdateRelatedHearingRequestedInActiveMQ(existedHearingId);
+        listNextHearingSteps2.verifyCasesAddedToHearingInActiveMQ(existedHearingId, nextHearings);
+        listNextHearingSteps2.verifyCasesAddedToHearingFromApi(existedHearings, nextHearings);
     }
 
 
@@ -170,34 +154,29 @@ public class ListNextHearingIT extends AbstractIT {
         final HearingsData firstHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         final HearingsData existedHearings = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearings)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(firstHearings);
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps1.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps1.verifyHearingListedFromAPI(ALLOCATED);
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(existedHearings)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(existedHearings);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps2.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps2.verifyHearingListedFromAPI(ALLOCATED);
 
 
         final UUID existedHearingId = existedHearings.getHearingData().get(0).getId();
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
-            listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(existedHearingId, oldNextHearings);
-            listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(existedHearingId);
-            listNextHearingSteps.verifyCasesAddedToHearingInActiveMQ(existedHearingId, oldNextHearings);
-            listNextHearingSteps.verifyCasesAddedToAllocatedHearingFromApi(existedHearings, oldNextHearings);
+        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps1.whenUpdateRelatedHearingSubmittedForListing(existedHearingId, oldNextHearings);
+        listNextHearingSteps1.verifyUpdateRelatedHearingRequestedInActiveMQ(existedHearingId);
+        listNextHearingSteps1.verifyCasesAddedToHearingInActiveMQ(existedHearingId, oldNextHearings);
+        listNextHearingSteps1.verifyCasesAddedToAllocatedHearingFromApi(existedHearings, oldNextHearings);
 
-        }
-
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearings.getHearingData().get(0))) {
-            listNextHearingSteps.whenDeleteNextHearingSubmittedForListing();
-            listNextHearingSteps.verifyRemoveOffencesFromExistingHearingRequestedInActiveMQ(existedHearingId);
-            listNextHearingSteps.verifyOffencesRemovedFromAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
-            listNextHearingSteps.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
-        }
+        final ListNextHearingSteps listNextHearingSteps2 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps2.whenDeleteNextHearingSubmittedForListing();
+        listNextHearingSteps2.verifyRemoveOffencesFromExistingHearingRequestedInActiveMQ(existedHearingId);
+        listNextHearingSteps2.verifyOffencesRemovedFromAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
+        listNextHearingSteps2.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
     }
 
 }

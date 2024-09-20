@@ -1,11 +1,12 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import static java.util.UUID.randomUUID;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import uk.gov.justice.listing.events.CourtRoomAssignedToHearing;
 import uk.gov.justice.listing.events.CourtRoomChangedForHearing;
 import uk.gov.justice.listing.events.CourtRoomRemovedFromHearing;
@@ -16,11 +17,14 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.UUID;
 
-import static java.util.UUID.randomUUID;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CourtRoomForHearingEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
@@ -56,7 +60,6 @@ public class CourtRoomForHearingEventListenerTest {
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
-        when(properties.findPath(JSON_PATH)).thenReturn(properties);
 
         courtRoomForHearingEventListener.courtRoomAssignedToHearing(envelope);
 
@@ -76,7 +79,6 @@ public class CourtRoomForHearingEventListenerTest {
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
-        when(properties.findPath(JSON_PATH)).thenReturn(properties);
 
         courtRoomForHearingEventListener.courtRoomChangedForHearing(envelope);
 
@@ -95,7 +97,6 @@ public class CourtRoomForHearingEventListenerTest {
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
-        when(properties.findPath(JSON_PATH)).thenReturn(properties);
 
         courtRoomForHearingEventListener.courtRoomRemovedFromHearing(envelope);
 

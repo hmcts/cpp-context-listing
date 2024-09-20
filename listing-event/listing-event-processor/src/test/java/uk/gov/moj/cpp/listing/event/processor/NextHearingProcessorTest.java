@@ -6,7 +6,7 @@ import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,16 +14,12 @@ import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
-
-import java.util.ArrayList;
-import java.util.Collections;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.HearingUnscheduledListingNeeds;
+import uk.gov.justice.listing.events.AllocatedHearingDeleted;
 import uk.gov.justice.listing.events.CourtCentreDetails;
 import uk.gov.justice.listing.events.Defendant;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
-import uk.gov.justice.listing.events.AllocatedHearingDeleted;
-
 import uk.gov.justice.listing.events.Hearing;
 import uk.gov.justice.listing.events.HearingDeleted;
 import uk.gov.justice.listing.events.ListedCase;
@@ -44,26 +40,28 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
+import uk.gov.moj.cpp.listing.event.processor.service.HearingService;
 
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import javax.json.JsonObject;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
-import uk.gov.moj.cpp.listing.event.processor.service.HearingService;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class NextHearingProcessorTest {
 
     @Mock
@@ -101,7 +99,7 @@ public class NextHearingProcessorTest {
                     .build())))
             .build();
 
-    @Before
+    @BeforeEach
     public void setup() {
         final ObjectToJsonValueConverter objectToJsonValueConverter = new JsonObjectConvertersFactory().objectToJsonValueConverter();
 
@@ -408,8 +406,6 @@ public class NextHearingProcessorTest {
         final UUID hearingId = randomUUID();
         final UUID offenceId2 = randomUUID();
 
-        when(hearingService.getHearing(any(), any())).thenReturn(hearing);
-
         final OffencesRemovedFromExistingUnallocatedHearing offencesToBeDeleted = OffencesRemovedFromExistingUnallocatedHearing.offencesRemovedFromExistingUnallocatedHearing()
                 .withHearingId(hearingId)
                 .withOffenceIds(asList(offenceId1, offenceId2))
@@ -462,7 +458,6 @@ public class NextHearingProcessorTest {
         final UUID offenceId2 = randomUUID();
 
 
-        when(hearingService.getHearing(any(), any())).thenReturn(hearing);
         final OffencesRemovedFromExistingAllocatedHearing offencesToBeDeleted = OffencesRemovedFromExistingAllocatedHearing.offencesRemovedFromExistingAllocatedHearing()
                 .withHearingId(hearingId)
                 .withOffenceIds(asList(offenceId1, offenceId2))

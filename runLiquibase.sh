@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-mvn -f listing-viewstore/listing-viewstore-liquibase/pom.xml -Dliquibase.url=jdbc:postgresql://localhost:5432/listingviewstore -Dliquibase.username=listing -Dliquibase.password=listing -Dliquibase.logLevel=info resources:resources liquibase:update

@@ -5,9 +5,9 @@ import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -40,15 +40,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class EjectEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
@@ -123,7 +123,6 @@ public class EjectEventListenerTest {
                 .withHearingId(HEARING_ID)
                 .withProsecutionCaseId(CASE_ID)
                 .build();
-        given(caseEjectedEnvelope.payload()).willReturn(ejectCase);
         given(ejectCaseEnvelopeForCase.payload()).willReturn(ejectCase);
 
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
@@ -135,7 +134,7 @@ public class EjectEventListenerTest {
                 ArgumentCaptor.forClass(ArrayNode.class);
 
         ejectEventListener.caseEjected(ejectCaseEnvelopeForCase);
-        verify(properties, times(2)).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties, times(2)).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository, times(2)).save(hearing);
 
     }
@@ -159,7 +158,6 @@ public class EjectEventListenerTest {
                 .withHearingId(HEARING_ID)
                 .withProsecutionCaseId(CASE_ID)
                 .build();
-        given(caseEjectedEnvelope.payload()).willReturn(ejectCase);
         given(ejectCaseEnvelopeForCase.payload()).willReturn(ejectCase);
 
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
@@ -171,9 +169,8 @@ public class EjectEventListenerTest {
                 ArgumentCaptor.forClass(ArrayNode.class);
 
         ejectEventListener.caseEjected(ejectCaseEnvelopeForCase);
-        verify(properties, times(2)).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties, times(2)).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository, times(2)).save(hearing);
-
     }
 
     @Test
@@ -191,7 +188,6 @@ public class EjectEventListenerTest {
                 .withApplicationId(COURT_APPLICATIONS_ID)
                 .build();
         given(applicationEjectedEnvelope.payload()).willReturn(ejectApplication);
-        given(ejectApplicationEnvelopeForCase.payload()).willReturn(ejectApplication);
 
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
@@ -202,16 +198,18 @@ public class EjectEventListenerTest {
 
         ejectEventListener.applicationEjected(applicationEjectedEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         final ArrayNode applicationArrayNode = objectNodeCaptor.getValue();
         applicationArrayNode.forEach(applicationNode -> {
             if (applicationNode.get("id").asText().equals(COURT_APPLICATIONS_ID.toString()) || (applicationNode.get("parentApplicationId").asText().equals(COURT_APPLICATIONS_ID.toString())
                     && isNotEmpty(applicationNode.path("isEjected").asText()))) {
-                assertEquals("Check if the application status is ejected", "true",
-                        applicationNode.path("isEjected").asText());
+                assertEquals("true",
+                        applicationNode.path("isEjected").asText(),
+                        "Check if the application status is ejected");
             } else {
-                assertEquals("Check if the application status is ejected", true,
-                        applicationNode.path("isEjected").isMissingNode());
+                assertEquals(true,
+                        applicationNode.path("isEjected").isMissingNode(),
+                        "Check if the application status is ejected");
             }
             assertThat(APPLICATION_PARTICULARS, equalTo(applicationNode.get("applicationParticulars").asText()));
             validateAddress(applicationNode.get("applicant").get("address"), APPLICANT_ADDRESS);
@@ -254,7 +252,7 @@ public class EjectEventListenerTest {
     }
 
     private List<CourtApplication> createCourtApplications(final List<UUID> linkedCaseIds) {
-       CourtApplication parentCourtApplication = CourtApplication.courtApplication()
+        CourtApplication parentCourtApplication = CourtApplication.courtApplication()
                 .withLinkedCaseIds(linkedCaseIds)
                 .withParentApplicationId(randomUUID())
                 .withId(COURT_APPLICATIONS_ID)

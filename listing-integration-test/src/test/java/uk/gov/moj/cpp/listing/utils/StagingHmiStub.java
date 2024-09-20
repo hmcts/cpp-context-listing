@@ -7,7 +7,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.util.UUID.randomUUID;
 import static org.apache.http.HttpStatus.SC_OK;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
-import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.waitForStubToBeReady;
 
 import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 
@@ -31,8 +30,6 @@ public class StagingHmiStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", STAGINGHMI_ORGUNIT_HMI_STATUS_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(STAGINGHMI_QUERY_ORGANISATION_UNIT_HMI_STATUS, STAGINGHMI_ORGUNIT_HMI_STATUS_MEDIA_TYPE);
     }
 
 
@@ -67,8 +64,6 @@ public class StagingHmiStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", STAGINHMI_QUERY_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(STAGINHHMI_QUERY_SESSIONS, STAGINHMI_QUERY_MEDIA_TYPE);
     }
 
 

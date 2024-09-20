@@ -4,7 +4,7 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
@@ -24,16 +24,16 @@ import java.util.UUID;
 
 import javax.json.JsonObjectBuilder;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HearingServiceTest {
 
     private Enveloper enveloper = createEnveloper();
@@ -47,7 +47,7 @@ public class HearingServiceTest {
     @Spy
     private JsonObjectToObjectConverter jsonObjectToObjectConverter;
 
-    @Before
+    @BeforeEach
     public void setup() {
         hearingService.setEnveloper(enveloper);
         setField(this.jsonObjectToObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
@@ -56,13 +56,12 @@ public class HearingServiceTest {
     private static final String HEARING_QUERY_BY_HEARING_ID = "listing.search.hearing";
 
 
-
     @Test
     public void getHearingById() {
         final UUID HEARING_ID = randomUUID();
         final JsonEnvelope eventEnvelope = generateEmptyEnvelope();
         final JsonEnvelope returnedResponseEnvelope = generateEmptyEnvelope();
-        when(hearingQueryView.getHearingById(eventEnvelope)).thenReturn(returnedResponseEnvelope);
+        when(hearingQueryView.getHearingById(any(JsonEnvelope.class))).thenReturn(returnedResponseEnvelope);
         final ArgumentCaptor<JsonEnvelope> argumentCaptorForRequestEnvelope = ArgumentCaptor.forClass(JsonEnvelope.class);
 
         hearingService.getHearingById(HEARING_ID, eventEnvelope);

@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.listing.domain.aggregate;
 
 import uk.gov.moj.cpp.platform.test.serializable.AggregateSerializableChecker;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class AggregateSerializationTest {
     private AggregateSerializableChecker aggregateSerializableChecker = new AggregateSerializableChecker();

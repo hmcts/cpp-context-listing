@@ -3,8 +3,8 @@ package uk.gov.moj.cpp.listing.steps;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertThat;
 import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -20,7 +20,7 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import javax.ws.rs.core.Response;
 
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 
 public class UpdateUnscheduledHearingSteps extends UpdateHearingSteps {
     public UpdateUnscheduledHearingSteps(final HearingsData hearingsData, final UpdatedHearingData updatedHearingData) {

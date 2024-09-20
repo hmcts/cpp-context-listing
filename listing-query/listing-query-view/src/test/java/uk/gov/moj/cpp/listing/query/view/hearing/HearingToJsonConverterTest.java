@@ -2,9 +2,9 @@ package uk.gov.moj.cpp.listing.query.view.hearing;
 
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static com.vladmihalcea.hibernate.type.json.internal.JacksonUtil.toJsonNode;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
 import static uk.gov.moj.cpp.listing.query.view.FileUtils.createHearing;
 
@@ -15,7 +15,7 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class HearingToJsonConverterTest {
 

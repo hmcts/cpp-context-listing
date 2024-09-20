@@ -4,6 +4,7 @@ import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.quality.Strictness.LENIENT;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 
@@ -20,15 +21,16 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CaseRemovedFromGroupCasesEventListenerTest {
 
     @Spy
@@ -57,7 +59,7 @@ public class CaseRemovedFromGroupCasesEventListenerTest {
     private final static UUID MEMBER_CASE_ID = randomUUID();
     private final static UUID MASTER_CASE_ID = randomUUID();
 
-    @Before
+    @BeforeEach
     public void setUp() {
         setField(this.jsonObjectToObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
@@ -75,7 +77,6 @@ public class CaseRemovedFromGroupCasesEventListenerTest {
                         .withRemovedCase(removedCase)
                         .build();
 
-        given(caseRemovedFromGroupCasesEnvelope.payload()).willReturn(caseRemovedFromGroupCases);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
 
         caseRemovedFromGroupCasesEventListener.caseRemovedFromGroupCases(
@@ -98,7 +99,6 @@ public class CaseRemovedFromGroupCasesEventListenerTest {
                         .withNewGroupMaster(newGroupMaster)
                         .build();
 
-        given(caseRemovedFromGroupCasesEnvelope.payload()).willReturn(caseRemovedFromGroupCases);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
 
         caseRemovedFromGroupCasesEventListener.caseRemovedFromGroupCases(

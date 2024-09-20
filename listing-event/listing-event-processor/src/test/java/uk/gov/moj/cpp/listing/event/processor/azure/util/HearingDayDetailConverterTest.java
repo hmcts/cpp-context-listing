@@ -3,10 +3,10 @@ package uk.gov.moj.cpp.listing.event.processor.azure.util;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil.getMeridian;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static uk.gov.moj.cpp.listing.event.processor.azure.util.HearingDayDetailConverter.getHearingDayDetails;
+import static uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil.getMeridian;
 
 import uk.gov.justice.core.courts.HearingDay;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class HearingDayDetailConverterTest {
     private static final ZonedDateTime START_DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");

@@ -561,7 +561,7 @@ public class ListingCommandHandler {
         final List<String> specialRequirements = updateHearingForListing.getSpecialRequirements();
         final Boolean unscheduled = source.map(value -> SOURCE_HMI.equals(value) && weekCommencingStartDate == null).orElse(false);
 
-        final JsonEnvelope jsonEnvelope = JsonEnvelope.envelopeFrom(command.metadata(), JsonValue.NULL);
+        final JsonEnvelope jsonEnvelope = envelopeFrom(command.metadata(), JsonValue.NULL);
 
         final EventStream eventStream = eventSource.getStreamById(hearingId);
         final Hearing hearingAggregate = aggregateService.get(eventStream, Hearing.class);

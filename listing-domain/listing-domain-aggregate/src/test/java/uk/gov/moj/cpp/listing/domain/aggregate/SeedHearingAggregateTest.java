@@ -10,8 +10,8 @@ import static org.hamcrest.core.Is.is;
 import uk.gov.justice.core.courts.HearingListingNeeds;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JudicialRoleType;
-import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.listing.events.DeleteNextHearingRequested;
 import uk.gov.justice.listing.events.NextHearingRequested;
 import uk.gov.justice.listing.events.UpdateExistingHearingRequested;
@@ -23,13 +23,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class SeedHearingAggregateTest {
 
     @InjectMocks

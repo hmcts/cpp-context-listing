@@ -20,6 +20,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentreById;
 
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.utils.QueueUtil;
@@ -37,14 +38,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 
 public class GroupCasesIT extends AbstractIT {
@@ -64,12 +64,12 @@ public class GroupCasesIT extends AbstractIT {
     private long defaultDuration = 20;
     private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-    private MessageProducer publicMessageProducer;
+    private JmsMessageProducerClient publicMessageProducer;
     private final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps();
 
-    @Before
+    @BeforeEach
     public void setup() {
-        publicMessageProducer = QueueUtil.publicEvents.createProducer();
+        publicMessageProducer = QueueUtil.publicEvents.createPublicProducer();
     }
 
     @Test

@@ -1,15 +1,16 @@
 package uk.gov.moj.cpp.listing.utils;
 
 import static java.lang.String.format;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.getPrivateTopicInstance;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.getPublicTopicInstance;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 
-import com.jayway.restassured.path.json.JsonPath;
+import java.util.Optional;
+
+import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.hamcrest.StringDescription;
 import org.slf4j.Logger;
@@ -35,10 +36,10 @@ public class Utilities {
         return new EventListener(mediaType, timeout);
     }
 
-    public static class EventListener implements AutoCloseable {
+    public static class EventListener {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(EventListener.class);
-        private final MessageConsumer messageConsumer;
+        private final JmsMessageConsumerClient messageConsumer;
         private final String eventType;
         private Matcher<?> matcher;
         private final long timeout;
@@ -51,14 +52,14 @@ public class Utilities {
         public EventListener(final String eventType, long timeout) {
             this.eventType = eventType;
             this.queueUtil = getPublicTopicInstance();
-            this.messageConsumer = queueUtil.createConsumer(eventType);
+            this.messageConsumer = queueUtil.createPublicConsumer(eventType);
             this.timeout = timeout;
         }
 
         public EventListener(final String eventType, long timeout, String topicName) {
             this.eventType = eventType;
-            this.queueUtil = getPrivateTopicInstance(topicName);
-            this.messageConsumer = queueUtil.createConsumer(eventType);
+            this.queueUtil = getPrivateTopicInstance();
+            this.messageConsumer = queueUtil.createPrivateConsumer(eventType);
             this.timeout = timeout;
         }
 
@@ -67,14 +68,12 @@ public class Utilities {
         }
 
         public void expectNoneWithin(long timeout) {
-            JsonPath message = retrieveMessage(messageConsumer, timeout);
+            Optional<JsonPath> message = messageConsumer.retrieveMessageAsJsonPath(timeout);
 
-            while (message != null && !this.matcher.matches(message.prettify())) {
-                message = retrieveMessage(messageConsumer);
+            while (message.isPresent() && !this.matcher.matches(message.get().prettify())) {
+                message = messageConsumer.retrieveMessageAsJsonPath(timeout);
             }
-            if (message != null) {
-                fail(format("expected no messages but got %s", message.prettify()));
-            }
+            message.ifPresent(jsonPath -> fail(format("expected no messages but got %s", jsonPath.prettify())));
         }
 
         public JsonPath waitFor() {
@@ -83,7 +82,7 @@ public class Utilities {
             JsonPath message;
             StringDescription description = new StringDescription();
             do {
-                message = retrieveMessage(messageConsumer, RETRY_TIMEOUT_IN_MILLIS);
+                message = messageConsumer.retrieveMessageAsJsonPath(RETRY_TIMEOUT_IN_MILLIS).get();
 
                 if (message != null) {
                     if (this.matcher.matches(message.prettify())) {
@@ -108,14 +107,6 @@ public class Utilities {
         public EventListener withFilter(Matcher<?> matcher) {
             this.matcher = matcher;
             return this;
-        }
-
-        @Override
-        public void close() {
-            try {
-                messageConsumer.close();
-            } catch (JMSException ignored) {
-            }
         }
     }
 }

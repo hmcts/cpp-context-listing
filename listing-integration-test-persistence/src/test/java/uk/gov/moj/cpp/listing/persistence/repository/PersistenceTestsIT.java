@@ -1,44 +1,8 @@
 package uk.gov.moj.cpp.listing.persistence.repository;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Predicate;
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
-import junit.framework.TestCase;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import uk.gov.justice.listing.event.PublishCourtListType;
-import uk.gov.justice.listing.events.HearingDay;
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.test.utils.persistence.BaseTransactionalTest;
-import uk.gov.moj.cpp.listing.domain.JurisdictionType;
-import uk.gov.moj.cpp.listing.domain.Type;
-import uk.gov.moj.cpp.listing.persistence.entity.*;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
-import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
-import uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil;
-import uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext;
-
-import javax.inject.Inject;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZonedDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.*;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasJsonPath;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
+import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static com.vladmihalcea.hibernate.type.json.internal.JacksonUtil.toJsonNode;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -59,9 +23,12 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.domain.JurisdictionType.CROWN;
@@ -69,6 +36,62 @@ import static uk.gov.moj.cpp.listing.domain.JurisdictionType.MAGISTRATES;
 import static uk.gov.moj.cpp.listing.domain.Type.type;
 import static uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext.hearingRepositoryContext;
+
+import uk.gov.justice.listing.event.PublishCourtListType;
+import uk.gov.justice.listing.events.HearingDay;
+import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
+import uk.gov.justice.services.test.utils.persistence.BaseTransactionalTest;
+import uk.gov.moj.cpp.listing.domain.JurisdictionType;
+import uk.gov.moj.cpp.listing.domain.Type;
+import uk.gov.moj.cpp.listing.persistence.entity.CaseIdentifier;
+import uk.gov.moj.cpp.listing.persistence.entity.CourtApplications;
+import uk.gov.moj.cpp.listing.persistence.entity.Defendant;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.HearingDays;
+import uk.gov.moj.cpp.listing.persistence.entity.LinkedCase;
+import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
+import uk.gov.moj.cpp.listing.persistence.entity.Notes;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtList;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListPrimaryKey;
+import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtListRepository;
+import uk.gov.moj.cpp.listing.persistence.repository.utils.FileUtil;
+import uk.gov.moj.cpp.listing.persistence.repository.utils.HearingRepositoryContext;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import javax.inject.Inject;
+import javax.transaction.NotSupportedException;
+import javax.transaction.SystemException;
+import javax.transaction.Transactional;
+import javax.transaction.UserTransaction;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Predicate;
+import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import org.apache.deltaspike.testcontrol.api.junit.CdiTestRunner;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /*
  * These repository tests needs a direct db connection and has been configured to use listingsystem .
@@ -90,6 +113,21 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
     @Inject
     NotesRepository notesRepository;
+
+    @Before
+    public void clear() {
+        final List<Hearing> all = hearingRepository.findAll();
+        all.forEach(e -> hearingRepository.remove(e));
+        hearingRepository.flush();
+
+        final List<PublishedCourtList> all1 = publishedCourtListRepository.findAll();
+        all1.forEach(e -> publishedCourtListRepository.remove(e));
+        publishedCourtListRepository.flush();
+
+        final List<Notes> all2 = notesRepository.findAll();
+        all2.forEach(e -> notesRepository.remove(e));
+        notesRepository.flush();
+    }
 
     @Test
     public void shouldFindHearingById() {
@@ -1395,7 +1433,7 @@ public class PersistenceTestsIT extends BaseTransactionalTest implements Persist
 
         List<Notes> actualNotes = notesRepository.findNotes(expectedNotes.stream().map(note -> note.getId()).collect(Collectors.toList()));
 
-        TestCase.assertTrue(EqualsBuilder.reflectionEquals(expectedNotes, actualNotes));
+      assertThat(actualNotes, is(expectedNotes));
 
     }
 

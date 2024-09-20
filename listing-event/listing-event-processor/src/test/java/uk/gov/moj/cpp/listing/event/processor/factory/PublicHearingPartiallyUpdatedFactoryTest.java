@@ -14,7 +14,7 @@ import uk.gov.justice.listing.events.HearingPartiallyUpdated;
 
 import java.util.UUID;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class PublicHearingPartiallyUpdatedFactoryTest {
 

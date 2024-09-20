@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.command.factory;
 
-import static org.apache.activemq.artemis.utils.JsonLoader.createReader;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.BDDMockito.given;
@@ -15,19 +14,19 @@ import java.time.LocalTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.json.Json;
 import javax.json.JsonObject;
-import javax.json.JsonReader;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CourtCentreFactoryTest {
     private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
     private static final UUID COURT_ROOM_UUID_1 = UUID.randomUUID();
@@ -79,7 +78,6 @@ public class CourtCentreFactoryTest {
     public void shouldReturnCourtRoomNumber() {
 
         //given
-        given(referenceDataService.getCourtCentreById(COURT_CENTRE_ID, envelope)).willReturn(finalEnvelope);
         final JsonObject jsonEnvelope = getJsonEnvelope();
 
 
@@ -105,9 +103,7 @@ public class CourtCentreFactoryTest {
                 .replace("COURT_ROOM_UUID_1", COURT_ROOM_UUID_1.toString())
                 .replace("COURT_ROOM_UUID_2", COURT_ROOM_UUID_2.toString());
 
-        try (JsonReader jsonReader = createReader(new StringReader(jsonString))) {
-            return jsonReader.readObject();
-        }
+        return Json.createReader(new StringReader(jsonString)).readObject();
     }
 
 }

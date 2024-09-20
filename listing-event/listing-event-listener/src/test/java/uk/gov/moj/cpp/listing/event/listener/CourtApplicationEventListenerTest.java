@@ -4,9 +4,8 @@ import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,16 +36,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CourtApplicationEventListenerTest {
     private static final UUID OFFENCE_ID = randomUUID();
     private static final String COURT_APPLICATIONS = "courtApplications";
@@ -138,7 +137,6 @@ public class CourtApplicationEventListenerTest {
                         .build())
                 .build();
 
-        given(envelope.payload()).willReturn(hearingData);
         given(courtApplicationUpdatedForHearingEnvelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
@@ -150,7 +148,7 @@ public class CourtApplicationEventListenerTest {
 
         courtApplicationEventListener.courtApplicationUpdated(courtApplicationUpdatedForHearingEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
         verify(hearingSearchSyncService).sync(HEARING_ID);
@@ -182,7 +180,6 @@ public class CourtApplicationEventListenerTest {
                         .build())
                 .build();
         given(envelope.payload()).willReturn(hearingData);
-        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
         given(properties.get(COURT_APPLICATIONS)).willReturn(null);
@@ -193,7 +190,7 @@ public class CourtApplicationEventListenerTest {
 
         courtApplicationEventListener.courtApplicationAdded(envelope);
 
-        verify(properties).set(anyObject(), objectNodeCaptor.capture());
+        verify(properties).set(any(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, FIRST_NAME, LAST_NAME);
         verify(hearingRepository).save(hearing);
         verify(hearingSearchSyncService).sync(HEARING_ID);
@@ -230,7 +227,6 @@ public class CourtApplicationEventListenerTest {
                 .build();
 
         given(envelope.payload()).willReturn(hearingData);
-        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
         given(properties.get(COURT_APPLICATIONS)).willReturn(testCasesProperties);
@@ -240,7 +236,7 @@ public class CourtApplicationEventListenerTest {
 
         courtApplicationEventListener.courtApplicationAdded(envelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
         verify(hearingSearchSyncService).sync(HEARING_ID);
@@ -277,7 +273,6 @@ public class CourtApplicationEventListenerTest {
                 .build();
 
         given(envelope.payload()).willReturn(hearingData);
-        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
         given(properties.get(COURT_APPLICATIONS)).willReturn(testCasesProperties);
@@ -287,7 +282,7 @@ public class CourtApplicationEventListenerTest {
 
         courtApplicationEventListener.courtApplicationAdded(envelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
         verify(hearingSearchSyncService).sync(HEARING_ID);
@@ -316,11 +311,10 @@ public class CourtApplicationEventListenerTest {
                 .build();
 
         given(envelope.payload()).willReturn(newHearingData);
-        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(newHearingData);
         given(properties.get(COURT_APPLICATIONS)).willReturn(testCasesProperties);
 
         courtApplicationEventListener.courtApplicationAdded(envelope);
-        verify(properties, times(2)).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties, times(2)).replace(any(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, FIRST_NAME, LAST_NAME);
         verify(hearingRepository,times(2)).save(hearing);
         verify(hearingSearchSyncService, times(2)).sync(HEARING_ID);
@@ -353,7 +347,6 @@ public class CourtApplicationEventListenerTest {
                 .build();
 
         given(envelope.payload()).willReturn(hearingData);
-        given(courtApplicationAddedForHearingsEnvelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
         given(properties.get(COURT_APPLICATIONS)).willReturn(null);
@@ -364,7 +357,7 @@ public class CourtApplicationEventListenerTest {
 
         courtApplicationEventListener.courtApplicationAdded(envelope);
 
-        verify(properties).set(anyString(), objectNodeCaptor.capture());
+        verify(properties).set(any(String.class), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor, UPDATED_FIRST_NAME, UPDATED_LAST_NAME);
         verify(hearingRepository).save(hearing);
         verify(hearingSearchSyncService).sync(HEARING_ID);

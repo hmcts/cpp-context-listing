@@ -1,36 +1,38 @@
 package uk.gov.moj.cpp.listing.query.view.service;
 
-import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import static com.google.common.collect.Lists.newArrayList;
+import static java.util.UUID.randomUUID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
+
+import uk.gov.moj.cpp.listing.common.NoteUUIDService;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.Notes;
+import uk.gov.moj.cpp.listing.persistence.repository.NotesRepository;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+
+import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
-import uk.gov.moj.cpp.listing.common.NoteUUIDService;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.entity.Notes;
-import uk.gov.moj.cpp.listing.persistence.repository.NotesRepository;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static java.util.UUID.randomUUID;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
-
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class NotesServiceTest {
     private static final boolean ALLOCATED = true;
     private static final boolean UNALLOCATED = false;
@@ -55,7 +57,7 @@ public class NotesServiceTest {
 
     ArgumentCaptor<List> queryListCaptor = ArgumentCaptor.forClass(List.class);
 
-    @Before
+    @BeforeEach
     public void setup(){
         expectedNotes = IntStream.range(0, 2).mapToObj(i-> new Notes(UUID.randomUUID(), UUID.randomUUID(), LocalDate.now(), STRING.next())).
                 collect(Collectors.toList());

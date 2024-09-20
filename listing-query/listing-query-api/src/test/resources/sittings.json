@@ -4,13 +4,13 @@
       "Her Majistry ...",
       "first Name, Last Name"
     ],
-    "sittingTime": "03:30 PM",
+    "sittingTime": "03:30 pm",
     "hearings": [
       {
         "hearingType": "Hearing Type Description",
         "hearingDay": {
-          "endTime": "09:01 AM",
-          "startTime": "09:00 AM",
+          "endTime": "09:01 am",
+          "startTime": "09:00 am",
           "hearingDate": "2019-01-25",
           "durationMinutes": 1
         },
@@ -39,13 +39,13 @@
   {
     "judiciaryNames": [
     ],
-    "sittingTime": "04:30 PM",
+    "sittingTime": "04:30 pm",
     "hearings": [
       {
         "hearingType": "Hearing Type Description",
         "hearingDay": {
-          "endTime": "09:01 AM",
-          "startTime": "09:00 AM",
+          "endTime": "09:01 am",
+          "startTime": "09:00 am",
           "hearingDate": "2019-01-25",
           "durationMinutes": 1
         },
@@ -76,13 +76,13 @@
       "ZZZZ",
       "AAAAA"
     ],
-    "sittingTime": "07:30 AM",
+    "sittingTime": "07:30 am",
     "hearings": [
       {
         "hearingType": "Hearing Type Description",
         "hearingDay": {
-          "endTime": "09:10 AM",
-          "startTime": "09:00 AM",
+          "endTime": "09:10 am",
+          "startTime": "09:00 am",
           "hearingDate": "2019-01-25",
           "durationMinutes": 1
         },
@@ -109,8 +109,8 @@
       {
         "hearingType": "Hearing Type Description",
         "hearingDay": {
-          "endTime": "08:01 AM",
-          "startTime": "08:00 AM",
+          "endTime": "08:01 am",
+          "startTime": "08:00 am",
           "hearingDate": "2019-01-25",
           "durationMinutes": 1
         },

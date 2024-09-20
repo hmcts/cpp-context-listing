@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ListingCommandHandlerRamlConfigTest {
 
@@ -26,7 +26,7 @@ public class ListingCommandHandlerRamlConfigTest {
 
     private Map<String, String> handlerMethodsToHandlerNames;
 
-    @Before
+    @BeforeEach
     public void setup() {
         handlerMethodsToHandlerNames = handlerMethodsToHandlerNames(ListingCommandHandler.class,
                 UnscheduledListingCommandHandler.class,

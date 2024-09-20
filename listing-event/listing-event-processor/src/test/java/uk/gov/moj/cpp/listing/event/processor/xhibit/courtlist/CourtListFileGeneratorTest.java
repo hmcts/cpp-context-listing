@@ -1,12 +1,12 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist;
 
 import static java.time.ZonedDateTime.parse;
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.UUID.fromString;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.quality.Strictness.LENIENT;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.DRAFT;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FINAL;
 import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.FIRM;
@@ -24,26 +24,31 @@ import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 import org.apache.log4j.BasicConfigurator;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.slf4j.Logger;
 
-@RunWith(Parameterized.class)
+// FIXME!!! Temporarily using lenient strictness to get this
+// context running with junit 5.
+@MockitoSettings(strictness = LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class CourtListFileGeneratorTest {
 
     private static final String DAILY_COURT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list.json";
@@ -56,69 +61,87 @@ public class CourtListFileGeneratorTest {
     private static final String COURT_LIST_WITH_CASE_HIDDEN_INPUT_LIST_JSON_FILE = "/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-case-hidden.json";
 
 
-    @Parameterized.Parameter(0)
-    public PublishCourtListType publishCourtListType;
-    @Parameterized.Parameter(1)
-    public String courtListJsonFile;
-    @Parameterized.Parameter(2)
-    public String expectedXmlFile;
     private UUID courtCentreId1 = fromString("f34a5dba-8c4b-4ec8-8b9a-6af405c00ebf");
     private UUID courtCentreId2 = fromString("f46ddec0-928e-4236-9d1b-142715e8b570");
     private LocalDate startDate = LocalDate.parse("2019-11-04");
 
-    @InjectMocks
-    private CourtListFileGenerator courtListFileGenerator;
     @Spy
     private XmlUtils xmlUtils;
+
     @Mock
     private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
+
     @Mock
     private ListingService listingService;
+
     @Mock
     private JsonEnvelope envelope;
+
     @Mock
     private Logger logger;
+
     @Spy
     private MapperFactory mapperFactory;
 
+    @InjectMocks
+    private CourtListFileGenerator courtListFileGenerator;
+
     private JsonObject courtListJson;
 
-    @Parameterized.Parameters(name = "{index}: Test with PublishCourtListType={0}, expectedXmlFile is:{2} ")
-    public static Collection<Object[]> data() {
-        Object[][] data = new Object[][]{
-                {WARN, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedWarnedList.xml"},
-                {DRAFT, DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedDraftList.xml"},
-                {DRAFT, DAILY_COURT_LIST_SUMMER_TIME_JSON_FILE, "xhibit/expectedDraftListSummerTime.xml"},
-                {FINAL, DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedFinalList.xml"},
-                {FIRM, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedFirmList.xml"},
-                {FINAL, RESTRICTED_DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedRestrictedFinalList.xml"},
-                {WARN, COURT_LIST_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithDifferentHearingTypesInCase.xml"},
-                {WARN, COURT_LIST_2_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithMultipleHearingTypesInCase.xml"},
-                {WARN, COURT_LIST_WITH_CASE_HIDDEN_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithCaseHidden.xml"},
-                {FINAL, RESTRICTED_DAILY_COURT_LIST_WithMultipleCaseConvertedIntoMultipleHearing_JSON_FILE, "xhibit/expectedRestrictedFinalListIeWithMultipleCaseConvertedIntoMultipleHearing.xml"}
-
-
-        };
-        return asList(data);
+    public static Stream<Arguments> data() {
+        return Stream.of(
+                Arguments.of(WARN, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedWarnedList.xml"),
+                Arguments.of(DRAFT, DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedDraftList.xml"),
+                Arguments.of(DRAFT, DAILY_COURT_LIST_SUMMER_TIME_JSON_FILE, "xhibit/expectedDraftListSummerTime.xml"),
+                Arguments.of(FINAL, DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedFinalList.xml"),
+                Arguments.of(FIRM, WEEK_COMMENCING_COURT_LIST_JSON_FILE, "xhibit/expectedFirmList.xml"),
+                Arguments.of(FINAL, RESTRICTED_DAILY_COURT_LIST_JSON_FILE, "xhibit/expectedRestrictedFinalList.xml"),
+                Arguments.of(WARN, COURT_LIST_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithDifferentHearingTypesInCase.xml"),
+                Arguments.of(WARN, COURT_LIST_2_WITH_CASE_WITH_DIFFERENT_HEARING_TYPE_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithMultipleHearingTypesInCase.xml"),
+                Arguments.of(WARN, COURT_LIST_WITH_CASE_HIDDEN_INPUT_LIST_JSON_FILE, "xhibit/expectedWarnedListWithCaseHidden.xml"),
+                Arguments.of(FINAL, RESTRICTED_DAILY_COURT_LIST_WithMultipleCaseConvertedIntoMultipleHearing_JSON_FILE, "xhibit/expectedRestrictedFinalListIeWithMultipleCaseConvertedIntoMultipleHearing.xml")
+        );
     }
 
-    @Before
+    @BeforeEach
     public void initialiseLogger() {
         BasicConfigurator.configure();
     }
 
-    @Before
+    @BeforeEach
     public void wireBeans() {
         xmlUtils.setLogger(logger);
         xmlUtils.postConstruct();
         mapperFactory.setCommonXhibitReferenceDataService(commonXhibitReferenceDataService);
     }
 
-    @Before
-    public void mockDataSources() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void shouldGenerateXml(
+            final PublishCourtListType publishCourtListType,
+            final String courtListJsonFile,
+            final String expectedXmlFile) throws Exception {
 
-        MockitoAnnotations.initMocks(this);
+        mockDataSources(publishCourtListType, courtListJsonFile);
 
+        ZonedDateTime timeStamp = ZonedDateTime.now();
+        final PublishCourtListRequestParameters requestParameters = withDefaults()
+                .withCourtCentreId(courtCentreId1)
+                .publishCourtListType(publishCourtListType)
+                .withStartDate(startDate)
+                .withRequestedTime(timeStamp)
+                .build();
+
+        final CourtListMetadata metadata = new CourtListMetadata(publishCourtListType.name() + "-FILENAME",
+                "UNIQUEID", parse("2018-01-02T13:04:05+00:00[Europe/London]"));
+
+        final String generatedXml = courtListFileGenerator.generateXml(envelope, requestParameters, metadata, courtListJson);
+
+        xmlUtils.validate(generatedXml, "xhibit/xsd/" + publishCourtListType.getSchemaName());
+        assertXmlEquals(generatedXml, expectedXmlFile, singletonMap("#TIME_STAMP#", requestParameters.getRequestedTime().toLocalDateTime().toString()));
+    }
+
+    private void mockDataSources(final PublishCourtListType publishCourtListType, final String courtListJsonFile) {
         final String crestCourtId = "000";
         final CourtLocation courtLocation1 = createCourtLocation(crestCourtId, "1");
         final CourtLocation courtLocation2 = createCourtLocation(crestCourtId, "2");
@@ -206,24 +229,5 @@ public class CourtListFileGeneratorTest {
                 .add("crestCourtSiteId", "002")
                 .add("crestCourtSiteName", "MOCKCOURTNAME2")
                 .add("courtType", "CROWN_COURT");
-    }
-
-    @Test
-    public void shouldGenerateXml() throws Exception {
-        ZonedDateTime timeStamp = ZonedDateTime.now();
-        final PublishCourtListRequestParameters requestParameters = withDefaults()
-                .withCourtCentreId(courtCentreId1)
-                .publishCourtListType(publishCourtListType)
-                .withStartDate(startDate)
-                .withRequestedTime(timeStamp)
-                .build();
-
-        final CourtListMetadata metadata = new CourtListMetadata(publishCourtListType.name() + "-FILENAME",
-                "UNIQUEID", parse("2018-01-02T13:04:05+00:00[Europe/London]"));
-
-        final String generatedXml = courtListFileGenerator.generateXml(envelope, requestParameters, metadata, courtListJson);
-
-        xmlUtils.validate(generatedXml, "xhibit/xsd/" + publishCourtListType.getSchemaName());
-        assertXmlEquals(generatedXml, expectedXmlFile, singletonMap("#TIME_STAMP#", requestParameters.getRequestedTime().toLocalDateTime().toString()));
     }
 }

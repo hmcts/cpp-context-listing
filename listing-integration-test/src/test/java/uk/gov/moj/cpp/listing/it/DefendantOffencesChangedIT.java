@@ -1,8 +1,5 @@
 package uk.gov.moj.cpp.listing.it;
 
-import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantOffencesSteps;
 import uk.gov.moj.cpp.listing.steps.UpdateDefendantOffencesStepsWithCustodyTimeLimit;
@@ -12,34 +9,19 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 import uk.gov.moj.cpp.listing.steps.data.OffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceDataWithCustodyTimeLimit;
+import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("squid:S2925") //TODO Remove once issuse of timeout identified in jenkins
 public class DefendantOffencesChangedIT extends AbstractIT {
 
     private static final String PUBLIC_EVENT_CASE_SENT_FOR_LISTING = "public.listing.case-sent-for-listing";
-    private static final String TOPIC_NAME = "public.event";
 
-    private MessageConsumerClient publicMessageConsumer = new MessageConsumerClient();
-
-    ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
-    ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
-
-    @Before
-    public void setup() {
-
-        publicMessageConsumer.startConsumer(PUBLIC_EVENT_CASE_SENT_FOR_LISTING, TOPIC_NAME);
-    }
-
-    @After
-    public void tearDown() {
-        publicMessageConsumer.close();
+    static {
+        QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_CASE_SENT_FOR_LISTING);
     }
 
     @Test
@@ -53,19 +35,18 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         UUID offenceIdToBeDeleted = defendantData.getOffences().get(1).getOffenceId();
         UpdatedOffenceData updatedOffenceData = UpdatedOffenceData.updateOffenceData(offenceData);
 
-        try (final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, offenceIdToBeDeleted)) {
-            steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublished();
-            Thread.sleep(10000); // TODO Looks like this larger payload with both
-            steps.verifyPublicEventDefendantOffencesUpdatedInActiveMQ();
-            steps.verifyEventDefendantOffencesToBeUpdateInActiveMQ();
-            steps.verifyEventDefendantOffencesToBeAddedInActiveMQ();
-            steps.verifyEventDefendantOffencesToBeDeletedInActiveMQ();
+        final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, offenceIdToBeDeleted);
+        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublished();
+        Thread.sleep(10000); // TODO Looks like this larger payload with both
+        steps.verifyPublicEventDefendantOffencesUpdatedInActiveMQ();
+        steps.verifyEventDefendantOffencesToBeUpdateInActiveMQ();
+        steps.verifyEventDefendantOffencesToBeAddedInActiveMQ();
+        steps.verifyEventDefendantOffencesToBeDeletedInActiveMQ();
 
-            // add/update/delete message causes timing issues where messages are not ready to be pulled of the queue for verification
-            steps.verifyEventOffenceUpdatedInActiveMQ();
-            steps.verifyEventOffenceDeletedInActiveMQ();
-            steps.verifyEventOffenceAddedInActiveMQ();
-        }
+        // add/update/delete message causes timing issues where messages are not ready to be pulled of the queue for verification
+        steps.verifyEventOffenceUpdatedInActiveMQ();
+        steps.verifyEventOffenceDeletedInActiveMQ();
+        steps.verifyEventOffenceAddedInActiveMQ();
 
 
 
@@ -82,12 +63,10 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         UUID offenceIdToBeDeleted = defendantData.getOffences().get(1).getOffenceId();
         UpdatedOffenceDataWithCustodyTimeLimit updatedOffenceData = UpdatedOffenceDataWithCustodyTimeLimit.updateOffenceData(offenceData);
 
-        try (final UpdateDefendantOffencesStepsWithCustodyTimeLimit steps = new UpdateDefendantOffencesStepsWithCustodyTimeLimit(caseId, hearingData, updatedOffenceData, offenceIdToBeDeleted)) {
-            steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublished();
-            Thread.sleep(10000); // TODO Looks like this larger payload with both
-            steps.verifyPublicEventDefendantOffencesUpdatedInActiveMQ();
-
-        }
+        final UpdateDefendantOffencesStepsWithCustodyTimeLimit steps = new UpdateDefendantOffencesStepsWithCustodyTimeLimit(caseId, hearingData, updatedOffenceData, offenceIdToBeDeleted);
+        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublished();
+        Thread.sleep(10000); // TODO Looks like this larger payload with both
+        steps.verifyPublicEventDefendantOffencesUpdatedInActiveMQ();
     }
 
     @Test
@@ -100,14 +79,12 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         OffenceData offenceData = defendantData.getOffences().get(0);
         UpdatedOffenceData updatedOffenceData = UpdatedOffenceData.updateOffenceData(offenceData);
 
-        try (final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null)) {
-            steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedUpdatedOnly();
-            Thread.sleep(10000);
-            steps.verifyEventOffenceUpdatedInActiveMQ();
+        final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null);
+        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedUpdatedOnly();
+        Thread.sleep(10000);
+        steps.verifyEventOffenceUpdatedInActiveMQ();
 
-            steps.verifyDefendentOffenceUpdatedOnlyFromAPI(false);
-
-        }
+        steps.verifyDefendentOffenceUpdatedOnlyFromAPI(false);
     }
 
     @Test
@@ -120,14 +97,12 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         OffenceData offenceData = defendantData.getOffences().get(0);
         UpdatedOffenceData updatedOffenceData = UpdatedOffenceData.updateOffenceData(offenceData);
 
-        try (final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null)) {
-            steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
-            Thread.sleep(10000);
-            steps.verifyEventOffenceAddedInActiveMQ();
+        final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null);
+        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
+        Thread.sleep(10000);
+        steps.verifyEventOffenceAddedInActiveMQ();
 
-            steps.verifyDefendentOffenceAddedOnlyFromAPI(false);
-
-        }
+        steps.verifyDefendentOffenceAddedOnlyFromAPI(false);
     }
 
     @Test
@@ -140,23 +115,20 @@ public class DefendantOffencesChangedIT extends AbstractIT {
         OffenceData offenceData = defendantData.getOffences().get(0);
         UpdatedOffenceData updatedOffenceData = UpdatedOffenceData.updateOffenceData(offenceData);
 
-        try (final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, updatedOffenceData.getOffenceId())) {
-            steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedDeletedOnly();
-            Thread.sleep(10000);
-            steps.verifyEventOffenceDeletedInActiveMQ();
+        final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, updatedOffenceData.getOffenceId());
+        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedDeletedOnly();
+        Thread.sleep(10000);
+        steps.verifyEventOffenceDeletedInActiveMQ();
 
-            steps.verifyDefendentOffenceDeletedOnlyFromAPI(false);
-
-        }
+        steps.verifyDefendentOffenceDeletedOnlyFromAPI(false);
     }
 
     private HearingsData listCourtHearing() {
         HearingsData hearingsData = HearingsData.hearingsData();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedWithReportingRestrictionInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedWithReportingRestrictionInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         return hearingsData;
     }
 

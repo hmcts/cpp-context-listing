@@ -10,7 +10,7 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
@@ -27,6 +27,8 @@ import static uk.gov.moj.cpp.listing.utils.Utilities.DEFAULT_NOT_HAPPENED_TIMEOU
 import static uk.gov.moj.cpp.listing.utils.Utilities.listenForPrivateEvent;
 
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -35,17 +37,14 @@ import uk.gov.moj.cpp.listing.utils.Utilities;
 
 import java.util.UUID;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class VacatingTrialSteps extends AbstractIT implements AutoCloseable {
+public class VacatingTrialSteps extends AbstractIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(VacatingTrialSteps.class);
 
@@ -65,10 +64,10 @@ public class VacatingTrialSteps extends AbstractIT implements AutoCloseable {
     private final String hearingId;
     private String request;
 
-    private MessageConsumer privateMessageConsumerHearingVacateTrial;
-    private MessageConsumer privateMessageConsumerListingTrialVacated;
-    private MessageConsumer privateMessageConsumerHearingSlotsFreed;
-    private MessageProducer publicEventHearingTrialVacated;
+    private JmsMessageConsumerClient privateMessageConsumerHearingVacateTrial;
+    private JmsMessageConsumerClient privateMessageConsumerListingTrialVacated;
+    private JmsMessageConsumerClient privateMessageConsumerHearingSlotsFreed;
+    private JmsMessageProducerClient publicEventHearingTrialVacated;
 
     public VacatingTrialSteps(final HearingsData hearingsData) {
         final HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -78,10 +77,10 @@ public class VacatingTrialSteps extends AbstractIT implements AutoCloseable {
     }
 
     private void createMessageConsumer() {
-        publicEventHearingTrialVacated = publicEvents.createProducer();
-        privateMessageConsumerHearingVacateTrial = privateEvents.createConsumer(EVENT_HEARING_TRIAL_VACATED);
-        privateMessageConsumerListingTrialVacated = privateEvents.createConsumer(EVENT_LISTING_TRIAL_VACATED);
-        privateMessageConsumerHearingSlotsFreed = privateEvents.createConsumer(EVENT_HEARING_SLOTS_FREED);
+        publicEventHearingTrialVacated = publicEvents.createPublicProducer();
+        privateMessageConsumerHearingVacateTrial = privateEvents.createPrivateConsumer(EVENT_HEARING_TRIAL_VACATED);
+        privateMessageConsumerListingTrialVacated = privateEvents.createPrivateConsumer(EVENT_LISTING_TRIAL_VACATED);
+        privateMessageConsumerHearingSlotsFreed = privateEvents.createPrivateConsumer(EVENT_HEARING_SLOTS_FREED);
     }
 
     public void whenPublicEventHearingTrialVacatedIsPublished() {
@@ -137,18 +136,6 @@ public class VacatingTrialSteps extends AbstractIT implements AutoCloseable {
         assertThat(jsonResponse.get(FIELD_HEARING_ID), is(hearingId));
     }
 
-    @Override
-    public void close() {
-        try {
-            privateMessageConsumerHearingVacateTrial.close();
-            privateMessageConsumerListingTrialVacated.close();
-            privateMessageConsumerHearingSlotsFreed.close();
-            publicEventHearingTrialVacated.close();
-        } catch (final JMSException e) {
-            LOGGER.error("Error closing one of privateMessageConsumerVacateTrial, privateMessageConsumerHearingSlotsFreed or publicEventHearingTrialVacated producers/consumers: {}", e.getMessage());
-        }
-    }
-
     public void verifyVacatedTrialWhenQueryingFromAPI() {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty(LISTING_QUERY_HEARING), hearingId));
@@ -192,10 +179,9 @@ public class VacatingTrialSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyAvailableSlotsForHearingFreedEventNotRaised() {
-        try (final Utilities.EventListener hearingSlotsFreedListener = listenForPrivateEvent(EVENT_HEARING_SLOTS_FREED)
-                .withFilter(isJson(withJsonPath("$.hearingId", is(hearingId))))) {
-            hearingSlotsFreedListener.expectNoneWithin(DEFAULT_NOT_HAPPENED_TIMEOUT_IN_MILLIS);
-        }
+        final Utilities.EventListener hearingSlotsFreedListener = listenForPrivateEvent(EVENT_HEARING_SLOTS_FREED)
+                .withFilter(isJson(withJsonPath("$.hearingId", is(hearingId))));
+        hearingSlotsFreedListener.expectNoneWithin(DEFAULT_NOT_HAPPENED_TIMEOUT_IN_MILLIS);
     }
 
     public void whenHearingIsVacated() {

@@ -4,8 +4,8 @@ package uk.gov.moj.cpp.listing.command.handler;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,15 +39,15 @@ import javax.json.Json;
 import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HearingMarkedAsDuplicateCommandHandlerTest {
 
     @Spy
@@ -150,7 +150,6 @@ public class HearingMarkedAsDuplicateCommandHandlerTest {
         when(aggregateService.get(eventStream, Case.class)).thenReturn(caseAggregate);
         when(eventSource.getStreamById(any())).thenReturn(eventStream);
         when(caseAggregate.markHearingAsDuplicate(eq(hearingId), eq(caseId))).thenReturn(mock(Stream.class));
-        when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
 
         hearingMarkedAsDuplicateCommandHandler.handleMarkHearingAsDuplicateForCase(commandEnvelope);
 

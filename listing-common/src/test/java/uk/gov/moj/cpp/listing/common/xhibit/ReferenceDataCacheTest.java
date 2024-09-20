@@ -8,15 +8,15 @@ import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.getValueOfField;
-import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.common.xhibit.exception.InvalidReferenceDataException;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMapping;
 import uk.gov.moj.cpp.listing.domain.referencedata.CourtMappingsList;
@@ -37,15 +37,14 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ReferenceDataCacheTest {
 
     @Mock
@@ -55,7 +54,7 @@ public class ReferenceDataCacheTest {
     private ReferenceDataCache referenceDataCache;
 
     @Spy
-    private JsonObjectToObjectConverter jsonObjectConverter;
+    private JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
     private static Optional<HearingTypesList> hearingTypesList;
     private static Optional<CourtMappingsList> crownCourtMappingsList;
@@ -71,24 +70,15 @@ public class ReferenceDataCacheTest {
     private static final String COURT_ROOM_ID_FIELD = "courtroomId";
     private static final String COURT_ROOM_NAME_FIELD = "courtroomName";
 
-    @Before
-    public void setUp() {
-        setField(this.jsonObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
-
-        initializeTestData();
-
-        when(referenceDataLoader.getAllHearingTypesList()).thenReturn(hearingTypesList);
-        when(referenceDataLoader.getXhibitCrownCourtMappings()).thenReturn(crownCourtMappingsList);
-        when(referenceDataLoader.getXhibitMagsCourtMappings(any())).thenReturn(magsCourtMappingsList);
-        when(referenceDataLoader.getOrganisationUnitList()).thenReturn(organisationUnitList);
-
-        referenceDataCache.initReferenceData();
-    }
 
     @Test
     public void shouldPopulateOrganisationUnitsCache() {
-        final OrganisationUnit expectedOrganisationUnit = getOrganisationUnit();
 
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
+        final OrganisationUnit expectedOrganisationUnit = getOrganisationUnit();
+        
         when(referenceDataLoader.getOrganisationUnitByOuCode(ouCode)).thenReturn(Optional.of(expectedOrganisationUnit));
 
         final Optional<OrganisationUnit> actualOrganisationUnit = referenceDataCache.getOrganisationUnitMapCache(ouCode);
@@ -100,13 +90,21 @@ public class ReferenceDataCacheTest {
 
     @Test
     public void shouldPopulateCourtMappingsCache() {
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
         final CourtMapping expectedCourtMapping = getCourtMapping("CROWN_COURT");
+        when(referenceDataLoader.getXhibitCrownCourtMappings()).thenReturn(crownCourtMappingsList);
+
         assertThat(referenceDataCache.getCrownCourtLocationsCache(courtId).get(0).getCourtSiteCode(), is(expectedCourtMapping.getCrestCourtSiteCode()));
     }
 
     @Test
     public void shouldPopulateCourtRoomMappingsCache() {
         final UUID courtCentreId = randomUUID();
+
+        initializeTestData();
+        referenceDataCache.initReferenceData();
 
         final JsonObject courtRoomMappingJson = givenPayload("/mock-data/referencedata.query.cp-xhibit-courtroom-mappings.json");
         final Optional<CourtRoomMappingsList> expectedCourtRoomMappingsList =  Optional.of(jsonObjectConverter.convert(courtRoomMappingJson, CourtRoomMappingsList.class));
@@ -119,20 +117,27 @@ public class ReferenceDataCacheTest {
         assertThat(actualCourtRoomMappingsList.getCpXhibitCourtRoomMappings().get(0).getCourtRoomId(), is(expectedCourtRoomMappingsList.get().getCpXhibitCourtRoomMappings().get(0).getCourtRoomId()));
     }
 
-    @Test(expected = InvalidReferenceDataException.class)
+    @Test
     public void shouldThrowInvalidReferenceDataException() {
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = randomUUID();
 
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
         when(referenceDataLoader.getCourtRoomMappingsList(courtCentreId)).thenReturn(Optional.empty());
 
-        referenceDataCache.getCourtRoomMappingByCourtCentreAndCourtRoom(courtCentreId, courtRoomId);
+        assertThrows(InvalidReferenceDataException.class, () -> referenceDataCache.getCourtRoomMappingByCourtCentreAndCourtRoom(courtCentreId, courtRoomId));
     }
 
     @Test
     public void shouldGetCourtRoomMappingByCourtCentreRoom() {
         final UUID courtCentreId = randomUUID();
         final UUID courtRoomId = fromString("b3c9eb70-93eb-4570-a1fa-7516a5e4e9cd");
+
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
 
         final JsonObject courtRoomMappingJson = givenPayload("/mock-data/referencedata.query.cp-xhibit-courtroom-mappings.json");
         final CourtRoomMappingsList courtRoomMappingsList = jsonObjectConverter.convert(courtRoomMappingJson, CourtRoomMappingsList.class);
@@ -153,6 +158,9 @@ public class ReferenceDataCacheTest {
         final UUID courtCentreId = randomUUID();
         final UUID wrongCourtRoomId = fromString("b3c9eb70-93eb-4570-a1fa-7516a5e4e9ce");
 
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
         final JsonObject courtRoomMappingJson = givenPayload("/mock-data/referencedata.query.cp-xhibit-courtroom-mappings.json");
         final CourtRoomMappingsList courtRoomMappingsList = jsonObjectConverter.convert(courtRoomMappingJson, CourtRoomMappingsList.class);
 
@@ -165,7 +173,14 @@ public class ReferenceDataCacheTest {
 
     @Test
     public void shouldPopulateHearingTypesCache() {
+
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
         final HearingType expectedHearingType = getHearingType();
+
+        when(referenceDataLoader.getAllHearingTypesList()).thenReturn(hearingTypesList);
+
         assertThat(referenceDataCache.getHearingTypeCache(hearingTypeId).get().getId(), is(expectedHearingType.getId()));
     }
 
@@ -176,6 +191,13 @@ public class ReferenceDataCacheTest {
                 .withHearingCode("FHG")
                 .withHearingDescription("FIRST HEARING")
                 .build();
+
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
+
+        when(referenceDataLoader.getAllHearingTypesList()).thenReturn(hearingTypesList);
+
         final HearingType actualHearingType = referenceDataCache.getHearingTypeCodeCache("FHG").get();
         assertThat(actualHearingType.getId(), is(expectedHearingType.getId()));
         assertThat(actualHearingType.getHearingCode(), is(expectedHearingType.getHearingCode()));
@@ -184,8 +206,15 @@ public class ReferenceDataCacheTest {
 
     @Test
     public void shouldPopulateCrownCourtMappingsMapCache() {
-        final List<CourtMapping> expectedCourtMappingList = asList(getCourtMapping("CROWN_COURT"));
 
+        initializeTestData();
+
+        when(referenceDataLoader.getAllHearingTypesList()).thenReturn(hearingTypesList);
+        when(referenceDataLoader.getXhibitCrownCourtMappings()).thenReturn(crownCourtMappingsList);
+        when(referenceDataLoader.getOrganisationUnitList()).thenReturn(organisationUnitList);
+
+        referenceDataCache.initReferenceData();
+        final List<CourtMapping> expectedCourtMappingList = asList(getCourtMapping("CROWN_COURT"));
         final Optional<List<CourtMapping>> actualCourtMappingList = referenceDataCache.getCrownCourtMappingsMapCache(courtCentreId);
 
         assertThat(actualCourtMappingList.isPresent(), is(true));
@@ -196,6 +225,16 @@ public class ReferenceDataCacheTest {
 
     @Test
     public void shouldPopulateMagsCourtMappingsMapCache() {
+
+        initializeTestData();
+
+        when(referenceDataLoader.getAllHearingTypesList()).thenReturn(hearingTypesList);
+        when(referenceDataLoader.getXhibitCrownCourtMappings()).thenReturn(crownCourtMappingsList);
+        when(referenceDataLoader.getXhibitMagsCourtMappings(any())).thenReturn(magsCourtMappingsList);
+        when(referenceDataLoader.getOrganisationUnitList()).thenReturn(organisationUnitList);
+
+        referenceDataCache.initReferenceData();
+
         final List<CourtMapping> expectedCourtMappingList = asList(getCourtMapping("MAGISTRATES_COURT"));
 
         final Optional<List<CourtMapping>> actualCourtMappingList = referenceDataCache.getMagsCourtMappingsMapCache(courtCentreId);
@@ -219,6 +258,10 @@ public class ReferenceDataCacheTest {
                 .withTitleJudicialPrefix(titleJudicialPrefix)
                 .build();
 
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
+
         final Optional<Judiciary> expectedJudiciary = Optional.of(judiciary);
 
         when(referenceDataLoader.getJudiciary(judiciaryId)).thenReturn(expectedJudiciary);
@@ -233,6 +276,10 @@ public class ReferenceDataCacheTest {
 
     @Test
     public void shouldPopulateCpCourtRoomCache() {
+
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
         final UUID courtCentreId = randomUUID();
         final JsonObject courtRooms = getPayloadForCourtRooms(courtCentreId.toString());
         final List<JsonObject> courtRoomList = courtRooms.getJsonArray("courtrooms").getValuesAs(JsonObject.class);
@@ -250,6 +297,10 @@ public class ReferenceDataCacheTest {
 
     @Test
     public void shouldInitAllHearingTypesRemovingDuplicates() {
+
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
         final HearingTypesList hearingTypeWithDuplicates = new HearingTypesList(asList(getHearingType(), getHearingType()));
         when(referenceDataLoader.getAllHearingTypesList()).thenReturn(Optional.of(hearingTypeWithDuplicates));
 
@@ -261,6 +312,10 @@ public class ReferenceDataCacheTest {
 
     @Test
     public void shouldInitOrganisationUnitsRemovingDuplicates() {
+
+        initializeTestData();
+        referenceDataCache.initReferenceData();
+
         final OrganisationUnitList orgUnitsWithDuplicates = new OrganisationUnitList(asList(getOrganisationUnit(), getOrganisationUnit()));
         when(referenceDataLoader.getOrganisationUnitList()).thenReturn(Optional.of(orgUnitsWithDuplicates));
 

@@ -5,6 +5,7 @@ import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -14,14 +15,13 @@ import java.util.Map;
 
 import javax.json.JsonObject;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HearingTypeFactoryTest {
     @Mock
     private JsonEnvelope envelope;
@@ -62,7 +62,7 @@ public class HearingTypeFactoryTest {
         Map hearingTypesMap = hearingTypeFactory.getHearingTypesIdDurationMap(envelope);
 
         //then
-        Assert.assertNull(hearingTypesMap.get(HEARING_TYPE_ID));
+        assertNull(hearingTypesMap.get(HEARING_TYPE_ID));
     }
     private JsonObject getJsonEnvelope() {
         return createObjectBuilder().add("hearingTypes", createArrayBuilder().add(createObjectBuilder().add("id", HEARING_TYPE_ID)

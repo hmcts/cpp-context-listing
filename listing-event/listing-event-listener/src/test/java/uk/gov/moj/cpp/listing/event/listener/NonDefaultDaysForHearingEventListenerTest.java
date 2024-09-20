@@ -2,7 +2,6 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -18,7 +17,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 import javax.json.Json;
@@ -27,14 +25,14 @@ import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(value = MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class NonDefaultDaysForHearingEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
@@ -60,7 +58,7 @@ public class NonDefaultDaysForHearingEventListenerTest {
     Hearing hearing;
 
 
-    @Before
+    @BeforeEach
     public  void setup() throws IOException {
         properties = (ObjectNode) mapper.readTree(TEST_JSON);
     }
@@ -80,7 +78,6 @@ public class NonDefaultDaysForHearingEventListenerTest {
         given(envelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
-        given(objectToJsonObjectConverter.convert(any(List.class))).willReturn(createTestJsonObject());
 
         //when
         defaultDaysForHearingEventListener.nonDefaultDaysAssignedForHearing(envelope);
@@ -104,7 +101,6 @@ public class NonDefaultDaysForHearingEventListenerTest {
         given(envelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
-        given(objectToJsonObjectConverter.convert(any(List.class))).willReturn(createTestJsonObject());
 
         //when
         defaultDaysForHearingEventListener.nonDefaultDaysChangedForHearing(envelope);

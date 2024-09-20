@@ -17,10 +17,10 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -85,11 +85,13 @@ import uk.gov.justice.core.courts.Prosecutor;
 import uk.gov.justice.core.courts.ReportingRestriction;
 import uk.gov.justice.core.courts.RotaSlot;
 import uk.gov.justice.core.courts.SummonsTemplateType;
-import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.core.courts.WeekCommencingDate;
+import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
 import uk.gov.moj.cpp.listing.steps.data.CaseAndDefendantData;
@@ -116,9 +118,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
@@ -128,7 +127,7 @@ import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.apache.commons.collections.CollectionUtils;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -136,7 +135,7 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
+public class ListCourtHearingSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListCourtHearingSteps.class);
 
     private static final String LISTING_COMMAND_LIST_COURT_HEARING = "listing.command.list-court-hearing";
@@ -168,6 +167,7 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final String PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED = "public.listing.hearing-partially-updated";
     private static final String PUBLIC_LISTING_HEARING_CHANGES_SAVED = "public.listing.hearing-changes-saved";
     private static final String LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI = "listing.events.requested-hearing-from-staging-hmi";
+    private static final String PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING = "public.listing.court-application-added-for-hearing";
 
     protected static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
@@ -190,26 +190,27 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     private static final boolean POSSIBLE_DISQUALIFICATION_FLAG = true;
 
     private HearingsData hearingsData;
-    private final MessageConsumer privateMessageConsumerHearingListed;
-    private final MessageConsumer privateMessageConsumerHearingAllocatedForListing;
-    private final MessageConsumer privateMessageConsumerJudiciaryAssigned;
-    private final MessageConsumer privateMessageConsumerAddedCaseForHearing;
-    private final MessageConsumer privateMessageConsumerHearingUpdatedToCase;
-    private final MessageConsumer privateMessageConsumerHearingDeleted;
-    private final MessageConsumer privateMessageConsumerHearingMarkedAsDeleted;
-    private final MessageConsumer privateMessageConsumerHearingPartiallyUpdated;
-    private final MessageConsumer privateMessageConsumerHearingDaysChanged;
-    private final MessageConsumer publicMessageConsumerHearingConfirmedForExtendHearing;
-    private final MessageConsumer publicMessageConsumerHearingExtend;
-    private final MessageConsumer publicMessageConsumerHearingDeleted;
-    private final MessageConsumer publicMessageConsumerStagingHmiListRequested;
-    private final MessageConsumer publicMessageConsumerStagingHmiUpdateListRequested;
-    private final MessageConsumer publicEventHearingListed;
-    private final MessageConsumer publicMessageConsumerHearingPartiallyUpdated;
-    private final MessageConsumer publicMessageConsumerHearingChangesSaved;
-    private final MessageConsumer privateEventMessageConsumerRequestedHearingFromStagingHmi;
+    private final JmsMessageConsumerClient privateMessageConsumerHearingListed;
+    private final JmsMessageConsumerClient privateMessageConsumerHearingAllocatedForListing;
+    private final JmsMessageConsumerClient privateMessageConsumerJudiciaryAssigned;
+    private final JmsMessageConsumerClient privateMessageConsumerAddedCaseForHearing;
+    private final JmsMessageConsumerClient privateMessageConsumerHearingUpdatedToCase;
+    private final JmsMessageConsumerClient privateMessageConsumerHearingDeleted;
+    private final JmsMessageConsumerClient privateMessageConsumerHearingMarkedAsDeleted;
+    private final JmsMessageConsumerClient privateMessageConsumerHearingPartiallyUpdated;
+    private final JmsMessageConsumerClient privateMessageConsumerHearingDaysChanged;
+    private final JmsMessageConsumerClient publicMessageConsumerHearingConfirmedForExtendHearing;
+    private final JmsMessageConsumerClient publicMessageConsumerHearingExtend;
+    private final JmsMessageConsumerClient publicMessageConsumerHearingDeleted;
+    private final JmsMessageConsumerClient publicMessageConsumerStagingHmiListRequested;
+    private final JmsMessageConsumerClient publicMessageConsumerStagingHmiUpdateListRequested;
+    private final JmsMessageConsumerClient publicEventHearingListed;
+    private final JmsMessageConsumerClient publicMessageConsumerHearingPartiallyUpdated;
+    private final JmsMessageConsumerClient publicMessageConsumerHearingChangesSaved;
+    private final JmsMessageConsumerClient privateEventMessageConsumerRequestedHearingFromStagingHmi;
 
-    private final MessageProducer publicMessageProducerProgressionHearingExtendedEvent;
+    private final JmsMessageProducerClient publicMessageProducerProgressionHearingExtendedEvent;
+    private JmsMessageConsumerClient publicMessageConsumerCourtApplicationAddedForHearing;
 
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
@@ -220,49 +221,50 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
     public ListCourtHearingSteps(final HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
-        privateMessageConsumerHearingListed = QueueUtil.privateEvents.createConsumer(EVENT_SELECTOR_HEARING_LISTED);
-        privateMessageConsumerHearingAllocatedForListing = QueueUtil.privateEvents.createConsumer(EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING);
-        privateMessageConsumerHearingDaysChanged = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_DAYS_CHANGED);
-        privateMessageConsumerAddedCaseForHearing = privateEvents.createConsumer(EVENT_SELECTED_CASES_ADDED_TO_HEARING);
-        privateMessageConsumerHearingUpdatedToCase = privateEvents.createConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
-        privateMessageConsumerJudiciaryAssigned = privateEvents.createConsumer(EVENT_SELECTOR_JUDICIARY_ASSIGNED);
-        privateMessageConsumerHearingDeleted = privateEvents.createConsumer(EVENT_SELECTED_HEARING_DELETED);
-        privateMessageConsumerHearingMarkedAsDeleted = privateEvents.createConsumer(EVENT_SELECTED_HEARING_MARKED_AS_DELETED);
-        privateMessageConsumerHearingPartiallyUpdated = privateEvents.createConsumer(EVENT_SELECTED_HEARING_PARTIALLY_UPDATED);
-        publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
-        publicMessageConsumerHearingExtend = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED);
-        publicMessageConsumerHearingDeleted = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_HEARING_DELETED);
-        publicMessageConsumerStagingHmiListRequested = publicEvents.createConsumer(PUBLIC_REQUEST_HEARING_FROM_STAGING_HMI);
-        publicMessageConsumerStagingHmiUpdateListRequested = publicEvents.createConsumer(PUBLIC_UPDATE_HEARING_IN_STAGING_HMI);
-        publicMessageProducerProgressionHearingExtendedEvent = QueueUtil.publicEvents.createProducer();
-        publicEventHearingListed = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_LISTED);
-        publicMessageConsumerHearingPartiallyUpdated = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
-        publicMessageConsumerHearingChangesSaved = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
-        privateEventMessageConsumerRequestedHearingFromStagingHmi = privateEvents.createConsumer(LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI);
+        privateMessageConsumerHearingListed = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_LISTED);
+        privateMessageConsumerHearingAllocatedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING);
+        privateMessageConsumerHearingDaysChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_DAYS_CHANGED);
+        privateMessageConsumerAddedCaseForHearing = privateEvents.createPrivateConsumer(EVENT_SELECTED_CASES_ADDED_TO_HEARING);
+        privateMessageConsumerHearingUpdatedToCase = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
+        privateMessageConsumerJudiciaryAssigned = privateEvents.createPrivateConsumer(EVENT_SELECTOR_JUDICIARY_ASSIGNED);
+        privateMessageConsumerHearingDeleted = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_DELETED);
+        privateMessageConsumerHearingMarkedAsDeleted = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_MARKED_AS_DELETED);
+        privateMessageConsumerHearingPartiallyUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_PARTIALLY_UPDATED);
+        publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
+        publicMessageConsumerHearingExtend = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED);
+        publicMessageConsumerHearingDeleted = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_HEARING_DELETED);
+        publicMessageConsumerStagingHmiListRequested = publicEvents.createPublicConsumer(PUBLIC_REQUEST_HEARING_FROM_STAGING_HMI);
+        publicMessageConsumerStagingHmiUpdateListRequested = publicEvents.createPublicConsumer(PUBLIC_UPDATE_HEARING_IN_STAGING_HMI);
+        publicMessageProducerProgressionHearingExtendedEvent = publicEvents.createPublicProducer();
+        publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
+        publicMessageConsumerHearingPartiallyUpdated = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
+        publicMessageConsumerHearingChangesSaved = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
+        publicMessageConsumerCourtApplicationAddedForHearing = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
+        privateEventMessageConsumerRequestedHearingFromStagingHmi = privateEvents.createPrivateConsumer(LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
     public ListCourtHearingSteps() {
-        this.privateMessageConsumerJudiciaryAssigned = QueueUtil.privateEvents.createConsumer(EVENT_SELECTOR_JUDICIARY_ASSIGNED);
-        privateMessageConsumerHearingListed = QueueUtil.privateEvents.createConsumer(EVENT_SELECTOR_HEARING_LISTED);
-        privateMessageConsumerHearingAllocatedForListing = QueueUtil.privateEvents.createConsumer(EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING);
-        privateMessageConsumerHearingDaysChanged = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_DAYS_CHANGED);
-        privateMessageConsumerAddedCaseForHearing = privateEvents.createConsumer(EVENT_SELECTED_CASES_ADDED_TO_HEARING);
-        privateMessageConsumerHearingUpdatedToCase = privateEvents.createConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
-        privateMessageConsumerHearingDeleted = privateEvents.createConsumer(EVENT_SELECTED_HEARING_DELETED);
-        privateMessageConsumerHearingMarkedAsDeleted = privateEvents.createConsumer(EVENT_SELECTED_HEARING_MARKED_AS_DELETED);
-        privateMessageConsumerHearingPartiallyUpdated = privateEvents.createConsumer(EVENT_SELECTED_HEARING_PARTIALLY_UPDATED);
-        publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
-        publicMessageConsumerHearingExtend = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED);
-        publicMessageConsumerHearingDeleted = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_HEARING_DELETED);
-        publicMessageConsumerStagingHmiListRequested = publicEvents.createConsumer(PUBLIC_REQUEST_HEARING_FROM_STAGING_HMI);
-        publicMessageConsumerStagingHmiUpdateListRequested = publicEvents.createConsumer(PUBLIC_UPDATE_HEARING_IN_STAGING_HMI);
-        publicMessageProducerProgressionHearingExtendedEvent = QueueUtil.publicEvents.createProducer();
-        publicEventHearingListed = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_LISTED);
-        publicMessageConsumerHearingPartiallyUpdated = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
-        publicMessageConsumerHearingChangesSaved = publicEvents.createConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
-        privateEventMessageConsumerRequestedHearingFromStagingHmi = privateEvents.createConsumer(LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI);
+        this.privateMessageConsumerJudiciaryAssigned = privateEvents.createPrivateConsumer(EVENT_SELECTOR_JUDICIARY_ASSIGNED);
+        privateMessageConsumerHearingListed = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_LISTED);
+        privateMessageConsumerHearingAllocatedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING);
+        privateMessageConsumerHearingDaysChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_DAYS_CHANGED);
+        privateMessageConsumerAddedCaseForHearing = privateEvents.createPrivateConsumer(EVENT_SELECTED_CASES_ADDED_TO_HEARING);
+        privateMessageConsumerHearingUpdatedToCase = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_UPDATED_TO_CASE);
+        privateMessageConsumerHearingDeleted = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_DELETED);
+        privateMessageConsumerHearingMarkedAsDeleted = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_MARKED_AS_DELETED);
+        privateMessageConsumerHearingPartiallyUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_PARTIALLY_UPDATED);
+        publicMessageConsumerHearingConfirmedForExtendHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_HEARING_CONFIRMED);
+        publicMessageConsumerHearingExtend = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED);
+        publicMessageConsumerHearingDeleted = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_HEARING_DELETED);
+        publicMessageConsumerStagingHmiListRequested = publicEvents.createPublicConsumer(PUBLIC_REQUEST_HEARING_FROM_STAGING_HMI);
+        publicMessageConsumerStagingHmiUpdateListRequested = publicEvents.createPublicConsumer(PUBLIC_UPDATE_HEARING_IN_STAGING_HMI);
+        publicMessageProducerProgressionHearingExtendedEvent = publicEvents.createPublicProducer();
+        publicEventHearingListed = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_LISTED);
+        publicMessageConsumerHearingPartiallyUpdated = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
+        publicMessageConsumerHearingChangesSaved = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
+        privateEventMessageConsumerRequestedHearingFromStagingHmi = privateEvents.createPrivateConsumer(LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -351,6 +353,14 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
                 hearingExtendedDataObject,
                 metadataOf(randomUUID(), PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED).withUserId(randomUUID().toString()).build());
         LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED, hearingExtendedDataObject, getLoggedInHeader());
+    }
+
+    public void verifyPublicCourtApplicationAdded() {
+        JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        Optional<JsonPath> jsonResponse = publicMessageConsumerCourtApplicationAddedForHearing.retrieveMessageAsJsonPath();
+        assertTrue(jsonResponse.isPresent());
     }
 
     private Response getResponseCaseSubmittedForListing(final boolean isStandaloneApp) {
@@ -630,10 +640,10 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         IntStream.range(0, judicialRoleDataList.size())
                 .forEach(judiciaryIndex -> {
                     final String baseJudiciaryPath = String.format("judiciary[%d]", judiciaryIndex);
-                    Assert.assertThat(jsonResponse.get(baseJudiciaryPath + ".judicialId"), is(judicialRoleDataList.get(judiciaryIndex).getJudicialId().toString()));
-                    Assert.assertThat(jsonResponse.get(baseJudiciaryPath + ".judicialRoleType.judiciaryType"), is(judicialRoleDataList.get(judiciaryIndex).getJudicialRoleType().getJudiciaryType()));
-                    Assert.assertThat(jsonResponse.getBoolean(baseJudiciaryPath + ".isBenchChairman"), is(judicialRoleDataList.get(judiciaryIndex).getIsBenchChairman().get()));
-                    Assert.assertThat(jsonResponse.get(baseJudiciaryPath + ".isDeputy"), is(judicialRoleDataList.get(judiciaryIndex).getIsDeputy().get()));
+                    assertThat(jsonResponse.get(baseJudiciaryPath + ".judicialId"), is(judicialRoleDataList.get(judiciaryIndex).getJudicialId().toString()));
+                    assertThat(jsonResponse.get(baseJudiciaryPath + ".judicialRoleType.judiciaryType"), is(judicialRoleDataList.get(judiciaryIndex).getJudicialRoleType().getJudiciaryType()));
+                    assertThat(jsonResponse.getBoolean(baseJudiciaryPath + ".isBenchChairman"), is(judicialRoleDataList.get(judiciaryIndex).getIsBenchChairman().get()));
+                    assertThat(jsonResponse.get(baseJudiciaryPath + ".isDeputy"), is(judicialRoleDataList.get(judiciaryIndex).getIsDeputy().get()));
                 });
     }
 
@@ -2075,32 +2085,6 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         return hearingsData;
     }
 
-    @Override
-    public void close() {
-        try {
-
-            privateMessageConsumerHearingAllocatedForListing.close();
-            privateMessageConsumerHearingListed.close();
-            privateMessageConsumerHearingDaysChanged.close();
-            privateMessageConsumerAddedCaseForHearing.close();
-            privateMessageConsumerHearingDeleted.close();
-            privateMessageConsumerHearingMarkedAsDeleted.close();
-            privateMessageConsumerHearingPartiallyUpdated.close();
-            publicMessageConsumerHearingConfirmedForExtendHearing.close();
-            publicMessageConsumerHearingExtend.close();
-            publicMessageConsumerHearingDeleted.close();
-            publicMessageConsumerStagingHmiListRequested.close();
-            publicMessageConsumerStagingHmiUpdateListRequested.close();
-            publicMessageProducerProgressionHearingExtendedEvent.close();
-            publicEventHearingListed.close();
-            publicMessageConsumerHearingPartiallyUpdated.close();
-            publicMessageConsumerHearingChangesSaved.close();
-
-        } catch (final JMSException e) {
-            LOGGER.error("Error closing privateMessageConsumerHearingListed: {}", e.getMessage());
-        }
-    }
-
     public void verifyHearingWithPossibleDisqualificationFromAPI() {
         HearingData singleHearingData = hearingsData.getHearingData().get(0);
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
@@ -2314,15 +2298,17 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         LOGGER.info("Event published:\n\tMedia type = {} \n\tPayload = {}\n\n", PUBLIC_EVENT_SELECTED_PROGRESSION_HEARING_EXTENDED, request, getLoggedInHeader());
     }
 
-    public void verifyHearingUpdatedToCaseInActiveMQ(final UUID allocatedHearingId, final UUID unallocatedHearingId) {
+    public void verifyHearingUpdatedToCaseInActiveMQ(final UUID allocatedHearingId, final UUID unallocatedHearingId, final int expectedCount) {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingUpdatedToCase);
-        LOGGER.debug("jsonResponse from privateMessageConsumerHearingUpdatedToCase: {}", jsonResponse.prettify());
+        for(int i = 0; i< expectedCount; i++) {
+            final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingUpdatedToCase);
+            LOGGER.debug("jsonResponse from privateMessageConsumerHearingUpdatedToCase: {}", jsonResponse.prettify());
 
-        assertThat(jsonResponse.get("id"), is(unallocatedHearingId.toString()));
-        assertThat(jsonResponse.get("existingHearingId"), is(allocatedHearingId.toString()));
+            assertThat(jsonResponse.get("id"), is(unallocatedHearingId.toString()));
+            assertThat(jsonResponse.get("existingHearingId"), is(allocatedHearingId.toString()));
+        }
     }
 
     public void verifyHearingDeletedInActiveMQ(final UUID hearingId) {
@@ -2597,9 +2583,9 @@ public class ListCourtHearingSteps extends AbstractIT implements AutoCloseable {
         JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        JsonPath jsonResponse = QueueUtil.retrieveMessage(privateEventMessageConsumerRequestedHearingFromStagingHmi);
+        Optional<JsonPath> jsonResponse = privateEventMessageConsumerRequestedHearingFromStagingHmi.retrieveMessageAsJsonPath();
 
-        assertThat(jsonResponse, nullValue());
+        assertTrue(jsonResponse.isEmpty());
     }
 
     public void verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ() {

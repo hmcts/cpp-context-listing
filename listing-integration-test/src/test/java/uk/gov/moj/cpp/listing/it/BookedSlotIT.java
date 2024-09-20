@@ -4,8 +4,8 @@ import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 
 public class BookedSlotIT extends AbstractIT {
@@ -13,7 +13,7 @@ public class BookedSlotIT extends AbstractIT {
     private static final String CONTEXT_NAME = "listing";
     private final DatabaseCleaner databaseCleaner = new DatabaseCleaner();
 
-    @Before
+    @BeforeEach
     public void cleanPublishedEventTable() {
         databaseCleaner.cleanEventStoreTables(CONTEXT_NAME);
         databaseCleaner.cleanStreamBufferTable(CONTEXT_NAME);
@@ -25,11 +25,10 @@ public class BookedSlotIT extends AbstractIT {
     @Test
     public void shouldListHearingWithBookedSlots() {
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataForBookedSlot())) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListingWithBookedSlot();
-            listCourtHearingSteps.verifyHearingListedWithBookedSlotsInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPIAllocatedForBookSlots();
-            listCourtHearingSteps.verifyHearingConfirmedInPublicMQ();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataForBookedSlot());
+        listCourtHearingSteps.whenCaseIsSubmittedForListingWithBookedSlot();
+        listCourtHearingSteps.verifyHearingListedWithBookedSlotsInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPIAllocatedForBookSlots();
+        listCourtHearingSteps.verifyHearingConfirmedInPublicMQ();
     }
 }

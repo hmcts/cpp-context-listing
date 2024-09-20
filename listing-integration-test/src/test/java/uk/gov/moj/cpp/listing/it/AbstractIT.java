@@ -13,6 +13,7 @@ import static uk.gov.moj.cpp.listing.utils.StagingHmiStub.stubHmiMagsSession;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsAuthorisedUser;
 import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupProsecutionCaseByCaseUrn;
 
+import uk.gov.justice.services.integrationtest.utils.jms.JmsResourceManagementExtension;
 import uk.gov.justice.services.test.utils.core.rest.RestClient;
 
 import java.io.IOException;
@@ -25,10 +26,12 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
 import com.google.common.io.Resources;
-import com.jayway.restassured.response.Header;
-import org.junit.Before;
+import io.restassured.http.Header;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 @SuppressWarnings("WeakerAccess")
+@ExtendWith(JmsResourceManagementExtension.class)
 public class AbstractIT {
     public static final UUID USER_ID_VALUE = randomUUID();
 
@@ -41,7 +44,9 @@ public class AbstractIT {
 
     private final static ThreadLocal<UUID> USER_CONTEXT = new ThreadLocal<>();
 
-    @Before
+    static final String CONTEXT_NAME = "listing";
+
+    @BeforeEach
     public void setUp() {
         reset();
         setupAsAuthorisedUser(USER_ID_VALUE);

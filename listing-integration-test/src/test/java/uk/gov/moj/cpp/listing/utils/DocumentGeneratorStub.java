@@ -12,7 +12,7 @@ import static javax.ws.rs.core.Response.Status.OK;
 
 public class DocumentGeneratorStub {
 
-    public static final String PATH = "/systemdocgenerator-service/command/api/rest/systemdocgenerator";
+    public static final String PATH = "/systemdocgenerator-service/command/api/rest/systemdocgenerator/render";
 
     public static void stubDocumentCreate(final String documentText) {
         stubDocumentCreate(documentText, OK);

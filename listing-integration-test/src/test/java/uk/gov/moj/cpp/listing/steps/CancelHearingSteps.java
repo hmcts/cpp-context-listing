@@ -21,10 +21,11 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.junit.Assert.assertThat;
 import static uk.gov.justice.services.common.converter.LocalDates.to;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
@@ -37,13 +38,14 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.sendMessage;
 import static uk.gov.moj.cpp.listing.utils.Utilities.DEFAULT_NOT_HAPPENED_TIMEOUT_IN_MILLIS;
 import static uk.gov.moj.cpp.listing.utils.Utilities.listenForPrivateEvent;
 
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -56,23 +58,20 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 
-import com.github.tomakehurst.wiremock.client.RequestPatternBuilder;
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import com.jayway.jsonpath.Filter;
 import com.jayway.jsonpath.ReadContext;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CancelHearingSteps extends AbstractIT implements AutoCloseable {
+public class CancelHearingSteps extends AbstractIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CancelHearingSteps.class);
 
@@ -90,8 +89,8 @@ public class CancelHearingSteps extends AbstractIT implements AutoCloseable {
     private final List<HearingDay> hearingDays;
     private final List<HearingDay> nonCancelledHearingDays;
     private final List<HearingDay> cancelledHearingDays;
-    private final MessageProducer publicEventHearingDaysCancelled;
-    private final MessageConsumer privateMessageConsumerNonDefaultDaysChangedForHearing;
+    private final JmsMessageProducerClient publicEventHearingDaysCancelled;
+    private final JmsMessageConsumerClient privateMessageConsumerNonDefaultDaysChangedForHearing;
     private JsonArray nonCancelledHearingDaysWithNewSequence;
 
     public CancelHearingSteps(final HearingsData hearingsData, final List<HearingDay> hearingDays) {
@@ -100,8 +99,8 @@ public class CancelHearingSteps extends AbstractIT implements AutoCloseable {
         this.hearingDays = hearingDays;
         this.nonCancelledHearingDays = hearingDays.stream().filter(hearingDay -> !hearingDay.getIsCancelled().orElse(false)).collect(toList());
         this.cancelledHearingDays = hearingDays.stream().filter(hearingDay -> hearingDay.getIsCancelled().orElse(false)).collect(toList());
-        this.publicEventHearingDaysCancelled = publicEvents.createProducer();
-        this.privateMessageConsumerNonDefaultDaysChangedForHearing = privateEvents.createConsumer(EVENT_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING);
+        this.publicEventHearingDaysCancelled = newPublicJmsMessageProducerClientProvider().getMessageProducerClient();
+        this.privateMessageConsumerNonDefaultDaysChangedForHearing = privateEvents.createPrivateConsumer(EVENT_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING);
     }
 
     public void whenPublicEventHearingDaysCancelledIsPublished() {
@@ -141,10 +140,9 @@ public class CancelHearingSteps extends AbstractIT implements AutoCloseable {
     }
 
     public void verifyHearingSlotsWereNotUpdated() {
-        try (final Utilities.EventListener hearingSlotsUpdatedListener = listenForPrivateEvent(EVENT_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING)
-                .withFilter(isJson(withJsonPath("$.hearingId", is(hearingId))))) {
-            hearingSlotsUpdatedListener.expectNoneWithin(DEFAULT_NOT_HAPPENED_TIMEOUT_IN_MILLIS);
-        }
+        final Utilities.EventListener hearingSlotsUpdatedListener = listenForPrivateEvent(EVENT_NON_DEFAULT_DAYS_CHANGED_FOR_HEARING)
+                .withFilter(isJson(withJsonPath("$.hearingId", is(hearingId))));
+        hearingSlotsUpdatedListener.expectNoneWithin(DEFAULT_NOT_HAPPENED_TIMEOUT_IN_MILLIS);
     }
 
     public void verifyAllocatedHearingFoundOnNonCancelledHearingDay(final LocalDate searchDate) {
@@ -331,15 +329,5 @@ public class CancelHearingSteps extends AbstractIT implements AutoCloseable {
         }
 
         return eventPayloadString;
-    }
-
-    @Override
-    public void close() {
-        try {
-            publicEventHearingDaysCancelled.close();
-            privateMessageConsumerNonDefaultDaysChangedForHearing.close();
-        } catch (final JMSException e) {
-            LOGGER.error("Error closing one of publicEventHearingDaysCancelled, privateMessageConsumerNonDefaultDaysChangedForHearing producers/consumers: {}", e.getMessage());
-        }
     }
 }

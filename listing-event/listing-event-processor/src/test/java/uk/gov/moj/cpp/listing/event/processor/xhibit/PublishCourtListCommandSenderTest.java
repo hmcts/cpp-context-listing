@@ -6,7 +6,7 @@ import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,16 +35,16 @@ import java.util.UUID;
 import javax.json.JsonObject;
 
 import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class PublishCourtListCommandSenderTest {
 
     @Mock
@@ -328,8 +328,6 @@ public class PublishCourtListCommandSenderTest {
 
         final Optional<JsonObject> jsonObject = Optional.of(createObjectBuilder().add("caseId", randomUUID().toString()).build());
 
-        when(progressionService.caseExistsByCaseUrn(any(JsonEnvelope.class), any(String.class))).thenReturn(jsonObject);
-
         publishCourtListCommandSender.publishPublicMessageForCourtList(tEnvelope, parameters, courtListJson);
 
         verify(sender, times(0)).send(envelopeArgumentCaptor.capture());
@@ -367,8 +365,6 @@ public class PublishCourtListCommandSenderTest {
         final JsonEnvelope tEnvelope = envelopeFrom(metadata, courtListExportRequested);
 
         final Optional<JsonObject> jsonObject = Optional.of(createObjectBuilder().add("caseId", randomUUID().toString()).build());
-
-        when(progressionService.caseExistsByCaseUrn(any(JsonEnvelope.class), any(String.class))).thenReturn(jsonObject);
 
         publishCourtListCommandSender.publishPublicMessageForCourtList(tEnvelope, parameters, courtListJson);
 

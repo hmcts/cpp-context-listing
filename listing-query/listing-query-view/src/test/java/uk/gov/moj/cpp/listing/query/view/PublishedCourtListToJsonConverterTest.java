@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.listing.event.PublishCourtListType.WARN;
 
 import uk.gov.justice.listing.event.PublishCourtListType;
@@ -18,13 +18,13 @@ import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class PublishedCourtListToJsonConverterTest {
 
     private final UUID courtCentreId = UUID.randomUUID();
@@ -39,7 +39,7 @@ public class PublishedCourtListToJsonConverterTest {
     @InjectMocks
     private PublishedCourtListToJsonConverter publishedCourtListToJsonConverter;
 
-    @Before
+    @BeforeEach
     public void before() {
         publishedCourtList = new PublishedCourtList(courtCentreId, publishCourtListType, startDate, courtListJson, lastUpdated, lastExported, null);
     }

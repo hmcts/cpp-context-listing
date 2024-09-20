@@ -1,5 +1,32 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jayway.jsonpath.ReadContext;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import uk.gov.justice.core.courts.Address;
+import uk.gov.justice.listing.events.*;
+import uk.gov.justice.services.common.converter.LocalDates;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.messaging.Envelope;
+import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+
 import static com.google.common.collect.Lists.newArrayList;
 import static com.jayway.jsonassert.impl.matcher.IsCollectionWithSize.hasSize;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
@@ -13,8 +40,8 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.listing.events.ApplicantRespondent.applicantRespondent;
@@ -24,41 +51,7 @@ import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
-import uk.gov.justice.core.courts.Address;
-import uk.gov.justice.listing.events.CaseIdentifier;
-import uk.gov.justice.listing.events.CourtApplication;
-import uk.gov.justice.listing.events.CourtListRestricted;
-import uk.gov.justice.listing.events.Defendant;
-import uk.gov.justice.listing.events.ListedCase;
-import uk.gov.justice.listing.events.Offence;
-import uk.gov.justice.listing.events.StatementOfOffence;
-import uk.gov.justice.services.common.converter.LocalDates;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
-import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
-import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
-
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jayway.jsonpath.ReadContext;
-import org.hamcrest.Matcher;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class RestrictCourtListEventListenerTest {
     private static final ObjectMapper MAPPER = new ObjectMapperProducer().objectMapper();
 
@@ -128,7 +121,7 @@ public class RestrictCourtListEventListenerTest {
 
         target.hearingRestrictionForCourt(restrictCourtListEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
         assertThat(objectNodeCaptor.getValue().toString(), isJson(allOf(
                 withJsonPath("$[0].defendants[0].offences[0].listingNumber", equalTo(1)))));
@@ -154,7 +147,7 @@ public class RestrictCourtListEventListenerTest {
 
         target.hearingRestrictionForCourt(restrictCourtListEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         validateApplicantAndRespondents(objectNodeCaptor);
         verify(hearingRepository).save(hearing);
     }
@@ -185,7 +178,7 @@ public class RestrictCourtListEventListenerTest {
 
         target.hearingRestrictionForCourt(restrictCourtListEnvelope);
 
-        verify(properties, times(4)).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties, times(4)).replace(any(), objectNodeCaptor.capture());
         final ArrayNode applicationArrayNode = objectNodeCaptor.getValue();
         final List<Matcher<? super ReadContext>> matchers = newArrayList();
         matchers.add(withJsonPath("$", hasSize(1)));

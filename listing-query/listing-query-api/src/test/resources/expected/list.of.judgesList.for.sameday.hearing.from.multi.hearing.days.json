@@ -4,15 +4,15 @@
   "sittings": [
     {
       "judiciaryNames": [],
-      "sittingTime": "10:00 AM",
+      "sittingTime": "10:00 am",
       "hearings": [
         {
           "hearingType": "Bail Application",
           "caseNumber": "41GD9734320",
           "hearingDay": {
             "hearingDate": "2020-10-09",
-            "endTime": "10:02 AM",
-            "startTime": "10:00 AM",
+            "endTime": "10:02 am",
+            "startTime": "10:00 am",
             "durationMinutes": 2
           },
           "defendants": [

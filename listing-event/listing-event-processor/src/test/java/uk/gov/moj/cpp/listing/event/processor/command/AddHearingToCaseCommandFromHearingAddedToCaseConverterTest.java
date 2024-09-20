@@ -2,11 +2,11 @@ package uk.gov.moj.cpp.listing.event.processor.command;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.justice.listing.commands.AddHearingToCaseCommand;
 import uk.gov.justice.listing.events.CasesAddedToHearing;
 import uk.gov.justice.listing.events.ListedCase;
@@ -21,7 +21,7 @@ import java.util.UUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class AddHearingToCaseCommandFromHearingAddedToCaseConverterTest {
 
     private AddHearingToCaseCommandFromHearingAddedToCaseConverter addHearingToCaseCommandFromHearingAddedToCaseConverter = new AddHearingToCaseCommandFromHearingAddedToCaseConverter();

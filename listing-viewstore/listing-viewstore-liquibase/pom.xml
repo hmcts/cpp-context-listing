@@ -3,7 +3,7 @@
     <parent>
         <artifactId>listing-viewstore</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>8.0.103-SNAPSHOT</version>
+        <version>17.0.4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -34,7 +34,7 @@
                     <dependency>
                         <groupId>org.liquibase</groupId>
                         <artifactId>liquibase-core</artifactId>
-                        <version>${liquibase.core.version}</version>
+                        <version>${liquibase.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>

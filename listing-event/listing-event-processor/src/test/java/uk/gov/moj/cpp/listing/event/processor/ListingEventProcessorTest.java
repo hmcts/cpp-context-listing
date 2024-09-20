@@ -17,14 +17,17 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.quality.Strictness.LENIENT;
 import static uk.gov.justice.core.courts.CourtCentre.courtCentre;
 import static uk.gov.justice.core.courts.HearingDay.hearingDay;
 import static uk.gov.justice.hearing.courts.HearingDaysCancelled.hearingDaysCancelled;
@@ -115,7 +118,6 @@ import uk.gov.justice.listing.events.Offences;
 import uk.gov.justice.listing.events.OffencesToBeAdded;
 import uk.gov.justice.listing.events.OffencesToBeDeleted;
 import uk.gov.justice.listing.events.OffencesToBeUpdated;
-import uk.gov.justice.listing.events.OrganisationUnit;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIds;
 import uk.gov.justice.listing.events.ProsecutionCaseDefendantOffenceIdsV2;
 import uk.gov.justice.listing.events.ProsecutionCases;
@@ -135,11 +137,13 @@ import uk.gov.justice.services.common.converter.ZonedDateTimes;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.core.sender.Sender;
+import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatcher;
 import uk.gov.justice.services.test.utils.core.random.Generator;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
+import uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil;
 import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
@@ -188,16 +192,22 @@ import javax.json.JsonValue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.slf4j.Logger;
 
-@RunWith(MockitoJUnitRunner.class)
+// FIXME!!! Temporarily using lenient strictness to get this
+// context running with junit 5.
+@MockitoSettings(strictness = LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class ListingEventProcessorTest {
 
     private static final String FIELD_HEARING_ID = "hearingId";
@@ -358,9 +368,18 @@ public class ListingEventProcessorTest {
     @Mock
     private HearingObjectsListingToCoreConverter hearingListingToCoreConverter;
 
+    @Mock
+    private Logger logger;
+
     @InjectMocks
     private ListingEventProcessor listingEventProcessor;
 
+    @BeforeEach
+    public void setUp() {
+        final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(objectMapper);
+        ReflectionUtil.setField(listingEventProcessor, "objectToJsonObjectConverter", objectToJsonObjectConverter);
+    }
 
     @Test
     public void shouldHandleHearingListedEventMessage() {
@@ -368,10 +387,6 @@ public class ListingEventProcessorTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(HearingListed.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(false);
 
         given(hearingListed.getHearing()).willReturn(hearing);
         given(hearing.getIsSlotsBooked()).willReturn(null);
@@ -379,7 +394,7 @@ public class ListingEventProcessorTest {
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).
                 willReturn(singletonList(addApplicationToHearingCommand));
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleHearingListedMessage(envelope);
@@ -398,22 +413,13 @@ public class ListingEventProcessorTest {
 
         given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed2);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(HearingListed.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(true);
 
-        given(hearingListed.getHearing()).willReturn(hearing);
-        given(hearing.getIsSlotsBooked()).willReturn(null);
-        given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addHearingToCaseCommand));
-        given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).
-                willReturn(singletonList(addApplicationToHearingCommand));
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed2)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed2)).
                 willReturn(singletonList(addApplicationToHearingCommand));
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleHearingListedMessage(envelope);
@@ -428,8 +434,6 @@ public class ListingEventProcessorTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(HearingListed.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
 
         given(hearingListed.getHearing()).willReturn(hearing);
         given(hearing.getIsSlotsBooked()).willReturn(true);
@@ -437,9 +441,7 @@ public class ListingEventProcessorTest {
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addApplicationToHearingCommand));
         given(hearingListedToUpdateHearingForListingCommand.convert(hearing)).willReturn(UpdateHearingForListingEnriched.updateHearingForListingEnriched().build());
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(false);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleHearingListedMessage(envelope);
@@ -459,22 +461,12 @@ public class ListingEventProcessorTest {
 
         given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed2);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(HearingListed.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
 
-        given(hearingListed.getHearing()).willReturn(hearing);
-        given(hearing.getIsSlotsBooked()).willReturn(true);
-        given(addHearingToCaseCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addHearingToCaseCommand));
-        given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed)).willReturn(singletonList(addApplicationToHearingCommand));
-        given(hearingListedToUpdateHearingForListingCommand.convert(hearing)).willReturn(UpdateHearingForListingEnriched.updateHearingForListingEnriched().build());
         given(addHearingToCaseCommandCollectionConverter.convert(hearingListed2)).willReturn(singletonList(addHearingToCaseCommand));
         given(addCourtApplicationToHearingCommandCollectionConverter.convert(hearingListed2)).
                 willReturn(singletonList(addApplicationToHearingCommand));
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(true);
-
+                forClass(JsonEnvelope.class);
         //when
         listingEventProcessor.handleHearingListedMessage(envelope);
 
@@ -486,19 +478,12 @@ public class ListingEventProcessorTest {
     @Test
     public void shouldHandleDefendantsToBeUpdatedMessage() {
         //Given
-        final List<UUID> hearings = singletonList(randomUUID());
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, DefendantsToBeUpdated.class)).willReturn(defendantsToBeUpdated);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(DefendantsToBeUpdated.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
-        given(defendantsToBeUpdated.getHearings()).willReturn(hearings);
         given(updateDefendantsForHearingCommandCollectionConverter.convert(defendantsToBeUpdated)).willReturn(singletonList(updateDefendantsForHearingCommand));
-        given(hearingService.getHearing(any(UUID.class), any(JsonEnvelope.class))).willReturn(hearing);
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(false);
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleDefendantsToBeUpdatedMessage(envelope);
@@ -510,25 +495,15 @@ public class ListingEventProcessorTest {
     @Test
     public void shouldHandleDefendantsToBeUpdatedMessageHmiEnabled() {
         //Given
-        final List<UUID> hearings = singletonList(randomUUID());
         given(envelope.payloadAsJsonObject()).willReturn(payload);
 
         JsonObjectToObjectConverter jsonObjectToObjectConverter2 = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
-        final HearingListed hearingListed2 = new EventBuilder(jsonObjectToObjectConverter2).buildHearingListed();
-
-        given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed2);
 
         given(jsonObjectConverter.convert(payload, DefendantsToBeUpdated.class)).willReturn(defendantsToBeUpdated);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(DefendantsToBeUpdated.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
-        given(defendantsToBeUpdated.getHearings()).willReturn(hearings);
         given(updateDefendantsForHearingCommandCollectionConverter.convert(defendantsToBeUpdated)).willReturn(singletonList(updateDefendantsForHearingCommand));
-        given(hearingService.getHearing(any(UUID.class), any(JsonEnvelope.class))).willReturn(hearingListed2.getHearing());
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(true);
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleDefendantsToBeUpdatedMessage(envelope);
@@ -544,15 +519,9 @@ public class ListingEventProcessorTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, DefendantsToBeAddedForCourtProceedings.class)).willReturn(defendantsToBeAddedForCourtProceedings);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(DefendantsToBeAddedForCourtProceedings.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
-        given(defendantsToBeAddedForCourtProceedings.getHearings()).willReturn(hearings);
         given(addDefendantsForCourtProceedingsCommandCollectionConverter.convert(defendantsToBeAddedForCourtProceedings)).willReturn(singletonList(addDefendantsForCourtProceedingsCommand));
-        given(hearingService.getHearing(any(UUID.class), any(JsonEnvelope.class))).willReturn(hearing);
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(false);
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleDefendantsToBeAddedForCourtProceedingsMessage(envelope);
@@ -569,15 +538,8 @@ public class ListingEventProcessorTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, DefendantsToBeAddedForCourtProceedings.class)).willReturn(defendantsToBeAddedForCourtProceedings);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(DefendantsToBeAddedForCourtProceedings.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
-        given(defendantsToBeAddedForCourtProceedings.getHearings()).willReturn(hearings);
         given(addDefendantsForCourtProceedingsCommandCollectionConverter.convert(defendantsToBeAddedForCourtProceedings)).willReturn(singletonList(addDefendantsForCourtProceedingsCommand));
-        given(hearingService.getHearing(any(UUID.class), any(JsonEnvelope.class))).willReturn(hearing);
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(false);
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleDefendantsToBeAddedForCourtProceedingsMessage(envelope);
@@ -595,13 +557,10 @@ public class ListingEventProcessorTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, OffencesToBeUpdated.class)).willReturn(offencesToBeUpdated);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(OffencesToBeUpdated.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
-        given(offencesToBeUpdated.getHearings()).willReturn(hearings);
         given(updateOffencesForHearingCommandCollectionConverter.convert(offencesToBeUpdated)).willReturn(singletonList(updateOffencesForHearingCommand));
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleOffencesToBeUpdatedMessage(envelope);
@@ -613,17 +572,13 @@ public class ListingEventProcessorTest {
     @Test
     public void shouldHandleOffencesToBeAddedMessage() {
         //Given
-        final List<UUID> hearings = singletonList(randomUUID());
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, OffencesToBeAdded.class)).willReturn(offencesToBeAdded);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(OffencesToBeAdded.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
-        given(offencesToBeAdded.getHearings()).willReturn(hearings);
         given(addOffencesForHearingCommandCollectionConverter.convert(offencesToBeAdded)).willReturn(singletonList(addOffencesForHearingCommand));
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleOffencesToBeAddedMessage(envelope);
@@ -639,13 +594,10 @@ public class ListingEventProcessorTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, OffencesToBeDeleted.class)).willReturn(offencesToBeDeleted);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(OffencesToBeDeleted.class))).willReturn(finalEnvelope);
-        given(enveloperFunction.apply(any(Hearing.class))).willReturn(finalEnvelope);
-        given(offencesToBeDeleted.getHearings()).willReturn(hearings);
         given(deleteOffencesForHearingCommandCollectionConverter.convert(offencesToBeDeleted)).willReturn(singletonList(deleteOffencesForHearingCommand));
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleOffencesToBeDeletedMessage(envelope);
@@ -664,7 +616,6 @@ public class ListingEventProcessorTest {
         final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
         given(hearingConfirmedFactory.create(hearingAllocatedForListing, event)).willReturn(hearingConfirmed);
 
-        when(stagingHmiService.isHmiListingEnabled(OU_CODE)).thenReturn(false);
         //when
         listingEventProcessor.handleHearingAllocatedForListingMessage(event);
 
@@ -694,7 +645,7 @@ public class ListingEventProcessorTest {
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = prepareRotaSLJudiciaryInfo(hearingSlotsResponse);
 
-        when(courtSchedulerServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
+        when(courtSchedulerServiceAdapter.getJudicialRoles(isNull(), anyString(), any(), anyString())).thenReturn(judicialRoles);
         when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays))
                 .thenReturn(Optional.of(Collections.singletonList(
                         SlotDetailBuilder.slotDetail()
@@ -713,7 +664,7 @@ public class ListingEventProcessorTest {
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(0).metadata().name(), is(COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS));
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
 
-        verify(courtSchedulerServiceAdapter, times(1)).getJudicialRoles(anyString(), anyString(), any(), anyString());
+        verify(courtSchedulerServiceAdapter, times(1)).getJudicialRoles(isNull(), anyString(), any(), anyString());
         verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays);
         verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, true, hearingDays);
     }
@@ -735,7 +686,7 @@ public class ListingEventProcessorTest {
         final JsonObject hearingSlotsResponse = FileUtil.givenPayload("/stub-data/azure.rotasl.getHearingSlots.stub-data.json");
         final List<uk.gov.moj.cpp.listing.domain.JudicialRole> judicialRoles = prepareRotaSLJudiciaryInfo(hearingSlotsResponse);
 
-        when(courtSchedulerServiceAdapter.getJudicialRoles(anyString(), anyString(), any(), anyString())).thenReturn(judicialRoles);
+        when(courtSchedulerServiceAdapter.getJudicialRoles(isNull(), anyString(), any(), anyString())).thenReturn(judicialRoles);
         when(slotUpdater.updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays))
                 .thenReturn(Optional.of(Collections.singletonList(
                         SlotDetailBuilder.slotDetail()
@@ -754,7 +705,7 @@ public class ListingEventProcessorTest {
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(1).metadata().name(), is(PUBLIC_EVENT_HEARING_CONFIRMED));
         assertThat(senderJsonEnvelopeCaptor.getAllValues().get(2).metadata().name(), is(PUBLIC_EVENT_HEARING_CHANGES_SAVED));
 
-        verify(courtSchedulerServiceAdapter, times(1)).getJudicialRoles(anyString(), anyString(), any(), anyString());
+        verify(courtSchedulerServiceAdapter, times(1)).getJudicialRoles(isNull(), anyString(), any(), anyString());
         verify(slotUpdater).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
         verify(slotUpdater, times(1)).updateSlot(event, hearingConfirmed.getConfirmedHearing(), false, false, hearingDays);
 
@@ -806,8 +757,6 @@ public class ListingEventProcessorTest {
 
         final HearingConfirmed hearingConfirmed = hearingConfirmed(JurisdictionType.CROWN);
         given(hearingConfirmedFactory.createV2(hearingAllocatedForListingV2, event)).willReturn(hearingConfirmed);
-
-        when(stagingHmiService.isHmiListingEnabled(OU_CODE)).thenReturn(false);
 
         //when
         listingEventProcessor.handleHearingAllocatedForListingV2Message(event);
@@ -867,7 +816,6 @@ public class ListingEventProcessorTest {
         given(allocatedHearingUpdatedFactory.createV2(allocatedHearingUpdatedForListingV2, event))
                 .willReturn(hearingUpdated);
 
-        when(stagingHmiService.isHmiListingEnabled(OU_CODE)).thenReturn(false);
         //when
         listingEventProcessor.handleAllocatedHearingUpdatedForListingV2Message(event);
 
@@ -969,7 +917,7 @@ public class ListingEventProcessorTest {
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleRestrictCourtListMessage(envelope);
@@ -990,13 +938,7 @@ public class ListingEventProcessorTest {
         UpdateCaseMarkersForHearingCommand updateCaseMarkersForHearingCommand = new UpdateCaseMarkersForHearingCommand(randomUUID(), randomUUID(), asList(caseMarker));
         when(updateCaseMarkersForHearingCommandCollectionConverter.convert(any(CaseMarkersToBeUpdated.class))).thenReturn(asList(updateCaseMarkersForHearingCommand));
 
-        given(hearingService.getHearing(any(UUID.class), any(JsonEnvelope.class))).willReturn(hearing);
-
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(false);
-
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
         //when
         listingEventProcessor.handleCaseMarkerUpdateMessage(envelope);
@@ -1017,17 +959,7 @@ public class ListingEventProcessorTest {
         UpdateCaseMarkersForHearingCommand updateCaseMarkersForHearingCommand = new UpdateCaseMarkersForHearingCommand(randomUUID(), randomUUID(), asList(caseMarker));
         when(updateCaseMarkersForHearingCommandCollectionConverter.convert(any(CaseMarkersToBeUpdated.class))).thenReturn(asList(updateCaseMarkersForHearingCommand));
 
-        JsonObjectToObjectConverter jsonObjectToObjectConverter2 = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
-        final HearingListed hearingListed2 = new EventBuilder(jsonObjectToObjectConverter2).buildHearingListed();
-
-        given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed2);
-        given(hearingService.getHearing(any(UUID.class), any(JsonEnvelope.class))).willReturn(hearingListed2.getHearing());
-
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(true);
-
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
         //when
         listingEventProcessor.handleCaseMarkerUpdateMessage(envelope);
@@ -1141,14 +1073,9 @@ public class ListingEventProcessorTest {
                                         .add("allocated", false).build()))
         );
 
-        when(hearingQueryView.searchAllocatedAndUnallocatedHearings(any())).thenReturn(queryEnvelope);
-        given(hearingService.getHearing(any(UUID.class), any(JsonEnvelope.class))).willReturn(hearing);
-
         //given
         given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
                 DefendantsAddedToCourtProceedings.class)).willReturn(defendantsAddedToCourtProceedings);
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(false);
 
         listingEventProcessor.handleDefendantAddedForCourtProceedings(jsonEnvelope);
 
@@ -1196,19 +1123,11 @@ public class ListingEventProcessorTest {
                                         .add("allocated", false).build()))
         );
 
-        when(hearingQueryView.searchAllocatedAndUnallocatedHearings(any())).thenReturn(queryEnvelope);
-
         JsonObjectToObjectConverter jsonObjectToObjectConverter2 = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
-        final HearingListed hearingListed2 = new EventBuilder(jsonObjectToObjectConverter2).buildHearingListed();
-
-        given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed2);
-        given(hearingService.getHearing(any(UUID.class), any(JsonEnvelope.class))).willReturn(hearingListed2.getHearing());
 
         //given
         given(jsonObjectConverter.convert(jsonEnvelope.payloadAsJsonObject(),
                 DefendantsAddedToCourtProceedings.class)).willReturn(defendantsAddedToCourtProceedings);
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(true);
 
         listingEventProcessor.handleDefendantAddedForCourtProceedings(jsonEnvelope);
 
@@ -1275,18 +1194,14 @@ public class ListingEventProcessorTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, CourtApplicationAddedForHearing.class)).willReturn(courtApplicationAddedForHearing);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(CourtApplicationAddedForHearing.class))).willReturn(finalEnvelope);
         given(courtApplicationAddedForHearing.getCourtApplication())
                 .willReturn(uk.gov.justice.listing.events.CourtApplication.courtApplication().withId(randomUUID()).build());
         given(courtApplicationAddedForHearing.getHearingId())
                 .willReturn(randomUUID());
         given(jsonObjectConverter.convert(payload, CourtApplicationAddedForHearing.class)).willReturn(courtApplicationAddedForHearing);
-        given(hearingService.getHearing(any(UUID.class), any(JsonEnvelope.class))).willReturn(hearing);
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(false);
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleCourtApplicationAddedForListedHearing(envelope);
@@ -1301,7 +1216,6 @@ public class ListingEventProcessorTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, CourtApplicationAddedForHearing.class)).willReturn(courtApplicationAddedForHearing);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(CourtApplicationAddedForHearing.class))).willReturn(finalEnvelope);
         given(courtApplicationAddedForHearing.getCourtApplication())
                 .willReturn(uk.gov.justice.listing.events.CourtApplication.courtApplication().withId(randomUUID()).build());
         given(courtApplicationAddedForHearing.getHearingId())
@@ -1309,15 +1223,8 @@ public class ListingEventProcessorTest {
         given(jsonObjectConverter.convert(payload, CourtApplicationAddedForHearing.class)).willReturn(courtApplicationAddedForHearing);
 
         JsonObjectToObjectConverter jsonObjectToObjectConverter2 = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
-        final HearingListed hearingListed2 = new EventBuilder(jsonObjectToObjectConverter2).buildHearingListed();
 
-        given(jsonObjectConverter.convert(payload, HearingListed.class)).willReturn(hearingListed2);
-        given(hearingService.getHearing(any(UUID.class), any(JsonEnvelope.class))).willReturn(hearingListed2.getHearing());
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(true);
-
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleCourtApplicationAddedForListedHearing(envelope);
@@ -1332,11 +1239,10 @@ public class ListingEventProcessorTest {
     public void shouldHandleCourtApplicationToBeUpdated() {
         //Given
         given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(jsonObjectConverter.convert(payload, CourtApplicationToBeUpdated.class)).willReturn(courtApplicationToBeUpdated);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
 
         //when
         listingEventProcessor.handleCourtApplicationToBeUpdated(envelope);
@@ -1851,7 +1757,6 @@ public class ListingEventProcessorTest {
 
     @Test
     public void shouldHandleHearingMarkedAsDuplicate() {
-        when(stagingHmiService.isHmiListingEnabled(OU_CODE)).thenReturn(true);
         final String hearingId = randomUUID().toString();
         final String case1Id = randomUUID().toString();
         final String case2Id = randomUUID().toString();
@@ -1949,9 +1854,6 @@ public class ListingEventProcessorTest {
                         .withHearingId(hearingId)
                         .withCourtCentreId(courtCentreId)
                         .build());
-        given(referenceDataService.getOrganizationUnitById(any(), any())).willReturn(new OrganisationUnit.Builder().build());
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(true);
 
         listingEventProcessor.handleHearingUnallocatedForListing(envelope);
 
@@ -1977,10 +1879,6 @@ public class ListingEventProcessorTest {
                         .withCourtCentreId(courtCentreId)
                         .withSource(HMI_SOURCE)
                         .build());
-        given(referenceDataService.getOrganizationUnitById(any(), any())).willReturn(new OrganisationUnit.Builder().build());
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(true);
-
         listingEventProcessor.handleHearingUnallocatedForListing(envelope);
 
         verify(this.sender, never()).send(this.senderJsonEnvelopeCaptor.capture());
@@ -2006,10 +1904,6 @@ public class ListingEventProcessorTest {
                         .withSeededHearing(true)
                         .withCourtCentreId(courtCentreId)
                         .build());
-        given(referenceDataService.getOrganizationUnitById(any(), any())).willReturn(new OrganisationUnit.Builder().build());
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(true);
-
         listingEventProcessor.handleHearingUnallocatedForListing(envelope);
 
         verify(this.sender, times(1)).send(this.senderJsonEnvelopeCaptor.capture());
@@ -2042,9 +1936,6 @@ public class ListingEventProcessorTest {
                         .withCourtCentreId(courtCentreId)
                         .withSource(HMI_SOURCE)
                         .build());
-        given(referenceDataService.getOrganizationUnitById(any(), any())).willReturn(new OrganisationUnit.Builder().build());
-        given(referenceDataService.getOucodeFromEnvelope(any(UUID.class), any(JsonEnvelope.class))).willReturn(OUCODE);
-        given(stagingHmiService.isHmiListingEnabled(any(Optional.class))).willReturn(true);
 
         listingEventProcessor.handleHearingUnallocatedForListing(envelope);
 
@@ -2083,7 +1974,6 @@ public class ListingEventProcessorTest {
                 .build();
 
         given(jsonObjectConverter.convert(payload, NewDefendantAddedForCourtProceedings.class)).willReturn(privateEventPayload);
-        given(hearingConfirmedFactory.buildCourtCentre(eq(courtCentreId), eq(Optional.of(courtRoomId)), (any(JsonEnvelope.class)))).willReturn(courtCentre);
 
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.new-defendant-added-for-court-proceedings"), payload);
 

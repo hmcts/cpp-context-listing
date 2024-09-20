@@ -1,6 +1,6 @@
 package uk.gov.moj.cpp.listing.query.api.courtcentre;
 
-import static org.apache.activemq.artemis.utils.JsonLoader.createReader;
+import static javax.json.Json.createReader;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.BDDMockito.given;
@@ -17,14 +17,14 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CourtCentreFactoryTest {
     private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
     private static final String COURT_CENTRE_NAME = "courtCentreName";

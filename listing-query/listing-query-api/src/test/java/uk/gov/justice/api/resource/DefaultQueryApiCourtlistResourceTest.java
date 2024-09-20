@@ -12,9 +12,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.api.resource.DefaultQueryApiCourtlistResource.COURT_LIST_QUERY_NAME;
@@ -49,17 +48,15 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import com.google.common.collect.ImmutableMap;
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DefaultQueryApiCourtlistResourceTest {
     private static final String PDF_CONTENT_TYPE = "application/pdf";
 
@@ -109,22 +106,15 @@ public class DefaultQueryApiCourtlistResourceTest {
     private static final String LIST_ID_JUDGE = "Judge";
     private static final String START_DATE = to(now());
     private static final String END_DATE = to(now());
-
-    @Before
-    public void init() {
-        when(serviceContextSystemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(systemUserId));
-
-        final JsonEnvelope documentDetails = documentDetails(materialId);
-        when(interceptorChainProcessor.process(argThat((Matchers.any(InterceptorContext.class))))).thenReturn(Optional.ofNullable(documentDetails));
-        when(hearingQueryView.getCourtListContent(argThat((Matchers.any(JsonEnvelope.class))))).thenReturn(documentDetails);
-        when(hearingQueryView.rangeSearchHearingsForJudge(argThat((Matchers.any(JsonEnvelope.class))))).thenReturn(documentDetails);
-        when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
-        when(documentContentResponse.getStatus()).thenReturn(SC_OK);
-    }
-
+    
     @Test
     public void shouldRunAllInterceptorsAndFetchAndStreamDocumentForAlphabetical() {
         final MultivaluedMap headers = givenHeaders();
+        final JsonEnvelope documentDetails = documentDetails(materialId);
+
+        when(interceptorChainProcessor.process(any(InterceptorContext.class))).thenReturn(Optional.ofNullable(documentDetails));
+        when(hearingQueryView.getCourtListContent(any(JsonEnvelope.class))).thenReturn(documentDetails);
+        when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(alphabeticalCourtListService.buildAlphabeticalCourtListData(
                 any(JsonEnvelope.class), any(String.class)))
                 .thenReturn(Optional.of(Json.createObjectBuilder().build()));
@@ -141,6 +131,11 @@ public class DefaultQueryApiCourtlistResourceTest {
     public void shouldRunAllInterceptorsAndFetchAndStreamDocumentForStandard() {
 
         final MultivaluedMap headers = givenHeaders();
+        final JsonEnvelope documentDetails = documentDetails(materialId);
+
+        when(interceptorChainProcessor.process(any(InterceptorContext.class))).thenReturn(Optional.ofNullable(documentDetails));
+        when(hearingQueryView.getCourtListContent(any(JsonEnvelope.class))).thenReturn(documentDetails);
+        when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(standardCourtListTemplateAssembler.assemble(
                 any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(Boolean.class)))
                 .thenReturn(Optional.of(Json.createObjectBuilder().build()));
@@ -149,13 +144,17 @@ public class DefaultQueryApiCourtlistResourceTest {
         final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_STANDARD, START_DATE, END_DATE, TRUE, UUID.randomUUID());
 
         verifyResponse(headers, documentContentResponse, LIST_ID_STANDARD);
-
     }
 
     @Test
     public void shouldRunAllInterceptorsAndFetchAndStreamDocumentForBench() {
 
         final MultivaluedMap headers = givenHeaders();
+        final JsonEnvelope documentDetails = documentDetails(materialId);
+
+        when(interceptorChainProcessor.process(any(InterceptorContext.class))).thenReturn(Optional.ofNullable(documentDetails));
+        when(hearingQueryView.getCourtListContent(any(JsonEnvelope.class))).thenReturn(documentDetails);
+        when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(standardCourtListTemplateAssembler.assemble(
                 any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), any(Boolean.class)))
                 .thenReturn(Optional.of(Json.createObjectBuilder().build()));
@@ -164,13 +163,17 @@ public class DefaultQueryApiCourtlistResourceTest {
         final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_BENCH, START_DATE, END_DATE, TRUE, UUID.randomUUID());
 
         verifyResponse(headers, documentContentResponse, LIST_ID_BENCH);
-
     }
 
     @Test
     public void shouldRunAllInterceptorsAndFetchAndStreamDocumentForJudge() {
 
         final MultivaluedMap headers = givenHeaders();
+        final JsonEnvelope documentDetails = documentDetails(materialId);
+
+        when(interceptorChainProcessor.process(any(InterceptorContext.class))).thenReturn(Optional.ofNullable(documentDetails));
+        when(hearingQueryView.rangeSearchHearingsForJudge(any(JsonEnvelope.class))).thenReturn(documentDetails);
+        when(documentGeneratorClient.generateDocument(any(JsonObject.class), any(String.class))).thenReturn(documentResponseBinary);
         when(judgeListTemplateAssembler.assemble(
                 any(JsonEnvelope.class), any(String.class), any(String.class), any(CourtListType.class), anyString()))
                 .thenReturn(Optional.of(Json.createObjectBuilder().build()));
@@ -179,7 +182,6 @@ public class DefaultQueryApiCourtlistResourceTest {
         final Response documentContentResponse = endpointHandler.getCourtList(COURT_CENTRE_ID, COURT_ROOM_ID, LIST_ID_JUDGE, START_DATE, END_DATE, TRUE, UUID.randomUUID());
 
         verifyResponse(headers, documentContentResponse, LIST_ID_JUDGE);
-
     }
 
     private void verifyResponse(MultivaluedMap headers, Response documentContentResponse, String listIdStandard) {
@@ -191,10 +193,8 @@ public class DefaultQueryApiCourtlistResourceTest {
     private MultivaluedMap givenHeaders() {
         final MultivaluedMap headers = new MultivaluedHashMap(ImmutableMap.of(
                 CONTENT_TYPE, PDF_CONTENT_TYPE, CONTENT_DISPOSITION, DISPOSITION));
-        when(documentContentResponse.getHeaders()).thenReturn(headers);
         return headers;
     }
-
 
     private JsonEnvelope documentDetails(final UUID materialId) {
         return documentDetails(createObjectBuilder().build());

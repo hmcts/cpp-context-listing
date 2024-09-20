@@ -4,7 +4,6 @@ import static java.util.Collections.singletonList;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.listing.events.JudicialRole.judicialRole;
@@ -29,13 +28,13 @@ import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class JudiciaryForHearingEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
@@ -81,7 +80,6 @@ public class JudiciaryForHearingEventListenerTest {
         given(envelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
-        given(objectToJsonObjectConverter.convert(any(JudicialRole.class))).willReturn(createTestJsonObject());
 
         judiciaryForHearingEventListener.judiciaryAssignedToHearing(envelope);
 
@@ -111,7 +109,6 @@ public class JudiciaryForHearingEventListenerTest {
         given(envelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
-        given(objectToJsonObjectConverter.convert(any(JudicialRole.class))).willReturn(createTestJsonObject());
 
         judiciaryForHearingEventListener.judiciaryChangedForHearing(envelope);
 

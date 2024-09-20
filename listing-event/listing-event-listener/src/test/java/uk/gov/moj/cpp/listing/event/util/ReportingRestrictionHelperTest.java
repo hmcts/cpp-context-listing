@@ -17,10 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import junit.framework.TestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class ReportingRestrictionHelperTest extends TestCase {
+public class ReportingRestrictionHelperTest {
 
     @Test
     public void testDedupAllReportingRestrictions(){

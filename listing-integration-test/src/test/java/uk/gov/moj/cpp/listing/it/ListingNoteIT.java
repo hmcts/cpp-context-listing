@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static com.jayway.awaitility.Awaitility.with;
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
@@ -10,12 +9,14 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.ws.rs.core.Response.Status.OK;
+import static org.awaitility.Awaitility.with;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPublicJmsMessageConsumerClientProvider;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
@@ -23,15 +24,14 @@ import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMat
 import static uk.gov.moj.cpp.listing.utils.CourtSchedulerServiceStub.stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.test.utils.persistence.TestJdbcConnectionProvider;
 import uk.gov.moj.cpp.listing.it.util.ViewStoreCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.NotesSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
-import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -45,17 +45,14 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-
 import com.google.common.collect.ImmutableMap;
-import com.jayway.awaitility.core.ConditionTimeoutException;
 import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
+import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.CoreMatchers;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings({"squid:S1607"})
 public class ListingNoteIT extends AbstractIT {
@@ -72,11 +69,6 @@ public class ListingNoteIT extends AbstractIT {
             ".search.hearings+json";
     public static final String NOTE_DESCRIPTION = "note description";
 
-
-    private MessageConsumer messageConsumerClientPublicForEditNote;
-    private MessageConsumer messageConsumerClientPublicForCreateNote;
-    private MessageConsumer messageConsumerClientPublicForDeleteNote;
-
     private NotesSteps notesSteps = new NotesSteps();
 
     @Test
@@ -84,12 +76,13 @@ public class ListingNoteIT extends AbstractIT {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
         final LocalDate date = now();
         final UUID courtRoomId = randomUUID();
-        messageConsumerClientPublicForCreateNote = publicEvents.createConsumer(PUBLIC_LISTING_CREATED_LISTING_NOTE);
+        final JmsMessageConsumerClient messageConsumerClientPublicForCreateNote = newPublicJmsMessageConsumerClientProvider()
+                .withEventNames( PUBLIC_LISTING_CREATED_LISTING_NOTE).getMessageConsumerClient();
 
         notesSteps.createNoteForListing(courtRoomId, date.toString(), NOTE_DESCRIPTION);
         final UUID noteId = verifyNoteExists(courtRoomId, date);
         Assert.assertThat(noteId.toString(), CoreMatchers.is(notNullValue()));
-        verifyInMessagingQueueForCreateRole(noteId.toString(), courtRoomId.toString(), date, NOTE_DESCRIPTION);
+        verifyInMessagingQueueForCreateRole(messageConsumerClientPublicForCreateNote, noteId.toString(), courtRoomId.toString(), date, NOTE_DESCRIPTION);
     }
 
     @Test
@@ -100,7 +93,8 @@ public class ListingNoteIT extends AbstractIT {
         UUID noteId = createRandomNote(now());
 
         //Given 2 :  consumer topic with selector "public.listing.note-edited" to capture public event raised
-        messageConsumerClientPublicForEditNote = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_NOTE_EDITED);
+        final JmsMessageConsumerClient messageConsumerClientPublicForEditNote = newPublicJmsMessageConsumerClientProvider()
+                .withEventNames( PUBLIC_EVENT_SELECTED_NOTE_EDITED).getMessageConsumerClient();
 
         //when
         String editedNoteDescription = "edited note description";
@@ -110,7 +104,7 @@ public class ListingNoteIT extends AbstractIT {
         verifyNoteDescriptionModified(noteId, editedNoteDescription);
 
         //then 2 : verify public event values
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(messageConsumerClientPublicForEditNote);
+        final JsonPath jsonResponse = messageConsumerClientPublicForEditNote.retrieveMessageAsJsonPath().get();
         assertThat(jsonResponse.get("noteId"), is(noteId.toString()));
         assertThat(jsonResponse.get("noteDescription"), is(editedNoteDescription));
 
@@ -122,14 +116,15 @@ public class ListingNoteIT extends AbstractIT {
         //Given : A note created using create note command
         final LocalDate hearingDate = now();
         final UUID noteId = createRandomNote(hearingDate);
-        messageConsumerClientPublicForDeleteNote = publicEvents.createConsumer(PUBLIC_LISTING_DELETED_LISTING_NOTE);
+        final JmsMessageConsumerClient  messageConsumerClientPublicForDeleteNote = newPublicJmsMessageConsumerClientProvider()
+                .withEventNames( PUBLIC_LISTING_DELETED_LISTING_NOTE).getMessageConsumerClient();
         //When:  delete note
         notesSteps.deleteNoteForListing(noteId);
         // then : verify note deleted
         final UUID noteIdRetrieved = verifyNoteExists(noteId, hearingDate);
         assertThat(noteIdRetrieved, is(nullValue()));
         // Then: verify public messaging queue
-        JsonPath message = QueueUtil.retrieveMessage(messageConsumerClientPublicForDeleteNote);
+        JsonPath message = messageConsumerClientPublicForDeleteNote.retrieveMessageAsJsonPath().get();
         assertThat(message.get("noteId"), is(noteId.toString()));
     }
 
@@ -141,10 +136,9 @@ public class ListingNoteIT extends AbstractIT {
         List<HearingData> hearingData = hearingsData.getHearingData();
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         //Given 2 : Note data using courtRoomId and date from hearing data
         notesSteps.createNoteForListing(hearingData.get(0).getCourtRoomId(), hearingData.get(0).getHearingStartDate().toString(), NOTE_DESCRIPTION);
@@ -164,10 +158,9 @@ public class ListingNoteIT extends AbstractIT {
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
         List<HearingData> hearingData = hearingsData.getHearingData();
         stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased(LocalDate.now(), ImmutableMap.of("courtRoomId", hearingData.get(0).getCourtRoomId().toString()));
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         //When and Then
         verifyHearingDataWithoutNoteData(hearingsData.getHearingData());
@@ -194,10 +187,9 @@ public class ListingNoteIT extends AbstractIT {
 
         //Given 1 : Hearing data
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         //Given 2 : Note data using courtRoomId and date from hearing data
         List<HearingData> hearingData = hearingsData.getHearingData();
@@ -213,15 +205,8 @@ public class ListingNoteIT extends AbstractIT {
         verifyNoHearingDataAndNoNoteData(hearingData);
     }
 
-    @After
-    public void cleanUp() throws JMSException {
-        if (messageConsumerClientPublicForCreateNote != null)
-            messageConsumerClientPublicForCreateNote.close();
-        if (messageConsumerClientPublicForEditNote != null)
-            messageConsumerClientPublicForEditNote.close();
-        if (messageConsumerClientPublicForDeleteNote != null) {
-            messageConsumerClientPublicForDeleteNote.close();
-        }
+    @AfterEach
+    public void cleanUp() {
         viewStoreCleaner.cleanViewStoreTables("listing_notes");
         viewStoreCleaner.cleanViewStoreTables("hearing");
     }
@@ -323,8 +308,8 @@ public class ListingNoteIT extends AbstractIT {
         return noteId;
     }
 
-    private void verifyInMessagingQueueForCreateRole(String noteId, String courtRoomId, LocalDate date, final String noteDescription) {
-        JsonPath message = QueueUtil.retrieveMessage(messageConsumerClientPublicForCreateNote);
+    private void verifyInMessagingQueueForCreateRole(JmsMessageConsumerClient messageConsumerClient, String noteId, String courtRoomId, LocalDate date, final String noteDescription) {
+        JsonPath message = messageConsumerClient.retrieveMessageAsJsonPath().get();
 
         assertThat(message.get("id"), is(noteId));
         assertThat(message.get("date"), is(date.toString()));

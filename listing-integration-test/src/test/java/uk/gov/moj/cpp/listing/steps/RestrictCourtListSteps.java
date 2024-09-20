@@ -8,11 +8,8 @@ import static java.text.MessageFormat.format;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -24,6 +21,8 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
@@ -35,22 +34,18 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.util.Arrays;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
-import org.hamcrest.core.IsNull;
+import io.restassured.path.json.JsonPath;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class RestrictCourtListSteps extends AbstractIT implements AutoCloseable {
+public class RestrictCourtListSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(RestrictCourtListSteps.class);
 
     private static final String LISTING_COMMAND_RESTRICT_COURT_LIST = "listing.command.restrict-court-list";
@@ -62,9 +57,9 @@ public class RestrictCourtListSteps extends AbstractIT implements AutoCloseable 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
             ".search.hearings+json";
 
-    private MessageProducer publicEventListingRestrictedFromCourt;
-    private MessageConsumer publicEventMessageConsumerRestrictCourtList;
-    private MessageConsumer privateMessageConsumerRestrictCourtList;
+    private JmsMessageProducerClient publicEventListingRestrictedFromCourt;
+    private JmsMessageConsumerClient publicEventMessageConsumerRestrictCourtList;
+    private JmsMessageConsumerClient privateMessageConsumerRestrictCourtList;
 
     private String request;
 
@@ -77,9 +72,9 @@ public class RestrictCourtListSteps extends AbstractIT implements AutoCloseable 
     public RestrictCourtListSteps(HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
-        publicEventListingRestrictedFromCourt = QueueUtil.publicEvents.createProducer();
-        publicEventMessageConsumerRestrictCourtList = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_RESTRICT_COURT_LIST);
-        privateMessageConsumerRestrictCourtList = QueueUtil.privateEvents.createConsumer(PRIVATE_EVENT_RESTRICT_COURT_LIST);
+        publicEventListingRestrictedFromCourt = QueueUtil.publicEvents.createPublicProducer();
+        publicEventMessageConsumerRestrictCourtList = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_RESTRICT_COURT_LIST);
+        privateMessageConsumerRestrictCourtList = QueueUtil.privateEvents.createPrivateConsumer(PRIVATE_EVENT_RESTRICT_COURT_LIST);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -264,19 +259,6 @@ public class RestrictCourtListSteps extends AbstractIT implements AutoCloseable 
                 .withHearingId(hearingData.getId())
                 .withRestrictCourtList(true)
                 .build();
-    }
-
-    @Override
-    public void close() {
-        try {
-            publicEventListingRestrictedFromCourt.close();
-            publicEventMessageConsumerRestrictCourtList.close();
-            privateMessageConsumerRestrictCourtList.close();
-
-        } catch (JMSException e) {
-            LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
     }
 
 }

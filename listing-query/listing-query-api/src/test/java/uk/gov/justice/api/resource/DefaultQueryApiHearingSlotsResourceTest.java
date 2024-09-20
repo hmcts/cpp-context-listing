@@ -1,48 +1,48 @@
 package uk.gov.justice.api.resource;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static java.util.UUID.fromString;
+import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.junit.Assert.assertNotNull;
 import static uk.gov.justice.services.common.converter.LocalDates.from;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import javax.json.JsonArray;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.junit.Before;
-import org.mockito.Spy;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
-
-import java.util.Map;
-
-
-import javax.json.JsonObject;
-import javax.ws.rs.core.Response;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.common.service.CourtSchedulerServiceAdapter;
-import uk.gov.moj.cpp.listing.common.service.HearingSlotsService;
 import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
-@RunWith(MockitoJUnitRunner.class)
-public class DefaultQueryApiHearingSlotsResourceTest {
-    private final String AZURE_RESULT = "listing.search.hearing.slots.json";
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class DefaultQueryApiHearingSlotsResourceTest {
+
+    private final String AZURE_RESULT = "listing.search.hearing.slots.json";
 
     @Mock
     private CourtSchedulerServiceAdapter courtSchedulerServiceAdapter;
@@ -57,18 +57,18 @@ public class DefaultQueryApiHearingSlotsResourceTest {
     private ListToJsonArrayConverter listToJsonArrayConverter = new ListToJsonArrayConverter();
 
     @Spy
-    private StringToJsonObjectConverter stringToJsonObjectConverter;
+    private StringToJsonObjectConverter stringToJsonObjectConverter = new JsonObjectConvertersFactory().stringToJsonObjectConverter();
 
     @InjectMocks
-    private DefaultQueryApiHearingSlotsResource resource;
+    private DefaultQueryApiHearingSlotsResource queryApiHearingSlotsResource;
 
-    @Before
+    @BeforeEach
     public void setup() throws IllegalAccessException {
-        final ObjectMapper objectMapper = new ObjectMapper();
+        final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
         response = Response.status(Response.Status.OK).entity(createJsonObject()).build();
         FieldUtils.writeField(this.listToJsonArrayConverter, "mapper", objectMapper, true);
         FieldUtils.writeField(this.listToJsonArrayConverter, "stringToJsonObjectConverter", stringToJsonObjectConverter, true);
-        FieldUtils.writeField(this.resource, "listToJsonArrayConverter", listToJsonArrayConverter, true);
+        FieldUtils.writeField(this.queryApiHearingSlotsResource, "listToJsonArrayConverter", listToJsonArrayConverter, true);
     }
 
     @Test
@@ -76,7 +76,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
         when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
         when(notesService.findNotes(any(List.class))).thenReturn(new ArrayList());
 
-        Response result = resource.getHearingSlots("ADULT",
+        Response result = queryApiHearingSlotsResource.getHearingSlots("ADULT",
                 "2017-10-11",
                 "2020-10-11",
                 "BAOOUS",
@@ -103,7 +103,7 @@ public class DefaultQueryApiHearingSlotsResourceTest {
         when(courtSchedulerServiceAdapter.hearingSlotsSearch(any(Map.class))).thenReturn(response);
         when(notesService.findNotes(any(List.class))).thenReturn(createNotes(response));
 
-        Response result = resource.getHearingSlots("ADULT",
+        Response result = queryApiHearingSlotsResource.getHearingSlots("ADULT",
                 "2017-10-11",
                 "2020-10-11",
                 "BAOOUS",
@@ -141,7 +141,8 @@ public class DefaultQueryApiHearingSlotsResourceTest {
     }
 
     private List<Notes> createNotes(Response response){
-        return Optional.of(response.getEntity()).
+        final Object entity = response.getEntity();
+        return Optional.of(entity).
                 map(e -> (JsonObject) e).
                 map(p -> p.getJsonArray("hearingSlots")).
                 map(hearings -> convertToNotes(hearings)).get();
@@ -149,11 +150,16 @@ public class DefaultQueryApiHearingSlotsResourceTest {
 
     private  List<Notes> convertToNotes(JsonArray hearings){
         return hearings.stream().map(h->(JsonObject)h)
-                .map( hearing -> new Notes(UUID.randomUUID(),
-                                            UUID.fromString(hearing.getString("courtRoomId")),
-                                            from(hearing.getString("sessionDate")),
-                                            STRING.next())).collect(Collectors.toList());
+                .map( hearing -> getNotes(hearing)
+                ).collect(toList());
 
+    }
+
+    private Notes getNotes(final JsonObject hearing) {
+        return new Notes(UUID.randomUUID(),
+                fromString(hearing.getString("courtRoomId")),
+                from(hearing.getString("sessionDate")),
+                STRING.next());
     }
 
 }

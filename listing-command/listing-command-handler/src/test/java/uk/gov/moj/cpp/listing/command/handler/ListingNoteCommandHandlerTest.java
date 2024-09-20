@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.command.handler;
 
 import static java.util.UUID.randomUUID;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -29,14 +29,14 @@ import javax.json.Json;
 import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ListingNoteCommandHandlerTest {
 
     private static final UUID NOTE_ID1 = randomUUID();
@@ -97,7 +97,6 @@ public class ListingNoteCommandHandlerTest {
     @Test
     public void shouldHandleDeleteNote() throws Exception {
         final JsonEnvelope commandEnvelope = getJsonEnvelopeForDeleteNote();
-        when(noteUUIDService.getNoteId(any(UUID.class), any(LocalDate.class))).thenReturn(NOTE_ID1);
 
         givenEventStream(NOTE_ID1, eventStream, listingNote, ListingNote.class);
         when(eventSource.getStreamById(any(UUID.class))).thenReturn(eventStream);
@@ -129,7 +128,6 @@ public class ListingNoteCommandHandlerTest {
     }
 
     private <T extends Aggregate> void givenEventStream(final UUID id, final EventStream eventStream, final T aggregate, final Class<T> clz) {
-        when(this.eventSource.getStreamById(id)).thenReturn(eventStream);
         when(aggregateService.get(eventStream, clz)).thenReturn(aggregate);
     }
 

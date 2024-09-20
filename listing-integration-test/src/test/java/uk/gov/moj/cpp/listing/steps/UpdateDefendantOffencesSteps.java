@@ -28,6 +28,8 @@ import uk.gov.justice.progression.courts.OffencesForDefendantUpdated;
 import uk.gov.justice.progression.courts.UpdatedOffences;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -43,13 +45,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.skyscreamer.jsonassert.comparator.CustomComparator;
@@ -58,7 +57,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoCloseable {
+public class UpdateDefendantOffencesSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDefendantOffencesSteps.class);
 
 
@@ -79,16 +78,16 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
     JSONComparator ignoreMetaDataComparator = new CustomComparator(JSONCompareMode.LENIENT, new Customization("_metadata", (o1, o2) -> true));
 
 
-    private MessageProducer publicEventDefendantOffencesUpdated;
-    private MessageConsumer publicEventMessageConsumerDefendantOffencesUpdated;
+    private JmsMessageProducerClient publicEventDefendantOffencesUpdated;
+    private JmsMessageConsumerClient publicEventMessageConsumerDefendantOffencesUpdated;
 
-    private MessageConsumer privateEventMessageOffencesToBeUpdated;
-    private MessageConsumer privateEventMessageOffencesToBeDeleted;
-    private MessageConsumer privateEventMessageOffencesToBeAdded;
+    private JmsMessageConsumerClient privateEventMessageOffencesToBeUpdated;
+    private JmsMessageConsumerClient privateEventMessageOffencesToBeDeleted;
+    private JmsMessageConsumerClient privateEventMessageOffencesToBeAdded;
 
-    private MessageConsumer privateEventsMessageOffenceUpdated;
-    private MessageConsumer privateEventsMessageOffenceDeleted;
-    private MessageConsumer privateEventsMessageOffenceAdded;
+    private JmsMessageConsumerClient privateEventsMessageOffenceUpdated;
+    private JmsMessageConsumerClient privateEventsMessageOffenceDeleted;
+    private JmsMessageConsumerClient privateEventsMessageOffenceAdded;
 
 
     private String request;
@@ -121,16 +120,16 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
         this.offenceIdToBeDeleted = offenceIdToBeDeleted;
 
 
-        publicEventDefendantOffencesUpdated = QueueUtil.publicEvents.createProducer();
-        publicEventMessageConsumerDefendantOffencesUpdated = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED);
+        publicEventDefendantOffencesUpdated = QueueUtil.publicEvents.createPublicProducer();
+        publicEventMessageConsumerDefendantOffencesUpdated = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_PROGRESSION_OFFENCES_FOR_DEFENDANT_CHANGED);
 
-        privateEventMessageOffencesToBeUpdated = privateEvents.createConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_UPDATED);
-        privateEventMessageOffencesToBeDeleted = privateEvents.createConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_DELETED);
-        privateEventMessageOffencesToBeAdded = privateEvents.createConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_ADDED);
+        privateEventMessageOffencesToBeUpdated = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_UPDATED);
+        privateEventMessageOffencesToBeDeleted = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_DELETED);
+        privateEventMessageOffencesToBeAdded = privateEvents.createPrivateConsumer(PRIVATE_EVENT_OFFENCES_TO_BE_ADDED);
 
-        privateEventsMessageOffenceUpdated = privateEvents.createConsumer(EVENT_SELECTOR_OFFENCES_UPDATED);
-        privateEventsMessageOffenceAdded = privateEvents.createConsumer(EVENT_SELECTOR_OFFENCES_ADDED);
-        privateEventsMessageOffenceDeleted = privateEvents.createConsumer(EVENT_SELECTOR_OFFENCES_DELETED);
+        privateEventsMessageOffenceUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_UPDATED);
+        privateEventsMessageOffenceAdded = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_ADDED);
+        privateEventsMessageOffenceDeleted = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_DELETED);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -464,10 +463,14 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
                         "  \"hearingId\": \"" + hearingData.getId() + "\",\n" +
                         "  \"offence\": {\n" +
+                        "      \"count\": " + updatedOffenceData.getCount() + ",\n" +
                         "      \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "      \"id\": \"" + updatedOffenceData.getOffenceId() + "\",\n" +
+                        "      \"indictmentParticular\": \"" + updatedOffenceData.getIndictmentParticular() + "\",\n" +
                         "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
                         "      \"offenceWording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
+                        "      \"orderIndex\": " + updatedOffenceData.getOrderIndex() + ",\n" +
+                        "      \"restrictFromCourtList\": false,\n" +
                         "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "      \"statementOfOffence\": {\n" +
                         "         \"legislation\": \"" + updatedOffenceData.getLegislation() +"\",\n" +
@@ -501,6 +504,7 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
         String jsonResponse = QueueUtil.retrieveMessageString(privateEventsMessageOffenceAdded);
         LOGGER.debug("jsonResponse from privateEventsMessageOffenceAdded: {}", jsonResponse);
 
+        final LaaReferenceData laaReferenceData = updatedOffenceData.getLaaReferences().get();
         String expected =
                 "{\n" +
                         "  \"_metadata\": {\n" +
@@ -525,13 +529,20 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "  \"defendantId\": \"" + defendantData.getDefendantId() + "\",\n" +
                         "  \"hearingId\": \"" + hearingData.getId() + "\",\n" +
                         "  \"offence\": {\n" +
+                        "      \"count\": " + updatedOffenceData.getCount() + ",\n" +
                         "      \"endDate\": \"" + updatedOffenceData.getEndDate() + "\",\n" +
                         "      \"id\": \"" + updatedOffenceData.getRandomOffenceId() + "\",\n" +
+                        "      \"indictmentParticular\": \"" + updatedOffenceData.getIndictmentParticular() + "\",\n" +
+                        "      \"laaApplnReference\": {\n" +
+                        "         \"applicationReference\": \"" + laaReferenceData.getApplicationReference() + "\",\n" +
+                        "         \"statusCode\": \"" + laaReferenceData.getStatusCode() + "\",\n" +
+                        "         \"statusDate\": \"" + laaReferenceData.getStatusDate() + "\",\n" +
+                        "         \"statusDescription\": \"" + laaReferenceData.getStatusDescription() + "\",\n" +
+                        "         \"statusId\": \"" + laaReferenceData.getStatusId() + "\"\n" +
+                        "      },\n" +
                         "      \"offenceCode\": \"" + updatedOffenceData.getOffenceCode() + "\",\n" +
                         "      \"offenceWording\": \"" + updatedOffenceData.getOffenceWording() + "\",\n" +
-                        "      \"count\": " + updatedOffenceData.getCount() + ",\n" +
                         "      \"orderIndex\": " + updatedOffenceData.getOrderIndex() + ",\n" +
-                        "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "      \"reportingRestrictions\": [\n" +
                         "      {\n" +
                         "      \"id\": \"" + updatedOffenceData.getReportingRestriction().get(0).getId() + "\",\n" +
@@ -539,17 +550,20 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         "      \"label\": \"" + updatedOffenceData.getReportingRestriction().get(0).getLabel() + "\",\n" +
                         "      \"orderedDate\": \"" + updatedOffenceData.getReportingRestriction().get(0).getOrderedDate().get().toString() + "\"\n}\n" +
                         "      ],\n" +
+                        "      \"restrictFromCourtList\": false,\n" +
+                        "      \"startDate\": \"" + updatedOffenceData.getStartDate() + "\",\n" +
                         "      \"statementOfOffence\": {\n" +
                         "         \"legislation\": \"" + updatedOffenceData.getLegislation() + "\",\n" +
-                        "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
                         "         \"title\": \"" + updatedOffenceData.getStatementOfOffenceTitle() + "\",\n" +
-                        "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\",\n" +
+                        "         \"welshLegislation\": \"" + updatedOffenceData.getLegislationWelsh() + "\",\n" +
+                        "         \"welshTitle\": \"" + updatedOffenceData.getStatementOfOffenceTitleWelsh() + "\"\n" +
                         "      }\n" +
                         "  }\n" +
                         "}\n";
 
         assertEquals(expected, jsonResponse, ignoreMetaDataComparator);
     }
+
 
     public void verifyEventOffenceDeletedInActiveMQ() throws Exception {
         JsonPath jsRequest = new JsonPath(request);
@@ -756,25 +770,6 @@ public class UpdateDefendantOffencesSteps extends AbstractIT implements AutoClos
                         .build()));
 
         return reportingRestrictions;
-    }
-
-    @Override
-    public void close() {
-        try {
-            publicEventDefendantOffencesUpdated.close();
-            publicEventMessageConsumerDefendantOffencesUpdated.close();
-
-            privateEventMessageOffencesToBeUpdated.close();
-            privateEventMessageOffencesToBeDeleted.close();
-            privateEventMessageOffencesToBeAdded.close();
-
-            privateEventsMessageOffenceUpdated.close();
-            privateEventsMessageOffenceDeleted.close();
-            privateEventsMessageOffenceAdded.close();
-        } catch (JMSException e) {
-            LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
     }
 
 }

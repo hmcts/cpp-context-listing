@@ -10,7 +10,7 @@ import uk.gov.justice.listing.events.SeedingHearing;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SeedingHearingConverterTest {
 

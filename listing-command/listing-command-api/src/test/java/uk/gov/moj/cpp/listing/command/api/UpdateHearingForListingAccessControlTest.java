@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.command.api;
 
+import static java.util.Collections.singletonMap;
 import static org.mockito.BDDMockito.given;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ADMINISTRATORS;
 import static uk.gov.moj.cpp.listing.domain.RuleConstants.COURT_ASSOCIATE;
@@ -14,8 +15,7 @@ import uk.gov.moj.cpp.accesscontrol.test.utils.BaseDroolsAccessControlTest;
 
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.kie.api.runtime.ExecutionResults;
 import org.mockito.Mock;
 
@@ -25,6 +25,15 @@ public class UpdateHearingForListingAccessControlTest extends BaseDroolsAccessCo
 
     @Mock
     private UserAndGroupProvider userAndGroupProvider;
+
+    public UpdateHearingForListingAccessControlTest() {
+        super("COMMAND_API_SESSION");
+    }
+
+    @Override
+    protected Map<Class<?>, Object> getProviderMocks() {
+        return singletonMap(UserAndGroupProvider.class, userAndGroupProvider);
+    }
 
     @Test
     public void shouldAllowAuthorisedUserToUpdateHearingForListing() {
@@ -40,14 +49,7 @@ public class UpdateHearingForListingAccessControlTest extends BaseDroolsAccessCo
     @Test
     public void shouldNotAllowUnauthorisedUserToUpdateHearingForListing() {
         final Action action = createActionFor(ACTION_UPDATE_HEARING_FOR_LISTING);
-        given(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups(action, CROWN_COURT_ADMIN)).willReturn(false);
-
         final ExecutionResults results = executeRulesWith(action);
         assertFailureOutcome(results);
-    }
-
-    @Override
-    protected Map<Class, Object> getProviderMocks() {
-        return ImmutableMap.<Class, Object>builder().put(UserAndGroupProvider.class, userAndGroupProvider).build();
     }
 }

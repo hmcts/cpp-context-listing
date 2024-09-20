@@ -1,8 +1,9 @@
 package uk.gov.moj.cpp.listing.command.api.courtcentre;
 
-import static org.apache.activemq.artemis.utils.JsonLoader.createReader;
+import static javax.json.Json.createReader;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import uk.gov.justice.listing.commands.CourtCentreDetails;
@@ -17,13 +18,13 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CourtCentreFactoryTest {
     private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
     private static final LocalTime DEFAULT_TIME = LocalTime.of(10, 30);
@@ -86,7 +87,7 @@ public class CourtCentreFactoryTest {
         assertThat(courtCentre.getDefaultDuration(), is(360));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldReturnIllegalArgumentExceptionWhenNoDefaultTime() {
 
         //given
@@ -94,9 +95,7 @@ public class CourtCentreFactoryTest {
         given(finalEnvelope.payloadAsJsonObject()).willReturn(getJsonEnvelopeWithNoDefaultStartTime());
 
         //when
-        CourtCentreDetails courtCentre = courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope);
-
-
+        assertThrows(IllegalArgumentException.class, () -> courtCentreFactory.getCourtCentre(COURT_CENTRE_ID, envelope));
     }
 
     private JsonObject getJsonEnvelope() {

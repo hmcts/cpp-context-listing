@@ -13,6 +13,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.justice.core.courts.Organisation.organisation;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPublicJmsMessageConsumerClientProvider;
+import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClientProvider.newPublicJmsMessageProducerClientProvider;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
@@ -21,7 +23,6 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.CourtCentre;
@@ -38,6 +39,8 @@ import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.AddDefendantForCourtProceedingsData;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -47,20 +50,18 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
+public class AddDefendantSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(AddDefendantSteps.class);
 
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS = "public.progression.defendants-added-to-court-proceedings";
@@ -77,12 +78,12 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
     private final HearingData hearingData;
     private final ListedCaseData listedCaseData;
     private final UUID caseId;
-    private final MessageProducer publicEventDefendantAdded;
-    private final MessageConsumer publicEventMessageConsumerDefendantAdded;
-    private final MessageConsumer privateEventMessageDefendantsToBeAdded;
-    private final MessageConsumer privateEventsMessageDefendantDetailsAdded;
-    private final MessageConsumer publicEventsMessageNewDefendantAdded;
-    private final MessageConsumer publicMessageConsumerHmiHearingUpdated;
+    private final JmsMessageProducerClient publicEventDefendantAdded;
+    private final JmsMessageConsumerClient publicEventMessageConsumerDefendantAdded;
+    private final JmsMessageConsumerClient privateEventMessageDefendantsToBeAdded;
+    private final JmsMessageConsumerClient privateEventsMessageDefendantDetailsAdded;
+    private final JmsMessageConsumerClient publicEventsMessageNewDefendantAdded;
+    private final JmsMessageConsumerClient publicMessageConsumerHmiHearingUpdated;
     ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
     private String request;
@@ -92,12 +93,15 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         this.hearingData = hearingData;
         this.listedCaseData = hearingData.getListedCases().get(0);
 
-        publicEventDefendantAdded = QueueUtil.publicEvents.createProducer();
-        publicEventMessageConsumerDefendantAdded = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS);
-        privateEventMessageDefendantsToBeAdded = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS);
-        privateEventsMessageDefendantDetailsAdded = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS);
-        publicEventsMessageNewDefendantAdded = publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS);
-        publicMessageConsumerHmiHearingUpdated = publicEvents.createConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
+        publicEventDefendantAdded = newPublicJmsMessageProducerClientProvider().getMessageProducerClient();
+        publicEventMessageConsumerDefendantAdded = newPublicJmsMessageConsumerClientProvider()
+                .withEventNames( PUBLIC_EVENT_SELECTOR_PROGRESSION_ADD_DEFENDANTS_TO_COURT_PROCEEDINGS).getMessageConsumerClient();
+        privateEventMessageDefendantsToBeAdded = privateEvents.createPrivateConsumer(EVENT_SELECTOR_DEFENDANTS_TO_BE_ADDED_FOR_COURT_PROCEEDINGS);
+        privateEventsMessageDefendantDetailsAdded = privateEvents.createPrivateConsumer(EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS);
+        publicEventsMessageNewDefendantAdded = newPublicJmsMessageConsumerClientProvider()
+                .withEventNames( PUBLIC_EVENT_SELECTOR_DEFENDANT_DETAILS_ADDED_FOR_COURT_PROCEEDINGS).getMessageConsumerClient();
+        publicMessageConsumerHmiHearingUpdated = newPublicJmsMessageConsumerClientProvider()
+                .withEventNames( PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI).getMessageConsumerClient();
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -120,7 +124,7 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventMessageConsumerDefendantAdded);
+        final JsonPath jsonResponse = publicEventMessageConsumerDefendantAdded.retrieveMessageAsJsonPath().get();
         LOGGER.debug("jsonResponse from publicEventMessageConsumerDefendantAdded: {}", jsonResponse.prettify());
 
         assertThat(jsonResponse.get("defendants.id").toString(), is(jsRequest.getString("defendants.id")));
@@ -187,9 +191,9 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
 
-        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicEventsMessageNewDefendantAdded);
+        final Optional<JsonPath> jsonResponse = publicEventsMessageNewDefendantAdded.retrieveMessageAsJsonPath();
 
-        Assert.assertNull("Event should not be raised", jsonResponse);
+        Assert.assertTrue("Event should not be raised", jsonResponse.isEmpty());
     }
 
     public void verifyHearingListedFromAPI(final boolean isAllocated) {
@@ -289,21 +293,6 @@ public class AddDefendantSteps extends AbstractIT implements AutoCloseable {
                 .build();
 
     }
-
-    @Override
-    public void close() {
-        try {
-            publicEventDefendantAdded.close();
-            publicEventMessageConsumerDefendantAdded.close();
-            privateEventMessageDefendantsToBeAdded.close();
-            privateEventsMessageDefendantDetailsAdded.close();
-            publicMessageConsumerHmiHearingUpdated.close();
-        } catch (final JMSException e) {
-            LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
-    }
-
 }
 
 

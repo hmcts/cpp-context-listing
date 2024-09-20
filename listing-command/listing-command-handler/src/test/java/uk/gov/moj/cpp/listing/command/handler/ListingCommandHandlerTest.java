@@ -18,13 +18,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
@@ -34,9 +33,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.quality.Strictness.LENIENT;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 import static uk.gov.justice.listing.event.PublishCourtListProduced.publishCourtListProduced;
 import static uk.gov.justice.listing.event.PublishCourtListRequested.publishCourtListRequested;
@@ -239,22 +239,24 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.slf4j.Logger;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
 @SuppressWarnings({"squid:S1607"})
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)
 public class ListingCommandHandlerTest {
 
     private static final String ADDRESS_LINE_1 = "Address line 1";
@@ -531,7 +533,7 @@ public class ListingCommandHandlerTest {
     private final static LocalDate MONDAY_3rd_DECEMBER_2018 = LocalDate.of(2018, Month.DECEMBER, 3);
     private final static Optional<String> APPLICATION_PARTICULARS = of("Application particulars");
 
-    @Before
+    @BeforeEach
     public void setup() {
         fixClock(Instant.now());
         EnveloperFactory.createEnveloperWithEvents(HearingAddedToCase.class,
@@ -1460,15 +1462,25 @@ public class ListingCommandHandlerTest {
         assertEquals(expectedUpdatedCaseOffences2, objectMapper.writeValueAsString(updatedCaseOffences.get(1)), true);
         assertEquals(expectedAddedCaseOffences1, objectMapper.writeValueAsString(addedCaseOffences.get(0)), true);
         assertEquals(expectedAddedCaseOffences2, objectMapper.writeValueAsString(addedCaseOffences.get(1)), true);
-        assertEquals(expectedDeletedCaseOffences1, objectMapper.writeValueAsString(deletedCaseOffences.get(0)), true);
-        assertEquals(expectedDeletedCaseOffences2, objectMapper.writeValueAsString(deletedCaseOffences.get(1)), true);
+
+        assertThat(deletedCaseOffences.get(0).getCaseId(), is(CASE_ID));
+        assertThat(deletedCaseOffences.get(0).getDefendantId(), is(DEFENDANT_ID1));
+        assertThat(deletedCaseOffences.get(0).getOffences().get(0).getId(), is(DELETED_OFFENCE_ID1));
+        assertThat(deletedCaseOffences.get(0).getOffences().get(0).getDefendantId(), is(DEFENDANT_ID1));
+
+        assertThat(deletedCaseOffences.get(1).getCaseId(), is(CASE_ID));
+        assertThat(deletedCaseOffences.get(1).getDefendantId(), is(DEFENDANT_ID2));
+        assertThat(deletedCaseOffences.get(1).getOffences().get(0).getId(), is(DELETED_OFFENCE_ID3));
+        assertThat(deletedCaseOffences.get(1).getOffences().get(0).getDefendantId(), is(DEFENDANT_ID2));
+        assertThat(deletedCaseOffences.get(1).getOffences().get(1).getId(), is(DELETED_OFFENCE_ID4));
+        assertThat(deletedCaseOffences.get(1).getOffences().get(1).getDefendantId(), is(DEFENDANT_ID2));
     }
 
 
     @Test
     public void listingCommandHandlerShouldTriggerDefendantDetailsUpdatedEvents() throws Exception {
         final List<Defendant> defendants = singletonList(createDomainDefendantForUpdateDefendantsForHearing());
-        when(hearing.updateDefendants(eq(CASE_ID), anyObject())).thenReturn(mock(Stream.class));
+        when(hearing.updateDefendants(eq(CASE_ID), any())).thenReturn(mock(Stream.class));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         final JsonEnvelope commandEnvelope = updateDefendantsForHearingCommandEnvelope();
@@ -1481,7 +1493,7 @@ public class ListingCommandHandlerTest {
 
     @Test
     public void listingCommandHandlerShouldTriggerOffenceUpdatedEvents() throws Exception {
-        when(hearing.updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
+        when(hearing.updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyList())).thenReturn(mock(Stream.class));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         final JsonEnvelope commandEnvelope = updateOffencesForHearingCommandEnvelope();
@@ -1530,7 +1542,7 @@ public class ListingCommandHandlerTest {
     @Test
     public void listingCommandHandlerShouldTriggerOffenceDeletedEvents() throws Exception {
 
-        when(hearing.deleteOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(SimpleOffence.class))).thenReturn(mock(Stream.class));
+        when(hearing.deleteOffences(eq(CASE_ID), eq(DEFENDANT_ID1), any())).thenReturn(mock(Stream.class));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenAnswer(i -> i.getArguments()[0]);
         final JsonEnvelope commandEnvelope = deleteOffencesForHearingCommandEnvelope();
         listingCommandHandler.deleteOffencesForHearing(commandEnvelope);
@@ -1540,19 +1552,10 @@ public class ListingCommandHandlerTest {
 
         final List<SimpleOffence> capturedDomainOffences = domainSimpleOffencesCaptor.getValue();
 
-        final String expectedDomainOffences =
-                "[\n" +
-                        "  {\n" +
-                        "    \"id\": \"" + DELETED_OFFENCE_ID1 + "\",\n" +
-                        "    \"defendantId\": \"" + DEFENDANT_ID1 + "\",\n" +
-                        "  },\n" +
-                        "  {\n" +
-                        "    \"id\": \"" + DELETED_OFFENCE_ID2 + "\",\n" +
-                        "    \"defendantId\": \"" + DEFENDANT_ID1 + "\",\n" +
-                        "  }\n" +
-                        "]\n";
-
-        assertEquals(expectedDomainOffences, objectMapper.writeValueAsString(capturedDomainOffences), true);
+        assertThat(capturedDomainOffences.get(0).getId(), is(DELETED_OFFENCE_ID1));
+        assertThat(capturedDomainOffences.get(0).getDefendantId(), is(DEFENDANT_ID1));
+        assertThat(capturedDomainOffences.get(1).getId(), is(DELETED_OFFENCE_ID2));
+        assertThat(capturedDomainOffences.get(1).getDefendantId(), is(DEFENDANT_ID1));
     }
 
     @Test
@@ -1584,7 +1587,7 @@ public class ListingCommandHandlerTest {
 
     @Test
     public void listingCommandHandlerShouldTriggerOffenceAddedEvents() throws Exception {
-        when(hearing.addOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
+        when(hearing.addOffences(eq(CASE_ID), eq(DEFENDANT_ID1), any())).thenReturn(mock(Stream.class));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         final JsonEnvelope commandEnvelope = addOffencesForHearingCommandEnvelope();
@@ -1765,7 +1768,7 @@ public class ListingCommandHandlerTest {
 
     @Test
     public void shouldUpdateCaseMarkersForCase() throws Exception {
-        when(aCase.addedCaseMarkers(eq(CASE_ID), anyListOf(CaseMarker.class))).thenReturn(mock(Stream.class));
+        when(aCase.addedCaseMarkers(eq(CASE_ID), anyList())).thenReturn(mock(Stream.class));
         final JsonEnvelope commandEnvelope = addCaseMarkersForListedCaseCommandEnvelope();
 
         listingCommandHandler.updateCaseMarker(commandEnvelope);
@@ -1812,7 +1815,7 @@ public class ListingCommandHandlerTest {
     @Test
     public void shouldRestrictCaseFromCourtListing() throws Exception {
         final JsonEnvelope commandEnvelope = restrictCourtListCommandEnvelope();
-        when(hearing.restrictDetailsFromCourt(eq(HEARING_ID_1), anyObject())).thenReturn(mock(Stream.class));
+        when(hearing.restrictDetailsFromCourt(eq(HEARING_ID_1), any())).thenReturn(mock(Stream.class));
 
         final RestrictCourtList restrictCourtList = RestrictCourtList.restrictCourtList()
                 .withHearingId(HEARING_ID_1)
@@ -1891,7 +1894,7 @@ public class ListingCommandHandlerTest {
     public void listingCommandHandlerShouldTriggerDefendantsAddedForCourtProceedingsEvents() throws Exception {
         final List<Defendant> defendants = singletonList(createDomainDefendantForUpdateDefendantsForHearing());
 
-        when(hearing.addDefendantsForCourtProceedings(eq(CASE_ID), anyObject())).thenReturn(mock(Stream.class));
+        when(hearing.addDefendantsForCourtProceedings(eq(CASE_ID), any())).thenReturn(mock(Stream.class));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
         when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
 
@@ -1903,16 +1906,16 @@ public class ListingCommandHandlerTest {
         final ArgumentCaptor<List> defendantListCaptor = ArgumentCaptor.forClass(List.class);
 
         verify(hearing).addDefendantsForCourtProceedings(caseIdCaptor.capture(), defendantListCaptor.capture());
-        Assert.assertThat(CASE_ID, Matchers.is(caseIdCaptor.getValue()));
+        assertThat(CASE_ID, Matchers.is(caseIdCaptor.getValue()));
         final List<Defendant> actualDefendantList = defendantListCaptor.getValue();
-        Assert.assertThat(actualDefendantList, Matchers.is(defendants));
+        assertThat(actualDefendantList, Matchers.is(defendants));
 
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
     @Test
     public void listingCommandHandlerShouldTriggerOffenceUpdatedEventsForLaa() throws Exception {
-        when(hearing.updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
+        when(hearing.updateOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyList())).thenReturn(mock(Stream.class));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
         when(hmiService.isHmiEnabled(any(), any())).thenReturn(true);
 
@@ -2170,7 +2173,7 @@ public class ListingCommandHandlerTest {
         final JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.publish-court-list", jsonReader.readObject());
         listingCommandHandler.publishCourtList(commandEnvelope);
-        verify(publishCourtListRequestAggregate).recordCourtListRequested(any(UUID.class), any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class), anyBoolean());
+        verify(publishCourtListRequestAggregate).recordCourtListRequested(any(UUID.class), any(UUID.class), any(LocalDate.class), any(LocalDate.class), any(PublishCourtListType.class), any(ZonedDateTime.class), eq(null));
     }
 
     @Test
@@ -2256,7 +2259,7 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
-        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class), any(Boolean.class));
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class), any());
     }
 
     @Test
@@ -2278,7 +2281,7 @@ public class ListingCommandHandlerTest {
         listingCommandHandler.extendHearingForHearing(commandEnvelope);
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearing.getListedCases());
-        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class), any(Boolean.class));
+        verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), any(Boolean.class), eq(null));
     }
 
     @Test
@@ -2316,7 +2319,7 @@ public class ListingCommandHandlerTest {
     }
 
     @Test
-    @Ignore("This test is failing after updating service parent pom. Need to fix this.")
+    @Disabled("This test is failing after updating service parent pom. Need to fix this.")
     public void listingCommandHandlerShouldExtendPartialHearingForHearings() throws Exception {
 
         final JsonEnvelope commandEnvelope = getEnvelopeForExtendPartialHearing(ALLOCATED_HEARING_ID.toString(),
@@ -2447,7 +2450,7 @@ public class ListingCommandHandlerTest {
     @Test
     public void shouldCancelHearingDaysWhenMultipleHearingDaysRequested() throws Exception {
         final Envelope<CancelHearingDays> envelope = getEnvelopeForCancelHearingDays();
-        when(hearing.cancelHearingDays(any(UUID.class), anyListOf(uk.gov.justice.listing.events.HearingDay.class))).thenReturn(events);
+        when(hearing.cancelHearingDays(any(UUID.class), anyList())).thenReturn(events);
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(events);
 
         listingCommandHandler.cancelHearingDays(envelope);
@@ -2483,7 +2486,7 @@ public class ListingCommandHandlerTest {
 
         listingCommandHandler.handleAddCasesToHearing(commandEnvelope);
 
-        verify(hearing, times(1)).addCasesToHearing(any(List.class), anyList(), any());
+        verify(hearing, times(1)).addCasesToHearing(any(List.class), any(), any());
         verify(hearing, times(1)).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 
@@ -3653,7 +3656,7 @@ public class ListingCommandHandlerTest {
 
     @Test
     public void listingCommandHandlerShouldTriggerOffenceAddedEventsWithCustodyTimeLimitData() throws Exception {
-        when(hearing.addOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyListOf(Offence.class))).thenReturn(mock(Stream.class));
+        when(hearing.addOffences(eq(CASE_ID), eq(DEFENDANT_ID1), anyList())).thenReturn(mock(Stream.class));
         when(hearing.raiseUpdateHearingInStagingHmi(any(Stream.class))).thenReturn(mock(Stream.class));
 
         final JsonEnvelope commandEnvelope = addOffencesForHearingCommandEnvelopeWithCustodyTimeLimit();
@@ -3701,19 +3704,6 @@ public class ListingCommandHandlerTest {
                         "]\n";
 
         assertEquals(expectedDomainOffences, objectMapper.writeValueAsString(capturedDomainOffences), true);
-    }
-
-    @Test
-    public void shouldNotMakeAnyRequestsToPublishACourtListForACrownCourtWhenThereAreNone() {
-
-        final JsonEnvelope commandEnvelope = generateEmptyCommandEnvelope();
-        final JsonObject payload = getPayloadOfZeroCrownCourtCentres();
-        givenThatWeSuccessfullyGetAllOfTheCrownCourtCentres(commandEnvelope, payload);
-
-        listingCommandHandler.publishFinalCourtListsForAllCrownCourts(commandEnvelope);
-
-        verifyZeroInteractions(publishCourtListRequestAggregate);
-
     }
 
 

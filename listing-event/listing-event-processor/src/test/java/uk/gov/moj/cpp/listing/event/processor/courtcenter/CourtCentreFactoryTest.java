@@ -1,11 +1,8 @@
 package uk.gov.moj.cpp.listing.event.processor.courtcenter;
 
-import static org.apache.activemq.artemis.utils.JsonLoader.createReader;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.when;
 
 import uk.gov.justice.listing.commands.CourtCentreDetails;
 import uk.gov.justice.services.messaging.JsonEnvelope;
@@ -16,17 +13,16 @@ import java.io.StringReader;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import javax.json.Json;
 import javax.json.JsonObject;
-import javax.json.JsonReader;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.slf4j.Logger;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CourtCentreFactoryTest {
     private static final UUID COURT_CENTRE_ID = UUID.randomUUID();
     private static final LocalTime DEFAULT_TIME = LocalTime.of(10, 30);
@@ -40,8 +36,6 @@ public class CourtCentreFactoryTest {
     @Mock
     private JsonEnvelope finalEnvelope;
 
-    @Mock
-    private Logger logger;
 
     @Mock
     private ReferenceDataService referenceDataService;
@@ -51,8 +45,6 @@ public class CourtCentreFactoryTest {
 
     @Test
     public void shouldReturnCourtCentre() {
-
-        when(logger.isInfoEnabled()).thenReturn(true);
 
         //given
         given(referenceDataService.getCourtCentreById(COURT_CENTRE_ID, envelope)).willReturn(finalEnvelope);
@@ -75,9 +67,7 @@ public class CourtCentreFactoryTest {
                 .replace("DEFAULT_START_TIME", defaultTime)
                 .replace("DEFAULT_DURATION_HOURS_MINS", defaultDurationHours)
                 .replace("COURT_CENTRE_ID", courtCentreId);
-        try (JsonReader jsonReader = createReader(new StringReader(jsonString))) {
-            return jsonReader.readObject();
-        }
+        return Json.createReader(new StringReader(jsonString)).readObject();
     }
 
 }

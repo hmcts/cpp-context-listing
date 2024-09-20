@@ -2,10 +2,13 @@ package uk.gov.moj.cpp.listing.domain.referencedata;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public class CourtRoomMappingsList {
 
     private List<CourtRoomMapping> cpXhibitCourtRoomMappings;
 
+    @JsonCreator
     public CourtRoomMappingsList(final List<CourtRoomMapping> cpXhibitCourtRoomMappings) {
         this.cpXhibitCourtRoomMappings = cpXhibitCourtRoomMappings;
     }

@@ -1,14 +1,34 @@
 package uk.gov.moj.cpp.listing.event.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import static java.util.Arrays.asList;
+import static javax.json.Json.createArrayBuilder;
+import static javax.json.Json.createObjectBuilder;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItems;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.COURT_APPLICATIONS;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.COURT_CENTRE_ID;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.COURT_ROOM_ID;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.END_DATE;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.GROUP_ID;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.HEARING_DAYS_FIELD;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.ID;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_CIVIL;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_GROUP_MASTER;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_GROUP_MEMBER;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_GROUP_PROCEEDINGS;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_VACATED_TRIAL;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.LISTED_CASES_FIELD;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.START_DATE;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.TYPE;
+import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.TYPE_OF_LIST;
 
 import uk.gov.justice.listing.events.CaseIdentifier;
 import uk.gov.justice.listing.events.ListedCase;
@@ -20,12 +40,6 @@ import uk.gov.moj.cpp.listing.persistence.entity.LinkedCase;
 import uk.gov.moj.cpp.listing.persistence.entity.ListedCases;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonWriter;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.time.LocalDate;
@@ -36,37 +50,23 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static javax.json.Json.createArrayBuilder;
-import static javax.json.Json.createObjectBuilder;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.hasItems;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.when;
-import static java.util.Arrays.asList;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.COURT_APPLICATIONS;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.COURT_CENTRE_ID;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.END_DATE;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.GROUP_ID;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.HEARING_DAYS_FIELD;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.ID;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.COURT_ROOM_ID;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_CIVIL;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_GROUP_MASTER;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_GROUP_MEMBER;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_GROUP_PROCEEDINGS;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.IS_VACATED_TRIAL;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.LISTED_CASES_FIELD;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.START_DATE;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.TYPE;
-import static uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService.TYPE_OF_LIST;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonWriter;
 
-@RunWith(MockitoJUnitRunner.class)
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
 public class HearingSearchSyncServiceTest {
 
 
@@ -121,32 +121,14 @@ public class HearingSearchSyncServiceTest {
         verify(hearingRepository).save(hearingArgumentCaptor.capture());
         final Hearing actual = hearingArgumentCaptor.getValue();
 
-        assertThat(actual.getCourtCentreId(), is(courtCentreId));
-        assertThat(actual.getCourtRoomId(), is(courtRoomId));
-        assertThat(actual.getTypeId(), is(typeId));
-        assertThat(actual.getStartDate(), is(LocalDate.parse(startDate)));
-        assertThat(actual.getEndDate(), is(LocalDate.parse(endDate)));
-        assertThat(actual.getUnscheduled(), is(nullValue()));
-        assertThat(actual.getWeekCommencingStartDate(), is(nullValue()));
-        assertThat(actual.getWeekCommencingEndDate(), is(nullValue()));
-        assertThat(actual.getListedCases().size(), is(2));
+        assertHearing(actual);
 
         final Iterator<CourtApplications> iterator = actual.getCourtApplications().iterator();
         CourtApplications courtApplication = iterator.next();
-        assertThat(courtApplication.getApplicationId(), is(applicationId1));
-        assertThat(courtApplication.getApplicationType(), is("applicationType"));
-        assertThat(courtApplication.getParentApplicationId(), is(parentApplicationId1));
-        assertThat(courtApplication.getApplicationReference(), is("applicationReference"));
-        assertThat(courtApplication.getApplicationParticulars(), is("applicationParticulars"));
-        assertThat(courtApplication.getEjected(), is(true));
+        assertCourtApplications(courtApplication);
 
         final ListedCases listedCases1 = actual.getListedCases().stream().filter(c -> c.getCaseId().equals(caseId1)).findFirst().orElse(null);
-        assertThat(listedCases1, is(notNullValue()));
-        assertThat(listedCases1.getCaseIdentifier().getAuthorityId(), is(authorityId1));
-        assertThat(listedCases1.getCaseIdentifier().getAuthorityCode(), is(authCode1));
-        assertThat(listedCases1.getCaseIdentifier().getCaseReference(), is(caseRef1));
-        assertThat(listedCases1.getProsecutor().getProsecutorId(), is(prosecutorId1));
-        assertThat(listedCases1.getProsecutor().getProsecutorCode(), is(prosecutorCode1));
+        assertListedCases(listedCases1);
 
         final List<String> caseUrns1 = listedCases1.getLinkedCases()
                 .stream()
@@ -155,22 +137,13 @@ public class HearingSearchSyncServiceTest {
 
         assertThat(caseUrns1, hasItems("caseUrn1", "caseUrn2"));
 
-//        final Iterator<LinkedCase> iterator1 = listedCases1.getLinkedCases().iterator();
-//        LinkedCase linkedCase = iterator1.next();
-//        assertThat(linkedCase.getCaseUrn(), is("caseUrn2"));
-//
-//        linkedCase = iterator1.next();
-//        assertThat(linkedCase.getCaseUrn(), is("caseUrn1"));
-
 
         final Iterator<Defendant> iterator3 = listedCases1.getDefendants().iterator();
         Defendant defendant = iterator3.next();
-        assertTrue(defendant.getId() != null);
-        assertTrue(defendant.getMasterDefendantId() != null);
+        assertDefendant(defendant);
 
         defendant = iterator3.next();
-        assertTrue(defendant.getId() != null);
-        assertTrue(defendant.getMasterDefendantId() != null);
+        assertDefendant(defendant);
 
 
         final ListedCases listedCases2 = actual.getListedCases().stream().filter(c -> c.getCaseId().equals(caseId2)).findFirst().orElse(null);
@@ -185,22 +158,12 @@ public class HearingSearchSyncServiceTest {
                 .collect(Collectors.toList());
         assertThat(caseUrns2, hasItems("caseUrn3", "caseUrn4"));
 
-//        final Iterator<LinkedCase> iterator2 = listedCases2.getLinkedCases().iterator();
-//
-//        linkedCase = iterator2.next();
-//        assertThat(caseUrns, is("caseUrn3"));
-//
-//        linkedCase = iterator2.next();
-//        assertThat(linkedCase.getCaseUrn(), is("caseUrn4"));
-
         final Iterator<Defendant> iterator4 = listedCases2.getDefendants().iterator();
         defendant = iterator4.next();
-        assertTrue(defendant.getId() != null);
-        assertTrue(defendant.getMasterDefendantId() != null);
+        assertDefendant(defendant);
 
         defendant = iterator4.next();
-        assertTrue(defendant.getId() != null);
-        assertTrue(defendant.getMasterDefendantId() != null);
+        assertDefendant(defendant);
 
         assertThat(actual.getHearingDays().size(), is(2));
         final HearingDays hearingDays1 = actual.getHearingDays().stream().filter(h -> h.getSequence() == 1).findFirst().orElse(null);
@@ -208,6 +171,41 @@ public class HearingSearchSyncServiceTest {
 
         final HearingDays hearingDays2 = actual.getHearingDays().stream().filter(h -> h.getSequence() == 2).findFirst().orElse(null);
         assertThat(hearingDays2, is(notNullValue()));
+    }
+
+    private static void assertDefendant(final Defendant defendant) {
+        assertNotNull(defendant.getId());
+        assertNotNull(defendant.getMasterDefendantId());
+    }
+
+    private void assertListedCases(final ListedCases listedCases1) {
+        assertThat(listedCases1, is(notNullValue()));
+        assertThat(listedCases1.getCaseIdentifier().getAuthorityId(), is(authorityId1));
+        assertThat(listedCases1.getCaseIdentifier().getAuthorityCode(), is(authCode1));
+        assertThat(listedCases1.getCaseIdentifier().getCaseReference(), is(caseRef1));
+        assertThat(listedCases1.getProsecutor().getProsecutorId(), is(prosecutorId1));
+        assertThat(listedCases1.getProsecutor().getProsecutorCode(), is(prosecutorCode1));
+    }
+
+    private void assertCourtApplications(final CourtApplications courtApplication) {
+        assertThat(courtApplication.getApplicationId(), is(applicationId1));
+        assertThat(courtApplication.getApplicationType(), is("applicationType"));
+        assertThat(courtApplication.getParentApplicationId(), is(parentApplicationId1));
+        assertThat(courtApplication.getApplicationReference(), is("applicationReference"));
+        assertThat(courtApplication.getApplicationParticulars(), is("applicationParticulars"));
+        assertThat(courtApplication.getEjected(), is(true));
+    }
+
+    private void assertHearing(final Hearing actual) {
+        assertThat(actual.getCourtCentreId(), is(courtCentreId));
+        assertThat(actual.getCourtRoomId(), is(courtRoomId));
+        assertThat(actual.getTypeId(), is(typeId));
+        assertThat(actual.getStartDate(), is(LocalDate.parse(startDate)));
+        assertThat(actual.getEndDate(), is(LocalDate.parse(endDate)));
+        assertThat(actual.getUnscheduled(), is(nullValue()));
+        assertThat(actual.getWeekCommencingStartDate(), is(nullValue()));
+        assertThat(actual.getWeekCommencingEndDate(), is(nullValue()));
+        assertThat(actual.getListedCases().size(), is(2));
     }
 
     @Test

@@ -2,10 +2,13 @@ package uk.gov.moj.cpp.listing.domain.referencedata;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public class HearingTypesList {
 
     private List<HearingType> hearingTypes;
 
+    @JsonCreator
     public HearingTypesList(final List<HearingType> hearingTypes) {
         this.hearingTypes = hearingTypes;
     }

@@ -2,8 +2,8 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.time.ZonedDateTime.now;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,14 +38,14 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class PublishCourtListEventListenerTest {
 
     private static final UUID COURT_CENTRE_ID = randomUUID();
@@ -256,9 +256,6 @@ public class PublishCourtListEventListenerTest {
                 null,
                 null
         );
-
-        when(publishedCourtListRepository.
-                save(expectedPublishedCourtList)).thenReturn(expectedPublishedCourtList);
 
         publishCourtListEventListener.storePublishedCourtCentreList(envelopeFrom(metadataWithDefaults(), publishedCourtListStored));
 

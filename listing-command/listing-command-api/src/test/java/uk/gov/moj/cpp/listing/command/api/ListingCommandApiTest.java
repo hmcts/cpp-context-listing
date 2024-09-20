@@ -2,14 +2,17 @@ package uk.gov.moj.cpp.listing.command.api;
 
 import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
-import static org.codehaus.groovy.runtime.DefaultGroovyMethods.any;
+import static javax.json.Json.createArrayBuilder;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -34,7 +37,6 @@ import uk.gov.justice.listing.commands.DeleteListingNote;
 import uk.gov.justice.listing.commands.NonDefaultDay;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.ExtendHearingForHearing;
-import uk.gov.justice.listing.courts.ExtendHearingForHearingEnriched;
 import uk.gov.justice.listing.courts.ListCourtHearing;
 import uk.gov.justice.listing.courts.ListNextHearingsEnrichedV2;
 import uk.gov.justice.listing.courts.ListNextHearingsV2;
@@ -43,7 +45,6 @@ import uk.gov.justice.listing.courts.ListUnscheduledCourtHearingEnriched;
 import uk.gov.justice.listing.courts.ListUnscheduledNextHearings;
 import uk.gov.justice.listing.courts.ListUnscheduledNextHearingsEnriched;
 import uk.gov.justice.listing.courts.ProsecutionCases;
-import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.courts.UpdateRelatedHearing;
 import uk.gov.justice.services.adapter.rest.exception.BadRequestException;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
@@ -58,7 +59,6 @@ import uk.gov.justice.services.messaging.spi.DefaultEnvelope;
 import uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory;
 import uk.gov.moj.cpp.listing.command.api.courtcentre.CourtCentreFactory;
 import uk.gov.moj.cpp.listing.command.api.service.ReferenceDataService;
-import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
 import uk.gov.moj.cpp.staginghmi.common.StagingHmiService;
 
 import java.time.LocalDate;
@@ -72,17 +72,17 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ListingCommandApiTest {
 
     @Spy
@@ -144,20 +144,13 @@ public class ListingCommandApiTest {
 
         final UUID courtCentreId = randomUUID();
         given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
-        OrganisationUnit organisationUnit = new OrganisationUnit(randomUUID(), "abc");
-        when(referenceDataService.getOrganizationUnitById(courtCentreId, envelope)).thenReturn(organisationUnit);
-        when(stagingHmiService.isHmiListingEnabled(Matchers.any())).thenReturn(true);
-
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
-        given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
-
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
         final UUID caseId = randomUUID();
         final JsonObject prosecutionCases = Json.createObjectBuilder().add("caseId", caseId.toString()).build();
-        final JsonArray prosecutionCasesArray = Json.createArrayBuilder().add(prosecutionCases).build();
+        final JsonArray prosecutionCasesArray = createArrayBuilder().add(prosecutionCases).build();
         given(payload.getJsonArray("prosecutionCases")).willReturn(prosecutionCasesArray);
         given(jsonObjectConverter.convert(prosecutionCases, ProsecutionCases.class)).willReturn(ProsecutionCases.prosecutionCases().build());
 
@@ -181,16 +174,10 @@ public class ListingCommandApiTest {
 
         final UUID courtCentreId = randomUUID();
         given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
-        OrganisationUnit organisationUnit = new OrganisationUnit(randomUUID(), "abc");
-        when(referenceDataService.getOrganizationUnitById(courtCentreId, envelope)).thenReturn(organisationUnit);
-        when(stagingHmiService.isHmiListingEnabled(Matchers.any())).thenReturn(true);
 
-        given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
-
-        final JsonArray prosecutionCasesArray = Json.createArrayBuilder().build();
+        final JsonArray prosecutionCasesArray = createArrayBuilder().build();
         given(payload.getJsonArray("prosecutionCases")).willReturn(prosecutionCasesArray);
 
         //when
@@ -198,18 +185,16 @@ public class ListingCommandApiTest {
 
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
-        verify(jsonObjectConverter, never()).convert(Matchers.any(), eq(ProsecutionCases.class));
+        verify(jsonObjectConverter, never()).convert(any(), eq(ProsecutionCases.class));
     }
 
     @Test
     public void shouldVacateTheTrial() throws Exception {
 
         //given
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
         //when
         listingCommandApi.handleVacateTrial(envelope);
 
@@ -224,10 +209,8 @@ public class ListingCommandApiTest {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, ListCourtHearing.class)).willReturn(listCourtHearing);
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
 
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
         //when
         listingCommandApi.handleListCourtHearing(envelope);
@@ -242,7 +225,7 @@ public class ListingCommandApiTest {
         final ListNextHearingsV2 listNextHearings = mock(ListNextHearingsV2.class);
         final UUID seedingHearingId = randomUUID();
         final String sittingDay = LocalDate.now().toString();
-        final ArgumentCaptor<ListNextHearingsEnrichedV2> payloadCaptor = ArgumentCaptor.forClass(ListNextHearingsEnrichedV2.class);
+        final ArgumentCaptor<ListNextHearingsEnrichedV2> payloadCaptor = forClass(ListNextHearingsEnrichedV2.class);
 
         //given
         when(envelope.payloadAsJsonObject()).thenReturn(payload);
@@ -273,7 +256,7 @@ public class ListingCommandApiTest {
     @Test
     public void shouldPublishCourtList() {
 
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
 
         listingCommandApi.handlePublishCourtList(envelope);
 
@@ -300,7 +283,7 @@ public class ListingCommandApiTest {
     public void shouldListUnscheduledCourtHearingAsExcepted() {
 
         final ListUnscheduledCourtHearing listUnscheduledCourtHearing = mock(ListUnscheduledCourtHearing.class);
-        final ArgumentCaptor<ListUnscheduledCourtHearingEnriched> payloadCaptor = ArgumentCaptor.forClass(ListUnscheduledCourtHearingEnriched.class);
+        final ArgumentCaptor<ListUnscheduledCourtHearingEnriched> payloadCaptor = forClass(ListUnscheduledCourtHearingEnriched.class);
         final UUID hearingId1 = randomUUID();
         final UUID hearingId2 = randomUUID();
 
@@ -333,7 +316,7 @@ public class ListingCommandApiTest {
     public void shouldListUnscheduledNextHearings() {
 
         final ListUnscheduledNextHearings listUnscheduledNextHearings = mock(ListUnscheduledNextHearings.class);
-        final ArgumentCaptor<ListUnscheduledNextHearingsEnriched> payloadCaptor = ArgumentCaptor.forClass(ListUnscheduledNextHearingsEnriched.class);
+        final ArgumentCaptor<ListUnscheduledNextHearingsEnriched> payloadCaptor = forClass(ListUnscheduledNextHearingsEnriched.class);
         final UUID seedHearingId = randomUUID();
         final UUID hearingId1 = randomUUID();
         final UUID hearingId2 = randomUUID();
@@ -375,7 +358,7 @@ public class ListingCommandApiTest {
     @Test
     public void shouldDeleteNextHearings() {
 
-        final ArgumentCaptor<DefaultEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(DefaultEnvelope.class);
+        final ArgumentCaptor<DefaultEnvelope> senderJsonEnvelopeCaptor = forClass(DefaultEnvelope.class);
         final UUID seedHearingId = randomUUID();
         final String sittingDay = LocalDate.now().toString();
         final JsonObject seedingHearing = Json.createObjectBuilder()
@@ -404,50 +387,29 @@ public class ListingCommandApiTest {
     public void shouldCallNonDefaultDayDurationBuilder() {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
-        given(updateHearingForListing.getJurisdictionType()).willReturn(MAGISTRATES);
         given(updateHearingForListing.getCourtRoomId()).willReturn(UUID.randomUUID());
-        given(updateHearingForListing.getNonDefaultDays()).willReturn(getNonDefaultDays());
         given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
 
 
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(updateHearingForListing.getNonDefaultDays()).willReturn(getNonDefaultDays());
 
         final UUID courtCentreId = randomUUID();
         given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
-        OrganisationUnit organisationUnit = new OrganisationUnit(randomUUID(), "abc");
-        when(referenceDataService.getOrganizationUnitById(courtCentreId, envelope)).thenReturn(organisationUnit);
-        when(stagingHmiService.isHmiListingEnabled(Matchers.any())).thenReturn(true);
 
-        given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
-
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
         listingCommandApi.handleUpdateHearingForListing(envelope);
 
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test
     public void shouldThrowBadRequestExceptionWhenJurisdictionTypeIsMagistratesCourtAndCourtRoomIdIsNull() {
         given(envelope.payloadAsJsonObject()).willReturn(payload);
         given(jsonObjectConverter.convert(payload, UpdateHearingForListing.class)).willReturn(updateHearingForListing);
         given(updateHearingForListing.getJurisdictionType()).willReturn(MAGISTRATES);
-        given(updateHearingForListing.getNonDefaultDays()).willReturn(getNonDefaultDays());
-        given(updateHearingForListing.getSelectedCourtCentre()).willReturn(null);
 
-        final UUID courtCentreId = randomUUID();
-        given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
-        OrganisationUnit organisationUnit = new OrganisationUnit(randomUUID(), "abc");
-        when(referenceDataService.getOrganizationUnitById(courtCentreId, envelope)).thenReturn(organisationUnit);
-        when(stagingHmiService.isHmiListingEnabled(Matchers.any())).thenReturn(true);
-
-        given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
-        given(updateHearingForListing.getNonDefaultDays()).willReturn(getNonDefaultDays());
-
-        given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
-
-        listingCommandApi.handleUpdateHearingForListing(envelope);
+        assertThrows(BadRequestException.class, () -> listingCommandApi.handleUpdateHearingForListing(envelope));
     }
 
     private List<NonDefaultDay> getNonDefaultDays() {
@@ -466,10 +428,7 @@ public class ListingCommandApiTest {
 
         given(envelope.metadata()).willReturn(metadataWithRandomUUIDAndName().build());
 
-        given(enveloperFunction.apply(any(ExtendHearingForHearingEnriched.class))).willReturn(finalEnvelope);
-
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
         //when
         listingCommandApi.handleExtendHearingForHearing(envelope);
@@ -481,13 +440,11 @@ public class ListingCommandApiTest {
 
     @Test
     public void shouldCreateListingNote() {
-        given(envelope.payloadAsJsonObject()).willReturn(payload);
-        given(jsonObjectConverter.convert(payload, CreateListingNote.class)).willReturn(createListingNote);
         final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.command.create-listing-note");
         given(envelope.metadata()).willReturn(metadataBuilder.build());
 
         final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
+                forClass(JsonEnvelope.class);
         listingCommandApi.handleCreateNote(envelope);
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
         assertThat(senderJsonEnvelopeCaptor.getValue().metadata().name(), is("listing.command.create-listing-note"));
@@ -498,7 +455,7 @@ public class ListingCommandApiTest {
         final JsonEnvelope command = mock(JsonEnvelope.class);
         final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.command.handler.delete-listing-note");
         when(command.metadata()).thenReturn(metadataBuilder.build());
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
         listingCommandApi.handleDeleteNote(command);
 
         verify(sender).send(senderJsonEnvelopeCaptor.capture());
@@ -510,7 +467,7 @@ public class ListingCommandApiTest {
         final JsonEnvelope command = mock(JsonEnvelope.class);
         final MetadataBuilder metadataBuilder = metadataWithRandomUUID("listing.command.handler.edit-listing-note");
         when(command.metadata()).thenReturn(metadataBuilder.build());
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = ArgumentCaptor.forClass(JsonEnvelope.class);
+        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor = forClass(JsonEnvelope.class);
 
         listingCommandApi.handleEditNote(command);
 
@@ -576,16 +533,10 @@ public class ListingCommandApiTest {
 
         final UUID courtCentreId = randomUUID();
         given(updateHearingForListing.getCourtCentreId()).willReturn(courtCentreId);
-        OrganisationUnit organisationUnit = new OrganisationUnit(randomUUID(), "abc");
-        when(referenceDataService.getOrganizationUnitById(courtCentreId, envelope)).thenReturn(organisationUnit);
-        when(stagingHmiService.isHmiListingEnabled(Matchers.any())).thenReturn(true);
 
-        given(enveloperFunction.apply(any(UpdateHearingForListingEnriched.class))).willReturn(finalEnvelope);
+        final ArgumentCaptor<Envelope> senderJsonEnvelopeCaptor = forClass(Envelope.class);
 
-        final ArgumentCaptor<JsonEnvelope> senderJsonEnvelopeCaptor =
-                ArgumentCaptor.forClass(JsonEnvelope.class);
-
-        final JsonArray prosecutionCasesArray = Json.createArrayBuilder().build();
+        final JsonArray prosecutionCasesArray = createArrayBuilder().build();
         given(payload.getJsonArray("prosecutionCases")).willReturn(prosecutionCasesArray);
 
         //when
@@ -593,8 +544,7 @@ public class ListingCommandApiTest {
 
         //then
         verify(sender, times(1)).send(senderJsonEnvelopeCaptor.capture());
-        verify(jsonObjectConverter, never()).convert(Matchers.any(), eq(ProsecutionCases.class));
-
+        verify(jsonObjectConverter, never()).convert(any(), eq(ProsecutionCases.class));
     }
 
     @Test
@@ -607,8 +557,6 @@ public class ListingCommandApiTest {
         verify(sender).send(envelopeArgumentCaptor.capture());
         assertThat(envelopeArgumentCaptor.getValue().metadata().name(), is("listing.command.delete-hearing"));
     }
-
-
 
     private List<HearingUnscheduledListingNeeds> createUnscheduledListingNeeds(final UUID hearingId1, final UUID hearingId2) {
         return Arrays.asList(
@@ -623,7 +571,7 @@ public class ListingCommandApiTest {
     }
 
     private void mockCourtCentres() {
-        when(courtCentreFactory.getCourtCentre(Matchers.any(), eq(envelope))).thenReturn(
+        when(courtCentreFactory.getCourtCentre(any(), eq(envelope))).thenReturn(
                 CourtCentreDetails.courtCentreDetails().withDefaultDuration(10).build(),
                 CourtCentreDetails.courtCentreDetails().withDefaultDuration(20).build());
     }

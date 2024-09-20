@@ -1,24 +1,24 @@
 package uk.gov.moj.cpp.listing.common;
 
-import com.google.common.collect.Lists;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.runners.MockitoJUnitRunner;
-
-
+import static java.util.UUID.fromString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static java.util.UUID.fromString;
 import static uk.gov.justice.services.common.converter.LocalDates.from;
 
-@RunWith(MockitoJUnitRunner.class)
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+import com.google.common.collect.Lists;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
 public class NoteUUIDServiceTest {
 
     @InjectMocks
@@ -27,7 +27,7 @@ public class NoteUUIDServiceTest {
     private UUID courtRoomId;
     private LocalDate courtSessionDate;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         courtRoomId = UUID.randomUUID();
         courtSessionDate = LocalDate.now();

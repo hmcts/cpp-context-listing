@@ -4,10 +4,11 @@ FROM {base_image}
 
 ARG version
 ARG repo_loc=https://libraries-internal.mdv.cpp.nonlive/artifactory/repocentral
-ARG framework_version=8.0.4
-ARG eventstore_version=8.2.0
-ARG wildfly_home=/opt/wildfly
-ARG wildfly_user=wildfly
+ARG framework_version=17.5.5
+ARG eventstore_version=17.5.4
+
+ARG wildfly_home=/opt/jboss/wildfly
+ARG wildfly_user=jboss
 
 # service war file
 ADD ${repo_loc}/uk/gov/moj/cpp/listing/listing-service/${version}/listing-service-${version}.war ${wildfly_home}/standalone/deployments/

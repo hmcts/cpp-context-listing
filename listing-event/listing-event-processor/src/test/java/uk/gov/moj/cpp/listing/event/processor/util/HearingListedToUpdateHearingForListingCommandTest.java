@@ -1,18 +1,18 @@
 package uk.gov.moj.cpp.listing.event.processor.util;
 
 import static java.util.UUID.randomUUID;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
+import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.HearingType;
+import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.commands.UpdateHearingForListing;
 import uk.gov.justice.listing.courts.UpdateHearingForListingEnriched;
 import uk.gov.justice.listing.events.CourtCentreDetails;
 import uk.gov.justice.listing.events.Hearing;
-import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.listing.events.JudicialRole;
 import uk.gov.justice.listing.events.JudicialRoleType;
-import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.listing.events.Type;
 
@@ -23,12 +23,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HearingListedToUpdateHearingForListingCommandTest {
 
     private static final UUID COURT_CENTRE_ID = randomUUID();

@@ -1,15 +1,24 @@
 package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static java.time.ZonedDateTime.parse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParametersBuilder.withDefaults;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
+import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.moj.cpp.listing.common.xhibit.CommonXhibitReferenceDataService;
+import uk.gov.moj.cpp.listing.domain.xhibit.CourtLocation;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.CourtHouseStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.HearingStructure;
 import uk.gov.moj.cpp.listing.domain.xhibit.generated.SittingStructure;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListGenerationContext;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.CourtListMetadata;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.PublishCourtListRequestParameters;
 import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlTestUtils;
+import uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.XmlUtils;
 
 import java.util.List;
 
@@ -17,16 +26,74 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
 
-@RunWith(MockitoJUnitRunner.class)
-public class FirmListMapperTest extends BaseMapperTest {
+@ExtendWith(MockitoExtension.class)
+public class FirmListMapperTest {
 
     @Mock
     private CourtServicesMapper courtServicesMapper;
+
+    @Spy
+    private XmlUtils xmlUtils;
+
+    @Mock
+    private CommonXhibitReferenceDataService commonXhibitReferenceDataService;
+
+    @Mock
+    protected JsonEnvelope envelope;
+    protected PublishCourtListRequestParameters requestParameters;
+    protected CourtListMetadata metadata;
+    protected CourtListGenerationContext context;
+    @Mock
+    private Logger logger;
+
+    @BeforeEach
+    public void wireBeans() {
+        xmlUtils.setLogger(logger);
+        xmlUtils.postConstruct();
+    }
+
+    @BeforeEach
+    public void mockDataSources() {
+
+        MockitoAnnotations.initMocks(this);
+
+        final CourtLocation crownCourtLocation = new CourtLocation(
+                "OUCODE",
+                "000",
+                "001",
+                "MOCK_CROWN_COURTNAME",
+                "MOCK",
+                "MOCKCOURTNAME",
+                "MOCKSITECODE",
+                "CROWN_COURT");
+
+        final CourtLocation magsCourtLocation = new CourtLocation(
+                "OUCODE",
+                "000",
+                "001",
+                "MOCK_MAGISTRATES_COURTNAME",
+                "MOCK",
+                "MOCKCOURTNAME",
+                "000",
+                "MAGISTRATES_COURT");
+
+        requestParameters = withDefaults()
+                .build();
+
+        metadata = new CourtListMetadata(requestParameters.getPublishCourtListType().name() + "-FILENAME",
+                "UNIQUEID", parse("2018-01-02T13:04:05+00:00[Europe/London]"));
+
+        context = new CourtListGenerationContext(envelope, requestParameters, metadata);
+    }
 
     @Test
     public void generate() throws Exception {
@@ -52,8 +119,6 @@ public class FirmListMapperTest extends BaseMapperTest {
 
         SittingStructure sittingStructure = new SittingStructure();
         sittingStructure.setSittingNote("TESTNOTE");
-
-        when(courtServicesMapper.generateSittingStructure(any(JsonObject.class), eq(1))).thenReturn(sittingStructure);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-no-hearings.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);
@@ -170,7 +235,6 @@ public class FirmListMapperTest extends BaseMapperTest {
 
 
         when(courtServicesMapper.generateSittingStructure(any(JsonObject.class), eq(1))).thenReturn(sittingStructure);
-        when(courtServicesMapper.generateSittingStructureHearings(any(JsonObject.class))).thenReturn(hearings1);
 
         final List<JsonObject> courtListsForPublishing = givenPayload("/xhibit/mock-data/listing.query.courtlist-daily-list-sittings-no-weekcommencing.json")
                 .getJsonArray("courtLists").getValuesAs(JsonObject.class);

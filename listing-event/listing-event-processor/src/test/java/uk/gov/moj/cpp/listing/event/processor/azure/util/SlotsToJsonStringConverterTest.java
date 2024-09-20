@@ -8,12 +8,11 @@ import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.BDDMockito.given;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithDefaults;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataWithRandomUUID;
-import static uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil.setField;
 import static uk.gov.moj.cpp.platform.data.utils.date.MeridianUtil.getMeridian;
 
 import uk.gov.justice.core.courts.CourtCentre;
@@ -23,13 +22,12 @@ import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.JudicialRole;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.listing.courts.HearingConfirmed;
-import uk.gov.justice.listing.events.HearingAllocatedForListing;
 import uk.gov.justice.listing.events.NonDefaultDay;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ZonedDateTimes;
-import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
+import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFactory;
 import uk.gov.moj.cpp.listing.event.processor.azure.data.SlotDetail;
 
 import java.time.LocalDate;
@@ -46,14 +44,15 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class SlotsToJsonStringConverterTest {
 
     private static final String REFERENCE_DATA_GET_COURTROOM = "referencedata.query.courtroom";
@@ -88,16 +87,11 @@ public class SlotsToJsonStringConverterTest {
     @InjectMocks
     private SlotsToJsonStringConverter converter;
 
-    @Mock
-    private final JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectToObjectConverter();
+    @Spy
+    private final JsonObjectToObjectConverter jsonObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
 
-    @Before
+    @BeforeEach
     public void before() {
-        setField(this.jsonObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
-        initTestData();
-    }
-
-    private void initTestData() {
         event = hearingAllocatedEvent();
         ouCode = "B01LY00";
         courtRoomId = 2;
@@ -105,26 +99,20 @@ public class SlotsToJsonStringConverterTest {
         final String formattedDateTime = DATE_TIME_FORMAT.format(START_DATE_TIME);
 
         expectedZoneDateTime = getMeridian(DATE_TIME);
-
-        final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
-
-        given(listingReferenceDataService.getPayLoadForCourtRoom(event, COURT_CENTRE_ID.toString())).willReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject));
-
-        given(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).willReturn(courtRoomId);
-
         hearingConfirmed = hearingConfirmed(formattedDateTime);
         isForAdjournmentHearing = false;
-
-        given(jsonObjectConverter.convert(event.payloadAsJsonObject(), HearingAllocatedForListing.class)).willReturn(HearingAllocatedForListing.hearingAllocatedForListing()
-                .withBookingId(UUID.randomUUID())
-                .withHearingDays(Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).withStartTime(DATE_TIME).build()))
-                .build());
     }
 
     @Test
     public void getSlotDetailFromHearingConfirmed() {
         final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
         final List<uk.gov.justice.listing.events.HearingDay> hearingDays = Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).withStartTime(DATE_TIME).build());
+
+        final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
+        when(listingReferenceDataService.getPayLoadForCourtRoom(event, COURT_CENTRE_ID.toString())).
+                thenReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject));
+        when(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).thenReturn(courtRoomId);
+
         final List<SlotDetail> slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
 
         assertNotNull(slotDetailFromHearingConfirmed);
@@ -144,6 +132,11 @@ public class SlotsToJsonStringConverterTest {
         final ZonedDateTime DATE_TIME = ZonedDateTime.parse("2019-12-02T11:11:30-05:00");
         final List<uk.gov.justice.listing.events.HearingDay> hearingDays = Arrays.asList(uk.gov.justice.listing.events.HearingDay.hearingDay().withHearingDate(START_DATE).withDurationMinutes(10).withStartTime(DATE_TIME).build());
 
+        final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
+        when(listingReferenceDataService.getPayLoadForCourtRoom(event, COURT_CENTRE_ID.toString())).
+                thenReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject));
+        when(listingReferenceDataService.retrieveCourtRoomId(jsonObject, COURT_ROOM_ID, COURT_CENTRE_ID)).thenReturn(courtRoomId);
+
         final List<SlotDetail> slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
 
         final SlotDetail slotDetail = slotDetailFromHearingConfirmed.get(0);
@@ -159,6 +152,10 @@ public class SlotsToJsonStringConverterTest {
     public void shouldReturnEmptyStringFromGetSlotDetailFromHearingConfirmed() {
         final List<uk.gov.justice.listing.events.HearingDay> hearingDays = emptyList();
 
+
+        final JsonObject jsonObject = getPayloadForCourtRooms(COURT_CENTRE_ID.toString());
+        when(listingReferenceDataService.getPayLoadForCourtRoom(event, COURT_CENTRE_ID.toString())).
+                thenReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject));
 
         final List<SlotDetail> slotDetailFromHearingConfirmed = converter.getSlotDetailFromHearingConfirmed(event, hearingConfirmed.getConfirmedHearing(), isForAdjournmentHearing, hearingDays);
 

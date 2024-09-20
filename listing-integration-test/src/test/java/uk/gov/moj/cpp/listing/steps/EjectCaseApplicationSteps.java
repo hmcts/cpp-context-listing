@@ -23,6 +23,8 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.ApplicationEjectedData;
@@ -36,19 +38,16 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import java.util.Arrays;
 import java.util.UUID;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseable {
+public class EjectCaseApplicationSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(EjectCaseApplicationSteps.class);
 
 
@@ -62,10 +61,10 @@ public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseab
             ".search.hearings+json";
 
 
-    private MessageProducer publicEventEjectCaseOrApplication;
-    private MessageConsumer publicEventMessageConsumerCaseApplication;
-    private MessageConsumer privateEventsMessageCaseEjected;
-    private MessageConsumer privateEventsMessageApplicationEjected;
+    private JmsMessageProducerClient publicEventEjectCaseOrApplication;
+    private JmsMessageConsumerClient publicEventMessageConsumerCaseApplication;
+    private JmsMessageConsumerClient privateEventsMessageCaseEjected;
+    private JmsMessageConsumerClient privateEventsMessageApplicationEjected;
 
 
     private String request;
@@ -79,10 +78,10 @@ public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseab
     public EjectCaseApplicationSteps(HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
-        publicEventEjectCaseOrApplication = QueueUtil.publicEvents.createProducer();
-        publicEventMessageConsumerCaseApplication = QueueUtil.publicEvents.createConsumer(PUBLIC_PROGRESSION_EVENTS_CASE_OR_APPLICATION_EJECTED);
-        privateEventsMessageCaseEjected = privateEvents.createConsumer(EVENT_SELECTOR_CASE_EJECTED);
-        privateEventsMessageApplicationEjected = privateEvents.createConsumer(EVENT_SELECTOR_APPLICATION_EJECTED);
+        publicEventEjectCaseOrApplication = QueueUtil.publicEvents.createPublicProducer();
+        publicEventMessageConsumerCaseApplication = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_PROGRESSION_EVENTS_CASE_OR_APPLICATION_EJECTED);
+        privateEventsMessageCaseEjected = privateEvents.createPrivateConsumer(EVENT_SELECTOR_CASE_EJECTED);
+        privateEventsMessageApplicationEjected = privateEvents.createPrivateConsumer(EVENT_SELECTOR_APPLICATION_EJECTED);
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
 
@@ -226,19 +225,6 @@ public class EjectCaseApplicationSteps extends AbstractIT implements AutoCloseab
                         payload().isJson(allOf(
                                 withJsonPath("$.hearings", hasSize(0))
                         )));
-    }
-
-    @Override
-    public void close() {
-        try {
-            publicEventEjectCaseOrApplication.close();
-            publicEventMessageConsumerCaseApplication.close();
-            //privateEventMessageDefendantsToBeAdded.close();
-            privateEventsMessageCaseEjected.close();
-        } catch (JMSException e) {
-            LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
     }
 
 }

@@ -1,12 +1,13 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import static java.util.UUID.randomUUID;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import uk.gov.justice.listing.events.Type;
 import uk.gov.justice.listing.events.TypeChangedForHearing;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
@@ -15,16 +16,19 @@ import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
-import javax.json.JsonObject;
 import java.util.UUID;
 
-import static java.util.UUID.randomUUID;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import javax.json.JsonObject;
 
-@RunWith(MockitoJUnitRunner.class)
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
 public class TypeForHearingEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
@@ -64,8 +68,6 @@ public class TypeForHearingEventListenerTest {
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
-        when(objectToJsonObjectConverter.convert(TYPE)).thenReturn(hearingTypeJsonObject);
-        when(hearingTypeJsonObject.toString()).thenReturn("{ \"Hello\": \"World\"}");
 
         typeForHearingEventListener.typeChangedForHearing(envelope);
 

@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.query.view.courtlist;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static uk.gov.moj.cpp.listing.query.view.courtlist.JsonUtils.getJsonFile;
 
 import uk.gov.moj.cpp.listing.query.view.courtlist.pojo.FlatHearing;
@@ -11,7 +11,7 @@ import java.util.List;
 
 import javax.json.JsonObject;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class FlatHearingsConverterTest {
 

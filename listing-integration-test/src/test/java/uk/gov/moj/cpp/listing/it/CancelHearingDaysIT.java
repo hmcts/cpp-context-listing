@@ -20,7 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 public class CancelHearingDaysIT extends AbstractIT {
@@ -32,14 +32,13 @@ public class CancelHearingDaysIT extends AbstractIT {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(null, null, true);
         final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, MAGISTRATES_JURISDICTION);
 
-        try (final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays)) {
-            cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
+        final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays);
+        cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
 
-            cancelHearingSteps.verifyAllocatedHearingFoundOnNonCancelledHearingDay(hearingDays.get(0).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyAllocatedHearingFoundOnNonCancelledHearingDay(hearingDays.get(1).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyAllocatedHearingNotFoundOnCancelledHearingDay(hearingDays.get(2).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
-        }
+        cancelHearingSteps.verifyAllocatedHearingFoundOnNonCancelledHearingDay(hearingDays.get(0).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyAllocatedHearingFoundOnNonCancelledHearingDay(hearingDays.get(1).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyAllocatedHearingNotFoundOnCancelledHearingDay(hearingDays.get(2).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
     }
 
     @Test
@@ -47,14 +46,13 @@ public class CancelHearingDaysIT extends AbstractIT {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(null, true, true);
         final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, CROWN_JURISDICTION);
 
-        try (final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays)) {
-            cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
+        final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays);
+        cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
 
-            cancelHearingSteps.verifyAllocatedHearingFoundOnNonCancelledHearingDay(hearingDays.get(0).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyAllocatedHearingNotFoundOnCancelledHearingDay(hearingDays.get(1).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyAllocatedHearingNotFoundOnCancelledHearingDay(hearingDays.get(2).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyHearingSlotsWereNotUpdated();
-        }
+        cancelHearingSteps.verifyAllocatedHearingFoundOnNonCancelledHearingDay(hearingDays.get(0).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyAllocatedHearingNotFoundOnCancelledHearingDay(hearingDays.get(1).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyAllocatedHearingNotFoundOnCancelledHearingDay(hearingDays.get(2).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyHearingSlotsWereNotUpdated();
     }
 
     @Test
@@ -62,13 +60,12 @@ public class CancelHearingDaysIT extends AbstractIT {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(null, false, true);
         final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, CROWN_JURISDICTION);
 
-        try (final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays)) {
-            cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
+        final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays);
+        cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
 
-            cancelHearingSteps.verifyCourtListHearingFoundWithoutCancelledHearingDay(ALPHABETICAL, hearingDays.get(0).getSittingDay().toLocalDate(), hearingDays.get(0).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyCourtListHearingFoundWithCancelledFalseHearingDay(ALPHABETICAL, hearingDays.get(1).getSittingDay().toLocalDate(), hearingDays.get(1).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyCourtListHearingNotFound(ALPHABETICAL, hearingDays.get(2).getSittingDay().toLocalDate(), hearingDays.get(2).getSittingDay().toLocalDate());
-        }
+        cancelHearingSteps.verifyCourtListHearingFoundWithoutCancelledHearingDay(ALPHABETICAL, hearingDays.get(0).getSittingDay().toLocalDate(), hearingDays.get(0).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyCourtListHearingFoundWithCancelledFalseHearingDay(ALPHABETICAL, hearingDays.get(1).getSittingDay().toLocalDate(), hearingDays.get(1).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyCourtListHearingNotFound(ALPHABETICAL, hearingDays.get(2).getSittingDay().toLocalDate(), hearingDays.get(2).getSittingDay().toLocalDate());
     }
 
     @Test
@@ -76,13 +73,12 @@ public class CancelHearingDaysIT extends AbstractIT {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(null, false, true);
         final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, CROWN_JURISDICTION);
 
-        try (final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays)) {
-            cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
+        final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays);
+        cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
 
-            cancelHearingSteps.verifyCourtListHearingFoundWithoutCancelledHearingDay(PUBLIC, hearingDays.get(0).getSittingDay().toLocalDate(), hearingDays.get(0).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyCourtListHearingFoundWithCancelledFalseHearingDay(STANDARD, hearingDays.get(1).getSittingDay().toLocalDate(), hearingDays.get(1).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyCourtListHearingNotFound(STANDARD, hearingDays.get(2).getSittingDay().toLocalDate(), hearingDays.get(2).getSittingDay().toLocalDate());
-        }
+        cancelHearingSteps.verifyCourtListHearingFoundWithoutCancelledHearingDay(PUBLIC, hearingDays.get(0).getSittingDay().toLocalDate(), hearingDays.get(0).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyCourtListHearingFoundWithCancelledFalseHearingDay(STANDARD, hearingDays.get(1).getSittingDay().toLocalDate(), hearingDays.get(1).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyCourtListHearingNotFound(STANDARD, hearingDays.get(2).getSittingDay().toLocalDate(), hearingDays.get(2).getSittingDay().toLocalDate());
     }
 
     @Test
@@ -90,15 +86,14 @@ public class CancelHearingDaysIT extends AbstractIT {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(false, true, true);
         final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, MAGISTRATES_JURISDICTION);
 
-        try (final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays)) {
-            cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
+        final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays);
+        cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
 
-            cancelHearingSteps.verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtLists();
-            cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(hearingDays.get(0).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(hearingDays.get(1).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(hearingDays.get(2).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
-        }
+        cancelHearingSteps.verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtLists();
+        cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(hearingDays.get(0).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(hearingDays.get(1).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinStartAndEndDateRangeForCourtLists(hearingDays.get(2).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
     }
 
     @Test
@@ -106,15 +101,14 @@ public class CancelHearingDaysIT extends AbstractIT {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(false, true, true);
         final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, MAGISTRATES_JURISDICTION);
 
-        try (final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays)) {
-            cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
+        final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays);
+        cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
 
-            cancelHearingSteps.verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtListsOnWeekCommencingRange();
-            cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinWeekCommencingRangeForCourtLists(hearingDays.get(0).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinWeekCommencingRangeForCourtLists(hearingDays.get(1).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinWeekCommencingRangeForCourtLists(hearingDays.get(2).getSittingDay().toLocalDate());
-            cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
-        }
+        cancelHearingSteps.verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtListsOnWeekCommencingRange();
+        cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinWeekCommencingRangeForCourtLists(hearingDays.get(0).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinWeekCommencingRangeForCourtLists(hearingDays.get(1).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyAllocatedHearingFoundWhenSearchDateWithinWeekCommencingRangeForCourtLists(hearingDays.get(2).getSittingDay().toLocalDate());
+        cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
     }
 
     @Test
@@ -122,14 +116,13 @@ public class CancelHearingDaysIT extends AbstractIT {
         final List<HearingDay> hearingDays = buildHearingDaysWithCancelledFlag(false, false, true);
         final HearingsData hearingsData = givenMultidayAllocatedHearingExists(hearingDays, MAGISTRATES_JURISDICTION);
 
-        try (final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays)) {
-            cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
+        final CancelHearingSteps cancelHearingSteps = new CancelHearingSteps(hearingsData, hearingDays);
+        cancelHearingSteps.whenPublicEventHearingDaysCancelledIsPublished();
 
-            cancelHearingSteps.verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtLists();
-            cancelHearingSteps.whenHearingDaysAreSequenced();
-            cancelHearingSteps.verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtListsWithUpdatedSequence();
-            cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
-        }
+        cancelHearingSteps.verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtLists();
+        cancelHearingSteps.whenHearingDaysAreSequenced();
+        cancelHearingSteps.verifyAllocatedHearingFoundWithCancelledDaysRemovedOnCourtListsWithUpdatedSequence();
+        cancelHearingSteps.verifyHearingSlotsUpdatedToRetainNonCancelledDays();
     }
 
     private HearingsData givenMultidayAllocatedHearingExists(final List<HearingDay> hearingDays, final String jurisdiction) {
@@ -142,10 +135,9 @@ public class CancelHearingDaysIT extends AbstractIT {
             put(to(hearingDays.get(2).getSittingDay().toLocalDate()), hearingData.get(0).getCourtRoomId().toString());
         }};
         stubGetProvisionalBookedSlotsMultipleCourtScheduleDurationBased(courtRoomSchedules, hearingData.get(0).getCourtCentreId().toString());
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().stream().toArray(String[]::new), courtRoomSchedules.values().stream().toArray(String[]::new));
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedWithHearingDays(ALLOCATED, courtRoomSchedules.keySet().stream().toArray(String[]::new), courtRoomSchedules.values().stream().toArray(String[]::new));
         return hearingsData;
     }
 

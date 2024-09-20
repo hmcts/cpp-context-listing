@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.query.document.generator;
 
 import static java.util.UUID.randomUUID;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
@@ -16,12 +16,13 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DocumentGeneratorClientTest {
 
     @Mock
@@ -39,19 +40,19 @@ public class DocumentGeneratorClientTest {
     public void shouldGenerateDocument() throws IOException {
         final DocumentGeneratorClient client = new DocumentGeneratorClient(documentGeneratorClientProducer, systemUserProvider);
         when(documentGeneratorClientProducer.documentGeneratorClient()).thenReturn(documentGeneratorClient);
-        when(documentGeneratorClient.generatePdfDocument(any(JsonObject.class),any(String.class),any(UUID.class))).thenReturn( new byte[10]);
+        when(documentGeneratorClient.generatePdfDocument(any(JsonObject.class), any(String.class), any(UUID.class))).thenReturn(new byte[10]);
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(randomUUID()));
-        byte [] bytes = client.generateDocument(documentPayload, STRING.next());
-        assertNotNull(bytes);
+        byte[] bytes = client.generateDocument(documentPayload, STRING.next());
+        Assertions.assertNotNull(bytes);
     }
 
-    @Test(expected = DocumentGenerationFailedException.class)
+    @Test
     public void shouldGenerateDocumentThrowException() throws IOException {
         final DocumentGeneratorClient client = new DocumentGeneratorClient(documentGeneratorClientProducer, systemUserProvider);
         when(documentGeneratorClientProducer.documentGeneratorClient()).thenReturn(documentGeneratorClient);
-        when(documentGeneratorClient.generatePdfDocument(any(JsonObject.class),any(String.class),any(UUID.class))).thenThrow(new IOException());
+        when(documentGeneratorClient.generatePdfDocument(any(JsonObject.class), any(String.class), any(UUID.class))).thenThrow(new IOException());
         when(systemUserProvider.getContextSystemUserId()).thenReturn(Optional.of(randomUUID()));
-        client.generateDocument(documentPayload, STRING.next());
+        assertThrows(DocumentGenerationFailedException.class, () -> client.generateDocument(documentPayload, STRING.next()));
     }
 
 }

@@ -19,7 +19,7 @@ import uk.gov.moj.cpp.listing.domain.CaseOffences;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CourtsAddedOffenceToDomainOffenceTest {
 

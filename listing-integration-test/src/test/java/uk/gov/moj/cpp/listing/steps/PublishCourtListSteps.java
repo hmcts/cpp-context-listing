@@ -11,9 +11,9 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
@@ -26,6 +26,7 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
@@ -38,19 +39,17 @@ import java.io.StringReader;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import javax.jms.MessageConsumer;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.ws.rs.core.Response;
 
-import com.jayway.restassured.path.json.JsonPath;
-import org.hamcrest.Matchers;
+import io.restassured.path.json.JsonPath;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.custommonkey.xmlunit.XpathEngine;
+import org.hamcrest.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 
 public class PublishCourtListSteps extends CommonHearingSteps {
 
@@ -72,8 +71,8 @@ public class PublishCourtListSteps extends CommonHearingSteps {
 
 
     private JsonObject commandJsonObject;
-    private MessageConsumer publicMessageConsumerStagingDartsUpdated;
-    private MessageConsumer publicMessageConsumerPublishCourtList;
+    private JmsMessageConsumerClient publicMessageConsumerStagingDartsUpdated;
+    private JmsMessageConsumerClient publicMessageConsumerPublishCourtList;
 
     public PublishCourtListSteps(final HearingsData hearingsData, final JsonObject commandJsonObject) {
         super(hearingsData);
@@ -82,9 +81,8 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     }
 
     private static void createHearingListed(final HearingsData hearingsData) {
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
     }
 
     public void acceptCourtListXmlFiles() {
@@ -133,8 +131,8 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     }
 
     public void createMessageConsumer() {
-        publicMessageConsumerStagingDartsUpdated = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_COURT_LIST_STAGING_DARTS);
-        publicMessageConsumerPublishCourtList = publicEvents.createConsumer(EVENT_SELECTED_PUBLIC_COURT_LIST_PUBLISHED);
+        publicMessageConsumerStagingDartsUpdated = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_COURT_LIST_STAGING_DARTS);
+        publicMessageConsumerPublishCourtList = publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_COURT_LIST_PUBLISHED);
     }
 
 
@@ -463,9 +461,8 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     }
 
     private static void createHearingForListing(final HearingsData hearingsData) {
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedAndListed();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedAndListed();
     }
 
     public void verifyPublicEventForCourtList(final UUID courtCentreId) {

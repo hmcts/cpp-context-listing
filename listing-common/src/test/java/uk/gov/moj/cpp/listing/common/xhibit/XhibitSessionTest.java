@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.common.xhibit;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -13,14 +13,14 @@ import java.net.URL;
 
 import com.github.sardine.Sardine;
 import org.apache.http.client.HttpResponseException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class XhibitSessionTest {
 
     @Mock
@@ -38,7 +38,7 @@ public class XhibitSessionTest {
 
     private XhibitSession xhibitSessionWithTrailingSlash;
 
-    @Before
+    @BeforeEach
     public void createClassAndMocks() throws Exception {
         xhibitSession = new XhibitSession(new URL("http://outbound.com"), client, logger);
         xhibitSessionSpy = spy(xhibitSession);

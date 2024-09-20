@@ -39,8 +39,9 @@ public class XmlUtils {
     @SuppressWarnings("squid:S1312")
     private Logger logger;
 
+    @SuppressWarnings("java:S2696")
     @PostConstruct
-    public static void postConstruct() {
+    public void postConstruct() {
         try {
             datatypeFactory = DatatypeFactory.newInstance();
         } catch (DatatypeConfigurationException e) {
@@ -58,8 +59,6 @@ public class XmlUtils {
 
         try {
             final Marshaller jaxbMarshaller = getJaxbContext().createMarshaller();
-            jaxbMarshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", new XhibitNamespacePrefixMapper());
-
             jaxbMarshaller.setProperty(JAXB_FORMATTED_OUTPUT, true);
             jaxbMarshaller.marshal(documentRoot, sw);
         } catch (final JAXBException e) {

@@ -3,16 +3,11 @@
     <parent>
         <artifactId>listing-domain</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>8.0.103-SNAPSHOT</version>
+        <version>17.0.4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>listing-domain-aggregate</artifactId>
-
-    <properties>
-        <maven.cucumber.reporting.plugin.version>2.0.0</maven.cucumber.reporting.plugin.version>
-        <maven.build.timestamp.format>MMddHHmmss</maven.build.timestamp.format>
-    </properties>
 
     <profiles>
         <profile>
@@ -32,30 +27,6 @@
                                 <dependency>uk.gov.justice.services:domain-test-dsl</dependency>
                             </dependenciesToScan>
                         </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>net.masterthought</groupId>
-                        <artifactId>maven-cucumber-reporting</artifactId>
-                        <version>${maven.cucumber.reporting.plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>execution</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>generate</goal>
-                                </goals>
-                                <configuration>
-                                    <projectName>${project.artifactId}</projectName>
-                                    <outputDirectory>
-                                        ${project.build.directory}/site/cucumber-reports
-                                    </outputDirectory>
-                                    <cucumberOutput>${project.build.directory}/cucumber.json
-                                    </cucumberOutput>
-                                    <skippedFails>true</skippedFails>
-                                    <buildNumber>${ci.build}</buildNumber>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -97,7 +68,6 @@
         <dependency>
             <groupId>uk.gov.justice.services</groupId>
             <artifactId>domain-test-dsl</artifactId>
-            <version>0.2.0</version>
             <scope>test</scope>
         </dependency>
 

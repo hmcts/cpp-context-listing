@@ -1,10 +1,10 @@
 package uk.gov.moj.cpp.listing.domain;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Month;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class WelshMonthTest {
 

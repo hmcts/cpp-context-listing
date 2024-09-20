@@ -1,17 +1,18 @@
 package uk.gov.moj.cpp.listing.event.utils;
 
-import com.google.common.io.Resources;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.nio.charset.Charset.defaultCharset;
+import static javax.json.Json.createReader;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.json.JsonObject;
-import javax.json.JsonReader;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static java.nio.charset.Charset.defaultCharset;
-import static javax.json.Json.createReader;
-import static org.junit.Assert.fail;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+
+import com.google.common.io.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FileUtil {
 

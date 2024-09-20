@@ -5,7 +5,7 @@ import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.setupAsUnauthorised
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings({"squid:S1607"})
 public class UserAccessIT extends AbstractIT {
@@ -15,9 +15,8 @@ public class UserAccessIT extends AbstractIT {
         setupAsUnauthorisedUser(USER_ID_VALUE);
         HearingsData hearingsData = HearingsData.hearingsData();
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListingByUnauthorisedUser();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListingByUnauthorisedUser();
 
     }
 

@@ -8,15 +8,15 @@ import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
-import static org.apache.activemq.artemis.utils.JsonLoader.createReader;
+import static javax.json.Json.createReader;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,17 +44,17 @@ import javax.json.JsonReader;
 
 import com.google.common.collect.ImmutableMap;
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class PublicCourtListAssemblerTest {
 
     private static final UUID COURT_CENTRE_ID = randomUUID();
@@ -118,7 +118,7 @@ public class PublicCourtListAssemblerTest {
     private StandardPublicCourtListTemplateAssembler publicListService;
 
 
-    @Before
+    @BeforeEach
     public void setup() {
         setField(this.objectToJsonObjectConverter, "mapper", new ObjectMapperProducer().objectMapper());
     }
@@ -449,7 +449,7 @@ public class PublicCourtListAssemblerTest {
 
     private JsonObject buildJudiciaryListData() {
         String jsonString = FileUtil.getPayload("stubbed.referenceData.getJudiciariesByIdList.json")
-                .replace("JUDICIARY_ID", JUDICIARY_ID.toString());
+                .replace("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"");
         return convertToJsonObject(jsonString);
     }
 
@@ -501,7 +501,7 @@ public class PublicCourtListAssemblerTest {
                 .replaceAll("FIRST_NAME1", FIRST_NAME1)
                 .replaceAll("LAST_NAME1", LAST_NAME1)
                 .replaceAll("OFFENCE_TITLE", OFFENCE_TITLE)
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString());
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"");
         JsonObject queryPayload = convertToJsonObject(path);
 
         return buildJsonEnvelope(queryPayload);
@@ -509,13 +509,13 @@ public class PublicCourtListAssemblerTest {
 
     private JsonObject createRequestPayloadWithLegalEntityDefendant() {
         String payload = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList-LegalEntityDefendant.json")
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString());
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"");
         return convertToJsonObject(payload);
     }
 
     private JsonObject createRequestPayloadWithStandAloneApplication() {
         final String payload = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList-StandaloneApplication.json")
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString());
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"");
         return convertToJsonObject(payload);
     }
 
@@ -534,7 +534,7 @@ public class PublicCourtListAssemblerTest {
 
     private JsonObject createRequestPayload() {
         String payload = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCourtListContentForPublicList.json")
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString());
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"");
         return convertToJsonObject(payload);
     }
 
@@ -546,7 +546,7 @@ public class PublicCourtListAssemblerTest {
 
     private JsonObject createRestrictedRequestPayload() {
         String payload = getFileContentWithCommonFieldsReplaced("restrict/stubbed.restrictedCourtListContentForPublicList.json")
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString());
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"");
         return convertToJsonObject(payload);
     }
 

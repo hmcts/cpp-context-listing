@@ -15,37 +15,29 @@ import static uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType.WARN;
 
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.JsonEnvelope;
-import uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType;
 
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import javax.json.JsonObject;
 
 import com.google.common.collect.Lists;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 
-@RunWith(Parameterized.class)
+@ExtendWith(MockitoExtension.class)
 public class RangeSearchQueryRequestFactoryTest {
 
     final String START_DATE = "2019-12-16";
     final String EXPECTED_WEEK_COMMENCING_END_DATE = "2019-12-22";
-
-    @Parameterized.Parameter(0)
-    public uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType;
-
-    @Parameterized.Parameter(1)
-    public boolean shouldUseWeekCommencingQueryParameters;
 
     @SuppressWarnings("squid:S1312")
     @Mock
@@ -53,22 +45,25 @@ public class RangeSearchQueryRequestFactoryTest {
 
     @InjectMocks
     private RangeSearchQueryRequestFactory rangeSearchQueryRequestFactory;
+
     @Spy
     private Enveloper enveloper = createEnveloper();
 
-    @Parameterized.Parameters(name = "{index}: Test with PublishCourtListType={0}, shouldUseWeekCommencingQueryParameters is:{1} ")
-    public static Collection<Object[]> data() {
-        Object[][] data = new Object[][]{{WARN, true}, {FIRM, true}, {DRAFT, false}, {FINAL, false}};
-        return Arrays.asList(data);
+    public static Stream<Arguments> data() {
+        return Stream.of(
+                Arguments.of(WARN, true),
+                Arguments.of(FIRM, true),
+                Arguments.of(DRAFT, false),
+                Arguments.of(FINAL, false)
+        );
     }
 
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-    }
 
-    @Test
-    public void shouldBuildRangeSearchQueryEnvelope() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void shouldBuildRangeSearchQueryEnvelope(
+            final uk.gov.moj.cpp.listing.domain.xhibit.PublishCourtListType publishCourtListType,
+            final boolean shouldUseWeekCommencingQueryParameters) {
 
         String startDate = "2019-12-16";
         String listType = publishCourtListType.toString();
@@ -88,10 +83,7 @@ public class RangeSearchQueryRequestFactoryTest {
                 LocalDate.parse(startDate),
                 courtListQueryEnvelope);
 
-        verifyQueryParameters(rangeSearchQueryEnvelope.payloadAsJsonObject(), startDate, courtCentreId, publishCourtListType);
-    }
-
-    private void verifyQueryParameters(final JsonObject queryPayload, final String startDate, final UUID courtCentreId, final PublishCourtListType publishCourtListType) {
+        final JsonObject queryPayload = rangeSearchQueryEnvelope.payloadAsJsonObject();
 
         if (shouldUseWeekCommencingQueryParameters) {
             assertThat(queryPayload.getString("jurisdictionType"), is(CROWN.name()));

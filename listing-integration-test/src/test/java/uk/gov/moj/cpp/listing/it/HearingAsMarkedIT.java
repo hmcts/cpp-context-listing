@@ -4,7 +4,6 @@ import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.listing.steps.data.HearingsData.hearingsData;
 import static uk.gov.moj.cpp.listing.steps.data.factory.HearingsDataFactory.CROWN_JURISDICTION;
 
-import uk.gov.justice.services.test.utils.core.messaging.MessageConsumerClient;
 import uk.gov.moj.cpp.listing.steps.HearingAsMarkedSteps;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
@@ -12,88 +11,65 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class HearingAsMarkedIT extends AbstractIT {
-
-    private static final String PUBLIC_EVENT_CASE_SENT_FOR_LISTING = "public.listing.case-sent-for-listing";
-    private static final String TOPIC_NAME = "public.event";
-
-    private MessageConsumerClient publicMessageConsumer = new MessageConsumerClient();
-
-    @Before
-    public void setup() {
-        publicMessageConsumer.startConsumer(PUBLIC_EVENT_CASE_SENT_FOR_LISTING, TOPIC_NAME);
-    }
-
-    @After
-    public void tearDown() {
-        publicMessageConsumer.close();
-    }
 
     @Test
     public void shouldHearingAsMarked() {
         final HearingsData hearingsData = hearingsData();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
 
         HearingData hearingData = hearingsData.getHearingData().get(0);
-        try (final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData)) {
-            hearingAsMarkedSteps.whenHearingMarkedAsDuplicatePublicEventIsPublished();
-            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicatePublicEventInActiveMQ();
-            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
-            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ();
-            hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
-        }
+        final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData);
+        hearingAsMarkedSteps.whenHearingMarkedAsDuplicatePublicEventIsPublished();
+        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicatePublicEventInActiveMQ();
+        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
+        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ();
+        hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
     }
 
     @Test
     public void shouldRemoveUnallocatedHearingMarkedAsDuplicate() {
         final HearingsData hearingsData = hearingsData();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-            listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiNotInActiveMQ();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiNotInActiveMQ();
 
         HearingData hearingData = hearingsData.getHearingData().get(0);
-        try (final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData)) {
-            hearingAsMarkedSteps.whenUnallocatedHearingMarkedAsDuplicateCommandIsSent();
-            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
-            hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
-            hearingAsMarkedSteps.verifyPrivateEventDeletedHearingInStagingHmiNotInActiveMQ();
-        }
+        final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData);
+        hearingAsMarkedSteps.whenUnallocatedHearingMarkedAsDuplicateCommandIsSent();
+        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
+        hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
+        hearingAsMarkedSteps.verifyPrivateEventDeletedHearingInStagingHmiNotInActiveMQ();
     }
 
-    @Ignore("will be handled with DD-34779")
+    @Disabled("will be handled with DD-34779")
     @Test
     public void shouldHearingDeletedForHmi() {
         final UUID courtCentreId = randomUUID();
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryAndJudiciaryType(courtCentreId, CROWN_JURISDICTION);
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-            listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+        listCourtHearingSteps.verifyPrivateEventRequestedHearingFromStagingHmiInActiveMQ();
 
         HearingData hearingData = hearingsData.getHearingData().get(0);
-        try (final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData)) {
-            hearingAsMarkedSteps.whenHearingMarkedAsDuplicatePublicEventIsPublished();
-            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicatePublicEventInActiveMQ();
-            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
-            hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ();
-            hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
-            hearingAsMarkedSteps.verifyHmiPublicEventForDeleteHearing();
-            hearingAsMarkedSteps.verifyPrivateEventDeletedHearingInStagingHmiInActiveMQ();
-        }
+        final HearingAsMarkedSteps hearingAsMarkedSteps = new HearingAsMarkedSteps(hearingData);
+        hearingAsMarkedSteps.whenHearingMarkedAsDuplicatePublicEventIsPublished();
+        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicatePublicEventInActiveMQ();
+        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateInActiveMQ();
+        hearingAsMarkedSteps.verifyHearingMarkedAsDuplicateForCaseInActiveMQ();
+        hearingAsMarkedSteps.verifyDeletedFromHearingViewStore();
+        hearingAsMarkedSteps.verifyHmiPublicEventForDeleteHearing();
+        hearingAsMarkedSteps.verifyPrivateEventDeletedHearingInStagingHmiInActiveMQ();
     }
 
 }

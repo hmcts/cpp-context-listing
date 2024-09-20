@@ -1,11 +1,11 @@
 package uk.gov.moj.cpp.listing.domain.utils;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
 
 public class ZonedDateTimeFormatterTest {
 

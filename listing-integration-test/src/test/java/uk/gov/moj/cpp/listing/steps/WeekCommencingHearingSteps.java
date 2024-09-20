@@ -8,8 +8,8 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
@@ -27,37 +27,33 @@ import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.retrieveMessage;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataCourtCentre;
 
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
 import javax.ws.rs.core.Response;
 
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WeekCommencingHearingSteps extends AbstractIT implements AutoCloseable {
+public class WeekCommencingHearingSteps extends AbstractIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WeekCommencingHearingSteps.class);
 
     private static final String EVENT_SELECTOR_START_DATE_REMOVED = "listing.events.start-date-removed-for-hearing";
     private static final String EVENT_SELECTOR_WEEK_COMMENCING_DATES_CHANGED = "listing.events.week-commencing-date-changed-for-hearing";
-    private static final String EVENT_SELECTOR_START_DATE_CHANGED = "listing.events.start-date-changed-for-hearing";
-    private static final String EVENT_SELECTOR_END_DATE_CHANGED = "listing.events.end-date-changed-for-hearing";
+    private static final String EVENT_SELECTOR_END_DATE_REMOVED = "listing.events.end-date-removed-from-hearing";
 
     private final UpdatedHearingData updatedHearingData;
 
     private String request;
 
-    private MessageConsumer privateMessageConsumerEndDateRemoved;
-    private MessageConsumer privateMessageConsumerStartDateRemoved;
-    private MessageConsumer privateMessageConsumerStartDateChanged;
-    private MessageConsumer privateMessageConsumerEndDateChanged;
+    private JmsMessageConsumerClient privateMessageConsumerEndDateRemoved;
+    private JmsMessageConsumerClient privateMessageConsumerStartDateRemoved;
 
-    private MessageConsumer privateMessageConsumerWeekCommencingDatesChanged;
+    private JmsMessageConsumerClient privateMessageConsumerWeekCommencingDatesChanged;
 
     public WeekCommencingHearingSteps(final UpdatedHearingData updatedHearingData) {
         this.updatedHearingData = updatedHearingData;
@@ -67,12 +63,9 @@ public class WeekCommencingHearingSteps extends AbstractIT implements AutoClosea
     }
 
     private void createMessageConsumers() {
-        privateMessageConsumerStartDateRemoved = privateEvents.createConsumer(EVENT_SELECTOR_START_DATE_REMOVED);
-        privateMessageConsumerEndDateRemoved = privateEvents.createConsumer(EVENT_SELECTOR_START_DATE_REMOVED);
-        privateMessageConsumerStartDateChanged = privateEvents.createConsumer(EVENT_SELECTOR_START_DATE_CHANGED);
-        privateMessageConsumerEndDateChanged = privateEvents.createConsumer(EVENT_SELECTOR_END_DATE_CHANGED);
-
-        privateMessageConsumerWeekCommencingDatesChanged = privateEvents.createConsumer(EVENT_SELECTOR_WEEK_COMMENCING_DATES_CHANGED);
+        privateMessageConsumerStartDateRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_START_DATE_REMOVED);
+        privateMessageConsumerEndDateRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_END_DATE_REMOVED);
+        privateMessageConsumerWeekCommencingDatesChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_WEEK_COMMENCING_DATES_CHANGED);
 
     }
 
@@ -118,20 +111,6 @@ public class WeekCommencingHearingSteps extends AbstractIT implements AutoClosea
         final JsonPath jsonResponse = retrieveMessage(privateMessageConsumerEndDateRemoved);
         LOGGER.info("jsonResponse from privateMessageConsumerEndDateRemoved: {}", jsonResponse.prettify());
         assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
-    }
-
-    @Override
-    public void close() {
-        try {
-            privateMessageConsumerWeekCommencingDatesChanged.close();
-
-            privateMessageConsumerEndDateRemoved.close();
-            privateMessageConsumerStartDateRemoved.close();
-            privateMessageConsumerStartDateChanged.close();
-            privateMessageConsumerEndDateChanged.close();
-        } catch (final JMSException e) {
-            LOGGER.error("Error closing privateMessageConsumerHearingListed: {}", e.getMessage());
-        }
     }
 
     public void verifyHearingUpdatedWithWeekCommencingDateAndUnallocatedWhenQueryingFromAPI() {

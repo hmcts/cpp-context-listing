@@ -1,7 +1,7 @@
 package uk.gov.moj.cpp.listing.common.hmi;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.listing.common.utils.FileUtil.givenPayload;
 
@@ -16,14 +16,13 @@ import java.util.Set;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
-import org.apache.http.HttpStatus;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class OrganisationUnitHMICacheTest {
 
     @Mock
@@ -55,7 +54,6 @@ public class OrganisationUnitHMICacheTest {
 
         final JsonObject hmiList = givenPayload("/mock-data/staginghmi.query.organisation-unit-hmi-status-rota.json");
 
-        when(response.getStatus()).thenReturn(HttpStatus.SC_OK);
         when(response.getEntity()).thenReturn(hmiList);
         when(organisationUnitHMIStatusService.getAllOrganisationUnitHMIStatus()).thenReturn(response);
 

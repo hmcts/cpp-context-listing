@@ -20,7 +20,6 @@ import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.apache.http.HttpStatus.SC_OK;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
-import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.waitForStubToBeReady;
 
 import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 
@@ -106,8 +105,6 @@ public class CourtSchedulerServiceStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader(CONTENT_TYPE, APPLICATION_JSON)
                         .withBody(payload)));
-
-       waitForStubToBeReady(format("%s", ROTA_SL_ENDPOINT_URL + ORGANISATION_UNIT), APPLICATION_JSON);
     }
 
     public static void stubGetProvisionalBookedSlotsSingleCourtScheduleCountBased() {

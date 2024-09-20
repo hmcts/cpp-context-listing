@@ -8,9 +8,6 @@ import java.io.InputStream;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class FileUtil {
 
     public static JsonObject givenPayload(final String filePath) {

@@ -23,8 +23,8 @@ import uk.gov.moj.cpp.listing.steps.data.UpdatedOffenceData;
 import java.util.UUID;
 
 import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class CourtListIT extends AbstractIT {
 
@@ -39,21 +39,20 @@ public class CourtListIT extends AbstractIT {
     private CourtListSteps courtListSteps;
     private HearingsData firstHearing;
 
-    @Before
+    @BeforeEach
     public void setupStepsForCourtList() {
         firstHearing = HearingsData.hearingsData();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearing)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearing);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
 
         UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(firstHearing.getHearingData().get(0).getId());
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(firstHearing, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListing();
-            updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
-            updateHearingSteps.verifyPublicHearingChangesSaved();
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(firstHearing, updatedHearingDataForAllocation);
+        updateHearingSteps.whenHearingIsUpdatedForListing();
+        updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+        updateHearingSteps.verifyPublicHearingChangesSaved();
         courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
     }
 
@@ -71,20 +70,18 @@ public class CourtListIT extends AbstractIT {
     @Test
     public void generatePublicCourtWhenHearingAdjourned() {
         HearingsData nextHearing = HearingsData.nextHearingsData(firstHearing.getHearingData());
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(firstHearing.getHearingData().get(0))) {
-            listNextHearingSteps.whenNextHearingSubmittedForListing(nextHearing);
-            listNextHearingSteps.verifyNextHearingRequestedInActiveMQ(nextHearing);
-            listNextHearingSteps.verifyHearingListedInActiveMQ(nextHearing);
-            listNextHearingSteps.verifyHearingListedFromAPI(nextHearing);
-        }
+        final ListNextHearingSteps listNextHearingSteps1 = new ListNextHearingSteps(firstHearing.getHearingData().get(0));
+        listNextHearingSteps1.whenNextHearingSubmittedForListing(nextHearing);
+        listNextHearingSteps1.verifyNextHearingRequestedInActiveMQ(nextHearing);
+        listNextHearingSteps1.verifyHearingListedInActiveMQ(nextHearing);
+        listNextHearingSteps1.verifyHearingListedFromAPI(nextHearing);
 
         UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(nextHearing.getHearingData().get(0).getId());
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(nextHearing, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListing();
-            updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
-            updateHearingSteps.verifyPublicHearingChangesSaved();
-        }
+        final UpdateHearingSteps updateHearingSteps2 = new UpdateHearingSteps(nextHearing, updatedHearingDataForAllocation);
+        updateHearingSteps2.whenHearingIsUpdatedForListing();
+        updateHearingSteps2.verifyHearingAllocatedWhenQueryingFromAPI();
+        updateHearingSteps2.verifyPublicHearingChangesSaved();
         courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
 
         courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", new Matcher[0]);
@@ -98,10 +95,9 @@ public class CourtListIT extends AbstractIT {
         OffenceData offenceData = defendantData.getOffences().get(0);
         UpdatedOffenceData updatedOffenceData = UpdatedOffenceData.updateOffenceData(offenceData);
 
-        try (final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null)) {
-            steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
-            steps.verifyEventOffenceAddedInActiveMQ();
-        }
+        final UpdateDefendantOffencesSteps steps = new UpdateDefendantOffencesSteps(caseId, hearingData, updatedOffenceData, null);
+        steps.whenCaseDefendantOffencesUpdatedPublicEventIsPublishedAddedOnly();
+        steps.verifyEventOffenceAddedInActiveMQ();
         final Matcher[] allocatedMatchers = {
                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[3].id", notNullValue()),
                 withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[3].listingNumber"),
@@ -114,12 +110,11 @@ public class CourtListIT extends AbstractIT {
 
         UUID caseId = firstHearing.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = firstHearing.getHearingData().get(0);
-        try (final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData)) {
-            addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
-            addDefendantSteps.verifyEventDefendantAddedInActiveMQ();
-            addDefendantSteps.verifyEventDefendantsToBeAddedInActiveMQ();
-            addDefendantSteps.verifyEventDefendantDetailsAddedInActiveMQ();
-        }
+        final AddDefendantSteps addDefendantSteps = new AddDefendantSteps(caseId, hearingData);
+        addDefendantSteps.whenCaseDefendantsAddedPublicEventIsPublished();
+        addDefendantSteps.verifyEventDefendantAddedInActiveMQ();
+        addDefendantSteps.verifyEventDefendantsToBeAddedInActiveMQ();
+        addDefendantSteps.verifyEventDefendantDetailsAddedInActiveMQ();
 
         final Matcher[] allocatedMatchers = {
                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[2].offences[0].id", notNullValue()),

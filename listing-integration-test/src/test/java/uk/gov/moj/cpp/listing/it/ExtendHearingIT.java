@@ -1,15 +1,9 @@
 package uk.gov.moj.cpp.listing.it;
 
-import static com.jayway.jsonpath.Criteria.where;
-import static com.jayway.jsonpath.Filter.filter;
-import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.UUID.randomUUID;
-import static org.hamcrest.CoreMatchers.hasItem;
 import static uk.gov.justice.core.courts.JurisdictionType.MAGISTRATES;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 
-import com.jayway.jsonpath.Filter;
-import org.hamcrest.Matcher;
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.services.test.utils.core.random.RandomGenerator;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
@@ -21,11 +15,10 @@ import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +30,6 @@ public class ExtendHearingIT extends AbstractIT {
     private final UUID UNALLOCATED_HEARING_ID = randomUUID();
     public static final String MATCHED_DEFENDANTS = "MATCHED_DEFENDANTS";
 
-
     private final String CASE_URN = STRING.next();
 
     private final String JURISDICTION_TYPE = JurisdictionType.CROWN.name();
@@ -48,20 +40,18 @@ public class ExtendHearingIT extends AbstractIT {
         final CaseAndDefendantData caseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE,
                 null, null);
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData))) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(caseAndDefendantData));
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsData(UNALLOCATED_HEARING_ID))) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(HearingsData.hearingsData(UNALLOCATED_HEARING_ID));
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
 
-            LOGGER.info("UnAllocated HearingID : {}  -  Allocated HearingId : {} ", UNALLOCATED_HEARING_ID, ALLOCATED_HEARING_ID);
+        LOGGER.info("UnAllocated HearingID : {}  -  Allocated HearingId : {} ", UNALLOCATED_HEARING_ID, ALLOCATED_HEARING_ID);
 
-            listCourtHearingSteps.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
-            listCourtHearingSteps.extendHearing(UNALLOCATED_HEARING_ID, ALLOCATED_HEARING_ID);
-            listCourtHearingSteps.verifyHearingConfirmedEventForExtendHearingPublicMQ(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID);
-            listCourtHearingSteps.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID);
-        }
+        listCourtHearingSteps2.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
+        listCourtHearingSteps2.extendHearing(UNALLOCATED_HEARING_ID, ALLOCATED_HEARING_ID);
+        listCourtHearingSteps2.verifyHearingConfirmedEventForExtendHearingPublicMQ(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID);
+        listCourtHearingSteps2.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, UNALLOCATED_HEARING_ID, 2);
     }
 
     @Test
@@ -70,9 +60,8 @@ public class ExtendHearingIT extends AbstractIT {
         final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE,
                 null, null);
         final HearingsData allocatedHearingData = HearingsData.hearingsDataWithAllocationDataAndJudiciary(allocatedHearingCaseAndDefendantData);
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(allocatedHearingData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(allocatedHearingData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
 
         final HearingsData hearingsData = HearingsData.singleHearingData();
         final HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -81,26 +70,24 @@ public class ExtendHearingIT extends AbstractIT {
         //remove only first case, retain the second case
         final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
 
-            LOGGER.info("UnAllocated HearingID : {}  -  Allocated HearingId : {} ", unallocatedHearingId, ALLOCATED_HEARING_ID);
+        LOGGER.info("UnAllocated HearingID : {}  -  Allocated HearingId : {} ", unallocatedHearingId, ALLOCATED_HEARING_ID);
 
-            listCourtHearingSteps.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
-            listCourtHearingSteps.extendHearingPartially(unallocatedHearingId, ALLOCATED_HEARING_ID, listedCaseData);
-            listCourtHearingSteps.verifyHearingConfirmedEventForExtendPartialHearingPublicMQ(ALLOCATED_HEARING_ID, unallocatedHearingId);
-            listCourtHearingSteps.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, unallocatedHearingId);
-            listCourtHearingSteps.verifyHearingUpdatedPartiallyInActiveMQ(unallocatedHearingId);
-            listCourtHearingSteps.verifyPublicHearingChangesSavedInPublicMQ(ALLOCATED_HEARING_ID);
-            listCourtHearingSteps.verifyPublicHearingUpdatedPartiallyInActiveMQ(unallocatedHearingId);
+        listCourtHearingSteps2.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
+        listCourtHearingSteps2.extendHearingPartially(unallocatedHearingId, ALLOCATED_HEARING_ID, listedCaseData);
+        listCourtHearingSteps2.verifyHearingConfirmedEventForExtendPartialHearingPublicMQ(ALLOCATED_HEARING_ID, unallocatedHearingId);
+        listCourtHearingSteps2.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, unallocatedHearingId, 1);
+        listCourtHearingSteps2.verifyHearingUpdatedPartiallyInActiveMQ(unallocatedHearingId);
+        listCourtHearingSteps2.verifyPublicHearingChangesSavedInPublicMQ(ALLOCATED_HEARING_ID);
+        listCourtHearingSteps2.verifyPublicHearingUpdatedPartiallyInActiveMQ(unallocatedHearingId);
 
-        }
 
         final UpdatedHearingData updatedHearingDataWithUpdatedJudiciary = UpdatedHearingData.updatedHearingDataDifferentJudiciary(allocatedHearingData.getHearingData().get(0));
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithUpdatedJudiciary)) {
-            updateHearingSteps.whenJudiciaryIsChangedForHearings();
-            updateHearingSteps.verifyProsecutionCaseDefendantsOffenceIds(2);
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataWithUpdatedJudiciary);
+        updateHearingSteps.whenJudiciaryIsChangedForHearings();
+        updateHearingSteps.verifyProsecutionCaseDefendantsOffenceIds(2);
     }
 
     @Test
@@ -108,9 +95,8 @@ public class ExtendHearingIT extends AbstractIT {
 
         final CaseAndDefendantData allocatedHearingCaseAndDefendantData = new CaseAndDefendantData(ALLOCATED_HEARING_ID, null, CASE_URN, randomUUID(), null, JURISDICTION_TYPE, JURISDICTION_TYPE, null, null);
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(allocatedHearingCaseAndDefendantData))) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(HearingsData.hearingsDataWithAllocationDataAndJudiciary(allocatedHearingCaseAndDefendantData));
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
 
         final HearingsData hearingsData = HearingsData.singleHearingDataMultipleCasesWithSingleOffence();
         final HearingData hearingData = hearingsData.getHearingData().get(0);
@@ -118,16 +104,15 @@ public class ExtendHearingIT extends AbstractIT {
 
         final List<ListedCaseData> listedCaseDataList = hearingData.getListedCases();
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
 
-            LOGGER.info("UnAllocated HearingID : {}  -  Allocated HearingId : {} ", unallocatedHearingId, ALLOCATED_HEARING_ID);
+        LOGGER.info("UnAllocated HearingID : {}  -  Allocated HearingId : {} ", unallocatedHearingId, ALLOCATED_HEARING_ID);
 
-            listCourtHearingSteps.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
-            listCourtHearingSteps.extendWholeHearing(unallocatedHearingId, ALLOCATED_HEARING_ID, listedCaseDataList);
-            listCourtHearingSteps.verifyHearingConfirmedEventForExtendHearingPublicMQ(ALLOCATED_HEARING_ID, unallocatedHearingId);
-            listCourtHearingSteps.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, unallocatedHearingId);
-        }
+        listCourtHearingSteps2.verifyHearingIsCreated(ALLOCATED_HEARING_ID, 1);
+        listCourtHearingSteps2.extendWholeHearing(unallocatedHearingId, ALLOCATED_HEARING_ID, listedCaseDataList);
+        listCourtHearingSteps2.verifyHearingConfirmedEventForExtendHearingPublicMQ(ALLOCATED_HEARING_ID, unallocatedHearingId);
+        listCourtHearingSteps2.verifyHearingUpdatedToCaseInActiveMQ(ALLOCATED_HEARING_ID, unallocatedHearingId, 2);
     }
 
     @Test
@@ -140,31 +125,26 @@ public class ExtendHearingIT extends AbstractIT {
                 caseUrn, masterDefendantId, MATCHED_DEFENDANTS, MAGISTRATES.name(), MAGISTRATES.name(), null, null);
         final HearingsData unallocatedHearingsData1 = HearingsData.hearingsDataWithUnAllocationDataAndJudiciary(caseAndDefendantData);
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(unallocatedHearingsData1)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(unallocatedHearingsData1);
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
 
         final HearingsData hearingsData = HearingsData.singleHearingDataMultipleCasesWithSingleOffence();
         final HearingData hearingData = hearingsData.getHearingData().get(0);
         final UUID unallocatedHearingId2 = hearingData.getId();
 
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            LOGGER.info("UnAllocated HearingID 1: {}  -  UnAllocated HearingId 2: {} ", UNALLOCATED_HEARING_ID, unallocatedHearingId2);
-            listCourtHearingSteps.verifyHearingIsCreated(UNALLOCATED_HEARING_ID, 1);
-            listCourtHearingSteps.extendHearing(unallocatedHearingId2, UNALLOCATED_HEARING_ID);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
+        LOGGER.info("UnAllocated HearingID 1: {}  -  UnAllocated HearingId 2: {} ", UNALLOCATED_HEARING_ID, unallocatedHearingId2);
+        listCourtHearingSteps2.verifyHearingIsCreated(UNALLOCATED_HEARING_ID, 1);
+        listCourtHearingSteps2.extendHearing(unallocatedHearingId2, UNALLOCATED_HEARING_ID);
 
 
         final UpdatedHearingData updatedHearingData = UpdatedHearingData.updatedHearingData(unallocatedHearingsData1.getHearingData().get(0));
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(unallocatedHearingsData1, updatedHearingData)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-            updateHearingSteps.verifyHearingConfirmedInPublicMQ();
-
-
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(unallocatedHearingsData1, updatedHearingData);
+        updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+        updateHearingSteps.verifyHearingConfirmedInPublicMQ();
     }
 
 

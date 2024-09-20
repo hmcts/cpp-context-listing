@@ -13,6 +13,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
@@ -62,10 +63,11 @@ import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
 import uk.gov.justice.core.courts.ReportingRestriction;
 import uk.gov.justice.core.courts.SeedingHearing;
 import uk.gov.justice.core.courts.SummonsTemplateType;
-import uk.gov.justice.listing.courts.TypeOfList;
 import uk.gov.justice.core.courts.WeekCommencingDate;
+import uk.gov.justice.listing.courts.TypeOfList;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
@@ -82,23 +84,22 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.ReadContext;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
+public class ListNextHearingSteps extends AbstractIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ListNextHearingSteps.class);
 
@@ -136,21 +137,20 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
 
 
 
-    private final MessageConsumer privateMessageConsumerNextHearingRequested;
-    private final MessageConsumer privateMessageConsumerUnscheduledNextHearingRequested;
-    private final MessageConsumer privateMessageConsumerUpdateRelatedHearingRequested;
-    private final MessageConsumer privateMessageConsumerCasesAddedToHearing;
-    private final MessageConsumer privateMessageConsumerHearingListed;
-    private final MessageConsumer privateMessageConsumerUnallocatedHearingDeleted;
-    private final MessageConsumer privateMessageConsumerRemoveOffencesFromExistingHearingRequested;
-    private final MessageConsumer privateMessageConsumeOffencesRemovedFromExistingHearing;
-    private final MessageConsumer privateMessageConsumerDeleteNextHearingRequested;
-    private final MessageConsumer privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent;
-    private final MessageConsumer privateMessageConsumerOffencesRemovedFromExistingAllocatedHearing;
-
-    private final MessageConsumer publicMessageConsumerUnallocatedHearingDeleted;
-    private final MessageConsumer publicMessageConsumerOffencesRemovedFromExistingHearing;
-    private final MessageConsumer publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing;
+    private final JmsMessageConsumerClient privateMessageConsumerNextHearingRequested;
+    private final JmsMessageConsumerClient privateMessageConsumerUnscheduledNextHearingRequested;
+    private final JmsMessageConsumerClient privateMessageConsumerUpdateRelatedHearingRequested;
+    private final JmsMessageConsumerClient privateMessageConsumerCasesAddedToHearing;
+    private final JmsMessageConsumerClient privateMessageConsumerHearingListed;
+    private final JmsMessageConsumerClient privateMessageConsumerUnallocatedHearingDeleted;
+    private final JmsMessageConsumerClient privateMessageConsumerRemoveOffencesFromExistingHearingRequested;
+    private final JmsMessageConsumerClient privateMessageConsumeOffencesRemovedFromExistingHearing;
+    private final JmsMessageConsumerClient privateMessageConsumerDeleteNextHearingRequested;
+    private final JmsMessageConsumerClient privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent;
+    private final JmsMessageConsumerClient privateMessageConsumerOffencesRemovedFromExistingAllocatedHearing;
+    private final JmsMessageConsumerClient publicMessageConsumerUnallocatedHearingDeleted;
+    private final JmsMessageConsumerClient publicMessageConsumerOffencesRemovedFromExistingHearing;
+    private final JmsMessageConsumerClient publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing;
 
 
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -162,46 +162,21 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
         this.firstHearing = firstHearing;
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
-        privateMessageConsumerNextHearingRequested = privateEvents.createConsumer(EVENT_SELECTOR_NEXT_HEARING_REQUESTED);
-        privateMessageConsumerUnscheduledNextHearingRequested = privateEvents.createConsumer(EVENT_SELECTOR_UNSCHEDULED_NEXT_HEARING_REQUESTED);
-        privateMessageConsumerUpdateRelatedHearingRequested = privateEvents.createConsumer(EVENT_SELECTOR_UPDATE_RELATED_HEARING_REQUESTED);
-        privateMessageConsumerCasesAddedToHearing = privateEvents.createConsumer(EVENT_SELECTOR_CASES_ADDED_TO_HEARING);
-        privateMessageConsumerHearingListed = privateEvents.createConsumer(EVENT_SELECTOR_HEARING_LISTED);
-        privateMessageConsumerUnallocatedHearingDeleted = privateEvents.createConsumer(EVENT_SELECTOR_UNALLOCATED_HEARING_DELETED);
-        privateMessageConsumerRemoveOffencesFromExistingHearingRequested = privateEvents.createConsumer(EVENT_SELECTOR_REMOVE_OFFENCES_FROM_EXISTING_HEARING);
-        privateMessageConsumeOffencesRemovedFromExistingHearing = privateEvents.createConsumer(EVENT_SELECTOR_OFFENCES_REMOVED_FROM_EXISTING_HEARING);
-        privateMessageConsumerDeleteNextHearingRequested = privateEvents.createConsumer(EVENT_SELECTOR_DELETE_NEXT_HEARING_REQUESTED);
-        privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent = privateEvents.createConsumer(EVENT_SELECTOR_MARKED_AS_DUPLICATE_FOR_CASE_EVENT);
-        privateMessageConsumerOffencesRemovedFromExistingAllocatedHearing = privateEvents.createConsumer(EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING);
+        privateMessageConsumerNextHearingRequested = privateEvents.createPrivateConsumer(EVENT_SELECTOR_NEXT_HEARING_REQUESTED);
+        privateMessageConsumerUnscheduledNextHearingRequested = privateEvents.createPrivateConsumer(EVENT_SELECTOR_UNSCHEDULED_NEXT_HEARING_REQUESTED);
+        privateMessageConsumerUpdateRelatedHearingRequested = privateEvents.createPrivateConsumer(EVENT_SELECTOR_UPDATE_RELATED_HEARING_REQUESTED);
+        privateMessageConsumerCasesAddedToHearing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_CASES_ADDED_TO_HEARING);
+        privateMessageConsumerHearingListed = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_LISTED);
+        privateMessageConsumerUnallocatedHearingDeleted = privateEvents.createPrivateConsumer(EVENT_SELECTOR_UNALLOCATED_HEARING_DELETED);
+        privateMessageConsumerRemoveOffencesFromExistingHearingRequested = privateEvents.createPrivateConsumer(EVENT_SELECTOR_REMOVE_OFFENCES_FROM_EXISTING_HEARING);
+        privateMessageConsumeOffencesRemovedFromExistingHearing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_OFFENCES_REMOVED_FROM_EXISTING_HEARING);
+        privateMessageConsumerDeleteNextHearingRequested = privateEvents.createPrivateConsumer(EVENT_SELECTOR_DELETE_NEXT_HEARING_REQUESTED);
+        privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent = privateEvents.createPrivateConsumer(EVENT_SELECTOR_MARKED_AS_DUPLICATE_FOR_CASE_EVENT);
+        privateMessageConsumerOffencesRemovedFromExistingAllocatedHearing = privateEvents.createPrivateConsumer(EVENT_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING);
 
-        publicMessageConsumerUnallocatedHearingDeleted = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED);
-        publicMessageConsumerOffencesRemovedFromExistingHearing = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING);
-        publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing = publicEvents.createConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING);
-
-    }
-
-
-    @Override
-    public void close() {
-        try {
-            privateMessageConsumerNextHearingRequested.close();
-            privateMessageConsumerUnscheduledNextHearingRequested.close();
-            privateMessageConsumerUpdateRelatedHearingRequested.close();
-            privateMessageConsumerCasesAddedToHearing.close();
-            privateMessageConsumerHearingListed.close();
-            privateMessageConsumerUnallocatedHearingDeleted.close();
-            privateMessageConsumerRemoveOffencesFromExistingHearingRequested.close();
-            privateMessageConsumeOffencesRemovedFromExistingHearing.close();
-            privateMessageConsumerDeleteNextHearingRequested.close();
-            privateMessageConsumerHearingMarkedAsDuplicateForCaseEvent.close();
-            privateMessageConsumerOffencesRemovedFromExistingAllocatedHearing.close();
-
-            publicMessageConsumerUnallocatedHearingDeleted.close();
-            publicMessageConsumerOffencesRemovedFromExistingHearing.close();
-            publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing.close();
-        } catch (final JMSException e) {
-            LOGGER.error("Error closing privateMessageConsumerHearingListed: {}", e.getMessage());
-        }
+        publicMessageConsumerUnallocatedHearingDeleted = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED);
+        publicMessageConsumerOffencesRemovedFromExistingHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING);
+        publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING);
 
     }
 
@@ -394,6 +369,15 @@ public class ListNextHearingSteps extends AbstractIT implements AutoCloseable {
         assertThat(Arrays.asList(jsonResponse.get("hearing.id"), jsonResponse2.get("hearing.id")),
                 hasItems(hearingsData.getHearingData().get(0).getId().toString(),
                         hearingsData.getHearingData().get(1).getId().toString()));
+    }
+
+
+    public void verifyHearingListedInActiveMQ() {
+        final JsonPath jsRequest = new JsonPath(request);
+        LOGGER.debug("Request payload: {}", jsRequest.prettify());
+
+        final Optional<JsonPath> jsonResponse = privateMessageConsumerHearingListed.retrieveMessageAsJsonPath();
+        assertTrue(jsonResponse.isPresent());
     }
 
     public void verifyCasesAddedToHearingInActiveMQ(final UUID hearingId, final HearingsData hearingsData) {

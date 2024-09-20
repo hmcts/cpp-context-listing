@@ -12,6 +12,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
+import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPublicJmsMessageConsumerClientProvider;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
@@ -22,7 +23,6 @@ import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
-import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.ApplicationStatus;
@@ -43,6 +43,8 @@ import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.AddCourtApplicationData;
 import uk.gov.moj.cpp.listing.steps.data.CourtApplicationData;
@@ -56,21 +58,18 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
+public class CourtApplicationSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtApplicationSteps.class);
 
     private static final String APPLICANT_FIRST_NAME = STRING.next();
@@ -93,16 +92,16 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
             ".search.hearings+json";
     private static final String PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI = "public.listing.updated-hearing-in-staging-hmi";
 
-    private MessageProducer publicEventCourtApplicationUpdated;
-    private MessageConsumer publicEventMessageConsumerCourtApplicationUpdated;
-    private MessageConsumer privateMessageConsumerCourtApplicationUpdatedForHearing;
-    private MessageProducer publicEventCourtApplicationAdded;
-    private MessageConsumer publicEventMessageConsumerCourtApplicationAdded;
-    private MessageConsumer privateMessageConsumerCourtApplicationAddedForHearing;
-    private final MessageConsumer privateMessageConsumerAddedCaseForHearing;
-    private MessageConsumer publicMessageConsumerCourtApplicationAddedForHearing;
+    private JmsMessageProducerClient publicEventCourtApplicationUpdated;
+    private JmsMessageConsumerClient publicEventMessageConsumerCourtApplicationUpdated;
+    private JmsMessageConsumerClient privateMessageConsumerCourtApplicationUpdatedForHearing;
+    private JmsMessageProducerClient publicEventCourtApplicationAdded;
+    private JmsMessageConsumerClient publicEventMessageConsumerCourtApplicationAdded;
+    private JmsMessageConsumerClient privateMessageConsumerCourtApplicationAddedForHearing;
+    private final JmsMessageConsumerClient privateMessageConsumerAddedCaseForHearing;
+    private JmsMessageConsumerClient publicMessageConsumerCourtApplicationAddedForHearing;
 
-    private MessageConsumer publicMessageConsumerHmiHearingUpdated;
+    private JmsMessageConsumerClient publicMessageConsumerHmiHearingUpdated;
 
     private String request;
 
@@ -117,15 +116,16 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
     public CourtApplicationSteps(HearingsData hearingsData) {
         this.hearingsData = hearingsData;
 
-        publicEventCourtApplicationUpdated = QueueUtil.publicEvents.createProducer();
-        publicEventMessageConsumerCourtApplicationUpdated = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED);
-        privateMessageConsumerCourtApplicationUpdatedForHearing = QueueUtil.privateEvents.createConsumer(PRIVATE_EVENT_APPLICATION_UPDATED_FOR_HEARING);
-        publicEventCourtApplicationAdded = QueueUtil.publicEvents.createProducer();
-        publicEventMessageConsumerCourtApplicationAdded = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED);
-        privateMessageConsumerCourtApplicationAddedForHearing = QueueUtil.privateEvents.createConsumer(PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
-        privateMessageConsumerAddedCaseForHearing = privateEvents.createConsumer(EVENT_SELECTED_CASES_ADDED_TO_HEARING);
-        publicMessageConsumerCourtApplicationAddedForHearing = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
-        publicMessageConsumerHmiHearingUpdated = publicEvents.createConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
+        publicEventCourtApplicationUpdated = QueueUtil.publicEvents.createPublicProducer();
+        publicEventMessageConsumerCourtApplicationUpdated = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_COURT_APPLICATION_CHANGED);
+        privateMessageConsumerCourtApplicationUpdatedForHearing = QueueUtil.privateEvents.createPrivateConsumer(PRIVATE_EVENT_APPLICATION_UPDATED_FOR_HEARING);
+        publicEventCourtApplicationAdded = QueueUtil.publicEvents.createPublicProducer();
+        publicEventMessageConsumerCourtApplicationAdded = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_HEARING_EXTENDED);
+        privateMessageConsumerCourtApplicationAddedForHearing = QueueUtil.privateEvents.createPrivateConsumer(PRIVATE_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
+        privateMessageConsumerAddedCaseForHearing = privateEvents.createPrivateConsumer(EVENT_SELECTED_CASES_ADDED_TO_HEARING);
+        publicMessageConsumerCourtApplicationAddedForHearing = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
+        publicMessageConsumerHmiHearingUpdated = newPublicJmsMessageConsumerClientProvider()
+                .withEventNames( PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI).getMessageConsumerClient();
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -461,24 +461,5 @@ public class CourtApplicationSteps extends AbstractIT implements AutoCloseable {
                 .withAddress5(STRING.next())
                 .withPostcode(POSTCODE)
                 .build();
-    }
-
-    @Override
-    public void close() {
-        try {
-            publicEventCourtApplicationUpdated.close();
-            publicEventMessageConsumerCourtApplicationUpdated.close();
-            privateMessageConsumerCourtApplicationUpdatedForHearing.close();
-            privateMessageConsumerAddedCaseForHearing.close();
-            publicEventCourtApplicationAdded.close();
-            publicEventMessageConsumerCourtApplicationAdded.close();
-            privateMessageConsumerCourtApplicationAddedForHearing.close();
-            publicMessageConsumerCourtApplicationAddedForHearing.close();
-            publicMessageConsumerHmiHearingUpdated.close();
-
-        } catch (JMSException e) {
-            LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
     }
 }

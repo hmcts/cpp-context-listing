@@ -22,6 +22,7 @@ import uk.gov.justice.progression.courts.LinkActionType;
 import uk.gov.justice.progression.courts.LinkedToCases;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.justice.services.test.utils.core.http.ResponseData;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.data.HearingsData;
@@ -30,15 +31,13 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 import java.util.Arrays;
 import java.util.UUID;
 
-import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,19 +53,14 @@ public class CaseLinkedIT extends AbstractIT {
     private static final String MEDIA_TYPE_SEARCH_HEARING_JSON = "application/vnd.listing" +
             ".search.hearing+json";
 
-    private MessageProducer publicEventProgressionCaseLinked;
+    private JmsMessageProducerClient publicEventProgressionCaseLinked;
 
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
     private final ObjectToJsonValueConverter objectToJsonValueConverter = new ObjectToJsonValueConverter(objectMapper);
 
-    @Before
+    @BeforeEach
     public void setup() {
-        publicEventProgressionCaseLinked = QueueUtil.publicEvents.createProducer();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        publicEventProgressionCaseLinked.close();
+        publicEventProgressionCaseLinked = QueueUtil.publicEvents.createPublicProducer();
     }
 
     @Test
@@ -195,11 +189,10 @@ public class CaseLinkedIT extends AbstractIT {
 
     private HearingsData listCourtHearing() {
         final HearingsData hearingsData = HearingsData.hearingsData();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
         return hearingsData;
     }
 }

@@ -4,8 +4,8 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.listing.events.OrganisationUnit.organisationUnit;
@@ -33,15 +33,15 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ReferenceDataServiceTest {
     private static final String REFERENCE_DATA_GET_COURTROOM = "referencedata.query.courtroom";
 
@@ -93,7 +93,8 @@ public class ReferenceDataServiceTest {
 
         when(enveloper.withMetadataFrom(eq(event), eq("referencedata.query.organisation-unit")))
                 .thenReturn(function);
-        when(requester.request(any(JsonEnvelope.class))).thenReturn(envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject));
+        final JsonEnvelope jsonEnvelope = envelopeFrom(metadataWithRandomUUID(REFERENCE_DATA_GET_COURTROOM), jsonObject);
+        when(requester.request(any())).thenReturn(jsonEnvelope);
         when(jsonObjectConverter.convert(any(), eq(OrganisationUnit.class)))
                 .thenReturn(organisationUnit().withId(orgId.toString()).withAddress1("address1").build());
 

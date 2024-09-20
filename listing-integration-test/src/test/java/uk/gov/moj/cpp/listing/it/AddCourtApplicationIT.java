@@ -7,7 +7,7 @@ import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 public class AddCourtApplicationIT extends AbstractIT {
@@ -17,59 +17,55 @@ public class AddCourtApplicationIT extends AbstractIT {
     public void shouldAddCourtApplicationForHearingId() {
 
         final HearingsData hearingsData = HearingsData.hearingsData();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(false);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(false);
+        listCourtHearingSteps.verifyPublicCourtApplicationAdded();
 
-        try (final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData)) {
-            courtApplicationSteps.whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended();
-            courtApplicationSteps.verifyCourtApplicationAddedInActiveMQ();
-            courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
-            courtApplicationSteps.verifyCourtApplicationAddedFromAPI(false);
-        }
+        final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData);
+        courtApplicationSteps.whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended();
+        courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
+        courtApplicationSteps.verifyCourtApplicationAddedFromAPI(false);
     }
 
     @Test
     public void shouldAddCourtApplicationForHearingIdHmiEnabled() {
 
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(true);
-            
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(true);
+        listCourtHearingSteps.verifyPublicCourtApplicationAdded();
 
-        try (final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData)) {
-            courtApplicationSteps.whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended();
-            courtApplicationSteps.verifyCourtApplicationAddedInActiveMQ();
-            courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
-            courtApplicationSteps.verifyCourtApplicationAddedFromAPI(true);
-        }
+
+
+        final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData);
+        courtApplicationSteps.whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended();
+        courtApplicationSteps.verifyCourtApplicationAddedInActiveMQ();
+        courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
+        courtApplicationSteps.verifyCourtApplicationAddedFromAPI(true);
     }
 
     @Test
     public void shouldAddCourtApplicationAndCaseForHearingIdHmiEnabled() {
 
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciary();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(true);
-            
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(true);
+        listCourtHearingSteps.verifyPublicCourtApplicationAdded();
 
-        try (final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData)) {
-            courtApplicationSteps.verifyCaseCountFromAPI(true, 2);
-            courtApplicationSteps.whenCaseCourtApplicationAndLinkedCaseAreAddedToListingAndHearingIsExtended();
-            courtApplicationSteps.verifyCourtApplicationAddedInActiveMQ();
-            courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
-            courtApplicationSteps.verifyCourtApplicationAddedFromAPI(true);
-            courtApplicationSteps.verifyAddedCaseForHearingInActiveMQ();
-            courtApplicationSteps.verifyCaseCountFromAPI(true, 3);
-        }
+        final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData);
+        courtApplicationSteps.verifyCaseCountFromAPI(true, 2);
+        courtApplicationSteps.whenCaseCourtApplicationAndLinkedCaseAreAddedToListingAndHearingIsExtended();
+        courtApplicationSteps.verifyCourtApplicationAddedInActiveMQ();
+        courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
+        courtApplicationSteps.verifyCourtApplicationAddedFromAPI(true);
+        courtApplicationSteps.verifyAddedCaseForHearingInActiveMQ();
+        courtApplicationSteps.verifyCaseCountFromAPI(true, 3);
     }
 
     @Test
@@ -79,18 +75,16 @@ public class AddCourtApplicationIT extends AbstractIT {
         final List<CourtApplicationData> applications = hearingsData.getHearingData().get(0).getCourtApplications();
         hearingsData.getHearingData().get(0).setCourtApplications(null);
 
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListingHmiEnabled();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyPublicCourtApplicationAdded();
 
         hearingsData.getHearingData().get(0).setCourtApplications(applications);
-        try (final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData)) {
-            courtApplicationSteps.whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended();
-            courtApplicationSteps.verifyCourtApplicationAddedInActiveMQ();
-            courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
-            courtApplicationSteps.verifyCourtApplicationAddedFromAPI(false);
-            courtApplicationSteps.verifyTimeLine(hearingsData.getHearingData().get(0));
-        }
+        final CourtApplicationSteps courtApplicationSteps = new CourtApplicationSteps(hearingsData);
+        courtApplicationSteps.whenCaseCourtApplicationIsAddedToListingAndHearingIsExtended();
+        courtApplicationSteps.verifyCourtApplicationAddedInPrivateMessage();
+        courtApplicationSteps.verifyCourtApplicationAddedFromAPI(false);
+        courtApplicationSteps.verifyTimeLine(hearingsData.getHearingData().get(0));
     }
 }

@@ -4,19 +4,20 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static uk.gov.justice.listing.commands.PublishCourtListType.FIRM;
 import static uk.gov.justice.listing.commands.PublishCourtListType.WARN;
 
 import java.time.LocalDate;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class UUIDServiceTest {
 
     @InjectMocks
@@ -25,7 +26,7 @@ public class UUIDServiceTest {
     private UUID courtCentreId;
     private LocalDate startDate;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         courtCentreId = UUID.randomUUID();
         startDate = LocalDate.now();
@@ -51,8 +52,8 @@ public class UUIDServiceTest {
         assertThat(courtListId2, is(not(courtListId)));
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void shouldThrowNullPointerExceptionIfAnyInputIsNull() {
-        uuidService.getCourtListId(null, WARN, startDate);
+        assertThrows(NullPointerException.class, () -> uuidService.getCourtListId(null, WARN, startDate));
     }
 }

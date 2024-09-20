@@ -5,8 +5,8 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
@@ -35,15 +35,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DefendantEventListenerTest {
 
     private static final String LISTED_CASES = "listedCases";
@@ -91,7 +91,6 @@ public class DefendantEventListenerTest {
                         .build())
                 .build();
 
-        given(envelope.payload()).willReturn(hearingData);
         given(defendantDetailsUpdatedEnvelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
@@ -102,7 +101,7 @@ public class DefendantEventListenerTest {
 
         defendantEventListener.defendantDetailsUpdated(defendantDetailsUpdatedEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         JsonNode actualBailStatus = objectNodeCaptor.getValue().get(0).get("defendants").get(0).get("bailStatus");
         String actualBailStatusId = actualBailStatus.get("id").toString();
         String actualBailStatusCode = actualBailStatus.get("code").toString();
@@ -133,7 +132,6 @@ public class DefendantEventListenerTest {
                         .build())
                 .build();
 
-        given(envelope.payload()).willReturn(hearingData);
         given(defendantDetailsUpdatedEnvelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
@@ -144,7 +142,7 @@ public class DefendantEventListenerTest {
 
         defendantEventListener.defendantDetailsUpdated(defendantDetailsUpdatedEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
 
         final JsonNode caseList = objectNodeCaptor.getValue();
         assertThat(caseList.size(), equalTo(1));
@@ -174,7 +172,6 @@ public class DefendantEventListenerTest {
                         .build())
                 .build();
 
-        given(envelope.payload()).willReturn(hearingData);
         given(defendantDetailsUpdatedEnvelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
@@ -185,7 +182,7 @@ public class DefendantEventListenerTest {
 
         defendantEventListener.defendantDetailsUpdated(defendantDetailsUpdatedEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
 
         final JsonNode defendants = objectNodeCaptor.getValue().get(0).get("defendants");
         assertThat(defendants.size(), equalTo(1));
@@ -211,7 +208,6 @@ public class DefendantEventListenerTest {
                         .build())
                 .build();
 
-        given(envelope.payload()).willReturn(hearingData);
         given(defendantAddedForCourtProceedingsEnvelope.payload()).willReturn(hearingData);
         given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
         given(hearing.getProperties()).willReturn(properties);
@@ -223,7 +219,7 @@ public class DefendantEventListenerTest {
 
         defendantEventListener.defendantDetailsAddedForCourtProceedings(defendantAddedForCourtProceedingsEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
     }
 
@@ -251,7 +247,7 @@ public class DefendantEventListenerTest {
 
         defendantEventListener.defendantLegalStatusUpdatedForHearing(envelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
 
 
@@ -284,7 +280,7 @@ public class DefendantEventListenerTest {
 
         defendantEventListener.defendantLegalStatusUpdatedForHearing(envelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
 
         final JsonNode caseList = objectNodeCaptor.getValue();
         assertThat(caseList.size(), equalTo(1));
@@ -321,7 +317,7 @@ public class DefendantEventListenerTest {
 
         defendantEventListener.defendantLegalStatusUpdatedForHearing(envelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
 
         final JsonNode defendants = objectNodeCaptor.getValue().get(0).get("defendants");
         assertThat(defendants.size(), equalTo(1));

@@ -1,15 +1,12 @@
 package uk.gov.moj.cpp.listing.steps.data.factory;
 
 import static java.time.ZonedDateTime.now;
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static uk.gov.moj.cpp.listing.steps.data.HearingDay.hearingDay;
 
 import uk.gov.justice.services.test.utils.common.helper.StoppedClock;
 import uk.gov.moj.cpp.listing.steps.data.HearingDay;
 
 import java.util.List;
-import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 

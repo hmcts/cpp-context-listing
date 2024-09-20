@@ -1,20 +1,5 @@
 package uk.gov.moj.cpp.listing.steps;
 
-import com.jayway.restassured.path.json.JsonPath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import uk.gov.moj.cpp.listing.it.AbstractIT;
-import uk.gov.moj.cpp.listing.steps.data.HearingData;
-import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
-import uk.gov.moj.cpp.listing.utils.QueueUtil;
-
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.json.Json;
-import javax.json.JsonObject;
-import java.util.UUID;
-
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.UUID.randomUUID;
@@ -24,16 +9,32 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
-import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.getBaseUri;
 import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 
-public class DefendantLegalAidStatusUpdateSteps extends AbstractIT implements AutoCloseable  {
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
+import uk.gov.moj.cpp.listing.it.AbstractIT;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
+import uk.gov.moj.cpp.listing.utils.QueueUtil;
+
+import java.util.UUID;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+
+import io.restassured.path.json.JsonPath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class DefendantLegalAidStatusUpdateSteps extends AbstractIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefendantLegalAidStatusUpdateSteps.class);
 
@@ -47,9 +48,9 @@ public class DefendantLegalAidStatusUpdateSteps extends AbstractIT implements Au
             ".search.hearings+json";
 
 
-    private MessageProducer publicEventDefendantLegalAidStatusUpdated;
-    private MessageConsumer publicEventMessageConsumerDefendantUpdated;
-    private MessageConsumer privateEventsMessageDefendantLegalAidStatusUpdated;
+    private JmsMessageProducerClient publicEventDefendantLegalAidStatusUpdated;
+    private JmsMessageConsumerClient publicEventMessageConsumerDefendantUpdated;
+    private JmsMessageConsumerClient privateEventsMessageDefendantLegalAidStatusUpdated;
 
 
     private String request;
@@ -65,9 +66,9 @@ public class DefendantLegalAidStatusUpdateSteps extends AbstractIT implements Au
         this.listedCaseData = hearingData.getListedCases().get(0);
 
 
-        publicEventDefendantLegalAidStatusUpdated = QueueUtil.publicEvents.createProducer();
-        publicEventMessageConsumerDefendantUpdated = QueueUtil.publicEvents.createConsumer(PUBLIC_PROGRESSION_DEFENDANT_LEGALAID_STATUS_UPDATED);
-        privateEventsMessageDefendantLegalAidStatusUpdated = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANT_LEGALAID_STATUS_UPDATED_FOR_HEAIRNG);
+        publicEventDefendantLegalAidStatusUpdated = QueueUtil.publicEvents.createPublicProducer();
+        publicEventMessageConsumerDefendantUpdated = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_PROGRESSION_DEFENDANT_LEGALAID_STATUS_UPDATED);
+        privateEventsMessageDefendantLegalAidStatusUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_DEFENDANT_LEGALAID_STATUS_UPDATED_FOR_HEAIRNG);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -110,21 +111,6 @@ public class DefendantLegalAidStatusUpdateSteps extends AbstractIT implements Au
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].legalAidStatus",
                                         equalTo("Granted"))
                         )));
-    }
-
-
-
-    @Override
-    public void close() throws Exception {
-        try {
-            publicEventDefendantLegalAidStatusUpdated.close();
-            privateEventsMessageDefendantLegalAidStatusUpdated.close();
-            publicEventMessageConsumerDefendantUpdated.close();
-        } catch (JMSException e) {
-            LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
-
     }
 
     private JsonObject getPayloadForPublicEventFromHearingData() {

@@ -1,12 +1,13 @@
 package uk.gov.moj.cpp.listing.query.document.generator;
 
+import static java.util.Locale.UK;
 import static java.util.UUID.randomUUID;
-import static org.apache.activemq.artemis.utils.JsonLoader.createReader;
+import static javax.json.Json.createReader;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
@@ -26,6 +27,7 @@ import uk.gov.moj.cpp.listing.query.api.util.FileUtil;
 import uk.gov.moj.cpp.listing.query.document.generator.util.SittingsSorter;
 
 import java.io.StringReader;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,14 +36,15 @@ import javax.json.JsonReader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class JudgeListTemplateAssemblerTest {
 
     private static final UUID COURT_CENTRE_ID = randomUUID();
@@ -71,6 +74,12 @@ public class JudgeListTemplateAssemblerTest {
     private static final UUID JUDICIARY2_ID = UUID.randomUUID();
     private static final UUID JUDICIARY3_ID = UUID.randomUUID();
 
+
+    @BeforeAll
+    public static void beforeClass() {
+        //Not needed after AM/PM vs am/pm java.util.Locale issue is resolved in EA-11374
+        Locale.setDefault(UK);
+    }
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -254,11 +263,6 @@ public class JudgeListTemplateAssemblerTest {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
-        when(referenceDataCache.getJudiciariesMapCache(any(UUID.class)))
-                .thenReturn(
-                        generateJudiciary(JUDICIARY_ID, "Sarah", "Her Majesty", "Court Judge", "Mr"),
-                        generateJudiciary(JUDICIARY2_ID, "Mary", "Her Majesty Honour", "Judge", "Mr")
-                );
 
         Optional<JsonObject> judgeList = assembler.assemble(buildRequestEnvelope(buildHearingDataForApplications()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.JUDGE, START_DATE);
         final JsonObject expectedList = returnAsJsonObject("expected/list.of.judgesList.for.ignore.all.application.json");
@@ -289,11 +293,6 @@ public class JudgeListTemplateAssemblerTest {
 
         when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
                 .thenReturn(generateCourtCentreDetails());
-        when(referenceDataCache.getJudiciariesMapCache(any(UUID.class)))
-                .thenReturn(
-                        generateJudiciary(JUDICIARY_ID, "Sarah", "Her Majesty", "Court Judge", "Mr"),
-                        generateJudiciary(JUDICIARY2_ID, "Mary", "Her Majesty Honour", "Judge", "Mr")
-                );
 
         Optional<JsonObject> judgeList = assembler.assemble(buildRequestEnvelope(buildHearingDataForMultiHearingDays()), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.JUDGE, "2020-10-09");
         final JsonObject expectedList = returnAsJsonObject("expected/list.of.judgesList.for.sameday.hearing.from.multi.hearing.days.json");
@@ -341,7 +340,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.findHearings.multipleHearings.ForSameJudgeListScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID.toString() + "\"")
                 .replaceAll("HEARING_ID", HEARING_ID.toString());
         try (JsonReader jsonReader = createReader(new StringReader(jsonString))) {
             return jsonReader.readObject();
@@ -363,7 +362,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.hearingRepository.findHearingsForJudgeListScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID.toString() + "\"")
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
                 .replaceAll("CASE_ID1", CASE_ID1.toString())
                 .replaceAll("CASE_ID2", CASE_ID1.toString())
@@ -377,7 +376,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.hearingRepository.findHearingsForJudgeListScenario-LegalEntityDefendant.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID.toString() + "\"")
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
                 .replaceAll("CASE_ID1", CASE_ID1.toString())
                 .replaceAll("CASE_ID2", CASE_ID1.toString())
@@ -392,7 +391,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.findHearings.ForMultiJudciariesListSortScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
                 .replaceAll("JUDICIARY_ID1", JUDICIARY2_ID.toString())
                 .replaceAll("JUDICIARY_ID2", JUDICIARY3_ID.toString())
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
@@ -408,7 +407,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.findHearings.multipleHearings.ForDifferentJudgeListScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
                 .replaceAll("JUDICIARY_ID1", JUDICIARY2_ID.toString())
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
                 .replaceAll("CASE_ID1", CASE_ID1.toString())
@@ -423,7 +422,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.findHearings.multipleHearings.ForDifferentJudge.unallocatedJudiciaries.ListScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
                 .replaceAll("JUDICIARY_ID1", JUDICIARY2_ID.toString())
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
                 .replaceAll("HEARING_ID3", HEARING_ID3.toString())
@@ -440,7 +439,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.findHearings.multipleHearings.ForDifferentJudge.multipleUnallocatedJudiciaries.ListScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
                 .replaceAll("JUDICIARY_ID1", JUDICIARY2_ID.toString())
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
                 .replaceAll("HEARING_ID3", HEARING_ID3.toString())
@@ -460,7 +459,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.multiCases.multipleHearings.ForDifferentJudge.multipleUnallocatedJudiciaries.ListScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
                 .replaceAll("JUDICIARY_ID1", JUDICIARY2_ID.toString())
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
                 .replaceAll("CASE_ID1", CASE_ID1.toString())
@@ -477,7 +476,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.multiCases.multipleHearings.counsels.ListScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
                 .replaceAll("JUDICIARY_ID1", JUDICIARY2_ID.toString())
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
                 .replaceAll("CASE_ID1", CASE_ID1.toString())
@@ -494,7 +493,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.multiCases.multipleHearings.application.ListScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
                 .replaceAll("JUDICIARY_ID1", JUDICIARY2_ID.toString())
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
                 .replaceAll("CASE_ID1", CASE_ID1.toString())
@@ -510,7 +509,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.multipleHearings.only.application.ListScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
                 .replaceAll("JUDICIARY_ID1", JUDICIARY2_ID.toString())
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
                 .replaceAll("HEARING_ID2", HEARING_ID2.toString());
@@ -523,7 +522,7 @@ public class JudgeListTemplateAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.multiCases.multipleHearings.linkedapplication.ListScenario.json")
                 .replaceAll("COURT_CENTRE_ID", COURT_CENTRE_ID.toString())
                 .replaceAll("COURT_ROOM_ID", COURT_ROOM_1_ID.toString())
-                .replaceAll("JUDICIARY_ID", JUDICIARY_ID.toString())
+                .replaceAll("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"")
                 .replaceAll("JUDICIARY_ID1", JUDICIARY2_ID.toString())
                 .replaceAll("HEARING_ID1", HEARING_ID.toString())
                 .replaceAll("CASE_ID1", CASE_ID1.toString())

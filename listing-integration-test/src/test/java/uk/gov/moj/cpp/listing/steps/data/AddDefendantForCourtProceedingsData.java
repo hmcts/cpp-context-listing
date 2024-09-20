@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
 
-import uk.gov.justice.core.courts.ListHearingRequest;
 import uk.gov.justice.core.courts.Defendant;
+import uk.gov.justice.core.courts.ListHearingRequest;
 
 import java.util.List;
 

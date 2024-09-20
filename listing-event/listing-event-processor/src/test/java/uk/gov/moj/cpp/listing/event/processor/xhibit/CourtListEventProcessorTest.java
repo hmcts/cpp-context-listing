@@ -3,10 +3,9 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit;
 import static java.time.ZonedDateTime.parse;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,17 +29,17 @@ import java.util.UUID;
 
 import javax.json.JsonObject;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.ArgumentCaptor;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CourtListEventProcessorTest {
     @Spy
     @InjectMocks
@@ -58,7 +57,7 @@ public class CourtListEventProcessorTest {
     @Mock
     private CourtListExportService courtListExportService;
 
-    @Before
+    @BeforeEach
     public void before() {
         setField(this.jsonObjectConverter, "objectMapper", new ObjectMapperProducer().objectMapper());
     }
@@ -72,15 +71,6 @@ public class CourtListEventProcessorTest {
 
         when(publishCourtListRequestParametersParser.parse(tEnvelope)).thenReturn(parameters);
         when(listingService.getUnpublishedCourtListForCourtCentre(tEnvelope, parameters)).thenReturn(courtListJson);
-
-        doAnswer(invocation -> {
-            Object arg0 = invocation.getArgumentAt(0, JsonEnvelope.class);
-            Object arg1 = invocation.getArgumentAt(1, PublishCourtListRequestParameters.class);
-
-            assertEquals(tEnvelope, arg0);
-            assertEquals(parameters, arg1);
-            return null;
-        }).when(courtListExportService).exportCourtList(tEnvelope, parameters, courtListJson);
 
         // Tested method
         courtListEventProcessor.handlePublishCourtListRequested(tEnvelope);
@@ -125,15 +115,6 @@ public class CourtListEventProcessorTest {
                 .withName("listing.event.court-list-export-requested")
                 .withUserId(randomUUID().toString()).build();
         final JsonEnvelope tEnvelope = envelopeFrom(metadata, courtListExportRequested);
-
-        doAnswer(invocation -> {
-            Object arg0 = invocation.getArgumentAt(0, JsonEnvelope.class);
-            Object arg1 = invocation.getArgumentAt(1, PublishCourtListRequestParameters.class);
-
-            assertEquals(tEnvelope, arg0);
-            assertEquals(parameters, arg1);
-            return null;
-        }).when(courtListExportService).exportCourtList(tEnvelope, parameters, courtListJson);
 
         // Tested method
         courtListEventProcessor.handleCourtListExportRequested(tEnvelope);

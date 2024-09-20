@@ -5,8 +5,8 @@ import static java.time.LocalDate.parse;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,16 +36,16 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vladmihalcea.hibernate.type.json.internal.JacksonUtil;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class RangeSearchQueryTest {
 
     private static final UUID COURT_CENTRE_ID = randomUUID();
@@ -112,7 +112,7 @@ public class RangeSearchQueryTest {
     @Spy
     private StringToJsonObjectConverter stringToJsonObjectConverter;
 
-    @Before
+    @BeforeEach
     public void setup() throws IllegalAccessException {
         final ObjectMapper objectMapper = new ObjectMapper();
         FieldUtils.writeField(this.listToJsonArrayConverter, "mapper", objectMapper, true);

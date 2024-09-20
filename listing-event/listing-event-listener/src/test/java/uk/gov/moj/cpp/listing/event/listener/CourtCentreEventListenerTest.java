@@ -1,10 +1,8 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.UUID.randomUUID;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,13 +15,13 @@ import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CourtCentreEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
@@ -47,18 +45,17 @@ public class CourtCentreEventListenerTest {
 
     @Test
     public void shouldChangeCourtRoomForHearing() {
-        Envelope<CourtCentreChangedForHearing> envelope = (Envelope<CourtCentreChangedForHearing>) mock(Envelope.class);
+        Envelope<CourtCentreChangedForHearing> event = mock(Envelope.class);
         CourtCentreChangedForHearing hearingData = CourtCentreChangedForHearing.courtCentreChangedForHearing()
                 .withCourtCentreId(COURT_CENTRE_ID)
                 .withHearingId(HEARING_ID)
                 .build();
-        given(envelope.payload()).willReturn(hearingData);
+        when(event.payload()).thenReturn(hearingData);
 
         when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
         when(hearing.getProperties()).thenReturn(properties);
-        when(properties.findPath(JSON_PATH)).thenReturn(properties);
 
-        courtCentreEventListener.courtCentreChangedForHearing(envelope);
+        courtCentreEventListener.courtCentreChangedForHearing(event);
 
         verify(properties).put(eq("courtCentreId"), eq(COURT_CENTRE_ID.toString()));
         verify(hearingRepository).save(hearing);

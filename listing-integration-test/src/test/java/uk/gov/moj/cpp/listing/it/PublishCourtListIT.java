@@ -4,8 +4,8 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.buildPublishCourtListCommandPayload;
 import static uk.gov.moj.cpp.listing.steps.PublishCourtListSteps.loadHearingData;
@@ -41,9 +41,9 @@ import java.util.concurrent.TimeUnit;
 import javax.json.JsonObject;
 import javax.ws.rs.core.Response;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class PublishCourtListIT extends AbstractIT {
 
@@ -58,12 +58,12 @@ public class PublishCourtListIT extends AbstractIT {
 
     private static final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
 
-    @Before
+    @BeforeEach
     public void cleanTables() {
         viewStoreCleaner.cleanViewStoreTables();
     }
 
-    @Ignore("flaky test, failing in pipeline, but passing locally")
+    @Disabled("flaky test, failing in pipeline, but passing locally")
     @Test
     public void shouldPublishCourtListWithNoHearings() throws Exception {
 
@@ -172,11 +172,10 @@ public class PublishCourtListIT extends AbstractIT {
 
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "publicListNote");
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-            updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+        updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
+        updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
 
 
         stubIdMapperReturningExistingAssociation(courtListId);
@@ -215,10 +214,9 @@ public class PublishCourtListIT extends AbstractIT {
 
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-            updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+        updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
 
 
         stubIdMapperReturningExistingAssociation(courtListId);
@@ -258,11 +256,10 @@ public class PublishCourtListIT extends AbstractIT {
 
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "videoLinkDetails");
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-            updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+        updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
+        updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
 
 
         stubIdMapperReturningExistingAssociation(courtListId);
@@ -302,11 +299,10 @@ public class PublishCourtListIT extends AbstractIT {
 
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, "publicListNote");
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-            updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
-            updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+        updateHearingSteps.verifyHearingUpdatedResultsWithPublicListNoteInAllocationInMQ();
+        updateHearingSteps.verifyHearingWithUpdatedPublicListNoteWhenQueryingFromAPI();
 
 
         stubIdMapperReturningExistingAssociation(courtListId);
@@ -361,10 +357,9 @@ public class PublishCourtListIT extends AbstractIT {
 
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-            updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+        updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
 
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);
@@ -399,25 +394,21 @@ public class PublishCourtListIT extends AbstractIT {
         stubGetReferenceDataCourtCentreById(courtCentreId);
 
         HearingsData hearingsData = HearingsData.hearingsDataWithRestriction(courtCentreId,courtRoomUUID,"DISTRICT_JUDGE");
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedAndListed();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-            listCourtHearingSteps.verifyHearingListedFromAPI(true);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedAndListed();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(true);
 
         final UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForPublicListNote(hearingsData.getHearingData().get(0), true, null);
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
-            updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForAllocation);
+        updateHearingSteps.whenHearingIsUpdatedForListingWithPublicListNote();
+        updateHearingSteps.verifyHearingWithUpdatedNoPublicListNoteWhenQueryingFromAPI();
 
-        try (final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData)) {
-            restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getRestrictListingFromCourtData(hearingsData));
-            restrictCourtListSteps.verifyRestrictCourtListInActiveMQ();
-            restrictCourtListSteps.verifyListingRestrictedInHearing(true, true, false);
-
-        }
+        final RestrictCourtListSteps restrictCourtListSteps = new RestrictCourtListSteps(hearingsData);
+        restrictCourtListSteps.whenRestrictingCaseOrStandaloneApplicationForCourtListing(restrictCourtListSteps.getRestrictListingFromCourtData(hearingsData));
+        restrictCourtListSteps.verifyRestrictCourtListInActiveMQ();
+        restrictCourtListSteps.verifyListingRestrictedInHearing(true, true, false);
 
         stubIdMapperReturningExistingAssociation(courtListId);
         stubOrganisationUnit(courtCentreId);

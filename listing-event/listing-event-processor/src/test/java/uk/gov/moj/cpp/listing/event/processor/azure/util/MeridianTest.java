@@ -3,7 +3,7 @@ package uk.gov.moj.cpp.listing.event.processor.azure.util;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class MeridianTest {
 

@@ -5,6 +5,8 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withoutJsonPath;
 import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.core.AllOf.allOf;
@@ -13,8 +15,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static uk.gov.justice.listing.events.HearingDay.hearingDay;
 import static uk.gov.justice.listing.events.HearingDaysCancelled.hearingDaysCancelled;
 import static uk.gov.justice.listing.events.HearingDaysSequenced.hearingDaysSequenced;
@@ -31,7 +31,6 @@ import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -42,16 +41,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HearingDaysForHearingEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
@@ -83,16 +81,9 @@ public class HearingDaysForHearingEventListenerTest {
 
     @Captor
     private ArgumentCaptor<JsonNode> propertiesCaptor;
-
-    @Before
-    public void setup() throws IOException {
-        final ObjectNode properties = (ObjectNode) mapper.readTree(TEST_JSON);
-        given(hearingRepository.findBy(HEARING_ID)).willReturn(hearing);
-        given(hearing.getProperties()).willReturn(properties);
-    }
-
+    
     @Test
-    public void shouldUpdateHearingDaysWhenHearingDaysChangedForHearing() {
+    public void shouldUpdateHearingDaysWhenHearingDaysChangedForHearing() throws Exception {
         //given
         final Envelope<HearingDaysChangedForHearing> envelope = mock(Envelope.class);
         final HearingDaysChangedForHearing hearingData = HearingDaysChangedForHearing.hearingDaysChangedForHearing()
@@ -104,6 +95,10 @@ public class HearingDaysForHearingEventListenerTest {
                         .build()))
                 .withHearingId(HEARING_ID)
                 .build();
+        final ObjectNode properties = (ObjectNode) mapper.readTree(TEST_JSON);
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
         given(envelope.payload()).willReturn(hearingData);
 
         //when
@@ -124,7 +119,10 @@ public class HearingDaysForHearingEventListenerTest {
     }
 
     @Test
-    public void shouldRemoveUnscheduledWhenHearingDaysChangedForHearing() {
+    public void shouldRemoveUnscheduledWhenHearingDaysChangedForHearing() throws Exception {
+
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+
         final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
         final Envelope<HearingDaysChangedForHearing> envelope = (Envelope<HearingDaysChangedForHearing>) mock(Envelope.class);
         final HearingDaysChangedForHearing hearingData = HearingDaysChangedForHearing.hearingDaysChangedForHearing()
@@ -161,10 +159,13 @@ public class HearingDaysForHearingEventListenerTest {
         assertThat(savedHearing.getProperties().get("hearingDays").size(), is(1));
     }
 
-
     @Test
-    public void shouldUpdateHearingDaysWhenHearingDaysSequenced() {
+    public void shouldUpdateHearingDaysWhenHearingDaysSequenced() throws Exception {
         //given
+        final ObjectNode properties = (ObjectNode) mapper.readTree(TEST_JSON);
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
         final Envelope<HearingDaysSequenced> envelope = mock(Envelope.class);
         final HearingDaysSequenced hearingData = hearingDaysSequenced()
                 .withHearingId(HEARING_ID)
@@ -189,8 +190,12 @@ public class HearingDaysForHearingEventListenerTest {
     }
 
     @Test
-    public void shouldFilterCancelledHearingDaysAndUpdateOnlyNotCancelledDaysWhenHearingDaysSequenced() {
+    public void shouldFilterCancelledHearingDaysAndUpdateOnlyNotCancelledDaysWhenHearingDaysSequenced() throws Exception {
         //given
+        final ObjectNode properties = (ObjectNode) mapper.readTree(TEST_JSON);
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
         final Envelope<HearingDaysSequenced> envelope = mock(Envelope.class);
         final HearingDaysSequenced hearingData = hearingDaysSequenced()
                 .withHearingId(HEARING_ID)
@@ -215,8 +220,12 @@ public class HearingDaysForHearingEventListenerTest {
     }
 
     @Test
-    public void shouldFilterCancelledHearingDaysAndUpdateOnlyNotCancelledDaysWhenHearingDaysCancelled() {
+    public void shouldFilterCancelledHearingDaysAndUpdateOnlyNotCancelledDaysWhenHearingDaysCancelled() throws Exception {
         //given
+        final ObjectNode properties = (ObjectNode) mapper.readTree(TEST_JSON);
+        when(hearingRepository.findBy(HEARING_ID)).thenReturn(hearing);
+        when(hearing.getProperties()).thenReturn(properties);
+
         final Envelope<HearingDaysCancelled> envelope = mock(Envelope.class);
         final HearingDaysCancelled hearingData = hearingDaysCancelled()
                 .withHearingId(HEARING_ID)

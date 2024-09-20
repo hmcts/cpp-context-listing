@@ -1,8 +1,8 @@
 package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.UUID.randomUUID;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -20,13 +20,13 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class StartDateForHearingEventListenerTest {
     private static final UUID HEARING_ID = randomUUID();
     private static final LocalDate START_DATE = RandomGenerator.PAST_LOCAL_DATE.next();

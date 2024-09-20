@@ -35,7 +35,6 @@ public class XmlTestUtils {
         final Iterator<Difference> iter = xmlDiff.getDifferences().iterator();
         int size = 0;
         while (iter.hasNext()) {
-            iter.next();
             size++;
         }
         assertThat("XML differences", size, is(0));

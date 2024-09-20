@@ -4,15 +4,15 @@
   "sittings": [
     {
       "judiciaryNames": [],
-      "sittingTime": "01:00 PM",
+      "sittingTime": "01:00 pm",
       "hearings": [
         {
           "hearingType": "Trial",
           "caseNumber": "CAJ4BGEAG7",
           "hearingDay": {
             "hearingDate": "2019-01-29",
-            "endTime": "02:00 PM",
-            "startTime": "01:00 PM",
+            "endTime": "02:00 pm",
+            "startTime": "01:00 pm",
             "durationMinutes": 40
           },
           "defendants": [
@@ -27,8 +27,8 @@
           "caseNumber": "CAJ4BGEAG7",
           "hearingDay": {
             "hearingDate": "2019-01-29",
-            "endTime": "04:00 PM",
-            "startTime": "03:00 PM",
+            "endTime": "04:00 pm",
+            "startTime": "03:00 pm",
             "durationMinutes": 60
           },
           "defendants": [
@@ -44,15 +44,15 @@
       "judiciaryNames": [
         "Her Majesty"
       ],
-      "sittingTime": "08:00 AM",
+      "sittingTime": "08:00 am",
       "hearings": [
         {
           "hearingType": "Trial",
           "caseNumber": "CAJ4BGEAG7",
           "hearingDay": {
             "hearingDate": "2019-01-29",
-            "endTime": "02:00 PM",
-            "startTime": "08:00 AM",
+            "endTime": "02:00 pm",
+            "startTime": "08:00 am",
             "durationMinutes": 360
           },
           "defendants": [
@@ -72,15 +72,15 @@
       "judiciaryNames": [
         "Her Majesty Honour"
       ],
-      "sittingTime": "09:00 AM",
+      "sittingTime": "09:00 am",
       "hearings": [
         {
           "hearingType": "Trial",
           "caseNumber": "CAJ4BGEAG7",
           "hearingDay": {
             "hearingDate": "2019-01-29",
-            "endTime": "02:00 PM",
-            "startTime": "09:00 AM",
+            "endTime": "02:00 pm",
+            "startTime": "09:00 am",
             "durationMinutes": 360
           },
           "defendants": [

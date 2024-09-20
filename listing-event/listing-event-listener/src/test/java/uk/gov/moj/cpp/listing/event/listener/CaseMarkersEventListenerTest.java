@@ -5,8 +5,8 @@ import static java.util.Collections.singletonList;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.verify;
 import static uk.gov.justice.listing.events.Marker.marker;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
@@ -37,15 +37,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.hamcrest.MatcherAssert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CaseMarkersEventListenerTest {
 
     private static final String LISTED_CASES = "listedCases";
@@ -123,7 +123,7 @@ public class CaseMarkersEventListenerTest {
 
         caseMarkersEventListener.handleCaseMarkersUpdated(caseMarkersToBeUpdatedEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptur.capture());
+        verify(properties).replace(any(), objectNodeCaptur.capture());
         final JsonNode newListedCase = objectNodeCaptur.getValue().get(0);
         final int markersSize = newListedCase.get("markers").size();
         MatcherAssert.assertThat(markersSize, equalTo(2));
@@ -165,7 +165,7 @@ public class CaseMarkersEventListenerTest {
 
         caseMarkersEventListener.handleCaseMarkersUpdated(caseMarkersToBeUpdatedEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptur.capture());
+        verify(properties).replace(any(), objectNodeCaptur.capture());
         final int markersSize = objectNodeCaptur.getValue().get(0).get("markers").size();
         MatcherAssert.assertThat(markersSize, equalTo(0));
         verify(hearingRepository).save(hearing);
@@ -209,7 +209,7 @@ public class CaseMarkersEventListenerTest {
 
         caseMarkersEventListener.handleCaseMarkersUpdated(caseMarkersToBeUpdatedEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptur.capture());
+        verify(properties).replace(any(), objectNodeCaptur.capture());
         final int markersSize = objectNodeCaptur.getValue().get(0).get("markers").size();
         MatcherAssert.assertThat(markersSize, equalTo(2));
         final JsonNode caseMarkers1 = objectNodeCaptur.getValue().get(0).get("markers").get(0);
@@ -253,7 +253,7 @@ public class CaseMarkersEventListenerTest {
 
         caseMarkersEventListener.handleCaseMarkersUpdated(caseMarkersToBeUpdatedEnvelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptur.capture());
+        verify(properties).replace(any(), objectNodeCaptur.capture());
         final int markersSize = objectNodeCaptur.getValue().get(0).get("markers").size();
         MatcherAssert.assertThat(markersSize, equalTo(1));
         verify(hearingRepository).save(hearing);

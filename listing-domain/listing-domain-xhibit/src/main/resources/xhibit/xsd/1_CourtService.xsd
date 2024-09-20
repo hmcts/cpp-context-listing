@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSpy v2008 sp1 (http://www.altova.com) by LCMG (LogicaCMG) -->
 <!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Doug Climie (Electronic Data Systems LTD) -->
-<xsd:schema xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails" xmlns:bs7666="http://www.govtalk.gov.uk/people/bs7666" xmlns="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.courtservice.gov.uk/schemas/courtservice" elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.7" id="CourtService">
+<xsd:schema xmlns:apd="http://www.govtalk.gov.uk/people/AddressAndPersonalDetails"
+            xmlns="http://www.courtservice.gov.uk/schemas/courtservice"
+            xmlns:cs="http://www.courtservice.gov.uk/schemas/courtservice"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="http://www.courtservice.gov.uk/schemas/courtservice"
+            elementFormDefault="qualified" attributeFormDefault="unqualified" version="5.7"
+            id="CourtService">
     <xsd:annotation>
         <xsd:appinfo>
             <Metadata xmlns="http://www.govtalk.gov.uk/metadata/egms">

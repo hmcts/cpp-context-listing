@@ -35,9 +35,10 @@ import java.util.concurrent.TimeUnit;
 import javax.json.JsonObject;
 
 import com.google.common.collect.ImmutableMap;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("java:S2925")
 public class ExhibitScenarioIT extends AbstractIT {
 
     private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 30);
@@ -50,7 +51,7 @@ public class ExhibitScenarioIT extends AbstractIT {
     private static final ViewStoreCleaner viewStoreCleaner = new ViewStoreCleaner();
 
 
-    @Before
+    @BeforeEach
     public void cleanTables() {
         viewStoreCleaner.cleanViewStoreTables();
     }
@@ -74,10 +75,9 @@ public class ExhibitScenarioIT extends AbstractIT {
         final UUID courtListId = randomUUID();
         final int courtRoomId = 231;
         final HearingsData hearingsData = HearingsData.hearingsDataWithAllocationDataAndJudiciaryWithAdjournmentFromDateWithParameters(1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.DRAFT;
         final LocalDate startDate = LocalDate.now();
@@ -131,24 +131,21 @@ public class ExhibitScenarioIT extends AbstractIT {
         final int courtRoomId = 231;
 
         final HearingsData hearingsData = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
 
         final HearingsData anotherHearing = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
         //Copy defendant data and offence details
         DefendantData defendantData = anotherHearing.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0);
         defendantData.copyDefendantData(hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0));
         //Now submit the case and make sure its unallocated
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(anotherHearing)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(anotherHearing);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
 
         //Link hearing
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(anotherHearing.getHearingData().get(0))) {
-            listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(anotherHearing.getHearingData().get(0).getId(), hearingsData);
-            listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
-        }
+        final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(anotherHearing.getHearingData().get(0));
+        listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(anotherHearing.getHearingData().get(0).getId(), hearingsData);
+        listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
         final LocalDate startDate = LocalDate.now();
@@ -199,22 +196,19 @@ public class ExhibitScenarioIT extends AbstractIT {
         final int courtRoomId = 231;
 
         final HearingsData hearingsData = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
 
         final HearingsData anotherHearing = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
 
         //Now submit the case and make sure its unallocated
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(anotherHearing)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(anotherHearing);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
 
         //Link hearing
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(anotherHearing.getHearingData().get(0))) {
-            listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(anotherHearing.getHearingData().get(0).getId(), hearingsData);
-            listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
-        }
+        final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(anotherHearing.getHearingData().get(0));
+        listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(anotherHearing.getHearingData().get(0).getId(), hearingsData);
+        listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
         final LocalDate startDate = LocalDate.now();
@@ -266,22 +260,19 @@ public class ExhibitScenarioIT extends AbstractIT {
         final int courtRoomId = 231;
 
         final HearingsData hearingsData = HearingsData.singleHearingDataSingleCaseWithTwoDefendantAndTwoOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
 
         final HearingsData anotherHearing = HearingsData.singleHearingDataSingleCaseWithTwoDefendantAndTwoOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
 
         //Now submit the case and make sure its unallocated
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(anotherHearing)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(anotherHearing);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
 
         //Link hearing
-        try (final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(anotherHearing.getHearingData().get(0))) {
-            listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(anotherHearing.getHearingData().get(0).getId(), hearingsData);
-            listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
-        }
+        final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(anotherHearing.getHearingData().get(0));
+        listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListing(anotherHearing.getHearingData().get(0).getId(), hearingsData);
+        listNextHearingSteps.verifyUpdateRelatedHearingRequestedInActiveMQ(anotherHearing.getHearingData().get(0).getId());
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FINAL;
         final LocalDate startDate = LocalDate.now();
@@ -329,17 +320,15 @@ public class ExhibitScenarioIT extends AbstractIT {
 
         final HearingsData hearingsData1 = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData1.getHearingData().get(0).setName("Nottingham crown court");
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData1)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsData1);
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps1.verifyHearingListedInActiveMQ();
 
         final HearingsData hearingsData2 = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 1, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData2.getHearingData().get(0).setName("Nottingham crown court");
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData2)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(hearingsData2);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps2.verifyHearingListedInActiveMQ();
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.WARN;
         final LocalDate startDate = LocalDate.now();
@@ -399,17 +388,15 @@ public class ExhibitScenarioIT extends AbstractIT {
 
         final HearingsData hearingsData1 = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 2, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData1.getHearingData().get(0).setName("Nottingham crown court");
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData1)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps1 = new ListCourtHearingSteps(hearingsData1);
+        listCourtHearingSteps1.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps1.verifyHearingListedInActiveMQ();
 
         final HearingsData hearingsData2 = HearingsData.hearingsDataForWeekCommencing(LocalDate.now(), 2, courtCentreId, courtRoomUUID, "DISTRICT_JUDGE");
         hearingsData2.getHearingData().get(0).setName("Nottingham crown court");
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData2)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps2 = new ListCourtHearingSteps(hearingsData2);
+        listCourtHearingSteps2.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps2.verifyHearingListedInActiveMQ();
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
@@ -450,10 +437,9 @@ public class ExhibitScenarioIT extends AbstractIT {
         final int courtRoomId = 231;
 
         final HearingsData hearingsData1 = HearingsData.singleHearingDataSingleCaseWithSingleOffence(courtCentreId, courtRoomUUID, "DISTRICT_JUDGE", "Norwich Crown court", 1);
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData1)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedInActiveMQ();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData1);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
 
         final PublishCourtListType publishCourtListType = PublishCourtListType.FIRM;
         final LocalDate startDate = LocalDate.now();
@@ -500,17 +486,16 @@ public class ExhibitScenarioIT extends AbstractIT {
     @Test
     public void testUshersCourtList() {
         HearingsData firstHearing = HearingsData.hearingsData();
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearing)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(firstHearing);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
         UpdatedHearingData updatedHearingDataForAllocation = UpdatedHearingData.updatedHearingDataForAllocation(firstHearing.getHearingData().get(0).getId());
 
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(firstHearing, updatedHearingDataForAllocation)) {
-            updateHearingSteps.whenHearingIsUpdatedForListing();
-            updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
-            updateHearingSteps.verifyPublicHearingChangesSaved();
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(firstHearing, updatedHearingDataForAllocation);
+        updateHearingSteps.whenHearingIsUpdatedForListing();
+        updateHearingSteps.verifyHearingAllocatedWhenQueryingFromAPI();
+        updateHearingSteps.verifyPublicHearingChangesSaved();
         CourtListSteps courtListSteps = new CourtListSteps(updatedHearingDataForAllocation);
         courtListSteps.verifyCourtListRequestedAndIsCorrect(CourtListType.USHERS_MAGISTRATE.name());
     }

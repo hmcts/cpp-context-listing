@@ -16,6 +16,7 @@ However, before running any of the integration tests, ensure that you turn it ba
 ``` 
 utils/accessControl on
 ```
+      
 
 Finally, if you receive something like the following error, it's likely that it's already in that state; the command isn't idempotent.
 
@@ -102,7 +103,7 @@ curl -v -H "CJSCPPUID:441a514e-2437-4338-b72a-baa3d2f9d0be" -H "Accept:applicati
 
 Please note it is the 'final' list for the next weekday.
 
-As well, this can only be called by a 'system' user (presuming that access control is active).
+As well, this can only be called by a 'System' user (presuming that access control is active).
 
 This endpoint is defined in [listing-command-api.raml](listing-command/listing-command-api/src/raml/listing-command-api.raml)
 

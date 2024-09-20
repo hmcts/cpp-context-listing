@@ -22,8 +22,6 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
-
-import org.junit.Assert;
 import uk.gov.justice.core.courts.BailStatus;
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.justice.core.courts.Gender;
@@ -33,6 +31,8 @@ import uk.gov.justice.core.courts.Person;
 import uk.gov.justice.core.courts.PersonDefendant;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.HearingData;
 import uk.gov.moj.cpp.listing.steps.data.ListedCaseData;
@@ -42,18 +42,16 @@ import uk.gov.moj.cpp.listing.utils.QueueUtil;
 
 import java.util.UUID;
 
-import javax.jms.JMSException;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Filter;
-import com.jayway.restassured.path.json.JsonPath;
+import io.restassured.path.json.JsonPath;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
+public class UpdateDefendantSteps extends AbstractIT {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateDefendantSteps.class);
 
     private static final String PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED = "public.progression.case-defendant-changed";
@@ -63,11 +61,11 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
 
     private static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
 
-    private final MessageProducer publicEventDefendantUpdated;
-    private final MessageConsumer publicEventMessageConsumerDefendantUpdated;
-    private final MessageConsumer privateEventMessageDefendantsToBeUpdated;
-    private final MessageConsumer privateEventsMessageDefendantDetailsUpdated;
-    private final MessageConsumer publicMessageConsumerHmiHearingUpdated;
+    private final JmsMessageProducerClient publicEventDefendantUpdated;
+    private final JmsMessageConsumerClient publicEventMessageConsumerDefendantUpdated;
+    private final JmsMessageConsumerClient privateEventMessageDefendantsToBeUpdated;
+    private final JmsMessageConsumerClient privateEventsMessageDefendantDetailsUpdated;
+    private final JmsMessageConsumerClient publicMessageConsumerHmiHearingUpdated;
 
     private String request;
 
@@ -86,11 +84,11 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
         this.updatedDefendantData = defendantData;
 
 
-        publicEventDefendantUpdated = QueueUtil.publicEvents.createProducer();
-        publicEventMessageConsumerDefendantUpdated = QueueUtil.publicEvents.createConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED);
-        privateEventMessageDefendantsToBeUpdated = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANTS_TO_BE_UPDATED);
-        privateEventsMessageDefendantDetailsUpdated = privateEvents.createConsumer(EVENT_SELECTOR_DEFENDANT_DETAILS_UPDATED);
-        publicMessageConsumerHmiHearingUpdated = publicEvents.createConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
+        publicEventDefendantUpdated = publicEvents.createPublicProducer();
+        publicEventMessageConsumerDefendantUpdated = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTOR_PROGRESSION_CASE_DEFENDANT_CHANGED);
+        privateEventMessageDefendantsToBeUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_DEFENDANTS_TO_BE_UPDATED);
+        privateEventsMessageDefendantDetailsUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_DEFENDANT_DETAILS_UPDATED);
+        publicMessageConsumerHmiHearingUpdated = publicEvents.createPublicConsumer(PUBLIC_LISTING_UPDATE_HEARING_IN_STAGING_HMI);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -318,19 +316,6 @@ public class UpdateDefendantSteps extends AbstractIT implements AutoCloseable {
             listingCaseFilter = filter(where("id").is(listedCase.getCaseId().toString()));
             defendantFilter = filter(where("id").is(defendant.getDefendantId().toString()));
             return this;
-        }
-    }
-
-    @Override
-    public void close() {
-        try {
-            publicEventDefendantUpdated.close();
-            privateEventMessageDefendantsToBeUpdated.close();
-            privateEventsMessageDefendantDetailsUpdated.close();
-            publicMessageConsumerHmiHearingUpdated.close();
-        } catch (final JMSException e) {
-            LOGGER.error("Error closing message consumers and producers: {}", e.getMessage());
-            throw new RuntimeException(e);
         }
     }
 

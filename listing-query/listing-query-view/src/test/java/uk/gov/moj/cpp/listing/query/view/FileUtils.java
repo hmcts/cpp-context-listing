@@ -3,8 +3,8 @@ package uk.gov.moj.cpp.listing.query.view;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.UUID.randomUUID;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.Assert.assertThat;
 
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 

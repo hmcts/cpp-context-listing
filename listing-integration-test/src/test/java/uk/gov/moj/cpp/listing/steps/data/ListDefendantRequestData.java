@@ -1,7 +1,6 @@
 package uk.gov.moj.cpp.listing.steps.data;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public class ListDefendantRequestData {

@@ -7,7 +7,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static org.apache.http.HttpStatus.SC_OK;
 import static uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils.stubPingFor;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
-import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.waitForStubToBeReady;
 
 import java.util.UUID;
 
@@ -26,9 +25,6 @@ public class DefenceServiceStub {
                         .withHeader("Content-Type", "application/vnd.defence.query.get-case-by-person-defendant+json")
                         .withBody(payload
                                 .replaceAll("CASE_ID", caseId).replaceAll("DEFENDANT_ID", defendantId))));
-
-
-        waitForStubToBeReady(url, "application/vnd.defence.query.get-case-by-person-defendant+json");
     }
 
     public static void stubDefenceQueryApiForSearchCasesByOrganisationDefendant(String caseId, String defendantId) {
@@ -42,8 +38,5 @@ public class DefenceServiceStub {
                         .withHeader("Content-Type", "application/vnd.defence.query.get-case-by-organisation-defendant+json")
                         .withBody(payload
                                 .replaceAll("CASE_ID", caseId).replaceAll("DEFENDANT_ID", defendantId))));
-
-
-        waitForStubToBeReady(url, "application/vnd.defence.query.get-case-by-organisation-defendant+json");
     }
 }

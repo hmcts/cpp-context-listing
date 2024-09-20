@@ -2,10 +2,10 @@ package uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static uk.gov.moj.cpp.listing.event.processor.xhibit.courtlist.mapper.PublicListNoteFormatter.getFormattedPublicListNote;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class PublicListNoteFormatterTest {
 

@@ -1,6 +1,5 @@
 package uk.gov.moj.cpp.listing.event.processor.util;
 
-import static com.sun.org.apache.xerces.internal.util.PropertyState.is;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
@@ -8,7 +7,7 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static uk.gov.moj.cpp.listing.event.utils.FileUtil.givenPayload;
 
 import uk.gov.justice.core.courts.Hearing;
@@ -24,17 +23,17 @@ import uk.gov.justice.services.test.utils.framework.api.JsonObjectConvertersFact
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import javax.json.JsonObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HearingObjectsListingToCoreConverterTest {
 
     final JsonObjectToObjectConverter jsonObjectToObjectConverter = new JsonObjectConvertersFactory().jsonObjectToObjectConverter();
@@ -52,7 +51,7 @@ public class HearingObjectsListingToCoreConverterTest {
     private static final UUID COURT_ROOM2_ID = randomUUID();
     private static final ZonedDateTime NOW = ZonedDateTime.now();
 
-    @Before
+    @BeforeEach
     public void setup() {
         converter = new HearingObjectsListingToCoreConverter();
         hearingBuilder = uk.gov.justice.listing.events.Hearing.hearing()

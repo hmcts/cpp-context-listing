@@ -23,15 +23,14 @@ import java.util.UUID;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CourtListServiceTest {
 
     @Spy
@@ -91,9 +90,9 @@ public class CourtListServiceTest {
 
         final JsonObject actualCourtList = courtList.getJsonArray("courtLists").getJsonObject(0);
 
-        Assert.assertThat(actualCourtList.getJsonArray("sittings").size(), is(0));
+        assertThat(actualCourtList.getJsonArray("sittings").size(), is(0));
 
-        Assert.assertThat(actualCourtList.getJsonObject("crestCourtSite"), is(courtSite1));
+        assertThat(actualCourtList.getJsonObject("crestCourtSite"), is(courtSite1));
     }
 
     private JsonEnvelope generateQuery(final JsonValue payload) {

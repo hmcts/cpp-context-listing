@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class HearingJsonListConverterFilterEjectCasesTest {
 

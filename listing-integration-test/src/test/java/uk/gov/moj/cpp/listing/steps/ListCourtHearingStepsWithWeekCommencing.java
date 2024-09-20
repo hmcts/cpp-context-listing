@@ -71,25 +71,22 @@ public class ListCourtHearingStepsWithWeekCommencing {
     }
 
     public static void verifyHearingListedForWeekCommencing(final String jurisdictionType, final String weekCommencingStartDate, final String weekCommencingEndDate, final boolean allocated, final Matcher... matchers) {
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps()) {
-            listCourtHearingSteps.verifyHearingForWeekCommencingRange(jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, allocated, matchers);
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps();
+        listCourtHearingSteps.verifyHearingForWeekCommencingRange(jurisdictionType, weekCommencingStartDate, weekCommencingEndDate, allocated, matchers);
     }
 
     public static UpdatedHearingData updatedHearingListedData(final HearingsData hearingsData) {
         UpdatedHearingData updatedHearingData = updatedHearingData(hearingsData.getHearingData().get(0));
-        try (final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData)) {
-            updateHearingSteps.whenHearingIsUpdatedForListing();
-            updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
-            updateHearingSteps.verifyPublicHearingChangesSaved();
-        }
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingData);
+        updateHearingSteps.whenHearingIsUpdatedForListing();
+        updateHearingSteps.verifyHearingUpdatedWhenQueryingFromAPI();
+        updateHearingSteps.verifyPublicHearingChangesSaved();
         return updatedHearingData;
     }
 
     private static void createHearingListed(final HearingsData hearingsData) {
-        try (final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData)) {
-            listCourtHearingSteps.whenCaseIsSubmittedForListing();
-        }
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
     }
 
     private static void createWeekCommencingHearingForWeekCommencingSearch(final List<UpdatedHearingData> updatedHearingsDataList) {
@@ -98,11 +95,10 @@ public class ListCourtHearingStepsWithWeekCommencing {
 
     private static void createUpdatedHearingListedWithWeekCommencing(final UpdatedHearingData updatedHearingDataWithWeekCommencingDate) {
 
-        try (final WeekCommencingHearingSteps weekCommencingHearingSteps = new WeekCommencingHearingSteps(updatedHearingDataWithWeekCommencingDate)) {
-            weekCommencingHearingSteps.whenHearingIsUpdatedForListingForWeekCommencingDate();
+        final WeekCommencingHearingSteps weekCommencingHearingSteps = new WeekCommencingHearingSteps(updatedHearingDataWithWeekCommencingDate);
+        weekCommencingHearingSteps.whenHearingIsUpdatedForListingForWeekCommencingDate();
 
-            weekCommencingHearingSteps.verifyHearingUpdatedResultsForWeekCommencingInMQ();
-            weekCommencingHearingSteps.verifyHearingUpdatedWithWeekCommencingDateAndUnallocatedWhenQueryingFromAPI();
-        }
+        weekCommencingHearingSteps.verifyHearingUpdatedResultsForWeekCommencingInMQ();
+        weekCommencingHearingSteps.verifyHearingUpdatedWithWeekCommencingDateAndUnallocatedWhenQueryingFromAPI();
     }
 }

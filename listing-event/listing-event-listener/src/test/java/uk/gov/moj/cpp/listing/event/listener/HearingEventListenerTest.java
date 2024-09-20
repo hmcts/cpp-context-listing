@@ -8,10 +8,10 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,8 +33,8 @@ import uk.gov.justice.listing.events.TrialVacated;
 import uk.gov.justice.listing.events.UpdatedHmiFieldsForHearing;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.domain.HearingDay;
+import uk.gov.moj.cpp.listing.event.service.HearingSearchSyncService;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 
@@ -48,15 +48,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HearingEventListenerTest {
 
     private static final UUID HEARING_ID = randomUUID();
@@ -230,7 +230,7 @@ public class HearingEventListenerTest {
                 ArgumentCaptor.forClass(ArrayNode.class);
 
         hearingEventListener.defendantProceedingsConcluded(envelope);
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
     }
 
@@ -263,7 +263,7 @@ public class HearingEventListenerTest {
 
         hearingEventListener.updateDefendantCourtProceedings(envelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
     }
 
@@ -296,7 +296,7 @@ public class HearingEventListenerTest {
 
         hearingEventListener.updateDefendantCourtProceedingsV2(envelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
     }
 
@@ -330,7 +330,7 @@ public class HearingEventListenerTest {
 
         hearingEventListener.updateDefendantCourtProceedings(envelope);
 
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
     }
 
@@ -427,7 +427,7 @@ public class HearingEventListenerTest {
 
         verify(properties).put(eq("bookingType"), eq("Video"));
         verify(properties).put(eq("priority"), eq("High"));
-        verify(properties).replace(anyObject(), jsonNodeArgumentCaptor.capture());
+        verify(properties).replace(any(), jsonNodeArgumentCaptor.capture());
         JsonNode actualValue = jsonNodeArgumentCaptor.getValue();
         assertEquals("RVC", actualValue.get(0).asText());
         assertEquals("GSN", actualValue.get(1).asText());
@@ -459,7 +459,7 @@ public class HearingEventListenerTest {
                 ArgumentCaptor.forClass(ArrayNode.class);
 
         hearingEventListener.updateCaseIdentifier(envelope);
-        verify(properties).replace(anyObject(), objectNodeCaptor.capture());
+        verify(properties).replace(any(), objectNodeCaptor.capture());
         verify(hearingRepository).save(hearing);
         ArrayNode actualValue = objectNodeCaptor.getValue();
 

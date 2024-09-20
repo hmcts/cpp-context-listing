@@ -9,7 +9,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.util.UUID.randomUUID;
 import static org.apache.http.HttpStatus.SC_OK;
 import static uk.gov.moj.cpp.listing.utils.FileUtil.getPayload;
-import static uk.gov.moj.cpp.listing.utils.WireMockStubUtils.waitForStubToBeReady;
 
 import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
@@ -52,8 +51,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_MAPPINGS_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(REFERENCE_DATA_COURT_MAPPINGS_QUERY_URL, REFERENCE_DATA_COURT_MAPPINGS_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataXhibitCourtRoomMappings(final UUID courtRoomUUID) {
@@ -67,8 +64,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_QUERY_URL, REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataXhibitCourtRoomMappings(final UUID courtRoomUUID, final UUID courtCentreId) {
@@ -83,8 +78,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_QUERY_URL, REFERENCE_DATA_CP_XHIBIT_COURTROOM_MAPPINGS_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataCpCourtRooms(final UUID courtRoomUUID, final int courtRoomId) {
@@ -99,8 +92,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_OU_COURTROOM_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(REFERENCE_DATA_OU_COURTROOM_URL, REFERENCE_DATA_OU_COURTROOM_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataCourtCentre(final CourtCentreData courtReferenceData) {
@@ -116,8 +107,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(REFERENCE_DATA_COURT_CENTRE_QUERY_URL, REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataCourtCentreHmiListingEnabledWithoutCourtRoomSelection(final CourtCentreData courtReferenceData) {
@@ -132,8 +121,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(REFERENCE_DATA_COURT_CENTRE_QUERY_URL, REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataCourtCentreHmiListingEnabled(final CourtCentreData courtReferenceData) {
@@ -149,8 +136,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(REFERENCE_DATA_COURT_CENTRE_QUERY_URL, REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataCourtCentreById(final CourtCentreData courtReferenceData) {
@@ -169,8 +154,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(urlPath, REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
     }
 
     public static void stubGetAllCrownCourtCentres(final UUID courtCentreIdOne, final UUID courtCentreIdTwo) {
@@ -185,10 +168,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
                         .withBody(payload)));
-
-        final String confirmationUrl = REFERENCE_DATA_ALL_CROWN_COURT_CENTRE_QUERY_URL + "?oucodeL1Code=C";
-
-        waitForStubToBeReady(confirmationUrl, REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
     }
 
 
@@ -205,8 +184,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(urlPath, REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataCourtWithHmiListingEnabledCentreById(UUID courtCentreId) {
@@ -222,8 +199,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(urlPath, REFERENCE_DATA_ORGANISATION_UNIT_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataJudiciaries(final UUID judiciaryId) {
@@ -237,7 +212,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", UUID.randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_JUDICIARIES_MEDIA_TYPE)
                         .withBody(payload)));
-        waitForStubToBeReady(REFERENCE_DATA_JUDICIARIES_QUERY_URL + "?ids=" + judiciaryId.toString(), REFERENCE_DATA_JUDICIARIES_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataHearingTypes(final UUID hearingTypeId) {
@@ -250,7 +224,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", UUID.randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE)
                         .withBody(payload)));
-        waitForStubToBeReady(REFERENCE_DATA_HEARING_TYPES_URL, REFERENCE_DATA_HEARING_TYPES_MEDIA_TYPE);
     }
 
     public static void stubGetReferenceDataCourtRoom(final UUID courtCentreIdOne, final LocalTime defaultStartTime, final String defaultDurationHoursMins, final UUID courtRoomId) {
@@ -266,8 +239,6 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE)
                         .withBody(payload)));
-
-        waitForStubToBeReady(REFERENCE_DATA_GET_COURTROOM_URL, REFERENCE_DATA_COURT_CENTRE_MEDIA_TYPE);
     }
 
     private static void stubPingForReferenceDataService() {
@@ -284,6 +255,5 @@ public class ReferenceDataStub {
                         .withHeader("CPPID", UUID.randomUUID().toString())
                         .withHeader("Content-Type", REFERENCE_DATA_ORGANISATIONAL_UNITS_MEDIA_TYPE)
                         .withBody(payload)));
-        waitForStubToBeReady(REFERENCE_DATA_ORGANISATIONAL_UNITS_URL, REFERENCE_DATA_ORGANISATIONAL_UNITS_MEDIA_TYPE);
     }
 }
