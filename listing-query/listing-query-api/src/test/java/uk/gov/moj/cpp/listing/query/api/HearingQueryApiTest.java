@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.listing.query.api;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.time.LocalDate.now;
 import static java.util.Arrays.stream;
+import static java.util.Objects.nonNull;
 import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toList;
@@ -29,6 +30,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatch
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payloadIsJson;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.ONLINE_PUBLIC;
+import static uk.gov.moj.cpp.listing.domain.CourtListType.PRISON;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.PUBLIC;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.USHERS_MAGISTRATE;
 
@@ -54,6 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
 import com.google.common.collect.ImmutableList;
@@ -62,6 +65,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -112,6 +116,10 @@ public class HearingQueryApiTest {
 
     @Mock
     Requester requester;
+
+    @Captor
+    private ArgumentCaptor<JsonEnvelope> requesterCaptor;
+
 
     @BeforeEach
     public void setup() {
@@ -348,6 +356,42 @@ public class HearingQueryApiTest {
     }
 
     @Test
+    public void shouldGetHearingCourtListForPrison() {
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder()
+                        .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
+                        .withName("listing.search.court.list.payload"),
+                createObjectBuilder()
+                        .add(COURT_CENTRE_ID, randomUUID().toString())
+                        .add(COURT_ROOM_ID, randomUUID().toString())
+                        .add(LIST_ID, PRISON.toString())
+                        .build());
+
+        when(standardPublicCourtListAssembler.assemble(any(), any(), any(), any(), any())).thenReturn(Optional.of(createObjectBuilder().add("id", "id1").build()));
+        when(referenceDataService.isHearingLanguageWelsh(any(), any())).thenReturn(Optional.of(true));
+        final JsonEnvelope returnedEnvelope = hearingQueryApi.searchHearingsForCourtListPayload(query);
+
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("id"), is("id1"));
+        assertThat(returnedEnvelope.payloadAsJsonObject().getString("templateName"), is("PrisonCourtList"));
+    }
+
+
+    @Test
+    public void shouldGetCasesByPersonDefendantWithIsCivilAndIsGroupMemberFlagTRUE() {
+        assertGetCasesByPersonDefendant(true, true);
+    }
+
+    @Test
+    public void shouldGetCasesByPersonDefendantWithIsCivilAndIsGroupMemberFlagFALSE() {
+        assertGetCasesByPersonDefendant(false, false);
+    }
+
+    @Test
+    public void shouldGetCasesByPersonDefendantWithoutIsCivilAndIsGroupMemberFlag() {
+        assertGetCasesByPersonDefendant(null, null);
+    }
+
+    @Test
     public void shouldGetCasesByPersonDefendant() {
         final JsonEnvelope envelope = EnvelopeFactory.createEnvelope("listing.get.cases-by-person-defendant", createObjectBuilder()
                 .add("firstName", randomAlphabetic(5))
@@ -389,11 +433,104 @@ public class HearingQueryApiTest {
         verify(hearingQueryView).getCasesByDefendantAndHearingDate(any(), any(), any(), any());
     }
 
+    private void assertGetCasesByPersonDefendant(final Boolean isCivil, final Boolean isGroupMember) {
+        JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
+                .add("firstName", randomAlphabetic(5))
+                .add("lastName", randomAlphabetic(5))
+                .add("dateOfBirth", now().toString())
+                .add("hearingDate", now().toString());
+
+        if (nonNull(isCivil)) {
+            jsonObjectBuilder.add("isCivil", isCivil);
+        }
+        if (nonNull(isGroupMember)) {
+            jsonObjectBuilder.add("isGroupMember", isGroupMember);
+        }
+        final JsonEnvelope envelope = EnvelopeFactory.createEnvelope("listing.get.cases-by-person-defendant", jsonObjectBuilder.build());
+
+        final MetadataBuilder metadataBuilder = metadataBuilder()
+                .withId(randomUUID())
+                .withName("defence.query.get-case-by-person-defendant");
+
+        final Envelope responseEnvelope = Envelope.envelopeFrom(metadataBuilder.build(), createObjectBuilder().add("caseIds", createArrayBuilder().add(randomUUID().toString()).build())
+                .add("defendants", createArrayBuilder().add(randomUUID().toString()).build()).build());
+        when(requester.request(any(), any())).thenReturn(responseEnvelope);
+        hearingQueryApi.getCasesByPersonDefendantAndHearingDate(envelope);
+
+        verify(requester).request(requesterCaptor.capture(), any());
+
+        final JsonObject jsonObject = requesterCaptor.getValue().payloadAsJsonObject();
+
+        if (nonNull(isCivil)) {
+            assertThat(jsonObject.getBoolean("isCivil"), is(isCivil));
+        } else {
+            assertThat(jsonObject.containsKey("isCivil"), is(false));
+        }
+        if (nonNull(isGroupMember)) {
+            assertThat(jsonObject.getBoolean("isGroupMember"), is(isGroupMember));
+        } else {
+            assertThat(jsonObject.containsKey("isGroupMember"), is(false));
+        }
+    }
+
     private JsonEnvelope generateQuery(JsonValue jsonValue) {
         return envelopeFrom(
                 metadataBuilder()
                         .withId(fromString("6d4ced64-b058-4bd4-a652-98d8230b92a5"))
                         .withName("_"), jsonValue);
 
+    }
+
+    @Test
+    public void shouldGetCasesByOrganisationDefendantWithIsCivilAndIsGroupMemberFlagTRUE() {
+        assertGetCasesByOrganisationDefendant(true, true);
+    }
+
+    @Test
+    public void shouldGetCasesByOrganisationDefendantWithIsCivilAndIsGroupMemberFlagFALSE() {
+        assertGetCasesByOrganisationDefendant(false, false);
+    }
+
+    @Test
+    public void shouldGetCasesByOrganisationDefendantWithoutIsCivilAndIsGroupMemberFlag() {
+        assertGetCasesByOrganisationDefendant(null, null);
+    }
+
+    private void assertGetCasesByOrganisationDefendant(final Boolean isCivil, final Boolean isGroupMember) {
+        JsonObjectBuilder jsonObjectBuilder = createObjectBuilder()
+                .add("organisationName", randomAlphabetic(5))
+                .add("hearingDate", now().toString());
+
+        if (nonNull(isCivil)) {
+            jsonObjectBuilder.add("isCivil", isCivil);
+        }
+        if (nonNull(isGroupMember)) {
+            jsonObjectBuilder.add("isGroupMember", isGroupMember);
+        }
+
+        final JsonEnvelope envelope = EnvelopeFactory.createEnvelope("listing.get.cases-by-organisation-defendant", jsonObjectBuilder.build());
+        final MetadataBuilder metadataBuilder = metadataBuilder()
+                .withId(randomUUID())
+                .withName("defence.query.get-case-by-organisation-defendant");
+
+        final Envelope responseEnvelope = Envelope.envelopeFrom(metadataBuilder.build(), createObjectBuilder().add("caseIds", createArrayBuilder().add(randomUUID().toString()).build())
+                .add("defendants", createArrayBuilder().add(randomUUID().toString()).build()).build());
+        when(requester.request(any(), any())).thenReturn(responseEnvelope);
+        hearingQueryApi.getCasesByOrganisationDefendantAndHearingDate(envelope);
+        verify(hearingQueryView).getCasesByDefendantAndHearingDate(any(), any(), any(), any());
+        verify(requester).request(requesterCaptor.capture(), any());
+
+        final JsonObject jsonObject = requesterCaptor.getValue().payloadAsJsonObject();
+
+        if (nonNull(isCivil)) {
+            assertThat(jsonObject.getBoolean("isCivil"), is(isCivil));
+        } else {
+            assertThat(jsonObject.containsKey("isCivil"), is(false));
+        }
+        if (nonNull(isCivil)) {
+            assertThat(jsonObject.getBoolean("isGroupMember"), is(isGroupMember));
+        } else {
+            assertThat(jsonObject.containsKey("isGroupMember"), is(false));
+        }
     }
 }

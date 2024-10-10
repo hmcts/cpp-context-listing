@@ -581,8 +581,9 @@ public class ListingCommandHandler {
         final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap = new HashMap<>();
         final List<ProsecutionCases> prosecutionCases = updateHearingForListingEnriched.getProsecutionCases();
         final HearingUpdateOperationType operationType = extendHearingUtils.getOperationType(hearingId, storedHearing, prosecutionCases, unallocatedHearingRequestCaseMap, persistedUnallocatedHearingCasesMap, nonDefaultDays, courtRoomId, weekCommencingStartDate);
+        final Optional<String> splitHearing = StringUtils.isNotEmpty(updateHearingForListingEnriched.getUpdateHearingForListing().getSplitHearing()) ? Optional.of( updateHearingForListingEnriched.getUpdateHearingForListing().getSplitHearing()) : Optional.empty();
 
-        LOGGER.info("HearingUpdateOperationType for hearing id: {}  is {}", updateHearingForListing.getHearingId(), operationType);
+        LOGGER.info("HearingUpdateOperationType for hearing id: {}  is {} splitHearing is {} ", updateHearingForListing.getHearingId(), operationType, splitHearing);
 
         updateHearingEventStream(jsonEnvelope, eventStream, hearingAggregate, (Hearing hearing) -> {
 
@@ -592,7 +593,8 @@ public class ListingCommandHandler {
                     hearingId,
                     unallocatedHearingRequestCaseMap,
                     persistedUnallocatedHearingCasesMap,
-                    operationType);
+                    operationType,
+                    splitHearing);
 
 
             if (HearingUpdateOperationType.SPLIT.equals(operationType)) {
@@ -880,7 +882,7 @@ public class ListingCommandHandler {
 
         updateHearingEventStream(command, removePartiallyMergedOffencesFromOriginalHearing.getHearingIdToBeUpdated(), (Hearing hearing) -> {
             final List<uk.gov.justice.listing.events.ProsecutionCases> prosecutionCases = prosecutionCasesBuilder.buildEventProsecutionCasesToRemove(removePartiallyMergedOffencesFromOriginalHearing.getProsecutionCasesToRemove());
-            final Stream<Object> updateUnallocatedHearingPartiallyStream = hearing.updateUnallocatedHearingPartially(removePartiallyMergedOffencesFromOriginalHearing.getHearingIdToBeUpdated(), prosecutionCases);
+            final Stream<Object> updateUnallocatedHearingPartiallyStream = hearing.updateUnallocatedHearingPartially(removePartiallyMergedOffencesFromOriginalHearing.getHearingIdToBeUpdated(), prosecutionCases, Optional.empty());
             final boolean isHmiEnabled = hmiService.isHmiEnabled(hearing.getCurrentHearingEventState(), command);
             return isHmiEnabled ? hearing.raiseUpdateHearingInStagingHmi(updateUnallocatedHearingPartiallyStream) : updateUnallocatedHearingPartiallyStream;
         });

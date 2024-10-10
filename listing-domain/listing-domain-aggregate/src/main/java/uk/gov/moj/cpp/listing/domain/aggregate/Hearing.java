@@ -1280,14 +1280,26 @@ public class Hearing implements Aggregate {
                 .build()));
     }
 
-    public Stream<Object> updateUnallocatedHearingPartially(final UUID hearingToBeUpdated, final List<ProsecutionCases> caseList) {
+    public Stream<Object> updateUnallocatedHearingPartially(final UUID hearingToBeUpdated, final List<ProsecutionCases> caseList, final Optional<String> splitHearing) {
         if (this.duplicate || this.deleted) {
             return Stream.empty();
         }
-        return apply(Stream.of(HearingPartiallyUpdated.hearingPartiallyUpdated()
-                .withHearingIdToBeUpdated(hearingToBeUpdated)
-                .withProsecutionCases(caseList)
-                .build()));
+
+        final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
+
+        if(splitHearing.isPresent()) {
+            eventStreamBuilder.add(HearingPartiallyUpdated.hearingPartiallyUpdated()
+                    .withHearingIdToBeUpdated(hearingToBeUpdated)
+                    .withProsecutionCases(caseList)
+                    .withSplitHearing(splitHearing.get())
+                    .build());
+        } else {
+            eventStreamBuilder.add(HearingPartiallyUpdated.hearingPartiallyUpdated()
+                    .withHearingIdToBeUpdated(hearingToBeUpdated)
+                    .withProsecutionCases(caseList)
+                    .build());
+        }
+        return apply(eventStreamBuilder.build());
     }
 
     public Stream<Object> markUnallocatedHearingForPartialUpdate(final UUID hearingToBeUpdated, final List<ProsecutionCases> caseList) {

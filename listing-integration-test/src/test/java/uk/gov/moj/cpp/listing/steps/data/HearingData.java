@@ -36,7 +36,7 @@ public class HearingData {
 
     public HearingData(final UUID id, final UUID courtCentreId, final HearingTypeData hearingTypeData,
                        final LocalDate hearingStartDate, final LocalDate hearingEndDate,
-                       final int hearingEstimateMinutes,String estimatedDuration, final UUID courtRoomId,
+                       final int hearingEstimateMinutes, String estimatedDuration, final UUID courtRoomId,
                        final ZonedDateTime hearingStartTime, final List<ListedCaseData> listedCases,
                        final List<JudicialRoleData> judiciary, final String jurisdictionType,
                        final String reportingRestrictionReason,

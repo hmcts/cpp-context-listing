@@ -9,6 +9,7 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
+import static javax.json.Json.createArrayBuilder;
 import static javax.json.Json.createObjectBuilder;
 import static javax.ws.rs.core.Response.Status.ACCEPTED;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -76,6 +77,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import javax.jms.JMSException;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
@@ -167,6 +169,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String EVENT_SELECTOR_START_DATE_REMOVED = "listing.events.start-date-removed-for-hearing";
     public static final String EVENT_SELECTOR_LISTING_EVENTS_WEEK_COMMENCING_DATE_CHANGED_FOR_HEARING = "listing.events.week-commencing-date-changed-for-hearing";
     private static final String LISTING_EVENTS_UPDATED_HEARING_IN_STAGING_HMI = "listing.events.updated-hearing-in-staging-hmi";
+    private static final String EVENT_SELECTOR_HEARING_LISTED = "listing.events.hearing-listed";
     private static final String FIELD_HEARINGS = "hearings";
     private static final int DEFAULT_DURATION_MINS = 120;
     private static final ZoneId UTC = ZoneId.of("UTC");
@@ -218,6 +221,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private JmsMessageConsumerClient privateMessageConsumerStartDateRemoved;
     private JmsMessageConsumerClient privateMessageConsumerWeekCommencingDateChanged;
     private JmsMessageConsumerClient privateEventMessageConsumerUpdatedHearingInStagingHmi;
+    private JmsMessageConsumerClient privateMessageConsumerHearingListed;
 
 
     private String request;
@@ -235,6 +239,16 @@ public class UpdateHearingSteps extends AbstractIT {
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
 
         createMessageConsumers();
+
+    }
+
+    public UpdateHearingSteps(final HearingsData hearingsData, final UpdatedHearingData updatedHearingData, final Boolean split) {
+        this.hearingData = hearingsData.getHearingData().get(0);
+        this.listedCaseDatas = hearingsData.getHearingData().get(0).getListedCases();
+        this.updatedHearingData = updatedHearingData;
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
+
+        createMessageConsumersForDefendantSplit();
 
     }
 
@@ -280,6 +294,35 @@ public class UpdateHearingSteps extends AbstractIT {
         if (isNotEmpty(updatedHearingData.getSpecialRequirements())) {
             builder.add("specialRequirements", updatedHearingData.getSpecialRequirements().stream()
                     .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build());
+        }
+
+        return builder;
+    }
+
+    private static JsonObjectBuilder prepareJsonForUpdatedHearingDataWithProsecutionCase(final UpdatedHearingData updatedHearingData) {
+        final JsonObjectBuilder builder = createObjectBuilder();
+
+        builder.add(FIELD_TYPE, prepareJsonHearingType(updatedHearingData.getHearingTypData()))
+                .add(FIELD_START_DATE, updatedHearingData.getStartDate())
+                .add(FIELD_JURISDICTION_TYPE, updatedHearingData.getJurisdictionType())
+                .add(FIELD_HEARING_LANGUAGE, updatedHearingData.getHearingLanguage())
+                .add(FIELD_COURT_CENTRE_ID, updatedHearingData.getCourtCentreId().toString())
+                .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
+                .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDays(updatedHearingData.getNonDefaultDays()))
+                .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
+                .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()));
+        if (nonNull(updatedHearingData.getPublicListNote())) {
+            builder.add(FIELD_PUBLIC_LIST_NOTE, updatedHearingData.getPublicListNote());
+        }
+
+        addNullableStringField(builder, FIELD_END_DATE, updatedHearingData.getEndDate());
+        addNullableStringField(builder, FIELD_COURT_ROOM_ID, getStringOrNull(updatedHearingData.getCourtRoomId()));
+        addNullableStringField(builder, PANEL, updatedHearingData.getPanel());
+        addNullableStringField(builder, "bookingType", Optional.ofNullable(updatedHearingData.getBookingType()));
+        addNullableStringField(builder, "priority", Optional.ofNullable(updatedHearingData.getPriority()));
+        if (isNotEmpty(updatedHearingData.getSpecialRequirements())) {
+            builder.add("specialRequirements", updatedHearingData.getSpecialRequirements().stream()
+                    .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add));
         }
 
         return builder;
@@ -382,6 +425,32 @@ public class UpdateHearingSteps extends AbstractIT {
         return builder.build().toString();
     }
 
+    private static String prepareJsonForUpdatedHearingDataWithProsecutionCasesDefs(final UpdatedHearingData updatedHearingData, final List<ListedCaseData> listedCaseDataList) {
+        final JsonObjectBuilder builder = createObjectBuilder();
+
+        builder.add(FIELD_TYPE, prepareJsonHearingType(updatedHearingData.getHearingTypData()))
+                .add(FIELD_START_DATE, updatedHearingData.getStartDate())
+                .add(FIELD_END_DATE, updatedHearingData.getEndDate())
+                .add(FIELD_JURISDICTION_TYPE, updatedHearingData.getJurisdictionType())
+                .add(FIELD_HEARING_LANGUAGE, updatedHearingData.getHearingLanguage())
+                .add(FIELD_COURT_CENTRE_ID, updatedHearingData.getCourtCentreId().toString())
+                .add(FIELD_COURT_ROOM_ID, updatedHearingData.getCourtRoomId().toString())
+                .add("panel", "ADULT")
+                .add("publicListNote", "")
+                .add("hasVideoLink", false)
+                .add(FIELD_JUDICIARY, prepareJsonJudiciary(updatedHearingData.getJudiciary()))
+                .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDaysForSplit(updatedHearingData.getNonDefaultDays()))
+                .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
+                .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()))
+                .add(FIELD_PROSECUTION_CASES, prepareJsonProsecutionCasesForSplitDefendant(listedCaseDataList))
+                .add("splitHearing", updatedHearingData.getSplitHearing());
+
+        addNullableStringField(builder, FIELD_END_DATE, updatedHearingData.getEndDate());
+        addNullableStringField(builder, FIELD_COURT_ROOM_ID, getStringOrNull(updatedHearingData.getCourtRoomId()));
+
+        return builder.build().toString();
+    }
+
     private static String prepareJsonForChangeJudiciaryForHearings(final UpdatedHearingData updatedHearingData) {
         final JsonObjectBuilder builder = createObjectBuilder();
 
@@ -435,6 +504,27 @@ public class UpdateHearingSteps extends AbstractIT {
                 ).collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build();
     }
 
+    private static JsonArray prepareJsonProsecutionCasesForSplitDefendant(final List<ListedCaseData> listedCaseDataList) {
+
+       return listedCaseDataList.stream()
+                .map(p ->
+                        {
+                            final JsonObjectBuilder caseBuilder = createObjectBuilder();
+                            caseBuilder.add("caseId", p.getCaseId().toString());
+                            final JsonObjectBuilder defendantBuilder = createObjectBuilder();
+                            final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+                            caseBuilder.add("defendants", arrayBuilder.add(defendantBuilder.add("defendantId" , p.getDefendants().get(0).getDefendantId().toString())
+                                            .add("offences", p.getDefendants().get(0).getOffences().stream()
+                                                .map(o -> {
+                                                    final JsonObjectBuilder offenceBuilder = createObjectBuilder();
+                                                    offenceBuilder.add("offenceId", o.getOffenceId().toString());
+                                                    return offenceBuilder;
+                                                }).collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add)).build()));
+                            return caseBuilder;
+                        }
+                ).collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add).build();
+    }
+
     private static JsonArray prepareJsonHearingIdArray(final UUID hearingId) {
         final JsonArrayBuilder builder = Json.createArrayBuilder();
         builder.add(hearingId.toString());
@@ -474,7 +564,8 @@ public class UpdateHearingSteps extends AbstractIT {
         if (hearingType != null) {
             return createObjectBuilder()
                     .add(FIELD_HEARING_TYPE_ID, hearingType.getTypeId().toString())
-                    .add(FIELD_HEARING_TYPE_DESCRIPTION, hearingType.getTypeDescription());
+                    .add(FIELD_HEARING_TYPE_DESCRIPTION, hearingType.getTypeDescription())
+                    .add("welshDescription", hearingType.getWelshDescription());
         }
         return null;
     }
@@ -494,6 +585,19 @@ public class UpdateHearingSteps extends AbstractIT {
                     return nonDefaultDayBuilder;
                 })
                 .collect(Json::createArrayBuilder, JsonArrayBuilder::add, JsonArrayBuilder::add);
+    }
+
+    private static JsonArrayBuilder prepareJsonNonDefaultDaysForSplit(final List<NonDefaultDayData> nonDefaultDays) {
+            final JsonArrayBuilder arrayBuilder = createArrayBuilder();
+                final JsonObjectBuilder nonDefaultDayBuilder = createObjectBuilder().add(FIELD_START_TIME, nonDefaultDays.get(0).getStartTime());
+                    addNullableIntegerField(nonDefaultDayBuilder, FIELD_DURATION, nonDefaultDays.get(0).getDuration());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_COURT_SCHEDULE_ID, nonDefaultDays.get(0).getCourtScheduleId());
+                    addNullableIntegerFieldIfNotNull(nonDefaultDayBuilder, FIELD_COURT_ROOM_ID, nonDefaultDays.get(0).getCourtRoomId());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_OUCODE, nonDefaultDays.get(0).getOucode());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_SESSION, nonDefaultDays.get(0).getSession());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_COURT_CENTRE_ID, nonDefaultDays.get(0).getCourtCentreId());
+                    addNullableStringField(nonDefaultDayBuilder, FIELD_ROOM_ID, nonDefaultDays.get(0).getRoomId());
+        return arrayBuilder.add(nonDefaultDayBuilder);
     }
 
     private static JsonArrayBuilder prepareJsonNonDefaultDaysWithoutCourtRoomSelection(final List<NonDefaultDayData> nonDefaultDays) {
@@ -582,6 +686,16 @@ public class UpdateHearingSteps extends AbstractIT {
         privateEventMessageConsumerUpdatedHearingInStagingHmi = privateEvents.createPrivateConsumer(LISTING_EVENTS_UPDATED_HEARING_IN_STAGING_HMI);
         publicEventMessageProducer = publicEvents.createPublicProducer();
     }
+
+    private void createMessageConsumersForDefendantSplit() {
+        privateMessageConsumerAllocatedHearingUpdatedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING);
+        privateMessageConsumerHearingAllocatedForListing = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING);
+        privateMessageConsumerHearingPartiallyUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_PARTIALLY_UPDATED);
+        privateMessageConsumerHearingListed = privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_LISTED);
+        publicEventMessageProducer = publicEvents.createPublicProducer();
+    }
+
+
 
     public void whenHearingIsUpdatedForListing() {
         stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
@@ -717,6 +831,23 @@ public class UpdateHearingSteps extends AbstractIT {
                 request, getLoggedInHeader());
 
         assertThat(response.getStatus(), equalTo(ACCEPTED.getStatusCode()));
+    }
+
+    public void whenHearingIsUpdatedForListingWithProsecutionCasesDefendantsSplit() {
+        stubGetReferenceDataCourtCentre(new CourtCentreData(updatedHearingData.getCourtCentreId(), DEFAULT_START_TIME, DEFAULT_DURATION_HOURS_MINS, updatedHearingData.getCourtRoomId(), "Carmarthen Magistrates Court"));
+        stubGetReferenceDataCourtCentreById(updatedHearingData.getCourtCentreId());
+        stubGetReferenceDataHearingTypes(updatedHearingData.getHearingTypData().getTypeId());
+        final String updateHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_COMMAND_UPDATE_HEARING_FOR_LISTING), updatedHearingData.getHearingId()));
+
+        request = prepareJsonForUpdatedHearingDataWithProsecutionCasesDefs(updatedHearingData, listedCaseDatas);
+
+        LOGGER.info("Post call made: \n\n\tURL = {} \n\tMedia type = {} \n\tPayload = {}\n\n", updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING, request);
+
+        final Response response = restClient.postCommand(updateHearingUrl, MEDIA_TYPE_UPDATE_HEARING_FOR_LISTING,
+                request, getLoggedInHeader());
+
+        assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
     }
 
     public void whenJudiciaryIsChangedForHearings() {

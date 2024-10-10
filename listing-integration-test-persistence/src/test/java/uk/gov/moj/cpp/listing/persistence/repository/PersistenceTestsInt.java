@@ -28,7 +28,7 @@ public interface PersistenceTestsInt {
     Boolean IS_POSSIBLE_DISQUALIFICATION = FALSE;
     Boolean RANDOM_ALLOCATED = BOOLEAN.next();
     Boolean NOT_VACATED = FALSE;
-    String UNALLOCATED_STR = "false";
+    Boolean UNALLOCATED_STR = FALSE;
     UUID HEARING_ID = randomUUID();
     UUID OTHER_HEARING_ID = randomUUID();
     UUID OTHER_HEARING_ID2 = randomUUID();

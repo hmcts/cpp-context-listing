@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.listing.event.listener;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static uk.gov.moj.cpp.listing.persistence.repository.JsonEntityFinder.using;
 
 import uk.gov.justice.core.courts.DefenceCounsel;
@@ -96,6 +97,8 @@ public class ExtendHearingForHearingListener {
         final UUID hearingIdToBeUpdated = hearingPartiallyUpdated.getHearingIdToBeUpdated();
         final Hearing hearingToBeUpdated = hearingRepository.findBy(hearingIdToBeUpdated);
         final List<ProsecutionCases> casesToRemove = hearingPartiallyUpdated.getProsecutionCases();
+        final List<DefenceCounsel> storedDefenceCounsel = new ArrayList<>();
+        final  String UNALLOCATED = "unallocated";
 
         if (hearingToBeUpdated != null) {
 
@@ -110,27 +113,28 @@ public class ExtendHearingForHearingListener {
                         storedListCases.add(extractListedCases(objectMapper, node, hearingIdToBeUpdated.toString()))
                 );
 
-                final Set<UUID> removedDefendantIdsFromHearing = new HashSet<>();
-                // remove cases in the request from persisted hearing
-                removeCasesFromPersistedHearing(casesToRemove, storedListCases, removedDefendantIdsFromHearing);
+                if(nonNull(hearingPartiallyUpdated.getSplitHearing()) && UNALLOCATED.equals(hearingPartiallyUpdated.getSplitHearing())) {
+                    removeUnallocatedCasesFromPersistedHearing(casesToRemove, storedListCases);
+                    using(hearingRepository)
+                            .find(hearingIdToBeUpdated)
+                            .remove(LISTED_CASES_FIELD)
+                            .putObjectList(LISTED_CASES_FIELD, storedListCases)
+                            .save();
+                } else {
+                    final Set<UUID> removedDefendantIdsFromHearing = new HashSet<>();
+                    // remove cases in the request from persisted hearing
+                    removeCasesFromPersistedHearing(casesToRemove, storedListCases, removedDefendantIdsFromHearing);
 
-                final List<DefenceCounsel> storedDefenceCounsel = new ArrayList<>();
-                final JsonNode jsonNodeDefenceCounsel = hearingToBeUpdated.getProperties().get(DEFENCE_COUNSELS_FIELD);
-                if(!removedDefendantIdsFromHearing.isEmpty() && nonNull(jsonNodeDefenceCounsel)) {
-                    jsonNodeDefenceCounsel.forEach(node ->
-                            storedDefenceCounsel.add(extractDefenceCounsel(objectMapper, node, hearingIdToBeUpdated.toString()))
-                    );
-                    // remove defence counsels for removed defendants from persisted hearing
-                    removeDefenceCounselsFromHearing(storedDefenceCounsel, removedDefendantIdsFromHearing);
+                    final JsonNode jsonNodeDefenceCounsel = hearingToBeUpdated.getProperties().get(DEFENCE_COUNSELS_FIELD);
+                    updateDefenceCounselsFromHearing(hearingIdToBeUpdated, storedDefenceCounsel, removedDefendantIdsFromHearing, jsonNodeDefenceCounsel);
+                    using(hearingRepository)
+                            .find(hearingIdToBeUpdated)
+                            .remove(LISTED_CASES_FIELD)
+                            .putObjectList(LISTED_CASES_FIELD, storedListCases)
+                            .remove(DEFENCE_COUNSELS_FIELD)
+                            .putObjectList(DEFENCE_COUNSELS_FIELD, storedDefenceCounsel)
+                            .save();
                 }
-
-                using(hearingRepository)
-                        .find(hearingIdToBeUpdated)
-                        .remove(LISTED_CASES_FIELD)
-                        .putObjectList(LISTED_CASES_FIELD, storedListCases)
-                        .remove(DEFENCE_COUNSELS_FIELD)
-                        .putObjectList(DEFENCE_COUNSELS_FIELD, storedDefenceCounsel)
-                        .save();
                 LOGGER.info("Hearing with id {} has been updated", hearingIdToBeUpdated);
                 LOGGER.info("Hearing with id {} is now as {}", hearingIdToBeUpdated, hearingToBeUpdated);
                 hearingSearchSyncService.sync(hearingIdToBeUpdated);
@@ -143,6 +147,16 @@ public class ExtendHearingForHearingListener {
         } else {
             LOGGER.error("Hearing with id {} not found", hearingIdToBeUpdated);
             throw new EntityNotFoundException("Failed to update hearing " + hearingIdToBeUpdated);
+        }
+    }
+
+    private void updateDefenceCounselsFromHearing(final UUID hearingIdToBeUpdated, final List<DefenceCounsel> storedDefenceCounsel, final Set<UUID> removedDefendantIdsFromHearing, final JsonNode jsonNodeDefenceCounsel) {
+        if (!removedDefendantIdsFromHearing.isEmpty() && nonNull(jsonNodeDefenceCounsel)) {
+            jsonNodeDefenceCounsel.forEach(node ->
+                    storedDefenceCounsel.add(extractDefenceCounsel(objectMapper, node, hearingIdToBeUpdated.toString()))
+            );
+            // remove defence counsels for removed defendants from persisted hearing
+            removeDefenceCounselsFromHearing(storedDefenceCounsel, removedDefendantIdsFromHearing);
         }
     }
 
@@ -307,6 +321,48 @@ public class ExtendHearingForHearingListener {
                     storedListCases.removeIf(lc -> lc.getDefendants().isEmpty());//remove case if all defendants removed
                 }
             }
+        }
+    }
+
+    //DD-34798: Removing unallocated hearing data once the hearing is allocated for split scenarios
+    @SuppressWarnings({"squid:S3776", "squid:S134"})
+    private void removeUnallocatedCasesFromPersistedHearing(final List<ProsecutionCases> casesToUpdate, final List<ListedCase> storedListCases) {
+        final List<ListedCase> retainCases = new ArrayList<>();
+        for (final ListedCase persistedPC : storedListCases) { // persisted cases
+            casesToUpdate.forEach(incomingCase -> { // traverse through incoming cases
+                if (persistedPC.getId().equals(incomingCase.getCaseId())) {  //persisted defendants
+                    retainCases.add(persistedPC);
+                    final List<Defendant> retainDefendants = new ArrayList<>();
+                    for (final Defendant persistedDefendants : persistedPC.getDefendants()) {  //traverse thorugh incoming defendants
+                        for (final Defendants incomingDefendants : incomingCase.getDefendants()) {
+                            updateOffences(persistedDefendants, incomingDefendants, retainDefendants);
+                        }
+                    }
+                    if (!isEmpty(retainDefendants)) {
+                        persistedPC.getDefendants().retainAll(retainDefendants);
+                    }
+                }
+            });
+        }  // end of persisted cases
+        if(!isEmpty(retainCases)) {
+            storedListCases.retainAll(retainCases);
+        }
+    }
+
+    private void updateOffences(final Defendant persistedDefendants, final Defendants incomingDefendants, final List<Defendant> retainDefendants) {
+        if(persistedDefendants.getId().equals(incomingDefendants.getDefendantId())) {
+            retainDefendants.add(persistedDefendants);
+            final List<Offence> retainOffences = new ArrayList<>();
+            for (final Offence persistedOffence : persistedDefendants.getOffences()) { //persisted offences
+                incomingDefendants.getOffences().forEach(incomingOffence -> {
+                    if (persistedOffence.getId().equals(incomingOffence.getOffenceId())) { //traverse through incoming offences
+                        retainOffences.add(persistedOffence);
+                    }
+                });
+            }
+            if(!isEmpty(retainOffences)) {
+                persistedDefendants.getOffences().retainAll(retainOffences);
+            } // end of persisted offences
         }
     }
 

@@ -195,7 +195,8 @@
               ],
               "hearingLanguage": "ENGLISH",
               "estimatedMinutes": 30,
-              "jurisdictionType": "CROWN"
+              "jurisdictionType": "CROWN",
+              "publicListNote": "publicListNote1"
             }
           }
         ]

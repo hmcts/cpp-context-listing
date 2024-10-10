@@ -31,6 +31,7 @@ public class CourtListIT extends AbstractIT {
     private static final String ALPHABETICAL = "Alphabetical";
     private static final String PUBLIC = "Public";
     public static final String STANDARD = "Standard";
+    public static final String PRISON = "Prison";
     public static final String JUDGE = "Judge";
     public static final String BENCH = "Bench";
     final UUID COURT_CENTRE_ID = fromString("b52f805c-2821-4904-a0e0-26f7fda6dd08");
@@ -106,7 +107,7 @@ public class CourtListIT extends AbstractIT {
     }
 
     @Test
-    public void generatePublicCourtWhenDefendantAdded(){
+    public void generatePublicCourtWhenDefendantAdded() {
 
         UUID caseId = firstHearing.getHearingData().get(0).getListedCases().get(0).getCaseId();
         HearingData hearingData = firstHearing.getHearingData().get(0);
@@ -120,13 +121,21 @@ public class CourtListIT extends AbstractIT {
                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[2].offences[0].id", notNullValue()),
                 withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[2].offences[0].listingNumber"),
         };
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh",  allocatedMatchers);
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PUBLIC, "PublicCourtListEnglishWelsh", allocatedMatchers);
     }
 
 
     @Test
     public void generateStandardCourtList() {
         courtListSteps.verifyCourtListRequestedAndIsCorrectJson(STANDARD, "BenchAndStandardCourtList", new Matcher[0] );
+    }
+
+    @Test
+    public void generatePrisonCourtList() {
+        final Matcher<?>[] extraMatchers = {
+                withJsonPath("$.courtCentreDefaultStartTime", notNullValue())
+        };
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(PRISON, "PrisonCourtList", extraMatchers);
     }
 
     @Test
@@ -138,7 +147,7 @@ public class CourtListIT extends AbstractIT {
 
     @Test
     public void generateBenchList() {
-        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(BENCH, "BenchAndStandardCourtList",  new Matcher[0] );
+        courtListSteps.verifyCourtListRequestedAndIsCorrectJson(BENCH, "BenchAndStandardCourtList", new Matcher[0]);
     }
 
 }

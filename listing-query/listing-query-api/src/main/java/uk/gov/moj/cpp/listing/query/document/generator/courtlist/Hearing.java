@@ -16,6 +16,7 @@ public class Hearing {
     private String caseNumber;
     private UUID caseId;
     private String prosecutorType;
+    private String hearingPublicListNote;
     private List<Defendant> defendants;
     private String adjournedHearingDate;
     private String panel;
@@ -80,6 +81,9 @@ public class Hearing {
 
     public List<Offence> getApplicationOffences() { return applicationOffences; }
 
+    public String getHearingPublicListNote() {
+        return hearingPublicListNote;
+    }
     public static Builder hearing() {
         return new Hearing.Builder();
     }
@@ -101,6 +105,7 @@ public class Hearing {
         private String panel;
         private UUID courtApplicationId;
         private List<Offence> applicationOffences;
+        private String hearingPublicListNote;
 
         private Builder() {
         }
@@ -183,6 +188,11 @@ public class Hearing {
             return this;
         }
 
+        public Builder withHearingPublicListNote(final String hearingPublicListNote) {
+            this.hearingPublicListNote = hearingPublicListNote;
+            return this;
+        }
+
         public Hearing build() {
             final Hearing hearing = new Hearing();
             hearing.sequence = this.sequence;
@@ -200,6 +210,7 @@ public class Hearing {
             hearing.panel = this.panel;
             hearing.courtApplicationId = this.courtApplicationId;
             hearing.applicationOffences = this.applicationOffences;
+            hearing.hearingPublicListNote = this.hearingPublicListNote;
             return hearing;
         }
     }
@@ -220,6 +231,7 @@ public class Hearing {
                 ", id=" + id +
                 ", panel=" + panel +
                 ", courtApplicationId=" + courtApplicationId +
+                ", hearingPublicListNote=" + hearingPublicListNote +
                 ", applicationOffences=" + applicationOffences +
                 '}';
     }
@@ -242,6 +254,7 @@ public class Hearing {
                 Objects.equals(id, hearing.id) &&
                 Objects.equals(panel, hearing.panel) &&
                 Objects.equals(courtApplicationId, hearing.courtApplicationId) &&
+                Objects.equals(hearingPublicListNote, hearing.hearingPublicListNote) &&
                 Objects.equals(applicationOffences, hearing.applicationOffences);
     }
 

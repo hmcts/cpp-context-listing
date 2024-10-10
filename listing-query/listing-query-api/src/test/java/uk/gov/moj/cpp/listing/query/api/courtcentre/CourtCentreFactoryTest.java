@@ -48,6 +48,7 @@ public class CourtCentreFactoryTest {
     private static final String COURT_ROOM_NAME_2 = "courtRoomName2";
     private static final String COURT_ROOM_WELSH_NAME_1 = "courtRoomWelshName1";
     private static final String COURT_ROOM_WELSH_NAME_2 = "courtRoomWelshName2";
+    private static final String COURT_START_TIME = "10:30";
 
     @Mock
     private JsonEnvelope envelope;
@@ -85,6 +86,7 @@ public class CourtCentreFactoryTest {
         assertThat(courtCentre.getWelshAddress3(), is(WELSH_ADDRESS_3));
         assertThat(courtCentre.getWelshAddress4(), is(WELSH_ADDRESS_4));
         assertThat(courtCentre.getWelshAddress5(), is(WELSH_ADDRESS_5));
+        assertThat(courtCentre.getDefaultStartTime(), is(COURT_START_TIME));
         assertThat(courtCentre.isWelsh(), is(true));
         CourtRoomDetails courtRoom1Details = courtCentre.getCourtRooms().get(COURT_ROOM_1_ID);
         assertThat(courtRoom1Details.getCourtRoomName(), is(COURT_ROOM_NAME_1));
@@ -99,6 +101,7 @@ public class CourtCentreFactoryTest {
         String jsonString = FileUtil.getPayload("stubbed.referencedata.query.courtroom.json")
                 .replace("COURT_CENTRE_NAME", COURT_CENTRE_NAME)
                 .replace("COURT_CENTRE_WELSH_NAME", COURT_CENTRE_WELSH_NAME)
+                .replace("COURT_START_TIME", COURT_START_TIME)
                 .replace("ADDRESS_1", ADDRESS_1)
                 .replace("ADDRESS_2", ADDRESS_2)
                 .replace("ADDRESS_3", ADDRESS_3)

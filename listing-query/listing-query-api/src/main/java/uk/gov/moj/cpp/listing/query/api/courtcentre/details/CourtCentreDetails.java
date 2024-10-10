@@ -11,6 +11,7 @@ public class CourtCentreDetails {
     private final UUID id;
     private final String courtCentreName;
     private final String welshCourtCentreName;
+    private final String defaultStartTime;
 
     private final String address1;
     private final String address2;
@@ -29,11 +30,12 @@ public class CourtCentreDetails {
     private final Map<UUID, CourtRoomDetails> courtRooms;
 
 
-    public CourtCentreDetails(UUID id, String courtCentreName, String welshCourtCentreName, String address1, String address2, String address3, String address4, String address5, String postcode,
+    public CourtCentreDetails(UUID id, String courtCentreName, String welshCourtCentreName, String defaultStartTime, String address1, String address2, String address3, String address4, String address5, String postcode,
                               String welshAddress1, String welshAddress2, String welshAddress3, String welshAddress4, String welshAddress5, Map<UUID, CourtRoomDetails> courtRooms, final Boolean welsh, final String ouCodeL3Name) {
         this.id = id;
         this.courtCentreName = courtCentreName;
         this.welshCourtCentreName = welshCourtCentreName;
+        this.defaultStartTime = defaultStartTime;
         this.address1 = address1;
         this.address2 = address2;
         this.address3 = address3;
@@ -60,6 +62,10 @@ public class CourtCentreDetails {
 
     public String getWelshCourtCentreName() {
         return welshCourtCentreName;
+    }
+
+    public String getDefaultStartTime() {
+        return defaultStartTime;
     }
 
     public String getAddress1() {
@@ -130,6 +136,7 @@ public class CourtCentreDetails {
 
         return Objects.equals(this.courtCentreName, that.courtCentreName) &&
                 Objects.equals(this.welshCourtCentreName, that.welshCourtCentreName) &&
+                Objects.equals(this.defaultStartTime, that.defaultStartTime) &&
                 Objects.equals(this.address1, that.address1) &&
                 Objects.equals(this.address2, that.address2) &&
                 Objects.equals(this.address3, that.address3) &&
@@ -148,7 +155,7 @@ public class CourtCentreDetails {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, courtCentreName, welshCourtCentreName, address1, address2, address3, address4, address5,
+        return Objects.hash(id, courtCentreName, defaultStartTime, welshCourtCentreName, address1, address2, address3, address4, address5,
                 postcode, welshAddress1, welshAddress2, welshAddress3, welshAddress4, welshAddress5, courtRooms, welsh);
     }
 
@@ -157,6 +164,7 @@ public class CourtCentreDetails {
         private UUID id;
         private String courtCentreName;
         private String welshCourtCentreName;
+        private String defaultStartTime;
 
         private String address1;
         private String address2;
@@ -184,6 +192,11 @@ public class CourtCentreDetails {
 
         public Builder withWelshCourtCentreName(final String welshCourtCentreName) {
             this.welshCourtCentreName = welshCourtCentreName;
+            return this;
+        }
+
+        public Builder withDefaultStartTime(final String defaultStartTime) {
+            this.defaultStartTime = defaultStartTime;
             return this;
         }
 
@@ -263,7 +276,7 @@ public class CourtCentreDetails {
         }
 
         public CourtCentreDetails build() {
-            return new CourtCentreDetails(id, courtCentreName, welshCourtCentreName, address1, address2, address3, address4, address5,
+            return new CourtCentreDetails(id, courtCentreName, welshCourtCentreName, defaultStartTime, address1, address2, address3, address4, address5,
                     postcode, welshAddress1, welshAddress2, welshAddress3, welshAddress4, welshAddress5, courtRooms, welsh, ouCodeL3Name);
         }
 

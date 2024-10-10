@@ -214,7 +214,7 @@ subscriptions_descriptor:
           schema_uri: http://justice.gov.uk/core/courts/hearing-resulted-case-updated.json
 
         - name: public.progression.defendant-legalaid-status-updated
-          schema_uri: http://justice.gov.uk/core/courts/defendant-legalaid-status-updated.json
+          schema_uri: http://justice.gov.uk/progression/courts/defendant-legalaid-status-updated.json
 
         - name: public.hearing.trial-vacated
           schema_uri: http://justice.gov.uk/hearing/courts/trial-vacated.json

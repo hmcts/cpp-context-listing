@@ -118,6 +118,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import javax.jms.JMSException;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
@@ -241,6 +242,32 @@ public class ListCourtHearingSteps extends AbstractIT {
         publicMessageConsumerHearingChangesSaved = publicEvents.createPublicConsumer(PUBLIC_LISTING_HEARING_CHANGES_SAVED);
         publicMessageConsumerCourtApplicationAddedForHearing = QueueUtil.publicEvents.createPublicConsumer(PUBLIC_EVENT_APPLICATION_ADD_COURT_APPLICATION_FOR_HEARING);
         privateEventMessageConsumerRequestedHearingFromStagingHmi = privateEvents.createPrivateConsumer(LISTING_EVENTS_REQUESTED_HEARING_FROM_STAGING_HMI);
+
+        givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
+    }
+
+    public ListCourtHearingSteps(final HearingsData hearingsData, final Boolean split) {
+        privateMessageConsumerJudiciaryAssigned = null;
+        privateMessageConsumerHearingUpdatedToCase = null;
+        privateMessageConsumerHearingDaysChanged = null;
+        privateMessageConsumerHearingMarkedAsDeleted = null;
+        publicMessageConsumerHearingDeleted = null;
+        publicMessageConsumerHearingConfirmedForExtendHearing = null;
+        publicMessageConsumerHearingExtend = null;
+        privateMessageConsumerHearingDeleted = null;
+        publicMessageConsumerStagingHmiUpdateListRequested = null;
+        publicMessageConsumerHearingChangesSaved = null;
+        privateEventMessageConsumerRequestedHearingFromStagingHmi = null;
+        publicMessageConsumerStagingHmiListRequested = null;
+        publicMessageProducerProgressionHearingExtendedEvent = null;
+        this.hearingsData = hearingsData;
+
+        privateMessageConsumerHearingListed = QueueUtil.privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_LISTED);
+        privateMessageConsumerHearingAllocatedForListing = QueueUtil.privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_ALLOCATED_FOR_LISTING);
+        privateMessageConsumerAddedCaseForHearing = privateEvents.createPrivateConsumer(EVENT_SELECTED_CASES_ADDED_TO_HEARING);
+        privateMessageConsumerHearingPartiallyUpdated = privateEvents.createPrivateConsumer(EVENT_SELECTED_HEARING_PARTIALLY_UPDATED);
+        publicEventHearingListed = publicEvents.createPrivateConsumer(PUBLIC_LISTING_HEARING_LISTED);
+        publicMessageConsumerHearingPartiallyUpdated = publicEvents.createPrivateConsumer(PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED);
 
         givenAUserHasLoggedInAsAListingOfficer(USER_ID_VALUE);
     }
@@ -653,7 +680,7 @@ public class ListCourtHearingSteps extends AbstractIT {
         final String searchHearingUrl = String.format("%s/%s", getBaseUri(),
                 format(readConfig().getProperty("listing.range.search.hearings"), hearingsData.getHearingData().get(0).getCourtCentreId(), isAllocated));
 
-        verifyHearingListedFromWithApiUrl(hearingData, searchHearingUrl);
+        verifyHearingListedFromCaseWithApiUrl(hearingData, searchHearingUrl);
     }
 
     public void verifyQueryAPIFindCaseByPersonDefendantAndHearingDate() {
@@ -818,6 +845,35 @@ public class ListCourtHearingSteps extends AbstractIT {
                                         equalTo(hearingData.getCourtApplications().get(0).getRespondent().getAddress().getPostcode().get())),
                                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].isYouth",
                                         equalTo(true))
+                        )));
+    }
+
+    public void verifyHearingListedFromCaseWithApiUrl(final HearingData hearingData, final String searchHearingUrl) {
+        final ListedCaseData listedCaseData = hearingData.getListedCases().get(0);
+
+        final DefendantData defendant = listedCaseData.getDefendants().get(0);
+
+        final com.jayway.jsonpath.JsonPath lastNameFilter = getJsonPathQueryForDefendantLastName(hearingData, listedCaseData, defendant, defendant.getLastName());
+        final com.jayway.jsonpath.JsonPath caseReferenceFilter = getJsonPathQueryForCaseReference(hearingData, listedCaseData, defendant, listedCaseData.getCaseReference());
+
+        poll(requestParams(searchHearingUrl, MEDIA_TYPE_SEARCH_HEARINGS_JSON).withHeader(USER_ID, getLoggedInUser()))
+                .until(
+                        status().is(OK),
+                        payload().isJson(allOf(
+                                withJsonPath(lastNameFilter),
+                                withJsonPath(caseReferenceFilter),
+                                withJsonPath("$.hearings[0].id",
+                                        equalTo(hearingData.getId().toString())),
+                                withJsonPath("$.hearings[0].jurisdictionType",
+                                        equalTo(hearingData.getJurisdictionType())),
+                                withJsonPath("$.hearings[0].courtCentreId",
+                                        equalTo(hearingData.getCourtCentreId().toString())),
+                                withJsonPath("$.hearings[0].type.id",
+                                        equalTo(hearingData.getHearingTypeData().getTypeId().toString())),
+                                withJsonPath("$.hearings[0].type.description",
+                                        equalTo(hearingData.getHearingTypeData().getTypeDescription())),
+                                withJsonPath("$.hearings[0].startDate",
+                                        equalTo(hearingData.getHearingStartDate().toString()))
                         )));
     }
 

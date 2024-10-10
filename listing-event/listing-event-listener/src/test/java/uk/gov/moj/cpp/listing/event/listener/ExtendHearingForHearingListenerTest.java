@@ -28,10 +28,14 @@ import java.util.UUID;
 
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 import static uk.gov.moj.cpp.listing.event.listener.utils.HearingUtils.*;
+
+import javax.json.JsonObject;
 
 @ExtendWith(MockitoExtension.class)
 public class ExtendHearingForHearingListenerTest {
@@ -200,6 +204,81 @@ public class ExtendHearingForHearingListenerTest {
     }
 
     @Test
+    public void shouldHearingBeUpdatedPartiallyForUnallocatedHearings() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        final JsonNode hearingObj = buildHearingEntity();
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCases())
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingObj).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+        verify(hearingRepository).save(hearingEntity);
+    }
+
+    @Test
+    public void shouldHearingBeUpdatedPartiallyByCases() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        final JsonNode hearingObj = buildHearingEntity();
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCases())
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingObj).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        verify(hearingRepository).save(hearingEntity);
+    }
+
+
+    @Test
+    public void shouldHearingBeUpdatedPartiallyByOffences() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        final JsonNode hearingObj = buildHearingEntity();
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCases())
+                .withSplitHearing("unallocated")
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingObj).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+        verify(hearingRepository).save(hearingEntity);
+    }
+
+    @Test
     public void shouldHearingWithDefenceCounselsBeUpdatedPartially() throws IOException {
         final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
         final JsonNode hearingEntityProperties = buildHearingEntityProperties();
@@ -225,6 +304,278 @@ public class ExtendHearingForHearingListenerTest {
 
         assertThat(hearingEntity.getProperties().get(DEFENCE_COUNSELS).toString().contains(DEF_ID1.toString()), Matchers.is(false));
         assertThat(hearingEntity.getProperties().get(DEFENCE_COUNSELS).toString().contains(DEF_ID2.toString()), Matchers.is(true));
+    }
+
+    @Test
+    public void shouldPartiallyUpdateUnallocatedHearingForFirstOffenceSplitInMultipleOffences() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        final JsonNode hearingEntityProperties = buildHearingEntityWithSingleDefMultiOffenceProperties();
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCases())
+                .withSplitHearing("unallocated")
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingEntityProperties).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+        verify(hearingRepository).save(hearingEntity);
+
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID1.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID2.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID3.toString()));
+    }
+
+    @Test
+    public void shouldPartiallyUpdateUnallocatedHearingForFirstCaseInMultiCasesDefendantsOffences() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        final JsonNode hearingObj = buildHearingEntity();
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCases())
+                .withSplitHearing("unallocated")
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingObj).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+        verify(hearingRepository).save(hearingEntity);
+
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(CASE_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID1.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(CASE_ID2.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID2.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID2.toString()));
+    }
+
+    @Test
+    public void shouldPartiallyUpdateUnalloactedHearinForSecondCaseInMultiCasesDefendantsOffences() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        final JsonNode hearingObj = buildHearingEntity();
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCase2())
+                .withSplitHearing("unallocated")
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingObj).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+        verify(hearingRepository).save(hearingEntity);
+
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(CASE_ID1.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID1.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(CASE_ID2.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID2.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID2.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID3.toString()));
+
+    }
+
+    @Test
+    public void shouldPartiallyUpdateUnalloactedHearinForMultiCasesDefendantsOffences() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        final JsonNode hearingObj = buildHearingEntity();
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCaseForMultiple())
+                .withSplitHearing("unallocated")
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingObj).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+        verify(hearingRepository).save(hearingEntity);
+
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(CASE_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(CASE_ID2.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID2.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID2.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID3.toString()));
+
+    }
+
+    @Test
+    public void shouldPartiallyUpdateUnalloactedHearinForCasesMultiDefendantsOffences() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        JsonObject incomingHearingJsonObject;
+
+
+
+        final JsonNode hearingObj = buildHearingEntityForMultiDefendants();
+
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCaseForMultipleDefendants())
+                .withSplitHearing("unallocated")
+                .build();
+
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingObj).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+        verify(hearingRepository).save(hearingEntity);
+
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(CASE_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID2.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID2.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID3.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID4.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID3.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID5.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID6.toString()));
+
+    }
+
+    @Test
+    public void shouldPartiallUpdateUnallocatedHearingWithSecondOffenceInMultipleOffences() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        final JsonNode hearingEntityProperties = buildHearingEntityWithSingleDefMultiOffenceProperties();
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCases(OFF_ID2))
+                .withSplitHearing("unallocated")
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingEntityProperties).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+        verify(hearingRepository).save(hearingEntity);
+
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID1.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID2.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID3.toString()));
+    }
+
+    @Test
+    public void shouldPartiallyUpdateUnallocatedHearingForFirstOffenceInMultiOffenceSplit() throws IOException {
+        final Envelope<HearingPartiallyUpdated> envelope = (Envelope<HearingPartiallyUpdated>) mock(Envelope.class);
+        final JsonNode hearingEntityProperties = buildHearingEntityWithSingleDefMultiOffenceProperties();
+
+        hearingPartiallyUpdated = HearingPartiallyUpdated.hearingPartiallyUpdated()
+                .withHearingIdToBeUpdated(HEARING_ID)
+                .withProsecutionCases(buildEventProsecutionCases())
+                .withSplitHearing("unallocated")
+                .build();
+
+        hearingEntity = uk.gov.moj.cpp.listing.persistence.entity.Hearing.builder()
+                .withId(hearingPartiallyUpdated.getHearingIdToBeUpdated())
+                .withProperties(hearingEntityProperties).build();
+
+        given(envelope.payload()).willReturn(hearingPartiallyUpdated);
+
+
+        doReturn(hearingEntity).when(hearingRepository).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+
+        extendHearingForHearingListener.hearingPartiallyUpdated(envelope);
+
+        verify(hearingRepository, times(2)).findBy(hearingPartiallyUpdated.getHearingIdToBeUpdated());
+        verify(hearingRepository).save(hearingEntity);
+
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(DEF_ID1.toString()));
+        assertTrue(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID1.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID2.toString()));
+        assertFalse(hearingEntity.getProperties().get("listedCases").toString().contains(OFF_ID3.toString()));
+    }
+
+    private List<ListedCase> createListedCaseWithADefendantAndThreeOffencesToAdd(final UUID caseId, final UUID defendantId,
+                                                                                 final UUID offId1, final int listingNumber1,
+                                                                                 final UUID offId2, final int listingNumber2,
+                                                                                 final UUID offId3, final int listingNumber3) {
+        final List<ListedCase> listedCasesToAdd = new ArrayList<>();
+        listedCasesToAdd.add(ListedCase.listedCase().withId(caseId)
+                .withDefendants(Arrays.asList(Defendant.defendant().withId(defendantId)
+                        .withOffences(Arrays.asList(
+                                Offence.offence().withId(offId1).withListingNumber(listingNumber1).build(),
+                                Offence.offence().withId(offId2).withListingNumber(listingNumber2).build(),
+                                Offence.offence().withId(offId3).withListingNumber(listingNumber3).build()
+                        ))
+                        .build()))
+                .build());
+
+        return listedCasesToAdd;
+    }
+
+    private List<ListedCase> createListedCaseWithADefendantAndFourOffencesToAdd(final UUID caseId, final UUID defendantId,
+                                                                                final UUID offId1, final int listingNumber1,
+                                                                                final UUID offId2, final int listingNumber2,
+                                                                                final UUID offId3, final int listingNumber3,
+                                                                                final UUID offId4, final int listingNumber4) {
+        final List<ListedCase> listedCasesToAdd = new ArrayList<>();
+        listedCasesToAdd.add(ListedCase.listedCase().withId(caseId)
+                .withDefendants(Arrays.asList(Defendant.defendant().withId(defendantId)
+                        .withOffences(Arrays.asList(
+                                Offence.offence().withId(offId1).withListingNumber(listingNumber1).build(),
+                                Offence.offence().withId(offId2).withListingNumber(listingNumber2).build(),
+                                Offence.offence().withId(offId3).withListingNumber(listingNumber3).build(),
+                                Offence.offence().withId(offId4).withListingNumber(listingNumber4).withShadowListed(true).build()
+                        ))
+                        .build()))
+                .build());
+
+        return listedCasesToAdd;
     }
 
     private List<ListedCase> createListedCasesToAdd(final UUID caseId2, final UUID caseId3, final UUID defId2, final UUID defId3, final UUID defId4, final UUID offId4, final UUID offId5, final UUID offId6) {

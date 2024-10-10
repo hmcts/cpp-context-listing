@@ -177,6 +177,19 @@ public class ListNextHearingIT extends AbstractIT {
         listNextHearingSteps2.verifyRemoveOffencesFromExistingHearingRequestedInActiveMQ(existedHearingId);
         listNextHearingSteps2.verifyOffencesRemovedFromAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
         listNextHearingSteps2.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
+
+        final ListNextHearingSteps listNextHearingSteps3 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps3.whenUpdateRelatedHearingSubmittedForListing(existedHearingId, oldNextHearings);
+        listNextHearingSteps3.verifyUpdateRelatedHearingRequestedInActiveMQ(existedHearingId);
+        listNextHearingSteps3.verifyCasesAddedToHearingInActiveMQ(existedHearingId, oldNextHearings);
+        listNextHearingSteps3.verifyCasesAddedToAllocatedHearingFromApi(existedHearings, oldNextHearings);
+
+        ListNextHearingSteps listNextHearingSteps4 = new ListNextHearingSteps(firstHearings.getHearingData().get(0));
+        listNextHearingSteps4.whenDeleteNextHearingSubmittedForListing();
+        listNextHearingSteps4.verifyRemoveOffencesFromExistingHearingRequestedInActiveMQ(existedHearingId);
+        listNextHearingSteps4.verifyOffencesRemovedFromAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
+        listNextHearingSteps4.verifyPublicOffencesRemovedFromExistingAllocatedHearingInActiveMQ(existedHearingId, oldNextHearings);
+
     }
 
 }

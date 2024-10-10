@@ -1149,7 +1149,7 @@ public class ListingCommandHandlerTest {
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
-        verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
+        verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any(), any());
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
 
     }
@@ -1199,7 +1199,7 @@ public class ListingCommandHandlerTest {
         when(hmiService.isHmiEnabled(any())).thenReturn(true);
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
-        verify(hearing, never()).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
+        verify(hearing, never()).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any(), any());
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
     }
 
@@ -1240,11 +1240,11 @@ public class ListingCommandHandlerTest {
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
         when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
-        when(hearing.updateUnallocatedHearingPartially(any(), any())).thenReturn(Stream.of(new Object()));
+        when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
         when(hmiService.isHmiEnabled(any())).thenReturn(true);
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
-        verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any());
+        verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any(), any());
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
         verify(hearing).applyAllocationRules(any(), any(), anyBoolean(),anyBoolean(), any());
     }
@@ -2371,7 +2371,7 @@ public class ListingCommandHandlerTest {
 
         verify(hearing, times(1)).updatedListedCasesInHearing(allocatedHearing, unAllocatedHearing, unAllocatedHearingDeepCopy.getListedCases());
         verify(hearing, times(1)).applyAllocationRulesForExtendedHearing(any(uk.gov.justice.listing.events.Hearing.class), true, true);
-        verify(hearing, times(1)).updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), anyList());
+        verify(hearing, times(1)).updateUnallocatedHearingPartially(eq(UNALLOCATED_HEARING_ID), anyList(), any());
     }
 
     @Test
@@ -2388,7 +2388,7 @@ public class ListingCommandHandlerTest {
         final JsonEnvelope commandEnvelope = createEnvelope("listing.command.remove-partially-merged-offences-from-original-hearing", payload);
         listingCommandHandler.handleRemovePartiallyMergedOffencesFromOriginalHearing(commandEnvelope);
 
-        verify(hearing, times(1)).updateUnallocatedHearingPartially(hearingIdToBeUpdated, Collections.emptyList());
+        verify(hearing, times(1)).updateUnallocatedHearingPartially(hearingIdToBeUpdated, Collections.emptyList(), Optional.empty());
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Stream.class));
     }
 

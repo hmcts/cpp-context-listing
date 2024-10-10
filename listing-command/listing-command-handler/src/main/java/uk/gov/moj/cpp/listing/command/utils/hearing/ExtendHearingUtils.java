@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -126,14 +127,15 @@ public class ExtendHearingUtils {
     public Stream<Object> createPartiallyAllocationEventForUpdateHearing(final Hearing hearing, final UUID hearingId,
                                                                          final Map<UUID, Map<UUID, List<UUID>>> unallocatedHearingRequestCaseMap,
                                                                          final Map<UUID, Map<UUID, List<UUID>>> persistedUnallocatedHearingCasesMap,
-                                                                         HearingUpdateOperationType operationType
+                                                                         HearingUpdateOperationType operationType,
+                                                                         final Optional<String> splitHearing
     ) {
         if (HearingUpdateOperationType.FULL_ALLOCATION.equals(operationType) || HearingUpdateOperationType.UNALLOCATED_NO_OFFENCE_CHANGE.equals(operationType)) {
             return Stream.empty();
         }
         removeSelectedCaseDefendantsOffencesFromStored(persistedUnallocatedHearingCasesMap, unallocatedHearingRequestCaseMap);
         final List<uk.gov.justice.listing.events.ProsecutionCases> prosecutionCasesToBeRemovedFromHearing = prosecutionCasesBuilder.buildEventProsecutionCase(unallocatedHearingRequestCaseMap);
-        return hearing.updateUnallocatedHearingPartially(hearingId, prosecutionCasesToBeRemovedFromHearing);
+        return hearing.updateUnallocatedHearingPartially(hearingId, prosecutionCasesToBeRemovedFromHearing, splitHearing);
 
     }
 

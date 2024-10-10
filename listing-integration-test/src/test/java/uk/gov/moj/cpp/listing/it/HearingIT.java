@@ -35,6 +35,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -312,6 +313,32 @@ public class HearingIT extends AbstractIT {
         updateHearingSteps.verifyHearingDaysChangedForHearingEvent();
         updateHearingSteps.verifyPublicHearingChangesSaved();
 
+    }
+
+    @Test
+    public void updateHearingResultsWhenUnallocatedDefendentsSplitToMultipleHearings() {
+        final HearingsData hearingsData = HearingsData.singleHearingDataSingleCaseMultipleDefendents();
+
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData, true);
+            listCourtHearingSteps.whenCaseIsSubmittedForListing();
+            listCourtHearingSteps.verifyHearingListedInActiveMQ();
+            listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final UUID hearingId =  hearingsData.getHearingData().get(0).getId();
+        final UpdatedHearingData updatedHearingDataForSplit = UpdatedHearingData.updatedHearingDataForAllocationWithDefendant(hearingId, hearingsData);
+        final UpdateHearingSteps updateHearingSteps = new UpdateHearingSteps(hearingsData, updatedHearingDataForSplit, true);
+        updateHearingSteps.whenHearingIsUpdatedForListingWithProsecutionCasesDefendantsSplit();
+        updateHearingSteps.verifyHearingListedFromAPI(true, allOf(
+                withJsonPath("$.hearings[0].id", equalTo(hearingId.toString())),
+                withJsonPath("$.hearings[0].allocated", equalTo(true)),
+                withJsonPath("$.hearings[0].hearingDays[0].courtRoomId", Objects::nonNull),
+                withJsonPath("$.hearings[0].listedCases[0].id", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(0).getCaseId().toString())),
+                withJsonPath("$.hearings[0].listedCases[0].defendants.length()", equalTo(1)),
+                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences.length()", equalTo(2)),
+                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].id", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0).getDefendantId().toString())),
+                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[0].id", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getOffenceId().toString())),
+                 withJsonPath("$.hearings[0].listedCases[0].defendants[0].offences[1].id", equalTo(hearingsData.getHearingData().get(0).getListedCases().get(0).getDefendants().get(0).getOffences().get(1).getOffenceId().toString()))
+        ), null, null);
     }
 
     @Test

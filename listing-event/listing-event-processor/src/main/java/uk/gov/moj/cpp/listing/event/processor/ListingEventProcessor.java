@@ -669,8 +669,14 @@ public class ListingEventProcessor {
             logger.info("progression.defendant-legalaid-status-updated event received {}", envelop.toObfuscatedDebugString());
         }
 
+        final JsonObject jsonObject = envelop.payloadAsJsonObject();
+        final JsonObject commandPayload = createObjectBuilder()
+                .add(CASE_ID, jsonObject.getString(CASE_ID))
+                .add(DEFENDANT_ID, jsonObject.getString(DEFENDANT_ID))
+                .add(LEGAL_AID_STATUS, jsonObject.getString(LEGAL_AID_STATUS))
+                .build();
         this.sender.send(envelopeFrom(metadataFrom(envelop.metadata()).withName(COMMAND_UPDATE_DEFENDANT_LEGALAID_STATUS),
-                envelop.payloadAsJsonObject()));
+                commandPayload));
     }
 
     @Handles(LISTING_EVENTS_DEFENDANT_LEGALAID_STATUS_UPDATED)

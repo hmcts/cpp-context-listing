@@ -8,6 +8,7 @@ public class StandardCourtList {
 
     private String listType;
     private String courtCentreName;
+    private String courtCentreDefaultStartTime;
     private String courtCentreAddress1;
     private String courtCentreAddress2;
     private String welshCourtCentreName;
@@ -17,6 +18,10 @@ public class StandardCourtList {
 
     public String getCourtCentreName() {
         return courtCentreName;
+    }
+
+    public String getCourtCentreDefaultStartTime() {
+        return courtCentreDefaultStartTime;
     }
 
     public String getCourtCentreAddress1() {
@@ -55,6 +60,7 @@ public class StandardCourtList {
     public static final class Builder {
         private String listType;
         private String courtCentreName;
+        private String courtCentreDefaultStartTime;
         private String courtCentreAddress1;
         private String courtCentreAddress2;
         private String welshCourtCentreName;
@@ -67,6 +73,11 @@ public class StandardCourtList {
 
         public Builder withCourtCentreName(String courtCentreName) {
             this.courtCentreName = courtCentreName;
+            return this;
+        }
+
+        public Builder withCourtCentreDefaultStartTime(String courtCenterDefaultStartTime) {
+            this.courtCentreDefaultStartTime = courtCenterDefaultStartTime;
             return this;
         }
 
@@ -108,6 +119,7 @@ public class StandardCourtList {
         public StandardCourtList build() {
             final StandardCourtList standardCourtList = new StandardCourtList();
             standardCourtList.courtCentreName = this.courtCentreName;
+            standardCourtList.courtCentreDefaultStartTime = this.courtCentreDefaultStartTime;
             standardCourtList.courtCentreAddress1 = this.courtCentreAddress1;
             standardCourtList.courtCentreAddress2 = this.courtCentreAddress2;
             standardCourtList.welshCourtCentreName= this.welshCourtCentreName;
@@ -124,6 +136,7 @@ public class StandardCourtList {
         return "StandardCourtList{" +
                 "listType='" + listType + '\'' +
                 ", courtCentreName='" + courtCentreName + '\'' +
+                ", courtCentreDefaultStartTime='" + courtCentreDefaultStartTime + '\'' +
                 ", courtCentreAddress1='" + courtCentreAddress1 + '\'' +
                 ", courtCentreAddress2='" + courtCentreAddress2 + '\'' +
                 ", welshCourtCentreName='" + welshCourtCentreName + '\'' +
@@ -140,6 +153,7 @@ public class StandardCourtList {
         StandardCourtList that = (StandardCourtList) o;
         return Objects.equals(listType, that.listType) &&
                 Objects.equals(courtCentreName, that.courtCentreName) &&
+                Objects.equals(courtCentreDefaultStartTime, that.courtCentreDefaultStartTime) &&
                 Objects.equals(courtCentreAddress1, that.courtCentreAddress1) &&
                 Objects.equals(courtCentreAddress2, that.courtCentreAddress2) &&
                 Objects.equals(welshCourtCentreName, that.welshCourtCentreName) &&
@@ -150,6 +164,6 @@ public class StandardCourtList {
 
     @Override
     public int hashCode() {
-        return Objects.hash(listType, courtCentreName, courtCentreAddress1, courtCentreAddress2, welshCourtCentreName, welshCourtCentreAddress1, welshCourtCentreAddress2, hearingDates);
+        return Objects.hash(listType, courtCentreName, courtCentreDefaultStartTime, courtCentreAddress1, courtCentreAddress2, welshCourtCentreName, welshCourtCentreAddress1, welshCourtCentreAddress2, hearingDates);
     }
 }

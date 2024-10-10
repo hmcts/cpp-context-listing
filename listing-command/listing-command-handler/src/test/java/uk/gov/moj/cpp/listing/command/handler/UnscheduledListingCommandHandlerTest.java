@@ -94,7 +94,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
 
 @SuppressWarnings({"squid:S1607"})
 @ExtendWith(MockitoExtension.class)

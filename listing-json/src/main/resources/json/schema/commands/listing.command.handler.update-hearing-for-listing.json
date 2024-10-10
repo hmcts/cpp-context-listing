@@ -91,6 +91,9 @@
     },
     "sendNotificationToParties": {
       "type": "boolean"
+    },
+    "splitHearing": {
+      "type": "string"
     }
   },
   "required": [

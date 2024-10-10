@@ -55,6 +55,9 @@
         ],
         "additionalProperties": false
       }
+    },
+    "splitHearing": {
+      "type": "string"
     }
   },
   "required": [

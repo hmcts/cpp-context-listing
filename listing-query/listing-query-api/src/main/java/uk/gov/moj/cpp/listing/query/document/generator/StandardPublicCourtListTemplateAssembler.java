@@ -132,6 +132,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String HEARING = "hearing";
     private static final String HEARING_DAYS = "hearingDays";
     private static final String TYPE = "type";
+    private static final String HEARING_PUBLIC_LIST_NOTE = "publicListNote";
     private static final String DESCRIPTION = "description";
     private static final String TITLE_JUDICIARY_PREFIX_WELSH = "titleJudiciaryPrefixWelsh";
     private static final String TITLE_SUFFIX_WELSH = "titleSuffixWelsh";
@@ -173,7 +174,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private JudiciaryNameMapper judiciaryNameMapper;
 
 
-    public Optional<JsonObject> assemble(JsonEnvelope envelope, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final boolean restricted) {
+    public Optional<JsonObject> assemble(JsonEnvelope envelope, final String courtCentreId, final String courtRoomId, final CourtListType courtListType, final Boolean restricted) {
         final JsonObject payload = envelope.payloadAsJsonObject();
 
         if (LOGGER.isInfoEnabled()) {
@@ -372,6 +373,7 @@ public class StandardPublicCourtListTemplateAssembler {
         return StandardCourtList.standardCourtList()
                 .withListType(courtListType)
                 .withCourtCentreName(courtCentre.getCourtCentreName())
+                .withCourtCentreDefaultStartTime(courtCentre.getDefaultStartTime())
                 .withWelshCourtCentreName(blankStringIfNull(courtCentre.getWelshCourtCentreName()))
                 .withCourtCentreAddress1(blankStringIfNull(courtCentre.getAddress1()) + SPACE + blankStringIfNull(courtCentre.getAddress2()))
                 .withWelshCourtCentreAddress1(blankStringIfNull(courtCentre.getWelshAddress1()) + SPACE + blankStringIfNull(courtCentre.getWelshAddress2()))
@@ -388,6 +390,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private Hearing createHearingFromListedCase(final JsonObject hearingJson, final String hearingStartTime, final Integer sequence,
                                                 final JsonObject listedCase, final boolean restrictedListRequired, final CourtListType courtListType, final Map<String, String> hearingTypesIdWelshDescriptionMap) {
         final String hearingType = hearingJson.getJsonObject(TYPE).getString(DESCRIPTION);
+        final String hearingPublicListNote = hearingJson.getString(HEARING_PUBLIC_LIST_NOTE, "");
         final String hearingWelshType = hearingTypesIdWelshDescriptionMap.get(hearingJson.getJsonObject(TYPE).getString(ID));
         final String reportingRestrictionReason = hearingJson.getString(REPORTING_RESTRICTION_REASON, BLANK_STRING);
         final String welshReportingRestrictionReason = hearingJson.getString(WELSH_REPORTING_RESTRICTION_REASON, BLANK_STRING);
@@ -396,6 +399,7 @@ public class StandardPublicCourtListTemplateAssembler {
         final String adjournedHearingDate = hearingJson.getString(ADJOURNED_HEARING_DATE, BLANK_STRING);
         final boolean isGroupMaster = listedCase.getBoolean(IS_GROUP_MASTER, false);
         return Hearing.hearing()
+                .withHearingPublicListNote(caseRestricted ? EMPTY : hearingPublicListNote)
                 .withCaseNumber(caseRestricted || isGroupMaster ? EMPTY : listedCase.getJsonObject(CASE_IDENTIFIER).getString(CASE_REFERENCE))
                 .withCaseId(caseRestricted ? null : fromString(listedCase.getString(ID)))
                 .withHearingType(caseRestricted ? HEARING_STRING : hearingType)
@@ -422,6 +426,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private Hearing createHearingFromCourtApplication(final JsonObject hearingJson, final String hearingStartTime, final Integer sequence,
                                                       final JsonObject courtApplication, final boolean restrictedListRequired, final Map<String, String> hearingTypesIdWelshDescriptionMap) {
         final String hearingType = hearingJson.getJsonObject(TYPE).getString(DESCRIPTION);
+        final String hearingPublicListNote = hearingJson.getString(HEARING_PUBLIC_LIST_NOTE, "");
         final String hearingWelshType = hearingTypesIdWelshDescriptionMap.get(hearingJson.getJsonObject(TYPE).getString(ID));
         final String reportingRestrictionReason = hearingJson.getString(REPORTING_RESTRICTION_REASON, BLANK_STRING);
         final String welshReportingRestrictionReason = hearingJson.getString(WELSH_REPORTING_RESTRICTION_REASON, BLANK_STRING);
@@ -429,6 +434,7 @@ public class StandardPublicCourtListTemplateAssembler {
         final boolean caseRestricted = restrictedByCase && restrictedListRequired;
         final String adjournedHearingDate = hearingJson.getString(ADJOURNED_HEARING_DATE, BLANK_STRING);
         return Hearing.hearing()
+                .withHearingPublicListNote(caseRestricted ? EMPTY : hearingPublicListNote)
                 .withCaseNumber(caseRestricted ? EMPTY : courtApplication.getString(APPLICATION_REFERENCE))
                 .withHearingType(caseRestricted ? HEARING_STRING : hearingType)
                 .withWelshHearingType(caseRestricted ? HEARING_STRING : (StringUtils.isEmpty(hearingWelshType) ? hearingType : hearingWelshType))

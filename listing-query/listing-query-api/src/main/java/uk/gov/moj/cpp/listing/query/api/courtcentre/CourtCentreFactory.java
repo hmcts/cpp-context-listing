@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class CourtCentreFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(CourtCentreFactory.class);
+    private static final String DEFAULT_START_TIME = "defaultStartTime";
     private static final String OUCODE_L_3_NAME = "oucodeL3Name";
     private static final String OUCODE_L_3_WELSH_NAME = "oucodeL3WelshName";
     private static final String ADDRESS_1 = "address1";
@@ -63,6 +64,7 @@ public class CourtCentreFactory {
         final String welshAddress4 = jsonObject.getString(WELSH_ADDRESS_4, null);
         final String welshAddress5 = jsonObject.getString(WELSH_ADDRESS_5, null);
         final String ouCodeL3Name = jsonObject.getString(OU_CODE_L3_NAME, null);
+        final String defaultStartTime = jsonObject.getString(DEFAULT_START_TIME, null);
         final Boolean welsh = jsonObject.getBoolean(IS_WELSH, false);
         final Map<UUID, CourtRoomDetails> courtRooms = jsonObject.getJsonArray(COURTROOMS).getValuesAs(JsonObject.class).stream()
                 .map(courtRoomJsonObject -> {
@@ -79,6 +81,7 @@ public class CourtCentreFactory {
                 .withId(courtCentreId)
                 .withCourtCentreName(courtCentreName)
                 .withWelshCourtCentreName(courtCentreNameWelsh)
+                .withDefaultStartTime(defaultStartTime)
                 .withAddress1(address1)
                 .withAddress2(address2)
                 .withAddress3(address3)

@@ -522,6 +522,7 @@ public class StandardCourtListTemplateAssemblerTest {
         assertThat(actualHearing.getStartTime(), is(START_LOCAL_TIME.toString()));
         assertThat(actualHearing.getHearingType(), is(PTP));
         assertThat(actualHearing.getSequence(), is(SEQUENCE_2));
+        assertThat(actualHearing.getHearingPublicListNote(), notNullValue());
     }
 
     @Test

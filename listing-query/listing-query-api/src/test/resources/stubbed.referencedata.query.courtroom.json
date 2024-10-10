@@ -16,7 +16,7 @@
   "welshAddress3": "ADDRESS_WELSH_3",
   "welshAddress4": "ADDRESS_WELSH_4",
   "welshAddress5": "ADDRESS_WELSH_5",
-  "defaultStartTime": "10:30",
+  "defaultStartTime": "COURT_START_TIME",
   "defaultDurationHrs": "6:30",
   "isWelsh":true,
   "courtrooms": [
