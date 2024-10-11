@@ -325,17 +325,16 @@ public class StandardPublicCourtListTemplateAssembler {
     }
 
     private void arrangeHearingsByStartTime(final Map<LocalDateTime, List<Hearing>> unsortedListMultimap, final JsonObject hearingJson, final ZonedDateTime startTimestamp, final String hearingStartTime, final Integer sequence, final boolean restrictedListRequired, final CourtListType courtListType, final Map<String, String> hearingTypesIdWelshDescriptionMap) {
-        if (hearingJson.containsKey(LISTED_CASES)&& !hearingJson.getJsonArray(LISTED_CASES).isEmpty()) {
+        if (hearingJson.containsKey(LISTED_CASES)) {
             final List<Hearing> hearings = hearingJson.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class).stream()
                     .map(listedCase -> createHearingFromListedCase(hearingJson, hearingStartTime, sequence, listedCase, restrictedListRequired, courtListType, hearingTypesIdWelshDescriptionMap))
                     .filter(hearing -> isNotEmpty(hearing.getDefendants()))
                     .collect(toList());
             unsortedListMultimap.computeIfAbsent(startTimestamp.toLocalDateTime(), k -> new ArrayList<>()).addAll(hearings);
         }
-        else if (hearingJson.containsKey(COURT_APPLICATIONS) && !hearingJson.getJsonArray(COURT_APPLICATIONS).isEmpty()) {
+        if (hearingJson.containsKey(COURT_APPLICATIONS) && !hearingJson.getJsonArray(COURT_APPLICATIONS).isEmpty()) {
             final List<Hearing> hearings = hearingJson.getJsonArray(COURT_APPLICATIONS).getValuesAs(JsonObject.class).stream()
                     .map(courtApplication -> createHearingFromCourtApplication(hearingJson, hearingStartTime, sequence, courtApplication, restrictedListRequired, hearingTypesIdWelshDescriptionMap))
-                    .filter(hearing -> isNotEmpty(hearing.getDefendants()))
                     .collect(toList());
             unsortedListMultimap.computeIfAbsent(startTimestamp.toLocalDateTime(), k -> new ArrayList<>()).addAll(hearings);
         }
