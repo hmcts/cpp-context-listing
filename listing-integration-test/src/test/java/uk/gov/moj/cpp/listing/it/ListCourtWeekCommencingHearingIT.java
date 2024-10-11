@@ -121,7 +121,7 @@ public class ListCourtWeekCommencingHearingIT extends AbstractIT {
 
         final UpdatedHearingData firstUpdatedHearingDataWithWeekCommencingDate = updatedHearingDataList.get(1);
 
-        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(2)),
+        final Matcher[] matchers = {withJsonPath("$.hearings", hasSize(3)),
                 withJsonPath("$.hearings[0].id", is(hearingsData1.getHearingData().get(0).getId().toString())),
                 withJsonPath("$.hearings[0].jurisdictionType", is(hearingsData1.getHearingData().get(0).getJurisdictionType())),
                 withJsonPath("$.hearings[0].courtCentreId", is(hearingsData1.getHearingData().get(0).getCourtCentreId().toString())),

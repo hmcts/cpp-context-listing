@@ -35,6 +35,7 @@ public class AddDefendantsForCourtProceedingsCommandCollectionConverter implemen
                                 HearingLanguageNeeds.valueOf(hearingLanguageNeeds.toString())))
                         .withLastName(ofNullable(defendant.getLastName()))
                         .withFirstName(ofNullable(defendant.getFirstName()))
+                        .withAddress(nonNull(defendant.getAddress()) ? buildAddress(defendant.getAddress()):null)
                         .withDefenceOrganisation(ofNullable(defendant.getDefenceOrganisation()))
                         .withDatesToAvoid(ofNullable(defendant.getDatesToAvoid()))
                         .withDateOfBirth(ofNullable(defendant.getDateOfBirth()))
@@ -47,6 +48,7 @@ public class AddDefendantsForCourtProceedingsCommandCollectionConverter implemen
                         .withCourtProceedingsInitiated(ofNullable(defendant.getCourtProceedingsInitiated()))
                         .build()).collect(toList());
     }
+
 
     private uk.gov.moj.cpp.listing.domain.Offence buildOffence(final uk.gov.justice.listing.events.Offence offence) {
 
@@ -63,6 +65,23 @@ public class AddDefendantsForCourtProceedingsCommandCollectionConverter implemen
             builder.withReportingRestrictions(buildReportingRestrictions(offence));
         }
         return builder.build();
+    }
+
+    private Optional<uk.gov.moj.cpp.listing.domain.Address> buildAddress(final  uk.gov.justice.core.courts.Address address) {
+        return Optional.ofNullable(uk.gov.moj.cpp.listing.domain.Address.address()
+                .withAddress1(address.getAddress1())
+                .withAddress2(Optional.ofNullable(address.getAddress2()))
+                .withAddress3(Optional.ofNullable(address.getAddress3()))
+                .withAddress4(Optional.ofNullable(address.getAddress4()))
+                .withAddress5(Optional.ofNullable(address.getAddress5()))
+                .withPostcode(Optional.ofNullable(address.getPostcode()))
+                .withWelshAddress1(Optional.ofNullable(address.getWelshAddress1()))
+                .withWelshAddress2(Optional.ofNullable(address.getWelshAddress2()))
+                .withWelshAddress3(Optional.ofNullable(address.getWelshAddress3()))
+                .withWelshAddress4(Optional.ofNullable(address.getWelshAddress4()))
+                .withWelshAddress5(Optional.ofNullable(address.getWelshAddress5()))
+                .build());
+
     }
 
     private List<ReportingRestriction> buildReportingRestrictions(uk.gov.justice.listing.events.Offence offence) {

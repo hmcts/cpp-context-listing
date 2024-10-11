@@ -187,15 +187,15 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                                 ? prosecutionCase.getProsecutionCaseIdentifier().getProsecutionAuthorityReference()
                                 : prosecutionCase.getProsecutionCaseIdentifier().getCaseURN())
                         .build())
-                .withIsCivil(nonNull(prosecutionCase.getIsCivil())?of(prosecutionCase.getIsCivil()):empty())
-                .withGroupId(nonNull(prosecutionCase.getGroupId())? of(prosecutionCase.getGroupId()):empty())
-                .withIsGroupMember(nonNull(prosecutionCase.getIsGroupMember())? of(prosecutionCase.getIsGroupMember()):empty())
-                .withIsGroupMaster(nonNull(prosecutionCase.getIsGroupMaster())? of(prosecutionCase.getIsGroupMaster()):empty())
+                .withIsCivil(nonNull(prosecutionCase.getIsCivil()) ? of(prosecutionCase.getIsCivil()) : empty())
+                .withGroupId(nonNull(prosecutionCase.getGroupId()) ? of(prosecutionCase.getGroupId()) : empty())
+                .withIsGroupMember(nonNull(prosecutionCase.getIsGroupMember()) ? of(prosecutionCase.getIsGroupMember()) : empty())
+                .withIsGroupMaster(nonNull(prosecutionCase.getIsGroupMaster()) ? of(prosecutionCase.getIsGroupMaster()) : empty())
                 .withDefendants(prosecutionCase.getDefendants().stream()
                         .map(d -> buildDefendants(commandHearing, d))
                         .collect(toList()));
 
-        if(nonNull(prosecutionCase.getProsecutor())){
+        if (nonNull(prosecutionCase.getProsecutor())) {
             builder.withProsecutor(Prosecutor.prosecutor()
                     .withProsecutorId(prosecutionCase.getProsecutor().getProsecutorId())
                     .withProsecutorCode(prosecutionCase.getProsecutor().getProsecutorCode())
@@ -275,17 +275,17 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withDefendants(defendants)
                 .withShadowListed(of(caseShadowListed))
                 .withTrialReceiptType(prosecutionCase.getTrialReceiptType())
-                .withIsCivil(nonNull(prosecutionCase.getIsCivil()) ? of(prosecutionCase.getIsCivil()):empty())
-                .withGroupId(nonNull(prosecutionCase.getGroupId()) ? of(prosecutionCase.getGroupId()): empty())
-                .withIsGroupMaster(nonNull(prosecutionCase.getIsGroupMaster())? of(prosecutionCase.getIsGroupMaster()): empty())
-                .withIsGroupMember(nonNull(prosecutionCase.getIsGroupMember())? of(prosecutionCase.getIsGroupMember()): empty());
+                .withIsCivil(nonNull(prosecutionCase.getIsCivil()) ? of(prosecutionCase.getIsCivil()) : empty())
+                .withGroupId(nonNull(prosecutionCase.getGroupId()) ? of(prosecutionCase.getGroupId()) : empty())
+                .withIsGroupMaster(nonNull(prosecutionCase.getIsGroupMaster()) ? of(prosecutionCase.getIsGroupMaster()) : empty())
+                .withIsGroupMember(nonNull(prosecutionCase.getIsGroupMember()) ? of(prosecutionCase.getIsGroupMember()) : empty());
 
         if (nonNull(prosecutionCase.getProsecutor())) {
             builder.withProsecutor(Prosecutor.prosecutor()
                     .withProsecutorId(prosecutionCase.getProsecutor().getProsecutorId())
                     .withProsecutorCode(prosecutionCase.getProsecutor().getProsecutorCode())
                     .build());
-}
+        }
         if (isNotEmpty(prosecutionCase.getCaseMarkers())) {
             builder.withCaseMarkers(prosecutionCase.getCaseMarkers().stream()
                     .map(this::buildCaseMarker)
@@ -378,6 +378,11 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withAddress4(d.map(Address::getAddress4))
                 .withAddress5(d.map(Address::getAddress5))
                 .withPostcode(d.map(Address::getPostcode))
+                .withWelshAddress1(d.map(Address::getWelshAddress1))
+                .withWelshAddress2(d.map(Address::getWelshAddress2))
+                .withWelshAddress3(d.map(Address::getWelshAddress3))
+                .withWelshAddress4(d.map(Address::getWelshAddress4))
+                .withWelshAddress5(d.map(Address::getWelshAddress5))
                 .build());
 
     }
@@ -391,7 +396,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     }
 
     private Optional<String> getDatesToAvoid(final HearingListingNeeds commandHearing, final Defendant d) {
-        if(nonNull(commandHearing)) {
+        if (nonNull(commandHearing)) {
             final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
             if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getDatesToAvoid())) {
                 return ofNullable(listDefendantRequest.get().getDatesToAvoid());
@@ -409,7 +414,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
     }
 
     private Optional<HearingLanguageNeeds> getHearingLanguageNeeds(final HearingListingNeeds commandHearing, final Defendant d) {
-        if(nonNull(commandHearing)) {
+        if (nonNull(commandHearing)) {
             final Optional<DefendantListingNeeds> listDefendantRequest = findListDefendantRequestByDefendantId(commandHearing.getDefendantListingNeeds(), d.getId());
             if (listDefendantRequest.isPresent() && nonNull(listDefendantRequest.get().getHearingLanguageNeeds())) {
                 return valueFor(listDefendantRequest.get().getHearingLanguageNeeds().toString());
@@ -420,7 +425,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     private Optional<Boolean> isPossibleDisqualification(final HearingListingNeeds commandHearing) {
 
-        if (nonNull(commandHearing.getDefendantListingNeeds())){
+        if (nonNull(commandHearing.getDefendantListingNeeds())) {
             final boolean match = commandHearing.getDefendantListingNeeds().stream()
                     .anyMatch(defendantListingNeeds -> REFERRAL_REASON_FOR_DISQUALIFICATION.equals(defendantListingNeeds.getListingReason()));
             return match ? Optional.of(Boolean.TRUE) : Optional.empty();
@@ -448,7 +453,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                 .withId(o.getId())
                 .withEndDate(ofNullable(o.getEndDate()))
                 .withStartDate(o.getStartDate())
-                .withLaidDate(ofNullable(o.getLaidDate()) )
+                .withLaidDate(ofNullable(o.getLaidDate()))
                 .withOffenceCode(o.getOffenceCode())
                 .withOrderIndex(o.getOrderIndex())
                 .withCount(o.getCount())
@@ -520,6 +525,7 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
                         .map(offence -> buildOffence(offence, null))
                         .collect(toList()))
                 .withProsecutionCaseId(d.getProsecutionCaseId())
+                .withAddress(getDefendantAddress(d))
                 .build();
     }
 
@@ -530,6 +536,35 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
             return ofNullable(listDefendantRequest.get().getDatesToAvoid());
         }
         return empty();
+    }
+
+    private Optional<uk.gov.moj.cpp.listing.domain.Address> getDefendantAddress(final Defendant defendant) {
+
+        if (nonNull(defendant.getPersonDefendant()) && nonNull(defendant.getPersonDefendant().getPersonDetails()) && nonNull(defendant.getPersonDefendant().getPersonDetails().getAddress())) {
+            return getAddress(defendant.getPersonDefendant().getPersonDetails().getAddress());
+        }
+        if (nonNull(defendant.getLegalEntityDefendant()) && nonNull(defendant.getLegalEntityDefendant().getOrganisation()) && nonNull(defendant.getLegalEntityDefendant().getOrganisation().getAddress())) {
+
+            return getAddress(defendant.getLegalEntityDefendant().getOrganisation().getAddress());
+        }
+        return empty();
+    }
+
+    private Optional<uk.gov.moj.cpp.listing.domain.Address> getAddress(final Address address) {
+        return Optional.of(
+                uk.gov.moj.cpp.listing.domain.Address.address()
+                        .withAddress1(address.getAddress1())
+                        .withAddress2(Optional.ofNullable(address.getAddress2()))
+                        .withAddress3(Optional.ofNullable(address.getAddress3()))
+                        .withAddress4(Optional.ofNullable(address.getAddress4()))
+                        .withAddress5(Optional.ofNullable(address.getAddress5()))
+                        .withPostcode(Optional.ofNullable(address.getPostcode()))
+                        .withWelshAddress1(Optional.ofNullable(address.getWelshAddress1()))
+                        .withWelshAddress2(Optional.ofNullable(address.getWelshAddress2()))
+                        .withWelshAddress3(Optional.ofNullable(address.getWelshAddress3()))
+                        .withWelshAddress4(Optional.ofNullable(address.getWelshAddress4()))
+                        .withWelshAddress5(Optional.ofNullable(address.getWelshAddress5()))
+                        .build());
     }
 
     private Optional<HearingLanguageNeeds> getHearingLanguageNeeds(final List<ListHearingRequest> commandHearing, final Defendant d) {
@@ -650,10 +685,10 @@ public class CommandToDomainConverter implements Converter<HearingListingNeeds, 
 
     private Optional<Boolean> isYouthDefendant(final ZonedDateTime startDate, final Defendant defendant) {
 
-        if(nonNull(startDate)) {
-            final  String dob = Optional.ofNullable(defendant.getPersonDefendant()).map(d -> Optional.ofNullable(d.getPersonDetails()).map(p -> p.getDateOfBirth()).orElse("")).orElse("");
-            final Boolean isDefendantYouth = StringUtils.isNotBlank(dob) ? isYouth( parse(dob), startDate.toLocalDate())  : null;
-            return  ofNullable(isDefendantYouth);
+        if (nonNull(startDate)) {
+            final String dob = Optional.ofNullable(defendant.getPersonDefendant()).map(d -> Optional.ofNullable(d.getPersonDetails()).map(p -> p.getDateOfBirth()).orElse("")).orElse("");
+            final Boolean isDefendantYouth = StringUtils.isNotBlank(dob) ? isYouth(parse(dob), startDate.toLocalDate()) : null;
+            return ofNullable(isDefendantYouth);
 
         }
         return ofNullable(null);

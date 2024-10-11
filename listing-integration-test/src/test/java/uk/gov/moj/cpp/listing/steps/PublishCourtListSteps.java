@@ -413,6 +413,8 @@ public class PublishCourtListSteps extends CommonHearingSteps {
     }
 
 
+
+
     public void waitForCompletedExport(final UUID courtCentreId, final PublishCourtListType publishCourtListType, final LocalDate startDate) {
 
         final String queryPart = format(readConfig().getProperty("listing.publishedcourtlist"),

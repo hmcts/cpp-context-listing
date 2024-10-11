@@ -7,6 +7,7 @@ import uk.gov.justice.listing.commands.UpdateHearingForListing;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class NonDefaultDayDurationBuilder {
@@ -17,11 +18,15 @@ public class NonDefaultDayDurationBuilder {
 
     public List<NonDefaultDay> updateNonDefaultDayWithNewDuration(final List<NonDefaultDay> ndd, final Integer totalDuration) {
         //single day selection as all day session
-        if (isAllDaySessionBooking(ndd, totalDuration)) {
-            return ndd;
+        if (isAllDaySessionBooking(ndd)) {
+            return totalDuration < FULL_DAY_MINUTES ? ndd : returnSingleDayAllDaySession(ndd);
         }
 
         return buildNewNonDefaultDays(ndd, totalDuration);
+    }
+
+    private List<NonDefaultDay> returnSingleDayAllDaySession(final List<NonDefaultDay> ndd) {
+        return Collections.singletonList(NonDefaultDay.nonDefaultDay().withValuesFrom(ndd.get(0)).withDuration(FULL_DAY_MINUTES).build());
     }
 
     public UpdateHearingForListing buildNewUpdateHearingForListingWithNewNonDefaultDays(final UpdateHearingForListing hearing, final List<NonDefaultDay> nonDefaultDays) {
@@ -90,11 +95,8 @@ public class NonDefaultDayDurationBuilder {
                 .withRoomId(nonDefaultDay.getRoomId()).build();
     }
 
-    private boolean isAllDaySessionBooking(final List<NonDefaultDay> nonDefaultDays, final int duration) {
-        return duration == FULL_DAY_MINUTES
-                && nonDefaultDays.size() == 1
-                && nonDefaultDays.get(0).getSession().equals(ALL_DAY);
-
+    private boolean isAllDaySessionBooking(final List<NonDefaultDay> nonDefaultDays) {
+        return nonDefaultDays.size() == 1 && nonDefaultDays.get(0).getSession().equals(ALL_DAY);
     }
 
     private boolean isHalfDaySession(final int duration) {

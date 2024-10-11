@@ -31,6 +31,8 @@ import java.util.Collections;
 import java.util.UUID;
 
 import javax.json.JsonObject;
+import javax.json.Json;
+
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -168,7 +170,7 @@ public class UpdateExistingHearingEventProcessorTest {
                 .withHearingId(hearingId)
                 .withUnAllocatedListedCases(Collections.singletonList(ListedCase.listedCase()
                         .withId(caseId)
-                        .withIsEjected(true)
+                        .withIsEjected(Boolean.valueOf(true))
                         .withDefendants(Collections.singletonList(Defendant.defendant()
                                 .withId(randomUUID())
                                 .withLastName("Summer")
@@ -178,7 +180,7 @@ public class UpdateExistingHearingEventProcessorTest {
                                         .build()))
                                 .build()))
                         .build()))
-                .withAddCasesToUnAllocatedHearing(true).build();
+                .withAddCasesToUnAllocatedHearing(Boolean.valueOf(true)).build();
         final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.case-added-to-hearing"),
                 objectToJsonObjectConverter.convert(casesAddedToHearing));
         when(addHearingToCaseCommandFromHearingAddedToCaseConverter.convert(casesAddedToHearing))
@@ -197,5 +199,21 @@ public class UpdateExistingHearingEventProcessorTest {
         assertThat(addHearingToaCaseEvent.payloadAsJsonObject().getString("hearingId"), is(hearingId.toString()));
         assertThat(addHearingToaCaseEvent.payloadAsJsonObject().getString("caseId"), is(caseId.toString()));
 
+    }
+
+    @Test
+    public void shouldCallCommand(){
+        final String hearingId = randomUUID().toString();
+        JsonObject relatedHearingUpdatedforAdhocHearing = Json.createObjectBuilder()
+                .add("hearingId", hearingId)
+                .build();
+
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("public.progression.related-hearing-updated-for-adhoc-hearing"), relatedHearingUpdatedforAdhocHearing);
+        processor.handleRelatedHearingUpdatedForAdhocHearing(event);
+
+        verify(this.sender, times(1)).send(this.senderJsonEnvelopeCaptor.capture());
+        final JsonEnvelope command = this.senderJsonEnvelopeCaptor.getValue();
+        assertThat(command.metadata().name(), is ("listing.command.add-cases-to-hearing"));
+        assertThat(command.payloadAsJsonObject().getString("hearingId"), is(hearingId));
     }
 }

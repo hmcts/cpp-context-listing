@@ -49,11 +49,14 @@ import com.jayway.jsonpath.Filter;
 import io.restassured.path.json.JsonPath;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
+import uk.gov.moj.cpp.listing.steps.data.HearingData;
+import uk.gov.moj.cpp.listing.steps.data.HearingsData;
 
 public class HearingDaysIT extends AbstractIT {
 
     private static final String LIST_COURT_HEARING_JSON = "list-court-hearing.json";
     private static final String UPDATE_HEARING_FOR_LISTING_JSON = "update-hearing-for-listing.json";
+    private static final String UPDATE_HEARING_FOR_LISTING_SPLIT_JSON = "update-hearing-for-listing-split.json";
     private static final String UPDATE_ALLOCATED_HEARING_FOR_LISTING_JSON = "update-allocated-hearing-for-listing.json";
     private static final String MEDIA_TYPE_CORRECT_HEARING_DAYS_WITHOUT_COURT_CENTRE = "application/vnd.listing.correct-hearing-days-without-court-centre+json";
     private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -116,20 +119,15 @@ public class HearingDaysIT extends AbstractIT {
         updateHearingSteps.updateHearingForListing(objectMapper.treeToValue(hearingNode, JsonObject.class), hearingId);
 
         //Query for allocated for each court
-        final Matcher[] allocatedMatchers = {withJsonPath(hearingIdFilter),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtCentreId", hasItem(courtCentreId.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtRoomId", hasItem(courtRoomId.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].hearingDate", hasItem(endDate.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtCentreId", hasItem(otherCourtCentreId.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtRoomId", hasItem(otherCourtRoomId.toString()))};
+        final Matcher[] allocatedMatchers = getAllocatedMatchers(hearingIdFilter);
+
         updateHearingSteps.verifyAllocatedHearingFound(hearingId.toString(), courtCentreId, courtRoomId, startDate.toString(), allocatedMatchers);
         updateHearingSteps.verifyAllocatedHearingFound(hearingId.toString(), otherCourtCentreId, otherCourtRoomId, endDate.toString(), allocatedMatchers);
 
         //Extend end date for allocated hearing
         final LocalDate extendedDate = endDate.plusDays(1);
         final Map<String, String> valueMap = getPayloadValues("updating");
-        valueMap.put("endDate",  extendedDate.toString());
+        valueMap.put("endDate", extendedDate.toString());
         final JsonObject updateAllocatedHearingJsonObject = updateHearingSteps.preparePayloadToUpdateHearing(UPDATE_ALLOCATED_HEARING_FOR_LISTING_JSON, valueMap);
 
         final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateAllocatedHearingJsonObject);
@@ -145,15 +143,7 @@ public class HearingDaysIT extends AbstractIT {
         sequenceHearingSteps.sequenceHearing(getSequencedHearingDay(startDate, 1), hearingId);
         sequenceHearingSteps.sequenceHearing(getSequencedHearingDay(endDate, 2), hearingId);
 
-        final Matcher[] sequenceMatchers = {withJsonPath(hearingIdFilter),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].sequence", hasItem(1)),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtCentreId", hasItem(courtCentreId.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtRoomId", hasItem(courtRoomId.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].hearingDate", hasItem(endDate.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].sequence", hasItem(2)),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtCentreId", hasItem(otherCourtCentreId.toString())),
-                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtRoomId", hasItem(otherCourtRoomId.toString()))};
+        final Matcher[] sequenceMatchers = getSequenceMatchers(hearingIdFilter);
 
         sequenceHearingSteps.verifyHearingDaysAreSequencedForHearing(courtCentreId, courtRoomId, startDate.toString(), sequenceMatchers);
         sequenceHearingSteps.verifyHearingDaysAreSequencedForHearing(otherCourtCentreId, otherCourtRoomId, endDate.toString(), sequenceMatchers);
@@ -163,6 +153,63 @@ public class HearingDaysIT extends AbstractIT {
         courtListSteps.verifyCourtListGenerated(courtCentreId, PUBLIC, startDate.toString(), endDate.toString());
         courtListSteps.verifyCourtListGenerated(courtCentreId, STANDARD, startDate.toString(), endDate.toString());
         courtListSteps.verifyCourtListGenerated(courtCentreId, ALPHABETICAL, startDate.toString(), endDate.toString());
+    }
+
+    @Test
+    public void testHearingDaysWithCourtCentreForSplit() throws IOException {
+        stubGetAvailableHearingSlots();
+        startDate = LocalDate.now();
+        endDate = LocalDate.now().plusDays(1);
+        hearingStartTime = ZonedDateTime.of(startDate, defaultStartTime, UTC);
+        hearingId = randomUUID();
+        caseId = randomUUID();
+        courtCentreId = randomUUID();
+        courtRoomId = randomUUID();
+        caseUrn = "TVL16116BT1UU";
+
+        otherCourtCentreId = randomUUID();
+        otherCourtRoomId = randomUUID();
+        final HearingsData hearingsData = HearingsData.singleHearingsDataWithAllocationDataAndJudiciary();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(hearingsData) ;
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedFromAPI(ALLOCATED);
+
+        final HearingData hearingData = hearingsData.getHearingData().get(0);
+
+        UpdateHearingSteps updateHearingStepsSplit = new UpdateHearingSteps();
+
+        final JsonObject updateHearingJsonObjectSplit = updateHearingStepsSplit.preparePayloadToUpdateHearing(UPDATE_HEARING_FOR_LISTING_SPLIT_JSON,
+                getSplitPayloadValues(hearingData.getId().toString(), hearingData.getListedCases().get(0).getCaseId().toString(),
+                        hearingData.getCourtCentreId().toString(), hearingData.getCourtRoomId().toString(),
+                        hearingData.getHearingStartDate().plusDays(1).toString(), hearingData.getHearingEndDate().plusDays(2).toString(),
+                        hearingData.getListedCases().get(0).getDefendants().get(0).getDefendantId().toString(),
+                        hearingData.getListedCases().get(0).getDefendants().get(0).getOffences().get(1).getOffenceId().toString()));
+
+
+        final JsonNode jsonNode = populateNonDefaultDays(otherCourtCentreId, otherCourtRoomId, updateHearingJsonObjectSplit);
+        updateHearingStepsSplit.updateHearingForListing(objectMapper.treeToValue(jsonNode, JsonObject.class), hearingData.getId());
+        updateHearingStepsSplit.verifyHearingRequestedForListingEvent(2);
+        updateHearingStepsSplit.verifyHearingRequestedForListingInPublicMQ();
+
+    }
+
+    private Map<String, String> getSplitPayloadValues(final String hearingId, final String caseId,
+                                                      final String courtCentreId, final String courtRoomId,
+                                                      final String startDate, final String endDate,
+                                                      final String defendantId, final String offenceId) {
+
+        return new HashMap<String, String>() {{
+            put("hearingId", hearingId);
+            put("caseId", caseId);
+            put("courtCentreId", courtCentreId);
+            put("courtRoomId", courtRoomId);
+            put("startDate", startDate);
+            put("defendantId", defendantId);
+            put("offenceId", offenceId);
+            put("firstNonDefaultDayStartDate", startDate);
+            put("secondNonDefaultDayStartDate", endDate);
+            put("endDate", endDate);
+        }};
     }
 
     @Test
@@ -220,6 +267,30 @@ public class HearingDaysIT extends AbstractIT {
         assertThat(message.get("hearingDays[0].listingSequence"), is(0));
     }
 
+    private Matcher[] getAllocatedMatchers(final com.jayway.jsonpath.JsonPath hearingIdFilter) {
+        final Matcher[] allocatedMatchers = {withJsonPath(hearingIdFilter),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtCentreId", hasItem(courtCentreId.toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtRoomId", hasItem(courtRoomId.toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].hearingDate", hasItem(endDate.toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtCentreId", hasItem(otherCourtCentreId.toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtRoomId", hasItem(otherCourtRoomId.toString()))};
+        return allocatedMatchers;
+    }
+
+    private Matcher[] getSequenceMatchers(final com.jayway.jsonpath.JsonPath hearingIdFilter) {
+        final Matcher[] sequenceMatchers = {withJsonPath(hearingIdFilter),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].hearingDate", hasItem(startDate.toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].sequence", hasItem(1)),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtCentreId", hasItem(courtCentreId.toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[0].courtRoomId", hasItem(courtRoomId.toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].hearingDate", hasItem(endDate.toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].sequence", hasItem(2)),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtCentreId", hasItem(otherCourtCentreId.toString())),
+                withJsonPath("$.hearings[?(@.id == '" + hearingId + "')].hearingDays[1].courtRoomId", hasItem(otherCourtRoomId.toString()))};
+        return sequenceMatchers;
+    }
+
     private JsonObjectBuilder populateCorrectedHearingDays() {
         return createObjectBuilder()
                 .add("durationMinutes", defaultDuration)
@@ -243,16 +314,16 @@ public class HearingDaysIT extends AbstractIT {
     private JsonNode populateNonDefaultDays(final UUID otherCourtCentreId, final UUID otherCourtRoomId, final JsonObject updateHearingJsonObject) throws IOException {
         final JsonNode hearingNode = convertToNode(updateHearingJsonObject);
         ((ObjectNode) hearingNode).putArray("nonDefaultDays").add(convertToNode(createObjectBuilder()
-                .add("duration", defaultDuration)
-                .add("startTime", ZonedDateTime.of(startDate, defaultStartTime, UTC).format(formatter))
-                .add("endTime", ZonedDateTime.of(startDate, defaultStartTime.plusMinutes(defaultDuration), UTC).format(formatter))
-                .add("courtCentreId", courtCentreId.toString())
-                .add("roomId", courtRoomId.toString())
-                .add("courtRoomId", 1234)
-                .add("session", "AM")
-                .add("oucode", "B01BLYO")
-                .add("courtScheduleId", randomUUID().toString())
-                .build()))
+                        .add("duration", defaultDuration)
+                        .add("startTime", ZonedDateTime.of(startDate, defaultStartTime, UTC).format(formatter))
+                        .add("endTime", ZonedDateTime.of(startDate, defaultStartTime.plusMinutes(defaultDuration), UTC).format(formatter))
+                        .add("courtCentreId", courtCentreId.toString())
+                        .add("roomId", courtRoomId.toString())
+                        .add("courtRoomId", 1234)
+                        .add("session", "AM")
+                        .add("oucode", "B01BLYO")
+                        .add("courtScheduleId", randomUUID().toString())
+                        .build()))
                 .add(convertToNode(createObjectBuilder()
                         .add("duration", defaultDuration)
                         .add("startTime", ZonedDateTime.of(endDate, defaultStartTime, UTC).format(formatter))

@@ -185,6 +185,10 @@ subscriptions_descriptor:
         - name: listing.events.hearing-changes-saved
           schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-changes-saved.json
 
+        - name: listing.events.hearing-added-to-case
+          schema_uri: http://justice.gov.uk/listing/events/listing.events.hearing-added-to-case.json
+
+
       event_source_name: listing
 
     - name: public event subscription
@@ -259,5 +263,9 @@ subscriptions_descriptor:
 
         - name: public.progression.events.court-application-deleted
           schema_uri: http://justice.gov.uk/progression/courts/public.progression.events.court-application-deleted.json
+
+        - name : public.progression.related-hearing-updated-for-adhoc-hearing
+          schema_uri: http://justice.gov.uk/listing/courts/public.progression.related-hearing-updated-for-adhoc-hearing.json
+
 
       event_source_name: public.event.source

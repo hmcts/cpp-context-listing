@@ -292,9 +292,11 @@ public class HearingQueryView {
 
     @Handles(LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS)
     public JsonEnvelope searchAllocatedAndUnallocatedHearings(final JsonEnvelope query) {
+        LOGGER.info("Event: {}", LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS);
         final List<Hearing> hearings;
         final String caseIdQueryParam = query.payloadAsJsonObject().getString(CASE_ID, null);
         final String applicationIdQueryParam = query.payloadAsJsonObject().getString(APPLICATION_ID, null);
+        LOGGER.info("Event: {}, Case Id: {}, Application Id: {}", LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS, caseIdQueryParam, applicationIdQueryParam);
         if (caseIdQueryParam == null && applicationIdQueryParam == null) {
             return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                     createObjectBuilder()
@@ -306,10 +308,12 @@ public class HearingQueryView {
         } else {
             hearings = repository.findAllocatedAndUnallocatedHearingsByCaseId(caseIdQueryParam);
         }
+        LOGGER.info("Event: {}, number of hearing records from query -  {}", LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS, hearings.size());
 
         final List<Hearing> hearingsToRemove = new ArrayList<>();
         if (caseIdQueryParam != null) {
             removedReViewHearings(hearings, hearingsToRemove);
+            LOGGER.info("Event: {}, number of hearing in Review to be removed - {}", LISTING_ALLOCATED_AND_UNALLOCATED_HEARINGS, hearingsToRemove.size());
         }
         hearingsToRemove.forEach(hearings::remove);
 

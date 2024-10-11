@@ -139,6 +139,11 @@ public class NewDomainToEventConverter {
                     .withAddress4(address.getAddress4().orElse(null))
                     .withAddress5(address.getAddress5().orElse(null))
                     .withPostcode(address.getPostcode().orElse(null))
+                    .withWelshAddress1(address.getWelshAddress1().orElse(null))
+                    .withWelshAddress2(address.getWelshAddress2().orElse(null))
+                    .withWelshAddress3(address.getWelshAddress3().orElse(null))
+                    .withWelshAddress4(address.getWelshAddress4().orElse(null))
+                    .withWelshAddress5(address.getWelshAddress5().orElse(null))
                     .build();
         }
         return null;

@@ -98,4 +98,7 @@ subscriptions_descriptor:
         - name: public.listing.hearing-changes-saved
           schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearing-changes-saved.json
 
+        - name: public.listing.hearing-added-to-case
+          schema_uri: http://justice.gov.uk/listing/courts/public.listing.hearing-added-to-case.json
+
       event_source_name: public.event.source

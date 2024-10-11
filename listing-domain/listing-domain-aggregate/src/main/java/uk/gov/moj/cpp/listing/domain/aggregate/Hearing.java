@@ -533,7 +533,8 @@ public class Hearing implements Aggregate {
                                        final ZonedDateTime startDate,
                                        final LocalDate weekCommencingStartDate,
                                        final Integer weekCommencingDurationInWeeks,
-                                       final List<uk.gov.justice.core.courts.JudicialRole> judiciary) {
+                                       final List<uk.gov.justice.core.courts.JudicialRole> judiciary,
+                                       final List<NonDefaultDay> nonDefaultDays) {
 
         if (this.duplicate || this.deleted) {
             return Stream.empty();
@@ -553,8 +554,13 @@ public class Hearing implements Aggregate {
                         .build())
                 .withJurisdictionType(uk.gov.justice.core.courts.JurisdictionType.valueOf(jurisdictionType.name()))
                 .withEarliestStartDateTime(startDate);
+
         if (isNotEmpty(judiciary)) {
             builder.withJudiciary(judiciary);
+        }
+
+        if (isNotEmpty(nonDefaultDays)) {
+            builder.withNonDefaultDays(convertDomainToCore(nonDefaultDays));
         }
 
         if (nonNull(weekCommencingStartDate)) {
@@ -696,6 +702,10 @@ public class Hearing implements Aggregate {
         return eventNonDefaults.stream().map(this::getDomainNonDefaultDay).collect(toList());
     }
 
+    private List<uk.gov.justice.core.courts.NonDefaultDay> convertDomainToCore(final List<NonDefaultDay> domainNonDefaults) {
+        return domainNonDefaults.stream().map(this::getCoreNonDefaultDay).collect(toList());
+    }
+
     private NonDefaultDay getDomainNonDefaultDay(final uk.gov.justice.listing.events.NonDefaultDay eventNonDefault) {
         final NonDefaultDay.Builder builder = NonDefaultDay.nonDefaultDay();
         if (nonNull(eventNonDefault.getStartTime())) {
@@ -718,6 +728,21 @@ public class Hearing implements Aggregate {
         }
         builder.withCourtCentreId(ofNullable(eventNonDefault.getCourtCentreId()));
         builder.withRoomId(ofNullable(eventNonDefault.getRoomId()));
+        return builder.build();
+    }
+
+    private uk.gov.justice.core.courts.NonDefaultDay getCoreNonDefaultDay(final NonDefaultDay nonDefaultDay) {
+        final uk.gov.justice.core.courts.NonDefaultDay.Builder builder = uk.gov.justice.core.courts.NonDefaultDay.nonDefaultDay();
+
+        builder.withStartTime(nonDefaultDay.getStartTime());
+        builder.withDuration(nonDefaultDay.getDuration().orElse(null));
+        builder.withSession(nonDefaultDay.getSession().orElse(null));
+        builder.withOucode(nonDefaultDay.getOucode().orElse(null));
+        builder.withCourtScheduleId(nonDefaultDay.getCourtScheduleId().orElse(null));
+        builder.withCourtRoomId(nonDefaultDay.getCourtRoomId().orElse(null));
+        builder.withCourtCentreId(nonDefaultDay.getCourtCentreId().orElse(null));
+        builder.withRoomId(nonDefaultDay.getRoomId().orElse(null));
+
         return builder.build();
     }
 
@@ -1811,6 +1836,11 @@ public class Hearing implements Aggregate {
     }
 
     public Stream<Object> raiseUpdateHearingInStagingHmi(final Optional<String> source) {
+
+        if (duplicate || deleted) {
+            return Stream.empty();
+        }
+
         final Stream.Builder<Object> eventStreamBuilder = Stream.builder();
         if (nonNull(currentHearingEventState) && source.map(s -> !SOURCE_HMI.equals(s)).orElse(true)) {
             eventStreamBuilder.add(UpdatedHearingInStagingHmi.updatedHearingInStagingHmi().withHearing(currentHearingEventState).build());
@@ -2158,14 +2188,14 @@ public class Hearing implements Aggregate {
 
         if (hearing.getJudiciary() != null) {
             this.judiciary = hearing.getJudiciary().stream().map(jr -> JudicialRole.judicialRole()
-                    .withJudicialRoleType(uk.gov.moj.cpp.listing.domain.JudicialRoleType.judicialRoleType()
-                            .withJudiciaryType(jr.getJudicialRoleType().getJudiciaryType())
-                            .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId())
+                            .withJudicialRoleType(uk.gov.moj.cpp.listing.domain.JudicialRoleType.judicialRoleType()
+                                    .withJudiciaryType(jr.getJudicialRoleType().getJudiciaryType())
+                                    .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId())
+                                    .build())
+                            .withJudicialId(jr.getJudicialId())
+                            .withIsDeputy(ofNullable(jr.getIsDeputy()))
+                            .withIsBenchChairman(ofNullable(jr.getIsBenchChairman()))
                             .build())
-                    .withJudicialId(jr.getJudicialId())
-                    .withIsDeputy(ofNullable(jr.getIsDeputy()))
-                    .withIsBenchChairman(ofNullable(jr.getIsBenchChairman()))
-                    .build())
                     .filter(Objects::nonNull)
                     .collect(toList());
         }
@@ -2604,9 +2634,8 @@ public class Hearing implements Aggregate {
     }
 
     /**
-     * @param event if previous hearings that contains offence id seeded by
-     *              another hearing, delete all offences match the seedId and
-     *              also delete case which all offences seeded by
+     * @param event if previous hearings that contains offence id seeded by another hearing, delete
+     *              all offences match the seedId and also delete case which all offences seeded by
      *              seedingHearingId but not delete all hearing
      */
     private void removeSeededOffences(final OffencesRemovedFromHearing event) {
@@ -2764,8 +2793,9 @@ public class Hearing implements Aggregate {
     }
 
     /**
-     * Update hearing for listing command's payload does not have seedingHearing information in the offence level.
-     * Offences SeedingHearing map  pulls out from prosecutionCaseDefendantOffenceIds  which is stored on HearingListed.
+     * Update hearing for listing command's payload does not have seedingHearing information in the
+     * offence level. Offences SeedingHearing map  pulls out from prosecutionCaseDefendantOffenceIds
+     * which is stored on HearingListed.
      */
     private uk.gov.justice.listing.events.DefendantOffenceIdsV2 buildEventDefendantOffenceIdsV2(final uk.gov.moj.cpp.listing.domain.DefendantOffenceIds d) {
         final Map<UUID, SeedingHearing> seedingHearingMap = getOffencesSeedingHearingMap();
@@ -2892,14 +2922,14 @@ public class Hearing implements Aggregate {
 
         if (hearing.getJudiciary() != null) {
             this.judiciary = hearing.getJudiciary().stream().map(jr -> JudicialRole.judicialRole()
-                    .withJudicialRoleType(uk.gov.moj.cpp.listing.domain.JudicialRoleType.judicialRoleType()
-                            .withJudiciaryType(jr.getJudicialRoleType().getJudiciaryType())
-                            .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId())
+                            .withJudicialRoleType(uk.gov.moj.cpp.listing.domain.JudicialRoleType.judicialRoleType()
+                                    .withJudiciaryType(jr.getJudicialRoleType().getJudiciaryType())
+                                    .withJudicialRoleTypeId(jr.getJudicialRoleType().getJudicialRoleTypeId())
+                                    .build())
+                            .withJudicialId(jr.getJudicialId())
+                            .withIsDeputy(ofNullable(jr.getIsDeputy()))
+                            .withIsBenchChairman(ofNullable(jr.getIsBenchChairman()))
                             .build())
-                    .withJudicialId(jr.getJudicialId())
-                    .withIsDeputy(ofNullable(jr.getIsDeputy()))
-                    .withIsBenchChairman(ofNullable(jr.getIsBenchChairman()))
-                    .build())
                     .filter(Objects::nonNull)
                     .collect(toList());
         }
@@ -3154,12 +3184,12 @@ public class Hearing implements Aggregate {
     }
 
     /**
-     * HearingDeleted event is moved with DD-14484
-     * To block the event replay from marking the historic hearings as deleted,
-     * we need to make sure the hearingId provided is matching with the hearingId in the aggregate
-     * which will verify the unallocated hearing is being deleted.
+     * HearingDeleted event is moved with DD-14484 To block the event replay from marking the
+     * historic hearings as deleted, we need to make sure the hearingId provided is matching with
+     * the hearingId in the aggregate which will verify the unallocated hearing is being deleted.
      *
-     * @param hearingDeleted Contains id of the unallocated and merged hearing to be marked as deleted.
+     * @param hearingDeleted Contains id of the unallocated and merged hearing to be marked as
+     *                       deleted.
      * @return boolean
      */
     private boolean isDeletingMergedUnAllocatedHearing(final HearingDeleted hearingDeleted) {
@@ -3247,11 +3277,11 @@ public class Hearing implements Aggregate {
     }
 
 
-
-
     /**
-     * This method is responsible for merging cases, defendants and offences between HearingListingNeeds which is passed in payload and hearing in aggregate.
-     *  Since the case can be splitted at case, defendant and offence levels when we are merging here we need to compare at every level and merge it back.
+     * This method is responsible for merging cases, defendants and offences between
+     * HearingListingNeeds which is passed in payload and hearing in aggregate. Since the case can
+     * be splitted at case, defendant and offence levels when we are merging here we need to compare
+     * at every level and merge it back.
      *
      * @param listedCases Listed cases from event payload
      */
@@ -3264,7 +3294,7 @@ public class Hearing implements Aggregate {
                 final Optional<uk.gov.justice.listing.events.ListedCase> matchingCaseOptional = this.currentHearingEventState.getListedCases().stream().filter(hearingCase -> hearingCase.getId().equals(prosecutionCase.getId())).findFirst();
                 if (matchingCaseOptional.isPresent()) {
 
-                        prosecutionCase.getDefendants().forEach(defendant -> {
+                    prosecutionCase.getDefendants().forEach(defendant -> {
 
                         final Optional<uk.gov.justice.listing.events.Defendant> matchingDefendantOptional = this.currentHearingEventState.getListedCases().stream()
                                 .flatMap(hearingCase -> hearingCase.getDefendants().stream())
@@ -3290,7 +3320,7 @@ public class Hearing implements Aggregate {
         }
     }
 
-    public uk.gov.justice.listing.events.Hearing getCurrentHearingEventState(){
+    public uk.gov.justice.listing.events.Hearing getCurrentHearingEventState() {
         return currentHearingEventState;
     }
 
@@ -3304,7 +3334,7 @@ public class Hearing implements Aggregate {
         }
 
         if (hasChanged(this.nonDefaultDays, updatedNonDefaultDays)) {
-           final Optional<NonDefaultDay> updatedDays = updatedNonDefaultDays.stream()
+            final Optional<NonDefaultDay> updatedDays = updatedNonDefaultDays.stream()
                     .filter(updatedDay -> nonDefaultDays.stream()
                             .anyMatch(originalDay -> !Objects.equals(updatedDay.getCourtCentreId(), originalDay.getCourtCentreId()) ||
                                     !Objects.equals(updatedDay.getCourtRoomId(), originalDay.getCourtRoomId()) ||
@@ -3314,6 +3344,7 @@ public class Hearing implements Aggregate {
         }
         return false;
     }
+
 
     public Stream<Object> removeCaseFromGroupCases(final UUID hearingId, final UUID groupId,
                                                    final ListedCase removedCase,

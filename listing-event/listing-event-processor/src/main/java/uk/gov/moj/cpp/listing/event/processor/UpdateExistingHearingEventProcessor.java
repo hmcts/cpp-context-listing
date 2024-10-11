@@ -113,6 +113,15 @@ public class UpdateExistingHearingEventProcessor {
         );
     }
 
+    @Handles("public.progression.related-hearing-updated-for-adhoc-hearing")
+    public void handleRelatedHearingUpdatedForAdhocHearing(final JsonEnvelope envelope){
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(EVENT_PAYLOAD_DEBUG_STRING, "public.progression.related-hearing-updated-for-adhoc-hearing", envelope.toObfuscatedDebugString());
+        }
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withName(COMMAND_ADD_CASES_TO_HEARING), envelope.payloadAsJsonObject()));
+    }
+
     private JsonObject buildCasesAddedToHearingPublicEventPayload(final CasesAddedToHearing casesAddedToHearing) {
         final CaseAddedToHearing payload = CaseAddedToHearing.caseAddedToHearing().withExistingHearingId(casesAddedToHearing.getSeedingHearingId())
                 .withHearingId(casesAddedToHearing.getHearingId())

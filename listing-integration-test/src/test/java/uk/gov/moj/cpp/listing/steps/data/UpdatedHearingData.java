@@ -288,6 +288,8 @@ public class UpdatedHearingData {
                 nonSittingDays, HEARING_LANGUAGE_WELSH, judiciary, JURISDICTION_TYPE_MAGISTRATES, null, null, null, null, null, true, null, null);
     }
 
+
+
     public static UpdatedHearingData updatedHearingDataForAllocationWithNonDefaultDaysWithoutCourtRoomSelection(final UUID hearingId, final UUID courtCentreId) {
         final String endDate = LocalDate.now().toString();
         final LocalDate startDate = LocalDate.parse(endDate);

@@ -20,14 +20,13 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.*;
 import static uk.gov.justice.services.common.converter.ZonedDateTimes.fromString;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
@@ -131,8 +130,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String FIELD_PUBLIC_LIST_NOTE = "publicListNote";
     private static final String FIELD_USER_ID = "userId";
     public static final String PANEL = "panel";
-    public static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing" +
-            ".search.hearings+json";
+    public static final String MEDIA_TYPE_SEARCH_HEARINGS_JSON = "application/vnd.listing.search.hearings+json";
     public static final String FIELD_HEARING_TYPE_ID = "id";
     public static final String FIELD_HEARING_TYPE_DESCRIPTION = "description";
     public static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
@@ -145,6 +143,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String EVENT_SELECTOR_HEARING_LANGUAGE_CHANGED = "listing.events.hearing-language-changed-for-hearing";
     private static final String EVENT_SELECTOR_HEARING_START_DATE_CHANGED = "listing.events.start-date-changed-for-hearing";
     private static final String EVENT_SELECTOR_HEARING_RESCHEDULED = "listing.events.hearing-rescheduled";
+    private static final String EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING = "listing.events.hearing-requested-for-listing";
     private static final String EVENT_SELECTOR_NON_DEFAULT_DAYS_ASSIGNED = "listing.events.non-default-days-assigned-to-hearing";
     private static final String EVENT_SELECTOR_NON_DEFAULT_DAYS_CHANGED = "listing.events.non-default-days-changed-for-hearing";
     private static final String EVENT_SELECTOR_NON_SITTING_DAYS_ASSIGNED = "listing.events.non-sitting-days-assigned-to-hearing";
@@ -162,6 +161,7 @@ public class UpdateHearingSteps extends AbstractIT {
     private static final String EVENT_SELECTED_PUBLIC_HEARING_CONFIRMED = "public.listing.hearing-confirmed";
     private static final String EVENT_SELECTED_PUBLIC_HEARING_UPDATED = "public.listing.hearing-updated";
     private static final String EVENT_SELECTED_PUBLIC_VACATED_TRIAL_UPDATED = "public.listing.vacated-trial-updated";
+    private static final String EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING = "public.listing.hearing-requested-for-listing";
     private static final String EVENT_SELECTOR_WEEK_COMMENCING_DATES_REMOVED = "listing.events.week-commencing-date-removed-for-hearing";
     private static final String EVENT_SELECTOR_HEARING_PARTIALLY_UPDATED = "listing.events.hearing-partially-updated";
     private static final String EVENT_SELECTOR_PUBLIC_LIST_NOTE_CHANGED = "listing.events.public-list-note-changed-for-hearing";
@@ -222,6 +222,10 @@ public class UpdateHearingSteps extends AbstractIT {
     private JmsMessageConsumerClient privateMessageConsumerWeekCommencingDateChanged;
     private JmsMessageConsumerClient privateEventMessageConsumerUpdatedHearingInStagingHmi;
     private JmsMessageConsumerClient privateMessageConsumerHearingListed;
+    private JmsMessageConsumerClient privateMessageConsumerHearingRequestedForListing;
+    private JmsMessageConsumerClient publicMessageConsumerHearingRequested;
+    private JmsMessageConsumerClient publicMessageConsumerHearingRequestedForListing;
+
 
 
     private String request;
@@ -389,6 +393,10 @@ public class UpdateHearingSteps extends AbstractIT {
                 .add(FIELD_NON_DEFAULT_DAYS, prepareJsonNonDefaultDays(updatedHearingData.getNonDefaultDays()))
                 .add(FIELD_SEND_NOTIFICATION_TO_PARTIES, updatedHearingData.isSendNotificationToParties())
                 .add(FIELD_NON_SITTING_DAYS, prepareJsonStringArray(updatedHearingData.getNonSittingDays()));
+
+        if(nonNull(updatedHearingData.getHasVideoLink())) {
+            builder.add(FIELD_HAS_VIDEO_LINK, updatedHearingData.getHasVideoLink());
+        }
 
         if(nonNull(updatedHearingData.getHasVideoLink())) {
             builder.add(FIELD_HAS_VIDEO_LINK, updatedHearingData.getHasVideoLink());
@@ -684,6 +692,9 @@ public class UpdateHearingSteps extends AbstractIT {
         privateMessageConsumerStartDateRemoved = privateEvents.createPrivateConsumer(EVENT_SELECTOR_START_DATE_REMOVED);
         privateMessageConsumerWeekCommencingDateChanged = privateEvents.createPrivateConsumer(EVENT_SELECTOR_LISTING_EVENTS_WEEK_COMMENCING_DATE_CHANGED_FOR_HEARING);
         privateEventMessageConsumerUpdatedHearingInStagingHmi = privateEvents.createPrivateConsumer(LISTING_EVENTS_UPDATED_HEARING_IN_STAGING_HMI);
+        privateMessageConsumerHearingRequestedForListing =privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
+        publicMessageConsumerHearingRequested= publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
+        publicMessageConsumerHearingRequestedForListing=publicEvents.createPublicConsumer(EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING);
         publicEventMessageProducer = publicEvents.createPublicProducer();
     }
 
@@ -1080,6 +1091,13 @@ public class UpdateHearingSteps extends AbstractIT {
         verifyHearingUpdatedEvent();
     }
 
+    public void verifyHearingRequestedForListingInPublicMQ() {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingRequested);
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingRequested: {}", jsonResponse.prettify());
+        assertNotNull(jsonResponse);
+        assertThat(((ArrayList)jsonResponse.get("listNewHearing.nonDefaultDays")).size(), is(2));
+    }
+
     public void verifyVacatedTrialUpdatedInPublicMQ(final boolean allocated, final boolean isVacated) {
         final JsonPath jsRequest = new JsonPath(request);
         LOGGER.debug("Request payload: {}", jsRequest.prettify());
@@ -1098,6 +1116,14 @@ public class UpdateHearingSteps extends AbstractIT {
     private void verifyHearingUpdatedEvent() {
 
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingUpdated);
+        LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
+
+        verifyHearingPublicDetails(jsonResponse, "updatedHearing");
+    }
+
+    private void verifyHearingRequestedForListingPublicEvent() {
+
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingRequestedForListing);
         LOGGER.info("jsonResponse from publicMessageConsumerHearingUpdated: {}", jsonResponse.prettify());
 
         verifyHearingPublicDetails(jsonResponse, "updatedHearing");
@@ -1231,6 +1257,14 @@ public class UpdateHearingSteps extends AbstractIT {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingRescheduled);
         LOGGER.info("jsonResponse from privateMessageConsumerHearingRescheduled: {}", jsonResponse.prettify());
         assertThat(jsonResponse.get("hearingId"), is(updatedHearingData.getHearingId().toString()));
+    }
+
+
+    public void verifyHearingRequestedForListingEvent(final int count) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerHearingRequestedForListing);
+        LOGGER.info("jsonResponse from privateMessageConsumerHearingRequestedForListing: {}", jsonResponse.prettify());
+        assertThat(jsonResponse.getMap("listNewHearing").get("nonDefaultDays"), is(notNullValue()));
+        assertThat(((ArrayList)jsonResponse.getMap("listNewHearing").get("nonDefaultDays")).size(), is(count));
     }
 
     private void verifyPublicListNoteChangedEvent() {
@@ -1807,7 +1841,11 @@ public class UpdateHearingSteps extends AbstractIT {
                 .replaceAll("COURT_CENTRE_ID", values.get("courtCentreId"))
                 .replaceAll("COURT_ROOM_ID", values.get("courtRoomId"))
                 .replaceAll("START_DATE", values.get("startDate"))
-                .replaceAll("END_DATE", values.get("endDate"));
+                .replaceAll("END_DATE", values.get("endDate"))
+                .replaceAll("DEFENDANT_ID", values.get("defendantId"))
+                .replaceAll("OFFENCE_ID", values.get("offenceId"))
+                .replaceAll("FIRST_NON_DEFAULT_DAY_START_DATE", values.get("firstNonDefaultDayStartDate"))
+                .replaceAll("SECOND_NON_DEFAULT_DAY_START_DATE", values.get("secondNonDefaultDayStartDate"));
 
         if (values.get("updatedCourtCentreId") != null && values.get("updatedCourtRoomId") != null) {
             eventPayloadString = eventPayloadString.replaceAll("UPDATED_CENTRE_ID", values.get("updatedCourtCentreId"));

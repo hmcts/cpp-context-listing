@@ -53,7 +53,14 @@ public class CommandDefendantToDomainConverterTest {
         final Defendant defendant = defendant()
                 .withId(defendantId)
                 .withOffences(asList(offence))
-                .withAddress(Address.address().withAddress1("adressLine1").build())
+                .withAddress(Address.address().
+                        withAddress1("adressLine1")
+                        .withAddress2("adressLine2")
+                        .withAddress3("adressLine3")
+                        .withAddress4("adressLine4")
+                        .withAddress5("adressLine5")
+                        .withPostcode("IG1 1NL")
+                        .build())
                 .build();
 
 
@@ -63,6 +70,16 @@ public class CommandDefendantToDomainConverterTest {
         assertThat(defendants.get(0).getId(), is(defendantId));
         assertThat(defendants.get(0).getOffences(), hasSize(1));
         assertThat(defendants.get(0).getOffences().get(0).getId(), is(offenceId));
+        assertThat(defendants.get(0).getAddress().get().getAddress1(), is(defendant.getAddress().getAddress1()));
+        assertThat(defendants.get(0).getAddress().get().getAddress2().get(), is(defendant.getAddress().getAddress2()));
+        assertThat(defendants.get(0).getAddress().get().getAddress3().get(), is(defendant.getAddress().getAddress3()));
+        assertThat(defendants.get(0).getAddress().get().getAddress4().get(), is(defendant.getAddress().getAddress4()));
+        assertThat(defendants.get(0).getAddress().get().getAddress5().get(), is(defendant.getAddress().getAddress5()));
+        assertThat(defendants.get(0).getAddress().get().getPostcode().get(), is(defendant.getAddress().getPostcode()));
+
+
+
+
 
     }
 

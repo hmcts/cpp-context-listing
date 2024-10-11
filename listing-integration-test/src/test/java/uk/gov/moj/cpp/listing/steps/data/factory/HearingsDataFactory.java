@@ -158,6 +158,10 @@ public class HearingsDataFactory {
         return manyRandomHearingsWithAllocationData(2);
     }
 
+    public static List<HearingData> singleHearingsDataWithAllocationDataAndJudiciary() {
+        return manyRandomHearingsWithAllocationDataSingleCase(1);
+    }
+
     public static List<HearingData> hearingsDataWithAllocationDataAndJudiciary(final String jurisdictionType) {
         return manyRandomHearingsWithAllocationDataWithJudiciaryType(2, randomUUID(), jurisdictionType);
     }
@@ -234,6 +238,10 @@ public class HearingsDataFactory {
         return manyRandomHearingsWithAllocationData(numberOfHearings, UUID.randomUUID());
     }
 
+    private static List<HearingData> manyRandomHearingsWithAllocationDataSingleCase(final Integer numberOfHearings) {
+        return manyRandomHearingsWithAllocationDataSingleCase(numberOfHearings, UUID.randomUUID());
+    }
+
     private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournment(final Integer numberOfHearings) {
         return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings, UUID.randomUUID());
     }
@@ -253,6 +261,10 @@ public class HearingsDataFactory {
         return manyRandomHearingsWithAllocationData(numberOfHearings, courtCentreId, "MAGISTRATE");
     }
 
+    private static List<HearingData> manyRandomHearingsWithAllocationDataSingleCase(final Integer numberOfHearings, final UUID courtCentreId) {
+        return manyRandomHearingsWithAllocationDataSingleCase(numberOfHearings, courtCentreId, "MAGISTRATE");
+    }
+
     private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournment(final Integer numberOfHearings, final UUID courtCentreId) {
         return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings, courtCentreId, "MAGISTRATE");
     }
@@ -268,6 +280,12 @@ public class HearingsDataFactory {
     private static List<HearingData> manyRandomHearingsWithAllocationData(final Integer numberOfHearings, final UUID courtCentreId, final String judiciaryType) {
         return IntStream.range(0, numberOfHearings)
                 .mapToObj((int i) -> randomHearingWithAdjournmentFromDate(courtCentreId, singletonList(randomJudicialRole(judiciaryType))))
+                .collect(toList());
+    }
+
+    private static List<HearingData> manyRandomHearingsWithAllocationDataSingleCase(final Integer numberOfHearings, final UUID courtCentreId, final String judiciaryType) {
+        return IntStream.range(0, numberOfHearings)
+                .mapToObj((int i) -> randomHearingWithAdjournmentFromDateSingleCase(courtCentreId, singletonList(randomJudicialRole(judiciaryType))))
                 .collect(toList());
     }
 
@@ -457,6 +475,12 @@ public class HearingsDataFactory {
                 .collect(toList());
     }
 
+    private static List<ListedCaseData> manyRandomListingCasesSingleDefendant(final Integer numberOfListingCases) {
+        return IntStream.range(0, numberOfListingCases)
+                .mapToObj((int i) -> randomListedCaseSingleDefendant())
+                .collect(toList());
+    }
+
     private static List<ListedCaseData> manyRandomListingCases(final Integer numberOfListingCases, final String listingReason) {
         return IntStream.range(0, numberOfListingCases)
                 .mapToObj((int i) -> randomListedCaseWithDefendantHavingListingReason(listingReason))
@@ -535,6 +559,12 @@ public class HearingsDataFactory {
                 .collect(toList());
     }
 
+    private static List<DefendantData> manyRandomDefendantsTwoOffences(final Integer numberOfDefendants) {
+        return IntStream.range(0, numberOfDefendants)
+                .mapToObj((int i) -> randomDefendant(2))
+                .collect(toList());
+    }
+
     private static List<DefendantData> manyRandomDefendants(final List<DefendantData> defendants) {
         return defendants.stream()
                 .map(defendantData -> randomDefendant(defendantData.getOffences()))
@@ -591,6 +621,10 @@ public class HearingsDataFactory {
 
     private static ListedCaseData randomListedCase() {
         return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendants(2), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
+    }
+
+    private static ListedCaseData randomListedCaseSingleDefendant() {
+        return new ListedCaseData(randomUUID(), randomUUID(), STRING.next(), randomCaseReference(), manyRandomDefendantsTwoOffences(1), false, false, manyRandomCaseMarkers(1), STRING.next(), null, null, null, null);
     }
 
     private static ListedCaseData randomListedCase(final ListedCaseData listedCaseData) {
@@ -674,6 +708,13 @@ public class HearingsDataFactory {
         return new DefendantData(randomUUID(), STRING.next(), STRING.next(),
                 LocalDate.now(), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
                 manyRandomOffences(3), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()),
+                Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, randomUUID(), ZonedDateTime.now(), STRING.next());
+    }
+
+    private static DefendantData randomDefendant(final int numberOfOffences) {
+        return new DefendantData(randomUUID(), STRING.next(), STRING.next(),
+                LocalDate.now(), LocalDate.now(), BAIL_CONDITIONAL, STRING.next(),
+                manyRandomOffences(numberOfOffences), new LegalEntityDefendantData(UUID.randomUUID(), getOrganisationData()),
                 Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, randomUUID(), ZonedDateTime.now(), STRING.next());
     }
 
@@ -976,6 +1017,16 @@ public class HearingsDataFactory {
 
     private static HearingData randomHearingWithAdjournmentFromDate(final UUID courtCentreId, final List<JudicialRoleData> judicialRoles) {
         final List<ListedCaseData> listedCaseData = manyRandomListingCases(2);
+        return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
+                LocalDate.now(), HEARING_ESTIMATE_MINUTES,
+                randomUUID(), ZonedDateTime.now().truncatedTo(ChronoUnit.HOURS), listedCaseData,
+                judicialRoles, MAGISTRATES_JURISDICTION, STRING.next(),
+                singletonList(randomCourtApplicationData(listedCaseData.get(0).getCaseId())),
+                singletonList(randomCourtApplicationPartyNeed()), "Carmarthen Magistrates Court", LocalDate.now().toString());
+    }
+
+    private static HearingData randomHearingWithAdjournmentFromDateSingleCase(final UUID courtCentreId, final List<JudicialRoleData> judicialRoles) {
+        final List<ListedCaseData> listedCaseData = manyRandomListingCasesSingleDefendant(1);
         return new HearingData(randomUUID(), courtCentreId, PTP_HEARING_TYPE, LocalDate.now(),
                 LocalDate.now(), HEARING_ESTIMATE_MINUTES,
                 randomUUID(), ZonedDateTime.now().truncatedTo(ChronoUnit.HOURS), listedCaseData,

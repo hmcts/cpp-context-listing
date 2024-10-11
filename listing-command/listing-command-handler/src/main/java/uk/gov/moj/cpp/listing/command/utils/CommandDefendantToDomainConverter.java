@@ -62,6 +62,11 @@ public class CommandDefendantToDomainConverter implements Converter<List<Defenda
                 .withAddress4(ofNullable(address.getAddress4()))
                 .withAddress5(ofNullable(address.getAddress5()))
                 .withPostcode(ofNullable(address.getPostcode()))
+                .withWelshAddress1(ofNullable(address.getWelshAddress1()))
+                .withWelshAddress2(ofNullable(address.getWelshAddress2()))
+                .withWelshAddress3(ofNullable(address.getWelshAddress3()))
+                .withWelshAddress4(ofNullable(address.getWelshAddress4()))
+                .withWelshAddress5(ofNullable(address.getWelshAddress5()))
                 .build());
     }
 

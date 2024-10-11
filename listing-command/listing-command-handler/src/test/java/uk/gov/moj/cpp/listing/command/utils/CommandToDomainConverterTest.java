@@ -320,8 +320,17 @@ public class CommandToDomainConverterTest {
         assertThat(actualDefendant.getSpecificRequirements().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getSpecificRequirements()));
         assertThat(actualDefendant.getDateOfBirth().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getDateOfBirth().toString()));
         assertThat(actualDefendant.getCustodyTimeLimit().get(), is(commandDefendant.getPersonDefendant().getCustodyTimeLimit().toString()));
+        assertThat(actualDefendant.getAddress().get().getAddress1(), is(commandDefendant.getPersonDefendant().getPersonDetails().getAddress().getAddress1()));
+        assertThat(actualDefendant.getAddress().get().getAddress2().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getAddress().getAddress2()));
+        assertThat(actualDefendant.getAddress().get().getAddress3().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getAddress().getAddress3()));
+        assertThat(actualDefendant.getAddress().get().getAddress4().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getAddress().getAddress4()));
+        assertThat(actualDefendant.getAddress().get().getAddress5().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getAddress().getAddress5()));
+        assertThat(actualDefendant.getAddress().get().getPostcode().get(), is(commandDefendant.getPersonDefendant().getPersonDetails().getAddress().getPostcode()));
+
+
         assertThat(actualDefendant.getHearingLanguageNeeds().get().toString(), is(commandListDefendantRequests.getHearingLanguageNeeds().toString()));
         assertThat(actualDefendant.getDatesToAvoid().get(), is(commandListDefendantRequests.getDatesToAvoid()));
+
 
 
         assertThat(actualDefendant2.getOrganisationName().get(), is(commandDefendant2.getLegalEntityDefendant().getOrganisation().getName()));

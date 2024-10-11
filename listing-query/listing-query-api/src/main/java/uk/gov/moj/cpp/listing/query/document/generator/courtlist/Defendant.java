@@ -10,9 +10,13 @@ public class Defendant {
     private UUID id;
     private String organisationName;
 
+    private String welshOrganisationName;
+
     private String firstName;
 
     private String surname;
+
+    private String welshSurname;
 
     private String dateOfBirth;
 
@@ -34,12 +38,20 @@ public class Defendant {
         return organisationName;
     }
 
+    public String getWelshOrganisationName() {
+        return welshOrganisationName;
+    }
+
     public String getFirstName() {
         return firstName;
     }
 
     public String getSurname() {
         return surname;
+    }
+
+    public String getWelshSurname() {
+        return welshSurname;
     }
 
     public String getDateOfBirth() {
@@ -85,8 +97,10 @@ public class Defendant {
     public static final class Builder {
         private UUID id;
         private String organisationName;
+        private String welshOrganisationName;
         private String firstName;
         private String surname;
+        private String welshSurname;
         private String dateOfBirth;
         private String age;
         private String nationality;
@@ -104,6 +118,11 @@ public class Defendant {
             return this;
         }
 
+        public Defendant.Builder withWelshOrganisationName(String welshOrganisationName) {
+            this.welshOrganisationName = welshOrganisationName;
+            return this;
+        }
+
         public Defendant.Builder withFirstName(String firstName) {
             this.firstName = firstName;
             return this;
@@ -111,6 +130,11 @@ public class Defendant {
 
         public Defendant.Builder withSurname(String surname) {
             this.surname = surname;
+            return this;
+        }
+
+        public Defendant.Builder withWelshSurname(String welshSurname) {
+            this.welshSurname = welshSurname;
             return this;
         }
 
@@ -161,11 +185,13 @@ public class Defendant {
         public Defendant build() {
             final Defendant defendant = new Defendant();
             defendant.organisationName = organisationName;
+            defendant.welshOrganisationName = welshOrganisationName;
             defendant.firstName = firstName;
             defendant.surname = surname;
-            defendant.dateOfBirth = this.dateOfBirth;
-            defendant.age = this.age;
-            defendant.offences = this.offences;
+            defendant.welshSurname = welshSurname;
+            defendant.dateOfBirth = dateOfBirth;
+            defendant.age = age;
+            defendant.offences = offences;
             defendant.nationality = nationality;
             defendant.address = address;
             defendant.prosecutionCounsels = prosecutionCounsels;
@@ -182,8 +208,10 @@ public class Defendant {
         if (!(o instanceof Defendant)) return false;
         final Defendant defendant = (Defendant) o;
         return Objects.equals(organisationName, defendant.organisationName) &&
+                Objects.equals(welshOrganisationName, defendant.welshOrganisationName) &&
                 Objects.equals(firstName, defendant.firstName) &&
                 Objects.equals(surname, defendant.surname) &&
+                Objects.equals(welshSurname, defendant.welshSurname) &&
                 Objects.equals(dateOfBirth, defendant.dateOfBirth) &&
                 Objects.equals(age, defendant.age) &&
                 Objects.equals(offences, defendant.offences) &&
@@ -192,7 +220,7 @@ public class Defendant {
 
     @Override
     public int hashCode() {
-        return Objects.hash(organisationName, firstName, surname, dateOfBirth, age, offences, id);
+        return Objects.hash(organisationName, welshOrganisationName, firstName, surname, welshSurname, dateOfBirth, age, offences, id);
     }
 
     @Override

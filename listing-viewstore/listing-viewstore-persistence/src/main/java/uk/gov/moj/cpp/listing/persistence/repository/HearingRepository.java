@@ -64,6 +64,10 @@ public abstract class HearingRepository implements EntityRepository<Hearing, UUI
             "and ( " +
             "   ( h.week_commencing_start_date >= ?6 and h.week_commencing_start_date <= ?7 ) or " +
             "   ( h.week_commencing_end_date >= ?6 and h.week_commencing_end_date <= ?7 ) or " +
+            "   ( ?6 between h.week_commencing_start_date and h.week_commencing_end_date ) or " +
+            "   ( ?7 between h.week_commencing_start_date and h.week_commencing_end_date ) or " +
+            "   ( ?6 between h.start_date and h.end_date ) or " +
+            "   ( ?7 between h.start_date and h.end_date ) or " +
             "   ( h.start_date >= ?6 and h.start_date <= ?7 )  or " +
             "   ( h.end_date >= ?6 and h.end_date <= ?7 ) ) " +
             "group by h.id, h.properties " +

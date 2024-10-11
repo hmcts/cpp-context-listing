@@ -162,6 +162,8 @@ public class ExtendHearingUtils {
                                                        final LocalDate weekCommencingStartDate) {
         HearingUpdateOperationType operationType = HearingUpdateOperationType.UNALLOCATED_NO_OFFENCE_CHANGE;
 
+        LOGGER.info("In getOperationType() for hearing: {}", hearingId);
+
         if (prosecutionCases == null || CollectionUtils.isEmpty(prosecutionCases)) {
             return operationType;
         }
@@ -184,11 +186,13 @@ public class ExtendHearingUtils {
         }
 
         if (persistedOffences.containsAll(requestOffences) && requestOffences.size() < persistedOffences.size()) {
-
+            LOGGER.info("isNull(selectedCourtRoomId) :{}, nonNull(weekCommencingStartDate) : {}", isNull(selectedCourtRoomId), nonNull(weekCommencingStartDate));
             if (isNull(selectedCourtRoomId) || nonNull(weekCommencingStartDate)) {
                 operationType = HearingUpdateOperationType.SPLIT;
                 return operationType;
             }
+
+            LOGGER.info("CollectionUtils.isNotEmpty(nonDefaultDays) :{}, storedHearing.getAllocated() : {}", CollectionUtils.isNotEmpty(nonDefaultDays), storedHearing.getAllocated());
             operationType = CollectionUtils.isNotEmpty(nonDefaultDays) && Boolean.TRUE.equals(storedHearing.getAllocated()) ? HearingUpdateOperationType.SPLIT : HearingUpdateOperationType.PARTIAL_ALLOCATION;
             return operationType;
         }

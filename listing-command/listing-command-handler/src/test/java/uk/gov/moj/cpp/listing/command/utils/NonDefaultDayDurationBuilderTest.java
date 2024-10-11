@@ -31,6 +31,8 @@ public class NonDefaultDayDurationBuilderTest {
 
     private static final int HALF_DAY_SESSION = 180;
 
+    private static final int ALL_DAY_SESSION = 360;
+
     private static final String OUCODE = "BAOKOO";
 
     private static final ZonedDateTime NDD1_START_TIME = ZonedDateTime.now();
@@ -121,6 +123,70 @@ public class NonDefaultDayDurationBuilderTest {
         assertNonDefaultDayWithCorrectDurationAssigned(newUpdateHearingForListing.getNonDefaultDays(), HALF_DAY_SESSION, HALF_DAY_SESSION);
     }
 
+    @Test
+    public void shouldDeduct3HoursFromEachSessionWith2SelectedSlots() {
+        final List<NonDefaultDay> nonDefaultDays = getNonDefaultDays(350);
+        final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
+
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays);
+
+        assertHearingContentMatchesOldHearing(updateHearingForListing, newUpdateHearingForListing);
+
+        assertNonDefaultDayValuesAreCorrect(updateHearingForListing.getNonDefaultDays(), newUpdateHearingForListing.getNonDefaultDays());
+
+        assertNonDefaultDayWithCorrectDurationAssigned(newUpdateHearingForListing.getNonDefaultDays(), HALF_DAY_SESSION, 350 - HALF_DAY_SESSION);
+    }
+
+    @Test
+    public void shouldDeduct5Hour50minutesfromSingleSlotAllDaySession() {
+        final List<NonDefaultDay> nonDefaultDays = getNonDefaultDaysSingleSlotAllDaySession(350);
+        final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
+
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays);
+        assertHearingContentMatchesOldHearing(updateHearingForListing, newUpdateHearingForListing);
+
+        assertNonDefaultDayValuesAreCorrect(updateHearingForListing.getNonDefaultDays(), newUpdateHearingForListing.getNonDefaultDays());
+
+        assertNonDefaultDayForSingleSlotWithCorrectDurationAssigned(newUpdateHearingForListing.getNonDefaultDays(), 350);
+
+    }
+
+    @Test
+    public void shouldReturnAllDayDurationForSingleSlotAllDaySession() {
+        final List<NonDefaultDay> nonDefaultDays = getNonDefaultDaysSingleSlotAllDaySession(365);
+        final UpdateHearingForListing updateHearingForListing = newUpdateHearingForListing(nonDefaultDays);
+
+        final UpdateHearingForListing newUpdateHearingForListing = builder.buildNewUpdateHearingForListingWithNewNonDefaultDays(updateHearingForListing, nonDefaultDays);
+
+
+        assertNonDefaultDayForSingleSlotWithCorrectDurationAssigned(newUpdateHearingForListing.getNonDefaultDays(), ALL_DAY_SESSION);
+
+    }
+
+    private List<NonDefaultDay> getNonDefaultDaysSingleSlotAllDaySession(final int duration) {
+        final NonDefaultDay.Builder nonDefaultDayBuilder = NonDefaultDay.nonDefaultDay()
+                .withDuration(duration)
+                .withStartTime(NDD1_START_TIME)
+                .withSession("AD")
+                .withOucode(OUCODE)
+                .withCourtScheduleId("17452")
+                .withCourtRoomId(1245);
+
+        final NonDefaultDay nonDefaultDay1 = nonDefaultDayBuilder.build();
+        final List<NonDefaultDay> nonDefaultDays = new ArrayList<>();
+
+        nonDefaultDays.add(nonDefaultDay1);
+
+        return nonDefaultDays;
+    }
+
+    private void assertNonDefaultDayForSingleSlotWithCorrectDurationAssigned(final List<NonDefaultDay> nondefaultDays, final int expectedDuration) {
+        final NonDefaultDay firstNonDefaultDay = nondefaultDays.get(0);
+        if (firstNonDefaultDay.getDuration()!= null) {
+            assertThat(firstNonDefaultDay.getDuration(), equalTo(expectedDuration));
+        }
+    }
+
     private void assertHearingContentMatchesOldHearing(final UpdateHearingForListing originalHearing, final UpdateHearingForListing updatedHearing) {
         assertThat(updatedHearing.getCourtCentreId(), equalTo(originalHearing.getCourtCentreId()));
         assertThat(updatedHearing.getCourtRoomId(), equalTo(originalHearing.getCourtRoomId()));
@@ -139,22 +205,14 @@ public class NonDefaultDayDurationBuilderTest {
 
     private void assertNonDefaultDayValuesAreCorrect(final List<NonDefaultDay> originalDays, final List<NonDefaultDay> updatedDays) {
 
-        final NonDefaultDay originalNonDefaultDay1 = originalDays.get(0);
-        final NonDefaultDay updatedNonDefaultDay1 = updatedDays.get(0);
-
-        final NonDefaultDay originalNonDefaultDay2 = originalDays.get(1);
-        final NonDefaultDay updatedNonDefaultDay2 = updatedDays.get(1);
-
-        assertThat(originalNonDefaultDay1.getCourtRoomId(), equalTo(updatedNonDefaultDay1.getCourtRoomId()));
-        assertThat(originalNonDefaultDay1.getCourtScheduleId(), equalTo(updatedNonDefaultDay1.getCourtScheduleId()));
-        assertThat(originalNonDefaultDay1.getOucode(), equalTo(updatedNonDefaultDay1.getOucode()));
-        assertThat(originalNonDefaultDay1.getSession(), equalTo(updatedNonDefaultDay1.getSession()));
-        assertThat(originalNonDefaultDay1.getStartTime(), equalTo(updatedNonDefaultDay1.getStartTime()));
-        assertThat(originalNonDefaultDay2.getCourtRoomId(), equalTo(updatedNonDefaultDay2.getCourtRoomId()));
-        assertThat(originalNonDefaultDay2.getCourtScheduleId(), equalTo(updatedNonDefaultDay2.getCourtScheduleId()));
-        assertThat(originalNonDefaultDay2.getOucode(), equalTo(updatedNonDefaultDay2.getOucode()));
-        assertThat(originalNonDefaultDay2.getSession(), equalTo(updatedNonDefaultDay2.getSession()));
-        assertThat(originalNonDefaultDay2.getStartTime(), equalTo(updatedNonDefaultDay2.getStartTime()));
+        for (int i = 0; i < originalDays.size(); i++) {
+            assertThat(originalDays.get(i).getCourtRoomId(), equalTo(updatedDays.get(i).getCourtRoomId()));
+            assertThat(originalDays.get(i).getCourtScheduleId(), equalTo(updatedDays.get(i).getCourtScheduleId()));
+            assertThat(originalDays.get(i).getOucode(), equalTo(updatedDays.get(i).getOucode()));
+            assertThat(originalDays.get(i).getSession(), equalTo(updatedDays.get(i).getSession()));
+            assertThat(originalDays.get(i).getStartTime(), equalTo(updatedDays.get(i).getStartTime()));
+            assertThat(originalDays.get(i).getCourtRoomId(), equalTo(updatedDays.get(i).getCourtRoomId()));
+        }
     }
 
     private void assertNonDefaultDayWithCorrectDurationAssigned(final List<NonDefaultDay> nondefaultDays, final int firstNonDefaultDayDuration, final int secondNonDefaultDayDuration) {

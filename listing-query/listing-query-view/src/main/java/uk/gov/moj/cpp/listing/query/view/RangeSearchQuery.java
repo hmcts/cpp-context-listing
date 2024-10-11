@@ -263,9 +263,11 @@ public class RangeSearchQuery {
                     .collect(toList());
         }
 
-
-
     }
+
+
+
+
 
     private List<Hearing> findHearingsForCotr(final Set<String> hearingTypeIds, final String courtCentreId, final String startDate, final String endDate) {
         return repository.findHearingsForCotr(hearingTypeIds, courtCentreId, parse(startDate), parse(endDate));

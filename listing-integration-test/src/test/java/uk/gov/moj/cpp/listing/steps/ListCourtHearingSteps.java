@@ -136,7 +136,7 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ListCourtHearingSteps extends AbstractIT {
+public class ListCourtHearingSteps extends AbstractIT  {
     private static final Logger LOGGER = LoggerFactory.getLogger(ListCourtHearingSteps.class);
 
     private static final String LISTING_COMMAND_LIST_COURT_HEARING = "listing.command.list-court-hearing";
@@ -2140,6 +2140,8 @@ public class ListCourtHearingSteps extends AbstractIT {
     public HearingsData getHearingsData() {
         return hearingsData;
     }
+
+
 
     public void verifyHearingWithPossibleDisqualificationFromAPI() {
         HearingData singleHearingData = hearingsData.getHearingData().get(0);

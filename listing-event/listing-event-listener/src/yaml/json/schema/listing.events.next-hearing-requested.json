@@ -204,6 +204,13 @@
         "numberOfGroupCases": {
           "description": "The number of group cases",
           "type": "integer"
+        },
+        "nonDefaultDays": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "$ref": "http://justice.gov.uk/core/courts/nonDefaultDay.json#"
+          }
         }
       },
       "required": [

@@ -65,10 +65,8 @@ import uk.gov.moj.cpp.listing.persistence.repository.courtlist.PublishedCourtLis
 import uk.gov.moj.cpp.listing.query.view.courtlist.CourtListService;
 import uk.gov.moj.cpp.listing.query.view.dto.LinkedApplicationsSummary;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
-import uk.gov.moj.cpp.listing.query.view.dto.ProsecutionCase;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
 import uk.gov.moj.cpp.listing.query.view.service.NotesService;
-import uk.gov.moj.cpp.listing.query.view.service.ProgressionService;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -111,7 +109,6 @@ public class HearingQueryViewTest {
     private static final UUID COURT_ROOM_ID = randomUUID();
     private static final UUID ID = fromString("7c5e9d0c-9e28-46a9-b139-68fc0813842c");
     private static final boolean ALLOCATED = true;
-    private static final boolean IS_POSSIBLE_DISQUALIFICATION = false;
     private static final String ALLOCATEDSTR = "true";
     private static final String ALLOCATED_QUERY_PARAMETER = "allocated";
     private static final String SEARCH_DATE_QUERY_PARAMETER = "searchDate";
@@ -142,8 +139,6 @@ public class HearingQueryViewTest {
     private static final String CASE_URN_FOR_LINKED_CASES_QUERY_PARAMETER = "caseUrnForLinkedCases";
     private static final String ID_PARAMETER = "id";
     private static final String AUTHORITY_ID = "efa4e01b-1dc5-48c5-80b5-c3858a7622d6";
-    private  static final String AUTHORITY_ID_SEARCH = String.format("[ { \"caseIdentifier\": { \"authorityId\": \"%s\" } } ]", AUTHORITY_ID);
-    private static final String PROSECUTOR_ID_SEARCH = String.format("[ { \"prosecutor\": { \"prosecutorId\": \"%s\" } } ]", AUTHORITY_ID);
     private static final UUID HEARING_TYPE_ID = randomUUID();
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
     private static final LocalDate SEARCH_DATE = LocalDate.parse("2023-08-29");
@@ -152,6 +147,8 @@ public class HearingQueryViewTest {
     private static final String PUBLISH_DATE = "2012-12-11";
     private static final String PUBLISH_DATE_WEEK_COMMENCING = "2012-12-13";
     private static final String EMPTY_STRING = "";
+    private static final String CASE_ID_QUERY_PARAMETER  = "caseId";
+    private static final String APPLICATION_ID_QUERY_PARAMETER  = "applicationId";
 
     @Mock
     private PaginationParameter paginationParameter;
@@ -178,8 +175,7 @@ public class HearingQueryViewTest {
     private OrganisationUnitHMICache organisationUnitHMICache;
     @Mock
     private CaseByDefendantRepository caseByDefendantRepository;
-    @Mock
-    private ProgressionService progressionService;
+
     @InjectMocks
     private HearingQueryView hearingsQueryView;
     @Spy
@@ -415,6 +411,64 @@ public class HearingQueryViewTest {
                         withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
                         withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")),
                         withJsonPath("$.notes.size()", equalTo(0)))
+                ))
+        ));
+    }
+
+    @Test
+    public void shouldSearchAllocatedAndUnallocatedHearingsByCaseId() throws Exception {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+
+        final UUID caseId = UUID.randomUUID();
+
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(caseId.toString())).thenReturn(hearingsJson);
+
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(CASE_ID_QUERY_PARAMETER, caseId.toString())
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
+
+        assertThat(results, is(jsonEnvelope(metadata().withName("listing.search.hearings"),
+                payloadIsJson(allOf(
+                        withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
+                        withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")))
+                ))
+        ));
+    }
+
+    @Test
+    public void shouldSearchAllocatedAndUnallocatedHearingsByCaseAndApplicationId() throws Exception {
+
+        final List<Hearing> hearingsJson = hearingsJson(ALLOCATEDSTR);
+
+        final UUID caseId = UUID.randomUUID();
+        final UUID applicationId = UUID.randomUUID();
+
+        when(hearingRepository.findAllocatedAndUnallocatedHearingsByCaseId(caseId.toString(), applicationId.toString())).thenReturn(hearingsJson);
+
+        when(hearingJsonListConverterFilterEjectCases.convert(hearingsJson))
+                .thenReturn(new HearingJsonListConverterFilterEjectCases().convert(hearingsJson));
+
+        final JsonEnvelope query = envelopeFrom(
+                metadataBuilder().withId(randomUUID()).withName("event.name"),
+                createObjectBuilder()
+                        .add(CASE_ID_QUERY_PARAMETER, caseId.toString())
+                        .add(APPLICATION_ID_QUERY_PARAMETER, applicationId.toString())
+                        .build());
+
+        final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
+
+        assertThat(results, is(jsonEnvelope(metadata().withName("listing.search.hearings"),
+                payloadIsJson(allOf(
+                        withJsonPath("$.hearings[0].startDate", equalTo("2020-09-03")),
+                        withJsonPath("$.hearings[0].courtRoomId", equalTo("6e424105-55f4-4e1a-bb9e-6ffbae3f7c18")))
                 ))
         ));
     }
@@ -727,7 +781,7 @@ public class HearingQueryViewTest {
 
         final List<LinkedApplicationsSummary> linkedApplicationsSummaryList = new ArrayList<>();
         linkedApplicationsSummaryList.add(LinkedApplicationsSummary.linkedApplicationsSummary().build());
-        final ProsecutionCase prosecutionCase = ProsecutionCase.prosecutionCase().withLinkedApplicationsSummary(linkedApplicationsSummaryList).build();
+
 
         final JsonEnvelope results = hearingsQueryView.searchAllocatedAndUnallocatedHearings(query);
 

@@ -104,6 +104,10 @@ public class HearingsData {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary());
     }
 
+    public static HearingsData singleHearingsDataWithAllocationDataAndJudiciary() {
+        return new HearingsData(HearingsDataFactory.singleHearingsDataWithAllocationDataAndJudiciary());
+    }
+
     public static HearingsData hearingsDataWithAllocationDataAndJudiciary(final String jurisdictionType) {
         return new HearingsData(HearingsDataFactory.hearingsDataWithAllocationDataAndJudiciary(jurisdictionType));
     }

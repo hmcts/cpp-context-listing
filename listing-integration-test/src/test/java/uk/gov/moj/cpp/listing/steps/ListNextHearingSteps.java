@@ -19,6 +19,7 @@ import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponsePayloadMatcher.payload;
 import static uk.gov.justice.services.test.utils.core.matchers.ResponseStatusMatcher.status;
+import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderFactory.metadataOf;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.INTEGER;
 import static uk.gov.justice.services.test.utils.core.random.RandomGenerator.STRING;
 import static uk.gov.moj.cpp.listing.endpoint.UnscheduledHearingsEndpoint.pollForUnscheduledHearings;
@@ -29,6 +30,8 @@ import static uk.gov.moj.cpp.listing.utils.PropertyUtil.readConfig;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.privateEvents;
 import static uk.gov.moj.cpp.listing.utils.QueueUtil.publicEvents;
 
+
+import javax.jms.MessageProducer;
 import uk.gov.justice.core.courts.Address;
 import uk.gov.justice.core.courts.ApplicationStatus;
 import uk.gov.justice.core.courts.AssociatedPerson;
@@ -68,6 +71,7 @@ import uk.gov.justice.listing.courts.TypeOfList;
 import uk.gov.justice.services.common.converter.ObjectToJsonValueConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
+import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageProducerClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.ApplicantRespondentData;
 import uk.gov.moj.cpp.listing.steps.data.DefendantData;
@@ -151,6 +155,8 @@ public class ListNextHearingSteps extends AbstractIT {
     private final JmsMessageConsumerClient publicMessageConsumerUnallocatedHearingDeleted;
     private final JmsMessageConsumerClient publicMessageConsumerOffencesRemovedFromExistingHearing;
     private final JmsMessageConsumerClient publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing;
+    private final JmsMessageConsumerClient publicMessageConsumerHearingAddedToCase;
+    private final JmsMessageProducerClient publicEventAdhocCreated ;
 
 
     private final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
@@ -177,6 +183,8 @@ public class ListNextHearingSteps extends AbstractIT {
         publicMessageConsumerUnallocatedHearingDeleted = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_UNALLOCATED_HEARING_DELETED);
         publicMessageConsumerOffencesRemovedFromExistingHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_HEARING);
         publicMessageConsumerOffencesRemovedFromExistingAllocatedHearing = publicEvents.createPublicConsumer(PUBLIC_EVENT_SELECTED_OFFENCES_REMOVED_FROM_EXISTING_ALLOCATED_HEARING);
+        publicMessageConsumerHearingAddedToCase =publicEvents.createPublicConsumer("public.listing.hearing-added-to-case");
+        publicEventAdhocCreated =  publicEvents.createPublicProducer();
 
     }
 
@@ -200,6 +208,30 @@ public class ListNextHearingSteps extends AbstractIT {
     public void whenUpdateRelatedHearingSubmittedForListing(final UUID existedHearingId, final HearingsData hearingsData) {
         final Response response = getResponseUpdatedRelatedHearingSubmittedForListing(existedHearingId, hearingsData);
         assertThat(response.getStatus(), equalTo(SC_ACCEPTED));
+    }
+
+    public void whenUpdateRelatedHearingSubmittedForListingForAdhocHearing(final UUID existedHearingId, final HearingsData hearingsData) {
+        final String updateRelatedHearingUrl = String.format("%s/%s", getBaseUri(), format
+                (readConfig().getProperty(LISTING_API_UPDATE_RELATED_HEARING), existedHearingId));
+
+        final HearingData nextHearing = hearingsData.getHearingData().get(0);
+
+        final List<ProsecutionCase> prosecutionCases = buildProsecutionCases(nextHearing);
+
+
+        final JsonObject listNextHearingsJsonObject = Json.createObjectBuilder()
+                .add("hearingId", existedHearingId.toString())
+                .add("prosecutionCases", objectToJsonValueConverter.convert(prosecutionCases))
+                .build();
+
+        request = listNextHearingsJsonObject.toString();
+
+        QueueUtil.sendMessage(
+                publicEventAdhocCreated,
+                "public.progression.related-hearing-updated-for-adhoc-hearing",
+                listNextHearingsJsonObject,
+                metadataOf(randomUUID(), "public.progression.related-hearing-updated-for-adhoc-hearing").withUserId(randomUUID().toString()).build());
+
     }
 
 
@@ -574,6 +606,13 @@ public class ListNextHearingSteps extends AbstractIT {
 
         assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
         assertThat(jsonResponse.get("offenceIds"), is(offenceIds));
+
+    }
+
+    public void verifyPublicHearingAddedToCaseInActiveMQ(final UUID existedHearingId) {
+        final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingAddedToCase);
+
+        assertThat(jsonResponse.get("hearingId"), is(existedHearingId.toString()));
 
     }
 

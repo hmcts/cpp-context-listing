@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.listing.it;
 
+import com.google.common.collect.ImmutableMap;
 import uk.gov.justice.services.test.utils.persistence.DatabaseCleaner;
 import uk.gov.moj.cpp.listing.steps.ListCourtHearingSteps;
 import uk.gov.moj.cpp.listing.steps.ListNextHearingSteps;
@@ -9,6 +10,9 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static com.google.common.collect.ImmutableMap.of;
+import static uk.gov.moj.cpp.platform.test.feature.toggle.FeatureStubber.stubFeaturesFor;
 
 
 public class ListNextHearingIT extends AbstractIT {
@@ -144,6 +148,25 @@ public class ListNextHearingIT extends AbstractIT {
         listNextHearingSteps2.verifyCasesAddedToHearingFromApi(existedHearings, nextHearings);
     }
 
+    @Test
+    public void shouldAddCasetoExistingHearingforAdHocHearing() {
+        final HearingsData existedHearings = HearingsData.hearingsData();
+        final ListCourtHearingSteps listCourtHearingSteps = new ListCourtHearingSteps(existedHearings);
+        listCourtHearingSteps.whenCaseIsSubmittedForListing();
+        listCourtHearingSteps.verifyHearingListedInActiveMQ();
+        listCourtHearingSteps.verifyHearingListedFromAPI(UNALLOCATED);
+
+        final UUID existedHearingId = existedHearings.getHearingData().get(0).getId();
+
+        final HearingsData adhocHearings = HearingsData.hearingsData();
+        adhocHearings.getHearingData().get(0).getListedCases().addAll(existedHearings.getHearingData().get(0).getListedCases());
+        final ListNextHearingSteps listNextHearingSteps = new ListNextHearingSteps(adhocHearings.getHearingData().get(0));
+        listNextHearingSteps.whenUpdateRelatedHearingSubmittedForListingForAdhocHearing(existedHearingId, adhocHearings);
+        listNextHearingSteps.verifyCasesAddedToHearingInActiveMQ(existedHearingId, adhocHearings);
+        listNextHearingSteps.verifyPublicHearingAddedToCaseInActiveMQ(existedHearingId);
+        listNextHearingSteps.verifyCasesAddedToHearingFromApi(existedHearings, adhocHearings);
+
+    }
 
     @Test
     public void shouldDeleteOldAllocatedRelatedHearingsAndUpdateRelatedHearings() {

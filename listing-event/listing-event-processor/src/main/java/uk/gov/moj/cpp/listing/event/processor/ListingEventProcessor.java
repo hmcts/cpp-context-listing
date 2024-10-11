@@ -161,6 +161,7 @@ public class ListingEventProcessor {
     private static final String PRIVATE_EVENT_CASE_MARKERS_TO_BE_UPDATED = "listing.events.case-markers-to-be-updated";
     private static final String PRIVATE_EVENT_LINKED_CASES_TO_BE_UPDATED = "listing.events.linked-cases-to-be-updated";
     private static final String PRIVATE_EVENT_TRIAL_VACATED = "listing.events.trial-vacated";
+    private static final String PRIVATE_EVENT_HEARING_REQUESTED_FOR_LISTING = "listing.events.hearing-requested-for-listing";
     private static final String PRIVATE_EVENT_HEARING_MARKED_AS_DUPLICATE = "listing.events.hearing-marked-as-duplicate";
     private static final String PRIVATE_EVENT_HEARING_RESCHEDULED = "listing.events.hearing-rescheduled";
     private static final String PRIVATE_EVENT_HEARING_UNALLOCATED_FOR_LISTING = "listing.events.hearing-unallocated-for-listing";
@@ -212,6 +213,7 @@ public class ListingEventProcessor {
     private static final String PUBLIC_EVENT_NEW_DEFENDANT_ADDED_FOR_COURT_PROCEEDINGS = "public.listing.new-defendant-added-for-court-proceedings";
     private static final String PRIVATE_EVENT_HEARING_MARKED_AS_DELETED = "listing.events.hearing-marked-as-deleted";
     private static final String PRIVATE_EVENT_HEARING_MARKED_FOR_PARTIAL_UPDATE = "listing.events.hearing-marked-for-partial-update";
+    private static final String PRIVATE_EVENTS_HEARING_ADDED_TO_CASE = "listing.events.hearing-added-to-case";
     static final String COMMAND_CHANGE_JUDICIARY_FOR_HEARINGS = "listing.command.change-judiciary-for-hearings";
     public static final String PUBLIC_HEARING_OFFENCES_REMOVED_FROM_EXISTING_HEARING = "public.hearing.selected-offences-removed-from-existing-hearing";
     private static final String COURT_CENTRE_ID_FIELD = "courtCentreId";
@@ -223,6 +225,7 @@ public class ListingEventProcessor {
     private static final String PRIVATE_LISTING_HEARING_PARTIALLY_UPDATED = "listing.events.hearing-partially-updated";
     private static final String PUBLIC_LISTING_HEARING_PARTIALLY_UPDATED = "public.listing.hearing-partially-updated";
     public static final String COURT_APPLICATION = "courtApplication";
+    public static final String PUBLIC_LISTING_HEARING_ADDED_TO_CASE = "public.listing.hearing-added-to-case";
 
 
     @Inject
@@ -337,7 +340,7 @@ public class ListingEventProcessor {
                 vacatedTrialUpdatedPayload));
     }
 
-    @Handles("listing.events.hearing-requested-for-listing")
+    @Handles(PRIVATE_EVENT_HEARING_REQUESTED_FOR_LISTING)
     public void handleHearingRequestedForListing(final JsonEnvelope envelope){
         if (logger.isInfoEnabled()) {
             logger.info(EVENT_PAYLOAD_DEBUG_STRING, "listing.events.hearing-requested-for-listing", envelope.toObfuscatedDebugString());
@@ -925,6 +928,16 @@ public class ListingEventProcessor {
         final uk.gov.justice.listing.events.HearingChangesSaved hearingChangesSaved = jsonObjectConverter.convert(payload, uk.gov.justice.listing.events.HearingChangesSaved.class);
 
         publishHearingChangesSavedPublicEvent(envelope, hearingChangesSaved.getHearingId());
+    }
+
+    @Handles(PRIVATE_EVENTS_HEARING_ADDED_TO_CASE)
+    public void handleHearingAddedToCase(final JsonEnvelope envelope){
+        if (logger.isInfoEnabled()) {
+            logger.info(EVENT_PAYLOAD_DEBUG_STRING, PRIVATE_EVENTS_HEARING_ADDED_TO_CASE, envelope.toObfuscatedDebugString());
+        }
+
+        sender.send(envelopeFrom(metadataFrom(envelope.metadata()).withId(UUID.randomUUID()).withName(PUBLIC_LISTING_HEARING_ADDED_TO_CASE).build(),
+                envelope.payloadAsJsonObject()));
     }
 
     private JsonObject generatePayloadForCommandMarkHearingAsDuplicate(final JsonEnvelope envelope) {

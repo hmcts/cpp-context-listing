@@ -2189,6 +2189,33 @@ public class ListingEventProcessorTest {
 
     }
 
+    @Test
+    public void shouldHandleHearingAddedToCase(){
+        final String caseId = randomUUID().toString();
+        final String hearingId = randomUUID().toString();
+
+        final JsonObject eventPayload = createObjectBuilder()
+                .add("caseId", caseId)
+                .add("hearingId", hearingId)
+                .build();
+
+        final JsonEnvelope event = envelopeFrom(metadataWithRandomUUID("listing.events.hearing-added-to-case"),
+                eventPayload);
+
+        listingEventProcessor.handleHearingAddedToCase(event);
+
+        verify(this.sender).send(this.senderJsonEnvelopeCaptor.capture());
+
+        final JsonEnvelope commandEvent = this.senderJsonEnvelopeCaptor.getValue();
+
+        assertThat(commandEvent.metadata().name(), is("public.listing.hearing-added-to-case"));
+        assertThat(commandEvent.payload().toString(),
+                isJson(allOf(
+                        withJsonPath("$.hearingId", equalTo(hearingId)),
+                        withJsonPath("$.caseId", equalTo(caseId)))
+                ));
+    }
+
     private JsonEnvelope allocatedHearingExtendedForListingEvent() {
 
         final JsonObjectBuilder hearingDate = createObjectBuilder()
