@@ -205,6 +205,47 @@ public class PublicCourtListAssemblerTest {
 
     }
 
+    @Test
+    public void shouldBuildDataForRestrictedPublicCourtListWelshCourt() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(IS_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+
+        JsonObject publicListData = publicListService.assemble(buildRequestEnvelopeRestrictedPublicList(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, TRUE).get();
+
+        assertRestrictedCasePublicCourtListPayload(publicListData);
+
+        JsonObject hearingDate2Jo = publicListData.getJsonArray("hearingDates").getJsonObject(1);
+        assertThat(hearingDate2Jo.getString("hearingDate"), is(START_DATE2));
+        JsonObject courtRoomsJo = hearingDate2Jo.getJsonArray("courtRooms").getJsonObject(0);
+        assertThat(courtRoomsJo.getString("courtRoomName"), is(COURT_ROOM_NAME_1));
+        JsonObject timeslot = courtRoomsJo.getJsonArray("timeslots").getJsonObject(0);
+        JsonObject hearing = timeslot.getJsonArray("hearings").getJsonObject(0);
+        assertThat(hearing.getString("startTime"), is(START_TIME2.substring(11, 16)));
+        assertThat(hearing.getString("caseNumber"), is(CASE_REFERENCE2));
+        assertThat(hearing.getString("hearingType"), is(HEARING_TYPE1));
+        assertThat(hearing.getString("reportingRestrictionReason"), is(notNullValue()));
+        assertThat(hearing.getJsonArray("defendants").size(), is(2));
+        JsonObject defendant = hearing.getJsonArray("defendants").getJsonObject(0);
+        assertThat(defendant.getString("firstName"), is(EMPTY));
+        assertThat(defendant.getString("surname"), is(DEFENDANT_STRING));
+        assertThat(defendant.getString("welshSurname"), is(WELSH_DEFENDANT_STRING));
+        assertThat(defendant.getJsonArray("offences").size(), is(1));
+        assertThat(defendant.getJsonArray("reportingRestrictions").size(),is(1));
+        JsonObject reportingRestriction = defendant.getJsonArray("reportingRestrictions").getJsonObject(0);
+        assertThat(reportingRestriction.getString("label"),is(REPORTING_RESTRICTION));
+        defendant = hearing.getJsonArray("defendants").getJsonObject(1);
+        assertThat(defendant.getString("firstName"), is(FIRST_NAME1));
+        assertThat(defendant.getString("surname"), is(LAST_NAME1));
+        assertThat(defendant.getString("welshSurname"), is(LAST_NAME1));
+        assertThat(defendant.getJsonArray("offences").size(), is(1));
+        assertThat(defendant.getJsonArray("reportingRestrictions").size(),is(2));
+        JsonObject reportingRestriction1 = defendant.getJsonArray("reportingRestrictions").getJsonObject(0);
+        assertThat(reportingRestriction1.getString("label"),is(REPORTING_RESTRICTION));
+
+    }
+
 
     @Test
     public void shouldBuildDataForPublicCourtListBST() {

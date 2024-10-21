@@ -2471,6 +2471,7 @@ public class HearingAggregateTest {
                         .build())).build());
 
         startDate = ZonedDateTime.now();
+
         final NonDefaultDay nonDefaultDay = NonDefaultDay.nonDefaultDay()
                 .withDuration(Optional.of(1))
                 .withStartTime(ZonedDateTime.now())

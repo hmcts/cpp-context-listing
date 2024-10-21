@@ -7,6 +7,7 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.hasNoJsonPath;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.isJson;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.text.MessageFormat.format;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static javax.json.Json.createArrayBuilder;
@@ -221,10 +222,10 @@ public class UpdateHearingSteps extends AbstractIT {
     private JmsMessageConsumerClient privateMessageConsumerStartDateRemoved;
     private JmsMessageConsumerClient privateMessageConsumerWeekCommencingDateChanged;
     private JmsMessageConsumerClient privateEventMessageConsumerUpdatedHearingInStagingHmi;
-    private JmsMessageConsumerClient privateMessageConsumerHearingListed;
     private JmsMessageConsumerClient privateMessageConsumerHearingRequestedForListing;
-    private JmsMessageConsumerClient publicMessageConsumerHearingRequested;
     private JmsMessageConsumerClient publicMessageConsumerHearingRequestedForListing;
+    private JmsMessageConsumerClient privateMessageConsumerHearingListed;
+    private JmsMessageConsumerClient publicMessageConsumerHearingRequested;
 
 
 
@@ -695,6 +696,9 @@ public class UpdateHearingSteps extends AbstractIT {
         privateMessageConsumerHearingRequestedForListing =privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingRequested= publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
         publicMessageConsumerHearingRequestedForListing=publicEvents.createPublicConsumer(EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING);
+        privateMessageConsumerHearingRequestedForListing =privateEvents.createPrivateConsumer(EVENT_SELECTOR_HEARING_REQUESTED_FOR_LISTING);
+        publicMessageConsumerHearingRequested= publicEvents.createPublicConsumer(EVENT_SELECTED_PUBLIC_HEARING_REQUESTED_FOR_LISTING);
+        publicMessageConsumerHearingRequestedForListing=publicEvents.createPublicConsumer(EVENT_SELECTOR_ALLOCATED_HEARING_UPDATED_FOR_LISTING);
         publicEventMessageProducer = publicEvents.createPublicProducer();
     }
 
@@ -1121,6 +1125,7 @@ public class UpdateHearingSteps extends AbstractIT {
         verifyHearingPublicDetails(jsonResponse, "updatedHearing");
     }
 
+
     private void verifyHearingRequestedForListingPublicEvent() {
 
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(publicMessageConsumerHearingRequestedForListing);
@@ -1266,6 +1271,7 @@ public class UpdateHearingSteps extends AbstractIT {
         assertThat(jsonResponse.getMap("listNewHearing").get("nonDefaultDays"), is(notNullValue()));
         assertThat(((ArrayList)jsonResponse.getMap("listNewHearing").get("nonDefaultDays")).size(), is(count));
     }
+
 
     private void verifyPublicListNoteChangedEvent() {
         final JsonPath jsonResponse = QueueUtil.retrieveMessage(privateMessageConsumerPublicListNoteChanged);
