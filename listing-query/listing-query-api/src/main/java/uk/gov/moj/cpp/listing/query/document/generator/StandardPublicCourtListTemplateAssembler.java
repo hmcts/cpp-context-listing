@@ -22,6 +22,7 @@ import static org.apache.commons.lang3.StringUtils.lowerCase;
 import static org.apache.commons.lang3.StringUtils.upperCase;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.ORGANISATION;
 import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON;
+import static uk.gov.moj.cpp.listing.domain.CourtApplicationPartyType.PERSON_DEFENDANT;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.BENCH;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.STANDARD;
 import static uk.gov.moj.cpp.listing.domain.CourtListType.USHERS_CROWN;
@@ -141,7 +142,7 @@ public class StandardPublicCourtListTemplateAssembler {
     private static final String WELSH_REPORTING_RESTRICTION_REASON = "welshReportingRestrictionReason";
     private static final String RESTRICT_FROM_COURT_LIST = "restrictFromCourtList";
     private static final String DEFENDANT = "Defendant";
-    private static final String WELSH_DEFENDANT = "diffynnydd";
+    private static final String WELSH_DEFENDANT = "Diffynnydd";
     private static final String HEARING_STRING = "Hearing";
     private static final String ADJOURNED_HEARING_DATE = "adjournedFromDate";
     private static final String ADDRESS = "address";
@@ -325,16 +326,17 @@ public class StandardPublicCourtListTemplateAssembler {
     }
 
     private void arrangeHearingsByStartTime(final Map<LocalDateTime, List<Hearing>> unsortedListMultimap, final JsonObject hearingJson, final ZonedDateTime startTimestamp, final String hearingStartTime, final Integer sequence, final boolean restrictedListRequired, final CourtListType courtListType, final Map<String, String> hearingTypesIdWelshDescriptionMap) {
-        if (hearingJson.containsKey(LISTED_CASES)) {
+        if (hearingJson.containsKey(LISTED_CASES)&& !hearingJson.getJsonArray(LISTED_CASES).isEmpty()) {
             final List<Hearing> hearings = hearingJson.getJsonArray(LISTED_CASES).getValuesAs(JsonObject.class).stream()
                     .map(listedCase -> createHearingFromListedCase(hearingJson, hearingStartTime, sequence, listedCase, restrictedListRequired, courtListType, hearingTypesIdWelshDescriptionMap))
                     .filter(hearing -> isNotEmpty(hearing.getDefendants()))
                     .collect(toList());
             unsortedListMultimap.computeIfAbsent(startTimestamp.toLocalDateTime(), k -> new ArrayList<>()).addAll(hearings);
         }
-        if (hearingJson.containsKey(COURT_APPLICATIONS) && !hearingJson.getJsonArray(COURT_APPLICATIONS).isEmpty()) {
+        else if (hearingJson.containsKey(COURT_APPLICATIONS) && !hearingJson.getJsonArray(COURT_APPLICATIONS).isEmpty()) {
             final List<Hearing> hearings = hearingJson.getJsonArray(COURT_APPLICATIONS).getValuesAs(JsonObject.class).stream()
                     .map(courtApplication -> createHearingFromCourtApplication(hearingJson, hearingStartTime, sequence, courtApplication, restrictedListRequired, hearingTypesIdWelshDescriptionMap))
+                    .filter(hearing -> isNotEmpty(hearing.getDefendants()))
                     .collect(toList());
             unsortedListMultimap.computeIfAbsent(startTimestamp.toLocalDateTime(), k -> new ArrayList<>()).addAll(hearings);
         }
@@ -674,11 +676,12 @@ public class StandardPublicCourtListTemplateAssembler {
     }
 
     private void populateWithNameAndAddressFromCourtApplication(final Defendant.Builder builder, @NotNull final JsonObject defendantEquivalent, final String nameSuffix, final boolean nameRestricted) {
-        if (CourtApplicationPartyType.valueOf(defendantEquivalent.getString(COURT_APPLICATION_PARTY_TYPE)) == PERSON) {
+        final CourtApplicationPartyType courtApplicationPartyType = CourtApplicationPartyType.valueOf(defendantEquivalent.getString(COURT_APPLICATION_PARTY_TYPE));
+        if (courtApplicationPartyType == PERSON || courtApplicationPartyType == PERSON_DEFENDANT) {
             builder.withFirstName(nameRestricted ? EMPTY : defendantEquivalent.getString(FIRST_NAME, EMPTY));
             builder.withSurname(nameRestricted ? (DEFENDANT + SPACE + nameSuffix).trim() : defendantEquivalent.getString(LAST_NAME));
             builder.withWelshSurname(nameRestricted ? (WELSH_DEFENDANT + SPACE + nameSuffix).trim() : defendantEquivalent.getString(LAST_NAME));
-        } else if (CourtApplicationPartyType.valueOf(defendantEquivalent.getString(COURT_APPLICATION_PARTY_TYPE)) == ORGANISATION) {
+        } else if (courtApplicationPartyType == ORGANISATION) {
             builder.withOrganisationName(nameRestricted ? (DEFENDANT + SPACE + nameSuffix).trim() : defendantEquivalent.getString(LAST_NAME));
             builder.withWelshOrganisationName(nameRestricted ? (WELSH_DEFENDANT + SPACE + nameSuffix).trim() : defendantEquivalent.getString(LAST_NAME));
         }

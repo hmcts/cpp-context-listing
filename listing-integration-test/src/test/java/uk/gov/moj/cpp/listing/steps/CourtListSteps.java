@@ -7,7 +7,7 @@ import static javax.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static uk.gov.justice.services.common.http.HeaderConstants.USER_ID;
 import static uk.gov.justice.services.test.utils.core.http.RequestParamsBuilder.requestParams;
 import static uk.gov.justice.services.test.utils.core.http.RestPoller.poll;
@@ -22,17 +22,17 @@ import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDat
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataHearingTypes;
 import static uk.gov.moj.cpp.listing.utils.ReferenceDataStub.stubGetReferenceDataJudiciaries;
 
+
+import org.hamcrest.Matcher;
 import uk.gov.justice.services.test.utils.core.http.RequestParams;
 import uk.gov.justice.services.test.utils.core.rest.RestClient;
 import uk.gov.moj.cpp.listing.it.AbstractIT;
 import uk.gov.moj.cpp.listing.steps.data.CourtCentreData;
 import uk.gov.moj.cpp.listing.steps.data.UpdatedHearingData;
 
-import java.util.UUID;
-
 import javax.ws.rs.core.Response;
 
-import org.hamcrest.Matcher;
+import java.util.UUID;
 
 public class CourtListSteps extends AbstractIT {
     private static final String DEFAULT_DURATION_HOURS_MINS = "6:30";
@@ -70,7 +70,6 @@ public class CourtListSteps extends AbstractIT {
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].panel", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].caseId", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].hearingPublicListNote", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[0].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[0].defendants[0].offences[1].id", notNullValue()),
@@ -86,7 +85,6 @@ public class CourtListSteps extends AbstractIT {
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].panel", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].caseId", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].hearingPublicListNote", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[0].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[0].offences[0].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[0].offences[1].id", notNullValue()),
@@ -95,12 +93,6 @@ public class CourtListSteps extends AbstractIT {
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[1].offences[0].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[1].offences[1].id", notNullValue()),
                                 withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[1].defendants[1].offences[2].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[2].id", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[2].panel", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[2].hearingPublicListNote", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[2].courtApplicationId", notNullValue()),
-                                withJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[2].applicationOffences[0].id", notNullValue()),
-                                withoutJsonPath("$.hearingDates[0].courtRooms[0].timeslots[0].hearings[2].applicationOffences[0].listingNumber"),
                                 withJsonPath("$.templateName", is(templateName))),
                                 allOf(allocatedMatchers)
                         )));

@@ -95,7 +95,7 @@ public class PublicCourtListAssemblerTest {
     private static final boolean NOT_WELSH = false;
     private static final boolean IS_WELSH = true;
     private static final String DEFENDANT_STRING = "Defendant";
-    private static final String WELSH_DEFENDANT_STRING = "diffynnydd";
+    private static final String WELSH_DEFENDANT_STRING = "Diffynnydd";
     private static final String APPLICATION_TYPE = STRING.next();
     private static final String APPLICATION_PARTICULARS = STRING.next();
     private static final String REPORTING_RESTRICTION="RestrictionApplied";
@@ -246,6 +246,53 @@ public class PublicCourtListAssemblerTest {
 
     }
 
+    public void shouldNotBuildDataForHideCasePublicCourtList() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+
+        when(judiciaryNameMapper.getName(any(JsonObject.class))).thenReturn("Mr Recorder Ainsworth suffix");
+        JsonObject publicListData = publicListService.assemble(buildCaseApplicationHearingRestrictedCasePublicCourtListData(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), PUBLIC, TRUE).get();
+
+        assertRestrictedCasePublicCourtListPayload(publicListData);
+    }
+
+    @Test
+    public void shouldBuildOnlyApplicationHearingRestrictedCasePublicCourtListData() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+        JsonObject publicListData = publicListService.assemble(buildOnlyApplicationHearingRestrictedCasePublicCourtListData(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, FALSE).get();
+
+        assertRestrictedCasePublicCourtListPayload(publicListData);
+    }
+
+    @Test
+    public void shouldBuildOnlyApplicationHearingPublicCourtListData() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+        JsonObject publicListData = publicListService.assemble(buildOnlyApplicationHearingPublicCourtListData(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, FALSE).get();
+
+        assertApplicationHearingPublicCourtListPayload(publicListData);
+        assertRestrictedDefendant(publicListData, false);
+    }
+
+    @Test
+    public void shouldBuildOnlyApplicationHearingPublicCourtListDataWithRestrictedDefendant() {
+        when(courtCentreFactory.getCourtCentre(eq(COURT_CENTRE_ID), any(JsonEnvelope.class)))
+                .thenReturn(generateCourtCentreDetails(NOT_WELSH));
+        when(referenceDataService.getJudiciariesByIdList(eq(singletonList(JUDICIARY_ID)), any(JsonEnvelope.class)))
+                .thenReturn(generateJudiciaryEnvelope());
+        JsonObject publicListData = publicListService.assemble(buildOnlyApplicationHearingPublicCourtListDataWithRestrictedDefendant(), COURT_CENTRE_ID.toString(), COURT_ROOM_1_ID.toString(), CourtListType.PUBLIC, FALSE).get();
+
+        assertApplicationHearingPublicCourtListPayload(publicListData);
+
+        assertRestrictedDefendant(publicListData, true);
+    }
 
     @Test
     public void shouldBuildDataForPublicCourtListBST() {
@@ -493,6 +540,66 @@ public class PublicCourtListAssemblerTest {
         String jsonString = FileUtil.getPayload("stubbed.referenceData.getJudiciariesByIdList.json")
                 .replace("\"JUDICIARY_ID\"", "\"" + JUDICIARY_ID + "\"");
         return convertToJsonObject(jsonString);
+    }
+
+    private JsonEnvelope buildOnlyApplicationHearingPublicCourtListData() {
+        String jsonString = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getOnlyApplicationHearingPublicCourtListData.json")
+                .replace("JUDICIARY_ID", JUDICIARY_ID.toString());;
+        return buildJsonEnvelope(convertToJsonObject(jsonString));
+    }
+
+    private JsonEnvelope buildOnlyApplicationHearingPublicCourtListDataWithRestrictedDefendant() {
+        String jsonString = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getOnlyApplicationHearingPublicCourtListDataWithDefendantRestricted.json")
+                .replace("JUDICIARY_ID", JUDICIARY_ID.toString());;
+        return buildJsonEnvelope(convertToJsonObject(jsonString));
+    }
+
+    private JsonEnvelope buildOnlyApplicationHearingRestrictedCasePublicCourtListData() {
+        String jsonString = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getOnlyApplicationHearingRestrictedCasePublicCourtListData.json")
+                .replace("JUDICIARY_ID", JUDICIARY_ID.toString());;
+        return buildJsonEnvelope(convertToJsonObject(jsonString));
+    }
+
+    private JsonEnvelope buildCaseApplicationHearingRestrictedCasePublicCourtListData() {
+        String jsonString = getFileContentWithCommonFieldsReplaced("stubbed.queryView.getCaseApplicationHearingRestrictedCasePublicCourtListData.json")
+                .replace("JUDICIARY_ID", JUDICIARY_ID.toString());;
+        return buildJsonEnvelope(convertToJsonObject(jsonString));
+    }
+
+    private void assertApplicationHearingPublicCourtListPayload(JsonObject publicListData) {
+        assertThat(publicListData.getString("listType"), is(PUBLIC.toString().toLowerCase()));
+        assertThat(publicListData.getString("courtCentreName"), is(COURT_CENTRE_NAME));
+        assertThat(publicListData.getString("courtCentreAddress1"), is(ADDRESS_1 + SPACE + ADDRESS_2));
+        assertThat(publicListData.getString("courtCentreAddress2"), is(ADDRESS_3 + SPACE + ADDRESS_4 + SPACE + ADDRESS_5 + SPACE + POSTCODE));
+
+        JsonObject hearingDateJo = publicListData.getJsonArray("hearingDates").getJsonObject(0);
+        assertThat(hearingDateJo.getString("hearingDate"), is(START_DATE1));
+
+        JsonObject courtRoomsJo = hearingDateJo.getJsonArray("courtRooms").getJsonObject(0);
+
+        assertThat(courtRoomsJo.getString("courtRoomName"), is(COURT_ROOM_NAME_1));
+
+        JsonObject timeslot = courtRoomsJo.getJsonArray("timeslots").getJsonObject(0);
+        JsonObject hearing = timeslot.getJsonArray("hearings").getJsonObject(0);
+        assertThat(hearing.getString("startTime"), is(START_TIME1.substring(11, 16)));
+        assertThat(hearing.getString("caseNumber"), is(CASE_REFERENCE));
+    }
+
+    private void assertRestrictedDefendant(JsonObject publicListData, boolean isDefendantRestricted) {
+
+        JsonObject hearingDateJo = publicListData.getJsonArray("hearingDates").getJsonObject(0);
+        JsonObject courtRoomsJo = hearingDateJo.getJsonArray("courtRooms").getJsonObject(0);
+
+        JsonObject timeslot = courtRoomsJo.getJsonArray("timeslots").getJsonObject(0);
+        JsonObject hearing = timeslot.getJsonArray("hearings").getJsonObject(0);
+        JsonObject defendant = hearing.getJsonArray("defendants").getJsonObject(0);
+        if(isDefendantRestricted){
+            assertThat(defendant.getString("firstName"), is(EMPTY));
+            assertThat(defendant.getString("surname"), is(DEFENDANT_STRING));
+        } else{
+            assertThat(defendant.getString("firstName"), is(FIRST_NAME1));
+            assertThat(defendant.getString("surname"), is(LAST_NAME1));
+        }
     }
 
     private JsonEnvelope buildRequestEnvelope() {
