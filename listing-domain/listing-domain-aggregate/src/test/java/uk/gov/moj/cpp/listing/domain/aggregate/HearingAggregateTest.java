@@ -62,6 +62,7 @@ import uk.gov.justice.listing.events.SeedingHearing;
 import uk.gov.justice.listing.events.UnallocatedHearingDeleted;
 import uk.gov.justice.listing.events.UpdatedHearingInStagingHmi;
 import uk.gov.justice.listing.events.UpdatedHmiFieldsForHearing;
+import uk.gov.justice.services.test.utils.core.reflection.ReflectionUtil;
 import uk.gov.moj.cpp.listing.domain.CourtApplication;
 import uk.gov.moj.cpp.listing.domain.CourtApplicationPartyListingNeeds;
 import uk.gov.moj.cpp.listing.domain.CourtCentreDefaults;
@@ -952,6 +953,9 @@ public class HearingAggregateTest {
 
         assertThat(hearing.getCurrentHearingEventState().getListedCases().size(), is(1));
         assertThat(hearing.getCurrentHearingEventState().getListedCases().get(0).getDefendants().get(0).getOffences().get(0).getId(), is(offence2Id));
+
+        var prosecutionCaseDefendantOffenceIds = ReflectionUtil.getValueOfField(hearing, "prosecutionCaseDefendantOffenceIds", List.class);
+        assertThat(prosecutionCaseDefendantOffenceIds.size(), is(0));
     }
 
     @Test
@@ -1010,7 +1014,8 @@ public class HearingAggregateTest {
         assertThat(offencesRemovedFromExistingUnallocatedHearing.getOffenceIds(), hasItems(offence1Id, offence2Id));
 
         assertThat(hearing.getCurrentHearingEventState().getListedCases().isEmpty(), is(true));
-
+        var prosecutionCaseDefendantOffenceIds = ReflectionUtil.getValueOfField(hearing, "prosecutionCaseDefendantOffenceIds", List.class);
+        assertThat(prosecutionCaseDefendantOffenceIds.size(), is(0));
     }
 
     @Test
