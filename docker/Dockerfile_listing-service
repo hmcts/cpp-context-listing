@@ -1,6 +1,7 @@
 #ARG base_image=crmdvrepo01.azurecr.io/wildfly:310122
 
-FROM {base_image}
+ARG baseImageTag
+FROM crmdvrepo01.azurecr.io/hmcts/wildfly:${baseImageTag}
 
 ARG version
 ARG repo_loc=https://libraries-internal.mdv.cpp.nonlive/artifactory/repocentral
