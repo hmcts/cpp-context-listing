@@ -52,5 +52,24 @@ public class AddHearingToCaseCommandFromHearingAddedToCaseConverterTest {
         assertThat(actualCommand.getHearingId(), is(hearingId));
     }
 
+    @Test
+    public void convertV2() {
+
+        //given
+        final CasesAddedToHearing casesAddedToHearing = eventBuilder.buildCasesAddedToHearingV2();
+
+        //when
+        final List<AddHearingToCaseCommand> actualList = addHearingToCaseCommandFromHearingAddedToCaseConverter.convert(casesAddedToHearing);
+
+        //then
+        assertThat(actualList.size(), is(1));
+        final AddHearingToCaseCommand actualCommand = actualList.get(0);
+        final UUID hearingId = casesAddedToHearing.getHearingId();
+        final ListedCase unAlloatedListedCase = casesAddedToHearing.getUnAllocatedListedCases().get(0);
+
+        assertThat(actualCommand.getCaseId(), is(unAlloatedListedCase.getId()));
+        assertThat(actualCommand.getHearingId(), is(hearingId));
+    }
+
 
 }

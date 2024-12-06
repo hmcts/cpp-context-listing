@@ -195,11 +195,11 @@ public class HearingsDataFactory {
     }
 
     public static List<HearingData> hearingsDataWithAllocationDataAndJudiciary(final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType) {
-        return manyRandomHearingsWithAllocationDataAndJurisdictionType(1, courtCentreId, courtRoomId, judiciaryType, "CROWN");
+        return manyRandomHearingsWithAllocationDataAndJurisdictionType(1, courtCentreId, courtRoomId, judiciaryType, CROWN_JURISDICTION);
     }
 
     public static List<HearingData> hearingsDataWithAllocationDataAndJudiciaryWithNoReportingRestriction(final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType) {
-        return manyRandomHearingWithoutReportingRestriction(1, courtCentreId, courtRoomId, judiciaryType, "CROWN");
+        return manyRandomHearingWithoutReportingRestriction(1, courtCentreId, courtRoomId, judiciaryType, CROWN_JURISDICTION);
     }
 
     public static List<HearingData> manyRandomHearingWithoutReportingRestriction(final Integer numberOfHearings, final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType, final String jurisdictionType) {
@@ -209,7 +209,7 @@ public class HearingsDataFactory {
     }
 
     public static List<HearingData> hearingsDataWithRestriction(final UUID courtCentreId, final UUID courtRoomId, final String judiciaryType) {
-        return manyRandomHearingWithRestriction(1, courtCentreId, courtRoomId, judiciaryType, "CROWN");
+        return manyRandomHearingWithRestriction(1, courtCentreId, courtRoomId, judiciaryType, CROWN_JURISDICTION);
     }
 
     public static List<HearingData> hearingsDataWithAllocationDataAndJudiciary(final CaseAndDefendantData caseAndDefendantData) {
@@ -258,19 +258,19 @@ public class HearingsDataFactory {
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationData(final Integer numberOfHearings, final UUID courtCentreId) {
-        return manyRandomHearingsWithAllocationData(numberOfHearings, courtCentreId, "MAGISTRATE");
+        return manyRandomHearingsWithAllocationData(numberOfHearings, courtCentreId, MAGISTRATES_JURISDICTION);
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationDataSingleCase(final Integer numberOfHearings, final UUID courtCentreId) {
-        return manyRandomHearingsWithAllocationDataSingleCase(numberOfHearings, courtCentreId, "MAGISTRATE");
+        return manyRandomHearingsWithAllocationDataSingleCase(numberOfHearings, courtCentreId, MAGISTRATES_JURISDICTION);
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournment(final Integer numberOfHearings, final UUID courtCentreId) {
-        return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings, courtCentreId, "MAGISTRATE");
+        return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings, courtCentreId, MAGISTRATES_JURISDICTION);
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournmentWithCourt(final Integer numberOfHearings, final UUID courtCentreId, final UUID courtRoomUUID,  final String court) {
-        return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings, courtCentreId, courtRoomUUID,"CROWN", court);
+        return manyRandomHearingsWithAllocationDataAndIsAdjournment(numberOfHearings, courtCentreId, courtRoomUUID, CROWN_JURISDICTION, court);
     }
 
     private static List<HearingData> manyRandomHearingsWithAllocationDataAndIsAdjournmentWithoutJudiciary(final Integer numberOfHearings, final UUID courtCentreId) {

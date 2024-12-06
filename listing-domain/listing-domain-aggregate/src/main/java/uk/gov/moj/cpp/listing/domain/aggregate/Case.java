@@ -42,12 +42,12 @@ import java.util.stream.Stream;
 @SuppressWarnings({"pmd:BeanMembersShouldSerialize", "squid:S1068"})
 public class Case implements Aggregate {
 
-    private static final long serialVersionUID = 201L;
+    private static final long serialVersionUID = 202L;
 
-    private final List<UUID> hearingIds = new ArrayList<>();
+    private final Set<UUID> hearingIds = new HashSet<>();
 
     public List<UUID> getHearingIds() {
-        return unmodifiableList(this.hearingIds);
+        return unmodifiableList(new ArrayList<>(this.hearingIds));
     }
 
     @Override
@@ -69,7 +69,9 @@ public class Case implements Aggregate {
     }
 
     public Stream<Object> addHearing(final UUID caseId, final UUID hearingId) {
-
+        if(hearingIds.contains(hearingId)){
+            return  Stream.empty();
+        }
         return apply(Stream.of(new HearingAddedToCase(caseId, hearingId)));
     }
 
@@ -88,7 +90,7 @@ public class Case implements Aggregate {
         return apply(Stream.of(DefendantsToBeUpdated.defendantsToBeUpdated()
                 .withCaseId(caseId)
                 .withDefendants(singletonList(NewDomainToEventConverter.buildDefendant(defendant)))
-                .withHearings(hearingIds)
+                .withHearings(new ArrayList<>(hearingIds))
                 .build()));
     }
 
@@ -101,7 +103,7 @@ public class Case implements Aggregate {
                 .withCaseId(caseOffences.getCaseId())
                 .withDefendantId(caseOffences.getDefendantId())
                 .withOffences(NewDomainToEventConverter.buildOffences(caseOffences.getOffences()))
-                .withHearings(hearingIds)
+                .withHearings(new ArrayList<>(hearingIds))
                 .build()));
     }
 
@@ -113,7 +115,7 @@ public class Case implements Aggregate {
         return apply(Stream.of(DefendantsToBeAddedForCourtProceedings.defendantsToBeAddedForCourtProceedings()
                 .withCaseId(caseId)
                 .withDefendants(singletonList(NewDomainToEventConverter.buildDefendant(defendant)))
-                .withHearings(hearingIds)
+                .withHearings(new ArrayList<>(hearingIds))
                 .build()));
     }
 
@@ -125,7 +127,7 @@ public class Case implements Aggregate {
                 .withLinkActionType(linkActionType)
                 .withCaseId(caseId)
                 .withCaseUrn(caseUrn)
-                .withHearingIds(hearingIds)
+                .withHearingIds(new ArrayList<>(hearingIds))
                 .withLinkedToCases(NewDomainToEventConverter.convertDomainToLinkedToCasesEvent(cases.getLinkedToCases()))
                 .build()));
     }
@@ -138,7 +140,7 @@ public class Case implements Aggregate {
         return apply(Stream.of(CaseMarkersToBeUpdated.caseMarkersToBeUpdated()
                 .withProsecutionCaseId(caseId)
                 .withMarkers(NewDomainToEventConverter.convertCaseMarkersListToMarkers(caseMarkers))
-                .withHearings(hearingIds)
+                .withHearings(new ArrayList<>(hearingIds))
                 .build()));
     }
 
@@ -151,7 +153,7 @@ public class Case implements Aggregate {
                 .withCaseId(caseSimpleOffences.getCaseId())
                 .withDefendantId(caseSimpleOffences.getDefendantId())
                 .withOffences(NewDomainToEventConverter.buildSimpleOffences(caseSimpleOffences.getOffences()))
-                .withHearings(hearingIds)
+                .withHearings(new ArrayList<>(hearingIds))
                 .build()));
     }
 
@@ -164,7 +166,7 @@ public class Case implements Aggregate {
                 .withCaseId(caseOffences.getCaseId())
                 .withDefendantId(caseOffences.getDefendantId())
                 .withOffences(NewDomainToEventConverter.buildOffences(caseOffences.getOffences()))
-                .withHearings(hearingIds)
+                .withHearings(new ArrayList<>(hearingIds))
                 .build()));
     }
 
@@ -189,7 +191,7 @@ public class Case implements Aggregate {
 
     public Stream<Object> updateDefendantLegalAidStatus(final UUID caseId, final UUID defendantId, final String legalAidStatus) {
         return this.hearingIds.isEmpty() ? Stream.empty() : apply(Stream.of(DefendantLegalaidStatusUpdated.defendantLegalaidStatusUpdated()
-                .withHearingIds(hearingIds)
+                .withHearingIds(new ArrayList<>(hearingIds))
                 .withCaseId(caseId)
                 .withDefendantId(defendantId)
                 .withLegalAidStatus(legalAidStatus)
@@ -201,7 +203,7 @@ public class Case implements Aggregate {
             return Stream.empty();
         }
         return apply(Stream.of(caseResultedDefendantProceedingsConcluded()
-                .withHearingIds(this.hearingIds)
+                .withHearingIds(new ArrayList<>(this.hearingIds))
                 .withProsecutionCase(prosecutionCase)
                 .build()));
     }
