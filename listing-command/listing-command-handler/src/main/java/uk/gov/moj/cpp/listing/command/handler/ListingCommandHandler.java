@@ -187,7 +187,6 @@ import javax.ws.rs.core.Response;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -748,66 +747,83 @@ public class ListingCommandHandler {
         }
 
         final List<NonDefaultDay> filteredNonDefaultDays = domainNonDefaultDays.stream()
-                .filter(nonDefaultDay -> nonDefaultDay.getStartTime().toLocalDate().compareTo(startDate) >= 0 && nonDefaultDay.getStartTime().toLocalDate().compareTo(endDate) <= 0)
+                .filter(nonDefaultDay -> !nonDefaultDay.getStartTime().toLocalDate().isBefore(startDate) && !nonDefaultDay.getStartTime().toLocalDate().isAfter(endDate))
                 .filter(nonDefaultDay -> !nonSittingDays.contains(nonDefaultDay.getStartTime().toLocalDate()))
                 .collect(toList());
 
         final Optional<SelectedCourtCentre> selectedCourtCentre = ofNullable(updateHearingForListing.getSelectedCourtCentre());
+        final Optional<UUID> optionalCourtRoomId = ofNullable(getCourtRoomId(updateHearingForListing));
         if (JurisdictionType.MAGISTRATES.equals(jurisdictionType) && selectedCourtCentre.isPresent() && !filteredNonDefaultDays.isEmpty()) {
             final Map<UUID, JsonObject> organisationUnitMap = new HashMap<>();
             final UUID selectedCourtCentreId = selectedCourtCentre.get().getId();
             final UUID selectedCourtRoomId = selectedCourtCentre.get().getCourtRoomId();
 
             // Populate details required for updating slots
-            filteredNonDefaultDays.replaceAll(nonDefaultDay -> {
-                if (nonDefaultDay.getCourtScheduleId().isPresent()) {
-                    return nonDefaultDay;
-                }
-                final String courtCentreId = nonDefaultDay.getCourtCentreId().orElse(selectedCourtCentreId.toString());
-                final String courtRoomId = nonDefaultDay.getRoomId().orElse(selectedCourtRoomId.toString());
-
-                organisationUnitMap.computeIfAbsent(fromString(courtCentreId), k -> courtCentreFactory.getOrganisationUnit(fromString(courtCentreId), command));
-
-                return getNonDefaultDay(nonDefaultDay.getDuration(), fromString(courtCentreId), fromString(courtRoomId),
-                        organisationUnitMap.get(fromString(courtCentreId)), nonDefaultDay.getStartTime());
-
-            });
+            populateNonDefaultDaysDetails(command, filteredNonDefaultDays, selectedCourtCentreId, of(selectedCourtRoomId), organisationUnitMap);
 
             // Create missing nonDefaultDays and populate details for updating slots
-            final List<LocalDate> nonDefaultDates = filteredNonDefaultDays.stream().map(NonDefaultDay::getStartTime).map(ZonedDateTime::toLocalDate).collect(Collectors.toList());
-            final long numOfDaysBetween = ChronoUnit.DAYS.between(startDate, endDate);
-            IntStream.rangeClosed(0, (int) numOfDaysBetween)
-                    .mapToObj(startDate::plusDays)
-                    .filter(d -> !nonDefaultDates.contains(d) && !nonSittingDays.contains(d))
-                    .forEach(date -> {
-                        organisationUnitMap.computeIfAbsent(selectedCourtCentreId, k -> courtCentreFactory.getOrganisationUnit(selectedCourtCentreId, command));
+            calculateNonDefaultDays(command, nonSittingDays,  startDate, endDate, defaultDuration, filteredNonDefaultDays, organisationUnitMap, selectedCourtCentreId.toString(), of(selectedCourtRoomId.toString()));
 
-                        final JsonObject courtCentreObj = organisationUnitMap.get(selectedCourtCentreId);
-                        final LocalTime defaultStartTime = LocalTime.parse(courtCentreObj.getString("defaultStartTime"));
-                        final ZonedDateTime hearingStartTime = ZonedDateTime.of(date, defaultStartTime, BST).withZoneSameInstant(UTC);
-
-                        final NonDefaultDay nonDefaultDay = getNonDefaultDay(of(defaultDuration), selectedCourtCentreId, selectedCourtRoomId,
-                                courtCentreObj, hearingStartTime);
-                        filteredNonDefaultDays.add(nonDefaultDay);
-                    });
+        } else if (JurisdictionType.CROWN.equals(jurisdictionType)) {
+            final Map<UUID, JsonObject> organisationUnitMap = new HashMap<>();
+            final UUID courtCentreId = getCourtCentreId(updateHearingForListing);
+            populateNonDefaultDaysDetails(command, filteredNonDefaultDays, courtCentreId, optionalCourtRoomId, organisationUnitMap);
+            organisationUnitMap.computeIfAbsent(courtCentreId, k -> courtCentreFactory.getOrganisationUnit(courtCentreId, command));
+            calculateNonDefaultDays(command, nonSittingDays, startDate, endDate, defaultDuration, filteredNonDefaultDays, organisationUnitMap, courtCentreId.toString(), optionalCourtRoomId.map(UUID::toString));
         }
-
         return filteredNonDefaultDays;
     }
 
-    private NonDefaultDay getNonDefaultDay(final Optional<Integer> defaultDuration, final UUID courtCentreId, final UUID courtRoomId,
-                                           final JsonObject courtCentreObj, final ZonedDateTime hearingStartTime) {
-        final Optional<String> ouCode = getString(courtCentreObj, OUCODE);
-        final Optional<Integer> courtRoomNumber = courtCentreFactory.getCourtRoomNumber(courtCentreObj, courtRoomId.toString());
+    private void populateNonDefaultDaysDetails(final JsonEnvelope command, final List<NonDefaultDay> filteredNonDefaultDays, final UUID courtCentreId, final Optional<UUID> courtRoomId, final Map<UUID, JsonObject> organisationUnitMap) {
+        filteredNonDefaultDays.replaceAll(nonDefaultDay -> {
+            if (nonDefaultDay.getCourtScheduleId().isPresent()) {
+                return nonDefaultDay;
+            }
+            final String nddCourtCentreId = nonDefaultDay.getCourtCentreId().orElse(courtCentreId.toString());
+            final Optional<String> nddCourtRoomId = nonDefaultDay.getRoomId().or(() -> courtRoomId.map(UUID::toString));
 
-        return NonDefaultDay.nonDefaultDay()
+            organisationUnitMap.computeIfAbsent(fromString(nddCourtCentreId), k -> courtCentreFactory.getOrganisationUnit(fromString(nddCourtCentreId), command));
+
+            return getNonDefaultDay(nonDefaultDay.getDuration(), nddCourtCentreId, nddCourtRoomId,
+                    organisationUnitMap.get(fromString(nddCourtCentreId)), nonDefaultDay.getStartTime());
+
+        });
+    }
+
+    public void calculateNonDefaultDays(final JsonEnvelope command, final List<LocalDate> nonSittingDays,  final LocalDate startDate,final LocalDate endDate, final Integer defaultDuration,
+                                        final List<NonDefaultDay> filteredNonDefaultDays, final Map<UUID, JsonObject> organisationUnitMap, final String courtCentreId, final Optional<String> courtRoomId) {
+        final List<LocalDate> nonDefaultDates = filteredNonDefaultDays.stream().map(NonDefaultDay::getStartTime).map(ZonedDateTime::toLocalDate).toList();
+        final long numOfDaysBetween = ChronoUnit.DAYS.between(startDate, endDate);
+        IntStream.rangeClosed(0, (int) numOfDaysBetween)
+                .mapToObj(startDate::plusDays)
+                .filter(d -> !nonDefaultDates.contains(d) && !nonSittingDays.contains(d))
+                .forEach(date -> {
+                    organisationUnitMap.computeIfAbsent(fromString(courtCentreId), k -> courtCentreFactory.getOrganisationUnit(fromString(courtCentreId), command));
+
+                    final JsonObject courtCentreObj = organisationUnitMap.get(fromString(courtCentreId));
+                    final LocalTime defaultStartTime = LocalTime.parse(courtCentreObj.getString("defaultStartTime"));
+                    final ZonedDateTime hearingStartTime = ZonedDateTime.of(date, defaultStartTime, BST).withZoneSameInstant(UTC);
+
+                    final NonDefaultDay nonDefaultDay = getNonDefaultDay(of(defaultDuration), courtCentreId, courtRoomId, courtCentreObj, hearingStartTime);
+                    filteredNonDefaultDays.add(nonDefaultDay);
+                });
+    }
+
+    private NonDefaultDay getNonDefaultDay(final Optional<Integer> defaultDuration, final String courtCentreId, final Optional<String> courtRoomId,
+                                           final JsonObject courtCentreObj, final ZonedDateTime hearingStartTime) {
+        final Optional<String> ouCode = ofNullable(courtCentreObj.getString(OUCODE,null));
+        var nonDefaultDayBuilder = NonDefaultDay.nonDefaultDay()
                 .withDuration(defaultDuration)
                 .withStartTime(hearingStartTime)
                 .withOucode(ouCode)
-                .withCourtCentreId(of(courtCentreId.toString()))
-                .withCourtRoomId(courtRoomNumber)
-                .withSession(of(MeridianUtil.getMeridian(hearingStartTime)))
-                .withRoomId(of(courtRoomId.toString())).build();
+                .withCourtCentreId(of(courtCentreId))
+                .withSession(of(MeridianUtil.getMeridian(hearingStartTime)));
+
+        if (courtRoomId.isPresent()) {
+            final Optional<Integer> courtRoomNumber = courtCentreFactory.getCourtRoomNumber(courtCentreObj, courtRoomId.get());
+            nonDefaultDayBuilder.withCourtRoomId(courtRoomNumber).withRoomId(courtRoomId);
+        }
+        return nonDefaultDayBuilder.build();
     }
 
     private UUID getCourtRoomId(final UpdateHearingForListing updateHearingForListing) {
@@ -1316,8 +1332,8 @@ public class ListingCommandHandler {
 
         final UUID caseId = command.getCaseId();
         final UUID hearingId = command.getHearingId();
-        updateCaseEventStream(commandEnvelope, caseId, (Case listingCase) ->
-                listingCase.addHearing(caseId, hearingId));
+        updateCaseEventStream(commandEnvelope, caseId, (Case caseAggrgate) ->
+                caseAggrgate.addHearing(caseId, hearingId));
     }
 
     @Handles("listing.command.update-hearing-to-case")
