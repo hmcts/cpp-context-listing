@@ -542,13 +542,14 @@ protocols: [ HTTP, HTTPS ]
                  application/vnd.listing.get.cases-by-organisation-defendant+json:
                    example: !include json/listing.search.cases-by-defendant-and-hearingDate.json
                    schema: !include json/schema/listing.search.cases-by-defendant-and-hearingDate.json
+
 /court-calendar-hearings:
   get:
     description: |
       ...
       (mapping):
-          responseType: application/vnd.listing.search.court-calendar-hearings+json
-          name: listing.search.court-calendar-hearings
+          responseType: application/vnd.listing.search.hearings.court-calendar-hearings+json
+          name: listing.search.hearings.court-calendar-hearings
       ...
     queryParameters:
       allocated:
@@ -575,10 +576,6 @@ protocols: [ HTTP, HTTPS ]
         description: the jurisdiction under which the hearing is being prosecuted, for example CROWN or MAGISTRATE
         type: string
         required: false
-      searchDate:
-        description: Search for hearings where the searchDate parameter is between the start and end date of the hearing.
-        type: date
-        required: true
       startTime:
         description: e.g. '10:30'. Search for hearings that have a start time greater than or equal to this startTime parameter.  Default is 00:00 (midnight) on the day of the searchDate
         type: string
@@ -592,7 +589,7 @@ protocols: [ HTTP, HTTPS ]
         type: string
         required: false
       courtSession:
-        description: Any/AM/PM/All day
+        description: Any/AM/PM/AD
         type: string
         required: false
       pageSize:
@@ -608,6 +605,6 @@ protocols: [ HTTP, HTTPS ]
       200:
         description: OK
         body:
-          application/vnd.listing.search.hearings.court-calendar+json:
-            example: !include json/listing.search.court-calendar-hearings.json
-            schema: !include  json/schema/listing.search.court-calendar-hearings.json
+          application/vnd.listing.search.hearings.court-calendar-hearings+json:
+            example: !include json/listing.search.hearings.court-calendar-hearings.json
+            schema: !include  json/schema/listing.search.hearings.court-calendar-hearings.json

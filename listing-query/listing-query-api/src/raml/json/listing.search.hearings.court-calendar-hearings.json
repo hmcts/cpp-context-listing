@@ -1,5 +1,7 @@
 {
-  "courtCalendarHearings": [
+  "results": 1,
+  "pageCount": 1,
+  "hearings": [
     {
       "id": "0baecac5-222b-402d-9047-84803679edaf",
       "allocated": true,

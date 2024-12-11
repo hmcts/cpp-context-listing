@@ -134,7 +134,7 @@ public class HearingQueryView {
     private static final String BUSINESS_TYPE = "businessType";
     private static final String COURT_SESSION = "courtSession";
     private static final String HEARING_IDS_SEARCH_PARAM = "hearingIds";
-    private static final String COURT_CALENDAR_HEARINGS = "listing.search.court-calendar-hearings";
+    private static final String COURT_CALENDAR_HEARINGS = "listing.search.hearings.court-calendar-hearings";
 
 //    private static final String PAGE_SIZE = "pageSize";
 //    private static final String PAGE_NUMBER = "pageNumber";

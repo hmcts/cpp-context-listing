@@ -1,0 +1,925 @@
+{
+  "results": 6,
+  "pageCount": 2,
+  "hearings": [
+    {
+      "id": "d2cb1920-9397-4eb5-bb43-62070474193e",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2024-12-06",
+      "allocated": true,
+      "judiciary": [
+        {
+          "isDeputy": false,
+          "judicialId": "fa6ecbe0-bf9c-34b4-b6d9-e1465e59bb58",
+          "isBenchChairman": true,
+          "judicialRoleType": {
+            "judiciaryType": "MAGISTRATE"
+          }
+        },
+        {
+          "isDeputy": true,
+          "judicialId": "ce2b18dc-dc9e-3f0e-8f16-6ee3f5b7d8ca",
+          "isBenchChairman": false,
+          "judicialRoleType": {
+            "judiciaryType": "MAGISTRATE"
+          }
+        }
+      ],
+      "startDate": "2024-12-06",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2024-12-06T22:50:00.000Z",
+          "sequence": 1,
+          "startTime": "2024-12-06T22:30:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2024-12-06",
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "durationMinutes": 20,
+          "matchedWithQuery": true
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "11ef4284-7561-49a4-9794-a4f5accf7161",
+          "markers": [],
+          "caseStatus": "ACTIVE",
+          "defendants": [
+            {
+              "id": "48a7ea15-81de-4f7a-8e2a-7dd20d65f4b0",
+              "address": {
+                "address1": "9999A9999AAAA",
+                "address2": "Woodlane",
+                "address3": "addressline 3",
+                "address4": "Bristol",
+                "address5": "Avon"
+              },
+              "isYouth": false,
+              "lastName": "USERISZPP",
+              "offences": [
+                {
+                  "id": "7a68a765-4b50-4fe0-877e-8bbb6074fd1c",
+                  "count": 0,
+                  "startDate": "2022-05-28",
+                  "orderIndex": 1,
+                  "offenceCode": "CA03012",
+                  "shadowListed": false,
+                  "offenceWording": "Theft of pedal cycle.",
+                  "statementOfOffence": {
+                    "title": "Possess / control TV set with intent another use install without a licence",
+                    "welshTitle": "Meddu ar/mewn rheolaeth set deledu gan fwriadu i unigolyn arall ei ddefnyddio/osod heb drwydded",
+                    "legislation": "Contrary to section 363(3)(b) and (4) of the Communications Act 2003.",
+                    "welshLegislation": "Yn groes i adran 363(3)(b) a (4) Deddf Cyfathrebu 2003."
+                  },
+                  "restrictFromCourtList": false
+                },
+                {
+                  "id": "962f87b5-fc6c-4851-97c3-ecd99085a915",
+                  "startDate": "2024-12-02",
+                  "orderIndex": 2,
+                  "offenceCode": "RT88215",
+                  "offenceWording": "On or in 02 Dec 2024 at test  in the county of test, being the driver of a mechanically propelled vehicle who was alleged to have committed an offence under section 2 of the Road Traffic Act 1988, refused, on being so required by a person having reasonable grounds for so requiring, to give your name.",
+                  "statementOfOffence": {
+                    "title": "Driver of a motor vehicle alleged to have driven dangerously / carelessly fail to provide name / address",
+                    "welshTitle": "Driver of a motor vehicle alleged to have driven dangerously / carelessly fail to provide name / address",
+                    "legislation": "Contrary to section 168 of the Road Traffic Act 1988 and Schedule 2 to the Road Traffic Offenders Act 1988."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "JasonIsZpp",
+              "dateOfBirth": "1986-12-13",
+              "masterDefendantId": "48a7ea15-81de-4f7a-8e2a-7dd20d65f4b0",
+              "hearingLanguageNeeds": "ENGLISH",
+              "proceedingsConcluded": false,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2024-12-05T10:32:02.219Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "RA264537766"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "hasVideoLink": true,
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [
+        {
+          "oucode": "B01LY00",
+          "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "session": "AD",
+          "duration": 20,
+          "startTime": "2024-12-06T22:30:00.000Z",
+          "courtRoomId": 2330,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26"
+        }
+      ],
+      "nonSittingDays": [],
+      "publicListNote": "",
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      },
+      "numberOfGroupCases": 1
+    },
+    {
+      "id": "d611324a-7ef7-46b5-96bf-aa5be505de2e",
+      "type": {
+        "id": "bf8155e1-90b9-4080-b133-bfbad895d6e4",
+        "description": "Trial"
+      },
+      "endDate": "2024-12-06",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "91ee083f-ef5c-3a18-b7e4-232e0cc56fa8",
+          "judicialRoleType": {
+            "judiciaryType": "DEPUTY_DISTRICT_JUDGE"
+          }
+        },
+        {
+          "judicialId": "b3918147-b5eb-3794-826e-a53fca8a81ca",
+          "judicialRoleType": {
+            "judiciaryType": "DISTRICT_JUDGE"
+          }
+        },
+        {
+          "judicialId": "d4522047-2c3a-4a8c-9423-d60d96bd66bd",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2024-12-06",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2024-12-06T11:00:00.000Z",
+          "sequence": 4,
+          "startTime": "2024-12-06T10:00:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2024-12-06",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "durationMinutes": 60,
+          "matchedWithQuery": true
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "f5ce0cca-d8e0-4513-af5e-c29d59743c87",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "eaef2b0d-edce-43af-8cea-043d9a029330",
+              "address": {
+                "address1": "FLAT - 25A",
+                "address2": "Constable Street",
+                "address3": "Bristol",
+                "address4": "England",
+                "address5": "UK",
+                "postcode": "IG1 1YY"
+              },
+              "isYouth": false,
+              "lastName": "Quigley",
+              "offences": [
+                {
+                  "id": "311a3dda-7498-4f85-9aab-10b298a4a78d",
+                  "count": 1,
+                  "startDate": "2024-10-16",
+                  "orderIndex": 1,
+                  "offenceCode": "VE94015",
+                  "shadowListed": false,
+                  "offenceWording": "offenceWording",
+                  "statementOfOffence": {
+                    "title": "Keep a vehicle without a valid vehicle licence",
+                    "welshTitle": "Keep a vehicle without a valid vehicle licence",
+                    "legislation": "Contrary to section 29(1) and (3) of the Vehicle Excise and    Registration Act 1994.",
+                    "welshLegislation": ""
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Diego",
+              "dateOfBirth": "2000-01-01",
+              "masterDefendantId": "eaef2b0d-edce-43af-8cea-043d9a029330",
+              "hearingLanguageNeeds": "ENGLISH",
+              "specificRequirements": "no special needs",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2024-11-15T10:53:49.628Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "31af405e-7b60-4dd8-a244-c24c2d3fa595",
+            "authorityCode": "TFL",
+            "caseReference": "SJ237289135"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [
+        {
+          "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "duration": 60,
+          "startTime": "2024-12-06T10:00:00.000Z",
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 60,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      }
+    },
+    {
+      "id": "d634760e-b82d-42ef-b55f-87ccead1ba77",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2024-12-06",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "91ee083f-ef5c-3a18-b7e4-232e0cc56fa8",
+          "judicialRoleType": {
+            "judiciaryType": "DEPUTY_DISTRICT_JUDGE"
+          }
+        },
+        {
+          "judicialId": "b3918147-b5eb-3794-826e-a53fca8a81ca",
+          "judicialRoleType": {
+            "judiciaryType": "DISTRICT_JUDGE"
+          }
+        },
+        {
+          "judicialId": "d4522047-2c3a-4a8c-9423-d60d96bd66bd",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2024-12-06",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2024-12-06T19:20:00.000Z",
+          "sequence": 1,
+          "startTime": "2024-12-06T19:00:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2024-12-06",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "durationMinutes": 20,
+          "matchedWithQuery": true
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "027e78a4-da65-493a-bcb8-64710bef7a15",
+          "markers": [],
+          "caseStatus": "INACTIVE",
+          "defendants": [
+            {
+              "id": "330b9643-b6d2-483d-81fb-cda4d67cae2a",
+              "address": {
+                "address1": "9999A9999AAAA",
+                "address2": "Woodlane",
+                "address3": "addressline 3",
+                "address4": "Bristol",
+                "address5": "Avon"
+              },
+              "lastName": "TEST",
+              "offences": [
+                {
+                  "id": "ca7e3d11-fa4e-45ee-b4e0-dcae8e405d49",
+                  "count": 0,
+                  "startDate": "2022-06-06",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68010",
+                  "shadowListed": false,
+                  "offenceWording": "Shoplifting at Debenhams",
+                  "statementOfOffence": {
+                    "title": "Theft from a shop",
+                    "welshTitle": "Dwyn o siop - siop-ladrad",
+                    "legislation": "Contrary to section 1(1) and 7 of the Theft    Act 1968.",
+                    "welshLegislation": "Yn groes i adran 1(1) a 7 Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Mark",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1990-01-01",
+              "masterDefendantId": "4957c894-bd31-4a91-a166-9fe0a56d5340",
+              "hearingLanguageNeeds": "ENGLISH",
+              "proceedingsConcluded": true,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2024-01-06T17:16:39.836Z"
+            },
+            {
+              "id": "a1ddc7ae-8097-4817-a425-782023f1f0ee",
+              "address": {
+                "address1": "9999A9999AAAA",
+                "address2": "Woodlane",
+                "address3": "addressline 3",
+                "address4": "Bristol",
+                "address5": "Avon"
+              },
+              "lastName": "Brown",
+              "offences": [
+                {
+                  "id": "2879cd77-a4ea-4560-924d-213ca15792f8",
+                  "count": 0,
+                  "startDate": "2022-06-06",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68010",
+                  "shadowListed": false,
+                  "offenceWording": "Shoplifting at Debenhams",
+                  "statementOfOffence": {
+                    "title": "Theft from a shop",
+                    "welshTitle": "Dwyn o siop - siop-ladrad",
+                    "legislation": "Contrary to section 1(1) and 7 of the Theft    Act 1968.",
+                    "welshLegislation": "Yn groes i adran 1(1) a 7 Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Sami",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1990-01-01",
+              "masterDefendantId": "4583c7a8-6062-4fa0-b717-0b580f9e5d6b",
+              "hearingLanguageNeeds": "ENGLISH",
+              "proceedingsConcluded": true,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2024-01-06T17:16:39.837Z"
+            },
+            {
+              "id": "7b02e810-92b2-49d9-824a-2d8818761e95",
+              "address": {
+                "address1": "9999A9999AAAA",
+                "address2": "Woodlane",
+                "address3": "addressline 3",
+                "address4": "Bristol",
+                "address5": "Avon"
+              },
+              "lastName": "White",
+              "offences": [
+                {
+                  "id": "4b6975a9-8a48-42a7-b086-0a5616b7ce27",
+                  "count": 0,
+                  "startDate": "2022-06-06",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68010",
+                  "shadowListed": false,
+                  "offenceWording": "Shoplifting at Debenhams",
+                  "statementOfOffence": {
+                    "title": "Theft from a shop",
+                    "welshTitle": "Dwyn o siop - siop-ladrad",
+                    "legislation": "Contrary to section 1(1) and 7 of the Theft    Act 1968.",
+                    "welshLegislation": "Yn groes i adran 1(1) a 7 Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Simon",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1990-01-01",
+              "masterDefendantId": "7b02e810-92b2-49d9-824a-2d8818761e95",
+              "hearingLanguageNeeds": "ENGLISH",
+              "proceedingsConcluded": true,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2024-01-06T17:16:39.837Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "20NX0038339"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [
+        {
+          "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "duration": 20,
+          "startTime": "2024-12-06T19:00:00.000Z",
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      }
+    },
+    {
+      "id": "d6a2df12-d572-49ab-83d6-3ed83a625dab",
+      "type": {
+        "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+        "description": "Plea"
+      },
+      "endDate": "2024-12-06",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "91ee083f-ef5c-3a18-b7e4-232e0cc56fa8",
+          "judicialRoleType": {
+            "judiciaryType": "DEPUTY_DISTRICT_JUDGE"
+          }
+        },
+        {
+          "judicialId": "b3918147-b5eb-3794-826e-a53fca8a81ca",
+          "judicialRoleType": {
+            "judiciaryType": "DISTRICT_JUDGE"
+          }
+        },
+        {
+          "judicialId": "d4522047-2c3a-4a8c-9423-d60d96bd66bd",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2024-12-06",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2024-12-06T10:20:00.000Z",
+          "sequence": 11,
+          "startTime": "2024-12-06T10:00:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2024-12-06",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "062c4b69-7146-301b-91a7-46ee3d5d05e1",
+          "durationMinutes": 20,
+          "matchedWithQuery": true
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "22858632-78d5-47a1-8147-9154d61658fa",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "52c17e73-d038-4956-9d88-a845d70e1539",
+              "address": {
+                "address1": "25 Park Avenue",
+                "address2": "Park Avenue",
+                "address3": "Birmingham",
+                "address4": "West Midlands",
+                "postcode": "NW1 5BR"
+              },
+              "isYouth": false,
+              "lastName": "Bot-Funk",
+              "offences": [
+                {
+                  "id": "e588944d-cf0f-488d-aa94-9640394ed0bb",
+                  "count": 0,
+                  "startDate": "2024-09-04",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68013A",
+                  "shadowListed": false,
+                  "offenceWording": "Attempt theft to vehicle",
+                  "seedingHearing": {
+                    "sittingDay": "2024-12-04",
+                    "jurisdictionType": "MAGISTRATES",
+                    "seedingHearingId": "a1ec4960-ad67-4e0f-b7b7-17e6318ebccd"
+                  },
+                  "statementOfOffence": {
+                    "title": "Attempt theft of motor vehicle",
+                    "welshTitle": "Ymgais i ddwyn cerbyd modur",
+                    "legislation": "Contrary to section 1(1)    of the Criminal Attempts Act 1981.",
+                    "welshLegislation": "Yn groes i adran 1(1) Deddf Ymgeisiau i Droseddu 1981."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "BobKarri",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1995-12-03",
+              "masterDefendantId": "52c17e73-d038-4956-9d88-a845d70e1539",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2024-12-03T08:17:33.761Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "RQ238555344"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [
+        {
+          "oucode": "B01LY00",
+          "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "session": "AM",
+          "duration": 20,
+          "startTime": "2024-12-06T10:00:00.000Z",
+          "courtRoomId": 2330,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "062c4b69-7146-301b-91a7-46ee3d5d05e1"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "adjournedFromDate": "2024-12-03",
+      "courtApplications": [],
+      "estimatedDuration": "20 MINUTES",
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      }
+    },
+    {
+      "id": "f4d11325-2aa2-4836-8fb3-03efb3a9f0fe",
+      "type": {
+        "id": "511fe0a3-1391-4954-8158-6b10eed0dad9",
+        "description": "Plea"
+      },
+      "endDate": "2024-12-06",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "91ee083f-ef5c-3a18-b7e4-232e0cc56fa8",
+          "judicialRoleType": {
+            "judiciaryType": "DEPUTY_DISTRICT_JUDGE"
+          }
+        },
+        {
+          "judicialId": "b3918147-b5eb-3794-826e-a53fca8a81ca",
+          "judicialRoleType": {
+            "judiciaryType": "DISTRICT_JUDGE"
+          }
+        },
+        {
+          "judicialId": "d4522047-2c3a-4a8c-9423-d60d96bd66bd",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2024-12-06",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2024-12-06T10:20:00.000Z",
+          "sequence": 12,
+          "startTime": "2024-12-06T10:00:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2024-12-06",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "062c4b69-7146-301b-91a7-46ee3d5d05e1",
+          "durationMinutes": 20,
+          "matchedWithQuery": true
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "f3d1d384-fc6f-43ef-8984-02bdb8bc4b92",
+          "markers": [],
+          "defendants": [
+            {
+              "id": "fbd74df3-f0cc-464d-bf1d-2afe26df312b",
+              "address": {
+                "address1": "80 Queen's Road",
+                "address2": "Queen's Road",
+                "address3": "Brighton",
+                "address4": "East Sussex",
+                "postcode": "NW1 5BR"
+              },
+              "isYouth": false,
+              "lastName": "Bot-Goyette",
+              "offences": [
+                {
+                  "id": "431f2572-81d0-4945-be9e-0f04fc3fe1cb",
+                  "count": 0,
+                  "startDate": "2024-09-04",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68013A",
+                  "shadowListed": false,
+                  "offenceWording": "Attempt theft to vehicle",
+                  "seedingHearing": {
+                    "sittingDay": "2024-12-04",
+                    "jurisdictionType": "MAGISTRATES",
+                    "seedingHearingId": "723303c1-f524-4229-95ec-0fbb339ba846"
+                  },
+                  "statementOfOffence": {
+                    "title": "Attempt theft of motor vehicle",
+                    "welshTitle": "Ymgais i ddwyn cerbyd modur",
+                    "legislation": "Contrary to section 1(1)    of the Criminal Attempts Act 1981.",
+                    "welshLegislation": "Yn groes i adran 1(1) Deddf Ymgeisiau i Droseddu 1981."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "BobDrew",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1954-12-03",
+              "masterDefendantId": "fbd74df3-f0cc-464d-bf1d-2afe26df312b",
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2024-12-03T14:55:10.755Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "RQ23856170"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [
+        {
+          "oucode": "B01LY00",
+          "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "session": "AM",
+          "duration": 20,
+          "startTime": "2024-12-06T10:00:00.000Z",
+          "courtRoomId": 2330,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "courtScheduleId": "062c4b69-7146-301b-91a7-46ee3d5d05e1"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "adjournedFromDate": "2024-12-03",
+      "courtApplications": [],
+      "estimatedDuration": "20 MINUTES",
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      }
+    },
+    {
+      "id": "fca25f77-2db6-414b-99eb-b40035d1bc99",
+      "type": {
+        "id": "4a0e892d-c0c5-3c51-95b8-704d8c781776",
+        "description": "First hearing"
+      },
+      "endDate": "2024-12-06",
+      "allocated": true,
+      "judiciary": [
+        {
+          "judicialId": "91ee083f-ef5c-3a18-b7e4-232e0cc56fa8",
+          "judicialRoleType": {
+            "judiciaryType": "DEPUTY_DISTRICT_JUDGE"
+          }
+        },
+        {
+          "judicialId": "b3918147-b5eb-3794-826e-a53fca8a81ca",
+          "judicialRoleType": {
+            "judiciaryType": "DISTRICT_JUDGE"
+          }
+        },
+        {
+          "judicialId": "d4522047-2c3a-4a8c-9423-d60d96bd66bd",
+          "judicialRoleType": {
+            "judiciaryType": "CIRCUIT_JUDGE"
+          }
+        }
+      ],
+      "startDate": "2024-12-06",
+      "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+      "hearingDays": [
+        {
+          "endTime": "2024-12-06T19:20:00.000Z",
+          "sequence": 2,
+          "startTime": "2024-12-06T19:00:00.000Z",
+          "courtRoomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "hearingDate": "2024-12-06",
+          "isCancelled": false,
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+          "durationMinutes": 20,
+          "matchedWithQuery": true
+        }
+      ],
+      "listedCases": [
+        {
+          "id": "2497bca4-b086-434e-a210-6fade34557c3",
+          "markers": [],
+          "caseStatus": "ACTIVE",
+          "defendants": [
+            {
+              "id": "1653394a-50fe-46c9-a69c-6b41c3982eb7",
+              "address": {
+                "address1": "9999A9999AAAA",
+                "address2": "Woodlane",
+                "address3": "addressline 3",
+                "address4": "Bristol",
+                "address5": "Avon"
+              },
+              "lastName": "TEST",
+              "offences": [
+                {
+                  "id": "e096751c-3e02-4383-94f5-cdb4c678360e",
+                  "count": 0,
+                  "startDate": "2022-06-06",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68010",
+                  "shadowListed": false,
+                  "offenceWording": "Shoplifting at Debenhams",
+                  "statementOfOffence": {
+                    "title": "Theft from a shop",
+                    "welshTitle": "Dwyn o siop - siop-ladrad",
+                    "legislation": "Contrary to section 1(1) and 7 of the Theft    Act 1968.",
+                    "welshLegislation": "Yn groes i adran 1(1) a 7 Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Mark",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1990-01-01",
+              "masterDefendantId": "4957c894-bd31-4a91-a166-9fe0a56d5340",
+              "hearingLanguageNeeds": "ENGLISH",
+              "proceedingsConcluded": true,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2024-01-06T17:37:44.838Z"
+            },
+            {
+              "id": "6542a31a-997b-4463-8ebc-5af6569a6342",
+              "address": {
+                "address1": "9999A9999AAAA",
+                "address2": "Woodlane",
+                "address3": "addressline 3",
+                "address4": "Bristol",
+                "address5": "Avon"
+              },
+              "lastName": "Brown",
+              "offences": [
+                {
+                  "id": "51a575f5-126c-4a51-9ea9-09e851a754bc",
+                  "count": 0,
+                  "startDate": "2022-06-06",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68010",
+                  "shadowListed": false,
+                  "offenceWording": "Shoplifting at Debenhams",
+                  "statementOfOffence": {
+                    "title": "Theft from a shop",
+                    "welshTitle": "Dwyn o siop - siop-ladrad",
+                    "legislation": "Contrary to section 1(1) and 7 of the Theft    Act 1968.",
+                    "welshLegislation": "Yn groes i adran 1(1) a 7 Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Sami",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1990-01-01",
+              "masterDefendantId": "4583c7a8-6062-4fa0-b717-0b580f9e5d6b",
+              "hearingLanguageNeeds": "ENGLISH",
+              "proceedingsConcluded": true,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2024-01-06T17:37:44.838Z"
+            },
+            {
+              "id": "1a584f56-a47b-4abd-8eda-a1453f2ccb13",
+              "address": {
+                "address1": "9999A9999AAAA",
+                "address2": "Woodlane",
+                "address3": "addressline 3",
+                "address4": "Bristol",
+                "address5": "Avon"
+              },
+              "lastName": "White",
+              "offences": [
+                {
+                  "id": "889e70dc-b045-4cfd-bd95-bd297bc90d0f",
+                  "count": 0,
+                  "startDate": "2022-06-06",
+                  "orderIndex": 1,
+                  "offenceCode": "TH68010",
+                  "shadowListed": false,
+                  "offenceWording": "Shoplifting at Debenhams",
+                  "statementOfOffence": {
+                    "title": "Theft from a shop",
+                    "welshTitle": "Dwyn o siop - siop-ladrad",
+                    "legislation": "Contrary to section 1(1) and 7 of the Theft    Act 1968.",
+                    "welshLegislation": "Yn groes i adran 1(1) a 7 Deddf Dwyn 1968."
+                  },
+                  "restrictFromCourtList": false
+                }
+              ],
+              "firstName": "Simon",
+              "bailStatus": {
+                "id": "12e69486-4d01-3403-a50a-7419ca040635",
+                "code": "C",
+                "description": "Custody"
+              },
+              "dateOfBirth": "1990-01-01",
+              "masterDefendantId": "1a584f56-a47b-4abd-8eda-a1453f2ccb13",
+              "hearingLanguageNeeds": "ENGLISH",
+              "proceedingsConcluded": false,
+              "restrictFromCourtList": false,
+              "courtProceedingsInitiated": "2024-01-06T17:37:44.838Z"
+            }
+          ],
+          "shadowListed": false,
+          "caseIdentifier": {
+            "authorityId": "bdc190e7-c939-37ca-be4b-9f615d6ef40e",
+            "authorityCode": "DERPF",
+            "caseReference": "20NX0038340"
+          },
+          "restrictFromCourtList": false
+        }
+      ],
+      "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+      "isSlotsBooked": false,
+      "nonDefaultDays": [
+        {
+          "roomId": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+          "duration": 20,
+          "startTime": "2024-12-06T19:00:00.000Z",
+          "courtCentreId": "f8254db1-1683-483e-afb3-b87fde5a0a26"
+        }
+      ],
+      "nonSittingDays": [],
+      "hearingLanguage": "ENGLISH",
+      "estimatedMinutes": 20,
+      "jurisdictionType": "MAGISTRATES",
+      "courtApplications": [],
+      "courtCentreDetails": {
+        "id": "f8254db1-1683-483e-afb3-b87fde5a0a26",
+        "defaultDuration": 420,
+        "defaultStartTime": "10:00:00"
+      }
+    }
+  ],
+  "notes": []
+}
