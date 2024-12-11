@@ -9,11 +9,13 @@ import org.slf4j.LoggerFactory;
 import uk.gov.justice.listing.event.PublishCourtListType;
 import uk.gov.justice.services.common.converter.JsonObjectToObjectConverter;
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
+import uk.gov.justice.services.common.converter.StringToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.annotation.Handles;
 import uk.gov.justice.services.core.enveloper.Enveloper;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.JsonObjects;
 import uk.gov.moj.cpp.listing.common.hmi.OrganisationUnitHMICache;
 import uk.gov.moj.cpp.listing.domain.CourtListType;
 import uk.gov.moj.cpp.listing.domain.JurisdictionType;
@@ -129,6 +131,13 @@ public class HearingQueryView {
     private static final String RETURN_ALL_HEARINGS = "returnAllHearings";
     private static final String PROSECUTION_CASES = "prosecutionCases";
     private static final String URN = "urn";
+    private static final String BUSINESS_TYPE = "businessType";
+    private static final String COURT_SESSION = "courtSession";
+    private static final String HEARING_IDS_SEARCH_PARAM = "hearingIds";
+    private static final String COURT_CALENDAR_HEARINGS = "listing.search.court-calendar-hearings";
+
+//    private static final String PAGE_SIZE = "pageSize";
+//    private static final String PAGE_NUMBER = "pageNumber";
 
     @Inject
     private HearingRepository repository;
@@ -168,6 +177,9 @@ public class HearingQueryView {
 
     @Inject
     private CaseByDefendantRepository caseByDefendantRepository;
+
+    @Inject
+    private StringToJsonObjectConverter stringToJsonObjectConverter;
 
     public static final String TYPE = "type";
 
@@ -723,5 +735,15 @@ public class HearingQueryView {
             }
         }
         return listedCases;
+    }
+
+    @Handles(COURT_CALENDAR_HEARINGS)
+    public JsonEnvelope searchCCHearings(final JsonEnvelope envelope) {
+        final JsonObjectBuilder jsonObjectBuilder = createObjectBuilder();
+        final JsonArrayBuilder jsonArrayBuilder = createArrayBuilder();
+//        <<To-do>>
+        return JsonEnvelope.envelopeFrom(
+                envelope.metadata(),
+                jsonObjectBuilder.build());
     }
 }
