@@ -37,9 +37,13 @@ protocols: [ HTTP, HTTPS ]
           type: string
           required: false
         searchDate:
-          description: Search for hearings where the searchDate parameter is between the start and end date of the hearing.
+          description: Search for hearings where the searchDate parameter is between the start and end date of the hearing. This is like a startDate.
           type: date
           required: true
+        endDate:
+          description: Search for hearings where the hearing ends before this date.
+          type: date
+          required: false
         startTime:
           description: e.g. '10:30'. Search for hearings that have a start time greater than or equal to this startTime parameter.  Default is 00:00 (midnight) on the day of the searchDate
           type: string
@@ -47,6 +51,22 @@ protocols: [ HTTP, HTTPS ]
         endTime:
           description: e.g. '11:30'. Search for hearings that have a start time less than or equal to this endTime parameter.  Default is '23:59:59.999999999' on the day of the searchDate
           type: string
+          required: false
+        businessType:
+          description: businessType
+          type: string
+          required: false
+        courtSession:
+          description: Any/AM/PM/AD
+          type: string
+          required: false
+        pageSize:
+          description: Number of records to be displayed per page
+          type: integer
+          required: false
+        pageNumber:
+          description: currentPageNumber details
+          type: integer
           required: false
 
       responses:
@@ -542,69 +562,3 @@ protocols: [ HTTP, HTTPS ]
                  application/vnd.listing.get.cases-by-organisation-defendant+json:
                    example: !include json/listing.search.cases-by-defendant-and-hearingDate.json
                    schema: !include json/schema/listing.search.cases-by-defendant-and-hearingDate.json
-
-/court-calendar-hearings:
-  get:
-    description: |
-      ...
-      (mapping):
-          responseType: application/vnd.listing.search.hearings.court-calendar-hearings+json
-          name: listing.search.hearings.court-calendar-hearings
-      ...
-    queryParameters:
-      allocated:
-        description: true for allocated hearings, false for unallocated hearings
-        type: boolean
-        required: true
-      courtCentreId:
-        description: reference data id for the court centre
-        type: string
-        required: false
-      courtRoomId:
-        description: reference data id for the court room
-        type: string
-        required: false
-      authorityId:
-        description: reference data id for the authority code
-        type: string
-        required: false
-      hearingTypeId:
-        description: reference data id for the hearing type
-        type: string
-        required: false
-      jurisdictionType:
-        description: the jurisdiction under which the hearing is being prosecuted, for example CROWN or MAGISTRATE
-        type: string
-        required: false
-      startTime:
-        description: e.g. '10:30'. Search for hearings that have a start time greater than or equal to this startTime parameter.  Default is 00:00 (midnight) on the day of the searchDate
-        type: string
-        required: false
-      endTime:
-        description: e.g. '11:30'. Search for hearings that have a start time less than or equal to this endTime parameter.  Default is '23:59:59.999999999' on the day of the searchDate
-        type: string
-        required: false
-      businessType:
-        description: businessType
-        type: string
-        required: false
-      courtSession:
-        description: Any/AM/PM/AD
-        type: string
-        required: false
-      pageSize:
-        description: Number of records to be displayed per page
-        type: string
-        required: false
-      pageNumber:
-        description: currentPageNumber details
-        type: string
-        required: false
-
-    responses:
-      200:
-        description: OK
-        body:
-          application/vnd.listing.search.hearings.court-calendar-hearings+json:
-            example: !include json/listing.search.hearings.court-calendar-hearings.json
-            schema: !include  json/schema/listing.search.hearings.court-calendar-hearings.json

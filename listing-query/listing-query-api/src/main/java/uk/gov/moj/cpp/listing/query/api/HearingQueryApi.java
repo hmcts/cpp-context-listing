@@ -22,7 +22,6 @@ import uk.gov.moj.cpp.listing.domain.referencedata.OrganisationUnit;
 import uk.gov.moj.cpp.listing.query.api.service.ReferenceDataService;
 import uk.gov.moj.cpp.listing.query.document.generator.StandardPublicCourtListTemplateAssembler;
 import uk.gov.moj.cpp.listing.query.view.HearingQueryView;
-import uk.gov.moj.cpp.listing.query.view.HearingQueryViewDummy;
 
 import java.io.IOException;
 import java.util.List;
@@ -61,9 +60,6 @@ public class HearingQueryApi {
 
     @Inject
     private HearingQueryView hearingQueryView;
-
-    @Inject
-    private HearingQueryViewDummy hearingQueryViewDummy;
 
     @Inject
     private Enveloper enveloper;
@@ -265,12 +261,5 @@ public class HearingQueryApi {
         }
         return courtListType.getTemplateName();
     }
-
-    @Handles("listing.search.hearings.court-calendar-hearings")
-    public JsonEnvelope searchCCHearings(final JsonEnvelope query) {
-        //return hearingQueryView.searchCCHearings(query);
-        return hearingQueryViewDummy.dummyResponse(query);
-    }
-
 
 }

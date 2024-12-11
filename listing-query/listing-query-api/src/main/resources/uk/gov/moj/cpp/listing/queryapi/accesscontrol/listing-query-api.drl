@@ -139,12 +139,3 @@ rule "Query - API - listing.get.cases-by-organisation-defendant"
   then
     $outcome.setSuccess(true);
 end
-
-rule "Query - API - listing.search.hearings.court-calendar-hearings"
-  when
-    $outcome: Outcome();
-    $action: Action(name == "listing.search.hearings.court-calendar-hearings");
-    eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($action, RuleConstants.LISTING_OFFICERS, RuleConstants.COURT_CLERKS, RuleConstants.LEGAL_ADVISERS, RuleConstants.COURT_ADMINISTRATORS, RuleConstants.CROWN_COURT_ADMIN, RuleConstants.YOTS, RuleConstants.CPS, RuleConstants.NPS, RuleConstants.COURT_ASSOCIATE, RuleConstants.NON_CPS_PROSECUTOR_GROUP));
-  then
-    $outcome.setSuccess(true);
-end
