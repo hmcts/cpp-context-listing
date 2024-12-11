@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.common</groupId>
         <artifactId>service-parent-pom</artifactId>
-        <version>17.100.0</version>
+        <version>17.100.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -23,13 +23,14 @@
     </description>
 
     <properties>
+        <jgitflow.maven.developBranchName>main</jgitflow.maven.developBranchName>
         <sonar.jacoco.itReportPath>${project.basedir}/../target/jacoco-it.exec
         </sonar.jacoco.itReportPath>
         <sonar.report.export.path>sonar-report.json</sonar.report.export.path>
         <sonar.scm.provider>git</sonar.scm.provider>
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <coredomain.version>17.21.15</coredomain.version>
-        <referencedata.version>17.0.34</referencedata.version>
+        <referencedata.version>17.0.35</referencedata.version>
         <documentgenerator-client.version>1.0.4</documentgenerator-client.version>
         <sardine.version>5.7</sardine.version>
         <progression.version>17.0.44</progression.version>

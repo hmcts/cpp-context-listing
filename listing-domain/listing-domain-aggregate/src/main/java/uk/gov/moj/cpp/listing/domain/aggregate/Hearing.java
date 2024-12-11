@@ -57,6 +57,7 @@ import uk.gov.justice.core.courts.CourtHearingRequest;
 import uk.gov.justice.core.courts.HearingType;
 import uk.gov.justice.core.courts.ListDefendantRequest;
 import uk.gov.justice.core.courts.ProsecutionCase;
+import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.justice.listing.event.CourtApplicationHearingDeleted;
 import uk.gov.justice.listing.events.AddedCasesForHearing;
@@ -142,7 +143,6 @@ import uk.gov.justice.listing.events.VideoLinkChangedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsAssignedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsChangedForHearing;
 import uk.gov.justice.listing.events.VideoLinkDetailsRemovedForHearing;
-import uk.gov.justice.core.courts.WeekCommencingDate;
 import uk.gov.justice.listing.events.WeekCommencingDateChangedForHearing;
 import uk.gov.justice.listing.events.WeekCommencingDateRemovedForHearing;
 import uk.gov.moj.cpp.listing.domain.CaseMarker;
@@ -3216,18 +3216,18 @@ public class Hearing implements Aggregate {
                     .filter(defendant -> defendant.getId().equals(defendantId))
                     .findFirst()
                     .ifPresent(defendant -> {
-                        if (nonNull(oldOffenceId) && nonNull(newOffence)) {
-                            defendant.getOffences().stream().filter(offence -> offence.getId().equals(oldOffenceId)).findFirst()
-                                    .ifPresent(offence -> {
-                                        final int index = defendant.getOffences().indexOf(offence);
-                                        defendant.getOffences().set(index, newOffence);
-                                    });
-                        } else if (nonNull(oldOffenceId)) {
-                            defendant.getOffences().removeIf(offence -> offence.getId().equals(oldOffenceId));
-                        } else if (nonNull(newOffence)) {
-                            defendant.getOffences().add(newOffence);
-                        }
+        if (nonNull(oldOffenceId) && nonNull(newOffence)) {
+            defendant.getOffences().stream().filter(offence -> offence.getId().equals(oldOffenceId)).findFirst()
+                    .ifPresent(offence -> {
+                        final int index = defendant.getOffences().indexOf(offence);
+                        defendant.getOffences().set(index, newOffence);
                     });
+        } else if (nonNull(oldOffenceId)) {
+            defendant.getOffences().removeIf(offence -> offence.getId().equals(oldOffenceId));
+        } else if (nonNull(newOffence)) {
+            defendant.getOffences().add(newOffence);
+        }
+                });
         }
     }
 
@@ -3266,20 +3266,31 @@ public class Hearing implements Aggregate {
     }
 
     private void removeOffences(final List<UUID> offenceIds2) {
+        removeOffencesFromProsecutionCaseDefendantOffenceIds(offenceIds2);
+
+        if (nonNull(this.currentHearingEventState) && nonNull(this.currentHearingEventState.getListedCases())) {
+            removeOffencesFromCurrentHearingEventState(offenceIds2);
+        }
+    }
+
+    private void removeOffencesFromProsecutionCaseDefendantOffenceIds(final List<UUID> offenceIds2) {
         prosecutionCaseDefendantOffenceIds.stream()
                 .flatMap(obj -> obj.getDefendants().stream())
                 .forEach(def -> def.getOffences().removeIf(offenceIds -> offenceIds2.stream().anyMatch(uuid -> uuid.equals(offenceIds.getId()))));
 
-        if (nonNull(this.currentHearingEventState) && nonNull(this.currentHearingEventState.getListedCases())) {
-            currentHearingEventState.getListedCases().stream()
-                    .flatMap(listedCase -> listedCase.getDefendants().stream())
-                    .forEach(defendant -> defendant.getOffences().removeIf(offence -> offenceIds2.contains(offence.getId())));
-
-            currentHearingEventState.getListedCases().forEach(listedCase -> listedCase.getDefendants().removeIf(defendant -> defendant.getOffences().isEmpty()));
-            currentHearingEventState.getListedCases().removeIf(pc -> pc.getDefendants().isEmpty());
-        }
+        prosecutionCaseDefendantOffenceIds
+                .forEach(obj -> obj.getDefendants().removeIf(defendant -> defendant.getOffences().isEmpty()));
+        prosecutionCaseDefendantOffenceIds.removeIf(lc -> lc.getDefendants().isEmpty());
     }
 
+    private void removeOffencesFromCurrentHearingEventState(final List<UUID> offenceIds2) {
+        currentHearingEventState.getListedCases().stream()
+                .flatMap(listedCase -> listedCase.getDefendants().stream())
+                .forEach(defendant -> defendant.getOffences().removeIf(offence -> offenceIds2.contains(offence.getId())));
+
+        currentHearingEventState.getListedCases().forEach(listedCase -> listedCase.getDefendants().removeIf(defendant -> defendant.getOffences().isEmpty()));
+        currentHearingEventState.getListedCases().removeIf(pc -> pc.getDefendants().isEmpty());
+    }
 
     /**
      * This method is responsible for merging cases, defendants and offences between

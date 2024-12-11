@@ -60,4 +60,11 @@ public class EventBuilder {
         return jsonObjectToObjectConverter.convert(jsonObject, CasesAddedToHearing.class);
 
     }
+
+    public CasesAddedToHearing buildCasesAddedToHearingV2() {
+
+        JsonObject jsonObject = givenPayload("/test-data/listing.events.cases-added-to-hearing-v2.json");
+        return jsonObjectToObjectConverter.convert(jsonObject, CasesAddedToHearing.class);
+
+    }
 }

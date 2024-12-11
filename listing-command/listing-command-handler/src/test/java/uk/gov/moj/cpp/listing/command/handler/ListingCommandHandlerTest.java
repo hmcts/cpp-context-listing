@@ -23,7 +23,6 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.atLeast;
@@ -34,7 +33,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.quality.Strictness.LENIENT;
@@ -69,6 +67,8 @@ import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.OFF_ID
 import static uk.gov.moj.cpp.listing.command.utils.ExtendHearingUtilsTest.UNALLOCATED_HEARING_ID;
 import static uk.gov.moj.cpp.listing.command.utils.FileUtil.givenPayload;
 import static uk.gov.moj.cpp.listing.domain.HearingLanguage.valueFor;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.BST;
+import static uk.gov.moj.cpp.listing.domain.utils.DateAndTimeUtils.UTC;
 import static uk.gov.moj.cpp.listing.domain.utils.HearingUtil.getAdjustedDuration;
 
 import uk.gov.justice.core.courts.CourtCentre;
@@ -216,6 +216,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
 import java.time.ZoneId;
@@ -225,6 +226,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -253,7 +255,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
-import org.slf4j.Logger;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
@@ -340,7 +341,7 @@ public class ListingCommandHandlerTest {
     private static final int OFFENCE_COUNT = 1;
     private static final String OFFENCE_CONVICTION_DATE = "2017-10-05";
     private static final String LISTING_DIRECTIONS = "wheelchair access required";
-    private static final LocalDate START_DATE = LocalDate.parse("2018-01-02");
+    private static final LocalDate START_DATE = LocalDate.parse("2018-06-01");
     private static final String REPORTING_RESTRICTIONS = "Automatic anonymity under the Sexual Offences (Amendment) Act 1992";
     private static final String PROSECUTOR_DATES_TO_AVOID = "Can't do Mondays & Tuesdays";
     private static final JurisdictionType JURISDICTION_TYPE = JurisdictionType.CROWN;
@@ -529,6 +530,10 @@ public class ListingCommandHandlerTest {
     @Spy
     private final Enveloper enveloper = EnveloperFactory.createEnveloperWithEvents(CourtListExportRequested.class,
             HearingCounselModified.class);
+    @Mock
+    private JsonObject mockJsonObject;
+    @Mock
+    private Map<UUID,JsonObject> mockOrganisationUnitMap;
 
     private final static LocalDate SUNDAY_25TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 25);
     private final static LocalDate MONDAY_26TH_NOVEMBER_2018 = LocalDate.of(2018, Month.NOVEMBER, 26);
@@ -568,6 +573,10 @@ public class ListingCommandHandlerTest {
         givenEventStream(eventStream, aCase, Case.class);
         givenEventStream(eventStream, hearing, Hearing.class);
         givenEventStream(eventStream, anApplication, Application.class);
+
+        when(mockOrganisationUnitMap.get(any(UUID.class))).thenReturn(mockJsonObject);
+        when(mockJsonObject.getString("defaultStartTime")).thenReturn("09:00");
+        when(mockJsonObject.getString("oucode", null)).thenReturn("test_oucode");
 
     }
 
@@ -943,8 +952,9 @@ public class ListingCommandHandlerTest {
         when(hearing.getCurrentHearingEventState()).thenReturn(getSampleStoredHearing());
         when(hearing.assignPublicListNote(PUBLIC_LIST_NOTE, HEARING_ID_1)).thenReturn(mock(Stream.class));
         when(hearing.assignVideoLink(HAS_VIDEO_LINK, HEARING_ID_1)).thenReturn(mock(Stream.class));
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
         when(hmiService.isHmiEnabled(any())).thenReturn(true);
+        when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -1233,8 +1243,10 @@ public class ListingCommandHandlerTest {
         when(aggregateService.get(eventStream, Hearing.class)).thenReturn(hearing);
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
         when(hmiService.isHmiEnabled(any())).thenReturn(true);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
 
@@ -1283,8 +1295,10 @@ public class ListingCommandHandlerTest {
 
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
         when(hmiService.isHmiEnabled(any())).thenReturn(true);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
         verify(hearing).raiseUpdateHearingInStagingHmi(any(Optional.class));
@@ -1309,9 +1323,11 @@ public class ListingCommandHandlerTest {
                 .build());
         when(hearing.changeStartDate(START_DATE, HEARING_ID_1)).thenReturn(Stream.of());
         when(hearing.applyRescheduledCheck(any())).thenReturn(mock(Stream.class));
-        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").build());
+        when(courtCentreFactory.getOrganisationUnit(any(), any())).thenReturn(Json.createObjectBuilder().add("oucode", "B06AN00").add("defaultStartTime","09:00").build());
         when(hearing.updateUnallocatedHearingPartially(any(), any(), any())).thenReturn(Stream.of(new Object()));
         when(hmiService.isHmiEnabled(any())).thenReturn(true);
+        when(hearingTypeFactory.getHearingTypesIdDurationMap(any(JsonEnvelope.class))).thenReturn(Collections.singletonMap(HEARING_TYPE.getId().toString(), 30));
+
 
         listingCommandHandler.updateHearingForListing(commandEnvelope);
         verify(hearing).updateUnallocatedHearingPartially(eq(HEARING_ID_1), any(), any());
@@ -4114,6 +4130,119 @@ public class ListingCommandHandlerTest {
         verify(hearing, times(1)).markHearingAsDeleted(hearingId);
     }
 
+    @Test
+    public void calculateNonDefaultDays_Command_NonDefaultDaysEmpty_NonSittingDaysEmpty() {
+        final LocalDate startDate = LocalDate.of(2024, 9, 12);
+        final LocalDate endDate = LocalDate.of(2024, 9, 14);
+        final ZonedDateTime firstDay = ZonedDateTime.of(LocalDateTime.of(2024, 9, 12, 9, 0), BST).withZoneSameInstant(UTC);
+        final List<NonDefaultDay> filteredNonDefaultDays = new ArrayList<>();
+        final List<LocalDate> nonSittingDays = emptyList();
+        final String selectedCourtCentreId = randomUUID().toString();
+        final Optional<String> selectedCourtRoomId = of(randomUUID().toString());
+
+        when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
+
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId, selectedCourtRoomId);
+        assertThat(filteredNonDefaultDays.size(),is(3));
+        assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
+        assertThat(filteredNonDefaultDays.get(1).getStartTime(),is(firstDay.plusDays(1)));
+        assertThat(filteredNonDefaultDays.get(2).getStartTime(),is(firstDay.plusDays(2)));
+    }
+
+    @Test
+    public void calculateNonDefaultDays_Command_NonDefaultDaysEmpty_NonSittingDaysEmpty_CourtRoomIsNotSelected() {
+        final LocalDate startDate = LocalDate.of(2024, 9, 12);
+        final LocalDate endDate = LocalDate.of(2024, 9, 14);
+        final ZonedDateTime firstDay = ZonedDateTime.of(LocalDateTime.of(2024, 9, 12, 9, 0), BST).withZoneSameInstant(UTC);
+        final List<NonDefaultDay> filteredNonDefaultDays = new ArrayList<>();
+        final List<LocalDate> nonSittingDays = emptyList();
+        final String selectedCourtCentreId = randomUUID().toString();
+        final Optional<String> selectedCourtRoomId = empty();
+
+        when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
+
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30, filteredNonDefaultDays, mockOrganisationUnitMap, selectedCourtCentreId, selectedCourtRoomId);
+        assertThat(filteredNonDefaultDays.size(),is(3));
+        assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
+        assertThat(filteredNonDefaultDays.get(1).getStartTime(),is(firstDay.plusDays(1)));
+        assertThat(filteredNonDefaultDays.get(2).getStartTime(),is(firstDay.plusDays(2)));
+    }
+
+    @Test
+    public void calculateNonDefaultDays_Command_NonDefaultDaysEmpty_NonSittingDaysPopulated() {
+        final LocalDate startDate = LocalDate.of(2024, 9, 12);
+        final LocalDate endDate = LocalDate.of(2024, 9, 14);
+        final ZonedDateTime firstDay = ZonedDateTime.of(LocalDateTime.of(2024, 9, 12, 9, 0), BST).withZoneSameInstant(UTC);
+        final List<NonDefaultDay> filteredNonDefaultDays = new ArrayList<>();
+        final List<LocalDate> nonSittingDays = singletonList(LocalDate.of(2024, 9, 13));
+        final String selectedCourtCentreId = randomUUID().toString();
+        final Optional<String> selectedCourtRoomId = of(randomUUID().toString());
+
+        when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
+
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId);
+        assertThat(filteredNonDefaultDays.size(), is(2));
+        assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
+        assertThat(filteredNonDefaultDays.get(1).getStartTime(),is(firstDay.plusDays(2)));
+    }
+
+    @Test
+    public void calculateNonDefaultDays_Command_NonDefaultDaysPopulated_NonSittingDaysEmpty() {
+        final LocalDate startDate = LocalDate.of(2024, 9, 12);
+        final LocalDate endDate = LocalDate.of(2024, 9, 14);
+
+        final String selectedCourtCentreId = randomUUID().toString();
+        final Optional<String> selectedCourtRoomId = of(randomUUID().toString());
+        final ZonedDateTime firstDay = ZonedDateTime.of(LocalDateTime.of(2024, 9, 12, 11, 0), BST).withZoneSameInstant(UTC);
+        final List<NonDefaultDay> filteredNonDefaultDays = new ArrayList<>();
+        filteredNonDefaultDays.add(NonDefaultDay.nonDefaultDay()
+                .withStartTime(firstDay)
+                .withDuration(of(30))
+                .withCourtRoomId(of(1))
+                .withCourtCentreId(of(selectedCourtCentreId))
+                .withRoomId(selectedCourtRoomId)
+                .build());
+
+
+        final List<LocalDate> nonSittingDays = emptyList();
+
+        when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
+
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId);
+        assertThat(filteredNonDefaultDays.size(),is(3));
+        assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
+        assertThat(filteredNonDefaultDays.get(1).getStartTime().toLocalDate(),is(firstDay.plusDays(1).toLocalDate()));
+        assertThat(filteredNonDefaultDays.get(2).getStartTime().toLocalDate(),is(firstDay.plusDays(2).toLocalDate()));
+        assertThat(filteredNonDefaultDays.get(1).getStartTime().withZoneSameInstant(BST).toLocalTime(),is(LocalTime.of(9,0)));
+        assertThat(filteredNonDefaultDays.get(2).getStartTime().withZoneSameInstant(BST).toLocalTime(),is(LocalTime.of(9,0)));
+    }
+
+    @Test
+    public void calculateNonDefaultDays_Command_NonDefaultDaysPopulated_NonSittingDaysPopulated() {
+        final LocalDate startDate = LocalDate.of(2024, 9, 12);
+        final LocalDate endDate = LocalDate.of(2024, 9, 14);
+
+        final String selectedCourtCentreId = randomUUID().toString();
+        final Optional<String> selectedCourtRoomId = of(randomUUID().toString());
+        final ZonedDateTime firstDay = ZonedDateTime.of(LocalDateTime.of(2024, 9, 12, 11, 0), BST).withZoneSameInstant(UTC);
+        final List<NonDefaultDay> filteredNonDefaultDays = new ArrayList<>();
+        filteredNonDefaultDays.add(NonDefaultDay.nonDefaultDay()
+                .withStartTime(firstDay)
+                .withDuration(of(30))
+                .withCourtRoomId(of(1))
+                .withCourtCentreId(of(selectedCourtCentreId))
+                .withRoomId(selectedCourtRoomId)
+                .build());
+        final List<LocalDate> nonSittingDays = singletonList(LocalDate.of(2024, 9, 13));
+
+        when(courtCentreFactory.getCourtRoomNumber(any(), any())).thenReturn(Optional.of(1));
+
+        listingCommandHandler.calculateNonDefaultDays(jsonEnvelopeMock,nonSittingDays, startDate, endDate, 30,filteredNonDefaultDays,mockOrganisationUnitMap, selectedCourtCentreId,selectedCourtRoomId);
+        assertThat(filteredNonDefaultDays.size(), is(2));
+        assertThat(filteredNonDefaultDays.get(0).getStartTime(),is(firstDay));
+        assertThat(filteredNonDefaultDays.get(1).getStartTime().toLocalDate(),is(firstDay.plusDays(2).toLocalDate()));
+        assertThat(filteredNonDefaultDays.get(1).getStartTime().withZoneSameInstant(BST).toLocalTime(),is(LocalTime.of(9,0)));
+    }
 
     @Test
     public void shouldParseStringToXML() {
