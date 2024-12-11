@@ -69,9 +69,6 @@ public class Case implements Aggregate {
     }
 
     public Stream<Object> addHearing(final UUID caseId, final UUID hearingId) {
-        if(hearingIds.contains(hearingId)){
-            return  Stream.empty();
-        }
         return apply(Stream.of(new HearingAddedToCase(caseId, hearingId)));
     }
 
