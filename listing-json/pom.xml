@@ -4,7 +4,7 @@
     <parent>
         <artifactId>listing-parent</artifactId>
         <groupId>uk.gov.moj.cpp.listing</groupId>
-        <version>17.0.19-cct-1981-SNAPSHOT</version>
+        <version>17.0.20-cct-1981-SNAPSHOT</version>
     </parent>
 
     <artifactId>listing-json</artifactId>
