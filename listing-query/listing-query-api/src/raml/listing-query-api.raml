@@ -37,13 +37,9 @@ protocols: [ HTTP, HTTPS ]
           type: string
           required: false
         searchDate:
-          description: Search for hearings where the searchDate parameter is between the start and end date of the hearing. This is like a startDate.
+          description: Search for hearings where the searchDate parameter is between the start and end date of the hearing.
           type: date
           required: true
-        endDate:
-          description: Search for hearings where the hearing ends before this date.
-          type: date
-          required: false
         startTime:
           description: e.g. '10:30'. Search for hearings that have a start time greater than or equal to this startTime parameter.  Default is 00:00 (midnight) on the day of the searchDate
           type: string
@@ -51,22 +47,6 @@ protocols: [ HTTP, HTTPS ]
         endTime:
           description: e.g. '11:30'. Search for hearings that have a start time less than or equal to this endTime parameter.  Default is '23:59:59.999999999' on the day of the searchDate
           type: string
-          required: false
-        businessType:
-          description: businessType
-          type: string
-          required: false
-        courtSession:
-          description: Any/AM/PM/AD
-          type: string
-          required: false
-        pageSize:
-          description: Number of records to be displayed per page
-          type: integer
-          required: false
-        pageNumber:
-          description: currentPageNumber details
-          type: integer
           required: false
 
       responses:
@@ -207,6 +187,14 @@ protocols: [ HTTP, HTTPS ]
         possibleDisqualification:
           description: identifier if hearing has cases with the possible disqualification from driving flag
           type: boolean
+          required: false
+        businessType:
+          description: businessType. used for MAGs only
+          type: string
+          required: false
+        courtSession:
+          description: Any/AM/PM/AD. used for MAGs only
+          type: string
           required: false
       responses:
             200:
