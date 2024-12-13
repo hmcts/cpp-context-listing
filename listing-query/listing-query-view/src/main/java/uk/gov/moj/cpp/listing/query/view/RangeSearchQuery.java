@@ -16,9 +16,11 @@ import static uk.gov.moj.cpp.listing.query.view.dto.PaginationParameterFactory.n
 import uk.gov.justice.services.common.converter.ListToJsonArrayConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
 import uk.gov.moj.cpp.listing.persistence.entity.Hearing;
+import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
+import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -60,6 +62,9 @@ public class RangeSearchQuery {
 
     @Inject
     private ListToJsonArrayConverter listToJsonArrayConverter;
+
+    @Inject
+    private NotesService notesService;
 
     public JsonEnvelope rangeSearchHearingsForJudgeList(final JsonEnvelope query) {
         final String courtCentreId = query.payloadAsJsonObject().getString(COURT_CENTRE_ID, null);
@@ -127,8 +132,12 @@ public class RangeSearchQuery {
 
 
         final Long totalCount = !(hearings.isEmpty()) ? hearings.get(0).getTotalCount() : 0;
+
+        final List<Notes> notes = notesService.findNotes(allocated, courtRoomId, startDate, hearings);
+
         return envelopeFrom(metadataFrom(query.metadata()).withName("listing.search.hearings"),
                 createObjectBuilder().add(HEARINGS, hearingJsonListConverterFilterEjectCases.convert(hearings))
+                        .add("notes", listToJsonArrayConverter.convert(notes))
                         .add("results", totalCount)
                         .add("pageCount", toPageCount(totalCount, paginationParameter.getPageSize())));
     }

@@ -7,6 +7,8 @@ import static java.util.UUID.randomUUID;
 import static javax.json.Json.createObjectBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,6 +27,7 @@ import uk.gov.moj.cpp.listing.persistence.entity.Notes;
 import uk.gov.moj.cpp.listing.persistence.repository.HearingRepository;
 import uk.gov.moj.cpp.listing.query.view.dto.PaginationParameter;
 import uk.gov.moj.cpp.listing.query.view.hearing.HearingJsonListConverterFilterEjectCases;
+import uk.gov.moj.cpp.listing.query.view.service.NotesService;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -103,6 +106,8 @@ public class RangeSearchQueryTest {
 
     @Mock
     private PaginationParameter paginationParameter;
+    @Mock
+    private NotesService notesService;
 
     @InjectMocks
     private RangeSearchQuery rangeSearchQuery;
@@ -273,7 +278,10 @@ public class RangeSearchQueryTest {
                 JURISDICTION_TYPE.toString(),
                 SEARCH_DATE,
                 SEARCH_DATE);
+
+        verify(notesService).findNotes(eq(ALLOCATED), eq(COURT_ROOM_ID.toString()), eq(SEARCH_DATE.toString()), anyList());
     }
+
     @Test
     public void searchHearingsWithWeekCommencingDateRange() {
 
